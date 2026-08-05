@@ -11,7 +11,8 @@ vi.mock('@/components/ActionButton.vue', () => ({
   default: {
     props: ['item', 'icon', 'tooltipText', 'disabled'],
     emits: ['click'],
-    template: '<button type="button" :data-icon="icon" :disabled="disabled" @click="$emit(\'click\', item)"></button>'
+    template:
+      '<button type="button" :data-icon="icon" :disabled="disabled" @click="$emit(\'click\', item)"></button>'
   }
 }))
 
@@ -70,7 +71,8 @@ function mountEditor(props = {}) {
         },
         'v-list-item': {
           props: ['title'],
-          template: '<div data-testid="v-list-item" v-bind="$attrs"><span v-if="title" data-testid="v-list-item-prop-title">{{ title }}</span><slot name="prepend"></slot><slot></slot></div>',
+          template:
+            '<div data-testid="v-list-item" v-bind="$attrs"><span v-if="title" data-testid="v-list-item-prop-title">{{ title }}</span><slot name="prepend"></slot><slot></slot></div>',
           inheritAttrs: false
         },
         'v-list-item-title': {
@@ -92,7 +94,7 @@ describe('RegisterStatusInlineEditor', () => {
     expect(wrapper.find('[data-testid="register-status-selection-title"]').exists()).toBe(false)
 
     const icons = wrapper.findAll('[data-testid="register-status-icon"]')
-    expect(icons.map(icon => icon.attributes('data-icon'))).toEqual([
+    expect(icons.map((icon) => icon.attributes('data-icon'))).toEqual([
       'svg:in-transit',
       'svg:in-transit',
       'svg:very-delivered'

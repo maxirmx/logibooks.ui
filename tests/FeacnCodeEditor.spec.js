@@ -33,7 +33,7 @@ vi.mock('@/helpers/parcels.list.helpers.js', () => ({
 }))
 
 vi.mock('@/helpers/feacn.info.helpers.js', () => ({
-  useFeacnTooltips: vi.fn(() => ({ value: { '1234567890': { name: 'Товар Тест' } } })),
+  useFeacnTooltips: vi.fn(() => ({ value: { 1234567890: { name: 'Товар Тест' } } })),
   loadFeacnTooltipOnHover: vi.fn(() => Promise.resolve())
 }))
 
@@ -42,7 +42,10 @@ vi.mock('@/stores/key.words.store.js', () => ({
 }))
 
 vi.mock('@/stores/parcels.store.js', () => ({
-  useParcelsStore: vi.fn(() => ({ update: vi.fn(), lookupFeacnCode: vi.fn(async () => ({ keyWordIds: [] })) }))
+  useParcelsStore: vi.fn(() => ({
+    update: vi.fn(),
+    lookupFeacnCode: vi.fn(async () => ({ keyWordIds: [] }))
+  }))
 }))
 
 vi.mock('@/stores/feacn.codes.store.js', () => ({
@@ -129,11 +132,9 @@ describe('FeacnCodeEditor', () => {
       // setFieldValue should not have been called
       expect(setFieldValue).not.toHaveBeenCalled()
     })
-
   })
 
   describe('when disabled prop is false (default)', () => {
-
     it('activates search on label dblclick', async () => {
       const label = wrapper.find('label')
       await label.trigger('dblclick')

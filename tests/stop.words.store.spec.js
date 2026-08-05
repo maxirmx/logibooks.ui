@@ -1,6 +1,6 @@
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
@@ -39,7 +39,7 @@ describe('stop.words.store.js', () => {
 
     // Reset all mocks
     vi.clearAllMocks()
-    
+
     // Reset error state to null
     store.error = null
   })
@@ -134,7 +134,10 @@ describe('stop.words.store.js', () => {
 
       const result = await store.create(newStopWord)
 
-      expect(fetchWrapper.post).toHaveBeenCalledWith('http://localhost:3000/api/stopwords', newStopWord)
+      expect(fetchWrapper.post).toHaveBeenCalledWith(
+        'http://localhost:3000/api/stopwords',
+        newStopWord
+      )
       expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:3000/api/stopwords')
       expect(store.stopWords).toEqual(mockStopWords)
       expect(result).toEqual(created)
@@ -149,7 +152,10 @@ describe('stop.words.store.js', () => {
 
       await store.create(newStopWord)
 
-      expect(fetchWrapper.post).toHaveBeenCalledWith('http://localhost:3000/api/stopwords', newStopWord)
+      expect(fetchWrapper.post).toHaveBeenCalledWith(
+        'http://localhost:3000/api/stopwords',
+        newStopWord
+      )
       expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:3000/api/stopwords')
       expect(store.stopWords).toEqual(updatedStopWords)
     })
@@ -167,7 +173,9 @@ describe('stop.words.store.js', () => {
       const error = new Error('409: Stop word already exists')
       fetchWrapper.post.mockRejectedValue(error)
 
-      await expect(store.create({ word: 'и', matchTypeId: 41 })).rejects.toThrow('409: Stop word already exists')
+      await expect(store.create({ word: 'и', matchTypeId: 41 })).rejects.toThrow(
+        '409: Stop word already exists'
+      )
       expect(store.error).toEqual(error)
       expect(fetchWrapper.get).not.toHaveBeenCalled()
     })
@@ -178,7 +186,9 @@ describe('stop.words.store.js', () => {
       error.data = { word: 'abc', level: 1 }
       fetchWrapper.post.mockRejectedValue(error)
 
-      await expect(store.create({ word: 'abc', matchTypeId: 41 })).rejects.toThrow('Morphology unsupported')
+      await expect(store.create({ word: 'abc', matchTypeId: 41 })).rejects.toThrow(
+        'Morphology unsupported'
+      )
       expect(store.error).toEqual(error)
       expect(fetchWrapper.get).not.toHaveBeenCalled()
     })
@@ -187,7 +197,7 @@ describe('stop.words.store.js', () => {
   describe('update', () => {
     it('updates stop word successfully', async () => {
       const updateData = { word: 'обновленное', matchTypeId: 1 }
-      const updatedStopWords = mockStopWords.map(sw => 
+      const updatedStopWords = mockStopWords.map((sw) =>
         sw.id === 1 ? { ...sw, ...updateData } : sw
       )
 
@@ -197,7 +207,10 @@ describe('stop.words.store.js', () => {
 
       const result = await store.update(1, updateData)
 
-      expect(fetchWrapper.put).toHaveBeenCalledWith('http://localhost:3000/api/stopwords/1', updateData)
+      expect(fetchWrapper.put).toHaveBeenCalledWith(
+        'http://localhost:3000/api/stopwords/1',
+        updateData
+      )
       expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:3000/api/stopwords')
       expect(store.stopWords).toEqual(updatedStopWords)
       expect(result).toEqual(updatedDto)
@@ -212,7 +225,10 @@ describe('stop.words.store.js', () => {
 
       await store.update(1, updateData)
 
-      expect(fetchWrapper.put).toHaveBeenCalledWith('http://localhost:3000/api/stopwords/1', updateData)
+      expect(fetchWrapper.put).toHaveBeenCalledWith(
+        'http://localhost:3000/api/stopwords/1',
+        updateData
+      )
       expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:3000/api/stopwords')
       expect(store.stopWords).toEqual(updatedStopWords)
     })
@@ -232,7 +248,9 @@ describe('stop.words.store.js', () => {
       error.data = { word: 'abc', level: 2 }
       fetchWrapper.put.mockRejectedValue(error)
 
-      await expect(store.update(1, { word: 'abc', matchTypeId: 41 })).rejects.toThrow('Morphology unsupported')
+      await expect(store.update(1, { word: 'abc', matchTypeId: 41 })).rejects.toThrow(
+        'Morphology unsupported'
+      )
       expect(store.error).toEqual(error)
       expect(fetchWrapper.get).not.toHaveBeenCalled()
     })
@@ -240,8 +258,8 @@ describe('stop.words.store.js', () => {
 
   describe('remove', () => {
     it('removes stop word successfully', async () => {
-      const remainingStopWords = mockStopWords.filter(sw => sw.id !== 1)
-      
+      const remainingStopWords = mockStopWords.filter((sw) => sw.id !== 1)
+
       fetchWrapper.delete.mockResolvedValue()
       fetchWrapper.get.mockResolvedValue(remainingStopWords)
 
@@ -254,8 +272,8 @@ describe('stop.words.store.js', () => {
     })
 
     it('refreshes stop words list after removal', async () => {
-      const remainingStopWords = mockStopWords.filter(sw => sw.id !== 2)
-      
+      const remainingStopWords = mockStopWords.filter((sw) => sw.id !== 2)
+
       fetchWrapper.delete.mockResolvedValue()
       fetchWrapper.get.mockResolvedValue(remainingStopWords)
 
@@ -264,7 +282,7 @@ describe('stop.words.store.js', () => {
       expect(fetchWrapper.delete).toHaveBeenCalledWith('http://localhost:3000/api/stopwords/2')
       expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:3000/api/stopwords')
       expect(store.stopWords).toEqual(remainingStopWords)
-      expect(store.stopWords.find(sw => sw.id === 2)).toBeUndefined()
+      expect(store.stopWords.find((sw) => sw.id === 2)).toBeUndefined()
     })
 
     it('handles remove error', async () => {
@@ -273,13 +291,12 @@ describe('stop.words.store.js', () => {
 
       await expect(store.remove(1)).rejects.toThrow('Delete failed')
       expect(fetchWrapper.get).not.toHaveBeenCalled()
-
     })
 
     it('does not refresh list when remove fails', async () => {
       const initialStopWords = [...mockStopWords]
       store.stopWords = initialStopWords
-      
+
       const error = new Error('Delete failed')
       fetchWrapper.delete.mockRejectedValue(error)
 
@@ -305,11 +322,7 @@ describe('stop.words.store.js', () => {
     it('handles multiple simultaneous operations', async () => {
       fetchWrapper.get.mockResolvedValue(mockStopWords)
 
-      const promises = [
-        store.getAll(),
-        store.getAll(),
-        store.getAll()
-      ]
+      const promises = [store.getAll(), store.getAll(), store.getAll()]
 
       await Promise.all(promises)
 
@@ -321,7 +334,7 @@ describe('stop.words.store.js', () => {
       fetchWrapper.get.mockResolvedValue(mockStopWords)
       await store.getAll()
 
-      store.stopWords.forEach(stopWord => {
+      store.stopWords.forEach((stopWord) => {
         expect(stopWord).toHaveProperty('id')
         expect(stopWord).toHaveProperty('word')
         expect(stopWord).toHaveProperty('matchTypeId')
@@ -347,7 +360,7 @@ describe('stop.words.store.js', () => {
 
       await store.create({}).catch(() => {}) // Ignore error for URL test
       expect(fetchWrapper.post).toHaveBeenCalledWith(baseUrl, {})
-      
+
       await store.update(1, {}).catch(() => {}) // Ignore error for URL test
       expect(fetchWrapper.put).toHaveBeenCalledWith(`${baseUrl}/1`, {})
 
@@ -376,7 +389,10 @@ describe('stop.words.store.js', () => {
 
       await store.create(emptyWordStopWord)
 
-      expect(fetchWrapper.post).toHaveBeenCalledWith('http://localhost:3000/api/stopwords', emptyWordStopWord)
+      expect(fetchWrapper.post).toHaveBeenCalledWith(
+        'http://localhost:3000/api/stopwords',
+        emptyWordStopWord
+      )
     })
 
     it('handles special characters in words', async () => {
@@ -386,7 +402,10 @@ describe('stop.words.store.js', () => {
 
       await store.create(specialCharStopWord)
 
-      expect(fetchWrapper.post).toHaveBeenCalledWith('http://localhost:3000/api/stopwords', specialCharStopWord)
+      expect(fetchWrapper.post).toHaveBeenCalledWith(
+        'http://localhost:3000/api/stopwords',
+        specialCharStopWord
+      )
     })
 
     it('handles matchTypeId values correctly', async () => {
@@ -399,7 +418,10 @@ describe('stop.words.store.js', () => {
         fetchWrapper.post.mockResolvedValue()
         fetchWrapper.get.mockResolvedValue([...mockStopWords, { id: Math.random(), ...testCase }])
         await store.create(testCase)
-        expect(fetchWrapper.post).toHaveBeenCalledWith('http://localhost:3000/api/stopwords', testCase)
+        expect(fetchWrapper.post).toHaveBeenCalledWith(
+          'http://localhost:3000/api/stopwords',
+          testCase
+        )
       }
     })
 

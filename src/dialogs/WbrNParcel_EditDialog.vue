@@ -1,8 +1,11 @@
 <script setup>
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
+import { focusFirstInvalidField } from '@/helpers/form.validation.helpers.js'
+import { reportFormError } from '@/helpers/error.helpers.js'
 import router from '@/router'
 import { Form, Field } from 'vee-validate'
 import * as Yup from 'yup'
@@ -19,7 +22,10 @@ import { useAlertStore } from '@/stores/alert.store.js'
 import { storeToRefs } from 'pinia'
 import { computed, ref, watch, onMounted, onUnmounted } from 'vue'
 import { useConfirm } from 'vuetify-use-dialog'
-import { wbrnRegisterColumnTitles, wbrnRegisterColumnTooltips } from '@/helpers/wbrn.register.mapping.js'
+import {
+  wbrnRegisterColumnTitles,
+  wbrnRegisterColumnTooltips
+} from '@/helpers/wbrn.register.mapping.js'
 import { getCheckStatusInfo, getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
 import { isImportCustomsProcedure } from '@/helpers/customs.procedure.helpers.js'
@@ -74,27 +80,33 @@ const keyWordsStore = useKeyWordsStore()
 const feacnOrdersStore = useFeacnOrdersStore()
 const feacnPrefixesStore = useFeacnPrefixesStore()
 const parcelViewsStore = useParcelViewsStore()
-
-await statusStore.ensureLoaded()
-await stopWordsStore.ensureLoaded()
-await keyWordsStore.ensureLoaded()
-await feacnOrdersStore.ensureLoaded()
-await feacnPrefixesStore.ensureLoaded()
-await registersStore.getById(props.registerId)
-// load initial parcel by currentParcelId
-await parcelsStore.getById(currentParcelId.value)
-await parcelViewsStore.add(currentParcelId.value)
-
 const alertStore = useAlertStore()
-const { alert } = storeToRefs(alertStore)
+const initializationFailed = ref(false)
+
+async function initialize() {
+  initializationFailed.value = false
+  try {
+    await statusStore.ensureLoaded()
+    await stopWordsStore.ensureLoaded()
+    await keyWordsStore.ensureLoaded()
+    await feacnOrdersStore.ensureLoaded()
+    await feacnPrefixesStore.ensureLoaded()
+    await registersStore.getById(props.registerId)
+    await parcelsStore.getById(currentParcelId.value)
+    await parcelViewsStore.add(currentParcelId.value)
+  } catch (error) {
+    initializationFailed.value = true
+    alertStore.error(error, {
+      fallback: 'Не удалось загрузить информацию о посылке',
+      action: { label: 'Повторить', handler: initialize }
+    })
+  }
+}
+
+await initialize()
 const confirm = useConfirm()
-const {
-  imageOverlayOpen,
-  imageUrl,
-  imageLoading,
-  openImageOverlay,
-  closeImageOverlay
-} = useParcelImageOverlay(parcelsStore, alertStore)
+const { imageOverlayOpen, imageUrl, imageLoading, openImageOverlay, closeImageOverlay } =
+  useParcelImageOverlay(parcelsStore, alertStore)
 
 // Set the selected parcel ID in auth store
 authStore.selectedParcelId = currentParcelId.value
@@ -104,10 +116,15 @@ const { item: registerItem } = storeToRefs(registersStore)
 const { stopWords } = storeToRefs(stopWordsStore)
 const { orders: feacnOrders } = storeToRefs(feacnOrdersStore)
 const { prefixes: feacnPrefixes } = storeToRefs(feacnPrefixesStore)
-const markedByPartnerActionsDisabled = computed(() => CheckStatusCode.isMarkedByPartner(item.value?.checkStatus))
-const readOnly = computed(() => item.value?.readOnly === true || registerItem.value?.readOnly === true)
-const showPassportVerification = computed(() =>
-  authStore.isSrLogistPlus && isImportCustomsProcedure(registerItem.value?.customsProcedureCode)
+const markedByPartnerActionsDisabled = computed(() =>
+  CheckStatusCode.isMarkedByPartner(item.value?.checkStatus)
+)
+const readOnly = computed(
+  () => item.value?.readOnly === true || registerItem.value?.readOnly === true
+)
+const showPassportVerification = computed(
+  () =>
+    authStore.isSrLogistPlus && isImportCustomsProcedure(registerItem.value?.customsProcedureCode)
 )
 const passportCheckStatuses = computed(() => registersStore.ops?.passportCheckStatuses || [])
 const passportIdentityFields = ['lastName', 'firstName', 'passportNumber']
@@ -145,9 +162,13 @@ function initNextParcelsPromise(id) {
 
   nextParcelsPromise = registersStore
     .nextParcels(id)
-    .then(result => {
+    .then((result) => {
       nextParcelsResult.value = result
       return result
+    })
+    .catch((error) => {
+      alertStore.error(error, { fallback: 'Не удалось определить соседние посылки' })
+      return null
     })
 }
 
@@ -223,7 +244,14 @@ const schema = Yup.object().shape({
 })
 
 async function deleteProductImage(values) {
-  await deleteProductImageHelper(values, isComponentMounted, runningAction, currentParcelId, confirm, parcelsStore)
+  await deleteProductImageHelper(
+    values,
+    isComponentMounted,
+    runningAction,
+    currentParcelId,
+    confirm,
+    parcelsStore
+  )
 }
 
 async function viewProductImage() {
@@ -236,7 +264,7 @@ async function validateParcel(values, sw, matchMode) {
   try {
     // Wait for next parcels info to complete before calling helper
     await ensureNextParcelsPromise()
-    
+
     await validateParcelData(values, item, parcelsStore, sw, matchMode)
   } catch (error) {
     alertStore.error(error?.message || String(error))
@@ -246,7 +274,15 @@ async function validateParcel(values, sw, matchMode) {
 }
 
 async function runCheckStatusAction(values, actionFn) {
-  return runCheckStatusActionHelper(values, actionFn, isComponentMounted, runningAction, currentParcelId, ensureNextParcelsPromise, parcelsStore)
+  return runCheckStatusActionHelper(
+    values,
+    actionFn,
+    isComponentMounted,
+    runningAction,
+    currentParcelId,
+    ensureNextParcelsPromise,
+    parcelsStore
+  )
 }
 
 // Approve the parcel
@@ -256,7 +292,7 @@ async function approveParcel(values) {
   try {
     // Wait for next parcels info to complete before calling helper
     await ensureNextParcelsPromise()
-    
+
     await approveParcelHelper(values, item, parcelsStore)
   } catch (error) {
     alertStore.error(error?.message || String(error))
@@ -312,7 +348,10 @@ async function refreshParcelAfterReportUpload() {
 }
 
 // Handle saving and moving to the next parcel
-async function onSubmit(values, useTheNext = false) {
+async function onSubmit(values, submitContext = false) {
+  const useTheNext = submitContext === true
+  const setErrors =
+    submitContext && typeof submitContext === 'object' ? submitContext.setErrors : undefined
   if (!isComponentMounted.value || runningAction.value || currentParcelId.value != values.id) return
   runningAction.value = true
   try {
@@ -322,9 +361,7 @@ async function onSubmit(values, useTheNext = false) {
 
     // Wait for the appropriate next parcel promise to resolve
     const nextParcels = await ensureNextParcelsPromise()
-    const nextParcel = useTheNext
-      ? nextParcels?.withoutIssues
-      : nextParcels?.withIssues
+    const nextParcel = useTheNext ? nextParcels?.withoutIssues : nextParcels?.withIssues
 
     if (nextParcel) {
       // Inline swap: set item, update current id and authStore,
@@ -340,13 +377,17 @@ async function onSubmit(values, useTheNext = false) {
       const newUrl = `/registers/${props.registerId}/parcels/edit/${nextParcel.id}`
       router.replace(newUrl)
 
-      // fetch full parcel data 
+      // fetch full parcel data
       // await parcelsStore.getById(nextParcel.id)
     } else {
       goToParcelsList()
     }
   } catch (error) {
-    alertStore.error(error?.message || String(error))
+    reportFormError(error, {
+      setErrors,
+      alertStore,
+      fallback: 'Не удалось сохранить посылку'
+    })
   } finally {
     if (isComponentMounted.value) runningAction.value = false
   }
@@ -392,7 +433,6 @@ async function onBack(values) {
       // update URL without remount
       const prevUrl = `/registers/${props.registerId}/parcels/edit/${prevParcel.id}`
       router.replace(prevUrl)
-
     } else {
       goToParcelsList()
     }
@@ -414,13 +454,11 @@ async function generateXml(values) {
       : parcelsStore.update(currentParcelId.value, values)
     await Promise.all([ensureNextParcelsPromise(), updatePromise])
     await registersStore.getById(props.registerId)
-    
-    await generateXmlHelper(
-      item,
-      parcelsStore,
-      String(item.value?.shk || '').padStart(20, '0'),
-      { confirm, register: registersStore.item }
-    )
+
+    await generateXmlHelper(item, parcelsStore, String(item.value?.shk || '').padStart(20, '0'), {
+      confirm,
+      register: registersStore.item
+    })
     await parcelsStore.getById(currentParcelId.value)
   } catch (error) {
     alertStore.error(error?.message || String(error))
@@ -437,7 +475,13 @@ function handleFellows() {
 
 // Lookup FEACN codes triggered from header actions
 async function onLookup(values) {
-  if (readOnly.value || !isComponentMounted.value || runningAction.value || currentParcelId.value != values.id) return
+  if (
+    readOnly.value ||
+    !isComponentMounted.value ||
+    runningAction.value ||
+    currentParcelId.value != values.id
+  )
+    return
   runningAction.value = true
   try {
     // Wait for neighbor promises if present
@@ -459,46 +503,51 @@ async function onLookup(values) {
 <template>
   <div class="settings form-4 form-compact">
     <Form
-      @submit="onSubmit" 
-      :initial-values="item" 
-      :validation-schema="schema" 
-      v-slot="{ errors, values, isSubmitting, setFieldValue }" 
+      v-if="!initializationFailed"
+      @invalid-submit="focusFirstInvalidField"
+      @submit="onSubmit"
+      :initial-values="item"
+      :validation-schema="schema"
+      v-slot="{ errors, values, isSubmitting, setFieldValue }"
       :class="{ 'form-disabled': overlayActive || imageOverlayOpen, 'read-only-form': readOnly }"
     >
-    <div class="header-with-actions">
-      <h1 class="primary-heading">
-        {{ item?.id ? `№ ${item.id} -- ` : '' }} посылка {{ item?.shk ? item.shk : '[без номера]' }}
-      </h1>
-      <!-- Action buttons moved inside Form scope -->
-      <ParcelHeaderActionsBar
-        :disabled="isSubmitting || runningAction || loading"
-        :actions-disabled="markedByPartnerActionsDisabled"
-        :mutation-disabled="readOnly"
-        :download-disabled="
-          isSubmitting ||
-          runningAction ||
-          loading ||
-          CheckStatusCode.hasIssues(item?.checkStatus) ||
-          CheckStatusCode.isDuplicate(item?.checkStatus) ||
-          item?.blockedByFellowItem ||
-          isCustomsProcessingDisabled(values.statusId, statusStore)
-        "
-        :lookup-disabled="CheckStatusCode.isDuplicate(item?.checkStatus)"
-        @next-parcel="onSubmit(values, true)"
-        @next-issue="onSubmit(values, false)"
-        @back="onBack(values)"
-        @save="onSave(values)"
-        @lookup="onLookup(values)"
-        @cancel="goToParcelsList()"
-        @download="generateXml(values)"
-      />
-    </div>
-    
-    <hr class="hr" />
+      <div class="header-with-actions">
+        <h1 class="primary-heading">
+          {{ item?.id ? `№ ${item.id} -- ` : '' }} посылка
+          {{ item?.shk ? item.shk : '[без номера]' }}
+        </h1>
+        <!-- Action buttons moved inside Form scope -->
+        <ParcelHeaderActionsBar
+          :disabled="isSubmitting || runningAction || loading"
+          :actions-disabled="markedByPartnerActionsDisabled"
+          :mutation-disabled="readOnly"
+          :download-disabled="
+            isSubmitting ||
+            runningAction ||
+            loading ||
+            CheckStatusCode.hasIssues(item?.checkStatus) ||
+            CheckStatusCode.isDuplicate(item?.checkStatus) ||
+            item?.blockedByFellowItem ||
+            isCustomsProcessingDisabled(values.statusId, statusStore)
+          "
+          :lookup-disabled="CheckStatusCode.isDuplicate(item?.checkStatus)"
+          @next-parcel="onSubmit(values, true)"
+          @next-issue="onSubmit(values, false)"
+          @back="onBack(values)"
+          @save="onSave(values)"
+          @lookup="onLookup(values)"
+          @cancel="goToParcelsList()"
+          @download="generateXml(values)"
+        />
+      </div>
+
+      <hr class="hr" />
+
+      <PageAlertRegion />
       <div v-if="readOnly" class="alert alert-warning read-only-notice">
         Изменения запрещены. Посылка доступна только для просмотра.
       </div>
-      
+
       <!-- Order Identification & Status Section -->
       <ParcelStatusSection
         :item="item"
@@ -508,8 +557,17 @@ async function onLookup(values) {
         :check-status-info="getCheckStatusInfo(item, feacnOrders, stopWords, feacnPrefixes)"
         :has-check-status-issues="CheckStatusCode.hasIssues(item?.checkStatus)"
         :approval-disabled="CheckStatusCode.isEUR1000(item?.checkStatus)"
-        :disabled="readOnly || isSubmitting || runningAction || loading || CheckStatusCode.isDuplicate(item?.checkStatus) || markedByPartnerActionsDisabled"
-        :clear-check-status-disabled="readOnly || isSubmitting || runningAction || loading || markedByPartnerActionsDisabled"
+        :disabled="
+          readOnly ||
+          isSubmitting ||
+          runningAction ||
+          loading ||
+          CheckStatusCode.isDuplicate(item?.checkStatus) ||
+          markedByPartnerActionsDisabled
+        "
+        :clear-check-status-disabled="
+          readOnly || isSubmitting || runningAction || loading || markedByPartnerActionsDisabled
+        "
         @validate-sw="(vals) => validateParcel(vals, true, SwValidationMatchMode.NoSwMatch)"
         @validate-sw-ex="(vals) => validateParcel(vals, true, SwValidationMatchMode.SwMatch)"
         @validate-fc="(vals) => validateParcel(vals, false)"
@@ -528,7 +586,11 @@ async function onLookup(values) {
         :columnTooltips="wbrnRegisterColumnTooltips"
         :setFieldValue="setFieldValue"
         :runningAction="runningAction"
-        :disabled="readOnly || CheckStatusCode.isDuplicate(item?.checkStatus) || markedByPartnerActionsDisabled"
+        :disabled="
+          readOnly ||
+          CheckStatusCode.isDuplicate(item?.checkStatus) ||
+          markedByPartnerActionsDisabled
+        "
         @update:item="(updatedItem) => (item.value = updatedItem)"
         @overlay-state-changed="overlayActive = $event"
         @set-running-action="runningAction = $event"
@@ -574,12 +636,16 @@ async function onLookup(values) {
         <div class="form-row">
           <div class="form-group">
             <label for="shk" class="label">{{ wbrnRegisterColumnTitles.shk }}:</label>
-            <ParcelNumberExt 
+            <ParcelNumberExt
               :item="item"
               field-name="shk"
               :disabled="isSubmitting || runningAction || loading || markedByPartnerActionsDisabled"
               class="readonly-parcel-number"
-              @click="() => {/* No action needed for readonly display */}"
+              @click="
+                () => {
+                  /* No action needed for readonly display */
+                }
+              "
               @fellows="handleFellows"
             />
           </div>
@@ -594,7 +660,9 @@ async function onLookup(values) {
           <ArticleWithH
             :item="item"
             :errors="errors"
-            :disabled="readOnly || isSubmitting || runningAction || loading || markedByPartnerActionsDisabled"
+            :disabled="
+              readOnly || isSubmitting || runningAction || loading || markedByPartnerActionsDisabled
+            "
             :approval-disabled="CheckStatusCode.isEUR1000(item?.checkStatus)"
             :column-titles="wbrnRegisterColumnTitles"
             :fullWidth="false"
@@ -609,13 +677,35 @@ async function onLookup(values) {
             :errors="errors"
             :fullWidth="false"
           />
-          <WbrNFormField name="quantity" type="number" step="1.0" :errors="errors" :fullWidth="false" />
-          <WbrNFormField name="unitPrice" type="number" step="1.0" :errors="errors" :fullWidth="false" />
+          <WbrNFormField
+            name="quantity"
+            type="number"
+            step="1.0"
+            :errors="errors"
+            :fullWidth="false"
+          />
+          <WbrNFormField
+            name="unitPrice"
+            type="number"
+            step="1.0"
+            :errors="errors"
+            :fullWidth="false"
+          />
           <WbrNFormField name="currency" :errors="errors" :fullWidth="false" readonly />
         </div>
         <div class="form-row">
-          <WbrNFormField name="lastName" :errors="errors" :fullWidth="false" :disabled="passportCheckInProgress" />
-          <WbrNFormField name="firstName" :errors="errors" :fullWidth="false" :disabled="passportCheckInProgress" />
+          <WbrNFormField
+            name="lastName"
+            :errors="errors"
+            :fullWidth="false"
+            :disabled="passportCheckInProgress"
+          />
+          <WbrNFormField
+            name="firstName"
+            :errors="errors"
+            :fullWidth="false"
+            :disabled="passportCheckInProgress"
+          />
           <WbrNFormField name="patronymic" :errors="errors" :fullWidth="false" />
           <PassportNumberWithActions
             :label="wbrnRegisterColumnTitles.passportNumber"
@@ -634,15 +724,7 @@ async function onLookup(values) {
       </div>
       <!-- DTag -->
       <DTagSection :item="item" />
-
     </Form>
-    <div v-if="item?.error" class="text-center m-5">
-      <div class="text-danger">Ошибка: {{ item.error }}</div>
-    </div>
-    <div v-if="alert" class="alert alert-dismissable text-center m-5" :class="alert.type">
-      <button @click="alertStore.clear()" class="btn btn-link close">×</button>
-      {{ alert.message }}
-    </div>
   </div>
   <ParcelImageOverlay
     :open="imageOverlayOpen"
@@ -668,12 +750,12 @@ async function onLookup(values) {
   margin: 0;
   flex: 1;
   min-width: 0; /* Allow shrinking */
-  
+
   /* Ellipsis on overflow */
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  
+
   /* Ensure it takes available space but can shrink */
   max-width: calc(100% - 300px); /* Reserve space for buttons */
 }
@@ -690,7 +772,7 @@ async function onLookup(values) {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .primary-heading {
     max-width: 100%;
     margin-bottom: 0.5rem;
@@ -724,5 +806,4 @@ async function onLookup(values) {
   pointer-events: auto;
   opacity: 1;
 }
-
 </style>

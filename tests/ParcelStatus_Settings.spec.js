@@ -1,7 +1,7 @@
 /* @vitest-environment jsdom */
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
@@ -28,7 +28,9 @@ const mockParcelStatusesStore = createMockStore({
 })
 
 const mockAlertStore = createMockStore({
-  success: vi.fn()
+  success: vi.fn(),
+  error: vi.fn(),
+  alert: null
 })
 
 // Mock all external dependencies
@@ -46,14 +48,18 @@ vi.mock('@/router', () => ({
   }
 }))
 
-vi.mock('pinia', () => ({
-  storeToRefs: (store) => {
-    if (store.parcelStatus !== undefined) {
-      return { parcelStatus: ref(store.parcelStatus) }
+vi.mock('pinia', async () => {
+  const actual = await vi.importActual('pinia')
+  return {
+    ...actual,
+    storeToRefs: (store) => {
+      if (store.parcelStatus !== undefined) {
+        return { parcelStatus: ref(store.parcelStatus) }
+      }
+      return {}
     }
-    return {}
   }
-}))
+})
 
 // Mock vee-validate with proper form submission handling
 vi.mock('vee-validate', () => ({
@@ -131,7 +137,7 @@ const AsyncWrapper = {
 function findActionButton(wrapper, icon) {
   return wrapper
     .findAllComponents({ name: 'ActionButton' })
-    .find(button => button.props('icon') === icon)
+    .find((button) => button.props('icon') === icon)
 }
 
 // Import router after mocking
@@ -148,7 +154,6 @@ beforeEach(async () => {
   mockParcelStatusesStore.loading = false
   mockParcelStatusesStore.error = null
   mockAlertStore.loading = false
-  mockAlertStore.error = null
 })
 
 describe('ParcelStatus_Settings.vue', () => {
@@ -165,7 +170,9 @@ describe('ParcelStatus_Settings.vue', () => {
 
       expect(wrapper.find('h1').text()).toBe('Создание статуса посылки')
       expect(wrapper.find('[data-testid="parcel-status-header-actions"]').exists()).toBe(true)
-      expect(findActionButton(wrapper, 'fa-solid fa-check-double').props('tooltipText')).toBe('Создать')
+      expect(findActionButton(wrapper, 'fa-solid fa-check-double').props('tooltipText')).toBe(
+        'Создать'
+      )
       expect(findActionButton(wrapper, 'fa-solid fa-xmark').props('tooltipText')).toBe('Отменить')
       expect(wrapper.find('button[type="submit"]').exists()).toBe(false)
       expect(mockParcelStatusesStore.getById).not.toHaveBeenCalled()
@@ -182,10 +189,10 @@ describe('ParcelStatus_Settings.vue', () => {
       await resolveAll()
 
       expect(wrapper.find('h1').text()).toBe('Редактирование статуса посылки')
-      expect(findActionButton(wrapper, 'fa-solid fa-check-double').props('tooltipText')).toBe('Сохранить')
+      expect(findActionButton(wrapper, 'fa-solid fa-check-double').props('tooltipText')).toBe(
+        'Сохранить'
+      )
     })
-
-
 
     it('renders empty export color as no color in create mode', async () => {
       const wrapper = mount(AsyncWrapper, {
@@ -198,7 +205,9 @@ describe('ParcelStatus_Settings.vue', () => {
       await resolveAll()
 
       expect(wrapper.find('.status-color-value').text()).toBe('Не задан')
-      expect(wrapper.find('[data-testid="bk-color-swatch"]').classes()).toContain('status-color-swatch--empty')
+      expect(wrapper.find('[data-testid="bk-color-swatch"]').classes()).toContain(
+        'status-color-swatch--empty'
+      )
       expect(findActionButton(wrapper, 'fa-solid fa-broom').props('disabled')).toBe(true)
     })
 
@@ -220,7 +229,9 @@ describe('ParcelStatus_Settings.vue', () => {
 
       expect(mockParcelStatusesStore.parcelStatus.bkColor).toBeNull()
       expect(wrapper.find('.status-color-value').text()).toBe('Не задан')
-      expect(wrapper.find('[data-testid="bk-color-swatch"]').classes()).toContain('status-color-swatch--empty')
+      expect(wrapper.find('[data-testid="bk-color-swatch"]').classes()).toContain(
+        'status-color-swatch--empty'
+      )
       expect(findActionButton(wrapper, 'fa-solid fa-broom').props('disabled')).toBe(true)
     })
 
@@ -414,8 +425,6 @@ describe('ParcelStatus_Settings.vue', () => {
   })
 
   describe('Props Validation', () => {
-
-
     it('handles missing parcelStatusId in edit mode', async () => {
       const wrapper = mount(AsyncWrapper, {
         props: { mode: 'edit' },
@@ -428,8 +437,6 @@ describe('ParcelStatus_Settings.vue', () => {
       expect(wrapper.exists()).toBe(true)
     })
   })
-
-
 
   describe('Error Handling', () => {
     it('handles network errors gracefully during creation', async () => {
@@ -550,5 +557,4 @@ describe('ParcelStatus_Settings.vue', () => {
       expect(wrapper.exists()).toBe(true)
     })
   })
-
 })

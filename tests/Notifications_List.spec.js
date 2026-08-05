@@ -66,9 +66,13 @@ vi.mock('vuetify-use-dialog', () => ({
   useConfirm: () => confirmMock
 }))
 
-vi.mock('@/router', () => ({
-  default: { push: pushMock }
-}), { virtual: true })
+vi.mock(
+  '@/router',
+  () => ({
+    default: { push: pushMock }
+  }),
+  { virtual: true }
+)
 
 vi.mock('@/helpers/items.per.page.js', () => ({
   itemsPerPageOptions: [10, 25, 50]
@@ -229,7 +233,9 @@ describe('Notifications_List.vue', () => {
       terminationDate: '2025-02-01',
       articles: []
     }
-    expect(wrapper.vm.filterNotifications(null, 'article', { raw: notificationWithoutArticles })).toBe(false)
+    expect(
+      wrapper.vm.filterNotifications(null, 'article', { raw: notificationWithoutArticles })
+    ).toBe(false)
   })
 
   it('filters through all articles case-insensitively', async () => {

@@ -1,6 +1,6 @@
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
@@ -51,20 +51,22 @@ describe('FeacnCodeSearch.vue', () => {
     vi.clearAllMocks()
     window.HTMLElement.prototype.scrollIntoView = vi.fn()
     mockLookup.mockResolvedValue([])
-    mockGetById.mockImplementation(id => {
+    mockGetById.mockImplementation((id) => {
       if (id === 3) return Promise.resolve(leaf)
       if (id === 2) return Promise.resolve(child)
       if (id === 1) return Promise.resolve(root)
       return Promise.resolve(null)
     })
-    mockGetChildren.mockImplementation(id => {
+    mockGetChildren.mockImplementation((id) => {
       if (id === null || id === undefined) return Promise.resolve([root])
       if (id === 1) return Promise.resolve([child])
       if (id === 2) return Promise.resolve([leaf])
       return Promise.resolve([])
     })
-    mockFormatFeacnName.mockImplementation(code => Promise.resolve({ name: `Name ${code}`, found: true }))
-    mockFormatFeacnNameFromItem.mockImplementation(item => `Name ${item?.code || ''}`)
+    mockFormatFeacnName.mockImplementation((code) =>
+      Promise.resolve({ name: `Name ${code}`, found: true })
+    )
+    mockFormatFeacnNameFromItem.mockImplementation((item) => `Name ${item?.code || ''}`)
   })
 
   it('re-emits select event from tree', async () => {
@@ -77,7 +79,7 @@ describe('FeacnCodeSearch.vue', () => {
     await childToggle.trigger('click')
     await waitForUpdates(wrapper)
 
-    const leafLabel = wrapper.findAll('.node-label').find(n => n.text() === 'Leaf')
+    const leafLabel = wrapper.findAll('.node-label').find((n) => n.text() === 'Leaf')
     await leafLabel.trigger('click')
 
     expect(wrapper.emitted('select')).toBeTruthy()
@@ -93,7 +95,7 @@ describe('FeacnCodeSearch.vue', () => {
   it('uses formatFeacnNameFromItem for search results', async () => {
     mockLookup.mockResolvedValueOnce([{ id: 1, code: '0101' }])
     mockFormatFeacnNameFromItem.mockReturnValueOnce('Formatted Name')
-    
+
     const wrapper = createWrapper()
     await waitForUpdates(wrapper)
     const input = wrapper.find('.search-input')
@@ -101,7 +103,7 @@ describe('FeacnCodeSearch.vue', () => {
     const searchButton = wrapper.findComponent({ name: 'ActionButton' })
     await searchButton.find('button').trigger('click')
     await waitForUpdates(wrapper)
-    
+
     expect(mockFormatFeacnNameFromItem).toHaveBeenCalledWith({ id: 1, code: '0101' })
     expect(wrapper.find('.result-name').text()).toBe('Formatted Name')
   })
@@ -196,7 +198,7 @@ describe('FeacnCodeSearch.vue', () => {
 
   it('shows error message when getById fails while opening path', async () => {
     mockLookup.mockResolvedValueOnce([{ id: 3, code: '0101010101', name: 'Leaf' }])
-    mockGetById.mockImplementation(id => {
+    mockGetById.mockImplementation((id) => {
       if (id === 3) return Promise.reject(new Error('fail'))
       if (id === 2) return Promise.resolve(child)
       if (id === 1) return Promise.resolve(root)
@@ -254,7 +256,7 @@ describe('FeacnCodeSearch.vue', () => {
 
   it('gracefully aborts opening path when a parent node is missing', async () => {
     mockLookup.mockResolvedValueOnce([{ id: 2, code: '0101', name: 'Child' }])
-    mockGetById.mockImplementation(id => {
+    mockGetById.mockImplementation((id) => {
       if (id === 2) return Promise.resolve(child)
       if (id === 1) return Promise.resolve(null)
       return Promise.resolve(null)

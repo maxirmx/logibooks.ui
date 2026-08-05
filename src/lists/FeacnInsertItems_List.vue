@@ -1,8 +1,9 @@
 <script setup>
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { onMounted, computed, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
@@ -13,10 +14,8 @@ import { useAlertStore } from '@/stores/alert.store.js'
 import { useConfirm } from 'vuetify-use-dialog'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
-import {
-  loadFeacnTooltipOnHover,
-  useFeacnTooltips
-} from '@/helpers/feacn.info.helpers.js'
+import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
+import { loadFeacnTooltipOnHover, useFeacnTooltips } from '@/helpers/feacn.info.helpers.js'
 
 const insertItemsStore = useFeacnInsertItemsStore()
 const authStore = useAuthStore()
@@ -24,7 +23,6 @@ const alertStore = useAlertStore()
 const confirm = useConfirm()
 
 const { insertItems, loading } = storeToRefs(insertItemsStore)
-const { alert } = storeToRefs(alertStore)
 const runningAction = ref(false)
 
 // Use shared FEACN tooltip cache
@@ -57,15 +55,19 @@ function filterInsertItems(value, query, item) {
 }
 
 const headers = [
-  ...(authStore.isSrLogistPlus ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '10%' }] : []),
-  { title: 'Код ТН ВЭД', key: 'code', sortable: true , width: '20%'},
+  ...(authStore.isSrLogistPlus
+    ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '10%' }]
+    : []),
+  { title: 'Код ТН ВЭД', key: 'code', sortable: true, width: '20%' },
   { title: 'Вставить перед', key: 'insBefore', sortable: true, width: '35%' },
   { title: 'Вставить после', key: 'insAfter', sortable: true, width: '35%' }
 ]
 
-onMounted(async () => {
-  await insertItemsStore.getAll()
-})
+onMounted(() =>
+  runWithRetryAlert(() => insertItemsStore.getAll(), {
+    fallback: 'Не удалось загрузить правила вставки'
+  })
+)
 
 function openEditDialog(item) {
   router.push(`/feacninsertitem/edit/${item.id}`)
@@ -96,7 +98,7 @@ async function deleteInsertItem(item) {
     if (confirmed) {
       try {
         await insertItemsStore.remove(item.id)
-      } catch  {
+      } catch {
         alertStore.error('Ошибка при удалении правила')
       }
     }
@@ -137,6 +139,8 @@ defineExpose({
 
     <hr class="hr" />
 
+    <PageAlertRegion />
+
     <div>
       <v-text-field
         v-model="authStore.feacninsertitems_search"
@@ -166,11 +170,7 @@ defineExpose({
         fixed-header
       >
         <template v-slot:[`item.code`]="{ item }">
-          <v-tooltip
-            location="top"
-            content-class="feacn-tooltip"
-            :max-width="tooltipMaxWidth"
-          >
+          <v-tooltip location="top" content-class="feacn-tooltip" :max-width="tooltipMaxWidth">
             <template v-slot:activator="{ props }">
               <span
                 v-bind="props"
@@ -180,7 +180,7 @@ defineExpose({
                 {{ item.code }}
               </span>
             </template>
-            <span>{{ feacnTooltips[item.code]?.name|| 'Наведите для загрузки...' }}</span>
+            <span>{{ feacnTooltips[item.code]?.name || 'Наведите для загрузки...' }}</span>
           </v-tooltip>
         </template>
         <template v-slot:[`item.actions`]="{ item }">
@@ -205,10 +205,6 @@ defineExpose({
     </v-card>
 
     <!-- Alert -->
-    <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
-      <button @click="alertStore.clear()" class="btn btn-link close">×</button>
-      {{ alert.message }}
-    </div>
   </div>
 </template>
 

@@ -1,41 +1,49 @@
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 import { useAuthStore } from '@/stores/auth.store.js'
+import { reportError } from '@/helpers/error.helpers.js'
 import { SwValidationMatchMode } from '@/models/sw.validation.match.mode.js'
 import { ParcelApprovalMode } from '@/models/parcel.approval.mode.js'
 import { PassportCheckStatusFilterValue } from '@/helpers/passport.check.status.helpers.js'
 
 const baseUrl = `${apiUrl}/parcels`
-const parcelCheckStatusPropertyByCode = new Map([
-  ['passport', 'passportCheckStatus']
-])
+const parcelCheckStatusPropertyByCode = new Map([['passport', 'passportCheckStatus']])
 
 export function buildParcelsFilterParams(authStore, additionalParams = {}) {
   const params = new URLSearchParams(additionalParams)
-  
+
   // Add sorting parameters
   params.append('sortBy', authStore.parcels_sort_by?.[0]?.key || 'id')
   params.append('sortOrder', authStore.parcels_sort_by?.[0]?.order || 'asc')
-  
+
   if (authStore.parcels_status !== null && authStore.parcels_status !== undefined) {
     params.append('statusId', authStore.parcels_status.toString())
   }
-  
-  if (authStore.parcels_check_status_sw !== null && authStore.parcels_check_status_sw !== undefined) {
+
+  if (
+    authStore.parcels_check_status_sw !== null &&
+    authStore.parcels_check_status_sw !== undefined
+  ) {
     params.append('checkStatusSw', authStore.parcels_check_status_sw.toString())
   }
-  
-  if (authStore.parcels_check_status_fc !== null && authStore.parcels_check_status_fc !== undefined) {
+
+  if (
+    authStore.parcels_check_status_fc !== null &&
+    authStore.parcels_check_status_fc !== undefined
+  ) {
     params.append('checkStatusFc', authStore.parcels_check_status_fc.toString())
   }
 
-  if (authStore.parcels_passport_check_status !== null && authStore.parcels_passport_check_status !== undefined) {
+  if (
+    authStore.parcels_passport_check_status !== null &&
+    authStore.parcels_passport_check_status !== undefined
+  ) {
     if (authStore.parcels_passport_check_status === PassportCheckStatusFilterValue.Problems) {
       params.append('passportCheckWithProblems', 'true')
     } else {
@@ -46,7 +54,7 @@ export function buildParcelsFilterParams(authStore, additionalParams = {}) {
   if (authStore.parcels_hide_legacy_restrictions === true) {
     params.append('hideLegacyRestrictions', 'true')
   }
-  
+
   if (authStore.parcels_tnved) {
     params.append('tnVed', authStore.parcels_tnved)
   }
@@ -142,8 +150,14 @@ export const useParcelsStore = defineStore('parcels', () => {
       const property = parcelCheckStatusPropertyByCode.get(checkCode)
       const status = Number(update?.status)
       const revision = Number(update?.revision)
-      if (!Number.isInteger(parcelId) || parcelId <= 0 || !property ||
-          !Number.isFinite(status) || !Number.isSafeInteger(revision) || revision <= 0) {
+      if (
+        !Number.isInteger(parcelId) ||
+        parcelId <= 0 ||
+        !property ||
+        !Number.isFinite(status) ||
+        !Number.isSafeInteger(revision) ||
+        revision <= 0
+      ) {
         continue
       }
 
@@ -195,10 +209,7 @@ export const useParcelsStore = defineStore('parcels', () => {
   }
 
   async function getAll(registerId, options = {}) {
-    const {
-      updateStore = true,
-      showMarkedByPartner = false
-    } = options
+    const { updateStore = true, showMarkedByPartner = false } = options
     const authStore = useAuthStore()
     const checkStatusWatermark = liveCheckStatusArrival
     if (updateStore) {
@@ -210,7 +221,9 @@ export const useParcelsStore = defineStore('parcels', () => {
         ? buildParcelsWhFilterParams
         : buildParcelsFilterParams
       const page = showMarkedByPartner ? authStore.parcels_wh_page : authStore.parcels_page
-      const pageSize = showMarkedByPartner ? authStore.parcels_wh_per_page : authStore.parcels_per_page
+      const pageSize = showMarkedByPartner
+        ? authStore.parcels_wh_per_page
+        : authStore.parcels_per_page
       const params = filterBuilder(authStore, {
         registerId: registerId.toString(),
         page: page.toString(),
@@ -219,16 +232,17 @@ export const useParcelsStore = defineStore('parcels', () => {
 
       const listEndpoint = showMarkedByPartner ? `${baseUrl}/a` : baseUrl
       const response = await fetchWrapper.get(`${listEndpoint}?${params.toString()}`)
-      const responseItems = (response.items || [])
-        .map(parcel => mergeLiveParcelCheckStatuses(parcel, checkStatusWatermark))
-      
+      const responseItems = (response.items || []).map((parcel) =>
+        mergeLiveParcelCheckStatuses(parcel, checkStatusWatermark)
+      )
+
       if (updateStore) {
         items.value = responseItems
         totalCount.value = response.pagination?.totalCount || 0
         hasNextPage.value = response.pagination?.hasNextPage || false
         hasPreviousPage.value = response.pagination?.hasPreviousPage || false
       }
-      
+
       const result = {
         items: responseItems,
         pagination: {
@@ -268,9 +282,11 @@ export const useParcelsStore = defineStore('parcels', () => {
 
   function updateItems(responseData) {
     if (responseData) {
-      const checkStatusWatermark = responseCheckStatusWatermarks.get(responseData) ?? liveCheckStatusArrival
-      items.value = (responseData.items || [])
-        .map(parcel => mergeLiveParcelCheckStatuses(parcel, checkStatusWatermark))
+      const checkStatusWatermark =
+        responseCheckStatusWatermarks.get(responseData) ?? liveCheckStatusArrival
+      items.value = (responseData.items || []).map((parcel) =>
+        mergeLiveParcelCheckStatuses(parcel, checkStatusWatermark)
+      )
       totalCount.value = responseData.pagination?.totalCount || 0
       hasNextPage.value = responseData.pagination?.hasNextPage || false
       hasPreviousPage.value = responseData.pagination?.hasPreviousPage || false
@@ -288,15 +304,12 @@ export const useParcelsStore = defineStore('parcels', () => {
       return merged
     } catch (err) {
       item.value = { error: err }
-      return null
+      throw err
     }
   }
 
   async function update(id, data) {
-    const response = await runParcelMutation(
-      id,
-      () => fetchWrapper.put(`${baseUrl}/${id}`, data)
-    )
+    const response = await runParcelMutation(id, () => fetchWrapper.put(`${baseUrl}/${id}`, data))
     const numericId = Number(id)
 
     // Update the item in the store if it's currently loaded
@@ -306,30 +319,32 @@ export const useParcelsStore = defineStore('parcels', () => {
     }
 
     // Update the item in the items array if it exists
-    const itemIndex = items.value.findIndex(parcel => Number(parcel.id) === numericId)
+    const itemIndex = items.value.findIndex((parcel) => Number(parcel.id) === numericId)
     if (itemIndex !== -1) {
       items.value[itemIndex] = { ...items.value[itemIndex], ...data }
     }
-    
+
     return response
   }
 
   async function markCurrentParcelReadOnlyOnConflict(id, err) {
     if (
-      err?.status !== 409
-      || !String(err?.message || err?.data?.msg || '').includes('Изменения запрещены')
-    ) return
+      err?.status !== 409 ||
+      !String(err?.message || err?.data?.msg || '').includes('Изменения запрещены')
+    )
+      return
     const numericId = Number(id)
     let refreshed = null
     if (Number(item.value?.id) === numericId) {
       try {
         refreshed = await fetchWrapper.get(`${baseUrl}/a/${numericId}`)
         item.value = refreshed
-      } catch {
+      } catch (refreshError) {
         item.value = { ...item.value, readOnly: true }
+        reportError(refreshError, { context: 'parcels conflict refresh' })
       }
     }
-    const itemIndex = items.value.findIndex(parcel => Number(parcel.id) === numericId)
+    const itemIndex = items.value.findIndex((parcel) => Number(parcel.id) === numericId)
     if (itemIndex !== -1) {
       items.value[itemIndex] = refreshed
         ? { ...items.value[itemIndex], ...refreshed }
@@ -352,8 +367,7 @@ export const useParcelsStore = defineStore('parcels', () => {
     try {
       if (filename == null || filename == undefined) {
         filename = `IndPost_${id}.xml`
-      }
-      else {
+      } else {
         filename = `IndPost_${filename}.xml`
       }
       const query = applyWeightCorrection === true ? '?applyWeightCorrection=true' : ''
@@ -370,7 +384,6 @@ export const useParcelsStore = defineStore('parcels', () => {
     loading.value = true
     error.value = null
     try {
-
       const url = sw
         ? `${baseUrl}/${id}/validate-sw?withSwMatch=${swMatchMode}`
         : `${baseUrl}/${id}/validate-fc`
@@ -379,7 +392,7 @@ export const useParcelsStore = defineStore('parcels', () => {
     } catch (err) {
       error.value = err
       await markCurrentParcelReadOnlyOnConflict(id, err)
-      return false
+      throw err
     } finally {
       loading.value = false
     }
@@ -394,7 +407,9 @@ export const useParcelsStore = defineStore('parcels', () => {
   }
 
   async function lookupFeacnCode(id) {
-    const result = await runParcelMutation(id, () => fetchWrapper.post(`${baseUrl}/${id}/lookup-feacn-code`))
+    const result = await runParcelMutation(id, () =>
+      fetchWrapper.post(`${baseUrl}/${id}/lookup-feacn-code`)
+    )
     return result
   }
 
@@ -434,12 +449,12 @@ export const useParcelsStore = defineStore('parcels', () => {
       item.value = { ...item.value, extId }
     }
 
-    const itemIndex = items.value.findIndex(parcel => Number(parcel.id) === numericId)
+    const itemIndex = items.value.findIndex((parcel) => Number(parcel.id) === numericId)
     if (itemIndex !== -1) {
       items.value[itemIndex] = { ...items.value[itemIndex], extId }
     }
 
-    const itemByNumberIndex = items_bn.value.findIndex(parcel => Number(parcel.id) === numericId)
+    const itemByNumberIndex = items_bn.value.findIndex((parcel) => Number(parcel.id) === numericId)
     if (itemByNumberIndex !== -1) {
       items_bn.value[itemByNumberIndex] = { ...items_bn.value[itemByNumberIndex], extId }
     }

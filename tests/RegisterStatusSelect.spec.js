@@ -72,7 +72,8 @@ function mountSelect(props = {}, attrs = {}) {
         },
         'v-list-item': {
           props: ['title'],
-          template: '<div data-testid="v-list-item" v-bind="$attrs"><span v-if="title" data-testid="v-list-item-prop-title">{{ title }}</span><slot name="prepend"></slot><slot></slot></div>',
+          template:
+            '<div data-testid="v-list-item" v-bind="$attrs"><span v-if="title" data-testid="v-list-item-prop-title">{{ title }}</span><slot name="prepend"></slot><slot></slot></div>',
           inheritAttrs: false
         },
         'v-list-item-title': {
@@ -100,7 +101,7 @@ describe('RegisterStatusSelect', () => {
     })
 
     const icons = wrapper.findAll('[data-testid="register-status-icon"]')
-    expect(icons.map(icon => icon.attributes('data-icon'))).toEqual([
+    expect(icons.map((icon) => icon.attributes('data-icon'))).toEqual([
       'fa-solid fa-gears',
       'fa-solid fa-layer-group',
       'fa-solid fa-gears',
@@ -113,14 +114,18 @@ describe('RegisterStatusSelect', () => {
   it('renders selected and menu statuses with register status icons', () => {
     const wrapper = mountSelect()
 
-    expect(wrapper.find('[data-testid="register-status-select"]').attributes('data-placeholder')).toBe('Статус партии')
+    expect(
+      wrapper.find('[data-testid="register-status-select"]').attributes('data-placeholder')
+    ).toBe('Статус партии')
     expect(wrapper.text()).toContain('In Progress')
     expect(wrapper.text()).toContain('Completed')
-    expect(wrapper.find('[data-testid="register-status-selection-title"]').text()).toBe('In Progress')
+    expect(wrapper.find('[data-testid="register-status-selection-title"]').text()).toBe(
+      'In Progress'
+    )
 
     const icons = wrapper.findAll('[data-testid="register-status-icon"]')
     expect(icons).toHaveLength(3)
-    expect(icons.map(icon => icon.attributes('data-icon'))).toEqual([
+    expect(icons.map((icon) => icon.attributes('data-icon'))).toEqual([
       'svg:in-transit',
       'svg:in-transit',
       'svg:very-delivered'
@@ -141,10 +146,9 @@ describe('RegisterStatusSelect', () => {
     const wrapper = mountSelect({ showSelectionTitle: false })
 
     expect(wrapper.find('[data-testid="register-status-selection-title"]').exists()).toBe(false)
-    expect(wrapper.findAll('[data-testid="register-status-option-title"]').map(item => item.text())).toEqual([
-      'In Progress',
-      'Completed'
-    ])
+    expect(
+      wrapper.findAll('[data-testid="register-status-option-title"]').map((item) => item.text())
+    ).toEqual(['In Progress', 'Completed'])
     expect(wrapper.findAll('[data-testid="register-status-icon"]')).toHaveLength(3)
   })
 
@@ -152,18 +156,21 @@ describe('RegisterStatusSelect', () => {
     const wrapper = mountSelect()
 
     expect(wrapper.find('[data-testid="v-list-item-prop-title"]').exists()).toBe(false)
-    expect(wrapper.findAll('[data-testid="register-status-option-title"]').map(item => item.text())).toEqual([
-      'In Progress',
-      'Completed'
-    ])
+    expect(
+      wrapper.findAll('[data-testid="register-status-option-title"]').map((item) => item.text())
+    ).toEqual(['In Progress', 'Completed'])
   })
 
   it('forwards custom classes while keeping custom status content', () => {
     const wrapper = mountSelect({}, { class: 'register-status-inline-select' })
     const select = wrapper.find('[data-testid="register-status-select"]')
 
-    expect(select.classes()).toEqual(expect.arrayContaining(['register-status-select', 'register-status-inline-select']))
+    expect(select.classes()).toEqual(
+      expect.arrayContaining(['register-status-select', 'register-status-inline-select'])
+    )
     expect(wrapper.find('[data-testid="register-status-icon"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="register-status-selection-title"]').text()).toBe('In Progress')
+    expect(wrapper.find('[data-testid="register-status-selection-title"]').text()).toBe(
+      'In Progress'
+    )
   })
 })

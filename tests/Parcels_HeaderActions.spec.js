@@ -53,7 +53,7 @@ function createRegisterHeaderActionsMock() {
     lookupFeacnCodesEx: vi.fn(),
     exportAllXmlOrdinary: vi.fn(),
     exportAllXmlExcise: vi.fn(),
-    exportAllXmlNotifications: vi.fn(),    
+    exportAllXmlNotifications: vi.fn(),
     freezeCheckStatus: vi.fn().mockResolvedValue(),
     freezeTnVedOrder: vi.fn().mockResolvedValue(),
     checkPassports: vi.fn().mockResolvedValue(),
@@ -84,13 +84,15 @@ function setupStores() {
       customsProcedureCode: CUSTOMS_PROCEDURE_IMPORT
     },
     ops: {
-      customsProcedures: [{
-        value: CUSTOMS_PROCEDURE_IMPORT,
-        charCode: 'ИМ40',
-        name: 'Импорт',
-        isRe: false,
-        isExport: false
-      }],
+      customsProcedures: [
+        {
+          value: CUSTOMS_PROCEDURE_IMPORT,
+          charCode: 'ИМ40',
+          name: 'Импорт',
+          isRe: false,
+          isExport: false
+        }
+      ],
       transportationTypes: [],
       passportCheckStatuses: [
         { value: 0, code: 'NotChecked', name: 'Не проверен' },
@@ -219,7 +221,7 @@ vi.mock('@/stores/parcels.store.js', () => ({
 }))
 
 vi.mock('@/stores/registers.store.js', () => ({
-  useRegistersStore: () => stores.registers,
+  useRegistersStore: () => stores.registers
 }))
 
 vi.mock('@/stores/parcel.statuses.store.js', () => ({
@@ -269,21 +271,37 @@ vi.mock('@/helpers/parcels.list.helpers.js', () => ({
     return entry?.key === 'frozenOrder' ? entry.order : null
   }),
   getFeacnCodesForKeywords: vi.fn(() => []),
-  formatPassport: vi.fn((item) => [
-    item.passportSeries,
-    item.passportNumber,
-    item.passportIssuedBy ? `выдан ${item.passportIssuedBy}` : null,
-    item.passportIssueDate ? '01.01.2020' : null
-  ].filter(Boolean).join(' ')),
+  formatPassport: vi.fn((item) =>
+    [
+      item.passportSeries,
+      item.passportNumber,
+      item.passportIssuedBy ? `выдан ${item.passportIssuedBy}` : null,
+      item.passportIssueDate ? '01.01.2020' : null
+    ]
+      .filter(Boolean)
+      .join(' ')
+  ),
   formatCustomsCharge: vi.fn(() => ''),
   getCustomsChargeHeaders: vi.fn((register) => {
     const registerValue = register?.value ?? register
     const headers = []
     if (registerValue?.customsFee != null) {
-      headers.push({ title: 'Сбор, руб', key: 'customsFee', sortable: false, align: 'end', width: '120px' })
+      headers.push({
+        title: 'Сбор, руб',
+        key: 'customsFee',
+        sortable: false,
+        align: 'end',
+        width: '120px'
+      })
     }
     if (registerValue?.customsDuty != null) {
-      headers.push({ title: 'Пошлина, руб', key: 'customsDuty', sortable: false, align: 'end', width: '120px' })
+      headers.push({
+        title: 'Пошлина, руб',
+        key: 'customsDuty',
+        sortable: false,
+        align: 'end',
+        width: '120px'
+      })
     }
     return headers
   }),
@@ -306,7 +324,8 @@ vi.mock('@/components/ActionButton.vue', () => ({
     name: 'ActionButton',
     props: ['item', 'icon', 'tooltipText', 'disabled'],
     emits: ['click'],
-    template: '<button class="action-button-stub" :data-icon="icon" :disabled="disabled" @click="$emit(\'click\', item)"></button>'
+    template:
+      '<button class="action-button-stub" :data-icon="icon" :disabled="disabled" @click="$emit(\'click\', item)"></button>'
   }
 }))
 
@@ -343,7 +362,8 @@ vi.mock('@/l2/ParcelStatusBulkChangeDialog.vue', () => ({
   default: {
     name: 'ParcelStatusBulkChangeDialog',
     props: ['show', 'registerId', 'register', 'statusOptions', 'disabled'],
-    template: '<div class="parcel-status-bulk-dialog-stub" :data-show="String(show)" :data-register-id="registerId" :data-register-type="register?.registerType"></div>'
+    template:
+      '<div class="parcel-status-bulk-dialog-stub" :data-show="String(show)" :data-register-id="registerId" :data-register-type="register?.registerType"></div>'
   }
 }))
 
@@ -508,17 +528,19 @@ describe.each([
   })
 
   it('shows passport verification controls and indicator for import SrLogistPlus users', async () => {
-    stores.parcels.items.value = [{
-      id: 21,
-      postingNumber: 'POST-21',
-      shk: 'SHK-21',
-      passportSeries: 'AA',
-      passportNumber: '123456',
-      passportIssuedBy: 'ОВД',
-      passportIssueDate: '2020-01-01',
-      passportCheckStatus: 30,
-      checkStatus: 0
-    }]
+    stores.parcels.items.value = [
+      {
+        id: 21,
+        postingNumber: 'POST-21',
+        shk: 'SHK-21',
+        passportSeries: 'AA',
+        passportNumber: '123456',
+        passportIssuedBy: 'ОВД',
+        passportIssueDate: '2020-01-01',
+        passportCheckStatus: 30,
+        checkStatus: 0
+      }
+    ]
 
     const wrapper = mount(Component, {
       props: { registerId: 21 },
@@ -527,15 +549,15 @@ describe.each([
 
     await resolveAll()
 
-    const passportAction = wrapper.findAll('.header-actions .action-button-stub').find(
-      (button) => button.attributes('data-icon') === 'fa-solid fa-passport'
-    )
+    const passportAction = wrapper
+      .findAll('.header-actions .action-button-stub')
+      .find((button) => button.attributes('data-icon') === 'fa-solid fa-passport')
     expect(passportAction).toBeTruthy()
 
     await passportAction.trigger('click')
-    const startPassportCheck = wrapper.findAll('.action-button-2l__menu-item').find(
-      (button) => button.text() === 'Проверить паспорта'
-    )
+    const startPassportCheck = wrapper
+      .findAll('.action-button-2l__menu-item')
+      .find((button) => button.text() === 'Проверить паспорта')
     expect(startPassportCheck).toBeTruthy()
     await startPassportCheck.trigger('click')
     expect(registerHeaderActionsMock.checkPassports).toHaveBeenCalledTimes(1)
@@ -598,14 +620,30 @@ describe.each([
 
     const buttons = wrapper.findAll('.header-actions .action-button-stub')
     // When user lacks logist and shift-lead roles, the logist and freeze actions are hidden.
-    expect(buttons.some((button) => button.attributes('data-icon') === 'fa-solid fa-spell-check')).toBe(false)
-    expect(buttons.some((button) => button.attributes('data-icon') === 'fa-solid fa-anchor-circle-check')).toBe(false)
-    expect(buttons.some((button) => button.attributes('data-icon') === 'fa-solid fa-passport')).toBe(false)
-    expect(buttons.some((button) => button.attributes('data-icon') === 'fa-solid fa-magnifying-glass')).toBe(false)
-    expect(buttons.some((button) => button.attributes('data-icon') === 'fa-solid fa-calculator')).toBe(false)
-    expect(buttons.some((button) => button.attributes('data-icon') === 'fa-solid fa-pen-to-square')).toBe(false)
-    expect(buttons.some((button) => button.attributes('data-icon') === 'fa-solid fa-xmarks-lines')).toBe(false)
-    expect(buttons.some((button) => button.attributes('data-icon') === 'fa-solid fa-arrows-to-eye')).toBe(false)
+    expect(
+      buttons.some((button) => button.attributes('data-icon') === 'fa-solid fa-spell-check')
+    ).toBe(false)
+    expect(
+      buttons.some((button) => button.attributes('data-icon') === 'fa-solid fa-anchor-circle-check')
+    ).toBe(false)
+    expect(
+      buttons.some((button) => button.attributes('data-icon') === 'fa-solid fa-passport')
+    ).toBe(false)
+    expect(
+      buttons.some((button) => button.attributes('data-icon') === 'fa-solid fa-magnifying-glass')
+    ).toBe(false)
+    expect(
+      buttons.some((button) => button.attributes('data-icon') === 'fa-solid fa-calculator')
+    ).toBe(false)
+    expect(
+      buttons.some((button) => button.attributes('data-icon') === 'fa-solid fa-pen-to-square')
+    ).toBe(false)
+    expect(
+      buttons.some((button) => button.attributes('data-icon') === 'fa-solid fa-xmarks-lines')
+    ).toBe(false)
+    expect(
+      buttons.some((button) => button.attributes('data-icon') === 'fa-solid fa-arrows-to-eye')
+    ).toBe(false)
   })
 
   it('calls stop handler on unmount', async () => {
@@ -623,7 +661,9 @@ describe.each([
   it('shows previousDTagComment and hides feacnLookup for reimport customs procedures', async () => {
     if (!capabilities.hasPreviousDTagComment) return
     stores.registers.item.customsProcedureCode = 2
-    stores.registers.ops.customsProcedures = [{ value: 2, charCode: 'ИМ60', name: 'Реимпорт', isRe: true, isExport: false }]
+    stores.registers.ops.customsProcedures = [
+      { value: 2, charCode: 'ИМ60', name: 'Реимпорт', isRe: true, isExport: false }
+    ]
 
     const wrapper = mount(Component, {
       props: { registerId: 4 },
@@ -640,7 +680,9 @@ describe.each([
   it('shows feacnLookup and hides previousDTagComment for non-reimport customs procedures', async () => {
     if (!capabilities.hasPreviousDTagComment) return
     stores.registers.item.customsProcedureCode = 3
-    stores.registers.ops.customsProcedures = [{ value: 3, charCode: 'ЭК10', name: 'Экспорт', isRe: false, isExport: true }]
+    stores.registers.ops.customsProcedures = [
+      { value: 3, charCode: 'ЭК10', name: 'Экспорт', isRe: false, isExport: true }
+    ]
 
     const wrapper = mount(Component, {
       props: { registerId: 5 },

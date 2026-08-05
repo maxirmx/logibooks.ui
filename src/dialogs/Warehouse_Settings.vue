@@ -1,8 +1,13 @@
 <script setup>
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
+import FieldError from '@/components/FieldError.vue'
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
+import { focusFirstInvalidField } from '@/helpers/form.validation.helpers.js'
+import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
+import { reportFormError } from '@/helpers/error.helpers.js'
 import { ref, computed } from 'vue'
 import router from '@/router'
 import { storeToRefs } from 'pinia'
@@ -26,7 +31,6 @@ const props = defineProps({
 
 const warehousesStore = useWarehousesStore()
 const countriesStore = useCountriesStore()
-countriesStore.ensureLoaded()
 const { countries } = storeToRefs(countriesStore)
 
 const isCreate = computed(() => props.mode === 'create')
@@ -48,9 +52,15 @@ let warehouse = ref({
 
 const alertStore = useAlertStore()
 
+await runWithRetryAlert(() => countriesStore.ensureLoaded(), {
+  fallback: 'Не удалось загрузить страны'
+})
+
 if (!isCreate.value) {
   ;({ warehouse } = storeToRefs(warehousesStore))
-  await warehousesStore.getById(props.warehouseId)
+  await runWithRetryAlert(() => warehousesStore.getById(props.warehouseId), {
+    fallback: 'Не удалось загрузить склад'
+  })
 }
 
 function getTitle() {
@@ -85,7 +95,7 @@ function toNumberOrNull(value) {
   return Number(value)
 }
 
-function onSubmit(values, { setErrors }) {
+function onSubmit(values, { setErrors } = {}) {
   const normalizedValues = normalizeValues(values) || {}
   const payload = {
     ...normalizedValues,
@@ -100,9 +110,13 @@ function onSubmit(values, { setErrors }) {
       })
       .catch((error) => {
         if (error.message?.includes('409')) {
-          setErrors({ apiError: 'Склад с таким названием уже существует' })
+          alertStore.error('Склад с таким названием уже существует')
         } else {
-          setErrors({ apiError: error.message || 'Ошибка при регистрации склада' })
+          reportFormError(error, {
+            setErrors,
+            alertStore,
+            fallback: 'Ошибка при регистрации склада'
+          })
         }
       })
   } else {
@@ -112,7 +126,11 @@ function onSubmit(values, { setErrors }) {
         router.push('/warehouses')
       })
       .catch((error) => {
-        setErrors({ apiError: error.message || 'Ошибка при сохранении информации о складе' })
+        reportFormError(error, {
+          setErrors,
+          alertStore,
+          fallback: 'Ошибка при сохранении информации о складе'
+        })
       })
   }
 }
@@ -122,7 +140,10 @@ function onSubmit(values, { setErrors }) {
   <div class="settings form-2">
     <h1 class="primary-heading">{{ getTitle() }}</h1>
     <hr class="hr" />
+
+    <PageAlertRegion />
     <Form
+      @invalid-submit="focusFirstInvalidField"
       @submit="onSubmit"
       :initial-values="warehouse"
       :validation-schema="schema"
@@ -138,6 +159,7 @@ function onSubmit(values, { setErrors }) {
           :class="{ 'is-invalid': errors.name }"
           placeholder="Название"
         />
+        <FieldError name="name" :errors="errors" />
       </div>
 
       <div class="form-group">
@@ -150,14 +172,11 @@ function onSubmit(values, { setErrors }) {
           :class="{ 'is-invalid': errors.countryIsoNumeric }"
         >
           <option value="">Выберите страну</option>
-          <option
-            v-for="country in countries"
-            :key="country.id"
-            :value="country.isoNumeric"
-          >
+          <option v-for="country in countries" :key="country.id" :value="country.isoNumeric">
             {{ country.nameRuOfficial }}
           </option>
         </Field>
+        <FieldError name="countryIsoNumeric" :errors="errors" />
       </div>
 
       <div class="form-group">
@@ -170,6 +189,7 @@ function onSubmit(values, { setErrors }) {
           :class="{ 'is-invalid': errors.postalCode }"
           placeholder="Почтовый индекс"
         />
+        <FieldError name="postalCode" :errors="errors" />
       </div>
 
       <div class="form-group">
@@ -182,6 +202,7 @@ function onSubmit(values, { setErrors }) {
           :class="{ 'is-invalid': errors.city }"
           placeholder="Город"
         />
+        <FieldError name="city" :errors="errors" />
       </div>
 
       <div class="form-group">
@@ -194,6 +215,7 @@ function onSubmit(values, { setErrors }) {
           :class="{ 'is-invalid': errors.street }"
           placeholder="Улица"
         />
+        <FieldError name="street" :errors="errors" />
       </div>
 
       <div class="form-group">
@@ -204,15 +226,12 @@ function onSubmit(values, { setErrors }) {
             :key="typeOption.value"
             class="radio-styled"
           >
-            <Field
-              name="type"
-              type="radio"
-              :value="typeOption.value"
-            />
+            <Field name="type" type="radio" :value="typeOption.value" />
             <span class="radio-mark"></span>
             {{ typeOption.label }}
           </label>
         </div>
+        <FieldError name="type" :errors="errors" />
       </div>
 
       <div class="form-group mt-8">
@@ -230,16 +249,6 @@ function onSubmit(values, { setErrors }) {
           <font-awesome-icon size="1x" icon="fa-solid fa-xmark" class="mr-1" />
           Отменить
         </button>
-      </div>
-      <div v-if="errors.name" class="alert alert-danger mt-3 mb-0">{{ errors.name }}</div>
-      <div v-if="errors.countryIsoNumeric" class="alert alert-danger mt-3 mb-0">{{ errors.countryIsoNumeric }}</div>
-      <div v-if="errors.postalCode" class="alert alert-danger mt-3 mb-0">{{ errors.postalCode }}</div>
-      <div v-if="errors.city" class="alert alert-danger mt-3 mb-0">{{ errors.city }}</div>
-      <div v-if="errors.street" class="alert alert-danger mt-3 mb-0">{{ errors.street }}</div>
-      <div v-if="errors.type" class="alert alert-danger mt-3 mb-0">{{ errors.type }}</div>
-      <div v-if="errors.apiError" class="alert alert-danger mt-3 mb-0">{{ errors.apiError }}</div>
-      <div v-if="alertStore.alert" class="mt-3">
-        <div :class="['alert', alertStore.alert.type]" role="alert">{{ alertStore.alert.message }}</div>
       </div>
     </Form>
   </div>

@@ -22,10 +22,42 @@ if (!global.ResizeObserver) {
 
 function createMockEvents() {
   return [
-    { id: 1001, eventId: 'Created', eventName: 'Создана', customsProcedureCode: 1, parcelStatusId: null, zone: null, extData: '' },
-    { id: 2001, eventId: 'Processing', eventName: 'В обработке', customsProcedureCode: 1, parcelStatusId: 3, zone: 1, extData: 'return tip' },
-    { id: 1, eventId: 'Created', eventName: 'Создана', customsProcedureCode: 10, parcelStatusId: null, zone: null, extData: 'export created' },
-    { id: 2, eventId: 'Processing', eventName: 'В обработке', customsProcedureCode: 10, parcelStatusId: 3, zone: 1, extData: 'voice tip' }
+    {
+      id: 1001,
+      eventId: 'Created',
+      eventName: 'Создана',
+      customsProcedureCode: 1,
+      parcelStatusId: null,
+      zone: null,
+      extData: ''
+    },
+    {
+      id: 2001,
+      eventId: 'Processing',
+      eventName: 'В обработке',
+      customsProcedureCode: 1,
+      parcelStatusId: 3,
+      zone: 1,
+      extData: 'return tip'
+    },
+    {
+      id: 1,
+      eventId: 'Created',
+      eventName: 'Создана',
+      customsProcedureCode: 10,
+      parcelStatusId: null,
+      zone: null,
+      extData: 'export created'
+    },
+    {
+      id: 2,
+      eventId: 'Processing',
+      eventName: 'В обработке',
+      customsProcedureCode: 10,
+      parcelStatusId: 3,
+      zone: 1,
+      extData: 'voice tip'
+    }
   ]
 }
 
@@ -64,6 +96,7 @@ const ensureRegisterOpsLoaded = vi.hoisted(() => vi.fn())
 const getAll = vi.hoisted(() => vi.fn())
 const updateMany = vi.hoisted(() => vi.fn())
 const routerBack = vi.hoisted(() => vi.fn())
+const alertError = vi.hoisted(() => vi.fn())
 
 const mockAuthStore = {
   parcelevents_per_page: ref(50),
@@ -105,13 +138,30 @@ vi.mock('@/stores/auth.store.js', () => ({
 }))
 
 vi.mock('@/helpers/items.per.page.js', () => ({
-  itemsPerPageOptions: [{ value: 10, title: '10' }, { value: 25, title: '25' }, { value: 50, title: '50' }]
+  itemsPerPageOptions: [
+    { value: 10, title: '10' },
+    { value: 25, title: '25' },
+    { value: 50, title: '50' }
+  ]
 }))
 
 vi.mock('@/router', () => ({
   default: {
     back: routerBack
   }
+}))
+
+vi.mock('@/stores/alert.store.js', () => ({
+  useAlertStore: () => ({
+    alert: null,
+    activePageHosts: 0,
+    error: alertError,
+    dismiss: vi.fn(),
+    pause: vi.fn(),
+    resume: vi.fn(),
+    registerPageHost: vi.fn(),
+    unregisterPageHost: vi.fn()
+  })
 }))
 
 vi.mock('pinia', async () => {
@@ -131,7 +181,8 @@ const mountComponent = () =>
       stubs: {
         'font-awesome-icon': true,
         ActionButton: {
-          template: '<button :data-testid="$attrs[`data-testid`]" :disabled="disabled" @click="$emit(`click`)"><slot /></button>',
+          template:
+            '<button :data-testid="$attrs[`data-testid`]" :disabled="disabled" @click="$emit(`click`)"><slot /></button>',
           props: ['item', 'icon', 'iconSize', 'tooltipText', 'disabled']
         },
         'v-select': {
@@ -333,7 +384,9 @@ describe('ParcelEvents_Settings.vue', () => {
     await wrapper.find('[data-testid="save-button"]').trigger('click')
     await resolveAll()
 
-    expect(wrapper.text()).toContain('Save failed')
+    expect(alertError).toHaveBeenCalledWith(expect.objectContaining({ message: 'Save failed' }), {
+      fallback: 'Не удалось сохранить изменения'
+    })
   })
 
   it('handles empty ("Не менять") status selection as 0', async () => {
@@ -345,7 +398,7 @@ describe('ParcelEvents_Settings.vue', () => {
     expect(select1.exists()).toBe(true)
     expect(select1.element.value).toBe('0')
 
-    const optionTexts1 = select1.findAll('option').map(o => o.text())
+    const optionTexts1 = select1.findAll('option').map((o) => o.text())
     expect(optionTexts1).toContain('Не менять')
 
     // Change second Return event's status to empty
@@ -375,7 +428,7 @@ describe('ParcelEvents_Settings.vue', () => {
     expect(zoneSelect1.exists()).toBe(true)
     expect(zoneSelect1.element.value).toBe('0')
 
-    const zoneOptionTexts = zoneSelect1.findAll('option').map(o => o.text())
+    const zoneOptionTexts = zoneSelect1.findAll('option').map((o) => o.text())
     expect(zoneOptionTexts).toContain('Не менять')
 
     // Change second Return event's zone to empty
@@ -405,7 +458,10 @@ describe('ParcelEvents_Settings.vue', () => {
     const wrapper = mountComponent()
     await resolveAll()
 
-    expect(wrapper.text()).toContain('Не удалось загрузить таможенные процедуры')
+    expect(alertError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'Не удалось загрузить таможенные процедуры' }),
+      expect.objectContaining({ fallback: 'Не удалось загрузить настройки событий посылок' })
+    )
     expect(getAll).not.toHaveBeenCalled()
     expect(wrapper.find('[data-testid="customs-procedure-select"]').exists()).toBe(false)
   })

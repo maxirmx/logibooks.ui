@@ -3,12 +3,20 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
+import FieldError from '@/components/FieldError.vue'
+import { useAlertStore } from '@/stores/alert.store.js'
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
+import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
+import { focusFirstInvalidField } from '@/helpers/form.validation.helpers.js'
+import { reportFormError } from '@/helpers/error.helpers.js'
 import { ref, computed } from 'vue'
 import router from '@/router'
 import { Form, Field } from 'vee-validate'
 import * as Yup from 'yup'
 import { useNotificationsStore } from '@/stores/notifications.store.js'
 import FieldArrayWithButtons from '@/components/FieldArrayWithButtons.vue'
+
+const alertStore = useAlertStore()
 
 const props = defineProps({
   mode: {
@@ -107,12 +115,13 @@ const schema = Yup.object({
     .test('is-valid-date', 'Неверная дата', (v) => isValidISODate(v))
 })
 
-function onSubmit(values, { setErrors }) {
+function onSubmit(values, { setErrors } = {}) {
   const payload = {
-    articles: values.articles
-      ?.map((article) => article?.trim())
-      .filter((article) => article.length > 0)
-      .map((article) => ({ article })) || [],
+    articles:
+      values.articles
+        ?.map((article) => article?.trim())
+        .filter((article) => article.length > 0)
+        .map((article) => ({ article })) || [],
     comment: values.comment?.trim() || '',
     number: values.number?.trim() || '',
     terminationDate: values.terminationDate,
@@ -127,7 +136,11 @@ function onSubmit(values, { setErrors }) {
         router.push('/notifications')
       })
       .catch((error) => {
-        setErrors({ apiError: error.message || 'Ошибка при создании нотификации' })
+        reportFormError(error, {
+          setErrors,
+          alertStore,
+          fallback: 'Ошибка при создании нотификации'
+        })
       })
   } else {
     payload.id = props.notificationId
@@ -139,7 +152,11 @@ function onSubmit(values, { setErrors }) {
       router.push('/notifications')
     })
     .catch((error) => {
-      setErrors({ apiError: error.message || 'Ошибка при сохранении нотификации' })
+      reportFormError(error, {
+        setErrors,
+        alertStore,
+        fallback: 'Ошибка при сохранении нотификации'
+      })
     })
 }
 
@@ -151,30 +168,30 @@ defineExpose({
 })
 
 if (!isCreate.value) {
-  const loaded = await notificationsStore.getById(props.notificationId)
+  const loaded = await runWithRetryAlert(() => notificationsStore.getById(props.notificationId), {
+    fallback: 'Не удалось загрузить нотификацию'
+  })
   if (loaded) {
     notificationForm.value = {
-      articles: loaded.articles?.length
-        ? loaded.articles.map((item) => item.article || '')
-        : [''],
+      articles: loaded.articles?.length ? loaded.articles.map((item) => item.article || '') : [''],
       comment: loaded.comment || '',
       number: loaded.number || '',
       terminationDate: formatDateForInput(loaded.terminationDate),
       publicationDate: formatDateForInput(loaded.publicationDate),
       registrationDate: formatDateForInput(loaded.registrationDate)
     }
-  } else {
-    router.push('/notifications')
   }
 }
-
 </script>
 
 <template>
   <div class="settings form-2">
     <h1 class="primary-heading">{{ getTitle() }}</h1>
     <hr class="hr" />
+
+    <PageAlertRegion />
     <Form
+      @invalid-submit="focusFirstInvalidField"
       @submit="onSubmit"
       :initial-values="notificationForm"
       :validation-schema="schema"
@@ -190,6 +207,7 @@ if (!isCreate.value) {
           :class="{ 'is-invalid': errors.number }"
           placeholder="Номер"
         />
+        <FieldError name="number" :errors="errors" />
       </div>
 
       <div class="form-group">
@@ -201,6 +219,7 @@ if (!isCreate.value) {
           class="form-control input"
           :class="{ 'is-invalid': errors.registrationDate }"
         />
+        <FieldError name="registrationDate" :errors="errors" />
       </div>
 
       <div class="form-group">
@@ -212,6 +231,7 @@ if (!isCreate.value) {
           class="form-control input"
           :class="{ 'is-invalid': errors.publicationDate }"
         />
+        <FieldError name="publicationDate" :errors="errors" />
       </div>
 
       <div class="form-group">
@@ -223,6 +243,7 @@ if (!isCreate.value) {
           class="form-control input"
           :class="{ 'is-invalid': errors.terminationDate }"
         />
+        <FieldError name="terminationDate" :errors="errors" />
       </div>
 
       <div class="form-group">
@@ -245,6 +266,9 @@ if (!isCreate.value) {
         placeholder="Артикул"
         :has-error="Boolean(getArticlesError(errors))"
       />
+      <div v-if="getArticlesError(errors)" class="invalid-feedback d-block">
+        {{ getArticlesError(errors) }}
+      </div>
 
       <div class="form-group mt-8">
         <button class="button primary" type="submit" :disabled="isSubmitting">
@@ -252,22 +276,11 @@ if (!isCreate.value) {
           <font-awesome-icon size="1x" icon="fa-solid fa-check-double" class="mr-1" />
           {{ getButtonText() }}
         </button>
-        <button
-          class="button secondary"
-          type="button"
-          @click="$router.push('/notifications')"
-        >
+        <button class="button secondary" type="button" @click="$router.push('/notifications')">
           <font-awesome-icon size="1x" icon="fa-solid fa-xmark" class="mr-1" />
           Отменить
         </button>
       </div>
-
-      <div v-if="getArticlesError(errors)" class="alert alert-danger mt-3 mb-0">{{ getArticlesError(errors) }}</div>
-      <div v-if="errors.number" class="alert alert-danger mt-3 mb-0">{{ errors.number }}</div>
-      <div v-if="errors.registrationDate" class="alert alert-danger mt-3 mb-0">{{ errors.registrationDate }}</div>
-      <div v-if="errors.publicationDate" class="alert alert-danger mt-3 mb-0">{{ errors.publicationDate }}</div>
-      <div v-if="errors.terminationDate" class="alert alert-danger mt-3 mb-0">{{ errors.terminationDate }}</div>
-      <div v-if="errors.apiError" class="alert alert-danger mt-3 mb-0">{{ errors.apiError }}</div>
     </Form>
   </div>
 </template>

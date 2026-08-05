@@ -1,6 +1,6 @@
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
@@ -38,7 +38,7 @@ describe('parcel.views store', () => {
     fetchWrapper.post.mockRejectedValue(testError)
 
     const store = useParcelViewsStore()
-    await store.add(123)
+    await expect(store.add(123)).rejects.toBe(testError)
 
     expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcelviews`, { id: 123 })
     expect(store.loading).toBe(false)
@@ -75,7 +75,7 @@ describe('parcel.views store', () => {
     fetchWrapper.put.mockRejectedValue(testError)
 
     const store = useParcelViewsStore()
-    await store.back()
+    await expect(store.back()).rejects.toBe(testError)
 
     expect(fetchWrapper.put).toHaveBeenCalledWith(`${apiUrl}/parcelviews`)
     expect(store.loading).toBe(false)

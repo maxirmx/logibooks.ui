@@ -5,7 +5,10 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { ref, reactive } from 'vue'
-import { createRegisterActionHandlers, useRegisterHeaderActions } from '@/helpers/register.actions.js'
+import {
+  createRegisterActionHandlers,
+  useRegisterHeaderActions
+} from '@/helpers/register.actions.js'
 import { OP_MODE_PAPERWORK } from '@/helpers/op.mode.js'
 
 const confirmMock = vi.hoisted(() => vi.fn())
@@ -78,7 +81,11 @@ describe('useRegisterHeaderActions', () => {
   it('initiates extended FEACN lookup with withFCMatch=true', async () => {
     // Simulate API handle response
     registersStore.lookupFeacnCodes.mockResolvedValueOnce({ id: 'handle-ex' })
-    registersStore.getLookupFeacnCodesProgress.mockResolvedValueOnce({ total: 10, processed: 0, finished: false })
+    registersStore.getLookupFeacnCodesProgress.mockResolvedValueOnce({
+      total: 10,
+      processed: 0,
+      finished: false
+    })
 
     const actions = useRegisterHeaderActions({
       registersStore,
@@ -147,9 +154,11 @@ describe('useRegisterHeaderActions', () => {
 
     await actions.exportAllXmlOrdinary()
 
-    expect(confirmMock).toHaveBeenCalledWith(expect.objectContaining({
-      content: 'Применить поправочный коэффициент 0,500 для веса посылок?'
-    }))
+    expect(confirmMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: 'Применить поправочный коэффициент 0,500 для веса посылок?'
+      })
+    )
     expect(registersStore.generateOrdinary).toHaveBeenCalledWith(1, 'INV-1', false)
     expect(actions.actionDialog.show).toBe(false)
   })
@@ -191,9 +200,11 @@ describe('useRegisterHeaderActions', () => {
 
     await actions.downloadRegister()
 
-    expect(confirmMock).toHaveBeenCalledWith(expect.objectContaining({
-      content: 'Применить поправочный коэффициент 0,500 для веса посылок?'
-    }))
+    expect(confirmMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: 'Применить поправочный коэффициент 0,500 для веса посылок?'
+      })
+    )
     expect(registersStore.download).toHaveBeenCalledWith(1, 'register.xlsx', null, null, true)
   })
 
@@ -373,7 +384,11 @@ describe('useRegisterHeaderActions', () => {
   it('cancels extended FEACN lookup via cancelLookupFeacnCodes', async () => {
     // Arrange: simulate active extended lookup
     registersStore.lookupFeacnCodes.mockResolvedValueOnce({ id: 'handle-ex' })
-    registersStore.getLookupFeacnCodesProgress.mockResolvedValueOnce({ total: 5, processed: 0, finished: false })
+    registersStore.getLookupFeacnCodesProgress.mockResolvedValueOnce({
+      total: 5,
+      processed: 0,
+      finished: false
+    })
 
     const actions = useRegisterHeaderActions({
       registersStore,
@@ -484,7 +499,9 @@ describe('useRegisterHeaderActions', () => {
   })
 
   it('checks register passports through list action handlers', async () => {
-    const actions = createRegisterActionHandlers(registersStore, alertStore, { mode: OP_MODE_PAPERWORK })
+    const actions = createRegisterActionHandlers(registersStore, alertStore, {
+      mode: OP_MODE_PAPERWORK
+    })
 
     await actions.checkPassports({ id: 7 })
 
@@ -507,12 +524,15 @@ describe('useRegisterHeaderActions', () => {
     const promise = actions.finishPassportCheck()
     await Promise.resolve()
 
-    expect(confirmMock).toHaveBeenCalledWith(expect.objectContaining({
-      title: 'Завершение проверки паспортов',
-      confirmationText: 'Завершить',
-      cancellationText: 'Отмена',
-      content: 'Из таможенного оформления могут быть исключены посылки с незавершённой проверкой паспорта получателя. Продолжить?'
-    }))
+    expect(confirmMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Завершение проверки паспортов',
+        confirmationText: 'Завершить',
+        cancellationText: 'Отмена',
+        content:
+          'Из таможенного оформления могут быть исключены посылки с незавершённой проверкой паспорта получателя. Продолжить?'
+      })
+    )
     expect(actions.actionDialog.show).toBe(true)
     expect(actions.actionDialog.title).toBe('Завершение проверки паспортов')
     expect(registersStore.finishPassportCheck).toHaveBeenCalledWith(1)
@@ -619,7 +639,9 @@ describe('useRegisterHeaderActions', () => {
   })
 
   it('calculates custom charges and refreshes register list', async () => {
-    const actions = createRegisterActionHandlers(registersStore, alertStore, { mode: OP_MODE_PAPERWORK })
+    const actions = createRegisterActionHandlers(registersStore, alertStore, {
+      mode: OP_MODE_PAPERWORK
+    })
 
     await actions.calculateCustomsCharges({ id: 7 })
 

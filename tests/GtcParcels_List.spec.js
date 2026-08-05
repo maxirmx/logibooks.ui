@@ -83,7 +83,7 @@ vi.mock('@/stores/parcels.store.js', () => ({
 vi.mock('@/stores/parcel.statuses.store.js', () => ({
   useParcelStatusesStore: () => ({
     ensureLoaded: vi.fn().mockResolvedValue(),
-    getStatusTitle: vi.fn(id => `Status ${id}`),
+    getStatusTitle: vi.fn((id) => `Status ${id}`),
     parcelStatuses: []
   })
 }))
@@ -200,10 +200,12 @@ describe('GtcParcels_List.vue', () => {
       await resolveAll()
 
       const table = wrapper.findComponent({ name: 'v-data-table-server' })
-      const keys = table.props('headers').map(header => header.key)
+      const keys = table.props('headers').map((header) => header.key)
 
       expect(keys).toContain('inn')
-      expect(keys.filter(key => key === 'passport' || key.startsWith('passport'))).toEqual(['passport'])
+      expect(keys.filter((key) => key === 'passport' || key.startsWith('passport'))).toEqual([
+        'passport'
+      ])
     } finally {
       wrapper?.unmount()
     }
@@ -242,12 +244,12 @@ describe('GtcParcels_List.vue', () => {
       const fellowButtons = parcelNumberCell.findAllComponents(ActionButton)
 
       expect(fellowButtons).toHaveLength(3)
-      expect(fellowButtons.map(button => button.props('icon'))).toEqual([
+      expect(fellowButtons.map((button) => button.props('icon'))).toEqual([
         'fa-solid fa-comment-slash',
         'fa-solid fa-comment-dollar',
         'fa-solid fa-comment-nodes'
       ])
-      expect(fellowButtons.map(button => button.props('variant'))).toEqual([
+      expect(fellowButtons.map((button) => button.props('variant'))).toEqual([
         'red',
         'orange',
         'blue'
@@ -275,10 +277,7 @@ describe('GtcParcels_List.vue', () => {
 
     registerItem.value = { dealNumber: 'D-1', readOnly: true }
     wrapper.vm.showAssignTnvedDialog = false
-    wrapper.vm.handleRowContextMenu(
-      { preventDefault: vi.fn() },
-      { item: mockItems.value[0] }
-    )
+    wrapper.vm.handleRowContextMenu({ preventDefault: vi.fn() }, { item: mockItems.value[0] })
     bulkAssignTnved.mockClear()
     await wrapper.vm.handleAssignTnvedConfirm([1], '6403999300')
     expect(wrapper.vm.showAssignTnvedDialog).toBe(false)

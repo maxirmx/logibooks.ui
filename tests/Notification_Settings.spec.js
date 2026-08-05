@@ -21,9 +21,14 @@ const mockNotification = {
 }
 
 let mockNotificationsStore
+const alertError = vi.hoisted(() => vi.fn())
 
 vi.mock('@/stores/notifications.store.js', () => ({
   useNotificationsStore: () => mockNotificationsStore
+}))
+
+vi.mock('@/stores/alert.store.js', () => ({
+  useAlertStore: () => ({ alert: null, error: alertError })
 }))
 
 vi.mock('@/router', () => ({
@@ -218,7 +223,7 @@ describe('Notification_Settings.vue', () => {
     await resolveAll()
 
     const buttons = wrapper.findAll('button')
-    const cancelButton = buttons.find(btn => btn.text().includes('Отменить'))
+    const cancelButton = buttons.find((btn) => btn.text().includes('Отменить'))
 
     expect(cancelButton).toBeTruthy()
     await cancelButton.trigger('click')
@@ -256,10 +261,20 @@ describe('Notification_Settings.vue', () => {
 
     const vm = wrapper.findComponent(NotificationSettings).vm
 
-    await expect(vm.schema.validateAt('articles', { articles: [] })).rejects.toThrow('Необходимо указать хотя бы один артикул')
-    await expect(vm.schema.validateAt('articles[0]', { articles: [''] })).rejects.toThrow('Необходимо ввести артикул')
-    await expect(vm.schema.validateAt('terminationDate', { terminationDate: '' })).rejects.toThrow('Необходимо ввести срок действия')
-    await expect(vm.schema.validateAt('publicationDate', { publicationDate: '' })).rejects.toThrow('Необходимо ввести дату публикации')
-    await expect(vm.schema.validateAt('registrationDate', { registrationDate: '' })).rejects.toThrow('Необходимо ввести дату регистрации')
+    await expect(vm.schema.validateAt('articles', { articles: [] })).rejects.toThrow(
+      'Необходимо указать хотя бы один артикул'
+    )
+    await expect(vm.schema.validateAt('articles[0]', { articles: [''] })).rejects.toThrow(
+      'Необходимо ввести артикул'
+    )
+    await expect(vm.schema.validateAt('terminationDate', { terminationDate: '' })).rejects.toThrow(
+      'Необходимо ввести срок действия'
+    )
+    await expect(vm.schema.validateAt('publicationDate', { publicationDate: '' })).rejects.toThrow(
+      'Необходимо ввести дату публикации'
+    )
+    await expect(
+      vm.schema.validateAt('registrationDate', { registrationDate: '' })
+    ).rejects.toThrow('Необходимо ввести дату регистрации')
   })
 })

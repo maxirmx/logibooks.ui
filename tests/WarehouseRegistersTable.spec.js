@@ -55,9 +55,16 @@ vi.mock('@/stores/warehouses.store.js', () => ({
 
 vi.mock('@/stores/register.statuses.store.js', () => ({
   useRegisterStatusesStore: () => ({
-    getStatusById: vi.fn((id) => id
-      ? { id, title: `Status ${id}`, icon: 'svg:very-delivered', bkColor: '#00AA00', fgColor: '#FFFFFF' }
-      : null
+    getStatusById: vi.fn((id) =>
+      id
+        ? {
+            id,
+            title: `Status ${id}`,
+            icon: 'svg:very-delivered',
+            bkColor: '#00AA00',
+            fgColor: '#FFFFFF'
+          }
+        : null
     ),
     getStatusTitle: vi.fn((id) => `Status ${id}`)
   })
@@ -67,10 +74,13 @@ vi.mock('@/components/ActionButton.vue', () => ({
   default: {
     props: ['item', 'icon', 'disabled'],
     emits: ['click'],
-    template: '<button type="button" class="action-button-stub" :data-icon="icon" :disabled="disabled" @click="$emit(\'click\', item)"></button>'
+    template:
+      '<button type="button" class="action-button-stub" :data-icon="icon" :disabled="disabled" @click="$emit(\'click\', item)"></button>'
   }
 }))
-vi.mock('@/components/ClickableCell.vue', () => ({ default: { template: '<span><slot /></span>' } }))
+vi.mock('@/components/ClickableCell.vue', () => ({
+  default: { template: '<span><slot /></span>' }
+}))
 vi.mock('@/components/RegisterInvoiceCell.vue', () => ({ default: { template: '<span />' } }))
 vi.mock('@/components/SenderRecipientCell.vue', () => ({ default: { template: '<span />' } }))
 vi.mock('@/components/SortableMultilineHeader.vue', () => ({ default: { template: '<span />' } }))
@@ -151,9 +161,7 @@ describe('WarehouseRegistersTable matching-count column', () => {
       showRegisterStatusIcon: true,
       canChangeRegisterStatus: true,
       startRegisterStatusChange,
-      items: [
-        { id: 1, statusId: 2 }
-      ]
+      items: [{ id: 1, statusId: 2 }]
     })
 
     expect(wrapper.find('[data-testid="header-keys"]').text()).not.toContain('registerStatusIcon')
@@ -169,9 +177,7 @@ describe('WarehouseRegistersTable matching-count column', () => {
   it('keeps full register edit on the pen action', async () => {
     const wrapper = mountTable({
       isSrLogistPlus: true,
-      items: [
-        { id: 1, statusId: 2 }
-      ]
+      items: [{ id: 1, statusId: 2 }]
     })
 
     await wrapper.find('[data-icon="fa-solid fa-pen"]').trigger('click')
@@ -184,9 +190,7 @@ describe('WarehouseRegistersTable matching-count column', () => {
     const wrapper = mountTable({
       isSrLogistPlus: true,
       openParcelStatusBulkDialog,
-      items: [
-        { id: 1, statusId: 2 }
-      ]
+      items: [{ id: 1, statusId: 2 }]
     })
 
     await wrapper.find('[data-icon="fa-solid fa-pen-to-square"]').trigger('click')
@@ -211,9 +215,7 @@ describe('WarehouseRegistersTable matching-count column', () => {
       setSelectedRegisterStatusId,
       applyRegisterStatusChange,
       cancelRegisterStatusChange,
-      items: [
-        { id: 1, statusId: 2 }
-      ]
+      items: [{ id: 1, statusId: 2 }]
     })
 
     await wrapper.find('[data-testid="register-status-select"]').setValue('5')
@@ -229,9 +231,7 @@ describe('WarehouseRegistersTable matching-count column', () => {
     const wrapper = mountTable({
       showRegisterStatusIcon: true,
       linksEnabled: false,
-      items: [
-        { id: 1, statusId: 2 }
-      ]
+      items: [{ id: 1, statusId: 2 }]
     })
 
     const statusIcon = wrapper.find('.register-status-action-button--readonly')

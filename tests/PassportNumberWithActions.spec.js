@@ -29,7 +29,8 @@ const fieldStub = {
 
 const tooltipStub = {
   props: ['text', 'disabled'],
-  template: '<span :data-text="text" :data-disabled="String(disabled)"><slot name="activator" :props="{ title: text }"></slot><slot /></span>'
+  template:
+    '<span :data-text="text" :data-disabled="String(disabled)"><slot name="activator" :props="{ title: text }"></slot><slot /></span>'
 }
 
 const fontAwesomeIconStub = {
@@ -68,13 +69,19 @@ describe('PassportNumberWithActions', () => {
     expect(wrapper.get('input[name="passportNumber"]').classes()).toContain('input')
     const icon = wrapper.get('[data-testid="passport-check-status-icon"]')
     expect(icon.attributes('data-icon')).toBe('fa-solid fa-circle-check')
-    expect(icon.classes()).toEqual(expect.arrayContaining([
-      'passport-check-status__icon--color-no-issues'
-    ]))
+    expect(icon.classes()).toEqual(
+      expect.arrayContaining(['passport-check-status__icon--color-no-issues'])
+    )
 
     const buttons = wrapper.findAll('button')
-    expect(buttons.map(button => button.attributes('data-tooltip'))).toEqual(['Сохранить и проверить паспорт', 'Очистить'])
-    expect(buttons.map(button => button.attributes('data-icon'))).toEqual(['fa-solid fa-passport', 'fa-solid fa-broom'])
+    expect(buttons.map((button) => button.attributes('data-tooltip'))).toEqual([
+      'Сохранить и проверить паспорт',
+      'Очистить'
+    ])
+    expect(buttons.map((button) => button.attributes('data-icon'))).toEqual([
+      'fa-solid fa-passport',
+      'fa-solid fa-broom'
+    ])
 
     await buttons[0].trigger('click')
     await buttons[1].trigger('click')

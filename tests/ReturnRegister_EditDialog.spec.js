@@ -21,6 +21,7 @@ const getReturnRegisterPairs = vi.hoisted(() => vi.fn())
 const getRegisters = vi.hoisted(() => vi.fn())
 const createReturnRegister = vi.hoisted(() => vi.fn())
 const routerPush = vi.hoisted(() => vi.fn())
+const alertError = vi.hoisted(() => vi.fn())
 const registerOps = vi.hoisted(() => ({
   current: null
 }))
@@ -104,12 +105,26 @@ vi.mock('@/router', () => ({
   default: { push: routerPush }
 }))
 
+vi.mock('@/stores/alert.store.js', () => ({
+  useAlertStore: () => ({
+    alert: null,
+    activePageHosts: 0,
+    error: alertError,
+    dismiss: vi.fn(),
+    pause: vi.fn(),
+    resume: vi.fn(),
+    registerPageHost: vi.fn(),
+    unregisterPageHost: vi.fn()
+  })
+}))
+
 vi.mock('@/components/ActionButton.vue', () => ({
   default: {
     name: 'ActionButton',
     props: ['item', 'icon', 'tooltipText', 'iconSize', 'disabled'],
     emits: ['click'],
-    template: '<button type="button" :data-tooltip="tooltipText" :data-icon="icon" :disabled="disabled" @click="$emit(\'click\', item)"></button>'
+    template:
+      '<button type="button" :data-tooltip="tooltipText" :data-icon="icon" :disabled="disabled" @click="$emit(\'click\', item)"></button>'
   }
 }))
 
@@ -288,6 +303,7 @@ describe('ReturnRegister_EditDialog.vue', () => {
     createReturnRegister.mockReset()
     createReturnRegister.mockResolvedValue({ id: 99 })
     routerPush.mockReset()
+    alertError.mockReset()
   })
 
   it('loads warehouses on mount and keeps OK disabled initially', async () => {
@@ -310,16 +326,18 @@ describe('ReturnRegister_EditDialog.vue', () => {
 
     const options = wrapper.find('[data-testid="return-type-select"]').findAll('option')
 
-    expect(options.map(option => ({
-      value: option.element.value,
-      text: option.text()
-    }))).toEqual([
+    expect(
+      options.map((option) => ({
+        value: option.element.value,
+        text: option.text()
+      }))
+    ).toEqual([
       { value: '1', text: '01 Возврат' },
       { value: '60', text: 'ИМ 60 Реимпорт' },
       { value: '31', text: 'ЭК 31 Реэкспорт' }
     ])
-    expect(options.map(option => option.element.value)).not.toContain('10')
-    expect(options.map(option => option.element.value)).not.toContain('40')
+    expect(options.map((option) => option.element.value)).not.toContain('10')
+    expect(options.map((option) => option.element.value)).not.toContain('40')
   })
 
   it('does not load pairs or enable submit when return procedure ops are unavailable', async () => {
@@ -339,7 +357,12 @@ describe('ReturnRegister_EditDialog.vue', () => {
   it('loads pairs when backend procedure ops become valid after criteria are selected', async () => {
     registerOps.current.customsProcedures = null
     getReturnRegisterPairs.mockResolvedValueOnce([
-      { senderCompanyId: 2, senderCompanyName: 'Sender', receiverCompanyId: 3, receiverCompanyName: 'Receiver' }
+      {
+        senderCompanyId: 2,
+        senderCompanyName: 'Sender',
+        receiverCompanyId: 3,
+        receiverCompanyName: 'Receiver'
+      }
     ])
 
     const wrapper = mountDialog()
@@ -348,9 +371,7 @@ describe('ReturnRegister_EditDialog.vue', () => {
     await selectWarehouse(wrapper, 1)
     expect(getReturnRegisterPairs).not.toHaveBeenCalled()
 
-    registerOps.current.customsProcedures = [
-      { value: 1, charCode: '01', name: 'Возврат' }
-    ]
+    registerOps.current.customsProcedures = [{ value: 1, charCode: '01', name: 'Возврат' }]
     await wrapper.vm.$nextTick()
     await flushPromises()
 
@@ -362,7 +383,9 @@ describe('ReturnRegister_EditDialog.vue', () => {
     const wrapper = mountDialog()
     await flushPromises()
 
-    const warehouseEmptyOption = wrapper.find('[data-testid="warehouse-select"]').findAll('option')[0]
+    const warehouseEmptyOption = wrapper
+      .find('[data-testid="warehouse-select"]')
+      .findAll('option')[0]
     const pairEmptyOption = wrapper.find('[data-testid="pair-select"]').findAll('option')[0]
 
     expect(warehouseEmptyOption.element.value).toBe('')
@@ -392,7 +415,12 @@ describe('ReturnRegister_EditDialog.vue', () => {
     await flushPromises()
     await wrapper.vm.$nextTick()
 
-    expect(wrapper.find('[data-testid="return-register-error"]').text()).toContain('Не удалось загрузить склады')
+    expect(alertError).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({
+        fallback: 'Не удалось загрузить данные для создания реестра возврата'
+      })
+    )
   })
 
   it('loads pairs on warehouse change and source registers on pair change', async () => {
@@ -406,7 +434,13 @@ describe('ReturnRegister_EditDialog.vue', () => {
       }
     ])
     getRegisters.mockResolvedValueOnce([
-      { id: 7, dealNumber: 'D-7', date: '2026-06-12T10:00:00Z', redParcelsCount: 2, parcelsTotal: 5 }
+      {
+        id: 7,
+        dealNumber: 'D-7',
+        date: '2026-06-12T10:00:00Z',
+        redParcelsCount: 2,
+        parcelsTotal: 5
+      }
     ])
 
     const wrapper = mountDialog()
@@ -437,22 +471,41 @@ describe('ReturnRegister_EditDialog.vue', () => {
     await wrapper.find('[data-testid="parcel-status-select"]').setValue('5')
     await flushPromises()
 
-    expect(getReturnRegisterPairs).toHaveBeenCalledWith(1, defaultCriteria({
-      parcelSelectionMode: 2,
-      parcelStatusId: 5
-    }))
+    expect(getReturnRegisterPairs).toHaveBeenCalledWith(
+      1,
+      defaultCriteria({
+        parcelSelectionMode: 2,
+        parcelStatusId: 5
+      })
+    )
   })
 
   it('resets pair, registers, and selection when return-register criteria changes', async () => {
     getReturnRegisterPairs
       .mockResolvedValueOnce([
-        { senderCompanyId: 2, senderCompanyName: 'Sender', receiverCompanyId: 3, receiverCompanyName: 'Receiver' }
+        {
+          senderCompanyId: 2,
+          senderCompanyName: 'Sender',
+          receiverCompanyId: 3,
+          receiverCompanyName: 'Receiver'
+        }
       ])
       .mockResolvedValueOnce([
-        { senderCompanyId: 2, senderCompanyName: 'Sender', receiverCompanyId: 3, receiverCompanyName: 'Receiver' }
+        {
+          senderCompanyId: 2,
+          senderCompanyName: 'Sender',
+          receiverCompanyId: 3,
+          receiverCompanyName: 'Receiver'
+        }
       ])
     getRegisters.mockResolvedValueOnce([
-      { id: 7, dealNumber: 'D-7', date: '2026-06-12T10:00:00Z', matchingParcelsCount: 2, parcelsTotal: 5 }
+      {
+        id: 7,
+        dealNumber: 'D-7',
+        date: '2026-06-12T10:00:00Z',
+        matchingParcelsCount: 2,
+        parcelsTotal: 5
+      }
     ])
 
     const wrapper = mountDialog()
@@ -465,9 +518,12 @@ describe('ReturnRegister_EditDialog.vue', () => {
     await wrapper.find('[data-testid="return-type-select"]').setValue('60')
     await flushPromises()
 
-    expect(getReturnRegisterPairs).toHaveBeenLastCalledWith(1, defaultCriteria({
-      customsProcedureCode: 60
-    }))
+    expect(getReturnRegisterPairs).toHaveBeenLastCalledWith(
+      1,
+      defaultCriteria({
+        customsProcedureCode: 60
+      })
+    )
     expect(wrapper.find('[data-testid="pair-select"]').element.value).toBe('')
     expect(wrapper.findAll('[data-testid="register-checkbox"]')).toHaveLength(0)
     expect(okButton(wrapper).attributes('disabled')).toBeDefined()
@@ -475,7 +531,12 @@ describe('ReturnRegister_EditDialog.vue', () => {
 
   it('shows source parties as a selectable read-only table with search and sort', async () => {
     getReturnRegisterPairs.mockResolvedValueOnce([
-      { senderCompanyId: 2, senderCompanyName: 'Sender', receiverCompanyId: 3, receiverCompanyName: 'Receiver' }
+      {
+        senderCompanyId: 2,
+        senderCompanyName: 'Sender',
+        receiverCompanyId: 3,
+        receiverCompanyName: 'Receiver'
+      }
     ])
     getRegisters.mockResolvedValueOnce({
       items: [{ id: 7, dealNumber: 'D-7', parcelsTotal: 5 }],
@@ -495,27 +556,33 @@ describe('ReturnRegister_EditDialog.vue', () => {
 
     await wrapper.find('[data-testid="table-sort"]').trigger('click')
     await flushPromises()
-    expect(getRegisters).toHaveBeenLastCalledWith(defaultSourceQuery({
-      sortBy: 'warehouseArrivalDate',
-      sortOrder: 'asc'
-    }))
+    expect(getRegisters).toHaveBeenLastCalledWith(
+      defaultSourceQuery({
+        sortBy: 'warehouseArrivalDate',
+        sortOrder: 'asc'
+      })
+    )
 
     await wrapper.find('[data-testid="table-per-page"]').trigger('click')
     await flushPromises()
-    expect(getRegisters).toHaveBeenLastCalledWith(defaultSourceQuery({
-      pageSize: 50,
-      sortBy: 'warehouseArrivalDate',
-      sortOrder: 'asc'
-    }))
+    expect(getRegisters).toHaveBeenLastCalledWith(
+      defaultSourceQuery({
+        pageSize: 50,
+        sortBy: 'warehouseArrivalDate',
+        sortOrder: 'asc'
+      })
+    )
 
     await wrapper.find('[data-testid="table-page"]').trigger('click')
     await flushPromises()
-    expect(getRegisters).toHaveBeenLastCalledWith(defaultSourceQuery({
-      page: 2,
-      pageSize: 50,
-      sortBy: 'warehouseArrivalDate',
-      sortOrder: 'asc'
-    }))
+    expect(getRegisters).toHaveBeenLastCalledWith(
+      defaultSourceQuery({
+        page: 2,
+        pageSize: 50,
+        sortBy: 'warehouseArrivalDate',
+        sortOrder: 'asc'
+      })
+    )
 
     vi.useFakeTimers()
     try {
@@ -523,12 +590,14 @@ describe('ReturnRegister_EditDialog.vue', () => {
       vi.advanceTimersByTime(300)
       await flushPromises()
 
-      expect(getRegisters).toHaveBeenLastCalledWith(defaultSourceQuery({
-        pageSize: 50,
-        sortBy: 'warehouseArrivalDate',
-        sortOrder: 'asc',
-        search: 'deal'
-      }))
+      expect(getRegisters).toHaveBeenLastCalledWith(
+        defaultSourceQuery({
+          pageSize: 50,
+          sortBy: 'warehouseArrivalDate',
+          sortOrder: 'asc',
+          search: 'deal'
+        })
+      )
     } finally {
       vi.useRealTimers()
     }
@@ -536,7 +605,12 @@ describe('ReturnRegister_EditDialog.vue', () => {
 
   it('clears source data when warehouse selection is cleared', async () => {
     getReturnRegisterPairs.mockResolvedValueOnce([
-      { senderCompanyId: 2, senderCompanyName: 'Sender', receiverCompanyId: 3, receiverCompanyName: 'Receiver' }
+      {
+        senderCompanyId: 2,
+        senderCompanyName: 'Sender',
+        receiverCompanyId: 3,
+        receiverCompanyName: 'Receiver'
+      }
     ])
 
     const wrapper = mountDialog()
@@ -552,11 +626,15 @@ describe('ReturnRegister_EditDialog.vue', () => {
   })
 
   it('uses fallback labels and supports deselecting registers', async () => {
-    getReturnRegisterPairs.mockResolvedValueOnce([
-      { senderCompanyId: 2, receiverCompanyId: 3 }
-    ])
+    getReturnRegisterPairs.mockResolvedValueOnce([{ senderCompanyId: 2, receiverCompanyId: 3 }])
     getRegisters.mockResolvedValueOnce([
-      { id: 7, fileName: 'source.xlsx', date: '2026-06-12T10:00:00Z', redParcelsCount: 2, parcelsTotal: 5 },
+      {
+        id: 7,
+        fileName: 'source.xlsx',
+        date: '2026-06-12T10:00:00Z',
+        redParcelsCount: 2,
+        parcelsTotal: 5
+      },
       { id: 8, date: '2026-06-12T11:00:00Z', redParcelsCount: 1, parcelsTotal: 1 }
     ])
 
@@ -580,7 +658,12 @@ describe('ReturnRegister_EditDialog.vue', () => {
 
   it('tolerates non-array source-register results', async () => {
     getReturnRegisterPairs.mockResolvedValueOnce([
-      { senderCompanyId: 2, senderCompanyName: 'Sender', receiverCompanyId: 3, receiverCompanyName: 'Receiver' }
+      {
+        senderCompanyId: 2,
+        senderCompanyName: 'Sender',
+        receiverCompanyId: 3,
+        receiverCompanyName: 'Receiver'
+      }
     ])
     getRegisters.mockResolvedValueOnce(null)
 
@@ -599,12 +682,20 @@ describe('ReturnRegister_EditDialog.vue', () => {
     await flushPromises()
     await selectWarehouse(wrapper, 1)
 
-    expect(wrapper.find('[data-testid="return-register-error"]').text()).toContain('Pair lookup failed')
+    expect(alertError).toHaveBeenCalledWith(
+      { msg: 'Pair lookup failed' },
+      expect.objectContaining({ fallback: 'Не удалось загрузить отправителей и получателей' })
+    )
   })
 
   it('shows source register lookup fallback errors', async () => {
     getReturnRegisterPairs.mockResolvedValueOnce([
-      { senderCompanyId: 2, senderCompanyName: 'Sender', receiverCompanyId: 3, receiverCompanyName: 'Receiver' }
+      {
+        senderCompanyId: 2,
+        senderCompanyName: 'Sender',
+        receiverCompanyId: 3,
+        receiverCompanyName: 'Receiver'
+      }
     ])
     getRegisters.mockRejectedValueOnce(null)
 
@@ -613,19 +704,38 @@ describe('ReturnRegister_EditDialog.vue', () => {
     await selectWarehouse(wrapper, 1)
     await selectPair(wrapper)
 
-    expect(wrapper.find('[data-testid="return-register-error"]').text()).toContain('Не удалось загрузить реестры')
+    expect(alertError).toHaveBeenCalledWith(
+      null,
+      expect.objectContaining({ fallback: 'Не удалось загрузить реестры' })
+    )
   })
 
   it('resets pair, registers, and selection when warehouse changes', async () => {
     getReturnRegisterPairs
       .mockResolvedValueOnce([
-        { senderCompanyId: 2, senderCompanyName: 'Sender', receiverCompanyId: 3, receiverCompanyName: 'Receiver' }
+        {
+          senderCompanyId: 2,
+          senderCompanyName: 'Sender',
+          receiverCompanyId: 3,
+          receiverCompanyName: 'Receiver'
+        }
       ])
       .mockResolvedValueOnce([
-        { senderCompanyId: 4, senderCompanyName: 'Other Sender', receiverCompanyId: 5, receiverCompanyName: 'Other Receiver' }
+        {
+          senderCompanyId: 4,
+          senderCompanyName: 'Other Sender',
+          receiverCompanyId: 5,
+          receiverCompanyName: 'Other Receiver'
+        }
       ])
     getRegisters.mockResolvedValueOnce([
-      { id: 7, dealNumber: 'D-7', date: '2026-06-12T10:00:00Z', redParcelsCount: 2, parcelsTotal: 5 }
+      {
+        id: 7,
+        dealNumber: 'D-7',
+        date: '2026-06-12T10:00:00Z',
+        redParcelsCount: 2,
+        parcelsTotal: 5
+      }
     ])
 
     const wrapper = mountDialog()
@@ -645,10 +755,21 @@ describe('ReturnRegister_EditDialog.vue', () => {
 
   it('enables OK after selecting warehouse, pair, and at least one register', async () => {
     getReturnRegisterPairs.mockResolvedValueOnce([
-      { senderCompanyId: 2, senderCompanyName: 'Sender', receiverCompanyId: 3, receiverCompanyName: 'Receiver' }
+      {
+        senderCompanyId: 2,
+        senderCompanyName: 'Sender',
+        receiverCompanyId: 3,
+        receiverCompanyName: 'Receiver'
+      }
     ])
     getRegisters.mockResolvedValueOnce([
-      { id: 7, dealNumber: 'D-7', date: '2026-06-12T10:00:00Z', redParcelsCount: 2, parcelsTotal: 5 }
+      {
+        id: 7,
+        dealNumber: 'D-7',
+        date: '2026-06-12T10:00:00Z',
+        redParcelsCount: 2,
+        parcelsTotal: 5
+      }
     ])
 
     const wrapper = mountDialog()
@@ -673,11 +794,28 @@ describe('ReturnRegister_EditDialog.vue', () => {
 
   it('creates return register and routes to the new register parcels', async () => {
     getReturnRegisterPairs.mockResolvedValueOnce([
-      { senderCompanyId: 2, senderCompanyName: 'Sender', receiverCompanyId: 3, receiverCompanyName: 'Receiver' }
+      {
+        senderCompanyId: 2,
+        senderCompanyName: 'Sender',
+        receiverCompanyId: 3,
+        receiverCompanyName: 'Receiver'
+      }
     ])
     getRegisters.mockResolvedValueOnce([
-      { id: 7, dealNumber: 'D-7', date: '2026-06-12T10:00:00Z', redParcelsCount: 2, parcelsTotal: 5 },
-      { id: 8, dealNumber: 'D-8', date: '2026-06-12T11:00:00Z', redParcelsCount: 1, parcelsTotal: 1 }
+      {
+        id: 7,
+        dealNumber: 'D-7',
+        date: '2026-06-12T10:00:00Z',
+        redParcelsCount: 2,
+        parcelsTotal: 5
+      },
+      {
+        id: 8,
+        dealNumber: 'D-8',
+        date: '2026-06-12T11:00:00Z',
+        redParcelsCount: 1,
+        parcelsTotal: 1
+      }
     ])
     createReturnRegister.mockResolvedValueOnce({ id: 99 })
 
@@ -704,10 +842,22 @@ describe('ReturnRegister_EditDialog.vue', () => {
 
   it('creates return register with selected type and parcel-status criteria', async () => {
     getReturnRegisterPairs.mockResolvedValueOnce([
-      { senderCompanyId: 2, senderCompanyName: 'Sender', receiverCompanyId: 3, receiverCompanyName: 'Receiver', matchingParcelsCount: 2 }
+      {
+        senderCompanyId: 2,
+        senderCompanyName: 'Sender',
+        receiverCompanyId: 3,
+        receiverCompanyName: 'Receiver',
+        matchingParcelsCount: 2
+      }
     ])
     getRegisters.mockResolvedValueOnce([
-      { id: 7, dealNumber: 'D-7', date: '2026-06-12T10:00:00Z', matchingParcelsCount: 2, parcelsTotal: 5 }
+      {
+        id: 7,
+        dealNumber: 'D-7',
+        date: '2026-06-12T10:00:00Z',
+        matchingParcelsCount: 2,
+        parcelsTotal: 5
+      }
     ])
     createReturnRegister.mockResolvedValueOnce({ id: 100 })
 
@@ -722,16 +872,21 @@ describe('ReturnRegister_EditDialog.vue', () => {
     await okButton(wrapper).trigger('click')
     await flushPromises()
 
-    expect(getReturnRegisterPairs).toHaveBeenCalledWith(1, defaultCriteria({
-      customsProcedureCode: 60,
-      parcelSelectionMode: 2,
-      parcelStatusId: 5
-    }))
-    expect(getRegisters).toHaveBeenCalledWith(defaultSourceQuery({
-      customsProcedureCode: 60,
-      parcelSelectionMode: 2,
-      parcelStatusId: 5
-    }))
+    expect(getReturnRegisterPairs).toHaveBeenCalledWith(
+      1,
+      defaultCriteria({
+        customsProcedureCode: 60,
+        parcelSelectionMode: 2,
+        parcelStatusId: 5
+      })
+    )
+    expect(getRegisters).toHaveBeenCalledWith(
+      defaultSourceQuery({
+        customsProcedureCode: 60,
+        parcelSelectionMode: 2,
+        parcelStatusId: 5
+      })
+    )
     expect(createReturnRegister).toHaveBeenCalledWith({
       warehouseId: 1,
       senderCompanyId: 2,
@@ -746,10 +901,21 @@ describe('ReturnRegister_EditDialog.vue', () => {
 
   it('displays create errors', async () => {
     getReturnRegisterPairs.mockResolvedValueOnce([
-      { senderCompanyId: 2, senderCompanyName: 'Sender', receiverCompanyId: 3, receiverCompanyName: 'Receiver' }
+      {
+        senderCompanyId: 2,
+        senderCompanyName: 'Sender',
+        receiverCompanyId: 3,
+        receiverCompanyName: 'Receiver'
+      }
     ])
     getRegisters.mockResolvedValueOnce([
-      { id: 7, dealNumber: 'D-7', date: '2026-06-12T10:00:00Z', redParcelsCount: 2, parcelsTotal: 5 }
+      {
+        id: 7,
+        dealNumber: 'D-7',
+        date: '2026-06-12T10:00:00Z',
+        redParcelsCount: 2,
+        parcelsTotal: 5
+      }
     ])
     createReturnRegister.mockRejectedValueOnce(new Error('No red parcels'))
 
@@ -761,16 +927,30 @@ describe('ReturnRegister_EditDialog.vue', () => {
     await okButton(wrapper).trigger('click')
     await flushPromises()
 
-    expect(wrapper.find('[data-testid="return-register-error"]').text()).toContain('No red parcels')
+    expect(alertError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'No red parcels' }),
+      { fallback: 'Не удалось создать реестр возврата' }
+    )
     expect(routerPush).not.toHaveBeenCalledWith('/registers/99/parcels?mode=modeWarehouse')
   })
 
   it('displays an error when creation response has no id', async () => {
     getReturnRegisterPairs.mockResolvedValueOnce([
-      { senderCompanyId: 2, senderCompanyName: 'Sender', receiverCompanyId: 3, receiverCompanyName: 'Receiver' }
+      {
+        senderCompanyId: 2,
+        senderCompanyName: 'Sender',
+        receiverCompanyId: 3,
+        receiverCompanyName: 'Receiver'
+      }
     ])
     getRegisters.mockResolvedValueOnce([
-      { id: 7, dealNumber: 'D-7', date: '2026-06-12T10:00:00Z', redParcelsCount: 2, parcelsTotal: 5 }
+      {
+        id: 7,
+        dealNumber: 'D-7',
+        date: '2026-06-12T10:00:00Z',
+        redParcelsCount: 2,
+        parcelsTotal: 5
+      }
     ])
     createReturnRegister.mockResolvedValueOnce({})
 
@@ -782,6 +962,9 @@ describe('ReturnRegister_EditDialog.vue', () => {
     await okButton(wrapper).trigger('click')
     await flushPromises()
 
-    expect(wrapper.find('[data-testid="return-register-error"]').text()).toContain('Сервер не вернул номер')
+    expect(alertError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'Сервер не вернул номер созданного реестра' }),
+      { fallback: 'Не удалось создать реестр возврата' }
+    )
   })
 })

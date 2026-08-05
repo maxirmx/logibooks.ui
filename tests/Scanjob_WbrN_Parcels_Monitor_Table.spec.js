@@ -33,7 +33,9 @@ vi.mock('@/dialogs/Scanjob_Parcels_Monitor_Table.vue', () => ({
 
 describe('Scanjob_WbrN_Parcels_Monitor_Table.vue', () => {
   beforeAll(async () => {
-    ScanjobWbrNParcelsMonitorTable = (await import('@/dialogs/Scanjob_WbrN_Parcels_Monitor_Table.vue')).default
+    ScanjobWbrNParcelsMonitorTable = (
+      await import('@/dialogs/Scanjob_WbrN_Parcels_Monitor_Table.vue')
+    ).default
   })
 
   it('passes WbrN headers and forwards row actions', async () => {
@@ -49,7 +51,9 @@ describe('Scanjob_WbrN_Parcels_Monitor_Table.vue', () => {
     })
 
     const table = wrapper.get('[data-testid="scanjob-generic-table"]')
-    expect(table.attributes('data-header-keys')).toBe('actions,stickerScanned,checkStatusProjection,zone,statusId,scannedInfo,extId,shk,article,sticker,stickerCode,productName,weightKg,quantity')
+    expect(table.attributes('data-header-keys')).toBe(
+      'actions,stickerScanned,checkStatusProjection,zone,statusId,scannedInfo,extId,shk,article,sticker,stickerCode,productName,weightKg,quantity'
+    )
     expect(table.attributes('data-parcel-count')).toBe('1')
     expect(table.attributes('data-register-id')).toBe('9')
     expect(table.attributes('data-loading')).toBe('true')

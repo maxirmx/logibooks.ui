@@ -24,7 +24,7 @@ const pageRef = ref(1)
 const searchRef = ref('')
 
 const getReportRowsMock = vi.hoisted(() => vi.fn())
-const clearMock = vi.hoisted(() => vi.fn())
+const dismissMock = vi.hoisted(() => vi.fn())
 const alertErrorMock = vi.hoisted(() => vi.fn())
 
 let customsReportsStoreMock
@@ -120,8 +120,25 @@ const testStubs = {
   ...defaultGlobalStubs,
   'v-data-table': {
     inheritAttrs: false,
-    emits: ['update:itemsPerPage', 'update:items-per-page', 'update:page', 'update:sortBy', 'update:sort-by'],
-    props: ['items', 'headers', 'loading', 'itemsPerPage', 'itemsPerPageOptions', 'page', 'sortBy', 'density', 'class', 'itemValue'],
+    emits: [
+      'update:itemsPerPage',
+      'update:items-per-page',
+      'update:page',
+      'update:sortBy',
+      'update:sort-by'
+    ],
+    props: [
+      'items',
+      'headers',
+      'loading',
+      'itemsPerPage',
+      'itemsPerPageOptions',
+      'page',
+      'sortBy',
+      'density',
+      'class',
+      'itemValue'
+    ],
     template: `
       <div class="v-data-table-stub" data-testid="v-data-table">
         <div class="v-data-table-header-row">
@@ -159,11 +176,11 @@ const testStubs = {
     `,
     methods: {
       isSorted(header) {
-        return Array.isArray(this.sortBy) && this.sortBy.some(item => item.key === header.key)
+        return Array.isArray(this.sortBy) && this.sortBy.some((item) => item.key === header.key)
       },
       getSortIcon(header) {
         const item = Array.isArray(this.sortBy)
-          ? this.sortBy.find(item => item.key === header.key)
+          ? this.sortBy.find((item) => item.key === header.key)
           : null
         return item?.order === 'desc' ? '$sortDesc' : '$sortAsc'
       }
@@ -172,8 +189,26 @@ const testStubs = {
   'v-data-table-server': {
     name: 'v-data-table-server',
     inheritAttrs: false,
-    emits: ['update:itemsPerPage', 'update:items-per-page', 'update:page', 'update:sortBy', 'update:sort-by'],
-    props: ['items', 'headers', 'loading', 'itemsPerPage', 'itemsPerPageOptions', 'page', 'sortBy', 'density', 'class', 'itemValue', 'itemsLength'],
+    emits: [
+      'update:itemsPerPage',
+      'update:items-per-page',
+      'update:page',
+      'update:sortBy',
+      'update:sort-by'
+    ],
+    props: [
+      'items',
+      'headers',
+      'loading',
+      'itemsPerPage',
+      'itemsPerPageOptions',
+      'page',
+      'sortBy',
+      'density',
+      'class',
+      'itemValue',
+      'itemsLength'
+    ],
     template: `
       <div class="v-data-table-server-stub" data-testid="v-data-table">
         <div class="v-data-table-header-row">
@@ -211,11 +246,11 @@ const testStubs = {
     `,
     methods: {
       isSorted(header) {
-        return Array.isArray(this.sortBy) && this.sortBy.some(item => item.key === header.key)
+        return Array.isArray(this.sortBy) && this.sortBy.some((item) => item.key === header.key)
       },
       getSortIcon(header) {
         const item = Array.isArray(this.sortBy)
-          ? this.sortBy.find(item => item.key === header.key)
+          ? this.sortBy.find((item) => item.key === header.key)
           : null
         return item?.order === 'desc' ? '$sortDesc' : '$sortAsc'
       }
@@ -292,8 +327,10 @@ describe('CustomsReportRows_List.vue', () => {
     }
 
     alertStoreMock = {
-      alert: alertRef,
-      clear: clearMock,
+      get alert() {
+        return alertRef.value
+      },
+      dismiss: dismissMock,
       error: alertErrorMock
     }
 
@@ -406,11 +443,17 @@ describe('CustomsReportRows_List.vue', () => {
 
     expect(wrapper.vm.headers.map((header) => header.key)).toEqual(exportColumnKeys)
     expect(wrapper.find('[data-column-key="masterInvoice-header"]').exists()).toBe(false)
-    expect(wrapper.find('[data-column-key="previousMonthValueOrWeight-header"]').exists()).toBe(false)
+    expect(wrapper.find('[data-column-key="previousMonthValueOrWeight-header"]').exists()).toBe(
+      false
+    )
     expect(wrapper.find('[data-column-key="customsDutiesAndTaxes-header"]').exists()).toBe(false)
     expect(wrapper.find('[data-column-key="customsFees-header"]').exists()).toBe(false)
-    expect(wrapper.find('[data-column-key="prohibitionsAndRestrictions-header"]').exists()).toBe(false)
-    expect(wrapper.find('[data-column-key="customsPaymentReservationId-header"]').exists()).toBe(false)
+    expect(wrapper.find('[data-column-key="prohibitionsAndRestrictions-header"]').exists()).toBe(
+      false
+    )
+    expect(wrapper.find('[data-column-key="customsPaymentReservationId-header"]').exists()).toBe(
+      false
+    )
     expect(wrapper.find('[data-column-key="masterInvoice"]').exists()).toBe(false)
     expect(wrapper.find('[data-column-key="customsPaymentReservationId"]').exists()).toBe(false)
     expect(wrapper.find('[data-column-key="recipient"]').text()).toContain('Получатель')
@@ -434,34 +477,51 @@ describe('CustomsReportRows_List.vue', () => {
     expect(wrapper.vm.headers.map((header) => header.key)).toEqual(reimportColumnKeys)
     expect(wrapper.find('[data-column-key="customsDutiesAndTaxes-header"]').exists()).toBe(true)
     expect(wrapper.find('[data-column-key="customsFees-header"]').exists()).toBe(true)
-    expect(wrapper.find('[data-column-key="customsDutiesAndTaxes"]').text()).toContain('пошлины и налоги')
+    expect(wrapper.find('[data-column-key="customsDutiesAndTaxes"]').text()).toContain(
+      'пошлины и налоги'
+    )
     expect(wrapper.find('[data-column-key="customsFees"]').text()).toContain('сборы')
     expect(wrapper.find('[data-column-key="masterInvoice-header"]').exists()).toBe(false)
-    expect(wrapper.find('[data-column-key="previousMonthValueOrWeight-header"]').exists()).toBe(false)
-    expect(wrapper.find('[data-column-key="prohibitionsAndRestrictions-header"]').exists()).toBe(false)
-    expect(wrapper.find('[data-column-key="customsPaymentReservationId-header"]').exists()).toBe(false)
+    expect(wrapper.find('[data-column-key="previousMonthValueOrWeight-header"]').exists()).toBe(
+      false
+    )
+    expect(wrapper.find('[data-column-key="prohibitionsAndRestrictions-header"]').exists()).toBe(
+      false
+    )
+    expect(wrapper.find('[data-column-key="customsPaymentReservationId-header"]').exists()).toBe(
+      false
+    )
   })
 
-  it.each(['ИМ 40', 'ЭК 31'])('uses full headers and cells for %s report columns', async (customsProcedure) => {
-    reportRowsColumnsRef.value = fullColumnKeys
-    reportRowsCustomsProcedureRef.value = customsProcedure
-    reportRowsRef.value = [createFullReportRow()]
+  it.each(['ИМ 40', 'ЭК 31'])(
+    'uses full headers and cells for %s report columns',
+    async (customsProcedure) => {
+      reportRowsColumnsRef.value = fullColumnKeys
+      reportRowsCustomsProcedureRef.value = customsProcedure
+      reportRowsRef.value = [createFullReportRow()]
 
-    wrapper = mount(CustomsReportRowsList, {
-      props: { reportId: 5 },
-      global: {
-        stubs: testStubs
-      }
-    })
+      wrapper = mount(CustomsReportRowsList, {
+        props: { reportId: 5 },
+        global: {
+          stubs: testStubs
+        }
+      })
 
-    await flushPromises()
+      await flushPromises()
 
-    expect(wrapper.vm.headers.map((header) => header.key)).toEqual(fullColumnKeys)
-    expect(wrapper.find('[data-column-key="masterInvoice"]').text()).toContain('MASTER-001')
-    expect(wrapper.find('[data-column-key="previousMonthValueOrWeight"]').text()).toContain('предыдущий месяц')
-    expect(wrapper.find('[data-column-key="prohibitionsAndRestrictions"]').text()).toContain('запреты')
-    expect(wrapper.find('[data-column-key="customsPaymentReservationId"]').text()).toContain('12345')
-  })
+      expect(wrapper.vm.headers.map((header) => header.key)).toEqual(fullColumnKeys)
+      expect(wrapper.find('[data-column-key="masterInvoice"]').text()).toContain('MASTER-001')
+      expect(wrapper.find('[data-column-key="previousMonthValueOrWeight"]').text()).toContain(
+        'предыдущий месяц'
+      )
+      expect(wrapper.find('[data-column-key="prohibitionsAndRestrictions"]').text()).toContain(
+        'запреты'
+      )
+      expect(wrapper.find('[data-column-key="customsPaymentReservationId"]').text()).toContain(
+        '12345'
+      )
+    }
+  )
 
   it('resets hidden sort column after metadata loads', async () => {
     sortByRef.value = [{ key: 'customsPaymentReservationId', order: 'desc' }]
@@ -512,8 +572,12 @@ describe('CustomsReportRows_List.vue', () => {
 
     await flushPromises()
 
-    expect(wrapper.find('[data-column-key="totalWeight-header"] .multiline-header span').text()).toBe('Вес')
-    expect(wrapper.find('[data-column-key="totalCost-header"] .multiline-header span').text()).toBe('Стоимость')
+    expect(
+      wrapper.find('[data-column-key="totalWeight-header"] .multiline-header span').text()
+    ).toBe('Вес')
+    expect(wrapper.find('[data-column-key="totalCost-header"] .multiline-header span').text()).toBe(
+      'Стоимость'
+    )
     expect(wrapper.find('[data-column-key="weightUnit-header"]').exists()).toBe(false)
     expect(wrapper.find('[data-column-key="currency-header"]').exists()).toBe(false)
   })
@@ -596,7 +660,9 @@ describe('CustomsReportRows_List.vue', () => {
     expect(wrapper.find('[data-column-key="currency"]').exists()).toBe(false)
     const dateTimeCell = wrapper.find('[data-column-key="dateTime"]')
     expect(dateTimeCell.find('.primary-line').text()).toBe('07.05.2026')
-    expect(dateTimeCell.find('.secondary-line').text()).toBe(new Date(reportDateTime).toLocaleTimeString('ru-RU'))
+    expect(dateTimeCell.find('.secondary-line').text()).toBe(
+      new Date(reportDateTime).toLocaleTimeString('ru-RU')
+    )
     expect(textFor('comments')).toContain('10-выпуск')
     expect(textFor('customsPaymentReservationId')).toContain('12345')
     expect(wrapper.find('[data-column-key="description"] .truncate-cell').exists()).toBe(true)
@@ -788,7 +854,7 @@ describe('CustomsReportRows_List.vue', () => {
   })
 
   it('renders alert message and clears it', async () => {
-    alertRef.value = { type: 'alert-danger', message: 'Load failed' }
+    alertRef.value = { id: 41, severity: 'error', message: 'Load failed', action: null }
 
     wrapper = mount(CustomsReportRowsList, {
       props: { reportId: 5 },
@@ -801,7 +867,7 @@ describe('CustomsReportRows_List.vue', () => {
 
     expect(wrapper.find('.alert').text()).toContain('Load failed')
     await wrapper.find('.alert .close').trigger('click')
-    expect(clearMock).toHaveBeenCalled()
+    expect(dismissMock).toHaveBeenCalledWith(41)
   })
 
   it('routes to parcel edit when parcelId is present', async () => {

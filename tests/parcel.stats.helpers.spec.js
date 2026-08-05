@@ -14,11 +14,13 @@ describe('parcel.stats.helpers', () => {
   it('formats check status tooltip from raw check statuses', () => {
     const status = CheckStatusCode.fromParts(FCCheckStatus.NoIssues, SWCheckStatus.Approved).value
 
-    expect(formatParcelsByCheckStatusTooltip({
-      parcelsByCheckStatus: {
-        [status]: 12
-      }
-    })).toBe('Согласовано, Ок ТН ВЭД: 12')
+    expect(
+      formatParcelsByCheckStatusTooltip({
+        parcelsByCheckStatus: {
+          [status]: 12
+        }
+      })
+    ).toBe('Согласовано, Ок ТН ВЭД: 12')
   })
 
   it('formats projection tooltip in warehouse severity order', () => {
@@ -50,8 +52,10 @@ describe('parcel.stats.helpers', () => {
   it('returns empty tooltip for missing or empty projection data', () => {
     expect(formatParcelsByCheckStatusProjectionTooltip(null)).toBe('')
     expect(formatParcelsByCheckStatusProjectionTooltip({})).toBe('')
-    expect(formatParcelsByCheckStatusProjectionTooltip({
-      parcelsByCheckStatusProjection: {}
-    })).toBe('')
+    expect(
+      formatParcelsByCheckStatusProjectionTooltip({
+        parcelsByCheckStatusProjection: {}
+      })
+    ).toBe('')
   })
 })

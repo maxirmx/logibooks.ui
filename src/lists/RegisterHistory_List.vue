@@ -3,6 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { computed, ref, unref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
@@ -55,8 +56,9 @@ const registerHeading = computed(() =>
     getRegisterNouns(props.mode).singular
   )
 )
-const historyItemsPerPageOptions = itemsPerPageOptions
-  .filter(option => option.value > 0 && option.value <= 100)
+const historyItemsPerPageOptions = itemsPerPageOptions.filter(
+  (option) => option.value > 0 && option.value <= 100
+)
 let referenceDataPromise = null
 
 const headers = [
@@ -127,7 +129,10 @@ async function loadHistory() {
       })
     ])
   } catch (error) {
-    alertStore.error(error?.message || 'Не удалось загрузить историю реестра')
+    alertStore.error(error, {
+      fallback: 'Не удалось загрузить историю реестра',
+      action: { label: 'Повторить', handler: loadHistory }
+    })
   } finally {
     pageLoading.value = false
   }
@@ -145,15 +150,17 @@ function formatValue(change, value) {
     getCountryName: countriesStore.getCountryShortName,
     getTransportationTypeName: (id) =>
       registersStore.getOpsLabel(operations?.transportationTypes, id),
-    getCustomsProcedureName: (id) =>
-      registersStore.getOpsLabel(operations?.customsProcedures, id),
+    getCustomsProcedureName: (id) => registersStore.getOpsLabel(operations?.customsProcedures, id),
     getWarehouseName: warehousesStore.getWarehouseName,
     getStatusName: (id) => registerStatusesStore.getStatusById(Number(id))?.title
   })
 }
 
 function formatChange(change) {
-  return `${getFieldLabel(change.field)}: ${formatValue(change, change.oldValue)} → ${formatValue(change, change.newValue)}`
+  return `${getFieldLabel(change.field)}: ${formatValue(change, change.oldValue)} → ${formatValue(
+    change,
+    change.newValue
+  )}`
 }
 
 function returnToRegisters() {
@@ -163,11 +170,7 @@ function returnToRegisters() {
   })
 }
 
-watch(
-  [() => props.registerId, page, itemsPerPage, canView],
-  loadHistory,
-  { immediate: true }
-)
+watch([() => props.registerId, page, itemsPerPage, canView], loadHistory, { immediate: true })
 </script>
 
 <template>
@@ -176,7 +179,10 @@ watch(
       <h1 class="primary-heading">История изменений: {{ registerHeading }}</h1>
       <div class="header-actions-bar">
         <div v-if="pageLoading || loading" class="header-actions header-actions-group">
-          <span class="spinner-border spinner-border-m" data-testid="register-history-spinner"></span>
+          <span
+            class="spinner-border spinner-border-m"
+            data-testid="register-history-spinner"
+          ></span>
         </div>
         <div class="header-actions header-actions-group">
           <ActionButton
@@ -193,6 +199,8 @@ watch(
     </div>
 
     <hr class="hr" />
+
+    <PageAlertRegion />
 
     <div v-if="!canView" class="alert alert-danger">
       История реестра доступна только администраторам и старшим смены.

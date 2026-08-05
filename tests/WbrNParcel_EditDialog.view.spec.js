@@ -60,7 +60,7 @@ const parcelViewsAdd = vi.fn().mockResolvedValue()
 const parcelViewsBack = vi.fn().mockResolvedValue(null)
 const nextParcels = vi.fn().mockResolvedValue({ withoutIssues: null, withIssues: null })
 const alertError = vi.fn()
-const alertClear = vi.fn()
+const alertDismiss = vi.fn()
 const setFieldValue = vi.fn((name, value) => {
   formValues[name] = value
 })
@@ -214,9 +214,11 @@ vi.mock('@/stores/auth.store.js', () => ({
 
 vi.mock('@/stores/alert.store.js', () => ({
   useAlertStore: () => ({
-    alert: alertRef,
+    get alert() {
+      return alertRef.value
+    },
     error: alertError,
-    clear: alertClear
+    dismiss: alertDismiss
   })
 }))
 
@@ -251,7 +253,8 @@ const baseParcel = {
 const stubs = {
   Form: {
     props: ['initialValues', 'validationSchema'],
-    template: '<form data-testid="form"><slot :errors="{}" :values="values" :isSubmitting="false" :setFieldValue="setFieldValue"></slot></form>',
+    template:
+      '<form data-testid="form"><slot :errors="{}" :values="values" :isSubmitting="false" :setFieldValue="setFieldValue"></slot></form>',
     data() {
       return { values: formValues }
     },
@@ -266,10 +269,17 @@ const stubs = {
         return this.class
       }
     },
-    template: '<textarea v-if="as === \'textarea\'" :name="name" :id="id" :class="classes"></textarea><input v-else :name="name" :id="id" :class="classes" />'
+    template:
+      '<textarea v-if="as === \'textarea\'" :name="name" :id="id" :class="classes"></textarea><input v-else :name="name" :id="id" :class="classes" />'
   },
   ParcelHeaderActionsBar: {
-    props: ['downloadDisabled', 'lookupDisabled', 'disabled', 'actionsDisabled', 'mutationDisabled'],
+    props: [
+      'downloadDisabled',
+      'lookupDisabled',
+      'disabled',
+      'actionsDisabled',
+      'mutationDisabled'
+    ],
     emits: ['next-parcel', 'next-issue', 'back', 'save', 'lookup', 'cancel', 'download'],
     template: `
       <div data-testid="parcel-header-actions" :data-download-disabled="String(downloadDisabled)" :data-lookup-disabled="String(lookupDisabled)" :data-actions-disabled="String(actionsDisabled)" :data-mutation-disabled="String(mutationDisabled)">
@@ -285,7 +295,15 @@ const stubs = {
   },
   ParcelStatusSection: {
     props: ['item', 'values', 'disabled', 'clearCheckStatusDisabled'],
-    emits: ['validate-sw', 'validate-sw-ex', 'validate-fc', 'approve', 'approve-excise', 'clear-check-status', 'check-for-duplicate'],
+    emits: [
+      'validate-sw',
+      'validate-sw-ex',
+      'validate-fc',
+      'approve',
+      'approve-excise',
+      'clear-check-status',
+      'check-for-duplicate'
+    ],
     template: `
       <div data-testid="parcel-status-section" :data-disabled="String(disabled)" :data-clear-disabled="String(clearCheckStatusDisabled)">
         <button data-testid="validate-sw" :disabled="disabled" @click="$emit('validate-sw', values)"></button>
@@ -301,25 +319,30 @@ const stubs = {
   FeacnCodeEditor: {
     props: ['columnTitles', 'columnTooltips', 'disabled'],
     emits: ['update:item', 'overlay-state-changed', 'set-running-action'],
-    template: '<div data-testid="feacn-code-editor" :data-tnved-title="columnTitles.tnVed" :data-weight-tooltip="columnTooltips.weightKg" :data-disabled="String(disabled)"><button data-testid="update-item" @click="$emit(\'update:item\', { id: 99, shk: \'SHK-UPDATED\' })"></button><button data-testid="overlay-on" @click="$emit(\'overlay-state-changed\', true)"></button><button data-testid="overlay-off" @click="$emit(\'overlay-state-changed\', false)"></button><button data-testid="running-on" @click="$emit(\'set-running-action\', true)"></button><button data-testid="running-off" @click="$emit(\'set-running-action\', false)"></button></div>'
+    template:
+      '<div data-testid="feacn-code-editor" :data-tnved-title="columnTitles.tnVed" :data-weight-tooltip="columnTooltips.weightKg" :data-disabled="String(disabled)"><button data-testid="update-item" @click="$emit(\'update:item\', { id: 99, shk: \'SHK-UPDATED\' })"></button><button data-testid="overlay-on" @click="$emit(\'overlay-state-changed\', true)"></button><button data-testid="overlay-off" @click="$emit(\'overlay-state-changed\', false)"></button><button data-testid="running-on" @click="$emit(\'set-running-action\', true)"></button><button data-testid="running-off" @click="$emit(\'set-running-action\', false)"></button></div>'
   },
   WbrNFormField: {
     props: ['name', 'fullWidth', 'type', 'step', 'disabled'],
-    template: '<div data-testid="wbrn-form-field" :data-name="name" :data-full-width="String(fullWidth)" :data-type="type" :data-step="step" :data-disabled="String(disabled)">{{ name }}</div>'
+    template:
+      '<div data-testid="wbrn-form-field" :data-name="name" :data-full-width="String(fullWidth)" :data-type="type" :data-step="step" :data-disabled="String(disabled)">{{ name }}</div>'
   },
   ParcelWeightAutoField: {
     props: ['fieldComponent', 'label'],
-    template: '<div data-testid="parcel-weight-auto-field" :data-label="label"><component :is="fieldComponent" name="weightKg" :errors="{}" :full-width="false" /></div>'
+    template:
+      '<div data-testid="parcel-weight-auto-field" :data-label="label"><component :is="fieldComponent" name="weightKg" :errors="{}" :full-width="false" /></div>'
   },
   ActionButton: {
     props: ['item', 'disabled', 'tooltipText'],
     emits: ['click'],
-    template: '<button type="button" data-testid="action-button" :data-tooltip="tooltipText" :disabled="disabled" @click="$emit(\'click\', item)"><slot /></button>'
+    template:
+      '<button type="button" data-testid="action-button" :data-tooltip="tooltipText" :disabled="disabled" @click="$emit(\'click\', item)"><slot /></button>'
   },
   ParcelNumberExt: {
     props: ['item', 'fieldName', 'disabled'],
     emits: ['fellows', 'click'],
-    template: '<button type="button" data-testid="parcel-number-ext" :disabled="disabled" @click="$emit(\'click\', item)"><span>{{ item[fieldName] }}</span><span data-testid="fellows" @click.stop="$emit(\'fellows\')">fellows</span></button>'
+    template:
+      '<button type="button" data-testid="parcel-number-ext" :disabled="disabled" @click="$emit(\'click\', item)"><span>{{ item[fieldName] }}</span><span data-testid="fellows" @click.stop="$emit(\'fellows\')">fellows</span></button>'
   },
   ArticleWithH: {
     props: {
@@ -330,12 +353,14 @@ const stubs = {
       fullWidth: { type: Boolean, default: false }
     },
     emits: ['approve-notification'],
-    template: '<div data-testid="article-with-h" :data-title="columnTitles.article" :data-readonly="String(inputReadonly)" :data-full-width="String(fullWidth)" :data-disabled="String(disabled)">{{ item.article }}<button type="button" data-testid="approve-notification" :disabled="disabled" @click="$emit(\'approve-notification\')"></button></div>'
+    template:
+      '<div data-testid="article-with-h" :data-title="columnTitles.article" :data-readonly="String(inputReadonly)" :data-full-width="String(fullWidth)" :data-disabled="String(disabled)">{{ item.article }}<button type="button" data-testid="approve-notification" :disabled="disabled" @click="$emit(\'approve-notification\')"></button></div>'
   },
   ProductLinkWithActions: {
     props: ['label', 'item', 'disabled'],
     emits: ['view-image', 'delete-image'],
-    template: '<div data-testid="product-link-with-actions" :data-label="label" :data-disabled="String(disabled)">{{ item.productLink }}<button type="button" data-testid="view-image" :disabled="disabled" @click="$emit(\'view-image\')"></button><button type="button" data-testid="delete-image" :disabled="disabled" @click="$emit(\'delete-image\')"></button></div>'
+    template:
+      '<div data-testid="product-link-with-actions" :data-label="label" :data-disabled="String(disabled)">{{ item.productLink }}<button type="button" data-testid="view-image" :disabled="disabled" @click="$emit(\'view-image\')"></button><button type="button" data-testid="delete-image" :disabled="disabled" @click="$emit(\'delete-image\')"></button></div>'
   },
   DTagSection: {
     props: ['item'],
@@ -344,7 +369,8 @@ const stubs = {
   ParcelImageOverlay: {
     props: ['open', 'imageUrl', 'loading'],
     emits: ['close'],
-    template: '<div v-if="open" data-testid="parcel-image-overlay"><button type="button" data-testid="close-overlay" @click="$emit(\'close\')"></button></div>'
+    template:
+      '<div v-if="open" data-testid="parcel-image-overlay"><button type="button" data-testid="close-overlay" @click="$emit(\'close\')"></button></div>'
   },
   'font-awesome-icon': {
     props: ['icon'],
@@ -352,7 +378,8 @@ const stubs = {
   },
   'v-tooltip': {
     props: ['text', 'disabled'],
-    template: '<span data-testid="v-tooltip" :data-text="text" :data-disabled="String(disabled)"><slot name="activator" :props="{ title: text }"></slot><slot></slot></span>'
+    template:
+      '<span data-testid="v-tooltip" :data-text="text" :data-disabled="String(disabled)"><slot name="activator" :props="{ title: text }"></slot><slot></slot></span>'
   }
 }
 
@@ -363,7 +390,12 @@ function resetState() {
   formValues = { ...baseParcel }
   parcelItem.value = { ...baseParcel }
   parcelLoading.value = false
-  registerItem.value = { id: 12, registerType: 2097154, dealNumber: 'WBRN-12', customsProcedureCode: CUSTOMS_PROCEDURE_IMPORT }
+  registerItem.value = {
+    id: 12,
+    registerType: 2097154,
+    dealNumber: 'WBRN-12',
+    customsProcedureCode: CUSTOMS_PROCEDURE_IMPORT
+  }
   stopWords.value = []
   feacnOrders.value = []
   feacnPrefixes.value = []
@@ -428,20 +460,28 @@ describe('WbrNParcel_EditDialog.vue', () => {
     expect(wrapper.get('[data-testid="article-with-h"]').attributes('data-title')).toBe('Артикул')
     expect(wrapper.get('[data-testid="article-with-h"]').attributes('data-readonly')).toBe('false')
     expect(wrapper.text()).toContain('29817781')
-    expect(wrapper.get('[data-testid="product-link-with-actions"]').attributes('data-label')).toBe('Ссылка на товар')
-    expect(wrapper.get('[data-testid="parcel-weight-auto-field"]').attributes('data-label')).toBe('Вес, кг')
+    expect(wrapper.get('[data-testid="product-link-with-actions"]').attributes('data-label')).toBe(
+      'Ссылка на товар'
+    )
+    expect(wrapper.get('[data-testid="parcel-weight-auto-field"]').attributes('data-label')).toBe(
+      'Вес, кг'
+    )
 
-    const fieldNames = wrapper.findAll('[data-testid="wbrn-form-field"]').map(field => field.attributes('data-name'))
-    expect(fieldNames).toEqual(expect.arrayContaining([
-      'productCountryName',
-      'weightKg',
-      'quantity',
-      'unitPrice',
-      'currency',
-      'lastName',
-      'firstName',
-      'patronymic'
-    ]))
+    const fieldNames = wrapper
+      .findAll('[data-testid="wbrn-form-field"]')
+      .map((field) => field.attributes('data-name'))
+    expect(fieldNames).toEqual(
+      expect.arrayContaining([
+        'productCountryName',
+        'weightKg',
+        'quantity',
+        'unitPrice',
+        'currency',
+        'lastName',
+        'firstName',
+        'patronymic'
+      ])
+    )
     expect(wrapper.get('input[name="passportNumber"]').exists()).toBe(true)
     expect(fieldNames).not.toContain('countryCode')
     expect(fieldNames).not.toContain('paymentAmount')
@@ -455,9 +495,9 @@ describe('WbrNParcel_EditDialog.vue', () => {
     expect(wrapper.get('[data-testid="passport-check-actions"]').exists()).toBe(true)
     const icon = wrapper.get('[data-testid="passport-check-status-icon"]')
     expect(icon.attributes('data-icon')).toBe('fa-solid fa-circle-check')
-    expect(icon.classes()).toEqual(expect.arrayContaining([
-      'passport-check-status__icon--color-no-issues'
-    ]))
+    expect(icon.classes()).toEqual(
+      expect.arrayContaining(['passport-check-status__icon--color-no-issues'])
+    )
 
     await wrapper.get('[data-tooltip="Сохранить и проверить паспорт"]').trigger('click')
     await resolveAll()
@@ -528,12 +568,15 @@ describe('WbrNParcel_EditDialog.vue', () => {
     const wrapper = await mountDialog()
     const passportField = wrapper.findComponent({ name: 'PassportNumberWithActions' })
 
-    expect(passportField.props('status')).toEqual(expect.objectContaining({
-      code: 'NotChecked',
-      value: 0
-    }))
-    expect(wrapper.get('[data-testid="passport-check-status-icon"]').attributes('data-icon'))
-      .toBe('fa-solid fa-circle-question')
+    expect(passportField.props('status')).toEqual(
+      expect.objectContaining({
+        code: 'NotChecked',
+        value: 0
+      })
+    )
+    expect(wrapper.get('[data-testid="passport-check-status-icon"]').attributes('data-icon')).toBe(
+      'fa-solid fa-circle-question'
+    )
     wrapper.unmount()
   })
 
@@ -544,14 +587,20 @@ describe('WbrNParcel_EditDialog.vue', () => {
 
     const wrapper = await mountDialog()
 
-    expect(wrapper.get('[data-testid="parcel-header-actions"]').attributes('data-actions-disabled')).toBe('true')
+    expect(
+      wrapper.get('[data-testid="parcel-header-actions"]').attributes('data-actions-disabled')
+    ).toBe('true')
     for (const testId of ['next-parcel', 'next-issue', 'back', 'save', 'lookup', 'download']) {
       expect(wrapper.get(`[data-testid="${testId}"]`).attributes('disabled')).toBeDefined()
     }
     expect(wrapper.get('[data-testid="cancel"]').attributes('disabled')).toBeUndefined()
 
-    expect(wrapper.get('[data-testid="parcel-status-section"]').attributes('data-disabled')).toBe('true')
-    expect(wrapper.get('[data-testid="parcel-status-section"]').attributes('data-clear-disabled')).toBe('true')
+    expect(wrapper.get('[data-testid="parcel-status-section"]').attributes('data-disabled')).toBe(
+      'true'
+    )
+    expect(
+      wrapper.get('[data-testid="parcel-status-section"]').attributes('data-clear-disabled')
+    ).toBe('true')
     for (const testId of [
       'validate-sw',
       'validate-sw-ex',
@@ -564,10 +613,14 @@ describe('WbrNParcel_EditDialog.vue', () => {
       expect(wrapper.get(`[data-testid="${testId}"]`).attributes('disabled')).toBeDefined()
     }
 
-    expect(wrapper.get('[data-testid="feacn-code-editor"]').attributes('data-disabled')).toBe('true')
+    expect(wrapper.get('[data-testid="feacn-code-editor"]').attributes('data-disabled')).toBe(
+      'true'
+    )
     expect(wrapper.get('[data-tooltip="Показать описание"]').attributes('disabled')).toBeDefined()
     expect(wrapper.get('[data-testid="parcel-number-ext"]').attributes('disabled')).toBeDefined()
-    expect(wrapper.get('[data-testid="product-link-with-actions"]').attributes('data-disabled')).toBe('true')
+    expect(
+      wrapper.get('[data-testid="product-link-with-actions"]').attributes('data-disabled')
+    ).toBe('true')
     expect(wrapper.get('[data-testid="view-image"]').attributes('disabled')).toBeDefined()
     expect(wrapper.get('[data-testid="delete-image"]').attributes('disabled')).toBeDefined()
     expect(wrapper.get('[data-testid="article-with-h"]').attributes('data-disabled')).toBe('true')
@@ -581,7 +634,10 @@ describe('WbrNParcel_EditDialog.vue', () => {
     await wrapper.get('[data-testid="download"]').trigger('click')
     await resolveAll()
 
-    expect(parcelUpdate).toHaveBeenCalledWith(3, expect.objectContaining({ id: 3, shk: 'SHK-N-EDIT' }))
+    expect(parcelUpdate).toHaveBeenCalledWith(
+      3,
+      expect.objectContaining({ id: 3, shk: 'SHK-N-EDIT' })
+    )
     expect(registerGetById).toHaveBeenCalledWith(12)
     expect(generateXml).toHaveBeenCalledWith(
       parcelItem,
@@ -611,7 +667,9 @@ describe('WbrNParcel_EditDialog.vue', () => {
     parcelUpdate.mockClear()
 
     expect(wrapper.text()).toContain('Посылка доступна только для просмотра')
-    expect(wrapper.get('[data-testid="parcel-header-actions"]').attributes('data-mutation-disabled')).toBe('true')
+    expect(
+      wrapper.get('[data-testid="parcel-header-actions"]').attributes('data-mutation-disabled')
+    ).toBe('true')
 
     await wrapper.get('[data-testid="save"]').trigger('click')
     await resolveAll()
@@ -667,29 +725,75 @@ describe('WbrNParcel_EditDialog.vue', () => {
     await wrapper.get('[data-testid="validate-fc"]').trigger('click')
     await resolveAll()
     expect(validateParcelData).toHaveBeenCalledTimes(3)
-    expect(validateParcelData).toHaveBeenCalledWith(expect.objectContaining({ id: 3 }), parcelItem, expect.any(Object), true, 0)
-    expect(validateParcelData).toHaveBeenCalledWith(expect.objectContaining({ id: 3 }), parcelItem, expect.any(Object), true, 1)
-    expect(validateParcelData).toHaveBeenCalledWith(expect.objectContaining({ id: 3 }), parcelItem, expect.any(Object), false, undefined)
+    expect(validateParcelData).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 3 }),
+      parcelItem,
+      expect.any(Object),
+      true,
+      0
+    )
+    expect(validateParcelData).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 3 }),
+      parcelItem,
+      expect.any(Object),
+      true,
+      1
+    )
+    expect(validateParcelData).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 3 }),
+      parcelItem,
+      expect.any(Object),
+      false,
+      undefined
+    )
 
     await wrapper.get('[data-testid="approve"]').trigger('click')
     await resolveAll()
-    expect(approveParcel).toHaveBeenCalledWith(expect.objectContaining({ id: 3 }), parcelItem, expect.any(Object))
+    expect(approveParcel).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 3 }),
+      parcelItem,
+      expect.any(Object)
+    )
 
     await wrapper.get('[data-testid="approve-excise"]').trigger('click')
     await resolveAll()
-    expect(approveParcelWithExcise).toHaveBeenCalledWith(expect.objectContaining({ id: 3 }), parcelItem, expect.any(Object))
+    expect(approveParcelWithExcise).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 3 }),
+      parcelItem,
+      expect.any(Object)
+    )
     expect(setFieldValue).toHaveBeenCalledWith('tnVed', '6403999300')
 
     await wrapper.get('[data-testid="approve-notification"]').trigger('click')
     await resolveAll()
-    expect(approveParcelWithNotification).toHaveBeenCalledWith(expect.objectContaining({ id: 3 }), parcelItem, expect.any(Object))
+    expect(approveParcelWithNotification).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 3 }),
+      parcelItem,
+      expect.any(Object)
+    )
 
     await wrapper.get('[data-testid="clear-check-status"]').trigger('click')
     await resolveAll()
     await wrapper.get('[data-testid="check-for-duplicate"]').trigger('click')
     await resolveAll()
-    expect(runCheckStatusAction).toHaveBeenCalledWith(expect.objectContaining({ id: 3 }), parcelClearCheckStatus, expect.any(Object), expect.any(Object), expect.any(Object), expect.any(Function), expect.any(Object))
-    expect(runCheckStatusAction).toHaveBeenCalledWith(expect.objectContaining({ id: 3 }), parcelCheckForDuplicate, expect.any(Object), expect.any(Object), expect.any(Object), expect.any(Function), expect.any(Object))
+    expect(runCheckStatusAction).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 3 }),
+      parcelClearCheckStatus,
+      expect.any(Object),
+      expect.any(Object),
+      expect.any(Object),
+      expect.any(Function),
+      expect.any(Object)
+    )
+    expect(runCheckStatusAction).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 3 }),
+      parcelCheckForDuplicate,
+      expect.any(Object),
+      expect.any(Object),
+      expect.any(Object),
+      expect.any(Function),
+      expect.any(Object)
+    )
 
     await wrapper.get('[data-testid="lookup"]').trigger('click')
     await resolveAll()
@@ -712,7 +816,14 @@ describe('WbrNParcel_EditDialog.vue', () => {
 
     await wrapper.get('[data-testid="delete-image"]').trigger('click')
     await resolveAll()
-    expect(deleteProductImage).toHaveBeenCalledWith(expect.objectContaining({ id: 3 }), expect.any(Object), expect.any(Object), expect.any(Object), confirmMock, expect.any(Object))
+    expect(deleteProductImage).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 3 }),
+      expect.any(Object),
+      expect.any(Object),
+      expect.any(Object),
+      confirmMock,
+      expect.any(Object)
+    )
 
     await wrapper.get('[data-testid="fellows"]').trigger('click')
     expect(handleFellowsClick).toHaveBeenCalledWith(12, 'SHK-N-EDIT')
@@ -746,7 +857,9 @@ describe('WbrNParcel_EditDialog.vue', () => {
     await wrapper.get('[data-testid="overlay-off"]').trigger('click')
     await wrapper.get('[data-testid="running-on"]').trigger('click')
     await nextTick()
-    expect(wrapper.get('[data-testid="parcel-header-actions"]').attributes('data-download-disabled')).toBe('true')
+    expect(
+      wrapper.get('[data-testid="parcel-header-actions"]').attributes('data-download-disabled')
+    ).toBe('true')
     await wrapper.get('[data-testid="running-off"]').trigger('click')
 
     parcelItem.value = { ...baseParcel }
@@ -767,14 +880,15 @@ describe('WbrNParcel_EditDialog.vue', () => {
       error: 'parcel load failed',
       blockedByFellowItem: true
     }
-    alertRef.value = { type: 'alert-danger', message: 'WbrN edit alert' }
+    alertRef.value = { id: 17, severity: 'error', message: 'WbrN edit alert', action: null }
     const wrapper = await mountDialog()
 
-    expect(wrapper.text()).toContain('Ошибка: parcel load failed')
     expect(wrapper.text()).toContain('WbrN edit alert')
-    expect(wrapper.get('[data-testid="parcel-header-actions"]').attributes('data-download-disabled')).toBe('true')
+    expect(
+      wrapper.get('[data-testid="parcel-header-actions"]').attributes('data-download-disabled')
+    ).toBe('true')
     await wrapper.get('.alert .close').trigger('click')
-    expect(alertClear).toHaveBeenCalled()
+    expect(alertDismiss).toHaveBeenCalledWith(17)
 
     generateXml.mockRejectedValueOnce(new Error('xml failed'))
     await wrapper.get('[data-testid="download"]').trigger('click')
@@ -828,7 +942,9 @@ describe('WbrNParcel_EditDialog.vue', () => {
     parcelUpdate.mockRejectedValueOnce(new Error('submit failed'))
     await wrapper.get('[data-testid="next-parcel"]').trigger('click')
     await resolveAll()
-    expect(alertError).toHaveBeenCalledWith('submit failed')
+    expect(alertError).toHaveBeenCalledWith('submit failed', {
+      fallback: 'Не удалось сохранить посылку'
+    })
 
     parcelUpdate.mockResolvedValueOnce()
     parcelViewsBack.mockRejectedValueOnce(new Error('back failed'))
@@ -846,7 +962,10 @@ describe('WbrNParcel_EditDialog.vue', () => {
     await nextTick()
     wrapper.unmount()
 
-    expect(removeEventListenerSpy).toHaveBeenCalledWith(DEC_REPORT_UPLOADED_EVENT, expect.any(Function))
+    expect(removeEventListenerSpy).toHaveBeenCalledWith(
+      DEC_REPORT_UPLOADED_EVENT,
+      expect.any(Function)
+    )
     expect(removeDocumentListenerSpy).toHaveBeenCalledWith('keydown', expect.any(Function))
 
     removeEventListenerSpy.mockRestore()

@@ -33,9 +33,12 @@ export function useScanjobHeading(scanjobId, options = {}) {
         alertStore.error('Не удалось загрузить задание на сканирование')
       }
       return loaded
-    } catch {
+    } catch (error) {
       if (isActive()) {
-        alertStore.error('Ошибка при загрузке данных')
+        alertStore.error(error, {
+          fallback: 'Ошибка при загрузке данных',
+          action: { label: 'Повторить', handler: loadScanjob }
+        })
       }
       return null
     } finally {

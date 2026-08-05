@@ -30,8 +30,9 @@ describe('RegisterCurrencySelectionDialog', () => {
     expect(wrapper.findComponent(VDialogStub).props('width')).toBe('420')
     expect(wrapper.findAll('.radio-styled')).toHaveLength(2)
     expect(wrapper.findAll('.radio-mark')).toHaveLength(2)
-    expect(wrapper.findAll('input[type="radio"]').map((radio) => radio.attributes('value')))
-      .toEqual(['USD', 'UZS'])
+    expect(
+      wrapper.findAll('input[type="radio"]').map((radio) => radio.attributes('value'))
+    ).toEqual(['USD', 'UZS'])
 
     wrapper.vm.selectedCurrency = 'UZS'
     await nextTick()

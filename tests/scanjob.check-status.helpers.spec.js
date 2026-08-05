@@ -12,10 +12,18 @@ import {
 
 describe('scanjob.check-status.helpers', () => {
   it('maps projected statuses to scan-job classes', () => {
-    expect(getScanjobCheckStatusClass({ kind: scanjobCheckStatusProjectionKind.NotChecked })).toBe('not-checked')
-    expect(getScanjobCheckStatusClass({ kind: scanjobCheckStatusProjectionKind.Restriction })).toBe('has-issues')
-    expect(getScanjobCheckStatusClass({ kind: scanjobCheckStatusProjectionKind.Defect })).toBe('has-issues')
-    expect(getScanjobCheckStatusClass({ kind: scanjobCheckStatusProjectionKind.Checked })).toBe('no-issues')
+    expect(getScanjobCheckStatusClass({ kind: scanjobCheckStatusProjectionKind.NotChecked })).toBe(
+      'not-checked'
+    )
+    expect(getScanjobCheckStatusClass({ kind: scanjobCheckStatusProjectionKind.Restriction })).toBe(
+      'has-issues'
+    )
+    expect(getScanjobCheckStatusClass({ kind: scanjobCheckStatusProjectionKind.Defect })).toBe(
+      'has-issues'
+    )
+    expect(getScanjobCheckStatusClass({ kind: scanjobCheckStatusProjectionKind.Checked })).toBe(
+      'no-issues'
+    )
     expect(getScanjobCheckStatusClass(null)).toBe('')
   })
 
@@ -28,8 +36,15 @@ describe('scanjob.check-status.helpers', () => {
 
     expect(scanjobCheckStatusText(restriction)).toBe('Запрет')
     expect(scanjobCheckStatusReason(restriction)).toBe('Стоп-слово')
-    expect(scanjobCheckStatusText({ kind: scanjobCheckStatusProjectionKind.Defect, title: 'Брак' })).toBe('Брак')
+    expect(
+      scanjobCheckStatusText({ kind: scanjobCheckStatusProjectionKind.Defect, title: 'Брак' })
+    ).toBe('Брак')
     expect(scanjobCheckStatusText(null)).toBe('-')
-    expect(scanjobCheckStatusReason({ kind: scanjobCheckStatusProjectionKind.Checked, restrictionReason: 'ignored' })).toBe('')
+    expect(
+      scanjobCheckStatusReason({
+        kind: scanjobCheckStatusProjectionKind.Checked,
+        restrictionReason: 'ignored'
+      })
+    ).toBe('')
   })
 })

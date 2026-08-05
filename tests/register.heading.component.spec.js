@@ -30,7 +30,12 @@ describe('RegisterHeadingWithStats', () => {
     }
 
     const getByIdSpy = vi.spyOn(store, 'getById').mockImplementation(async () => {
-      store.item = { id: 1, parcelsByCheckStatus: { 1: 2, 2: 5 }, parcelsTotal: 12, placesTotal: 25 }
+      store.item = {
+        id: 1,
+        parcelsByCheckStatus: { 1: 2, 2: 5 },
+        parcelsTotal: 12,
+        placesTotal: 25
+      }
     })
 
     const wrapper = mount(RegisterHeadingWithStats, {

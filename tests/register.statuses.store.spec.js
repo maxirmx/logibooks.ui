@@ -1,7 +1,7 @@
 /* @vitest-environment jsdom */
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
@@ -32,7 +32,13 @@ describe('register.statuses.store.js', () => {
 
   const mockRegisterStatuses = [
     { id: 1, title: 'Черновик', icon: 'svg:registered', bkColor: '#FFFFFF', fgColor: '#000000' },
-    { id: 2, title: 'Подтвержден', icon: 'svg:very-delivered', bkColor: '#00AA00', fgColor: '#FFFFFF' },
+    {
+      id: 2,
+      title: 'Подтвержден',
+      icon: 'svg:very-delivered',
+      bkColor: '#00AA00',
+      fgColor: '#FFFFFF'
+    },
     { id: 3, title: 'Выполнен', icon: null, bkColor: null, fgColor: null }
   ]
 
@@ -138,7 +144,10 @@ describe('register.statuses.store.js', () => {
 
       const result = await store.create(newRegisterStatus)
 
-      expect(mockPost).toHaveBeenCalledWith('http://localhost:3000/api/registerstatuses', newRegisterStatus)
+      expect(mockPost).toHaveBeenCalledWith(
+        'http://localhost:3000/api/registerstatuses',
+        newRegisterStatus
+      )
       expect(mockGet).toHaveBeenCalledWith('http://localhost:3000/api/registerstatuses')
       expect(result).toEqual(createdRegisterStatus)
     })
@@ -157,11 +166,16 @@ describe('register.statuses.store.js', () => {
       const updatedRegisterStatus = { ...mockRegisterStatus, ...updateData }
 
       mockPut.mockResolvedValue(updatedRegisterStatus)
-      mockGet.mockResolvedValue(mockRegisterStatuses.map(s => s.id === 1 ? updatedRegisterStatus : s))
+      mockGet.mockResolvedValue(
+        mockRegisterStatuses.map((s) => (s.id === 1 ? updatedRegisterStatus : s))
+      )
 
       const result = await store.update(1, updateData)
 
-      expect(mockPut).toHaveBeenCalledWith('http://localhost:3000/api/registerstatuses/1', updateData)
+      expect(mockPut).toHaveBeenCalledWith(
+        'http://localhost:3000/api/registerstatuses/1',
+        updateData
+      )
       expect(mockGet).toHaveBeenCalledWith('http://localhost:3000/api/registerstatuses')
       expect(result).toEqual(updatedRegisterStatus)
     })
@@ -177,7 +191,7 @@ describe('register.statuses.store.js', () => {
   describe('remove', () => {
     it('removes register status successfully', async () => {
       mockDelete.mockResolvedValue()
-      mockGet.mockResolvedValue(mockRegisterStatuses.filter(s => s.id !== 1))
+      mockGet.mockResolvedValue(mockRegisterStatuses.filter((s) => s.id !== 1))
 
       await store.remove(1)
 
@@ -206,11 +220,7 @@ describe('register.statuses.store.js', () => {
     it('handles multiple simultaneous operations', async () => {
       mockGet.mockResolvedValue(mockRegisterStatuses)
 
-      const promises = [
-        store.getAll(),
-        store.getAll(),
-        store.getAll()
-      ]
+      const promises = [store.getAll(), store.getAll(), store.getAll()]
 
       await Promise.all(promises)
 
@@ -244,7 +254,7 @@ describe('register.statuses.store.js', () => {
       expect(mockDelete).toHaveBeenCalledWith(`${baseUrl}/1`)
     })
   })
-  
+
   describe('Status Helper Functions', () => {
     beforeEach(async () => {
       mockGet.mockResolvedValue(mockRegisterStatuses)
@@ -286,7 +296,7 @@ describe('register.statuses.store.js', () => {
       })
     })
   })
-  
+
   describe('ensureLoaded', () => {
     beforeEach(() => {
       // Reset store to initial state for these tests
@@ -296,62 +306,62 @@ describe('register.statuses.store.js', () => {
       vi.clearAllMocks()
       mockGet.mockResolvedValue(mockRegisterStatuses)
     })
-    
+
     it('calls getAll when statuses are not loaded yet', async () => {
       expect(store.registerStatuses).toEqual([])
-      
+
       store.ensureLoaded()
-      
+
       // ensureLoaded calls getAll immediately; the await below just lets
       // any asynchronous work triggered by getAll settle before the test ends
       expect(mockGet).toHaveBeenCalledWith('http://localhost:3000/api/registerstatuses')
-      
+
       // Wait for any pending promises triggered by ensureLoaded/getAll to resolve
       await Promise.resolve()
     })
-    
+
     it('does not call getAll when already initialized', async () => {
       // First call to initialize
       store.ensureLoaded()
-      
+
       // Wait for any pending promises to resolve
       await Promise.resolve()
-      
+
       expect(mockGet).toHaveBeenCalledTimes(1)
-      
+
       // Reset mock to check if it's called again
       mockGet.mockClear()
-      
+
       // Second call should not trigger getAll again (initialized flag is true)
       store.ensureLoaded()
-      
+
       // Wait for any pending promises to resolve
       await Promise.resolve()
-      
+
       expect(mockGet).not.toHaveBeenCalled()
     })
-    
+
     it('does not call getAll when statuses are not empty', async () => {
       // Manually set statuses
       store.registerStatuses = mockRegisterStatuses
-      
+
       store.ensureLoaded()
-      
+
       // Wait for any pending promises to resolve
       await Promise.resolve()
-      
+
       expect(mockGet).not.toHaveBeenCalled()
     })
-    
+
     it('does not call getAll when already loading', async () => {
       // Set loading state
       store.loading = true
-      
+
       store.ensureLoaded()
-      
+
       // Wait for any pending promises to resolve
       await Promise.resolve()
-      
+
       expect(mockGet).not.toHaveBeenCalled()
     })
   })

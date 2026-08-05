@@ -1,8 +1,12 @@
 <script setup>
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
+import FieldError from '@/components/FieldError.vue'
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
+import { focusFirstInvalidField } from '@/helpers/form.validation.helpers.js'
+import { reportFormError } from '@/helpers/error.helpers.js'
 import router from '@/router'
 import { Form, Field } from 'vee-validate'
 import * as Yup from 'yup'
@@ -15,7 +19,13 @@ import { useCompaniesStore } from '@/stores/companies.store.js'
 import { useAirportsStore } from '@/stores/airports.store.js'
 import { useWarehousesStore } from '@/stores/warehouses.store.js'
 import { useRegisterStatusesStore } from '@/stores/register.statuses.store.js'
-import { WBR_COMPANY_ID, WBR2_REGISTER_ID, WBRN_REGISTER_ID, GTC_COMPANY_ID, OZON_COMPANY_ID } from '@/helpers/company.constants.js'
+import {
+  WBR_COMPANY_ID,
+  WBR2_REGISTER_ID,
+  WBRN_REGISTER_ID,
+  GTC_COMPANY_ID,
+  OZON_COMPANY_ID
+} from '@/helpers/company.constants.js'
 import { getCompanyDisplayName } from '@/helpers/register.display.helpers.js'
 import ActionButton from '@/components/ActionButton.vue'
 import ActionDialog from '@/l2/ActionDialog.vue'
@@ -113,12 +123,13 @@ function cancelCurrencySelection() {
   finishCurrencySelection(null)
 }
 
-// Id = 1 --> Code = 10 (Экспорт) 
+// Id = 1 --> Code = 10 (Экспорт)
 const isExport = ref(true)
 const isRe = ref(false)
 const procedureCodeLoaded = ref(false)
 const isComponentMounted = ref(true)
 const isInitializing = ref(true)
+const registerLoadFailed = ref(false)
 const isSubmitting = ref(false)
 const checkForDuplicates = ref(true)
 const originalCustomsProcedureCode = ref(null)
@@ -129,28 +140,35 @@ const isRegisterStatusEdited = ref(false)
 const readOnly = computed(() => !props.create && item.value?.readOnly === true)
 
 const airportOptions = computed(() => (Array.isArray(airports.value) ? airports.value : []))
-const selectedCustomsProcedureCode = computed(() => parseNumber(item.value?.customsProcedureCode, null))
+const selectedCustomsProcedureCode = computed(() =>
+  parseNumber(item.value?.customsProcedureCode, null)
+)
 const selectedWarehouseId = computed(() => parseNumber(item.value?.warehouseId, 0))
-const isReturnProcedureSelected = computed(() => isReturnProcedureCode(selectedCustomsProcedureCode.value))
+const isReturnProcedureSelected = computed(() =>
+  isReturnProcedureCode(selectedCustomsProcedureCode.value)
+)
 const hasEffectiveWarehouse = computed(() => selectedWarehouseId.value > 0)
-const shouldShowEditDuplicateCheck = computed(
-  () => hasProcedureChangedToNonReturn(selectedCustomsProcedureCode.value)
+const shouldShowEditDuplicateCheck = computed(() =>
+  hasProcedureChangedToNonReturn(selectedCustomsProcedureCode.value)
 )
 const warehouseOptions = computed(() => {
   const available = Array.isArray(warehouses.value) ? warehouses.value : []
-  return isReturnProcedureSelected.value
-    ? available
-    : [{ id: 0, name: 'Не задано' }, ...available]
+  return isReturnProcedureSelected.value ? available : [{ id: 0, name: 'Не задано' }, ...available]
 })
 const isWbr2Register = computed(() => item.value?.registerType === WBR2_REGISTER_ID)
 const isWbrNRegister = computed(() => item.value?.registerType === WBRN_REGISTER_ID)
 const isWbrRegister = computed(() => item.value?.registerType === WBR_COMPANY_ID)
 const isOzonRegister = computed(() => item.value?.registerType === OZON_COMPANY_ID)
-const isWarehouseCapableRegister = computed(() => isWbrRegister.value || isWbr2Register.value || isWbrNRegister.value || isOzonRegister.value)
+const isWarehouseCapableRegister = computed(
+  () => isWbrRegister.value || isWbr2Register.value || isWbrNRegister.value || isOzonRegister.value
+)
 const isGtcRegister = computed(() => item.value?.registerType === GTC_COMPANY_ID)
 const selectedCustomsProcedure = computed(() => {
   const procedureCode = selectedCustomsProcedureCode.value
-  return ops.value?.customsProcedures?.find((procedure) => Number(procedure.value) === procedureCode) || null
+  return (
+    ops.value?.customsProcedures?.find((procedure) => Number(procedure.value) === procedureCode) ||
+    null
+  )
 })
 const fixedCompanyId = computed(() => {
   if (isOzonRegister.value && selectedCustomsProcedure.value?.isGtc) {
@@ -162,16 +180,19 @@ const fixedCompanyId = computed(() => {
   return item.value?.registerType || item.value?.companyId || null
 })
 const loadReport = computed(() => item.value?.loadReport ?? null)
-const canViewLoadReport = computed(() => Boolean(unref(authStore.isAdmin) || unref(authStore.isShiftLead)))
+const canViewLoadReport = computed(() =>
+  Boolean(unref(authStore.isAdmin) || unref(authStore.isShiftLead))
+)
 const hasLoadReport = computed(() => canViewLoadReport.value && Boolean(loadReport.value))
-const loadReportToggleIcon = computed(() => (
+const loadReportToggleIcon = computed(() =>
   isLoadReportExpanded.value ? 'fa-solid fa-angles-up' : 'fa-solid fa-angles-down'
-))
-const loadReportToggleTooltip = computed(() => (
+)
+const loadReportToggleTooltip = computed(() =>
   isLoadReportExpanded.value ? 'Скрыть отчет загрузки' : 'Показать отчет загрузки'
-))
+)
 const uploadDateDisplay = computed(() => formatDate(item.value?.date))
-const realWeightValidationMessage = 'Фактический вес к оформлению должен быть больше 0. Если взвешивание не проводилось, оставьте поле пустым.'
+const realWeightValidationMessage =
+  'Фактический вес к оформлению должен быть больше 0. Если взвешивание не проводилось, оставьте поле пустым.'
 
 watch(
   () => item.value?.warehouseArrivalDate,
@@ -238,9 +259,7 @@ function formatRealWeightInputValue(fieldValue) {
 
 function handleRealWeightInput(event, handleChange) {
   isRealWeightEdited.value = true
-  const value = event.target.value === ''
-    ? null
-    : normalizeDecimalSeparator(event.target.value)
+  const value = event.target.value === '' ? null : normalizeDecimalSeparator(event.target.value)
   if (value !== null) {
     event.target.value = value
   }
@@ -369,10 +388,10 @@ function handleTransportationTypeChange(e, setFieldValue, handleChange) {
   if (handleChange && typeof handleChange === 'function') {
     handleChange(currentTransportationTypeId.value)
   }
-  
+
   // Handle airport field updates based on transportation type
   const type = getTransportationTypeByValue(currentTransportationTypeId.value)
-  
+
   if (!type?.isAvia) {
     // Clear form fields only (not item.value) when switching to non-aviation transport
     if (setFieldValue && typeof setFieldValue === 'function') {
@@ -436,51 +455,63 @@ watch([loadReport, canViewLoadReport], ([report, canViewReport]) => {
   }
 })
 
-    if (!props.create) {
-      await registersStore.getById(props.id)
-      // Ensure lookupByArticle has a default value if not set
-      if (item.value.lookupByArticle === undefined || item.value.lookupByArticle === null) {
-        item.value.lookupByArticle = false
-      }
-      if (item.value.warehouseId === undefined || item.value.warehouseId === null) {
-        item.value.warehouseId = 0
-      }
-      originalCustomsProcedureCode.value = parseNumber(item.value.customsProcedureCode, null)
-      ensureDefaultOtherCountry()
-    } else {
-      // Set default values for new records
-      ensureDefaultCustomsProcedure()
-      if (item.value.transportationTypeCode == null) {
-        item.value.transportationTypeCode = getDefaultTransportationTypeCode()
-      }
-      if (item.value.departureAirportId === undefined || item.value.departureAirportId === null) {
-        item.value.departureAirportId = 0
-      }
-      if (item.value.arrivalAirportId === undefined || item.value.arrivalAirportId === null) {
-        item.value.arrivalAirportId = 0
-      }
-      if (item.value.lookupByArticle === undefined || item.value.lookupByArticle === null) {
-        item.value.lookupByArticle = false
-      }
-      if (item.value.checkForDuplicates === undefined || item.value.checkForDuplicates === null) {
-        item.value.checkForDuplicates = true
-      }
-      if (item.value.warehouseId === undefined || item.value.warehouseId === null) {
-        item.value.warehouseId = 0
-      }
-      originalCustomsProcedureCode.value = null
-      ensureDefaultOtherCountry()
-      ensureDefaultRegisterStatus()
+async function loadRegister() {
+  registerLoadFailed.value = false
+  try {
+    await registersStore.getById(props.id)
+    if (item.value.lookupByArticle === undefined || item.value.lookupByArticle === null) {
+      item.value.lookupByArticle = false
     }
+    if (item.value.warehouseId === undefined || item.value.warehouseId === null) {
+      item.value.warehouseId = 0
+    }
+    originalCustomsProcedureCode.value = parseNumber(item.value.customsProcedureCode, null)
+    ensureDefaultOtherCountry()
+  } catch (error) {
+    registerLoadFailed.value = true
+    alertStore.error(error, {
+      fallback: `Не удалось загрузить ${registerNouns.value.accusative}`,
+      action: { label: 'Повторить', handler: loadRegister }
+    })
+  }
+}
 
+if (!props.create) {
+  await loadRegister()
+} else {
+  // Set default values for new records
+  ensureDefaultCustomsProcedure()
+  if (item.value.transportationTypeCode == null) {
+    item.value.transportationTypeCode = getDefaultTransportationTypeCode()
+  }
+  if (item.value.departureAirportId === undefined || item.value.departureAirportId === null) {
+    item.value.departureAirportId = 0
+  }
+  if (item.value.arrivalAirportId === undefined || item.value.arrivalAirportId === null) {
+    item.value.arrivalAirportId = 0
+  }
+  if (item.value.lookupByArticle === undefined || item.value.lookupByArticle === null) {
+    item.value.lookupByArticle = false
+  }
+  if (item.value.checkForDuplicates === undefined || item.value.checkForDuplicates === null) {
+    item.value.checkForDuplicates = true
+  }
+  if (item.value.warehouseId === undefined || item.value.warehouseId === null) {
+    item.value.warehouseId = 0
+  }
+  originalCustomsProcedureCode.value = null
+  ensureDefaultOtherCountry()
+  ensureDefaultRegisterStatus()
+}
 
-onMounted(async () => {
+async function initializeDependencies() {
+  isInitializing.value = true
   try {
     if (!isComponentMounted.value) return
-    
+
     await countriesStore.ensureLoaded()
     if (!isComponentMounted.value) return
-    
+
     await registersStore.ensureOpsLoaded()
     if (!isComponentMounted.value) return
 
@@ -504,15 +535,19 @@ onMounted(async () => {
     }
   } catch (error) {
     if (isComponentMounted.value) {
-      alertStore.error('Не удалось инициализировать компоненту: ' + (error?.message || String(error)))
-      registersStore.error = error?.message || 'Ошибка при загрузке данных'
+      alertStore.error(error, {
+        fallback: 'Не удалось загрузить данные формы',
+        action: { label: 'Повторить', handler: initializeDependencies }
+      })
     }
   } finally {
     if (isComponentMounted.value) {
       isInitializing.value = false
     }
   }
-})
+}
+
+onMounted(initializeDependencies)
 
 onUnmounted(() => {
   isComponentMounted.value = false
@@ -551,15 +586,14 @@ const schema = Yup.object().shape({
     .transform(parseNumberOrZero)
     .min(0)
     .nullable()
-    .test(
-      'return-warehouse-required',
-      'Склад обязателен для процедуры возврата',
-      function (value) {
-        const procedureCode = parseNumber(this?.parent?.customsProcedureCode ?? item.value?.customsProcedureCode, null)
-        const warehouseId = parseNumber(value ?? item.value?.warehouseId, 0)
-        return !isReturnProcedureCode(procedureCode) || warehouseId > 0
-      }
-    ),
+    .test('return-warehouse-required', 'Склад обязателен для процедуры возврата', function (value) {
+      const procedureCode = parseNumber(
+        this?.parent?.customsProcedureCode ?? item.value?.customsProcedureCode,
+        null
+      )
+      const warehouseId = parseNumber(value ?? item.value?.warehouseId, 0)
+      return !isReturnProcedureCode(procedureCode) || warehouseId > 0
+    }),
   realWeightKg: Yup.number()
     .transform((value, originalValue) => parseNullableDecimal(originalValue))
     .typeError(realWeightValidationMessage)
@@ -571,16 +605,18 @@ const schema = Yup.object().shape({
 
 // This computed property only checks if procedures are loaded and if we have a valid procedure
 const shouldUpdateExportStatus = computed(() => {
-  return Array.isArray(ops.value?.customsProcedures) && 
-         ops.value.customsProcedures.length > 0 && 
-         !procedureCodeLoaded.value
+  return (
+    Array.isArray(ops.value?.customsProcedures) &&
+    ops.value.customsProcedures.length > 0 &&
+    !procedureCodeLoaded.value
+  )
 })
 
 // Function to update export status based on the procedure
 function updateExportStatusFromProc() {
   if (Array.isArray(ops.value?.customsProcedures) && ops.value.customsProcedures.length > 0) {
     const procedureCode = getCustomsProcedureCodeOrDefault(item.value?.customsProcedureCode)
-    const proc = ops.value.customsProcedures.find(p => Number(p.value) === procedureCode)
+    const proc = ops.value.customsProcedures.find((p) => Number(p.value) === procedureCode)
     if (proc) {
       isExport.value = proc.isExport
       isRe.value = proc.isRe || false
@@ -597,16 +633,16 @@ watch(shouldUpdateExportStatus, (shouldUpdate) => {
   }
 })
 
-const proceduresLoaded = computed(
-  () => filteredCustomsProcedures.value.length > 0
-)
+const proceduresLoaded = computed(() => filteredCustomsProcedures.value.length > 0)
 
 const typesLoaded = computed(
   () => Array.isArray(ops.value?.transportationTypes) && ops.value.transportationTypes.length > 0
 )
 
 const registerStatusesLoaded = computed(
-  () => Array.isArray(registerStatusesStore.registerStatuses) && registerStatusesStore.registerStatuses.length > 0
+  () =>
+    Array.isArray(registerStatusesStore.registerStatuses) &&
+    registerStatusesStore.registerStatuses.length > 0
 )
 
 function updateDirection() {
@@ -670,9 +706,10 @@ function handleProcedureChange(e, setFieldValue, handleChange) {
   if (handleChange && typeof handleChange === 'function') {
     handleChange(procedureCode)
   }
-  const proc = procedureCode === null
-    ? null
-    : ops.value?.customsProcedures?.find((p) => Number(p.value) === procedureCode)
+  const proc =
+    procedureCode === null
+      ? null
+      : ops.value?.customsProcedures?.find((p) => Number(p.value) === procedureCode)
   isExport.value = Boolean(proc?.isExport)
   isRe.value = Boolean(proc?.isRe)
   if (hasProcedureChangedToNonReturn(procedureCode)) {
@@ -696,7 +733,10 @@ function getFieldOrItemValue(fieldValue, itemValue) {
 }
 
 function getTransportationTypeFieldValue(fieldValue) {
-  const value = parseNumber(getFieldOrItemValue(fieldValue, item.value?.transportationTypeCode), null)
+  const value = parseNumber(
+    getFieldOrItemValue(fieldValue, item.value?.transportationTypeCode),
+    null
+  )
   return value === null ? '' : value
 }
 
@@ -752,11 +792,13 @@ function isReturnProcedureCode(value) {
 
 function hasProcedureChangedToNonReturn(procedureCode) {
   const parsedProcedureCode = parseNumber(procedureCode, null)
-  return !props.create &&
+  return (
+    !props.create &&
     originalCustomsProcedureCode.value !== null &&
     parsedProcedureCode !== null &&
     parsedProcedureCode !== originalCustomsProcedureCode.value &&
     !isReturnProcedureCode(parsedProcedureCode)
+  )
 }
 
 function parseDecimal(value, defaultValue) {
@@ -805,7 +847,9 @@ function prepareRegisterPayload(formValues) {
   )
 
   // Handle boolean checkbox value
-  payload.lookupByArticle = Boolean(formValues.lookupByArticle ?? item.value?.lookupByArticle ?? false)
+  payload.lookupByArticle = Boolean(
+    formValues.lookupByArticle ?? item.value?.lookupByArticle ?? false
+  )
 
   const isAviaSelected =
     selectedTransportationTypeId !== null &&
@@ -818,19 +862,26 @@ function prepareRegisterPayload(formValues) {
     ? parseNumberOrZero(null, formValues.arrivalAirportId ?? item.value?.arrivalAirportId)
     : 0
   payload.warehouseId = parseNumber(formValues.warehouseId ?? item.value?.warehouseId, 0)
-  payload.statusId = parseNumber(getFieldOrItemValue(formValues.statusId, item.value?.statusId), null)
-  payload.warehouseArrivalDate = formValues.warehouseArrivalDate ?? item.value?.warehouseArrivalDate ?? null
+  payload.statusId = parseNumber(
+    getFieldOrItemValue(formValues.statusId, item.value?.statusId),
+    null
+  )
+  payload.warehouseArrivalDate =
+    formValues.warehouseArrivalDate ?? item.value?.warehouseArrivalDate ?? null
   payload.realWeightKg = parseRealWeightPayloadValue(formValues.realWeightKg)
   if (hasProcedureChangedToNonReturn(payload.customsProcedureCode)) {
     payload.checkForDuplicates = Boolean(
-      formValues.checkForDuplicates ?? item.value?.checkForDuplicates ?? checkForDuplicates.value ?? true
+      formValues.checkForDuplicates ??
+        item.value?.checkForDuplicates ??
+        checkForDuplicates.value ??
+        true
     )
   }
 
   return payload
 }
 
-async function onSubmit(values) {
+async function onSubmit(values, { setErrors } = {}) {
   if (!isComponentMounted.value) return
   if (readOnly.value && !unref(authStore.isAdmin)) return
 
@@ -844,80 +895,86 @@ async function onSubmit(values) {
   const payload = prepareRegisterPayload(values)
 
   try {
-    if (props.create) {
-      showActionDialog('upload-register')
-      try {
-        const uploadArgs = [
-          uploadFile.value,
-          item.value.registerType,
-          payload.customsProcedureCode,
-          Boolean(values.checkForDuplicates ?? checkForDuplicates.value ?? false),
-          Boolean(isRe.value && values.transfer2Re)
-        ]
-        let selectedCurrency = null
-        let result
-
-        while (true) {
-          result = selectedCurrency
-            ? await registersStore.upload(...uploadArgs, selectedCurrency)
-            : await registersStore.upload(...uploadArgs)
-
-          if (!isComponentMounted.value) return
-          if (!result?.requiresCurrencySelection) break
-
-          const availableCurrencies = Array.isArray(result.availableCurrencies)
-            ? result.availableCurrencies
-            : []
-          if (availableCurrencies.length < 2) break
-
-          selectedCurrency = await requestCurrencySelection(availableCurrencies)
-          if (!selectedCurrency || !isComponentMounted.value) return
-          showActionDialog('upload-register')
-        }
-
-        if (!isComponentMounted.value) return
-        if (result?.success) {
-          try {
-            await registersStore.update(result.registerId, payload)
-          } catch (updateError) {
-            if (isComponentMounted.value) {
-              hideActionDialog()
-              await showErrorAndAwaitClose(`Ошибка при сохранении информации о ${registerNouns.value.prepositional}`, updateError?.message )
-            }
-          }
-        } else {
-          if (isComponentMounted.value) {
-            await showErrorAndAwaitClose(
-              `Ошибка загрузки файла ${registerNouns.value.genitiveSingular}`,  
-              result?.errMsg,
-              result?.missingHeaders || [],
-              result?.missingColumns || []
-            )
-          }
-        }
-        return 
-      } catch (uploadError) {
-        // Handle upload failures with modal message box
-        if (isComponentMounted.value) {
-          await showErrorAndAwaitClose(`Ошибка загрузки файла ${registerNouns.value.genitiveSingular}`,  uploadError?.message )
-        }
-        return // Exit early, don't continue with normal error handling
-      }
-    } else {
+    if (!props.create) {
       await registersStore.update(props.id, payload)
+      if (isComponentMounted.value) await router.push(returnUrl.value)
+      return
     }
-  } catch (updateError) {
-    if (isComponentMounted.value) {
-       await showErrorAndAwaitClose(`Ошибка при сохранении информации о ${registerNouns.value.prepositional}`, updateError?.message )
+
+    showActionDialog('upload-register')
+    const uploadArgs = [
+      uploadFile.value,
+      item.value.registerType,
+      payload.customsProcedureCode,
+      Boolean(values.checkForDuplicates ?? checkForDuplicates.value ?? false),
+      Boolean(isRe.value && values.transfer2Re)
+    ]
+    let selectedCurrency = null
+    let result
+
+    while (true) {
+      result = selectedCurrency
+        ? await registersStore.upload(...uploadArgs, selectedCurrency)
+        : await registersStore.upload(...uploadArgs)
+
+      if (!isComponentMounted.value) return
+      if (!result?.requiresCurrencySelection) break
+
+      const availableCurrencies = Array.isArray(result.availableCurrencies)
+        ? result.availableCurrencies
+        : []
+      if (availableCurrencies.length < 2) break
+
+      selectedCurrency = await requestCurrencySelection(availableCurrencies)
+      if (!selectedCurrency || !isComponentMounted.value) return
+      showActionDialog('upload-register')
+    }
+
+    if (!result?.success) {
+      await showErrorAndAwaitClose(
+        `Ошибка загрузки файла ${registerNouns.value.genitiveSingular}`,
+        result?.errMsg,
+        result?.missingHeaders || [],
+        result?.missingColumns || []
+      )
+      return
+    }
+
+    try {
+      await registersStore.update(result.registerId, payload)
+    } catch (updateError) {
+      await showErrorAndAwaitClose(
+        `${registerNouns.value.singular} создан, но информация сохранена не полностью`,
+        updateError?.message ||
+          `Откройте созданный ${registerNouns.value.accusative} и повторите сохранение.`
+      )
+      if (isComponentMounted.value) {
+        await router.push(`/register/edit/${result.registerId}?mode=${props.mode}`)
+      }
+      return
+    }
+
+    if (isComponentMounted.value) await router.push(returnUrl.value)
+  } catch (error) {
+    if (!isComponentMounted.value) return
+
+    if (props.create) {
+      await showErrorAndAwaitClose(
+        `Ошибка загрузки файла ${registerNouns.value.genitiveSingular}`,
+        error?.message
+      )
+    } else {
+      reportFormError(error, {
+        setErrors,
+        alertStore,
+        fallback: `Ошибка при сохранении информации о ${registerNouns.value.prepositional}`
+      })
     }
   } finally {
     hideActionDialog()
-    // Always reset submitting state
     isSubmitting.value = false
-    await router.push(returnUrl.value)
   }
 }
-
 
 // Helper: show the error dialog and wait until it's closed by the user
 async function showErrorAndAwaitClose(title, message, missingHeaders = [], missingColumns = []) {
@@ -934,15 +991,17 @@ async function showErrorAndAwaitClose(title, message, missingHeaders = [], missi
 
   // Wait until dialog is closed (watch for show -> false)
   await new Promise((resolve) => {
-    const unwatch = watch(() => errorDialogState.value.show, (newShow) => {
-      if (!newShow) {
-        unwatch()
-        resolve()
+    const unwatch = watch(
+      () => errorDialogState.value.show,
+      (newShow) => {
+        if (!newShow) {
+          unwatch()
+          resolve()
+        }
       }
-    })
+    )
   })
 }
-
 
 function getCustomerName(customerId) {
   return getCompanyDisplayName(companies.value, customerId)
@@ -981,17 +1040,15 @@ function formatReportCounter(value) {
   }
 
   const numericValue = Number(value)
-  return Number.isFinite(numericValue)
-    ? numericValue.toLocaleString('ru-RU')
-    : String(value)
+  return Number.isFinite(numericValue) ? numericValue.toLocaleString('ru-RU') : String(value)
 }
 
 function formatReportDuplicates(report) {
   const duplicates = formatReportCounter(report.duplicates)
   if (
-    report.duplicate2ColorRejections === null
-    || report.duplicate2ColorRejections === undefined
-    || Number(report.duplicate2ColorRejections) === -1
+    report.duplicate2ColorRejections === null ||
+    report.duplicate2ColorRejections === undefined ||
+    Number(report.duplicate2ColorRejections) === -1
   ) {
     return duplicates
   }
@@ -1010,22 +1067,37 @@ const loadReportFields = computed(() => {
   return [
     { key: 'processed', label: 'Обработано строк', value: formatReportCounter(report.processed) },
     { key: 'failed', label: 'Ошибочных строк', value: formatReportCounter(report.failed) },
-    { key: 'skippedByCurrency', label: 'Пропущено по валюте', value: formatReportCounter(report.skippedByCurrency) },
-    { key: 'markedByPartner', label: 'Исключено партнёром', value: formatReportCounter(report.markedByPartner) },
-    { key: 'markedForExcise', label: 'Согласовано с акцизом', value: formatReportCounter(report.markedForExcise) },
-    { key: 'markedForNotifications', label: 'Согласовано с нотификацией', value: formatReportCounter(report.markedForNotifications) },
+    {
+      key: 'skippedByCurrency',
+      label: 'Пропущено по валюте',
+      value: formatReportCounter(report.skippedByCurrency)
+    },
+    {
+      key: 'markedByPartner',
+      label: 'Исключено партнёром',
+      value: formatReportCounter(report.markedByPartner)
+    },
+    {
+      key: 'markedForExcise',
+      label: 'Согласовано с акцизом',
+      value: formatReportCounter(report.markedForExcise)
+    },
+    {
+      key: 'markedForNotifications',
+      label: 'Согласовано с нотификацией',
+      value: formatReportCounter(report.markedForNotifications)
+    },
     { key: 'duplicates', label: 'Дубликатов', value: formatReportDuplicates(report) },
     { key: 'updated', label: 'С предшествующими', value: formatReportCounter(report.updated) },
     { key: 'createdAt', label: 'Время загрузки', value: formatTime(report.createdAt) || '—' }
   ]
 })
-
 </script>
 
 <template>
   <div class="settings form-3x form-compact">
-   
     <Form
+      @invalid-submit="focusFirstInvalidField"
       @submit="onSubmit"
       :initial-values="item"
       :validation-schema="schema"
@@ -1034,44 +1106,54 @@ const loadReportFields = computed(() => {
       <div class="header-with-actions">
         <h1 class="primary-heading">
           {{ getTitle() }}
-      </h1>
-      <!-- Action buttons moved inside Form scope -->
-      <div class="header-actions">
-        <ActionButton 
-          :item="{}" 
-          icon="fa-solid fa-check-double" 
-          :iconSize="'2x'"
-          tooltip-text="Сохранить"
-          :disabled="isSubmitting || (readOnly && !authStore.isAdmin)"
-          @click="handleSubmit(onSubmit)"
-        />
-        <ActionButton 
-          :item="{}" 
-          icon="fa-solid fa-xmark" 
-          :iconSize="'2x'"
-          tooltip-text="Отменить"
-          :disabled="isSubmitting"
-          @click="router.push(returnUrl)"
-        />
+        </h1>
+        <!-- Action buttons moved inside Form scope -->
+        <div class="header-actions">
+          <ActionButton
+            :item="{}"
+            icon="fa-solid fa-check-double"
+            :iconSize="'2x'"
+            tooltip-text="Сохранить"
+            :disabled="
+              isSubmitting ||
+              isInitializing ||
+              registerLoadFailed ||
+              (readOnly && !authStore.isAdmin)
+            "
+            @click="handleSubmit(onSubmit)"
+          />
+          <ActionButton
+            :item="{}"
+            icon="fa-solid fa-xmark"
+            :iconSize="'2x'"
+            tooltip-text="Отменить"
+            :disabled="isSubmitting"
+            @click="router.push(returnUrl)"
+          />
+        </div>
       </div>
-    </div>
-    
-    <hr class="hr" />
+
+      <hr class="hr" />
+
+      <PageAlertRegion />
       <div class="form-section">
         <div v-if="readOnly" class="alert alert-warning register-read-only-notice">
-          Изменения запрещены. Реестр доступен только для просмотра. Возможно изменение статуса пользователем с правами администратора.
+          Изменения запрещены. Реестр доступен только для просмотра. Возможно изменение статуса
+          пользователем с правами администратора.
         </div>
-        <h2
-          v-if="!props.create"
-          class="section-title"
-          data-testid="register-deal-section-title"
-        >
+        <h2 v-if="!props.create" class="section-title" data-testid="register-deal-section-title">
           Сделка
         </h2>
         <div class="form-row">
           <div class="form-group">
             <label for="dealNumber" class="label">Номер сделки:</label>
-            <Field name="dealNumber" id="dealNumber" type="text" class="form-control input" :disabled="readOnly" />
+            <Field
+              name="dealNumber"
+              id="dealNumber"
+              type="text"
+              class="form-control input"
+              :disabled="readOnly"
+            />
           </div>
           <div class="form-group">
             <label for="statusId" class="label">Статус:</label>
@@ -1093,289 +1175,305 @@ const loadReportFields = computed(() => {
           </div>
         </div>
 
-        <fieldset class="register-fields-fieldset" :disabled="readOnly">
-        <div class="form-row">
-          <div class="form-group">
-            <label for="invoiceNumber" class="label">Номер накладной:</label>
-            <Field 
-              name="invoiceNumber" 
-              id="invoiceNumber" 
-              type="text" 
-              class="form-control input" 
-              :class="{ 'is-invalid': errors.invoiceNumber }"
-            />
-          </div>
-          <div class="form-group">
-            <label for="invoiceDate" class="label">Дата накладной:</label>
-            <Field 
-              name="invoiceDate" 
-              id="invoiceDate" 
-              type="date" 
-              class="form-control input" 
-              :class="{ 'is-invalid': errors.invoiceDate }"
-            />
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label class="label" for="theOtherCompanyId">Отправитель:</label>
-            <template v-if="!isExport">
+        <fieldset
+          class="register-fields-fieldset"
+          :disabled="readOnly || isInitializing || registerLoadFailed"
+        >
+          <div class="form-row">
+            <div class="form-group">
+              <label for="invoiceNumber" class="label">Номер накладной:</label>
               <Field
-                as="select"
-                name="theOtherCompanyId"
-                id="theOtherCompanyId"
+                name="invoiceNumber"
+                id="invoiceNumber"
+                type="text"
                 class="form-control input"
-              >
-                <option value="">Выберите компанию</option>
-                <option v-for="c in companies" :key="c.id" :value="c.id">{{ c.shortName }}</option>
-              </Field>
-            </template>
-            <div v-else class="readonly-field">{{ getCustomerName(item.companyId) }}</div>
-          </div>
-          <div class="form-group">
-            <label class="label" for="theOtherCountryCode">Страна отправления:</label>
-            <template v-if="!isExport">
+                :class="{ 'is-invalid': errors.invoiceNumber }"
+              />
+              <FieldError name="invoiceNumber" :errors="errors" />
+            </div>
+            <div class="form-group">
+              <label for="invoiceDate" class="label">Дата накладной:</label>
               <Field
-                as="select"
-                name="theOtherCountryCode"
-                id="theOtherCountryCode"
-                class="form-control input"
-                :class="{ 'is-invalid': errors.theOtherCountryCode }"
-              >
-                <option value="">Выберите страну</option>
-                <option v-for="c in countries" :key="c.id" :value="c.isoNumeric">
-                  {{ c.nameRuOfficial }}
-                </option>
-              </Field>
-            </template>
-            <div v-else class="readonly-field">Россия</div>
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label class="label" for="theOtherCompanyId">Получатель:</label>
-            <template v-if="isExport">
-              <Field
-                as="select"
-                name="theOtherCompanyId"
-                id="theOtherCompanyId"
-                class="form-control input"
-              >
-                <option value="">Выберите компанию</option>
-                <option v-for="c in companies" :key="c.id" :value="c.id">{{ c.shortName }}</option>
-              </Field>
-            </template>
-            <div v-else class="readonly-field">{{ getCustomerName(item.companyId) }}</div>
-          </div>
-          <div class="form-group">
-            <label class="label" for="theOtherCountryCode">Страна назначения:</label>
-            <template v-if="isExport">
-              <Field
-                as="select"
-                name="theOtherCountryCode"
-                id="theOtherCountryCode"
-                class="form-control input"
-                :class="{ 'is-invalid': errors.theOtherCountryCode }"
-              >
-                <option v-for="c in countries" :key="c.id" :value="c.isoNumeric">
-                  {{ c.nameRuOfficial }}
-                </option>
-              </Field>
-            </template>
-            <div v-else class="readonly-field">Россия</div>
-          </div>
-        </div>
-
-        <div class="form-row">
-          <AirportSelectField
-            label="Аэропорт отправления:"
-            name="departureAirportId"
-            :airports="airportOptions"
-            :disabled="!isAviaTransportation"
-          />
-          <AirportSelectField
-            label="Аэропорт назначения:"
-            name="arrivalAirportId"
-            :airports="airportOptions"
-            :disabled="!isAviaTransportation"
-          />
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label for="transportationTypeCode" class="label">Транспорт:</label>
-            <Field name="transportationTypeCode" v-slot="{ field, handleChange }">
-              <select
-                id="transportationTypeCode"
-                class="form-control input"
-                :disabled="!typesLoaded"
-                :value="getTransportationTypeFieldValue(field?.value)"
-                @change="(e) => handleTransportationTypeChange(e, setFieldValue, handleChange)"
-              >
-                <option value="">Выберите тип</option>
-                <option v-for="t in ops.transportationTypes" :key="t.value" :value="t.value">
-                  {{ t.name }}
-                </option>
-              </select>
-            </Field>
-          </div>
-          <div class="form-group">
-            <label for="customsProcedureCode" class="label">Процедура:</label>
-            <Field name="customsProcedureCode" v-slot="{ field, handleChange }">
-              <select
-                id="customsProcedureCode"
-                class="form-control input"
-                :disabled="!proceduresLoaded"
-                :value="getCustomsProcedureFieldValue(field?.value)"
-                @change="(e) => handleProcedureChange(e, setFieldValue, handleChange)"
-              >
-                <option v-for="p in filteredCustomsProcedures" :key="p.value" :value="p.value">
-                  {{ p.name }}
-                </option>
-              </select>
-            </Field>
-          </div>
-        </div>
-
-        <div class="form-row" v-if="isWarehouseCapableRegister">
-          <div class="form-group">
-            <label for="warehouseId" class="label">Склад:</label>
-            <Field
-              as="select"
-              name="warehouseId"
-              id="warehouseId"
-              class="form-control input"
-              :class="{ 'is-invalid': errors.warehouseId }"
-              @change="handleWarehouseChange"
-            >
-              <option v-for="warehouse in warehouseOptions" :key="warehouse.id" :value="warehouse.id">
-                {{ warehouse.name }}
-              </option>
-            </Field>
-          </div>
-          <div class="form-group">
-            <label for="warehouseArrivalDate" class="label">Дата прибытия:</label>
-            <Field name="warehouseArrivalDate" v-slot="{ field, handleChange }">
-              <input
-                id="warehouseArrivalDate"
+                name="invoiceDate"
+                id="invoiceDate"
                 type="date"
                 class="form-control input"
-                :value="formatWarehouseArrivalDateInputValue(field?.value)"
-                @input="(event) => handleWarehouseArrivalDateInput(event, handleChange)"
+                :class="{ 'is-invalid': errors.invoiceDate }"
               />
-            </Field>
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <span class="label">Файл:</span>
-            <div id="fileName" class="readonly-field">{{ item.fileName }}</div>
-          </div>
-          <div class="form-group">
-            <span class="label">Дата загрузки:</span>
-            <div id="uploadDate" class="readonly-field">{{ uploadDateDisplay }}</div>
-          </div>
-        </div>
-
-        <div class="form-row" v-if="props.create || shouldShowEditDuplicateCheck">
-          <div class="form-group">
-            <label for="checkForDuplicates" class="custom-checkbox">
-              <Field
-                id="checkForDuplicates"
-                type="checkbox"
-                name="checkForDuplicates"
-                :value="true"
-                :unchecked-value="false"
-                class="custom-checkbox-input"
-              />
-              <span class="custom-checkbox-box"></span>
-              <span class="label custom-checkbox-label">Проверить на дубликаты</span>
-            </label>
+              <FieldError name="invoiceDate" :errors="errors" />
+            </div>
           </div>
 
-          <div class="form-group" v-if="props.create && props.mode === OP_MODE_PAPERWORK">
-            <label for="transfer2Re" class="custom-checkbox" :class="{ 'disabled': !isRe }">
-              <Field
-                id="transfer2Re"
-                type="checkbox"
-                name="transfer2Re"
-                :value="true"
-                :unchecked-value="false"
-                class="custom-checkbox-input"
-                :disabled="!isRe"
-              />
-              <span class="custom-checkbox-box"></span>
-              <span class="label custom-checkbox-label">Для реимпорта и реэкспорта использовать предшествующие данные</span>
-            </label>
-          </div>
-        </div>
-       
-        <div class="form-row" v-if="!props.create && props.mode === OP_MODE_PAPERWORK">
-          <div class="form-group">
-            <label class="custom-checkbox">
-              <Field
-                id="lookupByArticle"
-                type="checkbox"
-                name="lookupByArticle"
-                :value="true"
-                :unchecked-value="false"
-                class="custom-checkbox-input"
-              />
-              <span class="custom-checkbox-box"></span>
-              <span class="label custom-checkbox-label">Использовать для подбора кода ТН ВЭД и анализа стоп-слов</span>
-            </label>
-          </div>
-        </div>
-
-        <div
-          v-if="!props.create"
-          class="weight-section"
-          data-testid="register-weight-section"
-        >
-          <div class="weight-section-header">
-            <h2 class="section-title weight-section-title">Вес</h2>
-          </div>
-          <Field name="realWeightKg" v-slot="{ field, handleChange }">
-            <div class="form-row weight-grid">
-              <div class="form-group weight-field">
-                <span class="label">Общий вес, кг:</span>
-                <div class="readonly-field weight-value">{{ formatNumberValue(item.totalWeightKg) }}</div>
-              </div>
-              <div class="form-group weight-field">
-                <span class="label">К оформлению, кг:</span>
-                <div class="readonly-field weight-value">{{ formatNumberValue(item.totalWeightKgToRelease) }}</div>
-              </div>
-              <div class="form-group weight-field">
-                <label for="realWeightKg" class="label">Фактический к оформлению:</label>
-                <input
-                  id="realWeightKg"
-                  type="text"
+          <div class="form-row">
+            <div class="form-group">
+              <label class="label" for="theOtherCompanyId">Отправитель:</label>
+              <template v-if="!isExport">
+                <Field
+                  as="select"
+                  name="theOtherCompanyId"
+                  id="theOtherCompanyId"
                   class="form-control input"
-                  :class="{ 'is-invalid': errors.realWeightKg }"
-                  inputmode="decimal"
-                  :value="formatRealWeightInputValue(field?.value)"
-                  @input="(event) => handleRealWeightInput(event, handleChange)"
+                >
+                  <option value="">Выберите компанию</option>
+                  <option v-for="c in companies" :key="c.id" :value="c.id">
+                    {{ c.shortName }}
+                  </option>
+                </Field>
+              </template>
+              <div v-else class="readonly-field">{{ getCustomerName(item.companyId) }}</div>
+            </div>
+            <div class="form-group">
+              <label class="label" for="theOtherCountryCode">Страна отправления:</label>
+              <template v-if="!isExport">
+                <Field
+                  as="select"
+                  name="theOtherCountryCode"
+                  id="theOtherCountryCode"
+                  class="form-control input"
+                  :class="{ 'is-invalid': errors.theOtherCountryCode }"
+                >
+                  <option value="">Выберите страну</option>
+                  <option v-for="c in countries" :key="c.id" :value="c.isoNumeric">
+                    {{ c.nameRuOfficial }}
+                  </option>
+                </Field>
+                <FieldError name="theOtherCountryCode" :errors="errors" />
+              </template>
+              <div v-else class="readonly-field">Россия</div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="label" for="theOtherCompanyId">Получатель:</label>
+              <template v-if="isExport">
+                <Field
+                  as="select"
+                  name="theOtherCompanyId"
+                  id="theOtherCompanyId"
+                  class="form-control input"
+                >
+                  <option value="">Выберите компанию</option>
+                  <option v-for="c in companies" :key="c.id" :value="c.id">
+                    {{ c.shortName }}
+                  </option>
+                </Field>
+              </template>
+              <div v-else class="readonly-field">{{ getCustomerName(item.companyId) }}</div>
+            </div>
+            <div class="form-group">
+              <label class="label" for="theOtherCountryCode">Страна назначения:</label>
+              <template v-if="isExport">
+                <Field
+                  as="select"
+                  name="theOtherCountryCode"
+                  id="theOtherCountryCode"
+                  class="form-control input"
+                  :class="{ 'is-invalid': errors.theOtherCountryCode }"
+                >
+                  <option v-for="c in countries" :key="c.id" :value="c.isoNumeric">
+                    {{ c.nameRuOfficial }}
+                  </option>
+                </Field>
+              </template>
+              <div v-else class="readonly-field">Россия</div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <AirportSelectField
+              label="Аэропорт отправления:"
+              name="departureAirportId"
+              :airports="airportOptions"
+              :disabled="!isAviaTransportation"
+            />
+            <AirportSelectField
+              label="Аэропорт назначения:"
+              name="arrivalAirportId"
+              :airports="airportOptions"
+              :disabled="!isAviaTransportation"
+            />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="transportationTypeCode" class="label">Транспорт:</label>
+              <Field name="transportationTypeCode" v-slot="{ field, handleChange }">
+                <select
+                  id="transportationTypeCode"
+                  class="form-control input"
+                  :disabled="!typesLoaded"
+                  :value="getTransportationTypeFieldValue(field?.value)"
+                  @change="(e) => handleTransportationTypeChange(e, setFieldValue, handleChange)"
+                >
+                  <option value="">Выберите тип</option>
+                  <option v-for="t in ops.transportationTypes" :key="t.value" :value="t.value">
+                    {{ t.name }}
+                  </option>
+                </select>
+              </Field>
+            </div>
+            <div class="form-group">
+              <label for="customsProcedureCode" class="label">Процедура:</label>
+              <Field name="customsProcedureCode" v-slot="{ field, handleChange }">
+                <select
+                  id="customsProcedureCode"
+                  class="form-control input"
+                  :disabled="!proceduresLoaded"
+                  :value="getCustomsProcedureFieldValue(field?.value)"
+                  @change="(e) => handleProcedureChange(e, setFieldValue, handleChange)"
+                >
+                  <option v-for="p in filteredCustomsProcedures" :key="p.value" :value="p.value">
+                    {{ p.name }}
+                  </option>
+                </select>
+              </Field>
+            </div>
+          </div>
+
+          <div class="form-row" v-if="isWarehouseCapableRegister">
+            <div class="form-group">
+              <label for="warehouseId" class="label">Склад:</label>
+              <Field
+                as="select"
+                name="warehouseId"
+                id="warehouseId"
+                class="form-control input"
+                :class="{ 'is-invalid': errors.warehouseId }"
+                @change="handleWarehouseChange"
+              >
+                <option
+                  v-for="warehouse in warehouseOptions"
+                  :key="warehouse.id"
+                  :value="warehouse.id"
+                >
+                  {{ warehouse.name }}
+                </option>
+              </Field>
+              <FieldError name="warehouseId" :errors="errors" />
+            </div>
+            <div class="form-group">
+              <label for="warehouseArrivalDate" class="label">Дата прибытия:</label>
+              <Field name="warehouseArrivalDate" v-slot="{ field, handleChange }">
+                <input
+                  id="warehouseArrivalDate"
+                  type="date"
+                  class="form-control input"
+                  :value="formatWarehouseArrivalDateInputValue(field?.value)"
+                  @input="(event) => handleWarehouseArrivalDateInput(event, handleChange)"
                 />
-              </div>
-              <div class="form-group weight-field">
-                <span class="label">Поправочный коэффициент:</span>
-                <div class="readonly-field weight-value">
-                  {{ formatCorrectionCoefficient(field?.value) }}
+              </Field>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <span class="label">Файл:</span>
+              <div id="fileName" class="readonly-field">{{ item.fileName }}</div>
+            </div>
+            <div class="form-group">
+              <span class="label">Дата загрузки:</span>
+              <div id="uploadDate" class="readonly-field">{{ uploadDateDisplay }}</div>
+            </div>
+          </div>
+
+          <div class="form-row" v-if="props.create || shouldShowEditDuplicateCheck">
+            <div class="form-group">
+              <label for="checkForDuplicates" class="custom-checkbox">
+                <Field
+                  id="checkForDuplicates"
+                  type="checkbox"
+                  name="checkForDuplicates"
+                  :value="true"
+                  :unchecked-value="false"
+                  class="custom-checkbox-input"
+                />
+                <span class="custom-checkbox-box"></span>
+                <span class="label custom-checkbox-label">Проверить на дубликаты</span>
+              </label>
+            </div>
+
+            <div class="form-group" v-if="props.create && props.mode === OP_MODE_PAPERWORK">
+              <label for="transfer2Re" class="custom-checkbox" :class="{ disabled: !isRe }">
+                <Field
+                  id="transfer2Re"
+                  type="checkbox"
+                  name="transfer2Re"
+                  :value="true"
+                  :unchecked-value="false"
+                  class="custom-checkbox-input"
+                  :disabled="!isRe"
+                />
+                <span class="custom-checkbox-box"></span>
+                <span class="label custom-checkbox-label"
+                  >Для реимпорта и реэкспорта использовать предшествующие данные</span
+                >
+              </label>
+            </div>
+          </div>
+
+          <div class="form-row" v-if="!props.create && props.mode === OP_MODE_PAPERWORK">
+            <div class="form-group">
+              <label class="custom-checkbox">
+                <Field
+                  id="lookupByArticle"
+                  type="checkbox"
+                  name="lookupByArticle"
+                  :value="true"
+                  :unchecked-value="false"
+                  class="custom-checkbox-input"
+                />
+                <span class="custom-checkbox-box"></span>
+                <span class="label custom-checkbox-label"
+                  >Использовать для подбора кода ТН ВЭД и анализа стоп-слов</span
+                >
+              </label>
+            </div>
+          </div>
+
+          <div v-if="!props.create" class="weight-section" data-testid="register-weight-section">
+            <div class="weight-section-header">
+              <h2 class="section-title weight-section-title">Вес</h2>
+            </div>
+            <Field name="realWeightKg" v-slot="{ field, handleChange }">
+              <div class="form-row weight-grid">
+                <div class="form-group weight-field">
+                  <span class="label">Общий вес, кг:</span>
+                  <div class="readonly-field weight-value">
+                    {{ formatNumberValue(item.totalWeightKg) }}
+                  </div>
+                </div>
+                <div class="form-group weight-field">
+                  <span class="label">К оформлению, кг:</span>
+                  <div class="readonly-field weight-value">
+                    {{ formatNumberValue(item.totalWeightKgToRelease) }}
+                  </div>
+                </div>
+                <div class="form-group weight-field">
+                  <label for="realWeightKg" class="label">Фактический к оформлению:</label>
+                  <input
+                    id="realWeightKg"
+                    type="text"
+                    class="form-control input"
+                    :class="{ 'is-invalid': errors.realWeightKg }"
+                    inputmode="decimal"
+                    :value="formatRealWeightInputValue(field?.value)"
+                    @input="(event) => handleRealWeightInput(event, handleChange)"
+                  />
+                </div>
+                <div class="form-group weight-field">
+                  <span class="label">Поправочный коэффициент:</span>
+                  <div class="readonly-field weight-value">
+                    {{ formatCorrectionCoefficient(field?.value) }}
+                  </div>
                 </div>
               </div>
-            </div>
-          </Field>
-        </div>
+            </Field>
+            <FieldError name="realWeightKg" :errors="errors" />
+          </div>
         </fieldset>
 
-        <div
-          v-if="hasLoadReport"
-          class="load-report-section"
-          data-testid="register-load-report"
-        >
+        <div v-if="hasLoadReport" class="load-report-section" data-testid="register-load-report">
           <div class="load-report-header">
             <h2 class="section-title load-report-title">Отчёт о загрузке файла реестра</h2>
             <ActionButton
@@ -1407,31 +1505,26 @@ const loadReportFields = computed(() => {
       </div>
 
       <!-- actions moved to header -->
-      <div class="form-actions" style="display: none;">
+      <div class="form-actions" style="display: none">
         <button class="button primary" type="submit" :disabled="isSubmitting">
           <span v-show="isSubmitting" class="spinner-border spinner-border-sm mr-1"></span>
           <font-awesome-icon size="1x" icon="fa-solid fa-check-double" class="mr-1" />
           {{ getButton() }}
         </button>
-        <button class="button secondary" type="button" @click="router.push(returnUrl)" :disabled="isSubmitting">
+        <button
+          class="button secondary"
+          type="button"
+          @click="router.push(returnUrl)"
+          :disabled="isSubmitting"
+        >
           <font-awesome-icon size="1x" icon="fa-solid fa-xmark" class="mr-1" />
           Отменить
         </button>
       </div>
-      <div v-if="errors.apiError" class="alert alert-danger mt-3 mb-0">{{ errors.apiError }}</div>
-      <div v-if="errors.invoiceNumber" class="alert alert-danger mt-3 mb-0">{{ errors.invoiceNumber }}</div>
-      <div v-if="errors.invoiceDate" class="alert alert-danger mt-3 mb-0">{{ errors.invoiceDate }}</div>
-      <div v-if="errors.theOtherCountryCode" class="alert alert-danger mt-3 mb-0">{{ errors.theOtherCountryCode }}</div>
-      <div v-if="errors.warehouseId" class="alert alert-danger mt-3 mb-0">{{ errors.warehouseId }}</div>
-      <div v-if="errors.realWeightKg" class="alert alert-danger mt-3 mb-0">{{ errors.realWeightKg }}</div>
     </Form>
     <div v-if="item?.loading" class="text-center m-5">
       <span class="spinner-border spinner-border-lg align-center"></span>
     </div>
-    <div v-if="item?.error" class="text-center m-5">
-      <div class="text-danger">Ошибка при загрузке {{ registerNouns.genitiveSingular }}: {{ item.error }}</div>
-    </div>
-
     <ActionDialog :action-dialog="actionDialogState" />
     <RegisterCurrencySelectionDialog
       :show="currencySelectionDialogState.show"
@@ -1439,7 +1532,7 @@ const loadReportFields = computed(() => {
       @select="selectCurrency"
       @cancel="cancelCurrencySelection"
     />
-    <ErrorDialog 
+    <ErrorDialog
       :show="errorDialogState.show"
       :title="errorDialogState.title"
       :message="errorDialogState.message"
@@ -1467,14 +1560,14 @@ const loadReportFields = computed(() => {
   gap: 0.25rem;
   flex-shrink: 0;
   white-space: nowrap;
-  
+
   /* Control panel styling */
   background: #ffffff;
   border: 1px solid #74777c;
   border-radius: 0.5rem;
   padding: 0.5rem;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.1);
-  
+
   /* Ensure it flows below heading on narrow screens */
   min-width: min-content;
 }
@@ -1495,12 +1588,12 @@ const loadReportFields = computed(() => {
   margin: 0;
   flex: 1;
   min-width: 0; /* Allow shrinking */
-  
+
   /* Ellipsis on overflow */
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  
+
   /* Ensure it takes available space but can shrink */
   max-width: calc(100% - 300px); /* Reserve space for buttons */
 }
@@ -1553,12 +1646,12 @@ const loadReportFields = computed(() => {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .primary-heading {
     max-width: 100%;
     margin-bottom: 0.5rem;
   }
-  
+
   .header-actions {
     align-self: flex-end;
   }
@@ -1718,11 +1811,11 @@ const loadReportFields = computed(() => {
   background-color: #ccc;
 }
 
-#fileName.readonly-field { 
-  overflow: hidden; 
-  text-overflow: ellipsis; 
-  white-space: nowrap; 
-  display: block; 
-  max-width: 100%; 
+#fileName.readonly-field {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+  max-width: 100%;
 }
 </style>

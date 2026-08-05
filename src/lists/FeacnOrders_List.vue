@@ -1,8 +1,9 @@
 <script setup>
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { onMounted, watch, computed, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useFeacnOrdersStore } from '@/stores/feacn.orders.store.js'
@@ -11,13 +12,13 @@ import { useAlertStore } from '@/stores/alert.store.js'
 import ActionButton from '@/components/ActionButton.vue'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
+import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
 
 const feacnStore = useFeacnOrdersStore()
 const alertStore = useAlertStore()
 const authStore = useAuthStore()
 
 const { orders, prefixes, loading } = storeToRefs(feacnStore)
-const { alert } = storeToRefs(alertStore)
 const runningAction = ref(false)
 const {
   feacnorders_search,
@@ -32,6 +33,13 @@ const {
 } = storeToRefs(authStore)
 
 // Always keep selectedOrderId in sync with visible orders
+async function loadPrefixes(orderId) {
+  if (!orderId) return null
+  return runWithRetryAlert(() => feacnStore.getPrefixes(orderId), {
+    fallback: 'Не удалось загрузить префиксы порядка'
+  })
+}
+
 watch(
   () => orders.value,
   async (newOrders) => {
@@ -39,12 +47,12 @@ watch(
       selectedOrderId.value = null
     } else {
       // Only update selectedOrderId if current value is invalid or not set
-      if (!selectedOrderId.value || !newOrders.some(o => o.id === selectedOrderId.value)) {
-        const firstEnabled = newOrders.find(o => o.enabledForExport || o.enabledForImport)
+      if (!selectedOrderId.value || !newOrders.some((o) => o.id === selectedOrderId.value)) {
+        const firstEnabled = newOrders.find((o) => o.enabledForExport || o.enabledForImport)
         const newSelectedId = firstEnabled ? firstEnabled.id : newOrders[0].id
         selectedOrderId.value = newSelectedId
         // Update prefixes when new order is selected
-        if (newSelectedId) await feacnStore.getPrefixes(newSelectedId)
+        if (newSelectedId) await loadPrefixes(newSelectedId)
       }
     }
   },
@@ -53,30 +61,36 @@ watch(
 
 // When selectedOrderId changes, load prefixes
 watch(selectedOrderId, async (id) => {
-  if (id) await feacnStore.getPrefixes(id)
+  if (id) await loadPrefixes(id)
 })
 
-onMounted(async () => {
+async function loadOrders() {
   await feacnStore.ensureLoaded()
   if (orders.value?.length > 0) {
     // Only set selectedOrderId if it's not already set or if the persisted value is invalid
-    if (!selectedOrderId.value || !orders.value.some(o => o.id === selectedOrderId.value)) {
-      const firstEnabled = orders.value.find(o => o.enabledForExport || o.enabledForImport)
+    if (!selectedOrderId.value || !orders.value.some((o) => o.id === selectedOrderId.value)) {
+      const firstEnabled = orders.value.find((o) => o.enabledForExport || o.enabledForImport)
       const newSelectedId = firstEnabled ? firstEnabled.id : orders.value[0].id
       selectedOrderId.value = newSelectedId
     }
     // Always load prefixes for the current selectedOrderId (whether persisted or newly set)
     if (selectedOrderId.value) {
-      await feacnStore.getPrefixes(selectedOrderId.value)
+      await loadPrefixes(selectedOrderId.value)
     }
   }
-})
+}
+
+onMounted(() =>
+  runWithRetryAlert(loadOrders, {
+    fallback: 'Не удалось загрузить порядки кодов ТН ВЭД'
+  })
+)
 
 async function updateCodes() {
   if (runningAction.value) return
   runningAction.value = true
   try {
-    await feacnStore.update()  // This already reloads orders automatically
+    await feacnStore.update() // This already reloads orders automatically
     if (selectedOrderId.value) {
       await feacnStore.getPrefixes(selectedOrderId.value)
     }
@@ -91,10 +105,7 @@ function filterOrders(value, query, item) {
   if (!query) return true
   const q = query.toString().toUpperCase()
   const i = item.raw
-  return (
-    i.title.toUpperCase().includes(q) ||
-    (i.url || '').toUpperCase().includes(q)
-  )
+  return i.title.toUpperCase().includes(q) || (i.url || '').toUpperCase().includes(q)
 }
 
 function filterPrefixes(value, query, item) {
@@ -110,9 +121,9 @@ function filterPrefixes(value, query, item) {
 }
 
 const prefixItems = computed(() =>
-  prefixes.value.map(p => ({
+  prefixes.value.map((p) => ({
     ...p,
-    exceptions: p.exceptions.map(e => e.code).join(', ')
+    exceptions: p.exceptions.map((e) => e.code).join(', ')
   }))
 )
 
@@ -172,6 +183,8 @@ async function handleToggleOrderEnabledForImport(order) {
     </div>
     <hr class="hr" />
 
+    <PageAlertRegion />
+
     <div>
       <v-text-field
         v-model="authStore.feacnorders_search"
@@ -194,11 +207,21 @@ async function handleToggleOrderEnabledForImport(order) {
         class="elevation-1 interlaced-table"
         fixed-header
         hide-default-footer
-        :row-props="(data) => ({ class: data.item.id === selectedOrderId ? 'selected-order-row' : '' })"
-        @click:row="(event, { item }) => { selectedOrderId = item.id }"
+        :row-props="
+          (data) => ({ class: data.item.id === selectedOrderId ? 'selected-order-row' : '' })
+        "
+        @click:row="
+          (event, { item }) => {
+            selectedOrderId = item.id
+          }
+        "
       >
-        <template  #[`item.enabledForExport`]="{ item }">
-          <v-tooltip :text="item.enabledForExport ? 'Не использовать для экспорта' : 'Использовать для экспорта'">
+        <template #[`item.enabledForExport`]="{ item }">
+          <v-tooltip
+            :text="
+              item.enabledForExport ? 'Не использовать для экспорта' : 'Использовать для экспорта'
+            "
+          >
             <template v-slot:activator="{ props }">
               <button
                 type="button"
@@ -218,8 +241,12 @@ async function handleToggleOrderEnabledForImport(order) {
             </template>
           </v-tooltip>
         </template>
-        <template  #[`item.enabledForImport`]="{ item }">
-          <v-tooltip :text="item.enabledForImport ? 'Не использовать для импорта' : 'Использовать для импорта'">
+        <template #[`item.enabledForImport`]="{ item }">
+          <v-tooltip
+            :text="
+              item.enabledForImport ? 'Не использовать для импорта' : 'Использовать для импорта'
+            "
+          >
             <template v-slot:activator="{ props }">
               <button
                 type="button"
@@ -240,7 +267,13 @@ async function handleToggleOrderEnabledForImport(order) {
           </v-tooltip>
         </template>
         <template #[`item.url`]="{ item }">
-          <a v-if="item.url" :href="item.url" target="_blank" rel="noopener noreferrer" class="product-link">
+          <a
+            v-if="item.url"
+            :href="item.url"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="product-link"
+          >
             {{ item.url }}
           </a>
           <span v-else>-</span>
@@ -282,10 +315,6 @@ async function handleToggleOrderEnabledForImport(order) {
         </template>
       </v-data-table>
     </v-card>
-    <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
-      <button @click="alertStore.clear()" class="btn btn-link close">×</button>
-      {{ alert.message }}
-    </div>
   </div>
 </template>
 

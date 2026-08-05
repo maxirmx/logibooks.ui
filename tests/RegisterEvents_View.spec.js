@@ -17,6 +17,8 @@ vi.mock('@/dialogs/RegisterEvents_Settings.vue', () => ({
 describe('RegisterEvents_View.vue', () => {
   it('renders settings dialog wrapper', () => {
     const wrapper = mount(RegisterEventsView)
-    expect(wrapper.find('[data-testid="register-events-processing-settings-stub"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="register-events-processing-settings-stub"]').exists()).toBe(
+      true
+    )
   })
 })

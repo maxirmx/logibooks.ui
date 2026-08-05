@@ -1,8 +1,9 @@
 <script setup>
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
@@ -13,6 +14,7 @@ import { useAlertStore } from '@/stores/alert.store.js'
 import { useConfirm } from 'vuetify-use-dialog'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
+import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
 
 const parcelStatusesStore = useParcelStatusesStore()
 const authStore = useAuthStore()
@@ -20,7 +22,6 @@ const alertStore = useAlertStore()
 const confirm = useConfirm()
 
 const { parcelStatuses, loading } = storeToRefs(parcelStatusesStore)
-const { alert } = storeToRefs(alertStore)
 const runningAction = ref(false)
 
 // Custom filter function for v-data-table
@@ -42,7 +43,9 @@ function filterParcelStatuses(value, query, item) {
 
 // Table headers
 const headers = [
-  ...(authStore.isSrLogistPlus ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '10%' }] : []),
+  ...(authStore.isSrLogistPlus
+    ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '10%' }]
+    : []),
   { title: 'Название статуса', key: 'title', sortable: true },
   { title: 'Таможенное оформление', key: 'useAtCustomsProcessing', sortable: true },
   { title: 'Цвет при выгрузке', align: 'center', key: 'bkColor', sortable: false },
@@ -93,9 +96,11 @@ async function deleteParcelStatus(parcelStatus) {
 }
 
 // Initialize data
-onMounted(async () => {
-  await parcelStatusesStore.getAll()
-})
+onMounted(() =>
+  runWithRetryAlert(() => parcelStatusesStore.getAll(), {
+    fallback: 'Не удалось загрузить статусы посылок'
+  })
+)
 
 // Expose functions for testing
 defineExpose({
@@ -127,6 +132,8 @@ defineExpose({
     </div>
 
     <hr class="hr" />
+
+    <PageAlertRegion />
 
     <div>
       <v-text-field
@@ -194,10 +201,6 @@ defineExpose({
     </v-card>
 
     <!-- Alert -->
-    <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
-      <button @click="alertStore.clear()" class="btn btn-link close">×</button>
-      {{ alert.message }}
-    </div>
   </div>
 </template>
 

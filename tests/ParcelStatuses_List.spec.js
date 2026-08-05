@@ -1,7 +1,7 @@
 /* @vitest-environment jsdom */
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
@@ -33,8 +33,20 @@ vi.mock('vuetify-use-dialog', () => ({
 
 // Centralized mock data
 const mockParcelStatuses = ref([
-  { id: 1, title: 'Черновик', useAtCustomsProcessing: true, bkColor: '#112233', restrictionReason: 'Стоп-слово' },
-  { id: 2, title: 'Подтвержден', useAtCustomsProcessing: false, bkColor: '#445566', restrictionReason: 'Запрет' },
+  {
+    id: 1,
+    title: 'Черновик',
+    useAtCustomsProcessing: true,
+    bkColor: '#112233',
+    restrictionReason: 'Стоп-слово'
+  },
+  {
+    id: 2,
+    title: 'Подтвержден',
+    useAtCustomsProcessing: false,
+    bkColor: '#445566',
+    restrictionReason: 'Запрет'
+  },
   { id: 3, title: 'Выполнен', useAtCustomsProcessing: false, bkColor: null, restrictionReason: '' }
 ])
 
@@ -104,9 +116,27 @@ describe('ParcelStatuses_List.vue', () => {
 
     // Reset reactive data
     mockParcelStatuses.value = [
-      { id: 1, title: 'Черновик', useAtCustomsProcessing: true, bkColor: '#112233', restrictionReason: 'Стоп-слово' },
-      { id: 2, title: 'Подтвержден', useAtCustomsProcessing: false, bkColor: '#445566', restrictionReason: 'Запрет' },
-      { id: 3, title: 'Выполнен', useAtCustomsProcessing: false, bkColor: null, restrictionReason: '' }
+      {
+        id: 1,
+        title: 'Черновик',
+        useAtCustomsProcessing: true,
+        bkColor: '#112233',
+        restrictionReason: 'Стоп-слово'
+      },
+      {
+        id: 2,
+        title: 'Подтвержден',
+        useAtCustomsProcessing: false,
+        bkColor: '#445566',
+        restrictionReason: 'Запрет'
+      },
+      {
+        id: 3,
+        title: 'Выполнен',
+        useAtCustomsProcessing: false,
+        bkColor: null,
+        restrictionReason: ''
+      }
     ]
 
     wrapper = mount(ParcelStatusesList, {
@@ -123,7 +153,6 @@ describe('ParcelStatuses_List.vue', () => {
   })
 
   describe('Data Display', () => {
-
     it('shows empty table when no order statuses', async () => {
       mockParcelStatuses.value = []
       await wrapper.vm.$nextTick()
@@ -131,11 +160,9 @@ describe('ParcelStatuses_List.vue', () => {
       const dataTable = wrapper.find('[data-testid="v-data-table"]')
       expect(dataTable.exists()).toBe(true)
     })
-
   })
 
   describe('Admin Actions', () => {
-
     it('calls openCreateDialog and navigates to create page', async () => {
       await wrapper.vm.openCreateDialog()
       expect(mockPush).toHaveBeenCalledWith('/parcelstatus/create')
@@ -154,8 +181,7 @@ describe('ParcelStatuses_List.vue', () => {
     it('shows confirmation dialog when delete is clicked', async () => {
       mockConfirm.mockResolvedValue(true)
 
-      const deleteButton = wrapper.find('button[title*="delete"]') ||
-                           wrapper.find('.anti-btn')
+      const deleteButton = wrapper.find('button[title*="delete"]') || wrapper.find('.anti-btn')
 
       if (deleteButton.exists()) {
         await deleteButton.trigger('click')
@@ -217,7 +243,6 @@ describe('ParcelStatuses_List.vue', () => {
       const result = wrapper.vm.filterParcelStatuses(null, 'подтвержден', mockItem)
       expect(result).toBe(true)
     })
-
 
     it('filters parcel statuses by restriction reason', () => {
       const mockItem = { raw: { title: 'Черновик', restrictionReason: 'Стоп-слово' } }
@@ -283,7 +308,6 @@ describe('ParcelStatuses_List.vue', () => {
       expect(wrapper.vm.headers).toBeDefined()
       expect(wrapper.vm.filterParcelStatuses).toBeDefined()
     })
-
   })
 
   describe('Store Integration', () => {
@@ -297,8 +321,8 @@ describe('ParcelStatuses_List.vue', () => {
       expect(wrapper.vm.authStore).toBeDefined()
     })
 
-    it('properly integrates with alert store', () => {
-      expect(wrapper.vm.alert).toBeDefined()
+    it('properly integrates with the notification store', () => {
+      expect(wrapper.vm.alertStore).toBeDefined()
     })
   })
 })

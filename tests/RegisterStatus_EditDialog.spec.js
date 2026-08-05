@@ -1,7 +1,7 @@
 /* @vitest-environment jsdom */
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
@@ -29,7 +29,9 @@ const mockRegisterStatusesStore = createMockStore({
 })
 
 const mockAlertStore = createMockStore({
-  success: vi.fn()
+  success: vi.fn(),
+  error: vi.fn(),
+  alert: null
 })
 
 const mockAuthStore = {
@@ -55,14 +57,18 @@ vi.mock('@/router', () => ({
   }
 }))
 
-vi.mock('pinia', () => ({
-  storeToRefs: (store) => {
-    if (store.registerStatus !== undefined) {
-      return { registerStatus: ref(store.registerStatus) }
+vi.mock('pinia', async () => {
+  const actual = await vi.importActual('pinia')
+  return {
+    ...actual,
+    storeToRefs: (store) => {
+      if (store.registerStatus !== undefined) {
+        return { registerStatus: ref(store.registerStatus) }
+      }
+      return {}
     }
-    return {}
   }
-}))
+})
 
 // Mock vee-validate with proper form submission handling
 vi.mock('vee-validate', () => ({
@@ -141,7 +147,7 @@ const AsyncWrapper = {
 function findActionButton(wrapper, icon) {
   return wrapper
     .findAllComponents({ name: 'ActionButton' })
-    .find(button => button.props('icon') === icon)
+    .find((button) => button.props('icon') === icon)
 }
 
 // Import router after mocking
@@ -158,7 +164,6 @@ beforeEach(async () => {
   mockRegisterStatusesStore.loading = false
   mockRegisterStatusesStore.error = null
   mockAlertStore.loading = false
-  mockAlertStore.error = null
   mockAuthStore.isAdmin = true
 })
 
@@ -176,7 +181,9 @@ describe('RegisterStatus_EditDialog.vue', () => {
 
       expect(wrapper.find('h1').text()).toBe('Создание статуса партии')
       expect(wrapper.find('[data-testid="register-status-header-actions"]').exists()).toBe(true)
-      expect(findActionButton(wrapper, 'fa-solid fa-check-double').props('tooltipText')).toBe('Создать')
+      expect(findActionButton(wrapper, 'fa-solid fa-check-double').props('tooltipText')).toBe(
+        'Создать'
+      )
       expect(findActionButton(wrapper, 'fa-solid fa-xmark').props('tooltipText')).toBe('Отменить')
       expect(wrapper.find('button[type="submit"]').exists()).toBe(false)
       expect(mockRegisterStatusesStore.getById).not.toHaveBeenCalled()
@@ -193,10 +200,10 @@ describe('RegisterStatus_EditDialog.vue', () => {
       await resolveAll()
 
       expect(wrapper.find('h1').text()).toBe('Редактирование статуса партии')
-      expect(findActionButton(wrapper, 'fa-solid fa-check-double').props('tooltipText')).toBe('Сохранить')
+      expect(findActionButton(wrapper, 'fa-solid fa-check-double').props('tooltipText')).toBe(
+        'Сохранить'
+      )
     })
-
-
 
     it('uses the project styled checkbox for read-only status', async () => {
       const wrapper = mount(AsyncWrapper, {
@@ -212,7 +219,9 @@ describe('RegisterStatus_EditDialog.vue', () => {
       expect(checkbox.attributes('type')).toBe('checkbox')
       expect(checkbox.classes()).toContain('checkbox')
       expect(checkbox.classes()).toContain('checkbox-styled')
-      expect(wrapper.get('.status-settings-label[for="readOnly"]').text()).toBe('Изменения запрещены:')
+      expect(wrapper.get('.status-settings-label[for="readOnly"]').text()).toBe(
+        'Изменения запрещены:'
+      )
       expect(wrapper.get('.checkbox-styled + label').attributes('aria-hidden')).toBe('true')
     })
 
@@ -252,7 +261,9 @@ describe('RegisterStatus_EditDialog.vue', () => {
 
       expect(wrapper.find('#bkColor').element.value).toBe('#ffffff')
       expect(wrapper.find('#fgColor').element.value).toBe('#000000')
-      expect(wrapper.find('.status-icon-option.selected').attributes('aria-label')).toBe('svg:registered')
+      expect(wrapper.find('.status-icon-option.selected').attributes('aria-label')).toBe(
+        'svg:registered'
+      )
       expect(wrapper.find('.status-icon-option.selected').attributes('title')).toBeUndefined()
     })
 
@@ -271,8 +282,12 @@ describe('RegisterStatus_EditDialog.vue', () => {
 
       expect(mockRegisterStatusesStore.registerStatus.bkColor).toBe('#123456')
       expect(mockRegisterStatusesStore.registerStatus.fgColor).toBe('#abcdef')
-      expect(wrapper.find('[data-testid="bk-color-swatch"]').attributes('style')).toContain('background-color: rgb(18, 52, 86)')
-      expect(wrapper.find('[data-testid="fg-color-swatch"]').attributes('style')).toContain('background-color: rgb(171, 205, 239)')
+      expect(wrapper.find('[data-testid="bk-color-swatch"]').attributes('style')).toContain(
+        'background-color: rgb(18, 52, 86)'
+      )
+      expect(wrapper.find('[data-testid="fg-color-swatch"]').attributes('style')).toContain(
+        'background-color: rgb(171, 205, 239)'
+      )
     })
 
     it('selects a Font Awesome status icon from the visual icon selector', async () => {
@@ -285,16 +300,18 @@ describe('RegisterStatus_EditDialog.vue', () => {
 
       await resolveAll()
 
-      const option = wrapper.findAll('.status-icon-option').find(button =>
-        button.attributes('aria-label') === 'fa-solid fa-plane-departure'
-      )
+      const option = wrapper
+        .findAll('.status-icon-option')
+        .find((button) => button.attributes('aria-label') === 'fa-solid fa-plane-departure')
       expect(option.exists()).toBe(true)
       expect(option.attributes('title')).toBeUndefined()
       expect(option.text()).toBe('')
 
       await option.trigger('click')
 
-      expect(wrapper.find('.status-icon-option.selected').attributes('aria-label')).toBe('fa-solid fa-plane-departure')
+      expect(wrapper.find('.status-icon-option.selected').attributes('aria-label')).toBe(
+        'fa-solid fa-plane-departure'
+      )
     })
 
     it('rejects unsupported icon values in the validation schema', async () => {
@@ -308,12 +325,14 @@ describe('RegisterStatus_EditDialog.vue', () => {
       await resolveAll()
 
       const form = wrapper.findComponent({ name: 'Form' })
-      await expect(form.props('validationSchema').validate({
-        title: 'Новый',
-        icon: 'fa-solid fa-not-real',
-        bkColor: '#FFFFFF',
-        fgColor: '#000000'
-      })).rejects.toThrow('Выберите поддерживаемую иконку статуса')
+      await expect(
+        form.props('validationSchema').validate({
+          title: 'Новый',
+          icon: 'fa-solid fa-not-real',
+          bkColor: '#FFFFFF',
+          fgColor: '#000000'
+        })
+      ).rejects.toThrow('Выберите поддерживаемую иконку статуса')
     })
 
     it('shows loading fallback initially', async () => {
@@ -505,7 +524,9 @@ describe('RegisterStatus_EditDialog.vue', () => {
       await form.trigger('submit')
       await resolveAll()
 
-      expect(wrapper.text()).toContain('Ошибка при сохранении статуса партии')
+      expect(mockAlertStore.error).toHaveBeenCalledWith(error, {
+        fallback: 'Ошибка при сохранении статуса партии'
+      })
       expect(mockRouter.push).not.toHaveBeenCalled()
     })
 
@@ -546,8 +567,6 @@ describe('RegisterStatus_EditDialog.vue', () => {
   })
 
   describe('Props Validation', () => {
-
-
     it('handles missing registerStatusId in edit mode', async () => {
       const wrapper = mount(AsyncWrapper, {
         props: { mode: 'edit' },
@@ -560,8 +579,6 @@ describe('RegisterStatus_EditDialog.vue', () => {
       expect(wrapper.exists()).toBe(true)
     })
   })
-
-
 
   describe('Error Handling', () => {
     it('handles network errors gracefully during creation', async () => {
@@ -705,5 +722,4 @@ describe('RegisterStatus_EditDialog.vue', () => {
       expect(wrapper.exists()).toBe(true)
     })
   })
-
 })

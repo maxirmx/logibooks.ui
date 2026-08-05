@@ -24,12 +24,11 @@ export const useUnregisteredParcelsStore = defineStore('unregisteredParcels', ()
     } catch (err) {
       error.value = err
       items.value = []
-      return []
+      throw err
     } finally {
       loading.value = false
     }
   }
-
 
   function buildFilename(registerId, invoiceNumber) {
     const hasInvoiceNumber = typeof invoiceNumber === 'string' && invoiceNumber.trim() !== ''
@@ -45,10 +44,10 @@ export const useUnregisteredParcelsStore = defineStore('unregisteredParcels', ()
       return await fetchWrapper.downloadFile(`${baseUrl}/${registerId}/download`, filename)
     } catch (err) {
       error.value = err
+      throw err
     } finally {
       loading.value = false
     }
-    return null
   }
 
   return {

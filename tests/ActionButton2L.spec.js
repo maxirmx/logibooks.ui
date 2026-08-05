@@ -121,7 +121,11 @@ describe('ActionButton2L', () => {
     const items = wrapper.findAll('.action-button-2l__menu-item')
     const icons = wrapper.findAll('.action-button-2l__menu-icon')
 
-    expect(items.map(item => item.text())).toEqual(['Issue action', 'Excise action', 'Plain action'])
+    expect(items.map((item) => item.text())).toEqual([
+      'Issue action',
+      'Excise action',
+      'Plain action'
+    ])
     expect(icons).toHaveLength(2)
     expect(icons[0].attributes('data-icon')).toBe('fa-solid fa-person-circle-xmark')
     expect(icons[0].classes()).toContain('action-button-2l__menu-icon--parcel-has-issues')
@@ -144,9 +148,12 @@ describe('ActionButton2L', () => {
 
   it('disables menu interactions while action is executing', async () => {
     let resolveAction
-    options[0].action = vi.fn(() => new Promise(resolve => {
-      resolveAction = resolve
-    }))
+    options[0].action = vi.fn(
+      () =>
+        new Promise((resolve) => {
+          resolveAction = resolve
+        })
+    )
     const wrapper = createWrapper({ options })
 
     await wrapper.find('button').trigger('click')

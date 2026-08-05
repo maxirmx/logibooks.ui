@@ -30,7 +30,10 @@ vi.mock('@/stores/parcels.store.js', () => ({
   useParcelsStore: () => parcelsMock
 }))
 
-const ensureLoadedFactory = () => ({ ensureLoaded: vi.fn().mockResolvedValue(), add: vi.fn().mockResolvedValue() })
+const ensureLoadedFactory = () => ({
+  ensureLoaded: vi.fn().mockResolvedValue(),
+  add: vi.fn().mockResolvedValue()
+})
 const parcelStatusesMock = vi.hoisted(() => [])
 vi.mock('@/stores/parcel.statuses.store.js', () => ({
   useParcelStatusesStore: () => ({
@@ -40,9 +43,15 @@ vi.mock('@/stores/parcel.statuses.store.js', () => ({
 }))
 vi.mock('@/stores/stop.words.store.js', () => ({ useStopWordsStore: () => ensureLoadedFactory() }))
 vi.mock('@/stores/key.words.store.js', () => ({ useKeyWordsStore: () => ensureLoadedFactory() }))
-vi.mock('@/stores/feacn.orders.store.js', () => ({ useFeacnOrdersStore: () => ensureLoadedFactory() }))
-vi.mock('@/stores/feacn.prefixes.store.js', () => ({ useFeacnPrefixesStore: () => ensureLoadedFactory() }))
-vi.mock('@/stores/countries.store.js', () => ({ useCountriesStore: () => ({ ensureLoaded: vi.fn().mockResolvedValue(), countries: [] }) }))
+vi.mock('@/stores/feacn.orders.store.js', () => ({
+  useFeacnOrdersStore: () => ensureLoadedFactory()
+}))
+vi.mock('@/stores/feacn.prefixes.store.js', () => ({
+  useFeacnPrefixesStore: () => ensureLoadedFactory()
+}))
+vi.mock('@/stores/countries.store.js', () => ({
+  useCountriesStore: () => ({ ensureLoaded: vi.fn().mockResolvedValue(), countries: [] })
+}))
 const parcelViewsBack = vi.fn().mockResolvedValue(null)
 vi.mock('@/stores/parcel.views.store.js', () => ({
   useParcelViewsStore: () => ({ add: vi.fn().mockResolvedValue(), back: parcelViewsBack })
@@ -64,7 +73,9 @@ vi.mock('@/stores/registers.store.js', () => ({ useRegistersStore: () => registe
 const authMock = { selectedParcelId: null, isAdmin: ref(false), isSrLogistPlus: true }
 vi.mock('@/stores/auth.store.js', () => ({ useAuthStore: () => authMock }))
 const alertErrorMock = vi.fn()
-vi.mock('@/stores/alert.store.js', () => ({ useAlertStore: () => ({ alert: ref(null), error: alertErrorMock, clear: vi.fn() }) }))
+vi.mock('@/stores/alert.store.js', () => ({
+  useAlertStore: () => ({ alert: ref(null), error: alertErrorMock, clear: vi.fn() })
+}))
 
 vi.mock('@/components/ProductLinkWithActions.vue', () => ({
   default: { template: '<button data-test="view-btn" @click="$emit(\'view-image\')">View</button>' }
@@ -120,13 +131,18 @@ describe('WbrParcel_EditDialog image overlay', () => {
         stubs: {
           Field: { template: '<input />' },
           Form: {
-            template: '<div><slot :errors="{}" :values="{ id: 3 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
+            template:
+              '<div><slot :errors="{}" :values="{ id: 3 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
           },
           ParcelHeaderActionsBar: true,
           ParcelStatusSection: true,
           FeacnCodeEditor: true,
           ParcelNumberExt: true,
-          ActionButton: { props: ['item', 'disabled'], template: '<button v-bind="$attrs" :disabled="disabled" @click="$emit(\'click\', item)"><slot /></button>' },
+          ActionButton: {
+            props: ['item', 'disabled'],
+            template:
+              '<button v-bind="$attrs" :disabled="disabled" @click="$emit(\'click\', item)"><slot /></button>'
+          },
           'font-awesome-icon': true,
           VTooltip: true
         }
@@ -154,8 +170,9 @@ describe('WbrParcel_EditDialog image overlay', () => {
     await nextTick()
     expect(passportField.props('inputDisabled')).toBe(true)
     expect(passportField.props('checkDisabled')).toBe(true)
-    const recipientNameField = wrapper.findAllComponents({ name: 'WbrFormField' })
-      .find(field => field.props('name') === 'recipientName')
+    const recipientNameField = wrapper
+      .findAllComponents({ name: 'WbrFormField' })
+      .find((field) => field.props('name') === 'recipientName')
     expect(recipientNameField.props('disabled')).toBe(true)
 
     await wrapper.find('[data-test="view-btn"]').trigger('click')
@@ -173,7 +190,13 @@ describe('WbrParcel_EditDialog image overlay', () => {
 
   it('disables XML download action for customs-disabled parcel status', async () => {
     parcelStatusesMock.push({ id: 10, title: 'Disabled', useAtCustomsProcessing: false })
-    parcelsMock.item.value = { id: 3, statusId: 10, checkStatus: 0, productLink: 'http://example.com', hasImage: true }
+    parcelsMock.item.value = {
+      id: 3,
+      statusId: 10,
+      checkStatus: 0,
+      productLink: 'http://example.com',
+      hasImage: true
+    }
 
     const TestWrapper = {
       components: { WbrParcel_EditDialog },
@@ -185,7 +208,8 @@ describe('WbrParcel_EditDialog image overlay', () => {
         stubs: {
           Field: { template: '<input />' },
           Form: {
-            template: '<div><slot :errors="{}" :values="{ id: 3, statusId: 10 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
+            template:
+              '<div><slot :errors="{}" :values="{ id: 3, statusId: 10 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
           },
           ParcelHeaderActionsBar: true,
           ParcelStatusSection: true,
@@ -221,29 +245,33 @@ describe('WbrParcel_EditDialog image overlay', () => {
       `
     }
     const mountDialog = async () => {
-      const wrapper = mount({
-        components: { WbrParcel_EditDialog },
-        template: '<Suspense><WbrParcel_EditDialog :registerId="1" :id="3" /></Suspense>'
-      }, {
-        global: {
-          stubs: {
-            Field: { template: '<input />' },
-            Form: {
-              template: '<div><slot :errors="{}" :values="{ id: 3, statusId: 1 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
-            },
-            ParcelHeaderActionsBar: actionBarStub,
-            ParcelStatusSection: true,
-            FeacnCodeEditor: true,
-            ParcelNumberExt: true,
-            ParcelWeightAutoField: true,
-            WbrFormField: true,
-            ActionButton: true,
-            DTagSection: true,
-            'font-awesome-icon': true,
-            VTooltip: true
+      const wrapper = mount(
+        {
+          components: { WbrParcel_EditDialog },
+          template: '<Suspense><WbrParcel_EditDialog :registerId="1" :id="3" /></Suspense>'
+        },
+        {
+          global: {
+            stubs: {
+              Field: { template: '<input />' },
+              Form: {
+                template:
+                  '<div><slot :errors="{}" :values="{ id: 3, statusId: 1 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
+              },
+              ParcelHeaderActionsBar: actionBarStub,
+              ParcelStatusSection: true,
+              FeacnCodeEditor: true,
+              ParcelNumberExt: true,
+              ParcelWeightAutoField: true,
+              WbrFormField: true,
+              ActionButton: true,
+              DTagSection: true,
+              'font-awesome-icon': true,
+              VTooltip: true
+            }
           }
         }
-      })
+      )
       await nextTick()
       await resolveAll()
       return wrapper
@@ -276,7 +304,9 @@ describe('WbrParcel_EditDialog image overlay', () => {
     parcelsMock.update.mockClear()
 
     expect(wrapper.text()).toContain('Посылка доступна только для просмотра')
-    expect(wrapper.get('[data-testid="parcel-actions"]').attributes('data-mutation-disabled')).toBe('true')
+    expect(wrapper.get('[data-testid="parcel-actions"]').attributes('data-mutation-disabled')).toBe(
+      'true'
+    )
     for (const testId of ['next', 'back', 'save', 'download', 'lookup']) {
       await wrapper.get(`[data-testid="${testId}"]`).trigger('click')
       await resolveAll()

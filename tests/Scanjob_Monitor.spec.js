@@ -14,8 +14,8 @@ const mockReplace = vi.hoisted(() => vi.fn())
 const mockCurrentRoute = vi.hoisted(() => ({
   value: { fullPath: '/scanjobs/42/monitor' }
 }))
-const clearAlert = vi.hoisted(() => vi.fn())
-const alertError = vi.hoisted(() => vi.fn())
+const dismissAlert = vi.hoisted(() => vi.fn())
+const alertError = vi.hoisted(() => vi.fn(() => 71))
 const mockAlert = vi.hoisted(() => ({
   __v_isRef: true,
   value: null
@@ -24,7 +24,9 @@ const mockScanjob = vi.hoisted(() => ({
   __v_isRef: true,
   value: { id: 42, name: 'Scanjob A', type: 30, status: 15, registerId: 101 }
 }))
-const getById = vi.hoisted(() => vi.fn().mockResolvedValue({ id: 42, name: 'Scanjob A', type: 30, status: 15, registerId: 101 }))
+const getById = vi.hoisted(() =>
+  vi.fn().mockResolvedValue({ id: 42, name: 'Scanjob A', type: 30, status: 15, registerId: 101 })
+)
 const mockRegisterItem = vi.hoisted(() => ({
   id: 101,
   dealNumber: 'DEAL-101',
@@ -230,10 +232,7 @@ const unassignedBucketRow = {
 
 const registerSnapshotWithUnassignedBucket = {
   ...registerSnapshot,
-  boxes: [
-    ...registerSnapshot.boxes,
-    unassignedBucketRow
-  ]
+  boxes: [...registerSnapshot.boxes, unassignedBucketRow]
 }
 
 const unassignedBucketSnapshot = {
@@ -284,9 +283,18 @@ const unassignedBucketSnapshot = {
   }
 }
 
-vi.mock('@/router', () => ({
-  default: { back: mockBack, push: mockPush, replace: mockReplace, currentRoute: mockCurrentRoute }
-}), { virtual: true })
+vi.mock(
+  '@/router',
+  () => ({
+    default: {
+      back: mockBack,
+      push: mockPush,
+      replace: mockReplace,
+      currentRoute: mockCurrentRoute
+    }
+  }),
+  { virtual: true }
+)
 
 vi.mock('@/stores/scanjobs.store.js', () => ({
   useScanjobsStore: () => ({
@@ -316,7 +324,7 @@ vi.mock('@/stores/alert.store.js', () => ({
   useAlertStore: () => ({
     alert: mockAlert,
     error: alertError,
-    clear: clearAlert
+    dismiss: dismissAlert
   })
 }))
 
@@ -343,7 +351,9 @@ vi.mock('@/stores/auth.store.js', () => ({
     scanjobmonitor_parcels_per_page: monitorParcelsPerPage,
     scanjobmonitor_parcels_sort_by: monitorParcelsSortBy,
     scanjobmonitor_parcels_page: monitorParcelsPage,
-    get scanjobmonitor_follow_user_id() { return persistedFollowUserId.value },
+    get scanjobmonitor_follow_user_id() {
+      return persistedFollowUserId.value
+    },
     setScanjobMonitorFollowUserId,
     hasLogistRole,
     isAdmin,
@@ -492,7 +502,9 @@ describe('Scanjob_Monitor.vue', () => {
     expect(loadMonitorSnapshot).toHaveBeenCalledWith(42, { area: 0, boxId: null })
     expect(registerGetById).toHaveBeenCalledWith(101)
     expect(startMonitor).toHaveBeenCalledWith(42, expect.objectContaining({ area: 0, boxId: null }))
-    expect(wrapper.find('.primary-heading').text()).toBe('Сканирование | Сделка DEAL-101 (Авианакладная INV-101) | Коробки')
+    expect(wrapper.find('.primary-heading').text()).toBe(
+      'Сканирование | Сделка DEAL-101 (Авианакладная INV-101) | Коробки'
+    )
 
     const summaryItems = wrapper.findAll('.monitor-summary-item').map((item) => ({
       label: item.find('.monitor-summary-label').text(),
@@ -510,28 +522,31 @@ describe('Scanjob_Monitor.vue', () => {
     expect(registerSection.text()).toContain('Иванов Иван')
     expect(registerSection.text()).toContain('09:30 02.01')
     const parcelProgressPanel = registerSection.get('.scanjob-monitor-parcel-progress-panel')
-    expect(parcelProgressPanel.findAll('.scanjob-monitor-parcel-progress-label').map((label) => label.text())).toEqual([
-      'Всего',
-      'Сканировано',
-      'Запретов',
-      'Не сканировано'
-    ])
-    expect(parcelProgressPanel.findAll('.scanjob-monitor-parcel-progress-value').map((value) => value.text())).toEqual([
-      '3',
-      '2',
-      '1',
-      '1'
-    ])
-    expect(parcelProgressPanel.get('.scanjob-monitor-parcel-progress-restricted').text()).toContain('Запретов')
+    expect(
+      parcelProgressPanel
+        .findAll('.scanjob-monitor-parcel-progress-label')
+        .map((label) => label.text())
+    ).toEqual(['Всего', 'Сканировано', 'Запретов', 'Не сканировано'])
+    expect(
+      parcelProgressPanel
+        .findAll('.scanjob-monitor-parcel-progress-value')
+        .map((value) => value.text())
+    ).toEqual(['3', '2', '1', '1'])
+    expect(parcelProgressPanel.get('.scanjob-monitor-parcel-progress-restricted').text()).toContain(
+      'Запретов'
+    )
 
     const boxesTable = wrapper.findComponent({ name: 'v-data-table' })
     expect(boxesTable.exists()).toBe(true)
-    expect(boxesTable.props('headers').find((header) => header.key === 'parcelsProgress')?.title)
-      .toBe('Посылки')
+    expect(
+      boxesTable.props('headers').find((header) => header.key === 'parcelsProgress')?.title
+    ).toBe('Посылки')
     expect(boxesTable.props('itemsPerPage')).toBe(25)
     expect(boxesTable.props('page')).toBe(2)
     expect(boxesTable.props('sortBy')).toEqual([{ key: 'boxCode', order: 'desc' }])
-    expect(wrapper.get('[data-testid="scanjob-monitor-jump"]').text()).toContain('Перейти к посылке или коробке')
+    expect(wrapper.get('[data-testid="scanjob-monitor-jump"]').text()).toContain(
+      'Перейти к посылке или коробке'
+    )
   })
 
   it('navigates to resolved box by number', async () => {
@@ -563,8 +578,6 @@ describe('Scanjob_Monitor.vue', () => {
   })
 
   it('clears stale jump error after successful box search', async () => {
-    mockAlert.value = { message: 'Посылка или коробка не найдена', type: 'alert-danger' }
-    clearAlert.mockImplementationOnce(() => { mockAlert.value = null })
     resolveMonitorTarget.mockResolvedValueOnce({
       kind: 1,
       area: 1,
@@ -581,12 +594,12 @@ describe('Scanjob_Monitor.vue', () => {
     })
 
     await flushPromises()
+    wrapper.vm.showJumpError('Посылка или коробка не найдена')
     await wrapper.get('[data-testid="scanjob-monitor-jump-input"]').setValue('BOX-7')
     await wrapper.get('[data-testid="scanjob-monitor-jump-action"]').trigger('click')
     await flushPromises()
 
-    expect(clearAlert).toHaveBeenCalledTimes(1)
-    expect(mockAlert.value).toBeNull()
+    expect(dismissAlert).toHaveBeenCalledWith(71)
   })
 
   it('keeps unrelated alert after successful box search', async () => {
@@ -611,7 +624,7 @@ describe('Scanjob_Monitor.vue', () => {
     await wrapper.get('[data-testid="scanjob-monitor-jump-action"]').trigger('click')
     await flushPromises()
 
-    expect(clearAlert).not.toHaveBeenCalled()
+    expect(dismissAlert).not.toHaveBeenCalled()
     expect(mockAlert.value).toEqual({ message: 'Несвязанное сообщение', type: 'alert-danger' })
   })
 
@@ -687,8 +700,6 @@ describe('Scanjob_Monitor.vue', () => {
   })
 
   it('clears stale jump error after successful parcel search', async () => {
-    mockAlert.value = { message: 'Посылка или коробка не найдена', type: 'alert-danger' }
-    clearAlert.mockImplementationOnce(() => { mockAlert.value = null })
     loadMonitorSnapshot.mockResolvedValue(boxSnapshot)
     resolveMonitorTarget.mockResolvedValueOnce({
       kind: 2,
@@ -706,13 +717,13 @@ describe('Scanjob_Monitor.vue', () => {
     })
 
     await flushPromises()
+    wrapper.vm.showJumpError('Посылка или коробка не найдена')
     await wrapper.get('[data-testid="scanjob-monitor-jump-input"]').setValue('P-71')
     await wrapper.get('[data-testid="scanjob-monitor-jump-action"]').trigger('click')
     await flushPromises()
 
     expect(loadMonitorSnapshot).toHaveBeenLastCalledWith(42, { area: 1, boxId: 7 })
-    expect(clearAlert).toHaveBeenCalledTimes(1)
-    expect(mockAlert.value).toBeNull()
+    expect(dismissAlert).toHaveBeenCalledWith(71)
   })
 
   it('alerts when jump target is not found', async () => {
@@ -789,7 +800,11 @@ describe('Scanjob_Monitor.vue', () => {
 
   it('shows jump loading spinner while resolving', async () => {
     let resolveTarget
-    resolveMonitorTarget.mockReturnValueOnce(new Promise((resolve) => { resolveTarget = resolve }))
+    resolveMonitorTarget.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveTarget = resolve
+      })
+    )
 
     const wrapper = mount(ScanjobMonitor, {
       props: { scanjobId: 42 },
@@ -1114,10 +1129,17 @@ describe('Scanjob_Monitor.vue', () => {
 
     expect(clearMonitor).toHaveBeenCalled()
     expect(loadMonitorSnapshot).toHaveBeenLastCalledWith(42, { area: 1, boxId: 7 })
-    expect(startMonitor).toHaveBeenLastCalledWith(42, expect.objectContaining({ area: 1, boxId: 7 }))
+    expect(startMonitor).toHaveBeenLastCalledWith(
+      42,
+      expect.objectContaining({ area: 1, boxId: 7 })
+    )
     expect(wrapper.find('[data-testid="scanjob-monitor-box"]').exists()).toBe(true)
-    expect(wrapper.find('.primary-heading').text()).toBe('Сканирование | Сделка DEAL-101 (Авианакладная INV-101) | Коробка BOX-7')
-    expect(wrapper.findComponent({ name: 'Scanjob_Wbr2_Parcels_Monitor_Table' }).exists()).toBe(true)
+    expect(wrapper.find('.primary-heading').text()).toBe(
+      'Сканирование | Сделка DEAL-101 (Авианакладная INV-101) | Коробка BOX-7'
+    )
+    expect(wrapper.findComponent({ name: 'Scanjob_Wbr2_Parcels_Monitor_Table' }).exists()).toBe(
+      true
+    )
 
     const summaryItems = wrapper.findAll('.monitor-summary-item').map((item) => ({
       label: item.find('.monitor-summary-label').text(),
@@ -1143,13 +1165,11 @@ describe('Scanjob_Monitor.vue', () => {
   })
 
   it('passes monitor snapshot weight correction data to parcel tables', async () => {
-    loadMonitorSnapshot
-      .mockResolvedValueOnce(registerSnapshot)
-      .mockResolvedValueOnce({
-        ...boxSnapshot,
-        realWeightKg: 5,
-        totalWeightKgToRelease: 10
-      })
+    loadMonitorSnapshot.mockResolvedValueOnce(registerSnapshot).mockResolvedValueOnce({
+      ...boxSnapshot,
+      realWeightKg: 5,
+      totalWeightKgToRelease: 10
+    })
 
     const wrapper = mount(ScanjobMonitor, {
       props: { scanjobId: 42 },
@@ -1192,9 +1212,7 @@ describe('Scanjob_Monitor.vue', () => {
   })
 
   it('opens parcel edit from box monitor', async () => {
-    loadMonitorSnapshot
-      .mockResolvedValueOnce(registerSnapshot)
-      .mockResolvedValueOnce(boxSnapshot)
+    loadMonitorSnapshot.mockResolvedValueOnce(registerSnapshot).mockResolvedValueOnce(boxSnapshot)
 
     const wrapper = mount(ScanjobMonitor, {
       props: { scanjobId: 42 },
@@ -1221,9 +1239,7 @@ describe('Scanjob_Monitor.vue', () => {
   it('reports set defect errors from box monitor', async () => {
     isWhManager.value = true
     setDefect.mockRejectedValueOnce({ status: 409 })
-    loadMonitorSnapshot
-      .mockResolvedValueOnce(registerSnapshot)
-      .mockResolvedValueOnce(boxSnapshot)
+    loadMonitorSnapshot.mockResolvedValueOnce(registerSnapshot).mockResolvedValueOnce(boxSnapshot)
 
     const wrapper = mount(ScanjobMonitor, {
       props: { scanjobId: 42 },
@@ -1309,13 +1325,18 @@ describe('Scanjob_Monitor.vue', () => {
       boxId: null,
       bucketIndex: 1
     })
-    expect(startMonitor).toHaveBeenLastCalledWith(42, expect.objectContaining({
-      area: 2,
-      boxId: null,
-      bucketIndex: 1
-    }))
+    expect(startMonitor).toHaveBeenLastCalledWith(
+      42,
+      expect.objectContaining({
+        area: 2,
+        boxId: null,
+        bucketIndex: 1
+      })
+    )
     expect(wrapper.find('[data-testid="scanjob-monitor-box"]').exists()).toBe(true)
-    expect(wrapper.find('.primary-heading').text()).toBe('Сканирование | Сделка DEAL-101 (Авианакладная INV-101) | Без коробки 2')
+    expect(wrapper.find('.primary-heading').text()).toBe(
+      'Сканирование | Сделка DEAL-101 (Авианакладная INV-101) | Без коробки 2'
+    )
 
     const summaryItems = wrapper.findAll('.monitor-summary-item').map((item) => ({
       label: item.find('.monitor-summary-label').text(),
@@ -1343,7 +1364,9 @@ describe('Scanjob_Monitor.vue', () => {
     await flushPromises()
 
     const registerSection = wrapper.get('[data-testid="scanjob-monitor-register"]')
-    expect(registerSection.findAll('.clickable-cell')).toHaveLength(registerSnapshot.boxes.length * 6)
+    expect(registerSection.findAll('.clickable-cell')).toHaveLength(
+      registerSnapshot.boxes.length * 6
+    )
 
     await registerSection.find('.monitor-status').trigger('click')
     await flushPromises()
@@ -1375,9 +1398,7 @@ describe('Scanjob_Monitor.vue', () => {
   })
 
   it('returns from box monitor to register monitor via close action', async () => {
-    loadMonitorSnapshot
-      .mockResolvedValueOnce(registerSnapshot)
-      .mockResolvedValueOnce(boxSnapshot)
+    loadMonitorSnapshot.mockResolvedValueOnce(registerSnapshot).mockResolvedValueOnce(boxSnapshot)
 
     const wrapper = mount(ScanjobMonitor, {
       props: { scanjobId: 42 },
@@ -1399,9 +1420,7 @@ describe('Scanjob_Monitor.vue', () => {
   })
 
   it('reloads register monitor when route scope changes from box to register', async () => {
-    loadMonitorSnapshot
-      .mockResolvedValueOnce(boxSnapshot)
-      .mockResolvedValueOnce(registerSnapshot)
+    loadMonitorSnapshot.mockResolvedValueOnce(boxSnapshot).mockResolvedValueOnce(registerSnapshot)
 
     const wrapper = mount(ScanjobMonitor, {
       props: {
@@ -1418,7 +1437,10 @@ describe('Scanjob_Monitor.vue', () => {
     await flushPromises()
 
     expect(loadMonitorSnapshot).toHaveBeenLastCalledWith(42, { area: 0, boxId: null })
-    expect(startMonitor).toHaveBeenLastCalledWith(42, expect.objectContaining({ area: 0, boxId: null }))
+    expect(startMonitor).toHaveBeenLastCalledWith(
+      42,
+      expect.objectContaining({ area: 0, boxId: null })
+    )
     expect(wrapper.find('[data-testid="scanjob-monitor-register"]').exists()).toBe(true)
   })
 
@@ -1467,7 +1489,10 @@ describe('Scanjob_Monitor.vue', () => {
     expect(getById).toHaveBeenLastCalledWith(43)
     expect(stopMonitor).toHaveBeenCalled()
     expect(loadMonitorSnapshot).toHaveBeenLastCalledWith(43, { area: 0, boxId: null })
-    expect(startMonitor).toHaveBeenLastCalledWith(43, expect.objectContaining({ area: 0, boxId: null }))
+    expect(startMonitor).toHaveBeenLastCalledWith(
+      43,
+      expect.objectContaining({ area: 0, boxId: null })
+    )
   })
 
   it('shows status-only panel when scanjob id changes and ignores closed state from the previous scanjob', async () => {
@@ -1583,15 +1608,13 @@ describe('Scanjob_Monitor.vue', () => {
 
   it('refreshes and highlights same-scope follow event', async () => {
     persistedFollowUserId.value = 17
-    loadMonitorSnapshot
-      .mockResolvedValueOnce(boxSnapshot)
-      .mockResolvedValueOnce({
-        ...boxSnapshot,
-        box: {
-          ...boxSnapshot.box,
-          parcels: boxSnapshot.box.parcels
-        }
-      })
+    loadMonitorSnapshot.mockResolvedValueOnce(boxSnapshot).mockResolvedValueOnce({
+      ...boxSnapshot,
+      box: {
+        ...boxSnapshot.box,
+        parcels: boxSnapshot.box.parcels
+      }
+    })
 
     const wrapper = mount(ScanjobMonitor, {
       props: { scanjobId: 42, monitorScope: box7MonitorScope },
@@ -2054,7 +2077,9 @@ describe('Scanjob_Monitor.vue', () => {
     await flushPromises()
 
     expect(wrapper.find('[data-testid="scanjob-monitor-loading"]').exists()).toBe(true)
-    expect(wrapper.get('[data-testid="scanjob-monitor-close-action"]').attributes('disabled')).toBeDefined()
+    expect(
+      wrapper.get('[data-testid="scanjob-monitor-close-action"]').attributes('disabled')
+    ).toBeDefined()
 
     resolveSnapshot(registerSnapshot)
     await flushPromises()
@@ -2132,7 +2157,10 @@ describe('Scanjob_Monitor.vue', () => {
     const onSnapshot = startMonitor.mock.calls[0][1].onSnapshot
 
     // Dispatch a non-immediate snapshot (starts a throttle timer)
-    onSnapshot({ ...registerSnapshot, boxes: [{ ...registerSnapshot.boxes[0], boxCode: 'PENDING-BOX' }] })
+    onSnapshot({
+      ...registerSnapshot,
+      boxes: [{ ...registerSnapshot.boxes[0], boxCode: 'PENDING-BOX' }]
+    })
 
     // Snapshot is pending (not yet applied)
     expect(wrapper.text()).not.toContain('PENDING-BOX')
@@ -2167,7 +2195,10 @@ describe('Scanjob_Monitor.vue', () => {
     const { onSnapshot, onClosed } = startMonitor.mock.calls[0][1]
 
     // Build up pending snapshot in throttle timer
-    onSnapshot({ ...registerSnapshot, boxes: [{ ...registerSnapshot.boxes[0], boxCode: 'CANCELLABLE' }] })
+    onSnapshot({
+      ...registerSnapshot,
+      boxes: [{ ...registerSnapshot.boxes[0], boxCode: 'CANCELLABLE' }]
+    })
     expect(wrapper.text()).not.toContain('CANCELLABLE')
 
     // Close the monitor before the timer fires

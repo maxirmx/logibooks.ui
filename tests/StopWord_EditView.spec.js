@@ -1,6 +1,6 @@
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
@@ -15,7 +15,8 @@ vi.mock('@/dialogs/StopWord_Settings.vue', () => ({
   default: {
     name: 'StopWord_Settings',
     props: ['id'],
-    template: '<div data-test="stopword-settings">StopWord_Settings Component with ID: {{ id }}</div>'
+    template:
+      '<div data-test="stopword-settings">StopWord_Settings Component with ID: {{ id }}</div>'
   }
 }))
 
@@ -37,5 +38,4 @@ describe('StopWord_EditView', () => {
     const stopWordSettings = wrapper.findComponent(StopWord_Settings)
     expect(stopWordSettings.exists()).toBe(true)
   })
-
 })

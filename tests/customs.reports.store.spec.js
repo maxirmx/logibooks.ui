@@ -26,7 +26,6 @@ describe('customs.reports.store', () => {
     vi.clearAllMocks()
   })
 
-
   it('uploads file using fetchWrapper.postFile', async () => {
     const store = useCustomsReportsStore()
     const file = new File(['content'], 'dec.xlsx', { type: 'application/vnd.ms-excel' })
@@ -77,10 +76,12 @@ describe('customs.reports.store', () => {
 
     const promise = store.getReports()
     expect(store.loading).toBe(true)
-    await expect(promise).resolves.toBeUndefined()
+    await promise
 
     expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
-    expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:8080/api/customsreports?page=1&pageSize=100&sortBy=id&sortOrder=desc')
+    expect(fetchWrapper.get).toHaveBeenCalledWith(
+      'http://localhost:8080/api/customsreports?page=1&pageSize=100&sortBy=id&sortOrder=desc'
+    )
     expect(store.reports).toEqual([{ id: 2 }, { id: 1 }])
     expect(store.reportsTotalCount).toBe(2)
     expect(store.reportsHasNextPage).toBe(false)
@@ -125,7 +126,7 @@ describe('customs.reports.store', () => {
 
     const promise = store.getReports()
     expect(store.loading).toBe(true)
-    await expect(promise).resolves.toBeUndefined()
+    await expect(promise).rejects.toBe(error)
 
     expect(store.error).toBe(error)
     expect(store.reports).toEqual([])
@@ -149,7 +150,9 @@ describe('customs.reports.store', () => {
     await store.remove(10)
 
     expect(fetchWrapper.delete).toHaveBeenCalledWith('http://localhost:8080/api/customsreports/10')
-    expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:8080/api/customsreports?page=1&pageSize=100&sortBy=id&sortOrder=desc')
+    expect(fetchWrapper.get).toHaveBeenCalledWith(
+      'http://localhost:8080/api/customsreports?page=1&pageSize=100&sortBy=id&sortOrder=desc'
+    )
     expect(store.loading).toBe(false)
     expect(store.error).toBeNull()
   })
@@ -215,10 +218,12 @@ describe('customs.reports.store', () => {
 
     const promise = store.getReportRows(5)
     expect(store.loading).toBe(true)
-    await expect(promise).resolves.toBeUndefined()
+    await promise
 
     expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
-    expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:8080/api/customsreports/5/rows?page=1&pageSize=100&sortBy=id&sortOrder=asc')
+    expect(fetchWrapper.get).toHaveBeenCalledWith(
+      'http://localhost:8080/api/customsreports/5/rows?page=1&pageSize=100&sortBy=id&sortOrder=asc'
+    )
     expect(store.reportRows).toEqual(mockResponse.items)
     expect(store.reportRows[0]).toMatchObject({
       uin: 'UIN-001',
@@ -275,7 +280,7 @@ describe('customs.reports.store', () => {
 
     const promise = store.getReportRows(10)
     expect(store.loading).toBe(true)
-    await expect(promise).resolves.toBeUndefined()
+    await expect(promise).rejects.toBe(error)
 
     expect(store.error).toBe(error)
     expect(store.reportRows).toEqual([])

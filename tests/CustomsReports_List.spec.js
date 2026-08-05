@@ -37,12 +37,31 @@ const testStubs = {
   'v-btn': {
     inheritAttrs: false,
     emits: ['click'],
-    template: '<button class="v-btn-stub" data-testid="v-btn" v-bind="$attrs" @click="$emit(\'click\', $event)"><slot></slot></button>'
+    template:
+      '<button class="v-btn-stub" data-testid="v-btn" v-bind="$attrs" @click="$emit(\'click\', $event)"><slot></slot></button>'
   },
   'v-data-table-server': {
     inheritAttrs: false,
-    emits: ['update:itemsPerPage', 'update:items-per-page', 'update:page', 'update:sortBy', 'update:sort-by'],
-    props: ['items', 'headers', 'loading', 'itemsPerPage', 'itemsPerPageOptions', 'page', 'sortBy', 'density', 'class', 'itemValue', 'itemsLength'],
+    emits: [
+      'update:itemsPerPage',
+      'update:items-per-page',
+      'update:page',
+      'update:sortBy',
+      'update:sort-by'
+    ],
+    props: [
+      'items',
+      'headers',
+      'loading',
+      'itemsPerPage',
+      'itemsPerPageOptions',
+      'page',
+      'sortBy',
+      'density',
+      'class',
+      'itemValue',
+      'itemsLength'
+    ],
     template: `
       <div class="v-data-table-stub" data-testid="v-data-table">
         <div v-for="(item, i) in items" :key="i" class="v-data-table-row">
@@ -61,11 +80,12 @@ const testStubs = {
       </div>
     `
   },
-    ActionButton: {
-      inheritAttrs: false,
-      emits: ['click'],
-      template: '<button class="action-button-stub" data-testid="action-button" v-bind="$attrs" @click="$emit(\'click\', $event)"><slot></slot></button>'
-    },
+  ActionButton: {
+    inheritAttrs: false,
+    emits: ['click'],
+    template:
+      '<button class="action-button-stub" data-testid="action-button" v-bind="$attrs" @click="$emit(\'click\', $event)"><slot></slot></button>'
+  },
   PaginationFooter: {
     inheritAttrs: false,
     props: ['itemsPerPage', 'itemsPerPageOptions', 'page', 'pageOptions', 'totalCount', 'maxPage'],
@@ -73,7 +93,8 @@ const testStubs = {
   },
   ActionDialog: {
     props: ['actionDialog'],
-    template: '<div class="action-dialog-stub" :data-show="actionDialog?.show" :data-title="actionDialog?.title"></div>'
+    template:
+      '<div class="action-dialog-stub" :data-show="actionDialog?.show" :data-title="actionDialog?.title"></div>'
   }
 }
 
@@ -353,7 +374,9 @@ describe('CustomsReports_List.vue', () => {
     resolveUpload()
     await flushPromises()
 
-    const dispatchedEvent = dispatchSpy.mock.calls.find((call) => call[0] instanceof globalThis.CustomEvent)
+    const dispatchedEvent = dispatchSpy.mock.calls.find(
+      (call) => call[0] instanceof globalThis.CustomEvent
+    )
     expect(dispatchedEvent?.[0].detail).toEqual({ fileName: 'report.xlsx' })
     expect(getReportsMock).toHaveBeenCalledTimes(2)
     expect(wrapper.find('.action-dialog-stub').attributes('data-show')).toBe('false')

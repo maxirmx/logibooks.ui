@@ -38,5 +38,4 @@ describe('Notifications_View.vue', () => {
 
     expect(wrapper.exists()).toBe(true)
   })
-
 })

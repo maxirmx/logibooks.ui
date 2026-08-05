@@ -19,14 +19,27 @@ vi.mock('@/stores/parcels.store.js', () => ({
   useParcelsStore: () => parcelsMock
 }))
 
-const ensureLoadedFactory = () => ({ ensureLoaded: vi.fn().mockResolvedValue(), add: vi.fn().mockResolvedValue() })
-vi.mock('@/stores/parcel.statuses.store.js', () => ({ useParcelStatusesStore: () => ({ ensureLoaded: vi.fn().mockResolvedValue(), parcelStatuses: [] }) }))
+const ensureLoadedFactory = () => ({
+  ensureLoaded: vi.fn().mockResolvedValue(),
+  add: vi.fn().mockResolvedValue()
+})
+vi.mock('@/stores/parcel.statuses.store.js', () => ({
+  useParcelStatusesStore: () => ({ ensureLoaded: vi.fn().mockResolvedValue(), parcelStatuses: [] })
+}))
 vi.mock('@/stores/stop.words.store.js', () => ({ useStopWordsStore: () => ensureLoadedFactory() }))
 vi.mock('@/stores/key.words.store.js', () => ({ useKeyWordsStore: () => ensureLoadedFactory() }))
-vi.mock('@/stores/feacn.orders.store.js', () => ({ useFeacnOrdersStore: () => ensureLoadedFactory() }))
-vi.mock('@/stores/feacn.prefixes.store.js', () => ({ useFeacnPrefixesStore: () => ensureLoadedFactory() }))
-vi.mock('@/stores/countries.store.js', () => ({ useCountriesStore: () => ({ ensureLoaded: vi.fn().mockResolvedValue(), countries: [] }) }))
-vi.mock('@/stores/parcel.views.store.js', () => ({ useParcelViewsStore: () => ({ add: vi.fn().mockResolvedValue() }) }))
+vi.mock('@/stores/feacn.orders.store.js', () => ({
+  useFeacnOrdersStore: () => ensureLoadedFactory()
+}))
+vi.mock('@/stores/feacn.prefixes.store.js', () => ({
+  useFeacnPrefixesStore: () => ensureLoadedFactory()
+}))
+vi.mock('@/stores/countries.store.js', () => ({
+  useCountriesStore: () => ({ ensureLoaded: vi.fn().mockResolvedValue(), countries: [] })
+}))
+vi.mock('@/stores/parcel.views.store.js', () => ({
+  useParcelViewsStore: () => ({ add: vi.fn().mockResolvedValue() })
+}))
 const registersMock = {
   item: ref({ id: 1, customsProcedureCode: 10 }),
   getById: vi.fn().mockResolvedValue({ id: 1, customsProcedureCode: 10 }),
@@ -36,10 +49,16 @@ vi.mock('@/stores/registers.store.js', () => ({ useRegistersStore: () => registe
 
 // Mock auth and alert stores
 vi.mock('@/stores/auth.store.js', () => ({ useAuthStore: () => ({ selectedParcelId: null }) }))
-vi.mock('@/stores/alert.store.js', () => ({ useAlertStore: () => ({ alert: ref(null), error: vi.fn(), clear: vi.fn() }) }))
+vi.mock('@/stores/alert.store.js', () => ({
+  useAlertStore: () => ({ alert: ref(null), error: vi.fn(), clear: vi.fn() })
+}))
 
 // Stub out heavy child components and vee-validate Form/Field
-vi.mock('@/components/ProductLinkWithActions.vue', () => ({ default: { template: '<button data-test="delete-btn" @click="$emit(\'delete-image\')">Del</button>' } }))
+vi.mock('@/components/ProductLinkWithActions.vue', () => ({
+  default: {
+    template: '<button data-test="delete-btn" @click="$emit(\'delete-image\')">Del</button>'
+  }
+}))
 
 vi.mock('vue-router', async () => {
   const actual = await vi.importActual('vue-router')
@@ -73,7 +92,8 @@ describe('OzonParcel_EditDialog delete flow', () => {
           Field: { template: '<input />' },
           // Provide Form that yields slot props including values.id matching prop id
           Form: {
-            template: '<div><slot :errors="{}" :values="{ id: 2 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
+            template:
+              '<div><slot :errors="{}" :values="{ id: 2 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
           },
           ParcelHeaderActionsBar: true,
           ParcelStatusSection: true,
@@ -115,7 +135,8 @@ describe('OzonParcel_EditDialog delete flow', () => {
         stubs: {
           Field: { template: '<input />' },
           Form: {
-            template: '<div><slot :errors="{}" :values="{ id: 2 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
+            template:
+              '<div><slot :errors="{}" :values="{ id: 2 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
           },
           ParcelHeaderActionsBar: true,
           ParcelStatusSection: true,

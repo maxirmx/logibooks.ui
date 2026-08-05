@@ -34,5 +34,4 @@ describe('Notification_EditView.vue', () => {
     const settings = wrapper.findComponent(NotificationSettings)
     expect(settings.exists()).toBe(true)
   })
-
 })

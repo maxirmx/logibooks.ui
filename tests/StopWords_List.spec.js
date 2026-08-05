@@ -2,7 +2,7 @@
 
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
@@ -88,9 +88,12 @@ vi.mock('@/stores/stop.words.store.js', () => ({
 
 vi.mock('@/stores/word.match.types.store.js', () => ({
   useWordMatchTypesStore: () => ({
-    matchTypes: ref([{ id: 1, name: 'Exact' }, { id: 41, name: 'Morphology' }]),
+    matchTypes: ref([
+      { id: 1, name: 'Exact' },
+      { id: 41, name: 'Morphology' }
+    ]),
     ensureLoaded: vi.fn(),
-    getName: vi.fn(id => (id === 1 ? 'Exact' : id === 41 ? 'Morphology' : `Тип ${id}`))
+    getName: vi.fn((id) => (id === 1 ? 'Exact' : id === 41 ? 'Morphology' : `Тип ${id}`))
   })
 }))
 
@@ -154,14 +157,32 @@ const extendedStubs = {
         <slot></slot>
       </div>
     `,
-    props: ['loading', 'headers', 'items', 'search', 'custom-filter', 'items-per-page-options', 'class', 'item-value', 'page', 'v-model:items-per-page', 'items-per-page-text', 'page-text', 'v-model:page', 'v-model:sort-by', 'density']
+    props: [
+      'loading',
+      'headers',
+      'items',
+      'search',
+      'custom-filter',
+      'items-per-page-options',
+      'class',
+      'item-value',
+      'page',
+      'v-model:items-per-page',
+      'items-per-page-text',
+      'page-text',
+      'v-model:page',
+      'v-model:sort-by',
+      'density'
+    ]
   },
   'v-text-field': {
-    template: '<input data-testid="v-text-field" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
+    template:
+      '<input data-testid="v-text-field" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
     props: ['modelValue', 'append-inner-icon', 'label', 'variant', 'hide-details']
   },
   'v-select': {
-    template: '<select data-testid="v-select" :value="modelValue" @change="$emit(\'update:modelValue\', $event.target.value)"><option v-for="item in items" :key="item.value" :value="item.value">{{ item.title }}</option></select>',
+    template:
+      '<select data-testid="v-select" :value="modelValue" @change="$emit(\'update:modelValue\', $event.target.value)"><option v-for="item in items" :key="item.value" :value="item.value">{{ item.title }}</option></select>',
     props: ['modelValue', 'items', 'label', 'variant', 'hide-details', 'disabled']
   },
   'v-tooltip': {
@@ -235,18 +256,16 @@ describe('StopWords_List.vue', () => {
   })
 
   describe('Admin Access Control', () => {
-
     it('shows warning for non-admin users', () => {
       // Test the isAdmin property of the auth store
       expect(wrapper.vm.authStore.isAdmin).toBe(true) // Our mock user is admin
-      
+
       // For non-admin logic, we would need to change the mock
       // but that would affect other tests, so we just verify the current state
     })
   })
 
   describe('Data Display', () => {
-
     it('displays customs procedure selector next to search field', () => {
       const filters = wrapper.find('.stopwords-filter-row')
       expect(filters.find('[data-testid="v-select"]').exists()).toBe(true)
@@ -257,11 +276,9 @@ describe('StopWords_List.vue', () => {
         { title: 'Импорт в РФ', value: 'import' }
       ])
     })
-
   })
 
   describe('Admin Actions', () => {
-
     it('calls openCreateDialog and navigates to create page', async () => {
       await wrapper.vm.openCreateDialog()
       expect(mockPush).toHaveBeenCalledWith('/stopword/create')
@@ -341,7 +358,9 @@ describe('StopWords_List.vue', () => {
       await wrapper.vm.deleteStopWord(testStopWord)
 
       expect(removeStopWord).toHaveBeenCalledWith(testStopWord.id)
-      expect(wrapper.vm.alertStore.error).toHaveBeenCalledWith('Нельзя удалить стоп-слово, у которого есть связанные записи')
+      expect(wrapper.vm.alertStore.error).toHaveBeenCalledWith(
+        'Нельзя удалить стоп-слово, у которого есть связанные записи'
+      )
     })
 
     it('handles generic delete error', async () => {
@@ -378,7 +397,6 @@ describe('StopWords_List.vue', () => {
       expect(wrapper.vm.filterStopWords(null, 'Morphology', mockItem)).toBe(true)
     })
 
-
     it('handles null query', () => {
       const mockItem = { raw: { word: 'и' } }
       const result = wrapper.vm.filterStopWords(null, null, mockItem)
@@ -399,7 +417,7 @@ describe('StopWords_List.vue', () => {
     it('handles item with missing word property', () => {
       const mockItem = { raw: {} }
       const result = wrapper.vm.filterStopWords(null, 'test', mockItem)
-      expect(result).toBe(false) 
+      expect(result).toBe(false)
     })
   })
 
@@ -438,13 +456,18 @@ describe('StopWords_List.vue', () => {
     })
 
     it('filters visible stop words by selected procedure', () => {
-      expect(wrapper.vm.filteredStopWords.map(word => word.word)).toEqual(['и', 'или', 'но', 'кроме'])
+      expect(wrapper.vm.filteredStopWords.map((word) => word.word)).toEqual([
+        'и',
+        'или',
+        'но',
+        'кроме'
+      ])
 
       wrapper.vm.authStore.stopwords_procedure.value = 'export'
-      expect(wrapper.vm.filteredStopWords.map(word => word.word)).toEqual(['и', 'но', 'кроме'])
+      expect(wrapper.vm.filteredStopWords.map((word) => word.word)).toEqual(['и', 'но', 'кроме'])
 
       wrapper.vm.authStore.stopwords_procedure.value = 'import'
-      expect(wrapper.vm.filteredStopWords.map(word => word.word)).toEqual(['или', 'но', 'кроме'])
+      expect(wrapper.vm.filteredStopWords.map((word) => word.word)).toEqual(['или', 'но', 'кроме'])
     })
 
     it('uses requested procedure sort order from import and export flags', () => {
@@ -455,8 +478,10 @@ describe('StopWords_List.vue', () => {
         { forImport: true, forExport: false }
       ]
 
-      expect(combinations.map(item => wrapper.vm.getProhibitionScopeSortOrder(item))).toEqual([0, 1, 2, 3])
-      expect(wrapper.vm.tableStopWords.map(item => item.procedure)).toEqual([1, 3, 2, 2])
+      expect(combinations.map((item) => wrapper.vm.getProhibitionScopeSortOrder(item))).toEqual([
+        0, 1, 2, 3
+      ])
+      expect(wrapper.vm.tableStopWords.map((item) => item.procedure)).toEqual([1, 3, 2, 2])
     })
 
     it('renders procedure and prohibition reason columns', () => {
@@ -466,15 +491,18 @@ describe('StopWords_List.vue', () => {
 
       const procedureLines = rows[2].findAll('.v-data-table-cell')[3].findAll('.procedure-line')
       const reasonLines = rows[2].findAll('.v-data-table-cell')[4].findAll('.reason-line')
-      expect(procedureLines.map(line => line.text())).toEqual(['Экспорт из РФ', 'Импорт в РФ'])
-      expect(reasonLines.map(line => line.text())).toEqual(['dual export stop reason', 'dual import stop reason'])
+      expect(procedureLines.map((line) => line.text())).toEqual(['Экспорт из РФ', 'Импорт в РФ'])
+      expect(reasonLines.map((line) => line.text())).toEqual([
+        'dual export stop reason',
+        'dual import stop reason'
+      ])
     })
 
     it('keeps import reason aligned with import procedure when export reason is empty', () => {
       const rows = wrapper.findAll('[data-testid="v-data-table"] .v-data-table-row')
       const procedureLines = rows[3].findAll('.v-data-table-cell')[3].findAll('.procedure-line')
       const reasonLines = rows[3].findAll('.v-data-table-cell')[4].findAll('.reason-line')
-      expect(procedureLines.map(line => line.text())).toEqual(['Экспорт из РФ', 'Импорт в РФ'])
+      expect(procedureLines.map((line) => line.text())).toEqual(['Экспорт из РФ', 'Импорт в РФ'])
       expect(reasonLines).toHaveLength(2)
       expect(reasonLines[0].text()).toBe('')
       expect(reasonLines[1].text()).toBe('import only dual stop reason')
@@ -500,8 +528,8 @@ describe('StopWords_List.vue', () => {
       expect(wrapper.vm.authStore).toBeDefined()
     })
 
-    it('properly integrates with alert store', () => {
-      expect(wrapper.vm.alert).toBeDefined()
+    it('properly integrates with the notification store', () => {
+      expect(wrapper.vm.alertStore).toBeDefined()
     })
   })
 
@@ -514,7 +542,6 @@ describe('StopWords_List.vue', () => {
       expect(wrapper.vm.headers).toBeDefined()
       expect(wrapper.vm.filterStopWords).toBeDefined()
     })
-
   })
 
   describe('Edge Cases', () => {
@@ -556,9 +583,9 @@ describe('StopWords_List.vue', () => {
           stubs: extendedStubs
         }
       })
-      
+
       await emptyWrapper.vm.$nextTick()
-      
+
       expect(emptyWrapper.find('[data-testid="v-data-table"]').exists()).toBe(true)
       expect(emptyWrapper.find('.primary-heading').exists()).toBe(true)
       emptyWrapper.unmount()
@@ -570,7 +597,7 @@ describe('StopWords_List.vue', () => {
       const newStopWords = [
         { id: 5, word: 'новое', matchTypeId: 1, forExport: false, forImport: true }
       ]
-      
+
       mockStopWords.value = newStopWords
       await wrapper.vm.$nextTick()
 
@@ -580,7 +607,7 @@ describe('StopWords_List.vue', () => {
     it('updates search reactively', async () => {
       const searchField = wrapper.find('[data-testid="v-text-field"]')
       expect(searchField.exists()).toBe(true)
-      
+
       // Test that search is accessible through authStore
       expect(wrapper.vm.authStore.stopwords_search).toBeDefined()
     })
@@ -599,9 +626,9 @@ describe('StopWords_List.vue', () => {
         word: `слово${i}`,
         matchTypeId: i % 2 === 0 ? 1 : 41
       }))
-      
+
       mockStopWords.value = largeDataset
-      
+
       // Filter function should work efficiently
       const mockItem = { raw: { word: 'слово500' } }
       const result = wrapper.vm.filterStopWords(null, 'слово500', mockItem)
@@ -609,4 +636,3 @@ describe('StopWords_List.vue', () => {
     })
   })
 })
-

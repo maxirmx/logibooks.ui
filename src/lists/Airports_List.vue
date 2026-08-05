@@ -3,6 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { onMounted, ref } from 'vue'
 import router from '@/router'
 import { storeToRefs } from 'pinia'
@@ -13,6 +14,7 @@ import ActionButton from '@/components/ActionButton.vue'
 import { useConfirm } from 'vuetify-use-dialog'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
+import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
 
 const airportsStore = useAirportsStore()
 const authStore = useAuthStore()
@@ -20,8 +22,6 @@ const alertStore = useAlertStore()
 const confirm = useConfirm()
 
 const { airports, loading } = storeToRefs(airportsStore)
-const { alert } = storeToRefs(alertStore)
-
 const runningAction = ref(false)
 
 function filterAirports(value, query, item) {
@@ -45,7 +45,7 @@ const headers = [
     ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '120px' }]
     : []),
   { title: 'Название', key: 'name', sortable: true },
-  { title: 'Код ИАТА', key: 'codeIata', sortable: true },
+  { title: 'Код ИАТА', key: 'codeIata', sortable: true }
 ]
 
 function openEditDialog(airport) {
@@ -90,9 +90,11 @@ async function deleteAirport(airport) {
   }
 }
 
-onMounted(async () => {
-  await airportsStore.getAll()
-})
+onMounted(() =>
+  runWithRetryAlert(() => airportsStore.getAll(), {
+    fallback: 'Не удалось загрузить коды аэропортов'
+  })
+)
 
 defineExpose({
   openCreateDialog,
@@ -123,6 +125,8 @@ defineExpose({
     </div>
 
     <hr class="hr" />
+
+    <PageAlertRegion />
 
     <div>
       <v-text-field
@@ -173,11 +177,6 @@ defineExpose({
         </template>
       </v-data-table>
     </v-card>
-
-    <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
-      <button @click="alertStore.clear()" class="btn btn-link close">×</button>
-      {{ alert.message }}
-    </div>
   </div>
 </template>
 

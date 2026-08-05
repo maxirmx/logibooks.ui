@@ -1,13 +1,18 @@
 /* @vitest-environment jsdom */
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { ref } from 'vue'
 import RegistersList from '@/lists/Registers_List.vue'
-import { OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID, WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
+import {
+  OZON_COMPANY_ID,
+  WBR_COMPANY_ID,
+  WBR2_REGISTER_ID,
+  WBRN_REGISTER_ID
+} from '@/helpers/company.constants.js'
 import { OP_MODE_PAPERWORK } from '@/helpers/op.mode.js'
 import {
   REGISTER_STATUS_FILTER_ALL,
@@ -67,9 +72,16 @@ const mockRegisterStatuses = ref([
   { id: 2, title: 'Register Status 2' },
   { id: 5, title: 'Register Status 5' }
 ])
-const getRegisterStatusByIdFn = vi.fn((id) => id
-  ? { id, title: `Register Status ${id}`, icon: 'svg:very-delivered', bkColor: '#00AA00', fgColor: '#FFFFFF' }
-  : null
+const getRegisterStatusByIdFn = vi.fn((id) =>
+  id
+    ? {
+        id,
+        title: `Register Status ${id}`,
+        icon: 'svg:very-delivered',
+        bkColor: '#00AA00',
+        fgColor: '#FFFFFF'
+      }
+    : null
 )
 const getCountriesAll = vi.fn()
 const countriesEnsureLoadedFn = vi.fn().mockResolvedValue(mockCountries.value)
@@ -77,7 +89,7 @@ const ensureOpsLoadedFn = vi.fn().mockResolvedValue()
 const generateFn = vi.fn()
 const alertSuccessFn = vi.fn()
 const alertErrorFn = vi.fn()
-const alertClearFn = vi.fn()
+const alertDismissFn = vi.fn()
 const mockAlert = ref(null)
 const validateFn = vi.fn()
 const getValidationProgressFn = vi.fn()
@@ -102,7 +114,13 @@ vi.mock('pinia', async () => {
     storeToRefs: (store) => {
       if (store.getAll && store.upload && store.setParcelStatuses) {
         // registers store
-        return { items: mockItems, loading: ref(false), error: ref(null), totalCount: ref(0), ops: mockOps }
+        return {
+          items: mockItems,
+          loading: ref(false),
+          error: ref(null),
+          totalCount: ref(0),
+          ops: mockOps
+        }
       } else if (store.getAll && !store.upload && store.companies) {
         // companies store
         return { companies: mockCompanies }
@@ -164,10 +182,10 @@ const registersStore = {
   ensureOpsLoaded: ensureOpsLoadedFn,
   getOpsLabel: vi.fn((list, value) => {
     const num = Number(value)
-    const match = list?.find(item => Number(item.value) === num)
+    const match = list?.find((item) => Number(item.value) === num)
     return match ? match.name : String(value)
   }),
-  getTransportationDocument: vi.fn(id => `Doc ${id}`)
+  getTransportationDocument: vi.fn((id) => `Doc ${id}`)
 }
 
 vi.mock('@/stores/registers.store.js', () => ({
@@ -194,7 +212,7 @@ vi.mock('@/stores/countries.store.js', () => ({
     countries: mockCountries,
     getAll: getCountriesAll,
     ensureLoaded: countriesEnsureLoadedFn,
-    getCountryShortName: vi.fn(code => `Country ${code}`)
+    getCountryShortName: vi.fn((code) => `Country ${code}`)
   })
 }))
 
@@ -208,7 +226,7 @@ vi.mock('@/stores/airports.store.js', () => ({
 vi.mock('@/stores/warehouses.store.js', () => ({
   useWarehousesStore: () => ({
     ensureLoaded: vi.fn().mockResolvedValue(),
-    getWarehouseName: vi.fn(id => id ? `Warehouse ${id}` : 'Не указан')
+    getWarehouseName: vi.fn((id) => (id ? `Warehouse ${id}` : 'Не указан'))
   })
 }))
 
@@ -217,14 +235,16 @@ vi.mock('@/stores/register.statuses.store.js', () => ({
     ensureLoaded: ensureRegisterStatusesLoadedFn,
     registerStatuses: mockRegisterStatuses,
     getStatusById: getRegisterStatusByIdFn,
-    getStatusTitle: vi.fn(id => id ? `Status ${id}` : 'Не указан')
+    getStatusTitle: vi.fn((id) => (id ? `Status ${id}` : 'Не указан'))
   })
 }))
 
 vi.mock('@/stores/alert.store.js', () => ({
   useAlertStore: () => ({
-    alert: mockAlert,
-    clear: alertClearFn,
+    get alert() {
+      return mockAlert.value
+    },
+    dismiss: alertDismissFn,
     success: alertSuccessFn,
     error: alertErrorFn
   })
@@ -266,7 +286,8 @@ vi.mock('@/l2/ParcelStatusBulkChangeDialog.vue', () => ({
     name: 'ParcelStatusBulkChangeDialog',
     props: ['show', 'registerId', 'register', 'statusOptions', 'disabled'],
     emits: ['update:show', 'updated'],
-    template: '<div data-testid="parcel-status-bulk-dialog" :data-show="String(show)" :data-register-id="registerId" :data-register-type="register?.registerType"><button type="button" data-testid="parcel-status-bulk-dialog-updated" @click="$emit(\'updated\')"></button></div>'
+    template:
+      '<div data-testid="parcel-status-bulk-dialog" :data-show="String(show)" :data-register-id="registerId" :data-register-type="register?.registerType"><button type="button" data-testid="parcel-status-bulk-dialog-updated" @click="$emit(\'updated\')"></button></div>'
   }
 }))
 
@@ -394,9 +415,7 @@ describe('Registers_List.vue', () => {
       ]
       mockOps.value = {
         customsProcedures: [],
-        transportationTypes: [
-          { value: 0, name: 'Авиа', document: 'AWB', isAvia: true }
-        ]
+        transportationTypes: [{ value: 0, name: 'Авиа', document: 'AWB', isAvia: true }]
       }
       mockAirports.value = [
         { id: 10, codeIata: 'SVO' },
@@ -413,37 +432,35 @@ describe('Registers_List.vue', () => {
       const transportationTypesById = createTransportationTypesById(mockOps.value)
       const airportsById = createAirportsById(mockAirports.value)
 
-      expect(getCountryDisplayName(
-        item,
-        item.origCountryCode,
-        item.departureAirportId,
-        mockCountries.value,
-        transportationTypesById,
-        airportsById
-      )).toBe('Россия (SVO)')
-      expect(getCountryDisplayName(
-        item,
-        item.destCountryCode,
-        item.arrivalAirportId,
-        mockCountries.value,
-        transportationTypesById,
-        airportsById
-      )).toBe('США (JFK)')
+      expect(
+        getCountryDisplayName(
+          item,
+          item.origCountryCode,
+          item.departureAirportId,
+          mockCountries.value,
+          transportationTypesById,
+          airportsById
+        )
+      ).toBe('Россия (SVO)')
+      expect(
+        getCountryDisplayName(
+          item,
+          item.destCountryCode,
+          item.arrivalAirportId,
+          mockCountries.value,
+          transportationTypesById,
+          airportsById
+        )
+      ).toBe('США (JFK)')
     })
 
     it('returns country name without code when not aviation or missing airport', () => {
-      mockCountries.value = [
-        { isoNumeric: 36, nameRuShort: 'Австралия' }
-      ]
+      mockCountries.value = [{ isoNumeric: 36, nameRuShort: 'Австралия' }]
       mockOps.value = {
         customsProcedures: [],
-        transportationTypes: [
-          { value: 1, name: 'Авто', document: 'CMR', isAvia: false }
-        ]
+        transportationTypes: [{ value: 1, name: 'Авто', document: 'CMR', isAvia: false }]
       }
-      mockAirports.value = [
-        { id: 30, codeIata: 'SYD' }
-      ]
+      mockAirports.value = [{ id: 30, codeIata: 'SYD' }]
 
       const item = {
         transportationTypeCode: 1,
@@ -453,47 +470,101 @@ describe('Registers_List.vue', () => {
       const transportationTypesById = createTransportationTypesById(mockOps.value)
       const airportsById = createAirportsById(mockAirports.value)
 
-      expect(getCountryDisplayName(
-        item,
-        item.origCountryCode,
-        item.departureAirportId,
-        mockCountries.value,
-        transportationTypesById,
-        airportsById
-      )).toBe('Австралия')
+      expect(
+        getCountryDisplayName(
+          item,
+          item.origCountryCode,
+          item.departureAirportId,
+          mockCountries.value,
+          transportationTypesById,
+          airportsById
+        )
+      ).toBe('Австралия')
     })
 
     it('covers country and airport fallbacks', () => {
-      mockCountries.value = [
-        { isoNumeric: 36, nameRuOfficial: 'Австралийский Союз' }
-      ]
+      mockCountries.value = [{ isoNumeric: 36, nameRuOfficial: 'Австралийский Союз' }]
       mockOps.value = {
         customsProcedures: [],
-        transportationTypes: [
-          { value: 2, name: 'Авиа', document: 'AWB', isAvia: true }
-        ]
+        transportationTypes: [{ value: 2, name: 'Авиа', document: 'AWB', isAvia: true }]
       }
       mockAirports.value = []
 
       let transportationTypesById = createTransportationTypesById(mockOps.value)
       let airportsById = createAirportsById(mockAirports.value)
 
-      expect(getCountryDisplayName({}, null, null, mockCountries.value, transportationTypesById, airportsById)).toBe('Неизвестно')
-      expect(getCountryDisplayName({ transportationTypeCode: 1 }, 643, null, mockCountries.value, transportationTypesById, airportsById)).toBe('Россия')
-      expect(getCountryDisplayName({ transportationTypeCode: 1 }, 999, null, mockCountries.value, transportationTypesById, airportsById)).toBe(999)
-      expect(getCountryDisplayName({ transportationTypeCode: 1 }, 36, null, mockCountries.value, transportationTypesById, airportsById)).toBe('Австралийский Союз')
+      expect(
+        getCountryDisplayName(
+          {},
+          null,
+          null,
+          mockCountries.value,
+          transportationTypesById,
+          airportsById
+        )
+      ).toBe('Неизвестно')
+      expect(
+        getCountryDisplayName(
+          { transportationTypeCode: 1 },
+          643,
+          null,
+          mockCountries.value,
+          transportationTypesById,
+          airportsById
+        )
+      ).toBe('Россия')
+      expect(
+        getCountryDisplayName(
+          { transportationTypeCode: 1 },
+          999,
+          null,
+          mockCountries.value,
+          transportationTypesById,
+          airportsById
+        )
+      ).toBe(999)
+      expect(
+        getCountryDisplayName(
+          { transportationTypeCode: 1 },
+          36,
+          null,
+          mockCountries.value,
+          transportationTypesById,
+          airportsById
+        )
+      ).toBe('Австралийский Союз')
 
       mockCountries.value = [{ isoNumeric: 156 }]
-      expect(getCountryDisplayName({ transportationTypeCode: 1 }, 156, null, mockCountries.value, transportationTypesById, airportsById)).toBe(156)
+      expect(
+        getCountryDisplayName(
+          { transportationTypeCode: 1 },
+          156,
+          null,
+          mockCountries.value,
+          transportationTypesById,
+          airportsById
+        )
+      ).toBe(156)
 
       mockCountries.value = [{ isoNumeric: 36, nameRuOfficial: 'Австралийский Союз' }]
-      expect(getCountryDisplayName({ transportationTypeCode: 2 }, 36, null, mockCountries.value, transportationTypesById, airportsById)).toBe('Австралийский Союз')
+      expect(
+        getCountryDisplayName(
+          { transportationTypeCode: 2 },
+          36,
+          null,
+          mockCountries.value,
+          transportationTypesById,
+          airportsById
+        )
+      ).toBe('Австралийский Союз')
 
       mockOps.value = { customsProcedures: [], transportationTypes: null }
       mockAirports.value = null
       transportationTypesById = createTransportationTypesById(mockOps.value)
       airportsById = createAirportsById(mockAirports.value)
-      expect(isAviaTransportation({ transportationTypeCode: 2 }, transportationTypesById)).toBe(false)
+      expect(isAviaTransportation({ transportationTypeCode: 2 }, transportationTypesById)).toBe(
+        false
+      )
       expect(getAirportIata(0, airportsById)).toBeNull()
       expect(getAirportIata(10, airportsById)).toBeNull()
     })
@@ -560,7 +631,13 @@ describe('Registers_List.vue', () => {
 
       await flushPromises()
 
-      expect(alertErrorFn).toHaveBeenCalledWith('countries failed')
+      expect(alertErrorFn).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'countries failed' }),
+        expect.objectContaining({
+          fallback: 'Ошибка при загрузке данных',
+          action: expect.objectContaining({ label: 'Повторить', handler: expect.any(Function) })
+        })
+      )
     })
 
     it('reports fallback initialization error text for non-error failures', async () => {
@@ -574,14 +651,23 @@ describe('Registers_List.vue', () => {
 
       await flushPromises()
 
-      expect(alertErrorFn).toHaveBeenCalledWith('Ошибка при загрузке данных')
+      expect(alertErrorFn).toHaveBeenCalledWith(
+        'countries failed',
+        expect.objectContaining({
+          fallback: 'Ошибка при загрузке данных',
+          action: expect.objectContaining({ label: 'Повторить', handler: expect.any(Function) })
+        })
+      )
     })
 
     it('stops initialization work after unmounting during initial load', async () => {
       let resolveStatuses
-      ensureOrderStatusesLoadedFn.mockImplementationOnce(() => new Promise((resolve) => {
-        resolveStatuses = resolve
-      }))
+      ensureOrderStatusesLoadedFn.mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveStatuses = resolve
+          })
+      )
 
       const wrapper = mount(RegistersList, {
         global: {
@@ -616,7 +702,6 @@ describe('Registers_List.vue', () => {
       wrapper.vm.openParcels(item)
       expect(router.push).toHaveBeenCalledWith('/registers/123/parcels?mode=modePaperwork')
     })
-
   })
 
   describe('table cell interactions', () => {
@@ -783,7 +868,7 @@ describe('Registers_List.vue', () => {
 
       const route = weightCell.find('.weight-real-route')
       expect(route.exists()).toBe(true)
-      expect(route.findAll('span').map(span => span.text())).toEqual(['10.000', '5.000'])
+      expect(route.findAll('span').map((span) => span.text())).toEqual(['10.000', '5.000'])
       const arrow = route.find('[data-icon="fa-solid fa-arrow-right"]')
       expect(arrow.exists()).toBe(true)
       expect(arrow.classes()).toContain('arrow-icon')
@@ -816,9 +901,15 @@ describe('Registers_List.vue', () => {
       const weightCells = wrapper.findAll('[data-testid="register-weight-cell"]')
       expect(weightCells).toHaveLength(2)
       expect(weightCells[0].find('.weight-real-route').exists()).toBe(false)
-      expect(weightCells[0].findAll('.weight-line').map(line => line.text())).toEqual(['12.345', '10.000'])
+      expect(weightCells[0].findAll('.weight-line').map((line) => line.text())).toEqual([
+        '12.345',
+        '10.000'
+      ])
       expect(weightCells[1].find('.weight-real-route').exists()).toBe(false)
-      expect(weightCells[1].findAll('.weight-line').map(line => line.text())).toEqual(['20.000', '15.000'])
+      expect(weightCells[1].findAll('.weight-line').map((line) => line.text())).toEqual([
+        '20.000',
+        '15.000'
+      ])
     })
   })
 
@@ -950,10 +1041,7 @@ describe('Registers_List.vue', () => {
         const options = wrapper.vm.uploadMenuOptions
 
         expect(options).toHaveLength(2)
-        expect(options.map((option) => option.label)).toEqual([
-          'Озон',
-          'РВБ новый формат'
-        ])
+        expect(options.map((option) => option.label)).toEqual(['Озон', 'РВБ новый формат'])
         expect(options.some((option) => option.label === 'РВБ')).toBe(false)
         expect(options.every((option) => typeof option.action === 'function')).toBe(true)
       })
@@ -1005,7 +1093,9 @@ describe('Registers_List.vue', () => {
 
         await wrapper.vm.$nextTick()
 
-        const option = wrapper.vm.uploadMenuOptions.find((item) => item.label === 'РВБ новый формат')
+        const option = wrapper.vm.uploadMenuOptions.find(
+          (item) => item.label === 'РВБ новый формат'
+        )
         expect(option).toBeTruthy()
 
         await option.action()
@@ -1083,7 +1173,6 @@ describe('Registers_List.vue', () => {
     })
 
     it('handles delete error', async () => {
-     
       confirmMock.mockResolvedValue(true)
       removeFn.mockRejectedValueOnce(new Error('Network error'))
       const item = { id: 4, fileName: 'file.xlsx' }
@@ -1151,7 +1240,7 @@ describe('Registers_List.vue', () => {
       })
 
       const sortableByKey = Object.fromEntries(
-        getTableHeaders(wrapper).map(header => [header.key, header.sortable])
+        getTableHeaders(wrapper).map((header) => [header.key, header.sortable])
       )
 
       expect(sortableByKey.actions).toBe(false)
@@ -1178,7 +1267,7 @@ describe('Registers_List.vue', () => {
       })
 
       const headersByKey = Object.fromEntries(
-        getTableHeaders(wrapper).map(header => [header.key, header])
+        getTableHeaders(wrapper).map((header) => [header.key, header])
       )
 
       expect(headersByKey.parcelsTotal.align).toBe('end')
@@ -1200,9 +1289,9 @@ describe('Registers_List.vue', () => {
         }
       })
 
-      const actionTooltips = wrapper.findAllComponents(ActionButton).map(button =>
-        String(button.props('tooltipText') || '')
-      )
+      const actionTooltips = wrapper
+        .findAllComponents(ActionButton)
+        .map((button) => String(button.props('tooltipText') || ''))
 
       expect(actionTooltips).not.toContain('Создать задание на сканирование')
       expect(actionTooltips).not.toContain('Стикеры не в реестре')
@@ -1210,17 +1299,19 @@ describe('Registers_List.vue', () => {
     })
 
     it('keeps check-status tooltip for paperwork parcels totals', () => {
-      mockItems.value = [{
-        id: 1,
-        parcelsTotal: 3,
-        placesTotal: 1,
-        parcelsByCheckStatus: {
-          [CheckStatusCode.NoIssues.value]: 3
-        },
-        parcelsByCheckStatusProjection: {
-          30: 3
+      mockItems.value = [
+        {
+          id: 1,
+          parcelsTotal: 3,
+          placesTotal: 1,
+          parcelsByCheckStatus: {
+            [CheckStatusCode.NoIssues.value]: 3
+          },
+          parcelsByCheckStatusProjection: {
+            30: 3
+          }
         }
-      }]
+      ]
 
       const wrapper = mount(RegistersList, {
         global: {
@@ -1242,9 +1333,9 @@ describe('Registers_List.vue', () => {
         }
       })
 
-      const actionTooltips = wrapper.findAllComponents(ActionButton).map(button =>
-        String(button.props('tooltipText') || '')
-      )
+      const actionTooltips = wrapper
+        .findAllComponents(ActionButton)
+        .map((button) => String(button.props('tooltipText') || ''))
 
       expect(actionTooltips).toContain('Удалить реестр')
     })
@@ -1332,7 +1423,9 @@ describe('Registers_List.vue', () => {
           fgColor: null
         }
       ])
-      expect(filters.findComponent(RegisterStatusSelect).props('items')).toEqual(wrapper.vm.statusFilterItems)
+      expect(filters.findComponent(RegisterStatusSelect).props('items')).toEqual(
+        wrapper.vm.statusFilterItems
+      )
       expect(wrapper.vm.localStatus).toBe(REGISTER_STATUS_FILTER_IN_PROGRESS)
     })
 
@@ -1348,7 +1441,9 @@ describe('Registers_List.vue', () => {
       await flushPromises()
 
       expect(wrapper.vm.localStatus).toBe(REGISTER_STATUS_FILTER_ALL)
-      expect(wrapper.findComponent(RegisterStatusSelect).props('modelValue')).toBe(REGISTER_STATUS_FILTER_ALL)
+      expect(wrapper.findComponent(RegisterStatusSelect).props('modelValue')).toBe(
+        REGISTER_STATUS_FILTER_ALL
+      )
     })
 
     it('falls back to only all-procedures option when ops procedures are missing', async () => {
@@ -1362,9 +1457,7 @@ describe('Registers_List.vue', () => {
 
       await flushPromises()
 
-      expect(wrapper.vm.procedureFilterItems).toEqual([
-        { title: 'Все', value: 'all' }
-      ])
+      expect(wrapper.vm.procedureFilterItems).toEqual([{ title: 'Все', value: 'all' }])
     })
 
     it('syncs selected procedure and reloads paperwork registers', async () => {
@@ -1494,8 +1587,8 @@ describe('Registers_List.vue', () => {
 
       await flushPromises()
       const actionButtons = wrapper.findAllComponents(ActionButton)
-      const bulkButton = actionButtons.find(button =>
-        button.props('tooltipText') === 'Выбрать посылки и изменить статус'
+      const bulkButton = actionButtons.find(
+        (button) => button.props('tooltipText') === 'Выбрать посылки и изменить статус'
       )
 
       await bulkButton.find('button').trigger('click')
@@ -1513,7 +1606,7 @@ describe('Registers_List.vue', () => {
     })
 
     it('shows and clears alert messages', async () => {
-      mockAlert.value = { type: 'alert-danger', message: 'Visible alert' }
+      mockAlert.value = { id: 53, severity: 'error', message: 'Visible alert', action: null }
 
       const wrapper = mount(RegistersList, {
         global: {
@@ -1525,7 +1618,7 @@ describe('Registers_List.vue', () => {
 
       await wrapper.find('.close').trigger('click')
 
-      expect(alertClearFn).toHaveBeenCalled()
+      expect(alertDismissFn).toHaveBeenCalledWith(53)
     })
 
     it('passes the current sort model to the server table', async () => {
@@ -1580,7 +1673,6 @@ describe('Registers_List.vue', () => {
       expect(stopSpy).toHaveBeenCalled()
     })
   })
-
 })
 
 describe('formatInvoiceDate function', () => {
@@ -1588,48 +1680,48 @@ describe('formatInvoiceDate function', () => {
     // Test with ISO format string
     const isoDate = '2025-07-27T12:34:56'
     expect(formatDate(isoDate)).toBe('27.07.2025')
-    
+
     // Test with different date
     const anotherDate = '2023-01-05'
     expect(formatDate(anotherDate)).toBe('05.01.2023')
   })
-  
+
   it('handles single-digit day and month with padding', () => {
     // Test with single-digit day
     const singleDigitDay = '2025-07-03'
     expect(formatDate(singleDigitDay)).toBe('03.07.2025')
-    
+
     // Test with single-digit month
     const singleDigitMonth = '2025-03-15'
     expect(formatDate(singleDigitMonth)).toBe('15.03.2025')
-    
+
     // Test with both single-digit day and month
     const bothSingleDigit = '2025-02-09'
     expect(formatDate(bothSingleDigit)).toBe('09.02.2025')
   })
-  
+
   it('returns empty string for null or undefined input', () => {
     expect(formatDate(null)).toBe('')
     expect(formatDate(undefined)).toBe('')
     expect(formatDate('')).toBe('')
   })
-  
+
   it('returns original string for invalid date input', () => {
     const invalidDate = 'not-a-date'
     expect(formatDate(invalidDate)).toBe(invalidDate)
-    
-    const anotherInvalidDate = '2025/13/45'  // invalid month and day
+
+    const anotherInvalidDate = '2025/13/45' // invalid month and day
     expect(formatDate(anotherInvalidDate)).toBe(anotherInvalidDate)
   })
-  
+
   it('handles different date formats correctly', () => {
     // Testing with more reliable date format MM/DD/YYYY (US)
     expect(formatDate('07/27/2025')).toBe('27.07.2025')
-    
+
     // Date object directly
-    const dateObj = new Date(2025, 6, 27)  // Month is 0-indexed
+    const dateObj = new Date(2025, 6, 27) // Month is 0-indexed
     expect(formatDate(dateObj)).toBe('27.07.2025')
-    
+
     // Date with time component
     const dateWithTime = new Date('2025-07-27T15:30:45')
     expect(formatDate(dateWithTime)).toBe('27.07.2025')

@@ -1,10 +1,10 @@
 /* @vitest-environment jsdom */
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import UsersList from '@/lists/Users_List.vue'
 import { vuetifyStubs } from './helpers/test-utils'
@@ -12,10 +12,40 @@ import { roleAdmin, roleLogist, roleWhManager, roleWhOperator } from '@/helpers/
 
 // Centralized mock data
 const mockUsers = ref([
-  { id: 1, firstName: 'John', lastName: 'Doe', patronymic: 'Jr', email: 'john@example.com', roles: [roleAdmin], warehouseIds: [1] },
-  { id: 2, firstName: 'Jane', lastName: 'Smith', patronymic: '', email: 'jane@example.com', roles: [roleLogist], warehouseIds: [] },
-  { id: 3, firstName: 'Bob', lastName: 'Wilson', patronymic: 'Sr', email: 'bob@example.com', roles: [roleAdmin, roleLogist] },
-  { id: 4, firstName: 'Alice', lastName: 'Brown', patronymic: '', email: 'alice@example.com', roles: [] }
+  {
+    id: 1,
+    firstName: 'John',
+    lastName: 'Doe',
+    patronymic: 'Jr',
+    email: 'john@example.com',
+    roles: [roleAdmin],
+    warehouseIds: [1]
+  },
+  {
+    id: 2,
+    firstName: 'Jane',
+    lastName: 'Smith',
+    patronymic: '',
+    email: 'jane@example.com',
+    roles: [roleLogist],
+    warehouseIds: []
+  },
+  {
+    id: 3,
+    firstName: 'Bob',
+    lastName: 'Wilson',
+    patronymic: 'Sr',
+    email: 'bob@example.com',
+    roles: [roleAdmin, roleLogist]
+  },
+  {
+    id: 4,
+    firstName: 'Alice',
+    lastName: 'Brown',
+    patronymic: '',
+    email: 'alice@example.com',
+    roles: []
+  }
 ])
 
 // Mock alert store with reactive alert
@@ -37,9 +67,11 @@ const mockWarehousesStore = {
 }
 
 const mockAlertStore = {
-  alert: mockAlert,
+  get alert() {
+    return mockAlert.value
+  },
   error: vi.fn(),
-  clear: vi.fn()
+  dismiss: vi.fn()
 }
 
 const mockAuthStore = {
@@ -64,11 +96,8 @@ vi.mock('pinia', async () => {
       if (store === mockUsersStore) {
         return { users: mockUsers, loading: mockLoading, error: mockError }
       }
-      if (store === mockAlertStore) {
-        return { alert: mockAlert }
-      }
       if (store === mockAuthStore) {
-        return { 
+        return {
           users_per_page: ref(mockAuthStore.users_per_page),
           users_search: ref(mockAuthStore.users_search),
           users_sort_by: ref(mockAuthStore.users_sort_by),
@@ -100,9 +129,13 @@ vi.mock('vuetify-use-dialog', () => ({
   useConfirm: () => confirmMock
 }))
 
-vi.mock('@/router', () => ({
-  default: router
-}), { virtual: true })
+vi.mock(
+  '@/router',
+  () => ({
+    default: router
+  }),
+  { virtual: true }
+)
 
 describe('Users_List.vue', () => {
   let wrapper
@@ -110,29 +143,61 @@ describe('Users_List.vue', () => {
   beforeEach(() => {
     // Clear mocks before each test
     vi.clearAllMocks()
-    
+
     // Reset mock data
     mockUsers.value = [
-      { id: 1, firstName: 'John', lastName: 'Doe', patronymic: 'Jr', email: 'john@example.com', roles: [roleAdmin], warehouseIds: [1] },
-      { id: 2, firstName: 'Jane', lastName: 'Smith', patronymic: '', email: 'jane@example.com', roles: [roleLogist], warehouseIds: [] },
-      { id: 3, firstName: 'Bob', lastName: 'Wilson', patronymic: 'Sr', email: 'bob@example.com', roles: [roleAdmin, roleLogist] },
-      { id: 4, firstName: 'Alice', lastName: 'Brown', patronymic: '', email: 'alice@example.com', roles: [] }
+      {
+        id: 1,
+        firstName: 'John',
+        lastName: 'Doe',
+        patronymic: 'Jr',
+        email: 'john@example.com',
+        roles: [roleAdmin],
+        warehouseIds: [1]
+      },
+      {
+        id: 2,
+        firstName: 'Jane',
+        lastName: 'Smith',
+        patronymic: '',
+        email: 'jane@example.com',
+        roles: [roleLogist],
+        warehouseIds: []
+      },
+      {
+        id: 3,
+        firstName: 'Bob',
+        lastName: 'Wilson',
+        patronymic: 'Sr',
+        email: 'bob@example.com',
+        roles: [roleAdmin, roleLogist]
+      },
+      {
+        id: 4,
+        firstName: 'Alice',
+        lastName: 'Brown',
+        patronymic: '',
+        email: 'alice@example.com',
+        roles: []
+      }
     ]
-    
+
     // Reset alert
     mockAlert.value = null
-    
+
     // Reset default mock behavior
     confirmMock.mockResolvedValue(true)
     mockUsersStore.getAll = vi.fn()
     mockUsersStore.delete = vi.fn().mockResolvedValue()
     mockUsersStore.ensureLoaded = vi.fn().mockResolvedValue(undefined)
     mockWarehousesStore.ensureLoaded = vi.fn().mockResolvedValue(undefined)
-    mockWarehousesStore.getWarehouseName = vi.fn((id) => ({ 1: 'Warehouse One', 2: 'Warehouse Two' }[id] || String(id)))
+    mockWarehousesStore.getWarehouseName = vi.fn(
+      (id) => ({ 1: 'Warehouse One', 2: 'Warehouse Two' }[id] || String(id))
+    )
     mockAlertStore.error = vi.fn()
-    mockAlertStore.clear = vi.fn()
+    mockAlertStore.dismiss = vi.fn()
   })
-  
+
   afterEach(() => {
     if (wrapper) {
       wrapper.unmount()
@@ -193,14 +258,25 @@ describe('Users_List.vue', () => {
     it('reports load errors through alertStore', async () => {
       mockUsersStore.ensureLoaded.mockRejectedValueOnce(new Error('Failed to fetch users'))
       createWrapper()
-      await Promise.resolve()
+      await flushPromises()
 
       expect(wrapper.text()).not.toContain('Ошибка при загрузке списка пользователей')
-      expect(mockAlertStore.error).toHaveBeenCalledWith('Failed to fetch users')
+      expect(mockAlertStore.error).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'Failed to fetch users' }),
+        expect.objectContaining({
+          fallback: 'Не удалось загрузить пользователей и склады',
+          action: expect.objectContaining({ label: 'Повторить', handler: expect.any(Function) })
+        })
+      )
     })
 
     it('displays alert when alert store has alert', async () => {
-      mockAlert.value = { message: 'Test alert', type: 'alert-success' }
+      mockAlert.value = {
+        id: 37,
+        message: 'Test alert',
+        severity: 'success',
+        action: null
+      }
       createWrapper()
       expect(wrapper.text()).toContain('Test alert')
     })
@@ -264,8 +340,12 @@ describe('Users_List.vue', () => {
     })
 
     it('returns all warehouses marker for users with non-warehouse roles', () => {
-      expect(wrapper.vm.getWarehouseNames({ roles: [roleAdmin], warehouseIds: [1] })).toEqual(['Все'])
-      expect(wrapper.vm.getWarehouseNames({ roles: [roleWhOperator, roleLogist], warehouseIds: [1] })).toEqual(['Все'])
+      expect(wrapper.vm.getWarehouseNames({ roles: [roleAdmin], warehouseIds: [1] })).toEqual([
+        'Все'
+      ])
+      expect(
+        wrapper.vm.getWarehouseNames({ roles: [roleWhOperator, roleLogist], warehouseIds: [1] })
+      ).toEqual(['Все'])
     })
 
     it('returns empty warehouse names for users without associations', () => {
@@ -281,55 +361,92 @@ describe('Users_List.vue', () => {
     })
 
     it('filters users by last name', () => {
-      const item = { raw: { lastName: 'Smith', firstName: 'John', patronymic: '', email: 'john@test.com' } }
+      const item = {
+        raw: { lastName: 'Smith', firstName: 'John', patronymic: '', email: 'john@test.com' }
+      }
       const result = wrapper.vm.filterUsers(null, 'Smith', item)
       expect(result).toBe(true)
     })
 
     it('filters users by first name', () => {
-      const item = { raw: { lastName: 'Doe', firstName: 'Jane', patronymic: '', email: 'jane@test.com' } }
+      const item = {
+        raw: { lastName: 'Doe', firstName: 'Jane', patronymic: '', email: 'jane@test.com' }
+      }
       const result = wrapper.vm.filterUsers(null, 'Jane', item)
       expect(result).toBe(true)
     })
 
     it('filters users by patronymic', () => {
-      const item = { raw: { lastName: 'Doe', firstName: 'John', patronymic: 'Michael', email: 'john@test.com' } }
+      const item = {
+        raw: { lastName: 'Doe', firstName: 'John', patronymic: 'Michael', email: 'john@test.com' }
+      }
       const result = wrapper.vm.filterUsers(null, 'Michael', item)
       expect(result).toBe(true)
     })
 
     it('filters users by email', () => {
-      const item = { raw: { lastName: 'Doe', firstName: 'John', patronymic: '', email: 'john@example.com' } }
+      const item = {
+        raw: { lastName: 'Doe', firstName: 'John', patronymic: '', email: 'john@example.com' }
+      }
       const result = wrapper.vm.filterUsers(null, 'example.com', item)
       expect(result).toBe(true)
     })
 
     it('filters users by credentials', () => {
-      const item = { raw: { lastName: 'Doe', firstName: 'John', patronymic: '', email: 'john@test.com', roles: [roleAdmin] } }
+      const item = {
+        raw: {
+          lastName: 'Doe',
+          firstName: 'John',
+          patronymic: '',
+          email: 'john@test.com',
+          roles: [roleAdmin]
+        }
+      }
       const result = wrapper.vm.filterUsers(null, 'Администратор', item)
       expect(result).toBe(true)
     })
 
     it('filters users by warehouse manager credentials', () => {
-      const item = { raw: { lastName: 'Doe', firstName: 'John', patronymic: '', email: 'john@test.com', roles: [roleWhManager] } }
+      const item = {
+        raw: {
+          lastName: 'Doe',
+          firstName: 'John',
+          patronymic: '',
+          email: 'john@test.com',
+          roles: [roleWhManager]
+        }
+      }
       const result = wrapper.vm.filterUsers(null, 'Менеджер склада', item)
       expect(result).toBe(true)
     })
 
     it('filters users by associated warehouse name', () => {
-      const item = { raw: { lastName: 'Doe', firstName: 'John', patronymic: '', email: 'john@test.com', roles: [roleWhOperator], warehouseIds: [2] } }
+      const item = {
+        raw: {
+          lastName: 'Doe',
+          firstName: 'John',
+          patronymic: '',
+          email: 'john@test.com',
+          roles: [roleWhOperator],
+          warehouseIds: [2]
+        }
+      }
       const result = wrapper.vm.filterUsers(null, 'Warehouse Two', item)
       expect(result).toBe(true)
     })
 
     it('is case insensitive', () => {
-      const item = { raw: { lastName: 'Smith', firstName: 'John', patronymic: '', email: 'john@test.com' } }
+      const item = {
+        raw: { lastName: 'Smith', firstName: 'John', patronymic: '', email: 'john@test.com' }
+      }
       const result = wrapper.vm.filterUsers(null, 'smith', item)
       expect(result).toBe(true)
     })
 
     it('returns false for null query', () => {
-      const item = { raw: { lastName: 'Smith', firstName: 'John', patronymic: '', email: 'john@test.com' } }
+      const item = {
+        raw: { lastName: 'Smith', firstName: 'John', patronymic: '', email: 'john@test.com' }
+      }
       const result = wrapper.vm.filterUsers(null, null, item)
       expect(result).toBe(false)
     })
@@ -346,7 +463,9 @@ describe('Users_List.vue', () => {
     })
 
     it('returns false when no match found', () => {
-      const item = { raw: { lastName: 'Smith', firstName: 'John', patronymic: '', email: 'john@test.com' } }
+      const item = {
+        raw: { lastName: 'Smith', firstName: 'John', patronymic: '', email: 'john@test.com' }
+      }
       const result = wrapper.vm.filterUsers(null, 'nonexistent', item)
       expect(result).toBe(false)
     })
@@ -360,9 +479,9 @@ describe('Users_List.vue', () => {
     it('shows confirmation dialog and deletes user when confirmed', async () => {
       confirmMock.mockResolvedValue(true)
       const userItem = { id: 1, firstName: 'John', lastName: 'Doe' }
-      
+
       await wrapper.vm.deleteUser(userItem)
-      
+
       expect(confirmMock).toHaveBeenCalledWith({
         title: 'Подтверждение',
         confirmationText: 'Удалить',
@@ -383,9 +502,9 @@ describe('Users_List.vue', () => {
     it('does not delete user when confirmation is declined', async () => {
       confirmMock.mockResolvedValue(false)
       const userItem = { id: 1, firstName: 'John', lastName: 'Doe' }
-      
+
       await wrapper.vm.deleteUser(userItem)
-      
+
       expect(confirmMock).toHaveBeenCalled()
       expect(mockUsersStore.delete).not.toHaveBeenCalled()
     })
@@ -395,9 +514,9 @@ describe('Users_List.vue', () => {
       const error = new Error('Delete failed')
       mockUsersStore.delete.mockRejectedValue(error)
       const userItem = { id: 1, firstName: 'John', lastName: 'Doe' }
-      
+
       await wrapper.vm.deleteUser(userItem)
-      
+
       // Wait for next tick to allow promise chain to complete
       await vi.waitFor(() => {
         expect(mockUsersStore.delete).toHaveBeenCalledWith(1)
@@ -412,26 +531,26 @@ describe('Users_List.vue', () => {
     })
 
     it('clears alert when alert close button is clicked', async () => {
-      mockAlert.value = { message: 'Test alert', type: 'alert-success' }
+      mockAlert.value = { id: 61, message: 'Test alert', severity: 'success', action: null }
       createWrapper()
-      
+
       const closeButton = wrapper.find('.close')
       if (closeButton.exists()) {
         await closeButton.trigger('click')
-        expect(mockAlertStore.clear).toHaveBeenCalled()
+        expect(mockAlertStore.dismiss).toHaveBeenCalledWith(61)
       }
     })
 
     it('displays full user name in data table item slot', () => {
       const testUser = {
         lastName: 'Smith',
-        firstName: 'John', 
+        firstName: 'John',
         patronymic: 'Michael'
       }
-      
+
       // Test the user name formatting function
       expect(wrapper.vm).toBeTruthy()
-      
+
       // Simulate rendering of user name (this tests the template function)
       const nameSlot = `${testUser.lastName} ${testUser.firstName} ${testUser.patronymic}`
       expect(nameSlot).toBe('Smith John Michael')
@@ -458,9 +577,9 @@ describe('Users_List.vue', () => {
     it('tests data table item actions for delete user', async () => {
       confirmMock.mockResolvedValue(true)
       const testUser = { id: 456, firstName: 'Test', lastName: 'User' }
-      
+
       await wrapper.vm.deleteUser(testUser)
-      
+
       expect(confirmMock).toHaveBeenCalled()
       expect(mockUsersStore.delete).toHaveBeenCalledWith(456)
     })
@@ -474,15 +593,15 @@ describe('Users_List.vue', () => {
     it('handles all template conditional rendering paths', () => {
       // Test v-if conditions in template
       expect(wrapper.vm).toBeTruthy()
-      
+
       // Users loading state
       mockUsers.value = { loading: true }
       expect(wrapper.text()).toBeTruthy()
-      
-      // Users error state  
+
+      // Users error state
       mockUsers.value = { error: 'Test error' }
       expect(wrapper.text()).toBeTruthy()
-      
+
       // Alert display
       mockAlert.value = { message: 'Test message', type: 'alert-info' }
       expect(wrapper.text()).toBeTruthy()
@@ -491,7 +610,7 @@ describe('Users_List.vue', () => {
     it('tests all component data and computed properties', () => {
       expect(wrapper.vm).toBeTruthy()
       expect(wrapper.exists()).toBe(true)
-      
+
       // Test that all functions are accessible
       expect(typeof wrapper.vm.userSettings).toBe('function')
       expect(typeof wrapper.vm.getCredentials).toBe('function')

@@ -1,6 +1,6 @@
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
 import { ref } from 'vue'
@@ -35,30 +35,23 @@ export function formatFeacnNameFromItem(item) {
  */
 export async function formatFeacnName(code) {
   const store = useFeacnCodesStore()
-  try {
-    const info = await store.getByCode(code)
-    if (!info) {
-      return {
-        name: 'Несуществующий код ТН ВЭД',
-        found: false
-      }
-    }
-    
-    // Create a complete item with the original code
-    const item = {
-      ...info,
-      code: code // Ensure we have the original code
-    }
-    
-    return {
-      name: formatFeacnNameFromItem(item),
-      found: true
-    }
-  } catch {
+  const info = await store.getByCode(code)
+  if (!info) {
     return {
       name: 'Несуществующий код ТН ВЭД',
       found: false
     }
+  }
+
+  // Create a complete item with the original code
+  const item = {
+    ...info,
+    code: code // Ensure we have the original code
+  }
+
+  return {
+    name: formatFeacnNameFromItem(item),
+    found: true
   }
 }
 
@@ -73,7 +66,7 @@ export async function getFeacnTooltip(code, showLoadingPlaceholder = false) {
   if (globalFeacnInfo.value[code] && !globalFeacnInfo.value[code].loading) {
     return globalFeacnInfo.value[code].name
   }
-  
+
   // Set loading placeholder if requested (for hover scenarios)
   if (showLoadingPlaceholder) {
     globalFeacnInfo.value[code] = {
@@ -82,7 +75,7 @@ export async function getFeacnTooltip(code, showLoadingPlaceholder = false) {
       loading: true
     }
   }
-  
+
   // Get both name and status
   const result = await formatFeacnName(code)
   globalFeacnInfo.value[code] = {
@@ -90,7 +83,7 @@ export async function getFeacnTooltip(code, showLoadingPlaceholder = false) {
     found: result.found,
     loading: false
   }
-  
+
   return result.name
 }
 
@@ -105,7 +98,7 @@ export async function getFeacnInfo(code, showLoadingPlaceholder = false) {
   if (globalFeacnInfo.value[code] && !globalFeacnInfo.value[code].loading) {
     return globalFeacnInfo.value[code]
   }
-  
+
   // Set loading placeholder if requested
   if (showLoadingPlaceholder) {
     globalFeacnInfo.value[code] = {
@@ -114,7 +107,7 @@ export async function getFeacnInfo(code, showLoadingPlaceholder = false) {
       loading: true
     }
   }
-  
+
   // Get both name and status
   const result = await formatFeacnName(code)
   const info = {
@@ -122,7 +115,7 @@ export async function getFeacnInfo(code, showLoadingPlaceholder = false) {
     found: result.found,
     loading: false
   }
-  
+
   globalFeacnInfo.value[code] = info
   return info
 }
@@ -194,21 +187,23 @@ export async function preloadFeacnInfo(codes) {
   if (!codes || !Array.isArray(codes) || codes.length === 0) return
 
   // Normalize and deduplicate
-  const uniqueCodes = [...new Set(
-    codes
-      .filter(c => c !== null && c !== undefined)
-      .map(c => String(c).trim())
-      .filter(c => c.length > 0)
-  )]
+  const uniqueCodes = [
+    ...new Set(
+      codes
+        .filter((c) => c !== null && c !== undefined)
+        .map((c) => String(c).trim())
+        .filter((c) => c.length > 0)
+    )
+  ]
 
   // Filter out codes that are already cached (either found or not found)
-  const codesToLoad = uniqueCodes.filter(code => !globalFeacnInfo.value[code])
+  const codesToLoad = uniqueCodes.filter((code) => !globalFeacnInfo.value[code])
 
   if (codesToLoad.length === 0) return
 
   try {
     const store = useFeacnCodesStore()
-    
+
     // Prefer bulk lookup to minimize requests
     const response = await store.bulkLookup(codesToLoad)
     const results = (response && (response.results || response.Results)) || response || {}
@@ -245,11 +240,11 @@ export async function preloadFeacnInfo(codes) {
       }
       return
     }
-    
+
     // For other errors, fallback to individual loading
     try {
-      await Promise.all(codesToLoad.map(code => getFeacnInfo(code, false)))
-    } catch  {
+      await Promise.all(codesToLoad.map((code) => getFeacnInfo(code, false)))
+    } catch (individualError) {
       // If individual loading also fails, mark codes as not checked
       for (const code of codesToLoad) {
         globalFeacnInfo.value[code] = {
@@ -258,6 +253,7 @@ export async function preloadFeacnInfo(codes) {
           loading: false
         }
       }
+      throw individualError
     }
   }
 }

@@ -1,6 +1,6 @@
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
@@ -33,5 +33,4 @@ describe('StopWords_View', () => {
     const stopWordsList = wrapper.findComponent(StopWords_List)
     expect(stopWordsList.exists()).toBe(true)
   })
-
 })

@@ -47,15 +47,14 @@ describe('unregistered.parcels store', () => {
     expect(store.error).toBeNull()
   })
 
-  it('stores error and returns empty list on failure', async () => {
+  it('stores and rethrows load failures', async () => {
     const err = new Error('boom')
     fetchWrapper.get.mockRejectedValue(err)
 
     const store = useUnregisteredParcelsStore()
-    const result = await store.getAll(7)
+    await expect(store.getAll(7)).rejects.toBe(err)
 
     expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/unregisteredparcels/7`)
-    expect(result).toEqual([])
     expect(store.items).toEqual([])
     expect(store.error).toBe(err)
     expect(store.loading).toBe(false)
@@ -113,16 +112,13 @@ describe('unregistered.parcels store', () => {
     )
   })
 
-  it('stores error and returns null when export download fails', async () => {
+  it('stores and rethrows export download failures', async () => {
     const err = new Error('download failed')
     fetchWrapper.downloadFile.mockRejectedValue(err)
 
     const store = useUnregisteredParcelsStore()
-    const result = await store.download(8)
-
-    expect(result).toBeNull()
+    await expect(store.download(8)).rejects.toBe(err)
     expect(store.error).toBe(err)
     expect(store.loading).toBe(false)
   })
-
 })

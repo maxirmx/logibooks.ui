@@ -64,7 +64,7 @@ const stationsStore = {
 
 vi.mock('pinia', async () => {
   const actual = await vi.importActual('pinia')
-  return { ...actual, storeToRefs: store => store }
+  return { ...actual, storeToRefs: (store) => store }
 })
 vi.mock('@/stores/registers.store.js', () => ({
   useRegistersStore: () => registerStore
@@ -160,8 +160,11 @@ describe('Cmr_Settings.vue', () => {
     expect(companiesGetAllMock).toHaveBeenCalledOnce()
     expect(warehousesEnsureLoadedMock).toHaveBeenCalledOnce()
     expect(stationsGetAllMock).toHaveBeenCalledOnce()
-    const rows = [1, 2, 3, 4, 5].map(number =>
-      wrapper.get(`[data-testid="cmr-row-${number}"]`).findAll('label').map(label => label.text())
+    const rows = [1, 2, 3, 4, 5].map((number) =>
+      wrapper
+        .get(`[data-testid="cmr-row-${number}"]`)
+        .findAll('label')
+        .map((label) => label.text())
     )
     expect(rows).toEqual([
       ['Отправитель:', 'Получатель:'],
@@ -203,9 +206,12 @@ describe('Cmr_Settings.vue', () => {
 
   it('posts the exact normalized payload, locks submission, and navigates back', async () => {
     let finishDownload
-    downloadCmrFileMock.mockImplementationOnce(() => new Promise(resolve => {
-      finishDownload = resolve
-    }))
+    downloadCmrFileMock.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finishDownload = resolve
+        })
+    )
     const wrapper = mountDialog()
     await resolveAll()
     const state = setupState(wrapper)
@@ -275,7 +281,13 @@ describe('Cmr_Settings.vue', () => {
     const wrapper = mountDialog()
     await resolveAll()
 
-    expect(alertErrorMock).toHaveBeenCalledWith('Companies unavailable')
+    expect(alertErrorMock).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'Companies unavailable' }),
+      expect.objectContaining({
+        fallback: 'Не удалось загрузить данные для CMR',
+        action: expect.objectContaining({ label: 'Повторить', handler: expect.any(Function) })
+      })
+    )
     expect(setupState(wrapper).isFormDisabled).toBe(true)
     expect(downloadCmrFileMock).not.toHaveBeenCalled()
   })
@@ -285,15 +297,24 @@ describe('Cmr_Settings.vue', () => {
     const wrapper = mountDialog()
     await resolveAll()
 
-    expect(alertErrorMock).toHaveBeenCalledWith('CMR доступна только для автомобильных реестров')
+    expect(alertErrorMock).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'CMR доступна только для автомобильных реестров' }),
+      expect.objectContaining({
+        fallback: 'Не удалось загрузить данные для CMR',
+        action: expect.objectContaining({ label: 'Повторить', handler: expect.any(Function) })
+      })
+    )
     expect(setupState(wrapper).isFormDisabled).toBe(true)
   })
 
   it('keeps controls disabled until every reference request completes', async () => {
     let finishCompanies
-    companiesGetAllMock.mockImplementationOnce(() => new Promise(resolve => {
-      finishCompanies = resolve
-    }))
+    companiesGetAllMock.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finishCompanies = resolve
+        })
+    )
     const wrapper = mountDialog()
     await nextTick()
 
@@ -330,7 +351,13 @@ describe('Cmr_Settings.vue', () => {
     await resolveAll()
     const state = setupState(wrapper)
 
-    expect(alertErrorMock).toHaveBeenCalledWith('Реестр не найден')
+    expect(alertErrorMock).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'Реестр не найден' }),
+      expect.objectContaining({
+        fallback: 'Не удалось загрузить данные для CMR',
+        action: expect.objectContaining({ label: 'Повторить', handler: expect.any(Function) })
+      })
+    )
     state.initializeDefaults()
     expect(state.loadFailed).toBe(true)
   })

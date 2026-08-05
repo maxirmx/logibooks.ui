@@ -1,6 +1,6 @@
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
@@ -11,20 +11,19 @@ describe('Parcel Number Filter Integration', () => {
   })
 
   describe('Auth Store Integration', () => {
-
     it('should accept parcel number filter values', () => {
       const mockAuthStore = {
         parcels_number: ''
       }
-      
+
       // Test Ozon parcel number
       mockAuthStore.parcels_number = 'OZON123456789'
       expect(mockAuthStore.parcels_number).toBe('OZON123456789')
-      
+
       // Test WBR parcel number
       mockAuthStore.parcels_number = 'WB987654321'
       expect(mockAuthStore.parcels_number).toBe('WB987654321')
-      
+
       // Test with special characters
       mockAuthStore.parcels_number = 'TEST-123_456.789'
       expect(mockAuthStore.parcels_number).toBe('TEST-123_456.789')
@@ -36,19 +35,25 @@ describe('Parcel Number Filter Integration', () => {
       // Mock URL params construction
       const buildQueryParams = (authStore) => {
         const params = new URLSearchParams()
-        
+
         if (authStore.parcels_status !== null && authStore.parcels_status !== undefined) {
           params.append('statusId', authStore.parcels_status.toString())
         }
-        
-        if (authStore.parcels_check_status_sw !== null && authStore.parcels_check_status_sw !== undefined) {
+
+        if (
+          authStore.parcels_check_status_sw !== null &&
+          authStore.parcels_check_status_sw !== undefined
+        ) {
           params.append('checkStatusSw', authStore.parcels_check_status_sw.toString())
         }
-        
-        if (authStore.parcels_check_status_fc !== null && authStore.parcels_check_status_fc !== undefined) {
+
+        if (
+          authStore.parcels_check_status_fc !== null &&
+          authStore.parcels_check_status_fc !== undefined
+        ) {
           params.append('checkStatusFc', authStore.parcels_check_status_fc.toString())
         }
-        
+
         if (authStore.parcels_tnved) {
           params.append('tnVed', authStore.parcels_tnved)
         }
@@ -56,7 +61,7 @@ describe('Parcel Number Filter Integration', () => {
         if (authStore.parcels_number) {
           params.append('number', authStore.parcels_number)
         }
-        
+
         return params
       }
 
@@ -68,7 +73,7 @@ describe('Parcel Number Filter Integration', () => {
         parcels_tnved: '',
         parcels_number: 'TEST123'
       }
-      
+
       let params = buildQueryParams(mockAuthStore)
       expect(params.get('number')).toBe('TEST123')
       expect(params.has('tnVed')).toBe(false)
@@ -84,7 +89,7 @@ describe('Parcel Number Filter Integration', () => {
         parcels_tnved: 'AA123',
         parcels_number: 'OZON456'
       }
-      
+
       params = buildQueryParams(mockAuthStore)
       expect(params.get('statusId')).toBe('1')
       expect(params.get('checkStatusSw')).toBe('2')
@@ -100,7 +105,7 @@ describe('Parcel Number Filter Integration', () => {
         parcels_tnved: '',
         parcels_number: 'WB789'
       }
-      
+
       params = buildQueryParams(mockAuthStore)
       expect(params.get('number')).toBe('WB789')
       expect(params.get('checkStatusSw')).toBe('5')
@@ -115,7 +120,7 @@ describe('Parcel Number Filter Integration', () => {
         parcels_tnved: '',
         parcels_number: 'FC001'
       }
-      
+
       params = buildQueryParams(mockAuthStore)
       expect(params.get('number')).toBe('FC001')
       expect(params.get('checkStatusFc')).toBe('4')
@@ -126,18 +131,18 @@ describe('Parcel Number Filter Integration', () => {
     it('should not include number parameter when empty', () => {
       const buildQueryParams = (authStore) => {
         const params = new URLSearchParams()
-        
+
         if (authStore.parcels_number) {
           params.append('number', authStore.parcels_number)
         }
-        
+
         return params
       }
 
       const mockAuthStore = {
         parcels_number: ''
       }
-      
+
       const params = buildQueryParams(mockAuthStore)
       expect(params.has('number')).toBe(false)
     })
@@ -156,7 +161,7 @@ describe('Parcel Number Filter Integration', () => {
         ''
       ]
 
-      testCases.forEach(testCase => {
+      testCases.forEach((testCase) => {
         const mockAuthStore = { parcels_number: testCase }
         expect(mockAuthStore.parcels_number).toBe(testCase)
       })
@@ -164,19 +169,25 @@ describe('Parcel Number Filter Integration', () => {
 
     it('should maintain filter state persistence', () => {
       const mockAuthStore = { parcels_number: 'PERSISTENT123' }
-      
+
       // Simulate some operations that shouldn't reset the filter
       const originalValue = mockAuthStore.parcels_number
-      
+
       // Mock operations
-      const simulatePageChange = () => { /* no-op */ }
-      const simulateSort = () => { /* no-op */ }
-      const simulateRefresh = () => { /* no-op */ }
-      
+      const simulatePageChange = () => {
+        /* no-op */
+      }
+      const simulateSort = () => {
+        /* no-op */
+      }
+      const simulateRefresh = () => {
+        /* no-op */
+      }
+
       simulatePageChange()
       simulateSort()
       simulateRefresh()
-      
+
       expect(mockAuthStore.parcels_number).toBe(originalValue)
     })
   })
@@ -186,19 +197,19 @@ describe('Parcel Number Filter Integration', () => {
       const buildApiUrl = (registerId, authStore) => {
         const baseUrl = 'http://localhost:8080/api/parcels'
         const params = new URLSearchParams()
-        
+
         params.append('registerId', registerId.toString())
         params.append('page', authStore.parcels_page.toString())
         params.append('pageSize', authStore.parcels_per_page.toString())
-        
+
         if (authStore.parcels_number) {
           params.append('number', authStore.parcels_number)
         }
-        
+
         if (authStore.parcels_tnved) {
           params.append('tnVed', authStore.parcels_tnved)
         }
-        
+
         return `${baseUrl}?${params.toString()}`
       }
 
@@ -208,9 +219,9 @@ describe('Parcel Number Filter Integration', () => {
         parcels_number: 'OZON123',
         parcels_tnved: 'AA456'
       }
-      
+
       const apiUrl = buildApiUrl(2, mockAuthStore)
-      
+
       expect(apiUrl).toContain('registerId=2')
       expect(apiUrl).toContain('page=1')
       expect(apiUrl).toContain('pageSize=100')
@@ -222,22 +233,22 @@ describe('Parcel Number Filter Integration', () => {
       const buildApiUrl = (registerId, authStore) => {
         const baseUrl = 'http://localhost:8080/api/parcels'
         const params = new URLSearchParams()
-        
+
         params.append('registerId', registerId.toString())
-        
+
         if (authStore.parcels_number) {
           params.append('number', authStore.parcels_number)
         }
-        
+
         return `${baseUrl}?${params.toString()}`
       }
 
       const mockAuthStore = {
         parcels_number: ''
       }
-      
+
       const apiUrl = buildApiUrl(1, mockAuthStore)
-      
+
       expect(apiUrl).not.toContain('number=')
       expect(apiUrl).toBe('http://localhost:8080/api/parcels?registerId=1')
     })

@@ -1,6 +1,6 @@
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
@@ -24,6 +24,7 @@ export const useCountriesStore = defineStore('countries', () => {
       initialized = true
     } catch (err) {
       error.value = err
+      throw err
     } finally {
       loading.value = false
     }
@@ -37,6 +38,7 @@ export const useCountriesStore = defineStore('countries', () => {
       await fetchWrapper.post(`${baseUrl}/update`)
     } catch (err) {
       error.value = err
+      throw err
     } finally {
       loading.value = false
     }
@@ -44,14 +46,14 @@ export const useCountriesStore = defineStore('countries', () => {
 
   function getCountryAlpha2(code) {
     const num = Number(code)
-    const country = countries.value.find(c => c.isoNumeric === num)
+    const country = countries.value.find((c) => c.isoNumeric === num)
     return country ? country.isoAlpha2 : code
   }
 
   function getCountryShortName(code) {
     const num = Number(code)
     if (num == 643) return 'Россия' // Special case for Russia
-    const country = countries.value.find(c => c.isoNumeric === num)
+    const country = countries.value.find((c) => c.isoNumeric === num)
     if (!country) return code
     return country.nameRuShort || country.nameRuOfficial || code
   }
@@ -62,13 +64,13 @@ export const useCountriesStore = defineStore('countries', () => {
     }
   }
 
-  return { 
-    countries, 
-    loading, 
-    error, 
-    getAll, 
-    update, 
-    getCountryAlpha2, 
+  return {
+    countries,
+    loading,
+    error,
+    getAll,
+    update,
+    getCountryAlpha2,
     getCountryShortName,
     ensureLoaded
   }

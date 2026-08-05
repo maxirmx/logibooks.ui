@@ -1,7 +1,7 @@
 /* @vitest-environment jsdom */
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
@@ -116,7 +116,9 @@ describe('FeacnLocalPrefix_Settings.vue', () => {
     wrapper.vm.setFieldValue('code', '0101')
     wrapper.vm.setFieldValue('exceptions', ['111', ''])
     await wrapper.vm.onSubmit()
-    expect(create).toHaveBeenCalledWith(expectedCreatePayload({ code: '0101', exceptions: ['111'] }))
+    expect(create).toHaveBeenCalledWith(
+      expectedCreatePayload({ code: '0101', exceptions: ['111'] })
+    )
   })
 
   it('calls ensureLoaded on mount', async () => {
@@ -127,8 +129,8 @@ describe('FeacnLocalPrefix_Settings.vue', () => {
 
   it('loads data in edit mode and updates', async () => {
     // Mock backend response with FeacnPrefixExceptionDto structure
-    getById.mockResolvedValue({ 
-      code: '0202', 
+    getById.mockResolvedValue({
+      code: '0202',
       comment: ' legacy comment ',
       explanationForExport: 'export reason',
       explanationForImport: 'import reason',
@@ -136,7 +138,7 @@ describe('FeacnLocalPrefix_Settings.vue', () => {
       forImport: false,
       description: 'server description',
       feacnOrderId: 7,
-      exceptions: [{ id: 1, code: '222', feacnPrefixId: 1 }] 
+      exceptions: [{ id: 1, code: '222', feacnPrefixId: 1 }]
     })
     update.mockResolvedValue({})
     const wrapper = mountComponent({ mode: 'edit', prefixId: 1 })
@@ -158,21 +160,23 @@ describe('FeacnLocalPrefix_Settings.vue', () => {
 
   it('handles mixed exception formats in edit mode', async () => {
     // Mock backend response with mixed string and object formats for backward compatibility
-    getById.mockResolvedValue({ 
-      code: '0303', 
-      exceptions: ['333', { id: 2, code: '444', feacnPrefixId: 1 }] 
+    getById.mockResolvedValue({
+      code: '0303',
+      exceptions: ['333', { id: 2, code: '444', feacnPrefixId: 1 }]
     })
     update.mockResolvedValue({})
     const wrapper = mountComponent({ mode: 'edit', prefixId: 1 })
     await flushPromises()
     await wrapper.vm.onSubmit()
     expect(getById).toHaveBeenCalledWith(1)
-    expect(update).toHaveBeenCalledWith(1, expectedCreatePayload({
-      code: '0303',
-      exceptions: ['333', '444']
-    }))
+    expect(update).toHaveBeenCalledWith(
+      1,
+      expectedCreatePayload({
+        code: '0303',
+        exceptions: ['333', '444']
+      })
+    )
   })
-
 
   it('renders styled export and import checkboxes', () => {
     const wrapper = mountComponent()
@@ -210,9 +214,7 @@ describe('FeacnLocalPrefix_Settings.vue', () => {
   })
 
   it('does not disable checked procedure flags for the prefix currently being edited', async () => {
-    mockPrefixes = [
-      { id: 1, code: '0606', forExport: true, forImport: true }
-    ]
+    mockPrefixes = [{ id: 1, code: '0606', forExport: true, forImport: true }]
     getById.mockResolvedValue({
       id: 1,
       code: '0606',
@@ -256,13 +258,15 @@ describe('FeacnLocalPrefix_Settings.vue', () => {
     wrapper.vm.setFieldValue('explanationForExport', ' export text ')
     wrapper.vm.setFieldValue('explanationForImport', ' import text ')
     await wrapper.vm.onSubmit()
-    expect(create).toHaveBeenCalledWith(expectedCreatePayload({
-      code: '0505',
-      explanationForExport: 'export text',
-      explanationForImport: 'import text',
-      forExport: true,
-      forImport: true
-    }))
+    expect(create).toHaveBeenCalledWith(
+      expectedCreatePayload({
+        code: '0505',
+        explanationForExport: 'export text',
+        explanationForImport: 'import text',
+        forExport: true,
+        forImport: true
+      })
+    )
   })
 
   it('renders FieldArrayWithButtons', () => {
@@ -272,35 +276,35 @@ describe('FeacnLocalPrefix_Settings.vue', () => {
 
   it('renders ActionButton and FeacnCodeSearch when search is toggled', async () => {
     const wrapper = mountComponent()
-    
+
     // Should render ActionButton
     expect(wrapper.find('[data-test="action-button"]').exists()).toBe(true)
-    
+
     // Should not show search initially
     expect(wrapper.find('[data-test="feacn-code-search"]').exists()).toBe(false)
-    
+
     // Click the action button to toggle search
     await wrapper.find('[data-test="action-button"]').trigger('click')
     await wrapper.vm.$nextTick()
-    
+
     // Should show search now
     expect(wrapper.find('[data-test="feacn-code-search"]').exists()).toBe(true)
   })
 
   it('handles code selection from FeacnCodeSearch', async () => {
     const wrapper = mountComponent()
-    
+
     // Toggle search on
     await wrapper.find('[data-test="action-button"]').trigger('click')
     await wrapper.vm.$nextTick()
-    
+
     // Simulate code selection
     const feacnCodeSearch = wrapper.findComponent({ name: 'FeacnCodeSearch' })
     await feacnCodeSearch.vm.$emit('select', '123456')
-    
+
     // Check that code field is updated
     expect(wrapper.vm.code).toBe('123456')
-    
+
     // Search should be closed
     await wrapper.vm.$nextTick()
     expect(wrapper.find('[data-test="feacn-code-search"]').exists()).toBe(false)

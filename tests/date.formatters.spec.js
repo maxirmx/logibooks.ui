@@ -1,9 +1,14 @@
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { describe, expect, it } from 'vitest'
-import { formatDate, formatDateTime, formatDateTimeLines, formatTime } from '@/helpers/date.formatters.js'
+import {
+  formatDate,
+  formatDateTime,
+  formatDateTimeLines,
+  formatTime
+} from '@/helpers/date.formatters.js'
 
 describe('date.formatters', () => {
   describe('formatDate', () => {
@@ -69,10 +74,7 @@ describe('date.formatters', () => {
     it('formats date-time values as local date and local time lines', () => {
       const value = new Date(2026, 5, 10, 12, 30, 15)
 
-      expect(formatDateTimeLines(value)).toEqual([
-        '10.06.2026',
-        value.toLocaleTimeString('ru-RU')
-      ])
+      expect(formatDateTimeLines(value)).toEqual(['10.06.2026', value.toLocaleTimeString('ru-RU')])
     })
 
     it('returns empty array for empty values', () => {

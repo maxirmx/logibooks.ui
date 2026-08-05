@@ -1,8 +1,9 @@
 <script setup>
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import FeacnCodesTree from '@/components/FeacnCodesTree.vue'
@@ -16,8 +17,6 @@ defineOptions({ name: 'FeacnCodesTree_Dialog' })
 const store = useFeacnCodesStore()
 
 const alertStore = useAlertStore()
-const { alert } = storeToRefs(alertStore)
-
 const authStore = useAuthStore()
 const { isSrLogistPlus } = storeToRefs(authStore)
 
@@ -32,9 +31,9 @@ function openFileDialog() {
 
 async function fileSelected(file) {
   if (!file) return
-  
+
   uploading.value = true
-  
+
   try {
     await store.upload(file)
     treeKey.value += 1
@@ -68,6 +67,8 @@ async function fileSelected(file) {
       </div>
     </div>
     <hr class="hr" />
+
+    <PageAlertRegion />
     <input
       ref="fileInput"
       type="file"
@@ -77,20 +78,11 @@ async function fileSelected(file) {
       @change="(e) => fileSelected(e.target.files[0])"
     />
 
-    <div class="tree-container" :class="{ 'disabled': uploading }">
-      <FeacnCodesTree 
-        ref="treeRef" 
-        :key="treeKey"
-        class="tree-wrapper" 
-        :disabled="uploading" 
-      />
+    <div class="tree-container" :class="{ disabled: uploading }">
+      <FeacnCodesTree ref="treeRef" :key="treeKey" class="tree-wrapper" :disabled="uploading" />
     </div>
-    
+
     <!-- Alert -->
-    <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
-      <button @click="alertStore.clear()" class="btn btn-link close">×</button>
-      {{ alert.message }}
-    </div>
   </div>
 </template>
 
@@ -116,4 +108,3 @@ async function fileSelected(file) {
   overflow-y: auto;
 }
 </style>
-

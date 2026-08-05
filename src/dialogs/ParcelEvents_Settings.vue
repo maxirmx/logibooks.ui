@@ -3,6 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { computed, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
@@ -11,8 +12,12 @@ import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import { useWarehousesStore } from '@/stores/warehouses.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
+import { useAlertStore } from '@/stores/alert.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
-import { CUSTOMS_PROCEDURE, normalizeCustomsProcedureCode } from '@/helpers/customs.procedure.helpers.js'
+import {
+  CUSTOMS_PROCEDURE,
+  normalizeCustomsProcedureCode
+} from '@/helpers/customs.procedure.helpers.js'
 import ActionButton from '@/components/ActionButton.vue'
 
 const eventsStore = useEventsStore()
@@ -20,6 +25,7 @@ const parcelStatusesStore = useParcelStatusesStore()
 const warehousesStore = useWarehousesStore()
 const registersStore = useRegistersStore()
 const authStore = useAuthStore()
+const alertStore = useAlertStore()
 
 const { parcelEvents: events, parcelLoading: loading } = storeToRefs(eventsStore)
 const { parcelStatuses } = storeToRefs(parcelStatusesStore)
@@ -32,7 +38,7 @@ const zoneSelections = ref({})
 const extDataSelections = ref({})
 const saving = ref(false)
 const initializing = ref(true)
-const errorMessage = ref('')
+const initialLoadFailed = ref(false)
 
 const parcelEventProcedureSet = new Set(Object.values(CUSTOMS_PROCEDURE))
 const selectedCustomsProcedureCode = ref(null)
@@ -60,11 +66,16 @@ const procedureOptions = computed(() => {
     })
     .filter(Boolean)
 })
-const hasProcedureOptions = computed(() => procedureOptions.value.length === parcelEventProcedureSet.size)
-const filteredEvents = computed(() =>
-  events.value?.filter(
-    (item) => normalizeCustomsProcedureCode(item.customsProcedureCode) === selectedCustomsProcedureCode.value
-  ) ?? []
+const hasProcedureOptions = computed(
+  () => procedureOptions.value.length === parcelEventProcedureSet.size
+)
+const filteredEvents = computed(
+  () =>
+    events.value?.filter(
+      (item) =>
+        normalizeCustomsProcedureCode(item.customsProcedureCode) ===
+        selectedCustomsProcedureCode.value
+    ) ?? []
 )
 
 // Headers for events settings table
@@ -86,7 +97,9 @@ function ensureProcedureOptionsLoaded() {
 }
 
 function ensureSelectedCustomsProcedure() {
-  if (procedureOptions.value.some((option) => option.value === selectedCustomsProcedureCode.value)) {
+  if (
+    procedureOptions.value.some((option) => option.value === selectedCustomsProcedureCode.value)
+  ) {
     return
   }
 
@@ -126,7 +139,7 @@ function onExtDataChange(eventId, value) {
 
 async function loadData() {
   initializing.value = true
-  errorMessage.value = ''
+  initialLoadFailed.value = false
   try {
     await parcelStatusesStore.ensureLoaded()
     await warehousesStore.ensureOpsLoaded()
@@ -148,7 +161,11 @@ async function loadData() {
       return result
     }, {})
   } catch (error) {
-    errorMessage.value = error?.message || 'Не удалось загрузить настройки событий посылок'
+    initialLoadFailed.value = true
+    alertStore.error(error, {
+      fallback: 'Не удалось загрузить настройки событий посылок',
+      action: { label: 'Повторить', handler: loadData }
+    })
   } finally {
     initializing.value = false
   }
@@ -156,7 +173,6 @@ async function loadData() {
 
 async function saveSettings() {
   saving.value = true
-  errorMessage.value = ''
   try {
     const payload = events.value.map((item) => ({
       id: item.id,
@@ -168,7 +184,7 @@ async function saveSettings() {
     await eventsStore.parcelUpdateMany(payload)
     await loadData()
   } catch (error) {
-    errorMessage.value = error?.message || 'Не удалось сохранить изменения'
+    alertStore.error(error, { fallback: 'Не удалось сохранить изменения' })
   } finally {
     saving.value = false
   }
@@ -210,18 +226,18 @@ onMounted(async () => {
     </div>
     <hr class="hr" />
 
+    <PageAlertRegion />
+
     <div v-if="initializing" class="text-center m-5">
       <span class="spinner-border spinner-border-lg align-center"></span>
     </div>
 
     <div v-else>
-      <div v-if="errorMessage" class="alert alert-danger mt-3 mb-0">{{ errorMessage }}</div>
-
       <div v-if="loading" class="text-center m-5">
         <span class="spinner-border spinner-border-lg align-center"></span>
       </div>
 
-      <div v-else-if="hasEvents && hasProcedureOptions && !errorMessage">
+      <div v-else-if="hasEvents && hasProcedureOptions && !initialLoadFailed">
         <div class="parcel-events-filter-row mb-3">
           <v-select
             :model-value="selectedCustomsProcedureCode"
@@ -274,11 +290,7 @@ onMounted(async () => {
               :data-testid="`zone-select-${item.id}`"
             >
               <option value="0">Не менять</option>
-              <option
-                v-for="zone in warehouseOps.zones"
-                :key="zone.value"
-                :value="zone.value"
-              >
+              <option v-for="zone in warehouseOps.zones" :key="zone.value" :value="zone.value">
                 {{ zone.name }}
               </option>
             </select>

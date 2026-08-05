@@ -1,7 +1,7 @@
 /* @vitest-environment jsdom */
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
@@ -35,8 +35,22 @@ vi.mock('vuetify-use-dialog', () => ({
 
 // Centralized mock data
 const mockRegisterStatuses = ref([
-  { id: 1, title: 'Черновик', icon: 'svg:registered', bkColor: '#FFFFFF', fgColor: '#000000', readOnly: false },
-  { id: 2, title: 'Подтвержден', icon: 'svg:very-delivered', bkColor: '#00AA00', fgColor: '#FFFFFF', readOnly: true },
+  {
+    id: 1,
+    title: 'Черновик',
+    icon: 'svg:registered',
+    bkColor: '#FFFFFF',
+    fgColor: '#000000',
+    readOnly: false
+  },
+  {
+    id: 2,
+    title: 'Подтвержден',
+    icon: 'svg:very-delivered',
+    bkColor: '#00AA00',
+    fgColor: '#FFFFFF',
+    readOnly: true
+  },
   { id: 3, title: 'Выполнен', icon: null, bkColor: null, fgColor: null, readOnly: false }
 ])
 
@@ -111,8 +125,22 @@ describe('RegisterStatuses_List.vue', () => {
 
     // Reset reactive data
     mockRegisterStatuses.value = [
-      { id: 1, title: 'Черновик', icon: 'svg:registered', bkColor: '#FFFFFF', fgColor: '#000000', readOnly: false },
-      { id: 2, title: 'Подтвержден', icon: 'svg:very-delivered', bkColor: '#00AA00', fgColor: '#FFFFFF', readOnly: true },
+      {
+        id: 1,
+        title: 'Черновик',
+        icon: 'svg:registered',
+        bkColor: '#FFFFFF',
+        fgColor: '#000000',
+        readOnly: false
+      },
+      {
+        id: 2,
+        title: 'Подтвержден',
+        icon: 'svg:very-delivered',
+        bkColor: '#00AA00',
+        fgColor: '#FFFFFF',
+        readOnly: true
+      },
       { id: 3, title: 'Выполнен', icon: null, bkColor: null, fgColor: null, readOnly: false }
     ]
     mockIsShiftLeadPlus.value = true
@@ -132,7 +160,6 @@ describe('RegisterStatuses_List.vue', () => {
   })
 
   describe('Data Display', () => {
-
     it('shows empty table when no order statuses', async () => {
       mockRegisterStatuses.value = []
       await wrapper.vm.$nextTick()
@@ -142,14 +169,15 @@ describe('RegisterStatuses_List.vue', () => {
     })
 
     it('displays whether changes are prohibited', () => {
-      expect(
-        wrapper.findAll('.register-status-read-only').map((cell) => cell.text())
-      ).toEqual(['Нет', 'Да', 'Нет'])
+      expect(wrapper.findAll('.register-status-read-only').map((cell) => cell.text())).toEqual([
+        'Нет',
+        'Да',
+        'Нет'
+      ])
     })
   })
 
   describe('Authorized Actions', () => {
-
     it('calls openCreateDialog and navigates to create page', async () => {
       await wrapper.vm.openCreateDialog()
       expect(mockPush).toHaveBeenCalledWith('/registerstatus/create')
@@ -201,8 +229,7 @@ describe('RegisterStatuses_List.vue', () => {
     it('shows confirmation dialog when delete is clicked', async () => {
       mockConfirm.mockResolvedValue(true)
 
-      const deleteButton = wrapper.find('button[title*="delete"]') ||
-                           wrapper.find('.anti-btn')
+      const deleteButton = wrapper.find('button[title*="delete"]') || wrapper.find('.anti-btn')
 
       if (deleteButton.exists()) {
         await deleteButton.trigger('click')
@@ -265,7 +292,6 @@ describe('RegisterStatuses_List.vue', () => {
       expect(result).toBe(true)
     })
 
-
     it('handles null query', () => {
       const mockItem = { raw: { title: 'Черновик' } }
       const result = wrapper.vm.filterRegisterStatuses(null, null, mockItem)
@@ -309,7 +335,6 @@ describe('RegisterStatuses_List.vue', () => {
       expect(wrapper.vm.headers).toBeDefined()
       expect(wrapper.vm.filterRegisterStatuses).toBeDefined()
     })
-
   })
 
   describe('Store Integration', () => {
@@ -323,8 +348,8 @@ describe('RegisterStatuses_List.vue', () => {
       expect(wrapper.vm.authStore).toBeDefined()
     })
 
-    it('properly integrates with alert store', () => {
-      expect(wrapper.vm.alert).toBeDefined()
+    it('properly integrates with the notification store', () => {
+      expect(wrapper.vm.alertStore).toBeDefined()
     })
   })
 })

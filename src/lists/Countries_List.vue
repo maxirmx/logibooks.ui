@@ -1,8 +1,9 @@
 <script setup>
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { storeToRefs } from 'pinia'
 import { useCountriesStore } from '@/stores/countries.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
@@ -11,30 +12,24 @@ import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
 import { onMounted, unref } from 'vue'
 import ActionButton from '@/components/ActionButton.vue'
+import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
 
 const countriesStore = useCountriesStore()
 const alertStore = useAlertStore()
 const { countries, loading } = storeToRefs(countriesStore)
-const { alert } = storeToRefs(alertStore)
-
 const authStore = useAuthStore()
-const {
-  countries_per_page,
-  countries_search,
-  countries_sort_by,
-  countries_page,
-  isSrLogistPlus
-} = storeToRefs(authStore)
+const { countries_per_page, countries_search, countries_sort_by, countries_page, isSrLogistPlus } =
+  storeToRefs(authStore)
 
 async function loadCountries() {
   await countriesStore.getAll()
-  const storeError = unref(countriesStore.error)
-  if (storeError) {
-    alertStore.error(storeError instanceof Error ? storeError.message : String(storeError))
-  }
 }
 
-onMounted(loadCountries)
+onMounted(() =>
+  runWithRetryAlert(loadCountries, {
+    fallback: 'Не удалось загрузить страны'
+  })
+)
 
 function filterCodes(value, query, item) {
   if (!query) return true
@@ -66,7 +61,7 @@ const headers = [
   { title: 'Код', key: 'isoNumeric', align: 'start', width: '80px' },
   { title: 'Обозначение', key: 'isoAlpha2', align: 'start', width: '80px' },
   { title: 'Русское название', key: 'nameRuOfficial', align: 'start' },
-  { title: 'Английское название', key: 'nameEnOfficial', align: 'start' },
+  { title: 'Английское название', key: 'nameEnOfficial', align: 'start' }
 ]
 </script>
 
@@ -92,6 +87,8 @@ const headers = [
     </div>
 
     <hr class="hr" />
+
+    <PageAlertRegion />
 
     <div>
       <v-text-field
@@ -121,10 +118,6 @@ const headers = [
         fixed-header
       />
     </v-card>
-    <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
-      <button @click="alertStore.clear()" class="btn btn-link close">×</button>
-      {{ alert.message }}
-    </div>
   </div>
 </template>
 

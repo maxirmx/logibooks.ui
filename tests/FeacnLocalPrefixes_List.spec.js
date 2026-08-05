@@ -2,7 +2,7 @@
 
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
@@ -32,21 +32,21 @@ const mockAuthStore = vi.hoisted(() => ({
 }))
 
 const mockPrefixes = ref([
-  { 
-    id: 1, 
-    code: '0101', 
-    description: 'd1', 
+  {
+    id: 1,
+    code: '0101',
+    description: 'd1',
     comment: 'legacy comment',
     explanationForExport: 'export ban reason',
     explanationForImport: null,
     forExport: true,
     forImport: false,
-    exceptions: [{ id: 1, code: '111', feacnPrefixId: 1 }] 
+    exceptions: [{ id: 1, code: '111', feacnPrefixId: 1 }]
   },
-  { 
-    id: 2, 
-    code: '0202', 
-    description: 'd2', 
+  {
+    id: 2,
+    code: '0202',
+    description: 'd2',
     explanationForExport: null,
     explanationForImport: 'import ban reason',
     forExport: false,
@@ -80,8 +80,8 @@ const mockFeacnInfo = ref({
   '0202': { name: 'Derived 0202' },
   '0303': { name: 'Derived 0303' },
   '0404': { name: 'Derived 0404' },
-  '111': { name: 'Exception 111' },
-  '333': { name: 'Exception 333' }
+  111: { name: 'Exception 111' },
+  333: { name: 'Exception 333' }
 })
 
 vi.mock('@/stores/feacn.prefixes.store.js', () => ({
@@ -121,14 +121,15 @@ vi.mock('@/router', () => ({
 
 describe('FeacnLocalPrefixes_List.vue', () => {
   let wrapper
-  const mountList = () => mount(FeacnLocalPrefixesList, { 
-    global: { 
-      stubs: {
-        ...vuetifyStubs,
-        ActionButton: true
+  const mountList = () =>
+    mount(FeacnLocalPrefixesList, {
+      global: {
+        stubs: {
+          ...vuetifyStubs,
+          ActionButton: true
+        }
       }
-    } 
-  })
+    })
 
   beforeEach(() => {
     getAllPrefixes.mockClear()
@@ -153,15 +154,17 @@ describe('FeacnLocalPrefixes_List.vue', () => {
       { forImport: true, forExport: false }
     ]
 
-    expect(combinations.map(item => wrapper.vm.getProhibitionScopeSortOrder(item))).toEqual([0, 1, 2, 3])
-    expect(wrapper.vm.tablePrefixes.map(item => item.procedure)).toEqual([1, 3, 2, 2])
+    expect(combinations.map((item) => wrapper.vm.getProhibitionScopeSortOrder(item))).toEqual([
+      0, 1, 2, 3
+    ])
+    expect(wrapper.vm.tablePrefixes.map((item) => item.procedure)).toEqual([1, 3, 2, 2])
   })
 
   it('renders export and import prohibition reasons on separate lines', () => {
     const rows = wrapper.findAll('[data-testid="v-data-table"] .v-data-table-row')
     const reasonCell = rows[2].findAll('.v-data-table-cell')[5]
     const lines = reasonCell.findAll('.reason-line')
-    expect(lines.map(line => line.text())).toEqual(['dual export reason', 'dual import reason'])
+    expect(lines.map((line) => line.text())).toEqual(['dual export reason', 'dual import reason'])
   })
 
   it('keeps import reason aligned with import procedure when export reason is empty', () => {
@@ -169,7 +172,7 @@ describe('FeacnLocalPrefixes_List.vue', () => {
     const procedureLines = rows[3].findAll('.v-data-table-cell')[4].findAll('.procedure-line')
     const reasonLines = rows[3].findAll('.v-data-table-cell')[5].findAll('.reason-line')
 
-    expect(procedureLines.map(line => line.text())).toEqual(['Экспорт из РФ', 'Импорт в РФ'])
+    expect(procedureLines.map((line) => line.text())).toEqual(['Экспорт из РФ', 'Импорт в РФ'])
     expect(reasonLines).toHaveLength(2)
     expect(reasonLines[0].text()).toBe('')
     expect(reasonLines[1].text()).toBe('import only dual reason')
@@ -246,17 +249,17 @@ describe('FeacnLocalPrefixes_List.vue', () => {
   })
 
   it('filters visible prefixes by selected procedure', async () => {
-    expect(wrapper.vm.filteredPrefixes.map(p => p.code)).toEqual(['0101', '0202', '0303', '0404'])
+    expect(wrapper.vm.filteredPrefixes.map((p) => p.code)).toEqual(['0101', '0202', '0303', '0404'])
 
     wrapper.unmount()
     mockAuthStore.feacnlocalprefixes_procedure = 'export'
     wrapper = mountList()
-    expect(wrapper.vm.filteredPrefixes.map(p => p.code)).toEqual(['0101', '0303', '0404'])
+    expect(wrapper.vm.filteredPrefixes.map((p) => p.code)).toEqual(['0101', '0303', '0404'])
 
     wrapper.unmount()
     mockAuthStore.feacnlocalprefixes_procedure = 'import'
     wrapper = mountList()
-    expect(wrapper.vm.filteredPrefixes.map(p => p.code)).toEqual(['0202', '0303', '0404'])
+    expect(wrapper.vm.filteredPrefixes.map((p) => p.code)).toEqual(['0202', '0303', '0404'])
   })
 
   it('renders global procedure selector next to search field', () => {

@@ -12,6 +12,7 @@ import {
   getWeightCorrection,
   WEIGHT_CORRECTION_CHOICE
 } from '@/helpers/weight.correction.helpers.js'
+import { reportError } from '@/helpers/error.helpers.js'
 
 export const POLLING_INTERVAL_MS = 1000
 
@@ -83,7 +84,9 @@ export async function validateRegister(
 
 export function cancelValidation(validationState, registersStore, stopPollingFn) {
   if (validationState.handleId) {
-    registersStore.cancelValidation(validationState.handleId).catch(() => {})
+    registersStore.cancelValidation(validationState.handleId).catch((error) => {
+      reportError(error, { context: 'register validation cancellation cleanup' })
+    })
   }
   validationState.show = false
   stopPollingFn()
@@ -281,12 +284,13 @@ export function createRegisterActionHandlers(registersStore, alertStore, { mode 
   }
 
   function cancelValidationWrapper() {
-    const isFeacnLookup =
-      validationState.operation === 'lookup-feacn-codes'
+    const isFeacnLookup = validationState.operation === 'lookup-feacn-codes'
 
     if (isFeacnLookup) {
       if (validationState.handleId) {
-        registersStore.cancelLookupFeacnCodes(validationState.handleId).catch(() => {})
+        registersStore.cancelLookupFeacnCodes(validationState.handleId).catch((error) => {
+          reportError(error, { context: 'FEACN lookup cancellation cleanup' })
+        })
       }
       validationState.show = false
       pollingTimer.stop()
@@ -374,14 +378,15 @@ export function useRegisterHeaderActions({
 
   const registerReady = computed(() => !!currentRegister.value && !registerLoadingRef.value)
 
-  const generalActionsDisabled = computed(() =>
-    !registerReady.value ||
-    tableLoadingRef.value ||
-    runningActionRef.value ||
-    validationState.show ||
-    actionDialogState.show ||
-    weightCorrectionChoicePending.value ||
-    passportFinishConfirmationPending.value
+  const generalActionsDisabled = computed(
+    () =>
+      !registerReady.value ||
+      tableLoadingRef.value ||
+      runningActionRef.value ||
+      validationState.show ||
+      actionDialogState.show ||
+      weightCorrectionChoicePending.value ||
+      passportFinishConfirmationPending.value
   )
 
   async function runWithLock(action, { lock = true, checkDisabled = true } = {}) {
@@ -455,10 +460,10 @@ export function useRegisterHeaderActions({
 
     showActionDialog(operation)
     try {
-      await runWithLock(
-        (register) => action(register, applyWeightCorrection),
-        { lock: true, checkDisabled: false }
-      )
+      await runWithLock((register) => action(register, applyWeightCorrection), {
+        lock: true,
+        checkDisabled: false
+      })
     } finally {
       hideActionDialog()
     }
@@ -474,10 +479,10 @@ export function useRegisterHeaderActions({
 
     showActionDialog(operation)
     try {
-      await runWithLock(
-        (register) => action(register, applyWeightCorrection),
-        { lock: true, checkDisabled: false }
-      )
+      await runWithLock((register) => action(register, applyWeightCorrection), {
+        lock: true,
+        checkDisabled: false
+      })
     } finally {
       hideActionDialog()
     }
@@ -549,7 +554,8 @@ export function useRegisterHeaderActions({
           cancellationText: 'Отмена',
           confirmationButtonProps: { color: 'orange-darken-3' },
           dialogProps: { width: '40%', minWidth: '320px' },
-          content: 'Из таможенного оформления могут быть исключены посылки с незавершённой проверкой паспорта получателя. Продолжить?'
+          content:
+            'Из таможенного оформления могут быть исключены посылки с незавершённой проверкой паспорта получателя. Продолжить?'
         })
       } finally {
         passportFinishConfirmationPending.value = false
@@ -570,7 +576,10 @@ export function useRegisterHeaderActions({
   }
 
   const runcalculateCustomsCharges = async () => {
-    await runActionWithDialog(calculateCustomsChargesForCurrentRegister, 'calculate-customs-charges')
+    await runActionWithDialog(
+      calculateCustomsChargesForCurrentRegister,
+      'calculate-customs-charges'
+    )
   }
 
   function handleValidationDialogClose(show, previous) {
@@ -579,7 +588,9 @@ export function useRegisterHeaderActions({
     const canReloadParcels = typeof loadParcels === 'function'
 
     if (dialogClosed && componentMounted && canReloadParcels) {
-      Promise.resolve(loadParcels()).catch(() => {})
+      Promise.resolve(loadParcels()).catch((error) => {
+        reportError(error, { context: 'register action parcel refresh' })
+      })
     }
   }
 
@@ -610,7 +621,7 @@ export function useRegisterHeaderActions({
     lookupFeacnCodesEx: runLookupFeacnCodesEx,
     exportAllXmlOrdinary: runExportAllXmlWithoutExcise,
     exportAllXmlExcise: runExportAllXmlExcise,
-    exportAllXmlNotifications: runExportAllXmlNotifications,    
+    exportAllXmlNotifications: runExportAllXmlNotifications,
     downloadRegister: runDownloadRegister,
     downloadAdditionalRestrictions: runDownloadAdditionalRestrictions,
     downloadTechdoc: runDownloadTechdoc,

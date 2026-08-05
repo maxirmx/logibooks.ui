@@ -1,8 +1,9 @@
 <script setup>
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { watch, ref, computed, onMounted, onUnmounted, provide, nextTick } from 'vue'
 import { useParcelsStore } from '@/stores/parcels.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
@@ -39,7 +40,7 @@ import {
   getFrozenOrderSortDir,
   loadParcels,
   formatCustomsCharge,
-  getCustomsChargeHeaders,
+  getCustomsChargeHeaders
 } from '@/helpers/parcels.list.helpers.js'
 import { handleFellowsClick } from '@/helpers/parcel.number.ext.helpers.js'
 import { useRegisterHeaderActions } from '@/helpers/register.actions.js'
@@ -77,8 +78,6 @@ const authStore = useAuthStore()
 const route = useRoute()
 
 const alertStore = useAlertStore()
-const { alert } = storeToRefs(alertStore)
-
 const { items, loading, totalCount } = storeToRefs(parcelsStore)
 const {
   parcels_per_page,
@@ -121,20 +120,19 @@ const {
   updateSelectedParcelIds,
   scrollToSelectedItem,
   getRowProps: getRowPropsForWbrParcel,
-  stop: stopMultiSelect,
+  stop: stopMultiSelect
 } = useParcelMultiSelect({
   items,
   loading,
   selectedParcelId,
   page: parcels_page,
   dataTableRef,
-  getBaseRowClass: (data) => getRowPropsForParcel(
-    data,
-    showPassportVerification.value ? passportCheckStatuses.value : []
-  ).class,
+  getBaseRowClass: (data) =>
+    getRowPropsForParcel(data, showPassportVerification.value ? passportCheckStatuses.value : [])
+      .class,
   onContextMenu: () => {
     if (registersStore.item?.readOnly !== true) showAssignTnvedDialog.value = true
-  },
+  }
 })
 
 const showAssignTnvedDialog = ref(false)
@@ -147,8 +145,8 @@ async function handleAssignTnvedConfirm(ids, tnVed) {
     const result = await parcelsStore.bulkAssignTnved(ids, tnVed)
     if ((result?.skippedReadOnlyCount || 0) > 0) {
       alertStore.success(
-        `ТН ВЭД обновлен для ${result.updatedCount || 0} посылок. `
-        + `Пропущено из-за запрета изменений: ${result.skippedReadOnlyCount}`
+        `ТН ВЭД обновлен для ${result.updatedCount || 0} посылок. ` +
+          `Пропущено из-за запрета изменений: ${result.skippedReadOnlyCount}`
       )
     }
     showAssignTnvedDialog.value = false
@@ -168,18 +166,25 @@ async function handleParcelStatusBulkUpdated() {
   await loadParcelsWrapper()
 }
 
-const maxPage = computed(() => Math.max(1, Math.ceil((totalCount.value || 0) / parcels_per_page.value)))
+const maxPage = computed(() =>
+  Math.max(1, Math.ceil((totalCount.value || 0) / parcels_per_page.value))
+)
 const isReProcedure = computed(() => {
   const procedureId = registersStore.item?.customsProcedureCode
   if (procedureId == null) return false
-  const procedure = registersStore.ops?.customsProcedures?.find((proc) => Number(proc.value) === Number(procedureId))
+  const procedure = registersStore.ops?.customsProcedures?.find(
+    (proc) => Number(proc.value) === Number(procedureId)
+  )
   return procedure?.isRe
 })
-const showPassportVerification = computed(() =>
-  authStore.isSrLogistPlus && isImportCustomsProcedure(registersStore.item?.customsProcedureCode)
+const showPassportVerification = computed(
+  () =>
+    authStore.isSrLogistPlus && isImportCustomsProcedure(registersStore.item?.customsProcedureCode)
 )
 const passportCheckStatuses = computed(() => registersStore.ops?.passportCheckStatuses || [])
-const passportCheckStatusOptions = computed(() => createPassportCheckStatusOptions(passportCheckStatuses.value))
+const passportCheckStatusOptions = computed(() =>
+  createPassportCheckStatusOptions(passportCheckStatuses.value)
+)
 
 // Provide page options for a select control. For very large page counts, return a compact set
 const pageOptions = computed(() => {
@@ -197,7 +202,9 @@ const pageOptions = computed(() => {
   // around current
   for (let i = Math.max(1, current - 10); i <= Math.min(mp, current + 10); i++) set.add(i)
 
-  return Array.from(set).sort((a, b) => a - b).map(n => ({ value: n, title: String(n) }))
+  return Array.from(set)
+    .sort((a, b) => a - b)
+    .map((n) => ({ value: n, title: String(n) }))
 })
 
 // When max page decreases (e.g. due to filters), clamp current page
@@ -213,7 +220,11 @@ const isComponentMounted = ref(true)
 const runningAction = ref(false)
 const registerHeading = computed(() => {
   if (registerLoading.value) return 'Загрузка...'
-  return buildParcelListHeading(registersStore.item, (id) => registersStore.getTransportationDocument(id), 'Реестр')
+  return buildParcelListHeading(
+    registersStore.item,
+    (id) => registersStore.getTransportationDocument(id),
+    'Реестр'
+  )
 })
 
 async function fetchRegister() {
@@ -238,7 +249,6 @@ async function loadParcelsWrapper() {
 
 // Provide the loadParcels function for child components
 provide('loadParcels', loadParcelsWrapper)
-
 
 const {
   validationState,
@@ -284,35 +294,44 @@ const { triggerLoad, stop: stopFilterSync } = useDebouncedFilterSync({
 })
 
 const watcherStop = watch(
-  [parcels_page, parcels_per_page, parcels_sort_by, parcels_status, parcels_check_status_sw, parcels_check_status_fc, parcels_passport_check_status, parcels_hide_legacy_restrictions],
+  [
+    parcels_page,
+    parcels_per_page,
+    parcels_sort_by,
+    parcels_status,
+    parcels_check_status_sw,
+    parcels_check_status_fc,
+    parcels_passport_check_status,
+    parcels_hide_legacy_restrictions
+  ],
   () => triggerLoad(),
   { immediate: false }
 )
 
-onMounted(async () => {
+async function initializeList() {
   try {
     if (!isComponentMounted.value) return
 
-  // DEC_REPORT_UPLOADED_EVENT listener removed per request
+    // DEC_REPORT_UPLOADED_EVENT listener removed per request
 
     await registersStore.ensureOpsLoaded()
     if (!isComponentMounted.value) return
 
     await parcelStatusStore.ensureLoaded()
     if (!isComponentMounted.value) return
-    
+
     await feacnOrdersStore.ensureLoaded()
     if (!isComponentMounted.value) return
-    
-  await countriesStore.ensureLoaded()
+
+    await countriesStore.ensureLoaded()
     if (!isComponentMounted.value) return
 
     await stopWordsStore.ensureLoaded()
     if (!isComponentMounted.value) return
-    
+
     await keyWordsStore.ensureLoaded()
     if (!isComponentMounted.value) return
-    
+
     await fetchRegister()
 
     if (items.value?.length > 0) {
@@ -331,7 +350,7 @@ onMounted(async () => {
     // the previously selected parcel will be highlighted with the dashed border
     const { restoreSelectedParcelIdSnapshot } = useParcelSelectionRestore()
     const restoredParcelId = restoreSelectedParcelIdSnapshot()
-    if (restoredParcelId != null && items.value?.some(item => item.id === restoredParcelId)) {
+    if (restoredParcelId != null && items.value?.some((item) => item.id === restoredParcelId)) {
       selectedParcelIds.value = new Set([restoredParcelId])
       selectedParcelId.value = restoredParcelId
       lastClickedId.value = restoredParcelId
@@ -339,10 +358,12 @@ onMounted(async () => {
       await nextTick()
       scrollToSelectedItem()
     }
-
   } catch (error) {
     if (isComponentMounted.value) {
-      alertStore.error('Ошибка при инициализации компонента')
+      alertStore.error(error, {
+        fallback: 'Ошибка при инициализации компонента',
+        action: { label: 'Повторить', handler: initializeList }
+      })
       parcelsStore.error = error?.message || 'Ошибка при загрузке данных'
     }
   } finally {
@@ -350,7 +371,9 @@ onMounted(async () => {
       isInitializing.value = false
     }
   }
-})
+}
+
+onMounted(initializeList)
 
 onUnmounted(() => {
   isComponentMounted.value = false
@@ -364,7 +387,7 @@ onUnmounted(() => {
 
 const statusOptions = computed(() => [
   { value: null, title: 'Все' },
-  ...parcelStatusStore.parcelStatuses.map(status => ({
+  ...parcelStatusStore.parcelStatuses.map((status) => ({
     value: status.id,
     title: status.title
   }))
@@ -376,42 +399,119 @@ const checkStatusOptionsFc = computed(() => createCheckStatusFilterOptions(FCChe
 
 const headers = computed(() => {
   // Always keep FEACN lookup column at its original position.
-  const feacnLookupColumn = { title: 'Подбор ТН ВЭД', key: 'feacnLookup', sortable: true, align: 'center', width: '120px' }
+  const feacnLookupColumn = {
+    title: 'Подбор ТН ВЭД',
+    key: 'feacnLookup',
+    sortable: true,
+    align: 'center',
+    width: '120px'
+  }
   // previousDTagComment is optional and should be appended at the end when reimport procedure is active.
-  const previousDTagCommentColumn = { title: 'Комментарий', key: 'previousDTagComment', sortable: true, align: 'center', width: '170px' }
+  const previousDTagCommentColumn = {
+    title: 'Комментарий',
+    key: 'previousDTagComment',
+    sortable: true,
+    align: 'center',
+    width: '170px'
+  }
 
   const baseHeaders = [
     // Actions - Always first for easy access
     { title: '', key: 'frozenOrder', sortable: true, align: 'center', width: '50px' },
     // Order Identification & Status - Key identifiers and current state
     { title: '№', key: 'id', align: 'start', width: '120px' },
-    { title: wbrRegisterColumnTitles.shk, sortable: true, key: 'shk', align: 'start', width: '120px' },
-    { title: wbrRegisterColumnTitles.checkStatus, key: 'checkStatus', align: 'start', width: '170px' },
+    {
+      title: wbrRegisterColumnTitles.shk,
+      sortable: true,
+      key: 'shk',
+      align: 'start',
+      width: '120px'
+    },
+    {
+      title: wbrRegisterColumnTitles.checkStatus,
+      key: 'checkStatus',
+      align: 'start',
+      width: '170px'
+    },
     { title: wbrRegisterColumnTitles.tnVed, key: 'tnVed', align: 'start', width: '120px' },
     // Insert FEACN lookup column only when not reimport procedure
     ...(!isReProcedure.value ? [feacnLookupColumn] : []),
 
     // Product Identification & Details - What the parcel contains
-    { title: wbrRegisterColumnTitles.productName, sortable: false, key: 'productName', align: 'start', width: '200px' },
-    { title: wbrRegisterColumnTitles.productLink, sortable: false, key: 'productLink', align: 'start', width: '150px' },
+    {
+      title: wbrRegisterColumnTitles.productName,
+      sortable: false,
+      key: 'productName',
+      align: 'start',
+      width: '200px'
+    },
+    {
+      title: wbrRegisterColumnTitles.productLink,
+      sortable: false,
+      key: 'productLink',
+      align: 'start',
+      width: '150px'
+    },
 
     // Physical Properties - Tangible characteristics
-    { title: wbrRegisterColumnTitles.countryCode, sortable: false, key: 'countryCode', align: 'start', width: '100px' },
-    { title: wbrRegisterColumnTitles.weightKg, sortable: false, key: 'weightKg', align: 'start', width: '100px' },
-    { title: wbrRegisterColumnTitles.quantity, sortable: false, key: 'quantity', align: 'start', width: '80px' },
+    {
+      title: wbrRegisterColumnTitles.countryCode,
+      sortable: false,
+      key: 'countryCode',
+      align: 'start',
+      width: '100px'
+    },
+    {
+      title: wbrRegisterColumnTitles.weightKg,
+      sortable: false,
+      key: 'weightKg',
+      align: 'start',
+      width: '100px'
+    },
+    {
+      title: wbrRegisterColumnTitles.quantity,
+      sortable: false,
+      key: 'quantity',
+      align: 'start',
+      width: '80px'
+    },
 
     // Financial Information - Pricing and currency
-    { title: wbrRegisterColumnTitles.unitPrice, sortable: false, key: 'unitPrice', align: 'start', width: '100px' },
-    { title: wbrRegisterColumnTitles.currency, sortable: false, key: 'currency', align: 'start', width: '80px' },
+    {
+      title: wbrRegisterColumnTitles.unitPrice,
+      sortable: false,
+      key: 'unitPrice',
+      align: 'start',
+      width: '100px'
+    },
+    {
+      title: wbrRegisterColumnTitles.currency,
+      sortable: false,
+      key: 'currency',
+      align: 'start',
+      width: '80px'
+    },
 
     // Recipient Information - Who receives the parcel
-    { title: wbrRegisterColumnTitles.recipientName, sortable: false, key: 'recipientName', align: 'start', width: '200px' },
-    { title: wbrRegisterColumnTitles.passportNumber, sortable: false, key: 'passportNumber', align: 'start', width: '120px' },
+    {
+      title: wbrRegisterColumnTitles.recipientName,
+      sortable: false,
+      key: 'recipientName',
+      align: 'start',
+      width: '200px'
+    },
+    {
+      title: wbrRegisterColumnTitles.passportNumber,
+      sortable: false,
+      key: 'passportNumber',
+      align: 'start',
+      width: '120px'
+    },
 
     // Status Information - Current state of the parcel
     { title: wbrRegisterColumnTitles.statusId, key: 'statusId', align: 'start', width: '120px' },
     { title: 'ДТЭГ/ПТДЭГ', key: 'dTag', align: 'start', width: '120px' },
-    ...getCustomsChargeHeaders(registersStore.item),
+    ...getCustomsChargeHeaders(registersStore.item)
   ]
 
   // Append previousDTagComment at the end only for reimport procedure
@@ -491,12 +591,16 @@ function getGenericTemplateHeaders() {
       />
     </div>
     <hr class="hr" />
+
+    <PageAlertRegion />
     <div v-if="registersStore.item?.readOnly" class="alert alert-warning read-only-notice">
       Изменения запрещены. Просмотр, фильтрация и скачивание документов доступны.
     </div>
 
-
-    <div class="d-flex mb-2 align-center flex-wrap-reverse justify-space-between" style="width: 100%; gap: 10px;">
+    <div
+      class="d-flex mb-2 align-center flex-wrap-reverse justify-space-between"
+      style="width: 100%; gap: 10px"
+    >
       <ParcelFilterSelectors
         v-model:parcels-status="parcels_status"
         v-model:parcels-check-status-sw="parcels_check_status_sw"
@@ -538,31 +642,35 @@ function getGenericTemplateHeaders() {
         class="elevation-1 single-line-table interlaced-table wbr-parcels-table"
       >
         <!-- Add tooltip templates for each data field -->
-        <template v-for="header in getGenericTemplateHeaders()" :key="header.key" #[`item.${header.key}`]="{ item }">
-          <ClickableCell 
-            :item="item" 
-            :display-value="item[header.key] || ''" 
-            cell-class="truncated-cell clickable-cell" 
-            @click="editParcel" 
+        <template
+          v-for="header in getGenericTemplateHeaders()"
+          :key="header.key"
+          #[`item.${header.key}`]="{ item }"
+        >
+          <ClickableCell
+            :item="item"
+            :display-value="item[header.key] || ''"
+            cell-class="truncated-cell clickable-cell"
+            @click="editParcel"
           />
         </template>
 
         <!-- Special template for statusId -->
         <template #[`item.statusId`]="{ item }">
-          <ClickableCell 
-            :item="item" 
-            :display-value="parcelStatusStore.getStatusTitle(item.statusId)" 
-            cell-class="truncated-cell clickable-cell" 
-            @click="editParcel" 
+          <ClickableCell
+            :item="item"
+            :display-value="parcelStatusStore.getStatusTitle(item.statusId)"
+            cell-class="truncated-cell clickable-cell"
+            @click="editParcel"
           />
         </template>
 
         <template #[`item.dTag`]="{ item }">
-          <ClickableCell 
+          <ClickableCell
             :item="item"
-            :display-value="item.dTag || ''" 
-            cell-class="truncated-cell clickable-cell" 
-            @click="editParcel" 
+            :display-value="item.dTag || ''"
+            cell-class="truncated-cell clickable-cell"
+            @click="editParcel"
           />
         </template>
 
@@ -586,12 +694,14 @@ function getGenericTemplateHeaders() {
 
         <!-- Special template for checkStatus to display check status title -->
         <template #[`item.checkStatus`]="{ item }">
-          <ClickableCell 
-            :item="item" 
-            :display-value="new CheckStatusCode(item.checkStatus).toString()" 
-            :cell-class="`truncated-cell status-cell clickable-cell ${getCheckStatusClass(item.checkStatus)}`"
+          <ClickableCell
+            :item="item"
+            :display-value="new CheckStatusCode(item.checkStatus).toString()"
+            :cell-class="`truncated-cell status-cell clickable-cell ${getCheckStatusClass(
+              item.checkStatus
+            )}`"
             :show-bookmark="CheckStatusCode.isInheritedSw(item.checkStatus)"
-            @click="editParcel" 
+            @click="editParcel"
           />
         </template>
 
@@ -627,11 +737,12 @@ function getGenericTemplateHeaders() {
           </div>
         </template>
         <template #[`item.countryCode`]="{ item }">
-          <ClickableCell 
-            :item="item" 
-            :display-value="countriesStore.getCountryAlpha2(item.countryCode)" 
-            cell-class="truncated-cell clickable-cell" 
-            @click="editParcel" />
+          <ClickableCell
+            :item="item"
+            :display-value="countriesStore.getCountryAlpha2(item.countryCode)"
+            cell-class="truncated-cell clickable-cell"
+            @click="editParcel"
+          />
         </template>
 
         <template #[`item.weightKg`]="{ item }">
@@ -689,11 +800,11 @@ function getGenericTemplateHeaders() {
         </template>
 
         <template #[`item.shk`]="{ item }">
-          <ParcelNumberExt 
-            :item="item" 
+          <ParcelNumberExt
+            :item="item"
             field-name="shk"
             :disabled="runningAction || loading"
-            @click="editParcel" 
+            @click="editParcel"
             @fellows="handleFellows"
           />
         </template>
@@ -711,22 +822,28 @@ function getGenericTemplateHeaders() {
           <v-tooltip text="Фиксированная сортировка по кодам ТН ВЭД" location="top">
             <template #activator="{ props: tooltipProps }">
               <span v-bind="tooltipProps">
-                <font-awesome-icon v-if="frozenOrderSortDir === 'asc'" icon="fa-solid fa-arrow-down-1-9" />
-                <font-awesome-icon v-else-if="frozenOrderSortDir === 'desc'" icon="fa-solid fa-arrow-up-9-1" />
+                <font-awesome-icon
+                  v-if="frozenOrderSortDir === 'asc'"
+                  icon="fa-solid fa-arrow-down-1-9"
+                />
+                <font-awesome-icon
+                  v-else-if="frozenOrderSortDir === 'desc'"
+                  icon="fa-solid fa-arrow-up-9-1"
+                />
                 <font-awesome-icon v-else icon="fa-solid fa-arrows-to-eye" />
               </span>
             </template>
           </v-tooltip>
         </template>
-        
+
         <template #[`item.frozenOrder`]="{ item }">
           <div class="actions-container">
-            <ActionButton 
-              :item="item" 
-              icon="fa-solid fa-pen" 
-              tooltip-text="Редактировать посылку" 
-              @click="editParcel" 
-              :disabled="runningAction || loading" 
+            <ActionButton
+              :item="item"
+              icon="fa-solid fa-pen"
+              tooltip-text="Редактировать посылку"
+              @click="editParcel"
+              :disabled="runningAction || loading"
             />
           </div>
         </template>
@@ -744,11 +861,6 @@ function getGenericTemplateHeaders() {
         />
       </div>
     </v-card>
-    <div v-if="alert" class="alert alert-dismissable text-center m-5" :class="alert.type">
-      <button @click="alertStore.clear()" class="btn btn-link close">×</button>
-      {{ alert.message }}
-    </div>
-
     <RegisterActionsDialogs
       :validation-state="validationState"
       :progress-percent="progressPercent"
@@ -767,16 +879,16 @@ function getGenericTemplateHeaders() {
       :register-id="props.registerId"
       :register="registersStore.item"
       :status-options="parcelStatusStore.parcelStatuses"
-      :disabled="registersStore.item?.readOnly === true || runningAction || loading || isInitializing"
+      :disabled="
+        registersStore.item?.readOnly === true || runningAction || loading || isInitializing
+      "
       @update:show="showParcelStatusBulkDialog = $event"
       @updated="handleParcelStatusBulkUpdated"
     />
-
   </div>
 </template>
 
 <style scoped>
-
 .wbr-parcels-table {
   user-select: none;
 }
@@ -797,5 +909,4 @@ function getGenericTemplateHeaders() {
   width: 100%;
   text-align: right;
 }
-
 </style>

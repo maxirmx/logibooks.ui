@@ -1,7 +1,7 @@
 /* @vitest-environment jsdom */
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
@@ -62,17 +62,21 @@ vi.mock('@/router', () => ({
   default: mockRouter
 }))
 
-vi.mock('pinia', () => ({
-  storeToRefs: (store) => {
-    if (store.countries !== undefined) {
-      return { countries: { value: store.countries } }
+vi.mock('pinia', async () => {
+  const actual = await vi.importActual('pinia')
+  return {
+    ...actual,
+    storeToRefs: (store) => {
+      if (store.countries !== undefined) {
+        return { countries: { value: store.countries } }
+      }
+      if (store.warehouse !== undefined) {
+        return { warehouse: store.warehouse }
+      }
+      return {}
     }
-    if (store.warehouse !== undefined) {
-      return { warehouse: store.warehouse }
-    }
-    return {}
   }
-}))
+})
 
 vi.mock('vee-validate', () => ({
   Form: {
@@ -185,11 +189,15 @@ describe('Warehouse_Settings.vue', () => {
     await resolveAll()
 
     const formComponent = wrapper.findComponent({ name: 'Form' })
-    await formComponent.vm.$emit('submit', {
-      name: 'Новый склад',
-      countryIsoNumeric: 643,
-      type: 1
-    }, { setErrors: vi.fn() })
+    await formComponent.vm.$emit(
+      'submit',
+      {
+        name: 'Новый склад',
+        countryIsoNumeric: 643,
+        type: 1
+      },
+      { setErrors: vi.fn() }
+    )
     await resolveAll()
 
     expect(mockWarehousesStore.create).toHaveBeenCalled()
@@ -207,11 +215,15 @@ describe('Warehouse_Settings.vue', () => {
     await resolveAll()
 
     const formComponent = wrapper.findComponent({ name: 'Form' })
-    await formComponent.vm.$emit('submit', {
-      name: 'Обновленный склад',
-      countryIsoNumeric: 643,
-      type: 0
-    }, { setErrors: vi.fn() })
+    await formComponent.vm.$emit(
+      'submit',
+      {
+        name: 'Обновленный склад',
+        countryIsoNumeric: 643,
+        type: 0
+      },
+      { setErrors: vi.fn() }
+    )
     await resolveAll()
 
     expect(mockWarehousesStore.update).toHaveBeenCalledWith(1, expect.any(Object))
@@ -233,9 +245,14 @@ describe('Warehouse_Settings.vue', () => {
     const formComponent = wrapper.findComponent({ name: 'Form' })
     const setErrors = vi.fn()
 
-    await formComponent.vm.$emit('submit', { name: 'Склад', countryIsoNumeric: 643, type: 0 }, { setErrors })
+    await formComponent.vm.$emit(
+      'submit',
+      { name: 'Склад', countryIsoNumeric: 643, type: 0 },
+      { setErrors }
+    )
     await resolveAll()
 
-    expect(setErrors).toHaveBeenCalledWith({ apiError: 'Склад с таким названием уже существует' })
+    expect(mockAlertStore.error).toHaveBeenCalledWith('Склад с таким названием уже существует')
+    expect(setErrors).not.toHaveBeenCalled()
   })
 })

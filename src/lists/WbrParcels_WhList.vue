@@ -3,6 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks UI application
 
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { watch, ref, computed, onMounted, onUnmounted } from 'vue'
 import { useParcelsStore } from '@/stores/parcels.store.js'
 import { useScanjobsStore } from '@/stores/scanjobs.store.js'
@@ -14,6 +15,7 @@ import { useAlertStore } from '@/stores/alert.store.js'
 import router from '@/router'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { buildParcelListHeading } from '@/helpers/register.heading.helpers.js'
+import { reportError } from '@/helpers/error.helpers.js'
 import { loadParcels } from '@/helpers/parcels.list.helpers.js'
 import {
   scanjobCheckStatusProjectionKind,
@@ -55,8 +57,6 @@ const registersStore = useRegistersStore()
 const warehousesStore = useWarehousesStore()
 const authStore = useAuthStore()
 const alertStore = useAlertStore()
-
-const { alert } = storeToRefs(alertStore)
 const { items, loading, totalCount } = storeToRefs(parcelsStore)
 const {
   parcels_wh_per_page,
@@ -68,7 +68,7 @@ const {
   parcels_wh_number,
   parcels_wh_box_number,
   parcels_wh_sticker,
-  parcels_wh_product_name,
+  parcels_wh_product_name
 } = storeToRefs(authStore)
 const { ops } = storeToRefs(warehousesStore)
 
@@ -85,7 +85,9 @@ const isAdminUser = computed(() => Boolean(authStore.isAdmin?.value ?? authStore
 const readOnly = computed(() => registersStore.item?.readOnly === true)
 const showParcelStatusBulkDialog = ref(false)
 
-const maxPage = computed(() => Math.max(1, Math.ceil((totalCount.value || 0) / parcels_wh_per_page.value)))
+const maxPage = computed(() =>
+  Math.max(1, Math.ceil((totalCount.value || 0) / parcels_wh_per_page.value))
+)
 
 const pageOptions = computed(() => {
   const mp = maxPage.value
@@ -99,42 +101,69 @@ const pageOptions = computed(() => {
   for (let i = Math.max(1, mp - 9); i <= mp; i++) set.add(i)
   for (let i = Math.max(1, current - 10); i <= Math.min(mp, current + 10); i++) set.add(i)
 
-  return Array.from(set).sort((a, b) => a - b).map(n => ({ value: n, title: String(n) }))
+  return Array.from(set)
+    .sort((a, b) => a - b)
+    .map((n) => ({ value: n, title: String(n) }))
 })
 
 watch(maxPage, (v) => {
   if (parcels_wh_page.value > v) parcels_wh_page.value = v
 })
 
-const headers = computed(() =>[
+const headers = computed(() => [
   { title: '', key: 'actions', align: 'center', sortable: false, width: '108px' },
   { title: '№', key: 'id', align: 'start' },
-  { title: 'Проверка', key: 'checkStatusProjection', align: 'center', width: '170px', sortable: true },
+  {
+    title: 'Проверка',
+    key: 'checkStatusProjection',
+    align: 'center',
+    width: '170px',
+    sortable: true
+  },
   { title: 'Зона', key: 'zone', align: 'start' },
   { title: wbrRegisterColumnTitles.statusId, key: 'statusId', align: 'start' },
   { title: wbrRegisterColumnTitles.extId, key: 'extId', align: 'start' },
   { title: wbrRegisterColumnTitles.shk, key: 'shk', align: 'start' },
   { title: wbrRegisterColumnTitles.sticker, key: 'sticker', align: 'start', sortable: false },
-  { title: wbrRegisterColumnTitles.stickerCode, key: 'stickerCode', align: 'start', sortable: false },
+  {
+    title: wbrRegisterColumnTitles.stickerCode,
+    key: 'stickerCode',
+    align: 'start',
+    sortable: false
+  },
   { title: wbrRegisterColumnTitles.boxNumber, key: 'boxNumber', align: 'start', sortable: false },
-  { title: wbrRegisterColumnTitles.productName, sortable: false, key: 'productName', align: 'start' },
+  {
+    title: wbrRegisterColumnTitles.productName,
+    sortable: false,
+    key: 'productName',
+    align: 'start'
+  },
   { title: wbrRegisterColumnTitles.weightKg, key: 'weightKg', align: 'start', sortable: false },
   { title: wbrRegisterColumnTitles.quantity, key: 'quantity', align: 'start', sortable: false }
 ])
 
-const genericClickableHeaders = computed(() => headers.value.filter(header => ![
-  'actions',
-  'checkStatusProjection',
-  'zone',
-  'statusId',
-  'productName',
-  'weightKg',
-  'quantity'
-].includes(header.key)))
+const genericClickableHeaders = computed(() =>
+  headers.value.filter(
+    (header) =>
+      ![
+        'actions',
+        'checkStatusProjection',
+        'zone',
+        'statusId',
+        'productName',
+        'weightKg',
+        'quantity'
+      ].includes(header.key)
+  )
+)
 
 const registerHeading = computed(() => {
   if (registerLoading.value) return 'Загрузка...'
-  return buildParcelListHeading(registersStore.item, (id) => registersStore.getTransportationDocument(id), 'Партия')
+  return buildParcelListHeading(
+    registersStore.item,
+    (id) => registersStore.getTransportationDocument(id),
+    'Партия'
+  )
 })
 
 async function fetchRegister() {
@@ -160,7 +189,7 @@ async function handleParcelStatusBulkUpdated() {
 
 const statusOptions = computed(() => [
   { value: null, title: 'Все' },
-  ...(parcelStatusStore.parcelStatuses || []).map(status => ({
+  ...(parcelStatusStore.parcelStatuses || []).map((status) => ({
     value: status.id,
     title: status.title
   }))
@@ -171,7 +200,7 @@ const checkStatusProjectionOptions = [
   { value: scanjobCheckStatusProjectionKind.NotChecked, title: 'Не проверено' },
   { value: scanjobCheckStatusProjectionKind.Restriction, title: 'Запрет' },
   { value: scanjobCheckStatusProjectionKind.Defect, title: 'Брак' },
-  { value: scanjobCheckStatusProjectionKind.Checked, title: 'Проверено' },
+  { value: scanjobCheckStatusProjectionKind.Checked, title: 'Проверено' }
 ]
 
 const warehouseZoneNoneValue = 1
@@ -179,8 +208,8 @@ const zoneOptions = computed(() => [
   { value: null, title: 'Все' },
   { value: warehouseZoneNoneValue, title: 'Не задана' },
   ...(ops.value?.zones || [])
-    .filter(zone => Number(zone.value) !== warehouseZoneNoneValue)
-    .map(zone => ({
+    .filter((zone) => Number(zone.value) !== warehouseZoneNoneValue)
+    .map((zone) => ({
       value: zone.value,
       title: zone.name || String(zone.value)
     }))
@@ -197,30 +226,33 @@ const { triggerLoad, stop: stopFilterSync } = useDebouncedFilterSync({
   isComponentMounted
 })
 
-const {
-  isParcelEditCellDisabled,
-  parcelEditCellClass,
-  openParcelEdit
-} = useParcelEditAccess({
+const { isParcelEditCellDisabled, parcelEditCellClass, openParcelEdit } = useParcelEditAccess({
   router,
   disabled: computed(() => loading.value || isInitializing.value),
   getQueryParams: () => ({ registerId: props.registerId })
 })
 
 const watcherStop = watch(
-  [parcels_wh_page, parcels_wh_per_page, parcels_wh_sort_by, parcels_wh_status, parcels_wh_check_status_projection, parcels_wh_zone],
+  [
+    parcels_wh_page,
+    parcels_wh_per_page,
+    parcels_wh_sort_by,
+    parcels_wh_status,
+    parcels_wh_check_status_projection,
+    parcels_wh_zone
+  ],
   () => triggerLoad(),
   { immediate: false }
 )
 
-onMounted(async () => {
+async function initializeList() {
   try {
     await registersStore.ensureOpsLoaded()
     if (!isComponentMounted.value) return
- 
+
     await parcelStatusStore.ensureLoaded()
     if (!isComponentMounted.value) return
- 
+
     await warehousesStore.ensureOpsLoaded()
     if (!isComponentMounted.value) return
 
@@ -230,7 +262,10 @@ onMounted(async () => {
     })
   } catch (error) {
     if (isComponentMounted.value) {
-      alertStore.error('Ошибка при инициализации компонента')
+      alertStore.error(error, {
+        fallback: 'Ошибка при инициализации компонента',
+        action: { label: 'Повторить', handler: initializeList }
+      })
       parcelsStore.error = error?.message || 'Ошибка при загрузке данных'
     }
   } finally {
@@ -238,7 +273,9 @@ onMounted(async () => {
       isInitializing.value = false
     }
   }
-})
+}
+
+onMounted(initializeList)
 
 onUnmounted(() => {
   isComponentMounted.value = false
@@ -246,7 +283,9 @@ onUnmounted(() => {
   if (watcherStop) {
     watcherStop()
   }
-  scanJobsStore.stopParcelExtIdMonitor().catch(() => {})
+  scanJobsStore.stopParcelExtIdMonitor().catch((error) => {
+    reportError(error, { context: 'warehouse parcel monitor cleanup' })
+  })
 })
 
 function closeList() {
@@ -318,11 +357,16 @@ function handleParcelExtIdChanged(change) {
       />
     </div>
     <hr class="hr" />
+
+    <PageAlertRegion />
     <div v-if="readOnly" class="alert alert-warning read-only-notice">
       Изменения запрещены. Просмотр, фильтрация и экспорт доступны.
     </div>
 
-    <div class="d-flex mb-2 align-center flex-wrap-reverse justify-space-between" style="width: 100%; gap: 10px;">
+    <div
+      class="d-flex mb-2 align-center flex-wrap-reverse justify-space-between"
+      style="width: 100%; gap: 10px"
+    >
       <ParcelWhFilterSelectors
         v-model:parcels-wh-status="parcels_wh_status"
         v-model:parcels-wh-check-status-projection="parcels_wh_check_status_projection"
@@ -367,7 +411,9 @@ function handleParcelExtIdChanged(change) {
               title="Очистить номер КГТ"
               data-testid="clear-ext-id-action"
               @click="clearParcelExtId"
-              :disabled="readOnly || runningAction || loading || !canClearParcelExtId(item, authStore)"
+              :disabled="
+                readOnly || runningAction || loading || !canClearParcelExtId(item, authStore)
+              "
               v-if="isAdminUser"
             />
             <ActionButton
@@ -378,7 +424,9 @@ function handleParcelExtIdChanged(change) {
               title="Брак"
               data-testid="set-defect-action"
               @click="setParcelDefect"
-              :disabled="readOnly || runningAction || loading || !canSetParcelDefect(item, authStore)"
+              :disabled="
+                readOnly || runningAction || loading || !canSetParcelDefect(item, authStore)
+              "
             />
             <ActionButton
               :item="item"
@@ -388,11 +436,17 @@ function handleParcelExtIdChanged(change) {
               title="Отменить брак"
               data-testid="clear-defect-action"
               @click="clearParcelDefect"
-              :disabled="readOnly || runningAction || loading || !canClearParcelDefect(item, authStore)"
+              :disabled="
+                readOnly || runningAction || loading || !canClearParcelDefect(item, authStore)
+              "
             />
           </div>
         </template>
-        <template v-for="header in genericClickableHeaders" :key="header.key" #[`item.${header.key}`]="{ item }">
+        <template
+          v-for="header in genericClickableHeaders"
+          :key="header.key"
+          #[`item.${header.key}`]="{ item }"
+        >
           <ClickableCell
             :item="item"
             :display-value="item[header.key] ?? ''"
@@ -446,26 +500,42 @@ function handleParcelExtIdChanged(change) {
           />
         </template>
         <template #[`item.checkStatusProjection`]="{ item }">
-          <v-tooltip v-if="scanjobCheckStatusReason(item.checkStatusProjection)" location="top" open-delay="150">
+          <v-tooltip
+            v-if="scanjobCheckStatusReason(item.checkStatusProjection)"
+            location="top"
+            open-delay="150"
+          >
             <template #activator="{ props: tooltipProps }">
               <ClickableCell
                 v-bind="tooltipProps"
                 :item="item"
                 :display-value="item.checkStatusProjection?.title"
-                :cell-class="parcelEditCellClass('truncated-cell status-cell ' + getScanjobCheckStatusClass(item.checkStatusProjection))"
+                :cell-class="
+                  parcelEditCellClass(
+                    'truncated-cell status-cell ' +
+                      getScanjobCheckStatusClass(item.checkStatusProjection)
+                  )
+                "
                 :disabled="isParcelEditCellDisabled"
                 @click="editParcel"
               />
             </template>
             <template #default>
-              <div style="white-space: pre-line">{{ scanjobCheckStatusReason(item.checkStatusProjection) }}</div>
+              <div style="white-space: pre-line">
+                {{ scanjobCheckStatusReason(item.checkStatusProjection) }}
+              </div>
             </template>
           </v-tooltip>
           <ClickableCell
             v-else
             :item="item"
             :display-value="item.checkStatusProjection?.title"
-            :cell-class="parcelEditCellClass('truncated-cell status-cell ' + getScanjobCheckStatusClass(item.checkStatusProjection))"
+            :cell-class="
+              parcelEditCellClass(
+                'truncated-cell status-cell ' +
+                  getScanjobCheckStatusClass(item.checkStatusProjection)
+              )
+            "
             :disabled="isParcelEditCellDisabled"
             @click="editParcel"
           />
@@ -473,7 +543,7 @@ function handleParcelExtIdChanged(change) {
         <template #[`item.zone`]="{ item }">
           <ClickableCell
             :item="item"
-            :display-value="ops.zones.find(z => z.value === item.zone)?.name || ' '"
+            :display-value="ops.zones.find((z) => z.value === item.zone)?.name || ' '"
             :cell-class="parcelEditCellClass('truncated-cell')"
             :disabled="isParcelEditCellDisabled"
             @click="editParcel"
@@ -492,11 +562,6 @@ function handleParcelExtIdChanged(change) {
         />
       </div>
     </v-card>
-
-    <div v-if="alert" class="alert alert-dismissable text-center m-5" :class="alert.type">
-      <button @click="alertStore.clear()" class="btn btn-link close">×</button>
-      {{ alert.message }}
-    </div>
     <ParcelStatusBulkChangeDialog
       :show="showParcelStatusBulkDialog"
       :register-id="props.registerId"

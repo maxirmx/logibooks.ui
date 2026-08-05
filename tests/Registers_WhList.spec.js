@@ -44,7 +44,7 @@ const countriesEnsureLoadedFn = vi.fn().mockResolvedValue()
 const warehousesEnsureLoadedFn = vi.fn().mockResolvedValue()
 const alertErrorFn = vi.fn()
 const alertSuccessFn = vi.fn()
-const alertClearFn = vi.fn()
+const alertDismissFn = vi.fn()
 const mockAlert = ref(null)
 const mockWhPerPage = ref(25)
 const mockWhSearch = ref('warehouse search')
@@ -73,10 +73,10 @@ const registersStore = {
   ensureOpsLoaded: vi.fn().mockResolvedValue(),
   getOpsLabel: vi.fn((list, value) => {
     const num = Number(value)
-    const match = list?.find(item => Number(item.value) === num)
+    const match = list?.find((item) => Number(item.value) === num)
     return match ? match.name : String(value)
   }),
-  getTransportationDocument: vi.fn(id => `Doc ${id}`)
+  getTransportationDocument: vi.fn((id) => `Doc ${id}`)
 }
 
 vi.mock('@/helpers/register.actions.js', () => ({
@@ -93,7 +93,13 @@ vi.mock('pinia', async () => {
     ...actual,
     storeToRefs: (store) => {
       if (store.items && store.uploadFile !== undefined) {
-        return { items: mockItems, loading: ref(false), error: ref(null), totalCount: ref(0), ops: mockOps }
+        return {
+          items: mockItems,
+          loading: ref(false),
+          error: ref(null),
+          totalCount: ref(0),
+          ops: mockOps
+        }
       }
       if (store.companies !== undefined) {
         return { companies: mockCompanies }
@@ -167,7 +173,7 @@ vi.mock('@/stores/airports.store.js', () => ({
 vi.mock('@/stores/warehouses.store.js', () => ({
   useWarehousesStore: () => ({
     ensureLoaded: warehousesEnsureLoadedFn,
-    getWarehouseName: vi.fn(id => id ? `Warehouse ${id}` : 'Не указан')
+    getWarehouseName: vi.fn((id) => (id ? `Warehouse ${id}` : 'Не указан'))
   })
 }))
 
@@ -178,18 +184,27 @@ vi.mock('@/stores/register.statuses.store.js', () => ({
       { id: 2, title: 'Status 2' },
       { id: 5, title: 'Status 5' }
     ]),
-    getStatusById: vi.fn(id => id
-      ? { id, title: `Status ${id}`, icon: 'svg:very-delivered', bkColor: '#00AA00', fgColor: '#FFFFFF' }
-      : null
+    getStatusById: vi.fn((id) =>
+      id
+        ? {
+            id,
+            title: `Status ${id}`,
+            icon: 'svg:very-delivered',
+            bkColor: '#00AA00',
+            fgColor: '#FFFFFF'
+          }
+        : null
     ),
-    getStatusTitle: vi.fn(id => id ? `Status ${id}` : 'Не указан')
+    getStatusTitle: vi.fn((id) => (id ? `Status ${id}` : 'Не указан'))
   })
 }))
 
 vi.mock('@/stores/alert.store.js', () => ({
   useAlertStore: () => ({
-    alert: mockAlert,
-    clear: alertClearFn,
+    get alert() {
+      return mockAlert.value
+    },
+    dismiss: alertDismissFn,
     error: alertErrorFn,
     success: alertSuccessFn
   })
@@ -223,7 +238,8 @@ vi.mock('@/l2/ParcelStatusBulkChangeDialog.vue', () => ({
     name: 'ParcelStatusBulkChangeDialog',
     props: ['show', 'registerId', 'register', 'statusOptions', 'disabled'],
     emits: ['update:show', 'updated'],
-    template: '<div data-testid="parcel-status-bulk-dialog" :data-show="String(show)" :data-register-id="registerId" :data-register-type="register?.registerType"><button type="button" data-testid="parcel-status-bulk-dialog-updated" @click="$emit(\'updated\')"></button></div>'
+    template:
+      '<div data-testid="parcel-status-bulk-dialog" :data-show="String(show)" :data-register-id="registerId" :data-register-type="register?.registerType"><button type="button" data-testid="parcel-status-bulk-dialog-updated" @click="$emit(\'updated\')"></button></div>'
   }
 }))
 
@@ -311,7 +327,13 @@ describe('Registers_WhList.vue', () => {
     createWrapper()
     await flushPromises()
 
-    expect(alertErrorFn).toHaveBeenCalledWith('ops failed')
+    expect(alertErrorFn).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'ops failed' }),
+      expect.objectContaining({
+        fallback: 'Ошибка при загрузке данных',
+        action: expect.objectContaining({ label: 'Повторить', handler: expect.any(Function) })
+      })
+    )
   })
 
   it('reports fallback initialization error text for non-error failures', async () => {
@@ -320,14 +342,23 @@ describe('Registers_WhList.vue', () => {
     createWrapper()
     await flushPromises()
 
-    expect(alertErrorFn).toHaveBeenCalledWith('Ошибка при загрузке данных')
+    expect(alertErrorFn).toHaveBeenCalledWith(
+      'ops failed',
+      expect.objectContaining({
+        fallback: 'Ошибка при загрузке данных',
+        action: expect.objectContaining({ label: 'Повторить', handler: expect.any(Function) })
+      })
+    )
   })
 
   it('stops initialization work after unmounting during initial load', async () => {
     let resolveStatuses
-    ensureParcelStatusesLoadedFn.mockImplementationOnce(() => new Promise((resolve) => {
-      resolveStatuses = resolve
-    }))
+    ensureParcelStatusesLoadedFn.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveStatuses = resolve
+        })
+    )
 
     const wrapper = createWrapper()
     await wrapper.vm.$nextTick()
@@ -342,9 +373,12 @@ describe('Registers_WhList.vue', () => {
 
   it('stops initialization work after unmounting while countries load', async () => {
     let resolveCountries
-    countriesEnsureLoadedFn.mockImplementationOnce(() => new Promise((resolve) => {
-      resolveCountries = resolve
-    }))
+    countriesEnsureLoadedFn.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveCountries = resolve
+        })
+    )
 
     const wrapper = createWrapper()
     await flushPromises()
@@ -359,9 +393,12 @@ describe('Registers_WhList.vue', () => {
 
   it('stops initialization work after unmounting while warehouse ops load', async () => {
     let resolveOps
-    registersStore.ensureOpsLoaded.mockImplementationOnce(() => new Promise((resolve) => {
-      resolveOps = resolve
-    }))
+    registersStore.ensureOpsLoaded.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveOps = resolve
+        })
+    )
 
     const wrapper = createWrapper()
     await flushPromises()
@@ -376,9 +413,12 @@ describe('Registers_WhList.vue', () => {
 
   it('stops initialization work after unmounting while warehouses load', async () => {
     let resolveWarehouses
-    warehousesEnsureLoadedFn.mockImplementationOnce(() => new Promise((resolve) => {
-      resolveWarehouses = resolve
-    }))
+    warehousesEnsureLoadedFn.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveWarehouses = resolve
+        })
+    )
 
     const wrapper = createWrapper()
     await flushPromises()
@@ -396,23 +436,25 @@ describe('Registers_WhList.vue', () => {
     await wrapper.vm.$nextTick()
 
     expect(wrapper.find('h1').text()).toBe('Партии')
-    expect(wrapper.find('.v-text-field-stub span').text()).toBe('Поиск по любой информации о партии')
+    expect(wrapper.find('.v-text-field-stub span').text()).toBe(
+      'Поиск по любой информации о партии'
+    )
     expect(wrapper.findComponent(ActionButton2L).exists()).toBe(false)
     expect(wrapper.find('[data-testid="v-file-input"]').exists()).toBe(false)
 
     const actionButtons = wrapper.findAllComponents(ActionButton)
-    const hasEdit = actionButtons.some(button =>
+    const hasEdit = actionButtons.some((button) =>
       String(button.props('tooltipText') || '').includes('Редактировать')
     )
-    const hasDelete = actionButtons.some(button =>
+    const hasDelete = actionButtons.some((button) =>
       String(button.props('tooltipText') || '').includes('Удалить')
     )
 
     expect(hasEdit).toBe(true)
     expect(hasDelete).toBe(true)
 
-    const hasStatusBulkAction = actionButtons.some(button =>
-      button.props('tooltipText') === 'Выбрать посылки и изменить статус'
+    const hasStatusBulkAction = actionButtons.some(
+      (button) => button.props('tooltipText') === 'Выбрать посылки и изменить статус'
     )
     expect(hasStatusBulkAction).toBe(true)
   })
@@ -424,7 +466,7 @@ describe('Registers_WhList.vue', () => {
     await wrapper.vm.$nextTick()
 
     const actionButtons = wrapper.findAllComponents(ActionButton)
-    const hasDelete = actionButtons.some(button =>
+    const hasDelete = actionButtons.some((button) =>
       String(button.props('tooltipText') || '').includes('Удалить')
     )
 
@@ -482,8 +524,8 @@ describe('Registers_WhList.vue', () => {
     await wrapper.vm.$nextTick()
 
     const actionButtons = wrapper.findAllComponents(ActionButton)
-    const returnButton = actionButtons.find(button =>
-      button.props('tooltipText') === 'Создать реестр возврата'
+    const returnButton = actionButtons.find(
+      (button) => button.props('tooltipText') === 'Создать реестр возврата'
     )
 
     expect(returnButton).toBeTruthy()
@@ -495,8 +537,8 @@ describe('Registers_WhList.vue', () => {
 
   it('uses warehouse-specific table headers', async () => {
     const headers = createWarehouseRegisterHeaders()
-    const headerKeys = headers.map(header => header.key)
-    const headerTitles = headers.map(header => header.title)
+    const headerKeys = headers.map((header) => header.key)
+    const headerTitles = headers.map((header) => header.title)
 
     expect(headerKeys).toEqual([
       'actions',
@@ -532,9 +574,7 @@ describe('Registers_WhList.vue', () => {
 
     expect(table.props('itemsPerPage')).toBe(25)
     expect(table.props('page')).toBe(3)
-    expect(table.props('sortBy')).toEqual([
-      { key: 'warehouseArrivalDate', order: 'asc' }
-    ])
+    expect(table.props('sortBy')).toEqual([{ key: 'warehouseArrivalDate', order: 'asc' }])
     expect(wrapper.vm.localSearch).toBe('warehouse search')
     expect(wrapper.vm.localProcedure).toBe('all')
     expect(wrapper.vm.localStatus).toBe(REGISTER_STATUS_FILTER_IN_PROGRESS)
@@ -547,7 +587,9 @@ describe('Registers_WhList.vue', () => {
     await wrapper.vm.$nextTick()
 
     expect(wrapper.vm.localStatus).toBe(REGISTER_STATUS_FILTER_ALL)
-    expect(wrapper.findComponent(RegisterStatusSelect).props('modelValue')).toBe(REGISTER_STATUS_FILTER_ALL)
+    expect(wrapper.findComponent(RegisterStatusSelect).props('modelValue')).toBe(
+      REGISTER_STATUS_FILTER_ALL
+    )
   })
 
   it('enables the register-status icon column on the warehouse table', async () => {
@@ -641,7 +683,9 @@ describe('Registers_WhList.vue', () => {
         fgColor: null
       }
     ])
-    expect(filters.findComponent(RegisterStatusSelect).props('items')).toEqual(wrapper.vm.statusFilterItems)
+    expect(filters.findComponent(RegisterStatusSelect).props('items')).toEqual(
+      wrapper.vm.statusFilterItems
+    )
   })
 
   it('falls back to only all-procedures option when warehouse ops procedures are missing', async () => {
@@ -650,9 +694,7 @@ describe('Registers_WhList.vue', () => {
     const wrapper = createWrapper()
     await flushPromises()
 
-    expect(wrapper.vm.procedureFilterItems).toEqual([
-      { title: 'Все', value: 'all' }
-    ])
+    expect(wrapper.vm.procedureFilterItems).toEqual([{ title: 'Все', value: 'all' }])
   })
 
   it('syncs selected warehouse procedure and reloads warehouse registers', async () => {
@@ -735,7 +777,7 @@ describe('Registers_WhList.vue', () => {
 
   it('marks warehouse visible columns as sortable', async () => {
     const sortableByKey = Object.fromEntries(
-      createWarehouseRegisterHeaders().map(header => [header.key, header.sortable])
+      createWarehouseRegisterHeaders().map((header) => [header.key, header.sortable])
     )
 
     expect(sortableByKey.actions).toBe(false)
@@ -751,21 +793,25 @@ describe('Registers_WhList.vue', () => {
   })
 
   it('aligns warehouse parcels header with numeric cells', async () => {
-    const parcelsHeader = createWarehouseRegisterHeaders().find(header => header.key === 'parcelsTotal')
+    const parcelsHeader = createWarehouseRegisterHeaders().find(
+      (header) => header.key === 'parcelsTotal'
+    )
 
     expect(parcelsHeader.align).toBe('end')
     expect(parcelsHeader.width).toBe('150px')
   })
 
   it('renders warehouse zone distribution counts and hides zero values', async () => {
-    mockItems.value = [{
-      id: 57,
-      parcelsByZone: {
-        1: 3,
-        10: 0,
-        20: 12
+    mockItems.value = [
+      {
+        id: 57,
+        parcelsByZone: {
+          1: 3,
+          10: 0,
+          20: 12
+        }
       }
-    }]
+    ]
 
     const wrapper = createWrapper()
     await wrapper.vm.$nextTick()
@@ -805,8 +851,8 @@ describe('Registers_WhList.vue', () => {
     await wrapper.vm.$nextTick()
 
     const actionButtons = wrapper.findAllComponents(ActionButton)
-    const bulkStatusButton = actionButtons.find(button =>
-      button.props('tooltipText') === 'Выбрать посылки и изменить статус'
+    const bulkStatusButton = actionButtons.find(
+      (button) => button.props('tooltipText') === 'Выбрать посылки и изменить статус'
     )
 
     expect(bulkStatusButton).toBeTruthy()
@@ -825,33 +871,96 @@ describe('Registers_WhList.vue', () => {
         { value: 3, name: 'Авто', document: 'CMR', isAvia: false }
       ]
     }
-    const airports = [
-      { id: 20, codeIata: 'JFK' }
-    ]
+    const airports = [{ id: 20, codeIata: 'JFK' }]
     const transportationTypesById = createTransportationTypesById(ops)
     const airportsById = createAirportsById(airports)
 
-    expect(getCountryDisplayName({}, null, null, countries, transportationTypesById, airportsById)).toBe('Неизвестно')
-    expect(getCountryDisplayName({ transportationTypeCode: 3 }, 643, null, countries, transportationTypesById, airportsById)).toBe('Россия')
-    expect(getCountryDisplayName({ transportationTypeCode: 3 }, 999, null, countries, transportationTypesById, airportsById)).toBe(999)
-    expect(getCountryDisplayName({ transportationTypeCode: 3 }, 36, null, countries, transportationTypesById, airportsById)).toBe('Австралийский Союз')
+    expect(
+      getCountryDisplayName({}, null, null, countries, transportationTypesById, airportsById)
+    ).toBe('Неизвестно')
+    expect(
+      getCountryDisplayName(
+        { transportationTypeCode: 3 },
+        643,
+        null,
+        countries,
+        transportationTypesById,
+        airportsById
+      )
+    ).toBe('Россия')
+    expect(
+      getCountryDisplayName(
+        { transportationTypeCode: 3 },
+        999,
+        null,
+        countries,
+        transportationTypesById,
+        airportsById
+      )
+    ).toBe(999)
+    expect(
+      getCountryDisplayName(
+        { transportationTypeCode: 3 },
+        36,
+        null,
+        countries,
+        transportationTypesById,
+        airportsById
+      )
+    ).toBe('Австралийский Союз')
 
     countries = [{ isoNumeric: 156 }]
-    expect(getCountryDisplayName({ transportationTypeCode: 3 }, 156, null, countries, transportationTypesById, airportsById)).toBe(156)
+    expect(
+      getCountryDisplayName(
+        { transportationTypeCode: 3 },
+        156,
+        null,
+        countries,
+        transportationTypesById,
+        airportsById
+      )
+    ).toBe(156)
 
     countries = [
       { isoNumeric: 36, nameRuOfficial: 'Австралийский Союз' },
       { isoNumeric: 840, nameRuShort: 'США' }
     ]
-    expect(getCountryDisplayName({ transportationTypeCode: 2 }, 840, null, countries, transportationTypesById, airportsById)).toBe('США')
-    expect(getCountryDisplayName({ transportationTypeCode: 2 }, 840, 20, countries, transportationTypesById, airportsById)).toBe('США (JFK)')
-    expect(isAviaTransportation({ transportationTypeCode: 'invalid' }, transportationTypesById)).toBe(false)
-    expect(isAviaTransportation({ transportationTypeCode: 99 }, transportationTypesById)).toBe(false)
+    expect(
+      getCountryDisplayName(
+        { transportationTypeCode: 2 },
+        840,
+        null,
+        countries,
+        transportationTypesById,
+        airportsById
+      )
+    ).toBe('США')
+    expect(
+      getCountryDisplayName(
+        { transportationTypeCode: 2 },
+        840,
+        20,
+        countries,
+        transportationTypesById,
+        airportsById
+      )
+    ).toBe('США (JFK)')
+    expect(
+      isAviaTransportation({ transportationTypeCode: 'invalid' }, transportationTypesById)
+    ).toBe(false)
+    expect(isAviaTransportation({ transportationTypeCode: 99 }, transportationTypesById)).toBe(
+      false
+    )
     expect(getAirportIata(0, airportsById)).toBeNull()
 
-    const emptyTransportationTypesById = createTransportationTypesById({ customsProcedures: [], transportationTypes: null })
+    const emptyTransportationTypesById = createTransportationTypesById({
+      customsProcedures: [],
+      transportationTypes: null
+    })
     const emptyAirportsById = createAirportsById(null)
-    expect(isAviaTransportation({ transportationTypeCode: 2 }, emptyTransportationTypesById)).toBe(false)
+    expect(isAviaTransportation({ transportationTypeCode: 2 }, emptyTransportationTypesById)).toBe(
+      false
+    )
     expect(getAirportIata(20, emptyAirportsById)).toBeNull()
   })
 
@@ -864,8 +973,8 @@ describe('Registers_WhList.vue', () => {
     await wrapper.vm.$nextTick()
 
     const actionButtons = wrapper.findAllComponents(ActionButton)
-    const bulkButton = actionButtons.find(button =>
-      button.props('tooltipText') === 'Выбрать посылки и изменить статус'
+    const bulkButton = actionButtons.find(
+      (button) => button.props('tooltipText') === 'Выбрать посылки и изменить статус'
     )
 
     await bulkButton.find('button').trigger('click')
@@ -898,8 +1007,8 @@ describe('Registers_WhList.vue', () => {
     await wrapper.vm.$nextTick()
 
     const actionButtons = wrapper.findAllComponents(ActionButton)
-    const applyButton = actionButtons.find(button =>
-      button.props('tooltipText') === 'Применить статус партии'
+    const applyButton = actionButtons.find(
+      (button) => button.props('tooltipText') === 'Применить статус партии'
     )
     await applyButton.find('button').trigger('click')
     await flushPromises()
@@ -950,11 +1059,18 @@ describe('Registers_WhList.vue', () => {
     wrapper.vm.openScanjobCreate(null)
 
     expect(router.push).not.toHaveBeenCalledWith(expect.stringContaining('unregistered-parcels'))
-    expect(router.push).not.toHaveBeenCalledWith(expect.objectContaining({ path: '/scanjob/create' }))
+    expect(router.push).not.toHaveBeenCalledWith(
+      expect.objectContaining({ path: '/scanjob/create' })
+    )
   })
 
   it('shows and clears alert messages', async () => {
-    mockAlert.value = { type: 'alert-danger', message: 'Visible warehouse alert' }
+    mockAlert.value = {
+      id: 59,
+      severity: 'error',
+      message: 'Visible warehouse alert',
+      action: null
+    }
 
     const wrapper = createWrapper()
 
@@ -962,7 +1078,7 @@ describe('Registers_WhList.vue', () => {
 
     await wrapper.find('.close').trigger('click')
 
-    expect(alertClearFn).toHaveBeenCalled()
+    expect(alertDismissFn).toHaveBeenCalledWith(59)
   })
 
   it('cleans up watchers on unmount', () => {
@@ -972,12 +1088,14 @@ describe('Registers_WhList.vue', () => {
   })
 
   it('renders status, warehouse, and arrival date cells', async () => {
-    mockItems.value = [{
-      id: 55,
-      statusId: 5,
-      warehouseId: 12,
-      warehouseArrivalDate: '2024-02-01'
-    }]
+    mockItems.value = [
+      {
+        id: 55,
+        statusId: 5,
+        warehouseId: 12,
+        warehouseArrivalDate: '2024-02-01'
+      }
+    ]
 
     const wrapper = createWrapper()
     await wrapper.vm.$nextTick()
@@ -988,12 +1106,14 @@ describe('Registers_WhList.vue', () => {
   })
 
   it('opens parcels from status, warehouse, and arrival date cells', async () => {
-    mockItems.value = [{
-      id: 55,
-      statusId: 5,
-      warehouseId: 12,
-      warehouseArrivalDate: '2024-02-01'
-    }]
+    mockItems.value = [
+      {
+        id: 55,
+        statusId: 5,
+        warehouseId: 12,
+        warehouseArrivalDate: '2024-02-01'
+      }
+    ]
 
     const wrapper = createWrapper()
     await wrapper.vm.$nextTick()
@@ -1026,9 +1146,7 @@ describe('Registers_WhList.vue', () => {
       customsProcedures: [{ value: 1, name: 'Возврат' }],
       transportationTypes: [{ value: 2, name: 'Авиа', document: 'AWB', isAvia: true }]
     }
-    mockCountries.value = [
-      { isoNumeric: 860, nameRuShort: 'Узбекистан' }
-    ]
+    mockCountries.value = [{ isoNumeric: 860, nameRuShort: 'Узбекистан' }]
 
     const wrapper = createWrapper()
     await wrapper.vm.$nextTick()
@@ -1041,18 +1159,20 @@ describe('Registers_WhList.vue', () => {
   })
 
   it('renders warehouse projection tooltip for parcels totals', async () => {
-    mockItems.value = [{
-      id: 56,
-      parcelsTotal: 7,
-      placesTotal: 2,
-      parcelsByCheckStatus: {
-        [CheckStatusCode.NoIssues.value]: 7
-      },
-      parcelsByCheckStatusProjection: {
-        20: 2,
-        30: 5
+    mockItems.value = [
+      {
+        id: 56,
+        parcelsTotal: 7,
+        placesTotal: 2,
+        parcelsByCheckStatus: {
+          [CheckStatusCode.NoIssues.value]: 7
+        },
+        parcelsByCheckStatusProjection: {
+          20: 2,
+          30: 5
+        }
       }
-    }]
+    ]
 
     const wrapper = createWrapper()
     await wrapper.vm.$nextTick()
@@ -1081,7 +1201,7 @@ describe('Registers_WhList.vue', () => {
     await wrapper.vm.$nextTick()
 
     const actionButtons = wrapper.findAllComponents(ActionButton)
-    const unregisteredButton = actionButtons.find(button =>
+    const unregisteredButton = actionButtons.find((button) =>
       String(button.props('tooltipText') || '').includes('Стикеры не в реестре')
     )
 
@@ -1099,7 +1219,7 @@ describe('Registers_WhList.vue', () => {
     await wrapper.vm.$nextTick()
 
     const actionButtons = wrapper.findAllComponents(ActionButton)
-    const barcodeButton = actionButtons.find(button =>
+    const barcodeButton = actionButtons.find((button) =>
       String(button.props('tooltipText') || '').includes('Создать задание на сканирование')
     )
 

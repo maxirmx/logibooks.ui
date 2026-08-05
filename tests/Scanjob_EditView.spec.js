@@ -14,7 +14,8 @@ vi.mock('@/dialogs/Scanjob_Settings.vue', () => ({
   default: {
     name: 'Scanjob_Settings',
     props: ['mode', 'scanjobId'],
-    template: '<div data-testid="scanjobs-settings">Scanjobs Settings (mode: {{ mode }}, id: {{ scanjobId }})</div>'
+    template:
+      '<div data-testid="scanjobs-settings">Scanjobs Settings (mode: {{ mode }}, id: {{ scanjobId }})</div>'
   }
 }))
 

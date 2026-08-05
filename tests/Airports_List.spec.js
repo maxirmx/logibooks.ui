@@ -45,17 +45,21 @@ const mockAuthStore = {
   airports_page: ref(1)
 }
 
-vi.mock('pinia', () => ({
-  storeToRefs: (store) => {
-    if (store === mockAirportsStore) {
-      return { airports: mockAirportsStore.airports, loading: mockAirportsStore.loading }
+vi.mock('pinia', async () => {
+  const actual = await vi.importActual('pinia')
+  return {
+    ...actual,
+    storeToRefs: (store) => {
+      if (store === mockAirportsStore) {
+        return { airports: mockAirportsStore.airports, loading: mockAirportsStore.loading }
+      }
+      if (store === mockAlertStore) {
+        return { alert: mockAlertStore.alert }
+      }
+      return {}
     }
-    if (store === mockAlertStore) {
-      return { alert: mockAlertStore.alert }
-    }
-    return {}
   }
-}))
+})
 
 vi.mock('@/stores/airports.store.js', () => ({
   useAirportsStore: () => mockAirportsStore

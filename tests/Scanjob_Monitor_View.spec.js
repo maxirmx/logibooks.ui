@@ -31,12 +31,16 @@ describe('Scanjob_Monitor_View.vue', () => {
     const monitorComponent = wrapper.findComponent({ name: 'Scanjob_Monitor' })
     expect(monitorComponent.exists()).toBe(true)
     expect(monitorComponent.props('scanjob-id') || monitorComponent.props('scanjobId')).toBe(42)
-    expect(monitorComponent.props('monitor-scope') || monitorComponent.props('monitorScope')).toEqual({
+    expect(
+      monitorComponent.props('monitor-scope') || monitorComponent.props('monitorScope')
+    ).toEqual({
       area: scanjobMonitorArea.Boxes,
       boxId: null,
       bucketIndex: null
     })
-    expect(monitorComponent.props('register-id') || monitorComponent.props('registerId')).toBeUndefined()
+    expect(
+      monitorComponent.props('register-id') || monitorComponent.props('registerId')
+    ).toBeUndefined()
   })
 
   it('passes explicit monitor scope to monitor component', () => {
@@ -59,6 +63,8 @@ describe('Scanjob_Monitor_View.vue', () => {
     })
 
     const monitorComponent = wrapper.findComponent({ name: 'Scanjob_Monitor' })
-    expect(monitorComponent.props('monitor-scope') || monitorComponent.props('monitorScope')).toEqual(scope)
+    expect(
+      monitorComponent.props('monitor-scope') || monitorComponent.props('monitorScope')
+    ).toEqual(scope)
   })
 })

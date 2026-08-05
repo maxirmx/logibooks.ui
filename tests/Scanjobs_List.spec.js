@@ -59,11 +59,8 @@ const mockOps = ref({
 
 const mockRegisterOps = ref({
   customsProcedures: [],
-  transportationTypes: [
-    { value: 0, name: 'Авиа', document: 'AWB' }
-  ]
+  transportationTypes: [{ value: 0, name: 'Авиа', document: 'AWB' }]
 })
-
 
 const mockRegisterStatuses = ref([{ id: 31, title: 'Реестр готов' }])
 const mockParcelStatuses = ref([
@@ -98,9 +95,10 @@ const finishScanjobFn = vi.hoisted(() => vi.fn())
 const startScanJobsListMonitorFn = vi.hoisted(() => vi.fn())
 const stopScanJobsListMonitorFn = vi.hoisted(() => vi.fn())
 const errorFn = vi.hoisted(() => vi.fn())
+const warningFn = vi.hoisted(() => vi.fn())
 const confirmMock = vi.hoisted(() => vi.fn().mockResolvedValue(true))
 const mockPush = vi.hoisted(() => vi.fn())
-const clearAlertFn = vi.hoisted(() => vi.fn())
+const dismissAlertFn = vi.hoisted(() => vi.fn())
 const triggerLoadMock = vi.hoisted(() => vi.fn())
 const stopFilterSyncMock = vi.hoisted(() => vi.fn())
 
@@ -231,9 +229,12 @@ vi.mock('@/stores/parcel.statuses.store.js', () => ({
 
 vi.mock('@/stores/alert.store.js', () => ({
   useAlertStore: () => ({
-    alert: null,
+    get alert() {
+      return mockAlert.value
+    },
     error: errorFn,
-    clear: clearAlertFn
+    warning: warningFn,
+    dismiss: dismissAlertFn
   })
 }))
 
@@ -262,9 +263,13 @@ vi.mock('vuetify-use-dialog', () => ({
   useConfirm: () => confirmMock
 }))
 
-vi.mock('@/router', () => ({
-  default: router
-}), { virtual: true })
+vi.mock(
+  '@/router',
+  () => ({
+    default: router
+  }),
+  { virtual: true }
+)
 
 vi.mock('@/helpers/items.per.page.js', () => ({
   itemsPerPageOptions: [10, 25, 50, 100]
@@ -330,9 +335,15 @@ describe('Scanjobs_List.vue', () => {
     expect(getAllCompanies).toHaveBeenCalled()
     expect(startScanJobsListMonitorFn).toHaveBeenCalled()
     expect(errorFn).not.toHaveBeenCalled()
+    expect(warningFn).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'SignalR unavailable' }),
+      expect.objectContaining({
+        fallback: 'Автоматическое обновление недоступно; используйте обновление списка',
+        action: expect.objectContaining({ label: 'Повторить', handler: expect.any(Function) })
+      })
+    )
     expect(wrapper.exists()).toBe(true)
   })
-
 
   it('shows initialization error when preload fails', async () => {
     ensureRegisterOpsLoaded.mockRejectedValueOnce(new Error('Register ops failed'))
@@ -346,14 +357,23 @@ describe('Scanjobs_List.vue', () => {
     await wrapper.vm.$nextTick()
     await new Promise((resolve) => setTimeout(resolve, 0))
 
-    expect(errorFn).toHaveBeenCalledWith(expect.stringContaining('Register ops failed'))
+    expect(errorFn).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'Register ops failed' }),
+      expect.objectContaining({
+        fallback: 'Ошибка при загрузке данных',
+        action: expect.objectContaining({ label: 'Повторить', handler: expect.any(Function) })
+      })
+    )
     expect(wrapper.exists()).toBe(true)
   })
   it('does not start live list monitor after unmount during warehouses loading', async () => {
     let resolveWarehousesLoad
-    getAllWarehouses.mockImplementationOnce(() => new Promise((resolve) => {
-      resolveWarehousesLoad = resolve
-    }))
+    getAllWarehouses.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveWarehousesLoad = resolve
+        })
+    )
 
     const wrapper = mount(ScanjobsList, {
       global: {
@@ -400,7 +420,6 @@ describe('Scanjobs_List.vue', () => {
       }
     ]
   })
-
 
   it('renders register-derived headers immediately after dealNumber', () => {
     const wrapper = mount(ScanjobsList, {
@@ -453,7 +472,7 @@ describe('Scanjobs_List.vue', () => {
   })
 
   it('clears visible alert from close button', async () => {
-    mockAlert.value = { type: 'alert-danger', message: 'Ошибка' }
+    mockAlert.value = { id: 31, severity: 'error', message: 'Ошибка', action: null }
     const wrapper = mount(ScanjobsList, {
       global: {
         stubs: testStubs
@@ -462,7 +481,7 @@ describe('Scanjobs_List.vue', () => {
 
     await wrapper.find('.close').trigger('click')
 
-    expect(clearAlertFn).toHaveBeenCalled()
+    expect(dismissAlertFn).toHaveBeenCalledWith(31)
   })
   it('handles search input', async () => {
     const wrapper = mount(ScanjobsList, {
@@ -523,7 +542,6 @@ describe('Scanjobs_List.vue', () => {
     expect(mockPush).toHaveBeenCalledWith('/scanjobs/7/monitor')
   })
 
-
   it('routes to scanjob edit with scanjob id', async () => {
     const wrapper = mount(ScanjobsList, {
       global: {
@@ -554,7 +572,6 @@ describe('Scanjobs_List.vue', () => {
     expect(deleteScanjobFn).toHaveBeenCalledWith(1)
   })
 
-
   it('does not delete while another action is running', async () => {
     const wrapper = mount(ScanjobsList, {
       global: {
@@ -579,7 +596,9 @@ describe('Scanjobs_List.vue', () => {
 
     await wrapper.vm.deleteScanjob({ id: 1, name: 'Сканирование приемки' })
 
-    expect(errorFn).toHaveBeenCalledWith('Нельзя удалить задание на сканирование, у которого есть связанные записи')
+    expect(errorFn).toHaveBeenCalledWith(
+      'Нельзя удалить задание на сканирование, у которого есть связанные записи'
+    )
   })
 
   it('shows generic error when delete fails without conflict', async () => {

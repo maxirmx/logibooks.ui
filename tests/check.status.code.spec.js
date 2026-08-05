@@ -3,10 +3,10 @@
 // This file is a part of Logibooks ui application
 
 import { describe, it, expect } from 'vitest'
-import CheckStatusCode, { 
+import CheckStatusCode, {
   createCheckStatusFilterOptions,
-  CheckStatusHelper, 
-  FCCheckStatus, 
+  CheckStatusHelper,
+  FCCheckStatus,
   SWCheckStatus,
   WStatusValues
 } from '@/helpers/check.status.code.js'
@@ -33,24 +33,24 @@ describe('CheckStatusCode', () => {
   describe('Static methods for component extraction', () => {
     it('should extract FC component correctly', () => {
       expect(CheckStatusCode.getFC(0x02300010)).toBe(0x0230)
-      expect(CheckStatusCode.getFC(0x01FF0000)).toBe(0x01FF)
+      expect(CheckStatusCode.getFC(0x01ff0000)).toBe(0x01ff)
       expect(CheckStatusCode.getFC(0x00000010)).toBe(0)
     })
 
     it('should extract FC as enum value', () => {
       expect(CheckStatusCode.getFCe(0x02300010)).toBe(FCCheckStatus.ApprovedWithExcise)
-      expect(CheckStatusCode.getFCe(0x01FF0000)).toBe(FCCheckStatus.MarkedByPartner)
+      expect(CheckStatusCode.getFCe(0x01ff0000)).toBe(FCCheckStatus.MarkedByPartner)
     })
 
     it('should extract SW component correctly', () => {
       expect(CheckStatusCode.getSW(0x02300010)).toBe(0x0010)
-      expect(CheckStatusCode.getSW(0x000001FF)).toBe(0x01FF)
+      expect(CheckStatusCode.getSW(0x000001ff)).toBe(0x01ff)
       expect(CheckStatusCode.getSW(0x02300000)).toBe(0)
     })
 
     it('should extract SW as enum value', () => {
       expect(CheckStatusCode.getSWe(0x02300010)).toBe(SWCheckStatus.NoIssues)
-      expect(CheckStatusCode.getSWe(0x000001FF)).toBe(SWCheckStatus.MarkedByPartner)
+      expect(CheckStatusCode.getSWe(0x000001ff)).toBe(SWCheckStatus.MarkedByPartner)
     })
   })
 
@@ -89,12 +89,13 @@ describe('CheckStatusCode', () => {
   })
 
   describe('EUR1000 status', () => {
-
     it('should detect and render only the exact combined status', () => {
       expect(CheckStatusCode.isEUR1000(CheckStatusCode.EUR1000.value)).toBe(true)
-      expect(CheckStatusCode.isEUR1000(
-        CheckStatusCode.compose(FCCheckStatus.EUR1000, SWCheckStatus.NotChecked)
-      )).toBe(false)
+      expect(
+        CheckStatusCode.isEUR1000(
+          CheckStatusCode.compose(FCCheckStatus.EUR1000, SWCheckStatus.NotChecked)
+        )
+      ).toBe(false)
       expect(CheckStatusCode.EUR1000.toString()).toBe('>1000€')
     })
 
@@ -149,7 +150,10 @@ describe('CheckStatusCode', () => {
 
     it('should return false for issue statuses', () => {
       const swIssue = CheckStatusCode.compose(FCCheckStatus.NotChecked, SWCheckStatus.IssueStopWord)
-      const fcIssue = CheckStatusCode.compose(FCCheckStatus.IssueFeacnCode, SWCheckStatus.NotChecked)
+      const fcIssue = CheckStatusCode.compose(
+        FCCheckStatus.IssueFeacnCode,
+        SWCheckStatus.NotChecked
+      )
       expect(CheckStatusCode.isDuplicate(swIssue)).toBe(false)
       expect(CheckStatusCode.isDuplicate(fcIssue)).toBe(false)
     })
@@ -190,8 +194,14 @@ describe('CheckStatusCode', () => {
     })
 
     it('should return false when only one component is MarkedByPartner', () => {
-      const onlyFc = CheckStatusCode.compose(FCCheckStatus.MarkedByPartner, SWCheckStatus.NotChecked)
-      const onlySw = CheckStatusCode.compose(FCCheckStatus.NotChecked, SWCheckStatus.MarkedByPartner)
+      const onlyFc = CheckStatusCode.compose(
+        FCCheckStatus.MarkedByPartner,
+        SWCheckStatus.NotChecked
+      )
+      const onlySw = CheckStatusCode.compose(
+        FCCheckStatus.NotChecked,
+        SWCheckStatus.MarkedByPartner
+      )
 
       expect(CheckStatusCode.isMarkedByPartner(onlyFc)).toBe(false)
       expect(CheckStatusCode.isMarkedByPartner(onlySw)).toBe(false)
@@ -201,15 +211,17 @@ describe('CheckStatusCode', () => {
   describe('compose method', () => {
     it('should compose FC and SW correctly', () => {
       expect(CheckStatusCode.compose(0x0230, 0x0010)).toBe(0x02300010)
-      expect(CheckStatusCode.compose(0x01FF, 0)).toBe(0x01FF0000)
-      expect(CheckStatusCode.compose(0, 0x01FF)).toBe(0x000001FF)
+      expect(CheckStatusCode.compose(0x01ff, 0)).toBe(0x01ff0000)
+      expect(CheckStatusCode.compose(0, 0x01ff)).toBe(0x000001ff)
     })
-
   })
 
   describe('Factory methods', () => {
     it('should create from parts', () => {
-      const code = CheckStatusCode.fromParts(FCCheckStatus.ApprovedWithExcise, SWCheckStatus.NoIssues)
+      const code = CheckStatusCode.fromParts(
+        FCCheckStatus.ApprovedWithExcise,
+        SWCheckStatus.NoIssues
+      )
       expect(code.fc).toBe(FCCheckStatus.ApprovedWithExcise)
       expect(code.sw).toBe(SWCheckStatus.NoIssues)
     })
@@ -232,7 +244,7 @@ describe('CheckStatusCode', () => {
       const approvedWithExcise = CheckStatusCode.ApprovedWithExcise
       expect(approvedWithExcise.toString()).toBe('Согл. с акцизом')
 
-      const markedByPartner = CheckStatusCode.MarkedByPartner  
+      const markedByPartner = CheckStatusCode.MarkedByPartner
       expect(markedByPartner.toString()).toBe('Исключено партнёром')
 
       const duplicate = CheckStatusCode.Duplicate
@@ -252,16 +264,25 @@ describe('CheckStatusCode', () => {
       const swApproved = CheckStatusCode.fromParts(FCCheckStatus.NotChecked, SWCheckStatus.Approved)
       expect(swApproved.toString()).toBe('Согласовано')
 
-      const fcIssue = CheckStatusCode.fromParts(FCCheckStatus.IssueFeacnCode, SWCheckStatus.NotChecked)
+      const fcIssue = CheckStatusCode.fromParts(
+        FCCheckStatus.IssueFeacnCode,
+        SWCheckStatus.NotChecked
+      )
       expect(fcIssue.toString()).toBe('Стоп ТН ВЭД')
     })
 
     it('should respect wFlag for inherited SW strings (flag vs plain)', () => {
       // When wFlag = true SW uses swStrings1 (keeps flag emoji)
-      const inheritedWithFlag = CheckStatusCode.fromParts(FCCheckStatus.NotChecked, SWCheckStatus.ApprovedInherited)
+      const inheritedWithFlag = CheckStatusCode.fromParts(
+        FCCheckStatus.NotChecked,
+        SWCheckStatus.ApprovedInherited
+      )
       expect(inheritedWithFlag.toString(true)).toBe('🔖 Согласовано')
 
-      const inheritedIssueWithFlag = CheckStatusCode.fromParts(FCCheckStatus.NotChecked, SWCheckStatus.IssueStopWordInherited)
+      const inheritedIssueWithFlag = CheckStatusCode.fromParts(
+        FCCheckStatus.NotChecked,
+        SWCheckStatus.IssueStopWordInherited
+      )
       expect(inheritedIssueWithFlag.toString(true)).toBe('🔖 Стоп слово')
 
       // When wFlag = false SW uses swStrings2 (removes flag for inherited values)
@@ -270,10 +291,16 @@ describe('CheckStatusCode', () => {
     })
 
     it('should handle mixed statuses', () => {
-      const mixed = CheckStatusCode.fromParts(FCCheckStatus.IssueNonexistingFeacn, SWCheckStatus.IssueStopWord)
+      const mixed = CheckStatusCode.fromParts(
+        FCCheckStatus.IssueNonexistingFeacn,
+        SWCheckStatus.IssueStopWord
+      )
       expect(mixed.toString()).toBe('Стоп слово, Нет ТН ВЭД')
 
-      const partialIssue = CheckStatusCode.fromParts(FCCheckStatus.IssueInvalidFeacnFormat, SWCheckStatus.NoIssues)
+      const partialIssue = CheckStatusCode.fromParts(
+        FCCheckStatus.IssueInvalidFeacnFormat,
+        SWCheckStatus.NoIssues
+      )
       expect(partialIssue.toString()).toBe('Ок стоп слова, Формат ТН ВЭД')
     })
 
@@ -323,7 +350,7 @@ describe('CheckStatusCode', () => {
 
     it('should return false for different values', () => {
       const code1 = new CheckStatusCode(0x02300010)
-      const code2 = new CheckStatusCode(0x01FF0010)
+      const code2 = new CheckStatusCode(0x01ff0010)
       expect(code1.equals(code2)).toBe(false)
     })
 
@@ -364,14 +391,13 @@ describe('CheckStatusCode', () => {
       expect(modified.sw).toBe(SWCheckStatus.MarkedByPartner)
     })
   })
-
 })
 
 describe('CheckStatusHelper', () => {
   describe('compose method', () => {
     it('should compose FC and SW correctly', () => {
       expect(CheckStatusHelper.compose(0x0230, 0x0010)).toBe(0x02300010)
-      expect(CheckStatusHelper.compose(0x01FF, 0)).toBe(0x01FF0000)
+      expect(CheckStatusHelper.compose(0x01ff, 0)).toBe(0x01ff0000)
     })
   })
 
@@ -399,7 +425,10 @@ describe('CheckStatusHelper', () => {
 
   describe('fromParts method', () => {
     it('should create CheckStatusCode from parts', () => {
-      const code = CheckStatusHelper.fromParts(FCCheckStatus.ApprovedWithExcise, SWCheckStatus.NoIssues)
+      const code = CheckStatusHelper.fromParts(
+        FCCheckStatus.ApprovedWithExcise,
+        SWCheckStatus.NoIssues
+      )
       expect(code).toBeInstanceOf(CheckStatusCode)
       expect(code.fc).toBe(FCCheckStatus.ApprovedWithExcise)
       expect(code.sw).toBe(SWCheckStatus.NoIssues)
@@ -418,7 +447,10 @@ describe('CheckStatusHelper', () => {
 describe('Integration tests', () => {
   it('should work with complex scenarios', () => {
     // Create a status with issues
-    const statusWithIssues = CheckStatusCode.fromParts(FCCheckStatus.IssueFeacnCode, SWCheckStatus.IssueStopWord)
+    const statusWithIssues = CheckStatusCode.fromParts(
+      FCCheckStatus.IssueFeacnCode,
+      SWCheckStatus.IssueStopWord
+    )
     expect(CheckStatusCode.hasIssues(statusWithIssues.value)).toBe(true)
 
     // Modify FC component
@@ -448,22 +480,28 @@ describe('Integration tests', () => {
 
   it('should handle bit manipulation correctly', () => {
     // Test with maximum values
-    const maxFC = 0xFFFF
-    const maxSW = 0xFFFF
+    const maxFC = 0xffff
+    const maxSW = 0xffff
     const combined = CheckStatusCode.compose(maxFC, maxSW)
-    
+
     expect(CheckStatusCode.getFC(combined)).toBe(maxFC)
     expect(CheckStatusCode.getSW(combined)).toBe(maxSW)
   })
 
   it('should work with real enum values', () => {
     // Test common status combinations
-    const approved = CheckStatusCode.fromParts(FCCheckStatus.ApprovedWithExcise, SWCheckStatus.ApprovedWithExcise)
+    const approved = CheckStatusCode.fromParts(
+      FCCheckStatus.ApprovedWithExcise,
+      SWCheckStatus.ApprovedWithExcise
+    )
     expect(approved.fc).toBe(0x0230)
     expect(approved.sw).toBe(0x0230)
     expect(CheckStatusCode.hasIssues(approved.value)).toBe(false)
 
-    const hasIssues = CheckStatusCode.fromParts(FCCheckStatus.IssueNonexistingFeacn, SWCheckStatus.IssueStopWord)
+    const hasIssues = CheckStatusCode.fromParts(
+      FCCheckStatus.IssueNonexistingFeacn,
+      SWCheckStatus.IssueStopWord
+    )
     expect(hasIssues.fc).toBe(0x0101)
     expect(hasIssues.sw).toBe(0x0100)
     expect(CheckStatusCode.hasIssues(hasIssues.value)).toBe(true)
@@ -471,25 +509,25 @@ describe('Integration tests', () => {
 
   it('should correctly handle Duplicate status in all operations', () => {
     const duplicate = CheckStatusCode.Duplicate
-    
+
     // Verify it's composed of Duplicate parts
     expect(duplicate.fc).toBe(FCCheckStatus.Duplicate)
     expect(duplicate.sw).toBe(SWCheckStatus.Duplicate)
-    
+
     // Verify it's detected as having issues
     expect(CheckStatusCode.hasIssues(duplicate.value)).toBe(true)
-    
+
     // Verify isDuplicate
     expect(CheckStatusCode.isDuplicate(duplicate.value)).toBe(true)
-    
+
     // Verify toString
     expect(duplicate.toString()).toBe('Дубликат')
-    
+
     // Verify it can be decomposed correctly
     const decomposed = CheckStatusHelper.decompose(duplicate.value)
     expect(decomposed.fc).toBe(FCCheckStatus.Duplicate)
     expect(decomposed.sw).toBe(SWCheckStatus.Duplicate)
-    
+
     // Verify CheckStatusHelper also sees it as having issues
     expect(CheckStatusHelper.hasIssues(duplicate.value)).toBe(true)
   })
@@ -528,14 +566,17 @@ describe('Integration tests', () => {
     const duplicate = CheckStatusCode.Duplicate
     const defect = CheckStatusCode.fromParts(FCCheckStatus.Defect, SWCheckStatus.Defect)
     const markedByPartner = CheckStatusCode.MarkedByPartner
-    const issueStatus = CheckStatusCode.fromParts(FCCheckStatus.IssueFeacnCode, SWCheckStatus.IssueStopWord)
-    
+    const issueStatus = CheckStatusCode.fromParts(
+      FCCheckStatus.IssueFeacnCode,
+      SWCheckStatus.IssueStopWord
+    )
+
     // All are issues
     expect(CheckStatusCode.hasIssues(duplicate.value)).toBe(true)
     expect(CheckStatusCode.hasIssues(defect.value)).toBe(true)
     expect(CheckStatusCode.hasIssues(markedByPartner.value)).toBe(true)
     expect(CheckStatusCode.hasIssues(issueStatus.value)).toBe(true)
-    
+
     // Duplicate and Defect have dedicated detectors
     expect(CheckStatusCode.isDuplicate(duplicate.value)).toBe(true)
     expect(CheckStatusCode.isDefect(duplicate.value)).toBe(false)
@@ -545,7 +586,7 @@ describe('Integration tests', () => {
     expect(CheckStatusCode.isDefect(markedByPartner.value)).toBe(false)
     expect(CheckStatusCode.isDuplicate(issueStatus.value)).toBe(false)
     expect(CheckStatusCode.isDefect(issueStatus.value)).toBe(false)
-    
+
     // All have different string representations
     expect(duplicate.toString()).toBe('Дубликат')
     expect(defect.toString()).toBe('Брак')

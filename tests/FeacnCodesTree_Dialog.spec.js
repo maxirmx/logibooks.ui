@@ -1,7 +1,7 @@
 /* @vitest-environment jsdom */
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { mount, flushPromises } from '@vue/test-utils'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -20,7 +20,7 @@ vi.mock('pinia', async () => {
     ...actual,
     storeToRefs: vi.fn((store) => {
       if (store.isSrLogistPlus) {
-        return { 
+        return {
           isSrLogistPlus: store.isSrLogistPlus
         }
       }
@@ -58,7 +58,7 @@ vi.mock('@/stores/alert.store.js', () => ({
 
 const globalStubs = {
   ...vuetifyStubs,
-  FeacnCodesTree: { 
+  FeacnCodesTree: {
     template: '<div class="tree-stub"></div>',
     setup() {
       return {
@@ -83,13 +83,12 @@ describe('FeacnCodesTree_Dialog.vue', () => {
     })
   }
 
-
   it('uploads file successfully', async () => {
     uploadMock.mockResolvedValue()
-    
+
     const wrapper = createWrapper()
     const file = new File(['content'], 'codes.xlsx')
-    
+
     await wrapper.vm.fileSelected(file)
     await flushPromises()
 
@@ -100,10 +99,10 @@ describe('FeacnCodesTree_Dialog.vue', () => {
   it('handles upload error', async () => {
     const error = new Error('Upload failed')
     uploadMock.mockRejectedValue(error)
-    
+
     const wrapper = createWrapper()
     const file = new File(['content'], 'codes.xlsx')
-    
+
     await wrapper.vm.fileSelected(file)
     await flushPromises()
 
@@ -114,11 +113,16 @@ describe('FeacnCodesTree_Dialog.vue', () => {
 
   it('shows loading state during upload', async () => {
     let resolveUpload
-    uploadMock.mockImplementation(() => new Promise(resolve => { resolveUpload = resolve }))
-    
+    uploadMock.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveUpload = resolve
+        })
+    )
+
     const wrapper = createWrapper()
     const file = new File(['content'], 'codes.xlsx')
-    
+
     // Start upload
     const uploadPromise = wrapper.vm.fileSelected(file)
     await wrapper.vm.$nextTick()
@@ -140,20 +144,20 @@ describe('FeacnCodesTree_Dialog.vue', () => {
   it('opens file dialog when button is clicked', async () => {
     const wrapper = createWrapper()
     const fileInput = wrapper.find('input[type="file"]')
-    
+
     // Mock the click method
     const clickSpy = vi.spyOn(fileInput.element, 'click')
-    
+
     await wrapper.find('button').trigger('click')
-    
+
     expect(clickSpy).toHaveBeenCalled()
   })
 
   it('does not handle file selection when no file provided', async () => {
     const wrapper = createWrapper()
-    
+
     await wrapper.vm.fileSelected(null)
-    
+
     expect(uploadMock).not.toHaveBeenCalled()
     expect(alertSuccessMock).not.toHaveBeenCalled()
     expect(alertErrorMock).not.toHaveBeenCalled()
@@ -161,13 +165,13 @@ describe('FeacnCodesTree_Dialog.vue', () => {
 
   it('handles upload successfully when tree ref is null', async () => {
     uploadMock.mockResolvedValue()
-    
+
     const wrapper = createWrapper()
     const file = new File(['content'], 'codes.xlsx')
-    
+
     // Set tree ref to null to test the null check
     wrapper.vm.treeRef = null
-    
+
     await wrapper.vm.fileSelected(file)
     await flushPromises()
 
@@ -175,4 +179,3 @@ describe('FeacnCodesTree_Dialog.vue', () => {
     expect(wrapper.vm.uploading).toBe(false)
   })
 })
-

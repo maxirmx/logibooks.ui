@@ -1,7 +1,7 @@
 /* @vitest-environment jsdom */
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
@@ -53,7 +53,12 @@ vi.mock('@/helpers/login.navigation.js', () => ({
 }))
 
 const FormStub = {
-  template: '<form @submit.prevent="$emit(\'submit\')"><slot :errors="{}" :isSubmitting="false" /></form>'
+  template:
+    '<form @submit.prevent="$emit(\'submit\')"><slot :errors="{}" :isSubmitting="false" /></form>'
+}
+const InvalidFormStub = {
+  template:
+    '<form><slot :errors="{ login_email: \'Необходимо указать электронную почту\', login_password: \'Необходимо указать пароль\' }" :isSubmitting="false" /></form>'
 }
 const FieldStub = {
   props: ['name', 'id', 'type'],
@@ -64,12 +69,12 @@ describe('User_LoginView.vue', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
-    authStore = { 
-      login: loginMock, 
-      isAdmin: false, 
+    authStore = {
+      login: loginMock,
+      isAdmin: false,
       isLogist: false,
       isSrLogist: false,
-      user: { id: 1 } 
+      user: { id: 1 }
     }
   })
 
@@ -84,10 +89,45 @@ describe('User_LoginView.vue', () => {
     expect(wrapper.find('#login_password').attributes('type')).toBe('text')
   })
 
+  it('renders the password validation message outside the input row', () => {
+    const wrapper = mount(UserLoginView, {
+      global: {
+        stubs: { Form: InvalidFormStub, Field: FieldStub, 'font-awesome-icon': true }
+      }
+    })
+
+    const passwordWrapper = wrapper.find('.password-wrapper')
+    const inputRow = passwordWrapper.find('.password-input-row')
+
+    expect(inputRow.find('#login_password').exists()).toBe(true)
+    expect(inputRow.find('button[type="button"]').exists()).toBe(true)
+    expect(inputRow.find('.invalid-feedback').exists()).toBe(false)
+    expect(passwordWrapper.find('.invalid-feedback').text()).toBe('Необходимо указать пароль')
+  })
+
+  it('renders a regular field error as a separate form-group item', () => {
+    const wrapper = mount(UserLoginView, {
+      global: {
+        stubs: { Form: InvalidFormStub, Field: FieldStub, 'font-awesome-icon': true }
+      }
+    })
+
+    const emailGroup = wrapper.findAll('.form-group')[0]
+    const directChildren = Array.from(emailGroup.element.children)
+
+    expect(directChildren).toHaveLength(3)
+    expect(directChildren[0].matches('label[for="login_email"]')).toBe(true)
+    expect(directChildren[1].matches('#login_email.input.is-invalid')).toBe(true)
+    expect(directChildren[2].matches('.invalid-feedback.d-block')).toBe(true)
+    expect(emailGroup.find('.invalid-feedback').text()).toBe(
+      'Необходимо указать электронную почту'
+    )
+  })
+
   it('redirects after successful login', async () => {
     const { getHomeRoute } = await import('@/helpers/login.navigation.js')
     getHomeRoute.mockReturnValue('/users')
-    
+
     authStore.isAdmin = true
     const wrapper = mount(UserLoginView, {
       global: { stubs: { Form: FormStub, Field: FieldStub, 'font-awesome-icon': true } }
@@ -104,7 +144,7 @@ describe('User_LoginView.vue', () => {
   it('redirects non-admin to edit page', async () => {
     const { getHomeRoute } = await import('@/helpers/login.navigation.js')
     getHomeRoute.mockReturnValue('/user/edit/1')
-    
+
     authStore.isAdmin = false
     const wrapper = mount(UserLoginView, {
       global: { stubs: { Form: FormStub, Field: FieldStub, 'font-awesome-icon': true } }

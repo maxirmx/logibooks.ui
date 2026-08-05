@@ -1,11 +1,13 @@
 <script setup>
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
+import { focusFirstInvalidField } from '@/helpers/form.validation.helpers.js'
+import { reportFormError } from '@/helpers/error.helpers.js'
 import { ref, computed, onMounted, watch, nextTick, onUnmounted } from 'vue'
 import router from '@/router'
-import { storeToRefs } from 'pinia'
 import { useForm, useField } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/yup'
 import * as Yup from 'yup'
@@ -29,8 +31,6 @@ const props = defineProps({
 
 const prefixesStore = useFeacnPrefixesStore()
 const alertStore = useAlertStore()
-const { alert } = storeToRefs(alertStore)
-
 const isCreate = computed(() => props.mode === 'create')
 const saving = ref(false)
 const loading = ref(false)
@@ -49,7 +49,7 @@ const schema = toTypedSchema(
   })
 )
 
-const { errors, handleSubmit, resetForm, setFieldValue } = useForm({
+const { errors, handleSubmit, resetForm, setFieldValue, setErrors } = useForm({
   validationSchema: schema,
   initialValues: {
     code: '',
@@ -82,24 +82,26 @@ const sameCodePrefixes = computed(() => {
     return []
   }
 
-  return prefixesStore.prefixes.filter(prefix => {
-    const isCurrentPrefix = props.prefixId !== undefined && String(prefix.id) === String(props.prefixId)
+  return prefixesStore.prefixes.filter((prefix) => {
+    const isCurrentPrefix =
+      props.prefixId !== undefined && String(prefix.id) === String(props.prefixId)
     return !isCurrentPrefix && (prefix.code || '').trim() === normalizedCode.value
   })
 })
-const forExportDisabled = computed(() =>
-  !forExport.value && sameCodePrefixes.value.some(prefix => prefix.forExport)
+const forExportDisabled = computed(
+  () => !forExport.value && sameCodePrefixes.value.some((prefix) => prefix.forExport)
 )
-const forImportDisabled = computed(() =>
-  !forImport.value && sameCodePrefixes.value.some(prefix => prefix.forImport)
+const forImportDisabled = computed(
+  () => !forImport.value && sameCodePrefixes.value.some((prefix) => prefix.forImport)
 )
-const saveDisabled = computed(() =>
-  saving.value || searchActive.value || (!forExport.value && !forImport.value)
+const saveDisabled = computed(
+  () => saving.value || searchActive.value || (!forExport.value && !forImport.value)
 )
 
 function toggleCodeSearch() {
   if (!codeSearchActive.value) {
-    lastFocusedElement.value = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    lastFocusedElement.value =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null
     lastExceptionSearchIndex.value = null
   }
   codeSearchActive.value = !codeSearchActive.value
@@ -112,9 +114,10 @@ function handleCodeSelect(feacnCode) {
 
 function handleRefocus() {
   nextTick(() => {
-    const fallbackInput = lastExceptionSearchIndex.value !== null
-      ? document.getElementById(`exceptions_${lastExceptionSearchIndex.value}`)
-      : document.getElementById('code')
+    const fallbackInput =
+      lastExceptionSearchIndex.value !== null
+        ? document.getElementById(`exceptions_${lastExceptionSearchIndex.value}`)
+        : document.getElementById('code')
     const target = lastFocusedElement.value || fallbackInput
     target?.focus?.()
   })
@@ -122,7 +125,8 @@ function handleRefocus() {
 
 function toggleExceptionSearch(index) {
   if (exceptionSearchIndex.value !== index) {
-    lastFocusedElement.value = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    lastFocusedElement.value =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null
     lastExceptionSearchIndex.value = index
   }
   exceptionSearchIndex.value = exceptionSearchIndex.value === index ? null : index
@@ -154,7 +158,7 @@ onUnmounted(() => {
   document.removeEventListener('keydown', handleEscape)
 })
 
-onMounted(async () => {
+async function initialize() {
   if (!isCreate.value) {
     loading.value = true
   }
@@ -165,10 +169,11 @@ onMounted(async () => {
       const item = await prefixesStore.getById(props.prefixId)
       if (item) {
         // Convert FeacnPrefixExceptionDto[] to string[] for UI display
-        const exceptionCodes = item.exceptions && item.exceptions.length 
-          ? item.exceptions.map(exc => typeof exc === 'string' ? exc : exc.code)
-          : ['']
-        
+        const exceptionCodes =
+          item.exceptions && item.exceptions.length
+            ? item.exceptions.map((exc) => (typeof exc === 'string' ? exc : exc.code))
+            : ['']
+
         resetForm({
           values: {
             code: item.code || '',
@@ -184,24 +189,28 @@ onMounted(async () => {
         })
       }
     }
-  } catch {
-    alertStore.error('Ошибка при загрузке данных префикса')
-    router.push('/feacn/prefixes')
+  } catch (error) {
+    alertStore.error(error, {
+      fallback: 'Ошибка при загрузке данных префикса',
+      action: { label: 'Повторить', handler: initialize }
+    })
   } finally {
     if (!isCreate.value) {
       loading.value = false
     }
   }
-})
+}
 
-const onSubmit = handleSubmit(async (values, { setErrors }) => {
+onMounted(initialize)
+
+const onSubmit = handleSubmit(async (values) => {
   saving.value = true
   try {
     // Prepare data for API - convert UI format to DTO format
     const submitData = {
       code: values.code,
       // Filter out empty strings and convert to the format expected by CreateDto
-      exceptions: values.exceptions.filter(exc => exc && exc.trim() !== ''),
+      exceptions: values.exceptions.filter((exc) => exc && exc.trim() !== ''),
       comment: values.comment ?? '',
       explanationForExport: values.explanationForExport ? values.explanationForExport.trim() : '',
       explanationForImport: values.explanationForImport ? values.explanationForImport.trim() : '',
@@ -218,11 +227,15 @@ const onSubmit = handleSubmit(async (values, { setErrors }) => {
     }
     router.push('/feacn/prefixes')
   } catch (error) {
-    setErrors({ apiError: error.message || 'Ошибка при сохранении префикса' })
+    reportFormError(error, {
+      setErrors,
+      alertStore,
+      fallback: 'Ошибка при сохранении префикса'
+    })
   } finally {
     saving.value = false
   }
-})
+}, focusFirstInvalidField)
 
 function cancel() {
   router.push('/feacn/prefixes')
@@ -231,8 +244,12 @@ function cancel() {
 
 <template>
   <div class="settings form-3">
-    <h1 class="primary-heading">{{ isCreate ? 'Создание префикса ТН ВЭД' : 'Редактирование префикса ТН ВЭД' }}</h1>
+    <h1 class="primary-heading">
+      {{ isCreate ? 'Создание префикса ТН ВЭД' : 'Редактирование префикса ТН ВЭД' }}
+    </h1>
     <hr class="hr" />
+
+    <PageAlertRegion />
 
     <div v-if="loading" class="text-center m-5">
       <span class="spinner-border spinner-border-lg align-center"></span>
@@ -262,7 +279,12 @@ function cancel() {
             :disabled="false"
           />
           <div v-if="errors.code" class="invalid-feedback">{{ errors.code }}</div>
-          <FeacnCodeSearch v-if="codeSearchActive" class="feacn-overlay" @select="handleCodeSelect" @refocus="handleRefocus" />
+          <FeacnCodeSearch
+            v-if="codeSearchActive"
+            class="feacn-overlay"
+            @select="handleCodeSelect"
+            @refocus="handleRefocus"
+          />
         </div>
       </div>
 
@@ -306,7 +328,9 @@ function cancel() {
           placeholder="Причина запрета экспорта"
           v-model="explanationForExport"
         />
-        <div v-if="errors.explanationForExport" class="invalid-feedback">{{ errors.explanationForExport }}</div>
+        <div v-if="errors.explanationForExport" class="invalid-feedback">
+          {{ errors.explanationForExport }}
+        </div>
       </div>
 
       <div v-if="forImport" class="form-group">
@@ -320,7 +344,9 @@ function cancel() {
           placeholder="Причина запрета импорта"
           v-model="explanationForImport"
         />
-        <div v-if="errors.explanationForImport" class="invalid-feedback">{{ errors.explanationForImport }}</div>
+        <div v-if="errors.explanationForImport" class="invalid-feedback">
+          {{ errors.explanationForImport }}
+        </div>
       </div>
 
       <div class="feacn-search-wrapper">
@@ -328,10 +354,12 @@ function cancel() {
           name="exceptions"
           label="Исключения"
           field-type="input"
-          :field-props="({ index }) => ({
-            onDblclick: () => toggleExceptionSearch(index),
-            readonly: searchActive && exceptionSearchIndex !== index
-          })"
+          :field-props="
+            ({ index }) => ({
+              onDblclick: () => toggleExceptionSearch(index),
+              readonly: searchActive && exceptionSearchIndex !== index
+            })
+          "
           placeholder="Код-исключение"
           add-tooltip="Добавить исключение"
           remove-tooltip="Удалить исключение"
@@ -339,11 +367,19 @@ function cancel() {
         >
           <template #extra="{ index }">
             <ActionButton
-              :icon="searchActive && exceptionSearchIndex === index ? 'fa-solid fa-arrow-up' : 'fa-solid fa-arrow-down'"
+              :icon="
+                searchActive && exceptionSearchIndex === index
+                  ? 'fa-solid fa-arrow-up'
+                  : 'fa-solid fa-arrow-down'
+              "
               :item="index"
               @click="toggleExceptionSearch(index)"
               class="ml-2 mr-2"
-              :tooltip-text="searchActive && exceptionSearchIndex === index ? 'Скрыть дерево кодов' : 'Выбрать код'"
+              :tooltip-text="
+                searchActive && exceptionSearchIndex === index
+                  ? 'Скрыть дерево кодов'
+                  : 'Выбрать код'
+              "
               :disabled="searchActive && exceptionSearchIndex !== index"
             />
           </template>
@@ -368,14 +404,7 @@ function cancel() {
           Отменить
         </button>
       </div>
-
-      <div v-if="errors.apiError" class="alert alert-danger mt-3 mb-0">{{ errors.apiError }}</div>
     </form>
-
-    <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
-      <button @click="alertStore.clear()" class="btn btn-link close">×</button>
-      {{ alert.message }}
-    </div>
   </div>
 </template>
 

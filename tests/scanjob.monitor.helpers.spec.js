@@ -7,20 +7,17 @@ import { compareScanjobCheckStatusProjection } from '@/helpers/scanjob.monitor.h
 
 describe('scanjob.monitor.helpers', () => {
   it('sorts check status projections by their visible title', () => {
-    expect(compareScanjobCheckStatusProjection(
-      { title: 'Проверено' },
-      { title: 'Не проверено' }
-    )).toBeGreaterThan(0)
+    expect(
+      compareScanjobCheckStatusProjection({ title: 'Проверено' }, { title: 'Не проверено' })
+    ).toBeGreaterThan(0)
 
-    expect(compareScanjobCheckStatusProjection(
-      { title: 'Запрет' },
-      { title: 'Проверено' }
-    )).toBeLessThan(0)
+    expect(
+      compareScanjobCheckStatusProjection({ title: 'Запрет' }, { title: 'Проверено' })
+    ).toBeLessThan(0)
   })
 
   it('falls back to the rendered placeholder for missing projections', () => {
     expect(compareScanjobCheckStatusProjection(null, { title: 'Запрет' })).toBeLessThan(0)
     expect(compareScanjobCheckStatusProjection(null, null)).toBe(0)
   })
-
 })

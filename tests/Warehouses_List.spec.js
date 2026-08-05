@@ -1,7 +1,7 @@
 /* @vitest-environment jsdom */
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
@@ -83,7 +83,7 @@ vi.mock('@/stores/countries.store.js', () => ({
     ensureLoaded: countriesEnsureLoaded,
     getCountryShortName: vi.fn((code) => {
       const num = Number(code)
-      const country = mockCountries.value.find(c => c.isoNumeric === num)
+      const country = mockCountries.value.find((c) => c.isoNumeric === num)
       if (!country) return code
       return country.nameRuShort || country.nameRuOfficial || code
     })
@@ -113,9 +113,13 @@ vi.mock('vuetify-use-dialog', () => ({
   useConfirm: () => confirmMock
 }))
 
-vi.mock('@/router', () => ({
-  default: router
-}), { virtual: true })
+vi.mock(
+  '@/router',
+  () => ({
+    default: router
+  }),
+  { virtual: true }
+)
 
 vi.mock('@/helpers/items.per.page.js', () => ({
   itemsPerPageOptions: [10, 25, 50, 100]
@@ -177,7 +181,8 @@ describe('Warehouses_List.vue', () => {
     })
 
     const authStore = wrapper.vm.authStore
-    const searchInput = wrapper.findComponent({ name: 'v-text-field' }) || wrapper.find('input[type="text"]')
+    const searchInput =
+      wrapper.findComponent({ name: 'v-text-field' }) || wrapper.find('input[type="text"]')
     if (searchInput.exists()) {
       await searchInput.setValue('Склад')
       await searchInput.trigger('input')

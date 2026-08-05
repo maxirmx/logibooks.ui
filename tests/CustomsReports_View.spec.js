@@ -38,5 +38,4 @@ describe('CustomsReports_View.vue', () => {
 
     expect(wrapper.exists()).toBe(true)
   })
-
 })

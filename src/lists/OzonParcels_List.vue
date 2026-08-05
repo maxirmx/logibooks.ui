@@ -1,11 +1,12 @@
 <script setup>
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { watch, ref, computed, onMounted, onUnmounted, provide, nextTick } from 'vue'
 import { useParcelsStore } from '@/stores/parcels.store.js'
-import { useRegistersStore} from '@/stores/registers.store.js'
+import { useRegistersStore } from '@/stores/registers.store.js'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import { useKeyWordsStore } from '@/stores/key.words.store.js'
 import { useStopWordsStore } from '@/stores/stop.words.store.js'
@@ -29,7 +30,10 @@ import {
 } from '@/helpers/check.status.code.js'
 import { formatPrice } from '@/helpers/number.formatters.js'
 import { ensureHttps } from '@/helpers/url.helpers.js'
-import { isImportCustomsProcedure, isImportOrReexportCustomsProcedure } from '@/helpers/customs.procedure.helpers.js'
+import {
+  isImportCustomsProcedure,
+  isImportOrReexportCustomsProcedure
+} from '@/helpers/customs.procedure.helpers.js'
 import { createPassportCheckStatusOptions } from '@/helpers/passport.check.status.helpers.js'
 import {
   navigateToEditParcel,
@@ -40,7 +44,7 @@ import {
   loadParcels,
   formatPassport,
   formatCustomsCharge,
-  getCustomsChargeHeaders,
+  getCustomsChargeHeaders
 } from '@/helpers/parcels.list.helpers.js'
 import { handleFellowsClick } from '@/helpers/parcel.number.ext.helpers.js'
 import { useRegisterHeaderActions } from '@/helpers/register.actions.js'
@@ -76,9 +80,6 @@ const countriesStore = useCountriesStore()
 const authStore = useAuthStore()
 const alertStore = useAlertStore()
 const route = useRoute()
-
-const { alert } = storeToRefs(alertStore)
-
 const { items, loading, totalCount } = storeToRefs(parcelsStore)
 const {
   parcels_per_page,
@@ -92,7 +93,7 @@ const {
   parcels_tnved,
   parcels_number,
   parcels_product_name,
-  selectedParcelId,
+  selectedParcelId
 } = storeToRefs(authStore)
 
 const localTnvedSearch = ref(parcels_tnved.value || '')
@@ -121,20 +122,19 @@ const {
   updateSelectedParcelIds,
   scrollToSelectedItem,
   getRowProps: getRowPropsForOzonParcel,
-  stop: stopMultiSelect,
+  stop: stopMultiSelect
 } = useParcelMultiSelect({
   items,
   loading,
   selectedParcelId,
   page: parcels_page,
   dataTableRef,
-  getBaseRowClass: (data) => getRowPropsForParcel(
-    data,
-    showPassportVerification.value ? passportCheckStatuses.value : []
-  ).class,
+  getBaseRowClass: (data) =>
+    getRowPropsForParcel(data, showPassportVerification.value ? passportCheckStatuses.value : [])
+      .class,
   onContextMenu: () => {
     if (registersStore.item?.readOnly !== true) showAssignTnvedDialog.value = true
-  },
+  }
 })
 
 const showAssignTnvedDialog = ref(false)
@@ -147,8 +147,8 @@ async function handleAssignTnvedConfirm(ids, tnVed) {
     const result = await parcelsStore.bulkAssignTnved(ids, tnVed)
     if ((result?.skippedReadOnlyCount || 0) > 0) {
       alertStore.success(
-        `ТН ВЭД обновлен для ${result.updatedCount || 0} посылок. `
-        + `Пропущено из-за запрета изменений: ${result.skippedReadOnlyCount}`
+        `ТН ВЭД обновлен для ${result.updatedCount || 0} посылок. ` +
+          `Пропущено из-за запрета изменений: ${result.skippedReadOnlyCount}`
       )
     }
     showAssignTnvedDialog.value = false
@@ -168,22 +168,29 @@ async function handleParcelStatusBulkUpdated() {
   await loadParcelsWrapper()
 }
 
-const maxPage = computed(() => Math.max(1, Math.ceil((totalCount.value || 0) / parcels_per_page.value)))
+const maxPage = computed(() =>
+  Math.max(1, Math.ceil((totalCount.value || 0) / parcels_per_page.value))
+)
 const isReProcedure = computed(() => {
   const procedureId = registersStore.item?.customsProcedureCode
   if (procedureId == null) return false
-  const procedure = registersStore.ops?.customsProcedures?.find((proc) => Number(proc.value) === Number(procedureId))
+  const procedure = registersStore.ops?.customsProcedures?.find(
+    (proc) => Number(proc.value) === Number(procedureId)
+  )
   return procedure?.isRe
 })
 
 const showImportConsigneeColumns = computed(() => {
   return isImportOrReexportCustomsProcedure(registersStore.item?.customsProcedureCode)
 })
-const showPassportVerification = computed(() =>
-  authStore.isSrLogistPlus && isImportCustomsProcedure(registersStore.item?.customsProcedureCode)
+const showPassportVerification = computed(
+  () =>
+    authStore.isSrLogistPlus && isImportCustomsProcedure(registersStore.item?.customsProcedureCode)
 )
 const passportCheckStatuses = computed(() => registersStore.ops?.passportCheckStatuses || [])
-const passportCheckStatusOptions = computed(() => createPassportCheckStatusOptions(passportCheckStatuses.value))
+const passportCheckStatusOptions = computed(() =>
+  createPassportCheckStatusOptions(passportCheckStatuses.value)
+)
 
 // Provide page options for a select control. For very large page counts, return a compact set
 const pageOptions = computed(() => {
@@ -201,15 +208,15 @@ const pageOptions = computed(() => {
   // around current
   for (let i = Math.max(1, current - 10); i <= Math.min(mp, current + 10); i++) set.add(i)
 
-  return Array.from(set).sort((a, b) => a - b).map(n => ({ value: n, title: String(n) }))
+  return Array.from(set)
+    .sort((a, b) => a - b)
+    .map((n) => ({ value: n, title: String(n) }))
 })
 
 // When max page decreases (e.g. due to filters), clamp current page
 watch(maxPage, (v) => {
   if (parcels_page.value > v) parcels_page.value = v
 })
-
-
 
 const registerFileName = ref('')
 const registerDealNumber = ref('')
@@ -219,7 +226,11 @@ const isInitializing = ref(true)
 const isComponentMounted = ref(true)
 const registerHeading = computed(() => {
   if (registerLoading.value) return 'Загрузка...'
-  return buildParcelListHeading(registersStore.item, (id) => registersStore.getTransportationDocument(id), 'Реестр')
+  return buildParcelListHeading(
+    registersStore.item,
+    (id) => registersStore.getTransportationDocument(id),
+    'Реестр'
+  )
 })
 
 async function fetchRegister() {
@@ -291,35 +302,44 @@ const { triggerLoad, stop: stopFilterSync } = useDebouncedFilterSync({
 })
 
 const watcherStop = watch(
-  [parcels_page, parcels_per_page, parcels_sort_by, parcels_status, parcels_check_status_sw, parcels_check_status_fc, parcels_passport_check_status, parcels_hide_legacy_restrictions],
+  [
+    parcels_page,
+    parcels_per_page,
+    parcels_sort_by,
+    parcels_status,
+    parcels_check_status_sw,
+    parcels_check_status_fc,
+    parcels_passport_check_status,
+    parcels_hide_legacy_restrictions
+  ],
   () => triggerLoad(),
   { immediate: false }
 )
 
-onMounted(async () => {
+async function initializeList() {
   try {
     if (!isComponentMounted.value) return
 
-  // previously listened for DEC_REPORT_UPLOADED_EVENT; removed per request
+    // previously listened for DEC_REPORT_UPLOADED_EVENT; removed per request
 
     await registersStore.ensureOpsLoaded()
     if (!isComponentMounted.value) return
 
     await parcelStatusStore.ensureLoaded()
     if (!isComponentMounted.value) return
-    
-  await feacnOrdersStore.ensureLoaded()
+
+    await feacnOrdersStore.ensureLoaded()
     if (!isComponentMounted.value) return
-    
-  await countriesStore.ensureLoaded()
+
+    await countriesStore.ensureLoaded()
     if (!isComponentMounted.value) return
 
     await stopWordsStore.ensureLoaded()
     if (!isComponentMounted.value) return
-    
+
     await keyWordsStore.ensureLoaded()
     if (!isComponentMounted.value) return
-    
+
     await fetchRegister()
 
     if (items.value?.length > 0) {
@@ -332,25 +352,29 @@ onMounted(async () => {
     // Restore parcel selection from extension snapshot after all cleanups
     const { restoreSelectedParcelIdSnapshot } = useParcelSelectionRestore()
     const restoredParcelId = restoreSelectedParcelIdSnapshot()
-    if (restoredParcelId != null && items.value?.some(item => item.id === restoredParcelId)) {
+    if (restoredParcelId != null && items.value?.some((item) => item.id === restoredParcelId)) {
       selectedParcelId.value = restoredParcelId
       selectedParcelIds.value = new Set([restoredParcelId])
       lastClickedId.value = restoredParcelId
       await nextTick()
       scrollToSelectedItem()
     }
-
   } catch (error) {
     if (isComponentMounted.value) {
       parcelsStore.error = error?.message || 'Ошибка при загрузке данных'
-      alertStore.error(parcelsStore.error)
+      alertStore.error(error, {
+        fallback: 'Ошибка при загрузке данных',
+        action: { label: 'Повторить', handler: initializeList }
+      })
     }
   } finally {
     if (isComponentMounted.value) {
       isInitializing.value = false
     }
   }
-})
+}
+
+onMounted(initializeList)
 
 onUnmounted(() => {
   isComponentMounted.value = false
@@ -364,7 +388,7 @@ onUnmounted(() => {
 
 const statusOptions = computed(() => [
   { value: null, title: 'Все' },
-  ...parcelStatusStore.parcelStatuses.map(status => ({
+  ...parcelStatusStore.parcelStatuses.map((status) => ({
     value: status.id,
     title: status.title
   }))
@@ -375,12 +399,36 @@ const checkStatusOptionsSw = computed(() => createCheckStatusFilterOptions(SWChe
 const checkStatusOptionsFc = computed(() => createCheckStatusFilterOptions(FCCheckStatusNames))
 
 const headers = computed(() => {
-  const feacnLookupColumn = { title: 'Подбор ТНВЭД', key: 'feacnLookup', sortable: true, align: 'center', width: '120px' }
-  const previousDTagCommentColumn = { title: 'Комментарий', key: 'previousDTagComment', sortable: true, align: 'center', width: '170px' }
-  const passportNumberColumn = { title: ozonRegisterColumnTitles.passportNumber, key: 'passportNumber', sortable: false, align: 'start', width: '120px' }
+  const feacnLookupColumn = {
+    title: 'Подбор ТНВЭД',
+    key: 'feacnLookup',
+    sortable: true,
+    align: 'center',
+    width: '120px'
+  }
+  const previousDTagCommentColumn = {
+    title: 'Комментарий',
+    key: 'previousDTagComment',
+    sortable: true,
+    align: 'center',
+    width: '170px'
+  }
+  const passportNumberColumn = {
+    title: ozonRegisterColumnTitles.passportNumber,
+    key: 'passportNumber',
+    sortable: false,
+    align: 'start',
+    width: '120px'
+  }
   const importConsigneeColumns = [
-    { title: ozonRegisterColumnTitles.inn, key: 'inn', sortable: false, align: 'start', width: '120px' },
-    { title: 'Паспорт', key: 'passport', sortable: false, align: 'start', width: '220px' },
+    {
+      title: ozonRegisterColumnTitles.inn,
+      key: 'inn',
+      sortable: false,
+      align: 'start',
+      width: '120px'
+    },
+    { title: 'Паспорт', key: 'passport', sortable: false, align: 'start', width: '220px' }
   ]
 
   const baseHeaders = [
@@ -389,28 +437,104 @@ const headers = computed(() => {
 
     // Order Identification & Status - Key identifiers and current state
     { title: '№', key: 'id', align: 'start', width: '120px' },
-    { title: ozonRegisterColumnTitles.postingNumber, key: 'postingNumber', align: 'start', width: '120px' },
-    { title: ozonRegisterColumnTitles.checkStatus, key: 'checkStatus', align: 'start', width: '170px' },
+    {
+      title: ozonRegisterColumnTitles.postingNumber,
+      key: 'postingNumber',
+      align: 'start',
+      width: '120px'
+    },
+    {
+      title: ozonRegisterColumnTitles.checkStatus,
+      key: 'checkStatus',
+      align: 'start',
+      width: '170px'
+    },
     { title: ozonRegisterColumnTitles.tnVed, key: 'tnVed', align: 'start', width: '120px' },
     // Insert FEACN lookup column only when not reimport procedure
     ...(!isReProcedure.value ? [feacnLookupColumn] : []),
-    { title: ozonRegisterColumnTitles.productName, key: 'productName', sortable: false, align: 'start', width: '200px' },
-    { title: ozonRegisterColumnTitles.productLink, key: 'productLink', sortable: false, align: 'start', width: '150px' },
-    { title: ozonRegisterColumnTitles.article, key: 'article', sortable: false, align: 'start', width: '120px' },
-    { title: ozonRegisterColumnTitles.countryCode, key: 'countryCode', sortable: false, align: 'start', width: '100px' },
-//    { title: ozonRegisterColumnTitles.placesCount, key: 'placesCount', sortable: false, align: 'start', width: '120px' },
-    { title: ozonRegisterColumnTitles.weightKg, key: 'weightKg', sortable: false, align: 'start', width: '100px' },
-    { title: ozonRegisterColumnTitles.unitPrice, key: 'unitPrice', sortable: false, align: 'start', width: '100px' },
-    { title: ozonRegisterColumnTitles.currency, key: 'currency', sortable: false, align: 'start', width: '80px' },
-    { title: ozonRegisterColumnTitles.quantity, key: 'quantity', sortable: false, align: 'start', width: '80px' },
-    { title: ozonRegisterColumnTitles.lastName, key: 'lastName', sortable: false, align: 'start', width: '120px' },
-    { title: ozonRegisterColumnTitles.firstName, key: 'firstName', sortable: false, align: 'start', width: '120px' },
-    { title: ozonRegisterColumnTitles.patronymic, key: 'patronymic', sortable: false, align: 'start', width: '120px' },
+    {
+      title: ozonRegisterColumnTitles.productName,
+      key: 'productName',
+      sortable: false,
+      align: 'start',
+      width: '200px'
+    },
+    {
+      title: ozonRegisterColumnTitles.productLink,
+      key: 'productLink',
+      sortable: false,
+      align: 'start',
+      width: '150px'
+    },
+    {
+      title: ozonRegisterColumnTitles.article,
+      key: 'article',
+      sortable: false,
+      align: 'start',
+      width: '120px'
+    },
+    {
+      title: ozonRegisterColumnTitles.countryCode,
+      key: 'countryCode',
+      sortable: false,
+      align: 'start',
+      width: '100px'
+    },
+    //    { title: ozonRegisterColumnTitles.placesCount, key: 'placesCount', sortable: false, align: 'start', width: '120px' },
+    {
+      title: ozonRegisterColumnTitles.weightKg,
+      key: 'weightKg',
+      sortable: false,
+      align: 'start',
+      width: '100px'
+    },
+    {
+      title: ozonRegisterColumnTitles.unitPrice,
+      key: 'unitPrice',
+      sortable: false,
+      align: 'start',
+      width: '100px'
+    },
+    {
+      title: ozonRegisterColumnTitles.currency,
+      key: 'currency',
+      sortable: false,
+      align: 'start',
+      width: '80px'
+    },
+    {
+      title: ozonRegisterColumnTitles.quantity,
+      key: 'quantity',
+      sortable: false,
+      align: 'start',
+      width: '80px'
+    },
+    {
+      title: ozonRegisterColumnTitles.lastName,
+      key: 'lastName',
+      sortable: false,
+      align: 'start',
+      width: '120px'
+    },
+    {
+      title: ozonRegisterColumnTitles.firstName,
+      key: 'firstName',
+      sortable: false,
+      align: 'start',
+      width: '120px'
+    },
+    {
+      title: ozonRegisterColumnTitles.patronymic,
+      key: 'patronymic',
+      sortable: false,
+      align: 'start',
+      width: '120px'
+    },
     ...(showImportConsigneeColumns.value ? importConsigneeColumns : [passportNumberColumn]),
     // Status Information - Current state of the order
     { title: ozonRegisterColumnTitles.statusId, key: 'statusId', align: 'start', width: '120px' },
     { title: 'ДТЭГ/ПТДЭГ', key: 'dTag', align: 'start', width: '120px' },
-    ...getCustomsChargeHeaders(registersStore.item),
+    ...getCustomsChargeHeaders(registersStore.item)
   ]
 
   // Append previousDTagComment at the end only for reimport procedure
@@ -463,39 +587,43 @@ function getGenericTemplateHeaders() {
         :register="registersStore.item"
         :heading="registerHeading"
       />
-        <RegisterHeaderActionsBar
+      <RegisterHeaderActionsBar
         :item="registersStore.item"
         :disabled="generalActionsDisabled"
         :mutation-disabled="registersStore.item?.readOnly === true"
-          :loading="runningAction || loading || isInitializing"
-          :show-passport-check="showPassportVerification"
-          @validate-sw="validateRegisterSwHeader"
-          @validate-sw-ex="validateRegisterSwHeaderEx"
-          @validate-fc="validateRegisterFcHeader"
-          @lookup="lookupRegisterFeacnCodes"
-          @lookup-ex="lookupRegisterFeacnCodesEx"
-          @export-ordinary="exportRegisterXmlOrdinary"
-          @export-excise="exportRegisterXmlExcise"
-          @export-notifications="exportRegisterXmlNotifications"
-          @download="downloadRegisterFile"
-          @download-additional-restrictions="downloadAdditionalRestrictionsFile"
-          @download-techdoc="downloadTechdocFile"
-          @calculate-customs-charges="calculateCustomsChargesHeader"
-          @check-passports="checkPassportsHeader"
-          @finish-passport-check="finishPassportCheckHeader"
-          @bulk-change-parcel-status="showParcelStatusBulkDialog = true"
-          @freeze-check-status="freezeCheckStatusAndRefetch"
-          @freeze-tnved-order="freezeTnVedOrderAndRefetch"
-          @close="closeList"
-        />
+        :loading="runningAction || loading || isInitializing"
+        :show-passport-check="showPassportVerification"
+        @validate-sw="validateRegisterSwHeader"
+        @validate-sw-ex="validateRegisterSwHeaderEx"
+        @validate-fc="validateRegisterFcHeader"
+        @lookup="lookupRegisterFeacnCodes"
+        @lookup-ex="lookupRegisterFeacnCodesEx"
+        @export-ordinary="exportRegisterXmlOrdinary"
+        @export-excise="exportRegisterXmlExcise"
+        @export-notifications="exportRegisterXmlNotifications"
+        @download="downloadRegisterFile"
+        @download-additional-restrictions="downloadAdditionalRestrictionsFile"
+        @download-techdoc="downloadTechdocFile"
+        @calculate-customs-charges="calculateCustomsChargesHeader"
+        @check-passports="checkPassportsHeader"
+        @finish-passport-check="finishPassportCheckHeader"
+        @bulk-change-parcel-status="showParcelStatusBulkDialog = true"
+        @freeze-check-status="freezeCheckStatusAndRefetch"
+        @freeze-tnved-order="freezeTnVedOrderAndRefetch"
+        @close="closeList"
+      />
     </div>
     <hr class="hr" />
+
+    <PageAlertRegion />
     <div v-if="registersStore.item?.readOnly" class="alert alert-warning read-only-notice">
       Изменения запрещены. Просмотр, фильтрация и скачивание документов доступны.
     </div>
 
-
-    <div class="d-flex mb-2 align-center flex-wrap-reverse justify-space-between" style="width: 100%; gap: 10px;">
+    <div
+      class="d-flex mb-2 align-center flex-wrap-reverse justify-space-between"
+      style="width: 100%; gap: 10px"
+    >
       <ParcelFilterSelectors
         v-model:parcels-status="parcels_status"
         v-model:parcels-check-status-sw="parcels_check_status_sw"
@@ -537,41 +665,45 @@ function getGenericTemplateHeaders() {
         class="elevation-1 single-line-table interlaced-table ozon-parcels-table"
       >
         <!-- Add tooltip templates for each data field -->
-        <template v-for="header in getGenericTemplateHeaders()" :key="header.key" #[`item.${header.key}`]="{ item }">
-          <ClickableCell 
-            :item="item" 
-            :display-value="item[header.key] || ''" 
-            cell-class="truncated-cell clickable-cell" 
-            @click="editParcel" 
+        <template
+          v-for="header in getGenericTemplateHeaders()"
+          :key="header.key"
+          #[`item.${header.key}`]="{ item }"
+        >
+          <ClickableCell
+            :item="item"
+            :display-value="item[header.key] || ''"
+            cell-class="truncated-cell clickable-cell"
+            @click="editParcel"
           />
         </template>
 
         <template #[`item.postingNumber`]="{ item }">
-          <ParcelNumberExt 
-            :item="item" 
+          <ParcelNumberExt
+            :item="item"
             field-name="postingNumber"
             :disabled="runningAction || loading"
-            @click="editParcel" 
+            @click="editParcel"
             @fellows="handleFellows"
           />
         </template>
 
         <!-- Special template for statusId -->
         <template #[`item.statusId`]="{ item }">
-          <ClickableCell 
-            :item="item" 
-            :display-value="parcelStatusStore.getStatusTitle(item.statusId)" 
-            cell-class="truncated-cell clickable-cell" 
-            @click="editParcel" 
+          <ClickableCell
+            :item="item"
+            :display-value="parcelStatusStore.getStatusTitle(item.statusId)"
+            cell-class="truncated-cell clickable-cell"
+            @click="editParcel"
           />
         </template>
 
         <template #[`item.dTag`]="{ item }">
-          <ClickableCell 
-            :item="item" 
-            cell-class="truncated-cell clickable-cell" 
-            :display-value="item.dTag || ''" 
-            @click="editParcel" 
+          <ClickableCell
+            :item="item"
+            cell-class="truncated-cell clickable-cell"
+            :display-value="item.dTag || ''"
+            @click="editParcel"
           />
         </template>
 
@@ -669,12 +801,14 @@ function getGenericTemplateHeaders() {
 
         <!-- Special template for checkStatus to display check status title -->
         <template #[`item.checkStatus`]="{ item }">
-          <ClickableCell 
-            :item="item" 
-            :display-value="new CheckStatusCode(item.checkStatus).toString()" 
-            :cell-class="`truncated-cell status-cell clickable-cell ${getCheckStatusClass(item.checkStatus)}`"
+          <ClickableCell
+            :item="item"
+            :display-value="new CheckStatusCode(item.checkStatus).toString()"
+            :cell-class="`truncated-cell status-cell clickable-cell ${getCheckStatusClass(
+              item.checkStatus
+            )}`"
             :show-bookmark="CheckStatusCode.isInheritedSw(item.checkStatus)"
-            @click="editParcel" 
+            @click="editParcel"
           />
         </template>
 
@@ -710,11 +844,11 @@ function getGenericTemplateHeaders() {
           </div>
         </template>
         <template #[`item.countryCode`]="{ item }">
-          <ClickableCell 
-            :item="item" 
-            :display-value="countriesStore.getCountryAlpha2(item.countryCode)" 
-            cell-class="truncated-cell clickable-cell" 
-            @click="editParcel" 
+          <ClickableCell
+            :item="item"
+            :display-value="countriesStore.getCountryAlpha2(item.countryCode)"
+            cell-class="truncated-cell clickable-cell"
+            @click="editParcel"
           />
         </template>
 
@@ -731,8 +865,14 @@ function getGenericTemplateHeaders() {
           <v-tooltip text="Фиксированная сортировка по кодам ТН ВЭД" location="top">
             <template #activator="{ props: tooltipProps }">
               <span v-bind="tooltipProps">
-                <font-awesome-icon v-if="frozenOrderSortDir === 'asc'" icon="fa-solid fa-arrow-down-1-9" />
-                <font-awesome-icon v-else-if="frozenOrderSortDir === 'desc'" icon="fa-solid fa-arrow-up-9-1" />
+                <font-awesome-icon
+                  v-if="frozenOrderSortDir === 'asc'"
+                  icon="fa-solid fa-arrow-down-1-9"
+                />
+                <font-awesome-icon
+                  v-else-if="frozenOrderSortDir === 'desc'"
+                  icon="fa-solid fa-arrow-up-9-1"
+                />
                 <font-awesome-icon v-else icon="fa-solid fa-arrows-to-eye" />
               </span>
             </template>
@@ -741,12 +881,12 @@ function getGenericTemplateHeaders() {
 
         <template #[`item.frozenOrder`]="{ item }">
           <div class="actions-container">
-            <ActionButton 
-              :item="item" 
-              icon="fa-solid fa-pen" 
-              tooltip-text="Редактировать информацию о посылке" 
-              @click="editParcel" 
-              :disabled="runningAction || loading" 
+            <ActionButton
+              :item="item"
+              icon="fa-solid fa-pen"
+              tooltip-text="Редактировать информацию о посылке"
+              @click="editParcel"
+              :disabled="runningAction || loading"
             />
           </div>
         </template>
@@ -764,11 +904,6 @@ function getGenericTemplateHeaders() {
         />
       </div>
     </v-card>
-    <div v-if="alert" class="alert alert-dismissable text-center m-5" :class="alert.type">
-      <button @click="alertStore.clear()" class="btn btn-link close">×</button>
-      {{ alert.message }}
-    </div>
-
     <RegisterActionsDialogs
       :validation-state="validationState"
       :progress-percent="progressPercent"
@@ -787,7 +922,9 @@ function getGenericTemplateHeaders() {
       :register-id="props.registerId"
       :register="registersStore.item"
       :status-options="parcelStatusStore.parcelStatuses"
-      :disabled="registersStore.item?.readOnly === true || runningAction || loading || isInitializing"
+      :disabled="
+        registersStore.item?.readOnly === true || runningAction || loading || isInitializing
+      "
       @update:show="showParcelStatusBulkDialog = $event"
       @updated="handleParcelStatusBulkUpdated"
     />
@@ -817,5 +954,4 @@ function getGenericTemplateHeaders() {
   width: 100%;
   text-align: right;
 }
-
 </style>

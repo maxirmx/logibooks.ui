@@ -1,6 +1,6 @@
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
@@ -33,7 +33,7 @@ describe('FeacnCodesTree.vue', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    mockGetChildren.mockImplementation(id => {
+    mockGetChildren.mockImplementation((id) => {
       if (id === null || id === undefined) return Promise.resolve([root])
       if (id === 1) return Promise.resolve([child])
       if (id === 2) return Promise.resolve([leaf])
@@ -56,7 +56,7 @@ describe('FeacnCodesTree.vue', () => {
 
   it('loads root nodes on mount', async () => {
     const wrapper = createWrapper()
-    
+
     // The loading might be too fast to catch in some environments
     // Let's focus on the end result
     await waitForMount(wrapper)
@@ -105,7 +105,7 @@ describe('FeacnCodesTree.vue', () => {
     await toggleIcon.trigger('click')
     await toggleIcon.trigger('click')
     await toggleIcon.trigger('click')
-    
+
     await flushPromises()
 
     // Should only call getChildren once for the child loading
@@ -116,14 +116,14 @@ describe('FeacnCodesTree.vue', () => {
     // This test verifies the main loading behavior is implemented
     // The individual node loading spinner is tested in FeacnCodesTreeNode.spec.js
     const wrapper = createWrapper()
-    
+
     // Initial loading should be handled by waitForMount
     await waitForMount(wrapper)
-    
+
     // Verify normal operation works
     await wrapper.find('.toggle-icon').trigger('click')
     await flushPromises()
-    
+
     expect(mockGetChildren).toHaveBeenCalledWith(1)
     // Check for the separate code and name display
     expect(wrapper.text()).toContain('0101') // child code
@@ -143,7 +143,7 @@ describe('FeacnCodesTree.vue', () => {
     await childToggle.trigger('click')
     await flushPromises()
 
-    const leafLabel = wrapper.findAll('.node-label').find(n => n.text() === 'Leaf')
+    const leafLabel = wrapper.findAll('.node-label').find((n) => n.text() === 'Leaf')
     expect(leafLabel.classes()).toContain('clickable')
     await leafLabel.trigger('click')
 
@@ -151,4 +151,3 @@ describe('FeacnCodesTree.vue', () => {
     expect(wrapper.emitted('select')[0][0]).toBe('0101010101')
   })
 })
-

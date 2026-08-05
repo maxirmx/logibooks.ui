@@ -9,7 +9,7 @@ vi.mock('@/stores/notifications.store.js', () => ({
         {
           id: 5,
           number: 'N-42',
-          articles: [{article: 'Article 123'}],
+          articles: [{ article: 'Article 123' }],
           registrationDate: '2025-01-10',
           publicationDate: '2025-01-12',
           terminationDate: '2025-01-30',
@@ -18,13 +18,13 @@ vi.mock('@/stores/notifications.store.js', () => ({
         {
           id: 10,
           number: 'N-50',
-          articles: [{article: 'Article 456'}],
+          articles: [{ article: 'Article 456' }],
           registrationDate: { year: 2025, month: 2, day: 15 },
           publicationDate: new Date('2025-02-20T00:00:00Z'),
           terminationDate: '2025-03-15'
         }
       ]
-      return Promise.resolve(notifications.find(n => n.id === id) || null)
+      return Promise.resolve(notifications.find((n) => n.id === id) || null)
     })
   }))
 }))

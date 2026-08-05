@@ -1,7 +1,7 @@
 /* @vitest-environment jsdom */
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
@@ -47,7 +47,7 @@ const create = vi.hoisted(() => vi.fn(() => Promise.resolve(mockKeyWord)))
 const update = vi.hoisted(() => vi.fn(() => Promise.resolve(mockKeyWord)))
 const routerPush = vi.hoisted(() => vi.fn())
 const alertError = vi.hoisted(() => vi.fn())
-const alertClear = vi.hoisted(() => vi.fn())
+const alertDismiss = vi.hoisted(() => vi.fn())
 
 const mockAlert = ref(null)
 
@@ -62,15 +62,20 @@ vi.mock('@/stores/key.words.store.js', () => ({
 
 vi.mock('@/stores/word.match.types.store.js', () => ({
   useWordMatchTypesStore: () => ({
-    matchTypes: mockMatchTypes,
+    get matchTypes() {
+      return mockMatchTypes.value
+    },
     ensureLoaded: vi.fn()
   })
 }))
 
 vi.mock('@/stores/alert.store.js', () => ({
   useAlertStore: () => ({
+    get alert() {
+      return mockAlert.value
+    },
     error: alertError,
-    clear: alertClear
+    dismiss: alertDismiss
   })
 }))
 
@@ -88,17 +93,6 @@ vi.mock('@/router', () => ({
     push: routerPush
   }
 }))
-
-// Mock storeToRefs
-vi.mock('pinia', async () => {
-  const actual = await vi.importActual('pinia')
-  return {
-    ...actual,
-    storeToRefs: () => ({
-      alert: mockAlert
-    })
-  }
-})
 
 describe('KeyWord_Settings.vue', () => {
   const mountComponent = (props = {}) => {
@@ -167,7 +161,6 @@ describe('KeyWord_Settings.vue', () => {
   // Form validation tests are skipped as they're currently failing
 
   describe('Word Analysis and Option Disabling', () => {
-
     it('disables correct options for single word input', async () => {
       const wrapper = mountComponent()
       await resolveAll()
@@ -177,14 +170,14 @@ describe('KeyWord_Settings.vue', () => {
       await nextTick()
 
       const vm = wrapper.vm
-      
+
       // For single word: disable options 21-3=40
-      expect(vm.isOptionDisabled(1)).toBe(false)   // Should be enabled
-      expect(vm.isOptionDisabled(15)).toBe(false)  // Should be enabled
-      expect(vm.isOptionDisabled(21)).toBe(true)   // Should be disabled (21-40 range)
-      expect(vm.isOptionDisabled(25)).toBe(true)   // Should be disabled (21-40 range)
-      expect(vm.isOptionDisabled(31)).toBe(true)   // Should be disabled (21-40 range)
-      expect(vm.isOptionDisabled(41)).toBe(false)  // Should be enabled
+      expect(vm.isOptionDisabled(1)).toBe(false) // Should be enabled
+      expect(vm.isOptionDisabled(15)).toBe(false) // Should be enabled
+      expect(vm.isOptionDisabled(21)).toBe(true) // Should be disabled (21-40 range)
+      expect(vm.isOptionDisabled(25)).toBe(true) // Should be disabled (21-40 range)
+      expect(vm.isOptionDisabled(31)).toBe(true) // Should be disabled (21-40 range)
+      expect(vm.isOptionDisabled(41)).toBe(false) // Should be enabled
     })
 
     it('disables correct options for multi-word input', async () => {
@@ -196,15 +189,15 @@ describe('KeyWord_Settings.vue', () => {
       await nextTick()
 
       const vm = wrapper.vm
-      
+
       // For multi-word: disable options 11-20 and >40
-      expect(vm.isOptionDisabled(1)).toBe(false)   // Should be enabled
-      expect(vm.isOptionDisabled(11)).toBe(true)   // Should be disabled (11-20 range)
-      expect(vm.isOptionDisabled(15)).toBe(true)   // Should be disabled (11-20 range)
-      expect(vm.isOptionDisabled(21)).toBe(false)  // Should be enabled
-      expect(vm.isOptionDisabled(25)).toBe(false)  // Should be enabled
-      expect(vm.isOptionDisabled(31)).toBe(false)  // Should be enabled
-      expect(vm.isOptionDisabled(41)).toBe(true)   // Should be disabled (>40)
+      expect(vm.isOptionDisabled(1)).toBe(false) // Should be enabled
+      expect(vm.isOptionDisabled(11)).toBe(true) // Should be disabled (11-20 range)
+      expect(vm.isOptionDisabled(15)).toBe(true) // Should be disabled (11-20 range)
+      expect(vm.isOptionDisabled(21)).toBe(false) // Should be enabled
+      expect(vm.isOptionDisabled(25)).toBe(false) // Should be enabled
+      expect(vm.isOptionDisabled(31)).toBe(false) // Should be enabled
+      expect(vm.isOptionDisabled(41)).toBe(true) // Should be disabled (>40)
     })
   })
 
@@ -250,20 +243,24 @@ describe('KeyWord_Settings.vue', () => {
       await resolveAll()
 
       expect(getById).toHaveBeenCalledWith(1)
-      
+
       // Check loaded values in the form
       expect(wrapper.vm.word).toBe('тест')
       expect(wrapper.vm.matchTypeId).toBe(41)
     })
 
-    it('shows error and redirects when loading fails', async () => {
-      getById.mockRejectedValue(new Error('Failed to load keyword'))
-      
+    it('shows a retryable error and stays on the form when loading fails', async () => {
+      const error = new Error('Failed to load keyword')
+      getById.mockRejectedValue(error)
+
       mountComponent({ id: 1 })
       await resolveAll()
 
-      expect(alertError).toHaveBeenCalledWith('Ошибка при загрузке данных ключевого слова')
-      expect(routerPush).toHaveBeenCalledWith('/keywords')
+      expect(alertError).toHaveBeenCalledWith(error, {
+        fallback: 'Ошибка при загрузке данных ключевого слова',
+        action: expect.objectContaining({ label: 'Повторить', handler: expect.any(Function) })
+      })
+      expect(routerPush).not.toHaveBeenCalled()
     })
   })
 
@@ -275,7 +272,7 @@ describe('KeyWord_Settings.vue', () => {
       const wrapper = mountComponent()
       await resolveAll()
 
-      const cancelButton = wrapper.findAll('button').find(b => b.text().includes('Отменить'))
+      const cancelButton = wrapper.findAll('button').find((b) => b.text().includes('Отменить'))
       await cancelButton.trigger('click')
 
       expect(routerPush).toHaveBeenCalledWith('/keywords')
@@ -286,7 +283,7 @@ describe('KeyWord_Settings.vue', () => {
     it('exposes the correct methods and reactive properties', async () => {
       const wrapper = mountComponent()
       await resolveAll()
-      
+
       const vm = wrapper.vm
       expect(typeof vm.onSubmit).toBe('function')
       expect(typeof vm.cancel).toBe('function')
@@ -304,22 +301,22 @@ describe('KeyWord_Settings.vue', () => {
       await resolveAll()
 
       const vm = wrapper.vm
-      
+
       // Initially no search active
       expect(vm.searchIndex).toBe(null)
-      
+
       // Toggle search for index 0
       vm.toggleSearch(0)
       expect(vm.searchIndex).toBe(0)
-      
+
       // Toggle again to close
       vm.toggleSearch(0)
       expect(vm.searchIndex).toBe(null)
-      
+
       // Toggle different index
       vm.toggleSearch(1)
       expect(vm.searchIndex).toBe(1)
-      
+
       // Toggle different index again (should switch)
       vm.toggleSearch(2)
       expect(vm.searchIndex).toBe(2)
@@ -331,11 +328,11 @@ describe('KeyWord_Settings.vue', () => {
 
       // Initially hidden
       expect(wrapper.findComponent(FeacnCodeSearch).exists()).toBe(false)
-      
+
       // Activate search
       wrapper.vm.toggleSearch(0)
       await nextTick()
-      
+
       expect(wrapper.findComponent(FeacnCodeSearch).exists()).toBe(true)
     })
 
@@ -344,14 +341,14 @@ describe('KeyWord_Settings.vue', () => {
       await resolveAll()
 
       const vm = wrapper.vm
-      
+
       // Activate search for index 0
       vm.toggleSearch(0)
       expect(vm.searchIndex).toBe(0)
-      
+
       // Select a code
       vm.handleCodeSelect('9876543210')
-      
+
       // Should close search and update field
       expect(vm.searchIndex).toBe(null)
       expect(vm.feacnCodes[0]).toBe('9876543210')
@@ -363,10 +360,10 @@ describe('KeyWord_Settings.vue', () => {
 
       const vm = wrapper.vm
       const originalValue = vm.feacnCodes[0]
-      
+
       // Try to select code without active search
       vm.handleCodeSelect('9876543210')
-      
+
       // Should not change anything
       expect(vm.feacnCodes[0]).toBe(originalValue)
       expect(vm.searchIndex).toBe(null)
@@ -379,7 +376,9 @@ describe('KeyWord_Settings.vue', () => {
       wrapper.vm.toggleSearch(0)
       await nextTick()
 
-      const actionButton = wrapper.findAllComponents(ActionButton).find(btn => btn.props('icon').includes('arrow'))
+      const actionButton = wrapper
+        .findAllComponents(ActionButton)
+        .find((btn) => btn.props('icon').includes('arrow'))
       expect(actionButton.props('icon')).toBe('fa-solid fa-arrow-up')
 
       const wordInput = wrapper.find('input[name="word"]')
@@ -410,7 +409,7 @@ describe('KeyWord_Settings.vue', () => {
 
       const form = wrapper.find('form')
       expect(form.exists()).toBe(true)
-      
+
       // Check that submit button is present
       const submitButton = wrapper.find('button[type="submit"]')
       expect(submitButton.exists()).toBe(true)
@@ -421,7 +420,7 @@ describe('KeyWord_Settings.vue', () => {
       await resolveAll()
 
       // Find and click cancel button
-      const cancelButton = wrapper.findAll('button').find(b => b.text().includes('Отменить'))
+      const cancelButton = wrapper.findAll('button').find((b) => b.text().includes('Отменить'))
       await cancelButton.trigger('click')
 
       expect(routerPush).toHaveBeenCalledWith('/keywords')
@@ -455,12 +454,12 @@ describe('KeyWord_Settings.vue', () => {
   describe('Data Loading Edge Cases', () => {
     it('handles keyword with empty feacnCodes array', async () => {
       getById.mockResolvedValue(mockKeyWordEmpty)
-      
+
       const wrapper = mountComponent({ id: 2 })
       await resolveAll()
 
       expect(getById).toHaveBeenCalledWith(2)
-      
+
       // Check that the form has been populated
       expect(wrapper.find('input[name="word"]').element.value).toBe('empty')
     })
@@ -468,7 +467,7 @@ describe('KeyWord_Settings.vue', () => {
     it('handles keyword with null feacnCodes', async () => {
       const mockKeyWordNull = { ...mockKeyWord, feacnCodes: null }
       getById.mockResolvedValue(mockKeyWordNull)
-      
+
       const wrapper = mountComponent({ id: 1 })
       await resolveAll()
 
@@ -483,12 +482,12 @@ describe('KeyWord_Settings.vue', () => {
       await resolveAll()
 
       const wordInput = wrapper.find('input[name="word"]')
-      
+
       // Test empty word
       await wordInput.setValue('')
       await wordInput.trigger('blur')
       await nextTick()
-      
+
       // Component should handle validation through vee-validate
       expect(wordInput.exists()).toBe(true)
     })
@@ -508,7 +507,7 @@ describe('KeyWord_Settings.vue', () => {
       // Set word that makes certain options disabled
       await wrapper.find('input[name="word"]').setValue('single')
       await nextTick()
-      
+
       // Check disabled state through component method
       expect(wrapper.vm.isOptionDisabled(25)).toBe(true) // Should be disabled for single word
     })
@@ -516,8 +515,13 @@ describe('KeyWord_Settings.vue', () => {
 
   describe('Alert Display', () => {
     it('shows alert when present', async () => {
-      mockAlert.value = { type: 'alert-success', message: 'Test success message' }
-      
+      mockAlert.value = {
+        id: 1,
+        severity: 'success',
+        message: 'Test success message',
+        action: null
+      }
+
       const wrapper = mountComponent()
       await resolveAll()
 
@@ -529,7 +533,7 @@ describe('KeyWord_Settings.vue', () => {
 
     it('hides alert when not present', async () => {
       mockAlert.value = null
-      
+
       const wrapper = mountComponent()
       await resolveAll()
 
@@ -537,15 +541,15 @@ describe('KeyWord_Settings.vue', () => {
     })
 
     it('clears alert when close button is clicked', async () => {
-      mockAlert.value = { type: 'alert-info', message: 'Test message' }
-      
+      mockAlert.value = { id: 4, severity: 'info', message: 'Test message', action: null }
+
       const wrapper = mountComponent()
       await resolveAll()
 
       const closeButton = wrapper.find('.close')
       await closeButton.trigger('click')
 
-      expect(alertClear).toHaveBeenCalled()
+      expect(alertDismiss).toHaveBeenCalledWith(4)
     })
   })
 

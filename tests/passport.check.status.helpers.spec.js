@@ -95,7 +95,9 @@ describe('passport check status helpers', () => {
       { value: 91, code: PassportCheckStatusCode.InProgress, name: 'В процессе' }
     ]
 
-    expect(resolvePassportCheckStatusByCode(statuses, PassportCheckStatusCode.NotChecked)).toBe(statuses[0])
+    expect(resolvePassportCheckStatusByCode(statuses, PassportCheckStatusCode.NotChecked)).toBe(
+      statuses[0]
+    )
     expect(isPassportCheckInProgress(statuses, 91)).toBe(true)
     expect(isPassportCheckInProgress(statuses, 73)).toBe(false)
   })
@@ -103,16 +105,19 @@ describe('passport check status helpers', () => {
   it('treats trimmed identity values as unchanged and real edits as changed', () => {
     const initial = { firstName: ' Anna ', lastName: 'Ivanova', patronymic: 'Petrovna' }
 
-    expect(hasPassportIdentityChanged(
-      initial,
-      { firstName: 'Anna', lastName: 'Ivanova', patronymic: 'Changed' },
-      ['firstName', 'lastName']
-    )).toBe(false)
-    expect(hasPassportIdentityChanged(
-      initial,
-      { firstName: 'Maria', lastName: 'Ivanova' },
-      ['firstName', 'lastName']
-    )).toBe(true)
+    expect(
+      hasPassportIdentityChanged(
+        initial,
+        { firstName: 'Anna', lastName: 'Ivanova', patronymic: 'Changed' },
+        ['firstName', 'lastName']
+      )
+    ).toBe(false)
+    expect(
+      hasPassportIdentityChanged(initial, { firstName: 'Maria', lastName: 'Ivanova' }, [
+        'firstName',
+        'lastName'
+      ])
+    ).toBe(true)
   })
 
   it('uses a local NotChecked status when an identity field changes', () => {
@@ -121,19 +126,23 @@ describe('passport check status helpers', () => {
       { value: 30, code: PassportCheckStatusCode.Checked, name: 'Проверен' }
     ]
 
-    expect(resolveEffectivePassportCheckStatus(
-      statuses,
-      30,
-      { passportNumber: '123456' },
-      { passportNumber: '654321' },
-      ['passportNumber']
-    )).toBe(statuses[0])
-    expect(resolveEffectivePassportCheckStatus(
-      statuses,
-      30,
-      { passportNumber: '123456' },
-      { passportNumber: ' 123456 ' },
-      ['passportNumber']
-    )).toBe(statuses[1])
+    expect(
+      resolveEffectivePassportCheckStatus(
+        statuses,
+        30,
+        { passportNumber: '123456' },
+        { passportNumber: '654321' },
+        ['passportNumber']
+      )
+    ).toBe(statuses[0])
+    expect(
+      resolveEffectivePassportCheckStatus(
+        statuses,
+        30,
+        { passportNumber: '123456' },
+        { passportNumber: ' 123456 ' },
+        ['passportNumber']
+      )
+    ).toBe(statuses[1])
   })
 })

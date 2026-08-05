@@ -1,7 +1,7 @@
 /* @vitest-environment jsdom */
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
@@ -36,7 +36,12 @@ describe('parcel.statuses.store.js', () => {
     { id: 3, title: 'Выполнен', bkColor: null, restrictionReason: '' }
   ]
 
-  const mockParcelStatus = { id: 1, title: 'Черновик', bkColor: '#112233', restrictionReason: 'Стоп-слово' }
+  const mockParcelStatus = {
+    id: 1,
+    title: 'Черновик',
+    bkColor: '#112233',
+    restrictionReason: 'Стоп-слово'
+  }
 
   beforeEach(() => {
     pinia = createPinia()
@@ -130,7 +135,11 @@ describe('parcel.statuses.store.js', () => {
 
   describe('create', () => {
     it('creates order status successfully', async () => {
-      const newOrderStatus = { title: 'Новый статус', bkColor: '#ABCDEF', restrictionReason: 'Новая причина' }
+      const newOrderStatus = {
+        title: 'Новый статус',
+        bkColor: '#ABCDEF',
+        restrictionReason: 'Новая причина'
+      }
       const createdOrderStatus = { id: 4, ...newOrderStatus }
 
       mockPost.mockResolvedValue(createdOrderStatus)
@@ -138,7 +147,10 @@ describe('parcel.statuses.store.js', () => {
 
       const result = await store.create(newOrderStatus)
 
-      expect(mockPost).toHaveBeenCalledWith('http://localhost:3000/api/parcelstatuses', newOrderStatus)
+      expect(mockPost).toHaveBeenCalledWith(
+        'http://localhost:3000/api/parcelstatuses',
+        newOrderStatus
+      )
       expect(mockGet).toHaveBeenCalledWith('http://localhost:3000/api/parcelstatuses')
       expect(result).toEqual(createdOrderStatus)
     })
@@ -153,11 +165,17 @@ describe('parcel.statuses.store.js', () => {
 
   describe('update', () => {
     it('updates order status successfully', async () => {
-      const updateData = { title: 'Обновленный заголовок', bkColor: '#ABCDEF', restrictionReason: 'Новая причина' }
+      const updateData = {
+        title: 'Обновленный заголовок',
+        bkColor: '#ABCDEF',
+        restrictionReason: 'Новая причина'
+      }
       const updatedOrderStatus = { ...mockParcelStatus, ...updateData }
 
       mockPut.mockResolvedValue(updatedOrderStatus)
-      mockGet.mockResolvedValue(mockParcelStatuses.map(s => s.id === 1 ? updatedOrderStatus : s))
+      mockGet.mockResolvedValue(
+        mockParcelStatuses.map((s) => (s.id === 1 ? updatedOrderStatus : s))
+      )
 
       const result = await store.update(1, updateData)
 
@@ -177,7 +195,7 @@ describe('parcel.statuses.store.js', () => {
   describe('remove', () => {
     it('removes order status successfully', async () => {
       mockDelete.mockResolvedValue()
-      mockGet.mockResolvedValue(mockParcelStatuses.filter(s => s.id !== 1))
+      mockGet.mockResolvedValue(mockParcelStatuses.filter((s) => s.id !== 1))
 
       await store.remove(1)
 
@@ -206,11 +224,7 @@ describe('parcel.statuses.store.js', () => {
     it('handles multiple simultaneous operations', async () => {
       mockGet.mockResolvedValue(mockParcelStatuses)
 
-      const promises = [
-        store.getAll(),
-        store.getAll(),
-        store.getAll()
-      ]
+      const promises = [store.getAll(), store.getAll(), store.getAll()]
 
       await Promise.all(promises)
 
@@ -244,7 +258,7 @@ describe('parcel.statuses.store.js', () => {
       expect(mockDelete).toHaveBeenCalledWith(`${baseUrl}/1`)
     })
   })
-  
+
   describe('Status Helper Functions', () => {
     beforeEach(async () => {
       mockGet.mockResolvedValue(mockParcelStatuses)
@@ -277,7 +291,7 @@ describe('parcel.statuses.store.js', () => {
       })
     })
   })
-  
+
   describe('ensureLoaded', () => {
     beforeEach(() => {
       // Reset store to initial state for these tests
@@ -287,99 +301,102 @@ describe('parcel.statuses.store.js', () => {
       vi.clearAllMocks()
       mockGet.mockResolvedValue(mockParcelStatuses)
     })
-    
+
     it('calls getAll when statuses are not loaded yet', async () => {
       expect(store.parcelStatuses).toEqual([])
-      
+
       await store.ensureLoaded()
-      
+
       expect(mockGet).toHaveBeenCalledWith('http://localhost:3000/api/parcelstatuses')
       expect(mockGet).toHaveBeenCalledTimes(1)
       expect(store.parcelStatuses).toEqual(mockParcelStatuses)
     })
-    
+
     it('does not call getAll when already initialized', async () => {
       // First call to initialize
       await store.ensureLoaded()
-      
+
       expect(mockGet).toHaveBeenCalledTimes(1)
       expect(store.parcelStatuses).toEqual(mockParcelStatuses)
-      
+
       // Reset mock to check if it's called again
       mockGet.mockClear()
-      
+
       // Second call should not trigger getAll again (isInitialized flag is true)
       await store.ensureLoaded()
-      
+
       expect(mockGet).not.toHaveBeenCalled()
       expect(store.parcelStatuses).toEqual(mockParcelStatuses)
     })
-    
+
     it('handles concurrent calls by awaiting the same promise', async () => {
       // Mock a delayed response to simulate concurrent calls
       let resolveGetAll
-      mockGet.mockImplementation(() => new Promise(resolve => {
-        resolveGetAll = resolve
-      }))
-      
+      mockGet.mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            resolveGetAll = resolve
+          })
+      )
+
       // Start multiple concurrent calls
       const promise1 = store.ensureLoaded()
       const promise2 = store.ensureLoaded()
       const promise3 = store.ensureLoaded()
-      
+
       // Only one getAll should be called
       expect(mockGet).toHaveBeenCalledTimes(1)
-      
+
       // Resolve the promise
       resolveGetAll(mockParcelStatuses)
-      
+
       // All promises should resolve with the same data
       await Promise.all([promise1, promise2, promise3])
-      
+
       expect(store.parcelStatuses).toEqual(mockParcelStatuses)
       expect(mockGet).toHaveBeenCalledTimes(1)
     })
-    
+
     it('cleans up loadPromise after completion', async () => {
       await store.ensureLoaded()
-      
+
       expect(mockGet).toHaveBeenCalledTimes(1)
-      
+
       // Reset mock and isInitialized to simulate a second independent call
       mockGet.mockClear()
-      
+
       // Since isInitialized is true, this shouldn't call getAll
       await store.ensureLoaded()
-      
+
       expect(mockGet).not.toHaveBeenCalled()
     })
-    
+
     it('handles errors in concurrent calls', async () => {
       const error = new Error('Network error')
       mockGet.mockRejectedValue(error)
-      
+
       const promise1 = store.ensureLoaded()
       const promise2 = store.ensureLoaded()
-      
+
       await expect(promise1).rejects.toThrow('Network error')
       await expect(promise2).rejects.toThrow('Network error')
-      
+
       // Only one getAll should be called even with errors
       expect(mockGet).toHaveBeenCalledTimes(1)
     })
-    
+
     it('allows retry after failed load', async () => {
       const error = new Error('Network error')
       mockGet.mockRejectedValueOnce(error)
-      
+
       // First call fails
       await expect(store.ensureLoaded()).rejects.toThrow('Network error')
       expect(mockGet).toHaveBeenCalledTimes(1)
-      
+
       // Second call should retry (promise was cleaned up in finally)
       mockGet.mockResolvedValue(mockParcelStatuses)
       await store.ensureLoaded()
-      
+
       expect(mockGet).toHaveBeenCalledTimes(2)
       expect(store.parcelStatuses).toEqual(mockParcelStatuses)
     })

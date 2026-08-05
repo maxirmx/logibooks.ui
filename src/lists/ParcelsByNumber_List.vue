@@ -3,6 +3,8 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
+import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
 import { onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useParcelsStore } from '@/stores/parcels.store.js'
@@ -24,8 +26,8 @@ const authStore = useAuthStore()
 const alertStore = useAlertStore()
 
 const { items_bn, loading } = storeToRefs(parcelsStore)
-const { alert } = storeToRefs(alertStore)
-const { parcels_number, parcels_bn_per_page, parcels_bn_page, parcels_bn_sort_by } = storeToRefs(authStore)
+const { parcels_number, parcels_bn_per_page, parcels_bn_page, parcels_bn_sort_by } =
+  storeToRefs(authStore)
 
 const runningAction = ref(false)
 
@@ -37,7 +39,12 @@ const headers = [
   { title: 'Код ТН ВЭД', key: 'tnVed', align: 'center', width: '170px' },
   { title: 'ДТЭГ/ПТДЭГ', key: 'dTag', align: 'center', width: '170px' },
   { title: 'Комментарий', key: 'dTagComment', align: 'center', width: '170px' },
-  { title: 'Предшествующий ДТЭГ/ПТДЭГ', key: 'previousDTagComment', align: 'center', width: '170px' },
+  {
+    title: 'Предшествующий ДТЭГ/ПТДЭГ',
+    key: 'previousDTagComment',
+    align: 'center',
+    width: '170px'
+  },
   { title: 'Статус', key: 'statusId', align: 'center', width: '170px' },
   { title: 'Проверка', key: 'checkStatus', align: 'center', width: '170px' }
 ]
@@ -100,7 +107,8 @@ async function loadParcelsByNumber() {
   try {
     await parcelsStore.getByNumber(number)
   } catch (err) {
-    const message = err?.response?.data?.message || err?.message || 'Ошибка при загрузке информации о посылках'
+    const message =
+      err?.response?.data?.message || err?.message || 'Ошибка при загрузке информации о посылках'
     alertStore.error(message)
   } finally {
     runningAction.value = false
@@ -109,7 +117,9 @@ async function loadParcelsByNumber() {
 
 onMounted(async () => {
   parcels_bn_page.value = 1
-  void parcelStatusStore.ensureLoaded()
+  await runWithRetryAlert(() => parcelStatusStore.ensureLoaded(), {
+    fallback: 'Не удалось загрузить статусы посылок'
+  })
   if (normalizedNumber()) {
     await loadParcelsByNumber()
   }
@@ -154,6 +164,8 @@ defineExpose({
 
     <hr class="hr" />
 
+    <PageAlertRegion />
+
     <v-card class="table-card">
       <v-data-table
         v-model:items-per-page="parcels_bn_per_page"
@@ -169,7 +181,11 @@ defineExpose({
         class="elevation-1 interlaced-table"
         fixed-header
       >
-        <template v-for="column in clickableColumns" :key="column.key" #[`item.${column.key}`]="{ item }">
+        <template
+          v-for="column in clickableColumns"
+          :key="column.key"
+          #[`item.${column.key}`]="{ item }"
+        >
           <ClickableCell
             :item="item"
             :display-value="column.useTruncate ? '' : item[column.key]"
@@ -197,18 +213,15 @@ defineExpose({
           <ClickableCell
             :item="item"
             :display-value="new CheckStatusCode(item.checkStatus).toString()"
-            :cell-class="`truncated-cell status-cell clickable-cell ${getCheckStatusClass(item.checkStatus)}`"
+            :cell-class="`truncated-cell status-cell clickable-cell ${getCheckStatusClass(
+              item.checkStatus
+            )}`"
             :data-testid="`parcels-by-number-cell-checkStatus-${item.id}`"
             @click="() => handleCellClick(item, 'checkStatus')"
           />
         </template>
       </v-data-table>
     </v-card>
-
-    <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
-      <button @click="alertStore.clear()" class="btn btn-link close">×</button>
-      {{ alert.message }}
-    </div>
   </div>
 </template>
 
@@ -224,5 +237,4 @@ defineExpose({
 .parcels-number-input {
   min-width: 250px;
 }
-
 </style>

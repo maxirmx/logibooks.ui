@@ -31,14 +31,28 @@ vi.mock('@/stores/parcels.store.js', () => ({
   useParcelsStore: () => parcelsMock
 }))
 
-const ensureLoadedFactory = () => ({ ensureLoaded: vi.fn().mockResolvedValue(), add: vi.fn().mockResolvedValue() })
+const ensureLoadedFactory = () => ({
+  ensureLoaded: vi.fn().mockResolvedValue(),
+  add: vi.fn().mockResolvedValue()
+})
 const parcelStatusesMock = vi.hoisted(() => [])
-vi.mock('@/stores/parcel.statuses.store.js', () => ({ useParcelStatusesStore: () => ({ ensureLoaded: vi.fn().mockResolvedValue(), parcelStatuses: parcelStatusesMock }) }))
+vi.mock('@/stores/parcel.statuses.store.js', () => ({
+  useParcelStatusesStore: () => ({
+    ensureLoaded: vi.fn().mockResolvedValue(),
+    parcelStatuses: parcelStatusesMock
+  })
+}))
 vi.mock('@/stores/stop.words.store.js', () => ({ useStopWordsStore: () => ensureLoadedFactory() }))
 vi.mock('@/stores/key.words.store.js', () => ({ useKeyWordsStore: () => ensureLoadedFactory() }))
-vi.mock('@/stores/feacn.orders.store.js', () => ({ useFeacnOrdersStore: () => ensureLoadedFactory() }))
-vi.mock('@/stores/feacn.prefixes.store.js', () => ({ useFeacnPrefixesStore: () => ensureLoadedFactory() }))
-vi.mock('@/stores/countries.store.js', () => ({ useCountriesStore: () => ({ ensureLoaded: vi.fn().mockResolvedValue(), countries: [] }) }))
+vi.mock('@/stores/feacn.orders.store.js', () => ({
+  useFeacnOrdersStore: () => ensureLoadedFactory()
+}))
+vi.mock('@/stores/feacn.prefixes.store.js', () => ({
+  useFeacnPrefixesStore: () => ensureLoadedFactory()
+}))
+vi.mock('@/stores/countries.store.js', () => ({
+  useCountriesStore: () => ({ ensureLoaded: vi.fn().mockResolvedValue(), countries: [] })
+}))
 const parcelViewsMock = {
   add: vi.fn().mockResolvedValue(),
   back: vi.fn().mockResolvedValue(null)
@@ -61,7 +75,9 @@ vi.mock('@/stores/registers.store.js', () => ({ useRegistersStore: () => registe
 const authMock = { selectedParcelId: null, isSrLogistPlus: true }
 vi.mock('@/stores/auth.store.js', () => ({ useAuthStore: () => authMock }))
 const alertErrorMock = vi.fn()
-vi.mock('@/stores/alert.store.js', () => ({ useAlertStore: () => ({ alert: ref(null), error: alertErrorMock, clear: vi.fn() }) }))
+vi.mock('@/stores/alert.store.js', () => ({
+  useAlertStore: () => ({ alert: ref(null), error: alertErrorMock, clear: vi.fn() })
+}))
 
 vi.mock('@/components/ProductLinkWithActions.vue', () => ({
   default: { template: '<button data-test="view-btn" @click="$emit(\'view-image\')">View</button>' }
@@ -82,7 +98,12 @@ describe('OzonParcel_EditDialog image overlay', () => {
     vi.clearAllMocks()
     confirmMock = vi.fn()
     parcelStatusesMock.length = 0
-    parcelsMock.item.value = { id: 2, registerId: 1, productLink: 'http://example.com', hasImage: true }
+    parcelsMock.item.value = {
+      id: 2,
+      registerId: 1,
+      productLink: 'http://example.com',
+      hasImage: true
+    }
     parcelsMock.checkPassport.mockResolvedValue()
     parcelsMock.clearPassportCheck.mockResolvedValue()
     parcelsMock.update.mockResolvedValue()
@@ -114,7 +135,8 @@ describe('OzonParcel_EditDialog image overlay', () => {
         stubs: {
           Field: { template: '<input />' },
           Form: {
-            template: '<div><slot :errors="{}" :values="{ id: 2 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
+            template:
+              '<div><slot :errors="{}" :values="{ id: 2 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
           },
           ParcelHeaderActionsBar: true,
           ParcelStatusSection: true,
@@ -146,7 +168,13 @@ describe('OzonParcel_EditDialog image overlay', () => {
 
   it('disables XML download action for customs-disabled parcel status', async () => {
     parcelStatusesMock.push({ id: 10, title: 'Disabled', useAtCustomsProcessing: false })
-    parcelsMock.item.value = { id: 2, statusId: 10, checkStatus: 0, productLink: 'http://example.com', hasImage: true }
+    parcelsMock.item.value = {
+      id: 2,
+      statusId: 10,
+      checkStatus: 0,
+      productLink: 'http://example.com',
+      hasImage: true
+    }
 
     const TestWrapper = {
       components: { OzonParcel_EditDialog },
@@ -158,7 +186,8 @@ describe('OzonParcel_EditDialog image overlay', () => {
         stubs: {
           Field: { template: '<input />' },
           Form: {
-            template: '<div><slot :errors="{}" :values="{ id: 2, statusId: 10 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
+            template:
+              '<div><slot :errors="{}" :values="{ id: 2, statusId: 10 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
           },
           ParcelHeaderActionsBar: true,
           ParcelStatusSection: true,
@@ -210,7 +239,8 @@ describe('OzonParcel_EditDialog image overlay', () => {
           Form: {
             name: 'Form',
             props: { keepValues: Boolean },
-            template: '<div><slot :errors="{}" :values="{ id: 2, statusId: 1 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
+            template:
+              '<div><slot :errors="{}" :values="{ id: 2, statusId: 1 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
           },
           ParcelHeaderActionsBar: true,
           ParcelStatusSection: true,
@@ -255,16 +285,19 @@ describe('OzonParcel_EditDialog image overlay', () => {
     expect(passportField.props('inputDisabled')).toBe(true)
     expect(passportField.props('checkDisabled')).toBe(true)
     for (const name of ['lastName', 'firstName', 'passportSeries']) {
-      const field = wrapper.findAllComponents({ name: 'OzonFormField' })
-        .find(component => component.props('name') === name)
+      const field = wrapper
+        .findAllComponents({ name: 'OzonFormField' })
+        .find((component) => component.props('name') === name)
       expect(field.props('disabled')).toBe(true)
     }
-    const patronymicField = wrapper.findAllComponents({ name: 'OzonFormField' })
-      .find(component => component.props('name') === 'patronymic')
+    const patronymicField = wrapper
+      .findAllComponents({ name: 'OzonFormField' })
+      .find((component) => component.props('name') === 'patronymic')
     expect(patronymicField.props('disabled')).toBe(false)
     expect(registersMock.getById).toHaveBeenCalledWith(1)
-    expect(registersMock.getById.mock.invocationCallOrder[0])
-      .toBeLessThan(parcelsMock.getById.mock.invocationCallOrder[0])
+    expect(registersMock.getById.mock.invocationCallOrder[0]).toBeLessThan(
+      parcelsMock.getById.mock.invocationCallOrder[0]
+    )
   })
 
   it('renders Ozon reexport recipient fields', async () => {
@@ -281,7 +314,8 @@ describe('OzonParcel_EditDialog image overlay', () => {
         stubs: {
           Field: { template: '<input />' },
           Form: {
-            template: '<div><slot :errors="{}" :values="{ id: 2, statusId: 1 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
+            template:
+              '<div><slot :errors="{}" :values="{ id: 2, statusId: 1 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
           },
           ParcelHeaderActionsBar: true,
           ParcelStatusSection: true,
@@ -317,7 +351,8 @@ describe('OzonParcel_EditDialog image overlay', () => {
         stubs: {
           Field: { template: '<input />' },
           Form: {
-            template: '<div><slot :errors="{}" :values="{ id: 2, statusId: 1 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
+            template:
+              '<div><slot :errors="{}" :values="{ id: 2, statusId: 1 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
           },
           ParcelHeaderActionsBar: true,
           ParcelStatusSection: true,
@@ -345,7 +380,13 @@ describe('OzonParcel_EditDialog image overlay', () => {
   it('refetches register when back navigation returns parcel from another register', async () => {
     registersMock.item.value = { id: 1, customsProcedureCode: 40 }
     parcelsMock.item.value = { id: 2, registerId: 1, statusId: 1, checkStatus: 0 }
-    parcelViewsMock.back.mockResolvedValue({ id: 7, registerId: 9, statusId: 1, checkStatus: 0, postingNumber: 'OZ-7' })
+    parcelViewsMock.back.mockResolvedValue({
+      id: 7,
+      registerId: 9,
+      statusId: 1,
+      checkStatus: 0,
+      postingNumber: 'OZ-7'
+    })
 
     const TestWrapper = {
       components: { OzonParcel_EditDialog },
@@ -357,7 +398,8 @@ describe('OzonParcel_EditDialog image overlay', () => {
         stubs: {
           Field: { template: '<input />' },
           Form: {
-            template: '<div><slot :errors="{}" :values="{ id: 2, statusId: 1 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
+            template:
+              '<div><slot :errors="{}" :values="{ id: 2, statusId: 1 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
           },
           ParcelHeaderActionsBar: {
             template: '<button data-test="back-btn" @click="$emit(\'back\')"></button>'
@@ -400,30 +442,34 @@ describe('OzonParcel_EditDialog image overlay', () => {
       `
     }
     const mountDialog = async () => {
-      const wrapper = mount({
-        components: { OzonParcel_EditDialog },
-        template: '<Suspense><OzonParcel_EditDialog :registerId="1" :id="2" /></Suspense>'
-      }, {
-        global: {
-          stubs: {
-            Field: { template: '<input />' },
-            Form: {
-              template: '<div><slot :errors="{}" :values="{ id: 2, statusId: 1 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
-            },
-            ParcelHeaderActionsBar: actionBarStub,
-            ParcelStatusSection: true,
-            FeacnCodeEditor: true,
-            ParcelNumberExt: true,
-            ParcelWeightAutoField: true,
-            OzonFormField: true,
-            ArticleWithH: true,
-            ActionButton: true,
-            DTagSection: true,
-            'font-awesome-icon': true,
-            VTooltip: true
+      const wrapper = mount(
+        {
+          components: { OzonParcel_EditDialog },
+          template: '<Suspense><OzonParcel_EditDialog :registerId="1" :id="2" /></Suspense>'
+        },
+        {
+          global: {
+            stubs: {
+              Field: { template: '<input />' },
+              Form: {
+                template:
+                  '<div><slot :errors="{}" :values="{ id: 2, statusId: 1 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
+              },
+              ParcelHeaderActionsBar: actionBarStub,
+              ParcelStatusSection: true,
+              FeacnCodeEditor: true,
+              ParcelNumberExt: true,
+              ParcelWeightAutoField: true,
+              OzonFormField: true,
+              ArticleWithH: true,
+              ActionButton: true,
+              DTagSection: true,
+              'font-awesome-icon': true,
+              VTooltip: true
+            }
           }
         }
-      })
+      )
       await nextTick()
       await resolveAll()
       return wrapper
@@ -456,7 +502,9 @@ describe('OzonParcel_EditDialog image overlay', () => {
     parcelsMock.update.mockClear()
 
     expect(wrapper.text()).toContain('Изменения запрещены')
-    expect(wrapper.get('[data-testid="parcel-actions"]').attributes('data-mutation-disabled')).toBe('true')
+    expect(wrapper.get('[data-testid="parcel-actions"]').attributes('data-mutation-disabled')).toBe(
+      'true'
+    )
     for (const testId of ['next', 'save', 'download', 'lookup']) {
       await wrapper.get(`[data-testid="${testId}"]`).trigger('click')
       await resolveAll()

@@ -1,6 +1,6 @@
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
@@ -60,7 +60,6 @@ describe('companies store', () => {
     vi.clearAllMocks()
   })
 
-
   describe('getAll', () => {
     it('fetches companies successfully', async () => {
       fetchWrapper.get.mockResolvedValue(mockCompanies)
@@ -79,7 +78,7 @@ describe('companies store', () => {
       fetchWrapper.get.mockRejectedValue(error)
       const store = useCompaniesStore()
 
-      await store.getAll()
+      await expect(store.getAll()).rejects.toBe(error)
 
       expect(store.companies).toEqual([])
       expect(store.loading).toBe(false)
@@ -106,9 +105,7 @@ describe('companies store', () => {
       fetchWrapper.get.mockRejectedValue(error)
       const store = useCompaniesStore()
 
-      const result = await store.getById(999)
-
-      expect(result).toBeNull()
+      await expect(store.getById(999)).rejects.toBe(error)
       expect(store.loading).toBe(false)
       expect(store.error).toBe(error)
     })

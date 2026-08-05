@@ -1,6 +1,6 @@
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { setActivePinia, createPinia } from 'pinia'
 import { useFeacnCodesStore } from '@/stores/feacn.codes.store.js'
@@ -46,31 +46,40 @@ describe('feacn.codes.store.js', () => {
     it('getByCode retrieves code by code', async () => {
       fetchWrapper.get.mockResolvedValue(mockCode)
       const res = await store.getByCode('1234567890')
-      expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:3000/api/feacncodes/code/1234567890')
+      expect(fetchWrapper.get).toHaveBeenCalledWith(
+        'http://localhost:3000/api/feacncodes/code/1234567890'
+      )
       expect(res).toEqual(mockCode)
     })
 
     it('lookup retrieves codes', async () => {
       fetchWrapper.get.mockResolvedValue(mockCodes)
       const res = await store.lookup('abc')
-      expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:3000/api/feacncodes/lookup/abc')
+      expect(fetchWrapper.get).toHaveBeenCalledWith(
+        'http://localhost:3000/api/feacncodes/lookup/abc'
+      )
       expect(res).toEqual(mockCodes)
     })
 
     it('getChildren retrieves children codes', async () => {
       fetchWrapper.get.mockResolvedValue(mockCodes)
       const res = await store.getChildren(1)
-      expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:3000/api/feacncodes/children?id=1')
+      expect(fetchWrapper.get).toHaveBeenCalledWith(
+        'http://localhost:3000/api/feacncodes/children?id=1'
+      )
       expect(res).toEqual(mockCodes)
     })
   })
 
   describe('bulk lookup', () => {
     it('bulkLookup posts codes and returns results', async () => {
-      const mockResult = { results: { '111': { id: 1 }, '222': null } }
+      const mockResult = { results: { 111: { id: 1 }, 222: null } }
       fetchWrapper.post.mockResolvedValue(mockResult)
       const res = await store.bulkLookup(['111', '222'])
-      expect(fetchWrapper.post).toHaveBeenCalledWith('http://localhost:3000/api/feacncodes/bulk-lookup', { codes: ['111', '222'] })
+      expect(fetchWrapper.post).toHaveBeenCalledWith(
+        'http://localhost:3000/api/feacncodes/bulk-lookup',
+        { codes: ['111', '222'] }
+      )
       expect(res).toEqual(mockResult)
     })
 

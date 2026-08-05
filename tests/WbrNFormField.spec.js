@@ -70,25 +70,28 @@ describe('WbrNFormField', () => {
   })
 
   it('renders select fields with slot content', () => {
-    const wrapper = mountField({
-      name: 'currency',
-      as: 'select',
-      fullWidth: false,
-      errors: {}
-    }, {
-      slots: {
-        default: '<option value="CNY">CNY</option>'
+    const wrapper = mountField(
+      {
+        name: 'currency',
+        as: 'select',
+        fullWidth: false,
+        errors: {}
       },
-      fieldStub: {
-        template: '<select :name="name" :id="id" :class="classes"><slot /></select>',
-        props: ['name', 'id', 'as', 'class'],
-        computed: {
-          classes() {
-            return this.class
+      {
+        slots: {
+          default: '<option value="CNY">CNY</option>'
+        },
+        fieldStub: {
+          template: '<select :name="name" :id="id" :class="classes"><slot /></select>',
+          props: ['name', 'id', 'as', 'class'],
+          computed: {
+            classes() {
+              return this.class
+            }
           }
         }
       }
-    })
+    )
 
     expect(wrapper.find('select').attributes('name')).toBe('currency')
     expect(wrapper.find('select').classes()).toContain('input')

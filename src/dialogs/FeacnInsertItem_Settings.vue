@@ -1,11 +1,13 @@
 <script setup>
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
+import { focusFirstInvalidField } from '@/helpers/form.validation.helpers.js'
+import { reportFormError } from '@/helpers/error.helpers.js'
 import { ref, computed, onMounted, watch, nextTick, onUnmounted } from 'vue'
 import router from '@/router'
-import { storeToRefs } from 'pinia'
 import { useForm, useField } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/yup'
 import * as Yup from 'yup'
@@ -28,8 +30,6 @@ const props = defineProps({
 
 const insertItemsStore = useFeacnInsertItemsStore()
 const alertStore = useAlertStore()
-const { alert } = storeToRefs(alertStore)
-
 const isCreate = computed(() => props.mode === 'create')
 const saving = ref(false)
 const loading = ref(false)
@@ -44,7 +44,7 @@ const schema = toTypedSchema(
   })
 )
 
-const { errors, handleSubmit, resetForm, setFieldValue } = useForm({
+const { errors, handleSubmit, resetForm, setFieldValue, setErrors } = useForm({
   validationSchema: schema,
   initialValues: {
     code: '',
@@ -110,7 +110,7 @@ onUnmounted(() => {
   document.removeEventListener('keydown', handleEscape)
 })
 
-onMounted(async () => {
+async function initialize() {
   if (!isCreate.value) {
     loading.value = true
     try {
@@ -124,16 +124,20 @@ onMounted(async () => {
           }
         })
       }
-    } catch {
-      alertStore.error('Ошибка при загрузке данных правила')
-      router.push('/feacn/insertitems')
+    } catch (error) {
+      alertStore.error(error, {
+        fallback: 'Ошибка при загрузке данных правила',
+        action: { label: 'Повторить', handler: initialize }
+      })
     } finally {
       loading.value = false
     }
   }
-})
+}
 
-const onSubmit = handleSubmit(async (values, { setErrors }) => {
+onMounted(initialize)
+
+const onSubmit = handleSubmit(async (values) => {
   saving.value = true
   try {
     if (isCreate.value) {
@@ -143,11 +147,15 @@ const onSubmit = handleSubmit(async (values, { setErrors }) => {
     }
     router.push('/feacn/insertitems')
   } catch (error) {
-    setErrors({ apiError: error.message || 'Ошибка при сохранении правила' })
+    reportFormError(error, {
+      setErrors,
+      alertStore,
+      fallback: 'Ошибка при сохранении правила'
+    })
   } finally {
     saving.value = false
   }
-})
+}, focusFirstInvalidField)
 
 function cancel() {
   router.push('/feacn/insertitems')
@@ -159,6 +167,8 @@ function cancel() {
     <h1 class="primary-heading">{{ getTitle() }}</h1>
     <hr class="hr" />
 
+    <PageAlertRegion />
+
     <div v-if="loading" class="text-center m-5">
       <span class="spinner-border spinner-border-lg align-center"></span>
     </div>
@@ -166,32 +176,37 @@ function cancel() {
     <form v-else @submit.prevent="onSubmit">
       <div class="feacn-search-wrapper">
         <div class="form-group">
-            <label for="code" class="label">Код ТН ВЭД:</label>
-            <input
-                name="code"
-                id="code"
-                type="text"
-                class="form-control input"
-                :class="{ 'is-invalid': errors.code }"
-                maxlength="10"
-                inputmode="numeric"
-                pattern="[0-9]*"
-                v-model="code"
-                @input="onCodeInput"
-                @dblclick="toggleSearch"
-                :readonly="searchActive"
-                placeholder="Введите код ТН ВЭД"
-            />
-            <ActionButton
-                :icon="searchActive ? 'fa-solid fa-arrow-up' : 'fa-solid fa-arrow-down'"
-                :item="null"
-                @click="toggleSearch"
-                class="ml-2 mr-2"
-                :tooltip-text="searchActive ? 'Скрыть дерево кодов' : 'Выбрать код'"
-                :disabled="false"
-            />
-            <div v-if="errors.code" class="invalid-feedback">{{ errors.code }}</div>
-            <FeacnCodeSearch v-if="searchActive" class="feacn-overlay" @select="handleCodeSelect" @refocus="handleRefocus" />
+          <label for="code" class="label">Код ТН ВЭД:</label>
+          <input
+            name="code"
+            id="code"
+            type="text"
+            class="form-control input"
+            :class="{ 'is-invalid': errors.code }"
+            maxlength="10"
+            inputmode="numeric"
+            pattern="[0-9]*"
+            v-model="code"
+            @input="onCodeInput"
+            @dblclick="toggleSearch"
+            :readonly="searchActive"
+            placeholder="Введите код ТН ВЭД"
+          />
+          <ActionButton
+            :icon="searchActive ? 'fa-solid fa-arrow-up' : 'fa-solid fa-arrow-down'"
+            :item="null"
+            @click="toggleSearch"
+            class="ml-2 mr-2"
+            :tooltip-text="searchActive ? 'Скрыть дерево кодов' : 'Выбрать код'"
+            :disabled="false"
+          />
+          <div v-if="errors.code" class="invalid-feedback">{{ errors.code }}</div>
+          <FeacnCodeSearch
+            v-if="searchActive"
+            class="feacn-overlay"
+            @select="handleCodeSelect"
+            @refocus="handleRefocus"
+          />
         </div>
       </div>
       <div class="form-group">
@@ -235,15 +250,9 @@ function cancel() {
           Отменить
         </button>
       </div>
-
-      <div v-if="errors.apiError" class="alert alert-danger mt-3 mb-0">{{ errors.apiError }}</div>
     </form>
 
     <!-- Alert -->
-    <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
-      <button @click="alertStore.clear()" class="btn btn-link close">×</button>
-      {{ alert.message }}
-    </div>
   </div>
 </template>
 
@@ -260,4 +269,3 @@ function cancel() {
   z-index: 100;
 }
 </style>
-

@@ -2,7 +2,7 @@
 
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
@@ -14,7 +14,8 @@ import FieldArrayWithButtons from '@/components/FieldArrayWithButtons.vue'
 vi.mock('@/components/ActionButton.vue', () => ({
   default: {
     name: 'ActionButton',
-    template: '<button @click="$emit(\'click\', item)" :disabled="disabled" :class="$attrs.class"><slot /></button>',
+    template:
+      '<button @click="$emit(\'click\', item)" :disabled="disabled" :class="$attrs.class"><slot /></button>',
     props: ['item', 'icon', 'tooltipText', 'disabled'],
     emits: ['click']
   }
@@ -38,9 +39,9 @@ const createWrapper = (props = {}, initialValues = { testField: [''] }) => {
     `,
     components: { Form, FieldArrayWithButtons },
     setup() {
-      return { 
-        schema, 
-        initialValues, 
+      return {
+        schema,
+        initialValues,
         componentProps: props,
         hasError: props.hasError || false
       }
@@ -56,7 +57,7 @@ describe('FieldArrayWithButtons', () => {
   it('renders with default props', async () => {
     const wrapper = createWrapper()
     await flushPromises()
-    
+
     expect(wrapper.find('label').text()).toBe('Test Field:')
     expect(wrapper.find('select').exists()).toBe(true)
     expect(wrapper.findAll('button')).toHaveLength(2) // plus and minus buttons
@@ -67,17 +68,17 @@ describe('FieldArrayWithButtons', () => {
       { value: 1, text: 'Option 1' },
       { value: 2, text: 'Option 2' }
     ]
-    
+
     const wrapper = createWrapper({
       fieldType: 'select',
       options,
       placeholder: 'Choose option:'
     })
     await flushPromises()
-    
+
     const select = wrapper.find('select')
     expect(select.exists()).toBe(true)
-    
+
     const optionElements = select.findAll('option')
     expect(optionElements).toHaveLength(3) // placeholder + 2 options
     expect(optionElements[0].text()).toBe('Choose option:')
@@ -91,7 +92,7 @@ describe('FieldArrayWithButtons', () => {
       fieldProps: { type: 'text', placeholder: 'Enter text' }
     })
     await flushPromises()
-    
+
     expect(wrapper.find('input[type="text"]').exists()).toBe(true)
   })
 
@@ -101,14 +102,14 @@ describe('FieldArrayWithButtons', () => {
       fieldProps: { placeholder: 'Enter text', rows: 3 }
     })
     await flushPromises()
-    
+
     expect(wrapper.find('textarea').exists()).toBe(true)
   })
 
   it('applies error styling when hasError is true', async () => {
     const wrapper = createWrapper({ hasError: true })
     await flushPromises()
-    
+
     // The field should have the is-invalid class when hasError is true
     const field = wrapper.find('.field-container-select')
     expect(field.exists()).toBe(true)
@@ -118,9 +119,9 @@ describe('FieldArrayWithButtons', () => {
   it('disables minus button when only one field exists', async () => {
     const wrapper = createWrapper()
     await flushPromises()
-    
+
     const buttons = wrapper.findAll('button')
-    const minusButton = buttons.find(btn => btn.classes().includes('ml-2'))
+    const minusButton = buttons.find((btn) => btn.classes().includes('ml-2'))
     expect(minusButton.attributes('disabled')).toBeDefined()
   })
 
@@ -130,52 +131,56 @@ describe('FieldArrayWithButtons', () => {
 
     const containers = wrapper.findAll('.field-container')
     expect(containers).toHaveLength(2)
-    
+
     // First container should have plus button
     const firstContainerButtons = containers[0].findAll('button')
-    const hasPlusButton = firstContainerButtons.some(btn => btn.classes().includes('field-container-plus'))
+    const hasPlusButton = firstContainerButtons.some((btn) =>
+      btn.classes().includes('field-container-plus')
+    )
     expect(hasPlusButton).toBe(true)
-    
+
     // Second container should not have plus button
     const secondContainerButtons = containers[1].findAll('button')
-    const hasNoPlusButton = !secondContainerButtons.some(btn => btn.classes().includes('field-container-plus'))
+    const hasNoPlusButton = !secondContainerButtons.some((btn) =>
+      btn.classes().includes('field-container-plus')
+    )
     expect(hasNoPlusButton).toBe(true)
   })
 
   it('adds new field when plus button is clicked', async () => {
     const wrapper = createWrapper()
     await flushPromises()
-    
+
     expect(wrapper.findAll('.field-container')).toHaveLength(1)
-    
+
     const plusButton = wrapper.find('button.field-container-plus')
     await plusButton.trigger('click')
     await flushPromises()
-    
+
     expect(wrapper.findAll('.field-container')).toHaveLength(2)
   })
 
   it('removes field when minus button is clicked', async () => {
     const wrapper = createWrapper({}, { testField: ['', ''] }) // start with two fields
     await flushPromises()
-    
+
     expect(wrapper.findAll('.field-container')).toHaveLength(2)
-    
-    const minusButtons = wrapper.findAll('button').filter(btn => btn.classes().includes('ml-2'))
+
+    const minusButtons = wrapper.findAll('button').filter((btn) => btn.classes().includes('ml-2'))
     await minusButtons[1].trigger('click') // click second minus button
     await flushPromises()
-    
+
     expect(wrapper.findAll('.field-container')).toHaveLength(1)
   })
 
   it('does not allow removing the last field', async () => {
     const wrapper = createWrapper()
     await flushPromises()
-    
+
     expect(wrapper.findAll('.field-container')).toHaveLength(1)
-    
+
     const buttons = wrapper.findAll('button')
-    const minusButton = buttons.find(btn => btn.classes().includes('ml-2'))
+    const minusButton = buttons.find((btn) => btn.classes().includes('ml-2'))
     expect(minusButton.attributes('disabled')).toBeDefined()
   })
 
@@ -185,12 +190,12 @@ describe('FieldArrayWithButtons', () => {
       removeTooltip: 'Custom Remove'
     })
     await flushPromises()
-    
+
     // Check ActionButton components directly
     const actionButtons = wrapper.findAllComponents({ name: 'ActionButton' })
-    const plusButton = actionButtons.find(btn => btn.classes().includes('field-container-plus'))
-    const minusButton = actionButtons.find(btn => btn.classes().includes('ml-2'))
-    
+    const plusButton = actionButtons.find((btn) => btn.classes().includes('field-container-plus'))
+    const minusButton = actionButtons.find((btn) => btn.classes().includes('ml-2'))
+
     expect(plusButton.props('tooltipText')).toBe('Custom Add')
     expect(minusButton.props('tooltipText')).toBe('Custom Remove')
   })
@@ -198,25 +203,25 @@ describe('FieldArrayWithButtons', () => {
   it('uses custom default value when adding fields', async () => {
     const wrapper = createWrapper({ defaultValue: 'custom' })
     await flushPromises()
-    
+
     // Check that the ActionButton component receives the right props
     const actionButtons = wrapper.findAllComponents({ name: 'ActionButton' })
-    const plusButton = actionButtons.find(btn => btn.classes().includes('field-container-plus'))
-    
+    const plusButton = actionButtons.find((btn) => btn.classes().includes('field-container-plus'))
+
     expect(plusButton.props('item')).toBe('custom')
   })
 
   it('applies custom field props', async () => {
     const wrapper = createWrapper({
       fieldType: 'input',
-      fieldProps: { 
-        type: 'email', 
+      fieldProps: {
+        type: 'email',
         placeholder: 'Enter email',
         maxlength: '50'
       }
     })
     await flushPromises()
-    
+
     const input = wrapper.find('input')
     expect(input.attributes('type')).toBe('email')
     expect(input.attributes('placeholder')).toBe('Enter email')
@@ -228,25 +233,25 @@ describe('FieldArrayWithButtons', () => {
     const validTypes = ['select', 'input', 'textarea']
     const component = FieldArrayWithButtons
     const validator = component.props.fieldType.validator
-    
-    validTypes.forEach(type => {
+
+    validTypes.forEach((type) => {
       expect(validator(type)).toBe(true)
     })
-    
+
     expect(validator('invalid')).toBe(false)
   })
 
   it('renders correct CSS classes', async () => {
     const wrapper = createWrapper()
     await flushPromises()
-    
+
     // Check container classes
     expect(wrapper.find('.field-container').exists()).toBe(true)
     expect(wrapper.find('.form-group.mb-2').exists()).toBe(true)
-    
+
     // Check field classes
     expect(wrapper.find('.form-control.input.field-container-select').exists()).toBe(true)
-    
+
     // Check button classes
     expect(wrapper.find('.button-o-c.field-container-plus').exists()).toBe(true)
     expect(wrapper.find('.button-o-c.ml-2').exists()).toBe(true)
@@ -312,7 +317,7 @@ describe('FieldArrayWithButtons', () => {
     await flushPromises()
 
     const buttons = wrapper.findAll('button')
-    buttons.forEach(btn => {
+    buttons.forEach((btn) => {
       expect(btn.attributes('disabled')).toBeDefined()
     })
 

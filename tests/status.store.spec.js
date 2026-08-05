@@ -1,6 +1,6 @@
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
@@ -31,23 +31,26 @@ describe('status store', () => {
       exchangeRates: {
         rates: [
           { alphabeticCode: 'USD', rate: 92.12, date: '2024-06-24' },
-          { alphabeticCode: 'EUR', rate: 101.98, date: '2024-06-24' },
+          { alphabeticCode: 'EUR', rate: 101.98, date: '2024-06-24' }
         ],
-        eurUzs: { baseAlphabeticCode: 'EUR', quoteAlphabeticCode: 'UZS', rate: 15586.1234, date: '2024-06-24' }
-      },
+        eurUzs: {
+          baseAlphabeticCode: 'EUR',
+          quoteAlphabeticCode: 'UZS',
+          rate: 15586.1234,
+          date: '2024-06-24'
+        }
+      }
     })
 
     const store = useStatusStore()
     await store.fetchStatus()
 
-    expect(fetchWrapper.get).toHaveBeenCalledWith(
-      `${apiUrl}/status/status`
-    )
+    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/status/status`)
     expect(store.coreVersion).toBe('1.2.3')
     expect(store.dbVersion).toBe('20240624')
     expect(store.exchangeRates).toEqual([
       { alphabeticCode: 'USD', rate: 92.12, date: '2024-06-24' },
-      { alphabeticCode: 'EUR', rate: 101.98, date: '2024-06-24' },
+      { alphabeticCode: 'EUR', rate: 101.98, date: '2024-06-24' }
     ])
     expect(store.eurUzs).toEqual({
       baseAlphabeticCode: 'EUR',
@@ -61,14 +64,17 @@ describe('status store', () => {
     fetchWrapper.get.mockResolvedValue({
       appVersion: '2.0.0',
       dbVersion: '20240630',
-      exchangeRates: {},
+      exchangeRates: {}
     })
 
     const store = useStatusStore()
-    store.exchangeRates = [
-      { alphabeticCode: 'USD', rate: 91.1, date: '2024-06-01' },
-    ]
-    store.eurUzs = { baseAlphabeticCode: 'EUR', quoteAlphabeticCode: 'UZS', rate: 15586.1234, date: '2024-06-01' }
+    store.exchangeRates = [{ alphabeticCode: 'USD', rate: 91.1, date: '2024-06-01' }]
+    store.eurUzs = {
+      baseAlphabeticCode: 'EUR',
+      quoteAlphabeticCode: 'UZS',
+      rate: 15586.1234,
+      date: '2024-06-01'
+    }
 
     await store.fetchStatus()
 

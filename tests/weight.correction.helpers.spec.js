@@ -27,27 +27,31 @@ describe('weight correction helpers', () => {
     })
 
     expect(choice).toBe(WEIGHT_CORRECTION_CHOICE.Skip)
-    expect(confirm).toHaveBeenCalledWith(expect.objectContaining({
-      title: 'Подтверждение',
-      confirmationText: 'Да',
-      cancellationText: 'Нет',
-      dialogProps: {
-        width: '30%',
-        minWidth: '250px'
-      },
-      confirmationButtonProps: {
-        color: 'orange-darken-3'
-      },
-      content: 'Применить поправочный коэффициент 0,500 для веса посылок?'
-    }))
+    expect(confirm).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Подтверждение',
+        confirmationText: 'Да',
+        cancellationText: 'Нет',
+        dialogProps: {
+          width: '30%',
+          minWidth: '250px'
+        },
+        confirmationButtonProps: {
+          color: 'orange-darken-3'
+        },
+        content: 'Применить поправочный коэффициент 0,500 для веса посылок?'
+      })
+    )
   })
 
   it('returns true when shared correction confirm is accepted', async () => {
     const confirm = vi.fn().mockResolvedValue(true)
 
-    await expect(confirmOutputWeightCorrection(confirm, {
-      realWeightKg: 5,
-      totalWeightKgToRelease: 10
-    })).resolves.toBe(true)
+    await expect(
+      confirmOutputWeightCorrection(confirm, {
+        realWeightKg: 5,
+        totalWeightKgToRelease: 10
+      })
+    ).resolves.toBe(true)
   })
 })

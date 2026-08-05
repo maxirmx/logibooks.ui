@@ -9,6 +9,7 @@ import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 import { scanjobMonitorArea } from '@/helpers/scanjob.monitor.helpers.js'
 import { useAuthStore } from '@/stores/auth.store.js'
+import { reportError } from '@/helpers/error.helpers.js'
 
 const baseUrl = `${apiUrl}/scanjobs`
 const scanJobMonitorHubUrl = `${apiUrl.replace(/\/api\/?$/i, '')}/hubs/scan-jobs`
@@ -44,7 +45,6 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
   let parcelExtIdRegisterId = null
   let parcelExtIdChangedHandler = null
 
-
   function getOpsLabel(list, value) {
     const num = Number(value)
     const match = list?.find((item) => Number(item.value) === num)
@@ -53,7 +53,7 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
 
   async function getAll() {
     const authStore = useAuthStore()
-    
+
     loading.value = true
     error.value = null
     try {
@@ -75,6 +75,7 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
       totalCount.value = response.pagination?.totalCount || 0
     } catch (err) {
       error.value = err
+      throw err
     } finally {
       loading.value = false
     }
@@ -206,13 +207,16 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
       return currentConnection
     }
 
-    async function start(scanJobId, {
-      area = scanjobMonitorArea.Boxes,
-      boxId = null,
-      bucketIndex = null,
-      onSnapshot = null,
-      onClosed = null
-    } = {}) {
+    async function start(
+      scanJobId,
+      {
+        area = scanjobMonitorArea.Boxes,
+        boxId = null,
+        bucketIndex = null,
+        onSnapshot = null,
+        onClosed = null
+      } = {}
+    ) {
       if (syncLoading) {
         monitorLoading.value = true
       }
@@ -260,9 +264,7 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
       }
     }
 
-    async function followUser(scanJobId, userId, {
-      onFollowEvent = null
-    } = {}) {
+    async function followUser(scanJobId, userId, { onFollowEvent = null } = {}) {
       followEventHandler = onFollowEvent
       lastFollowRequest = {
         scanJobId: Number(scanJobId),
@@ -353,11 +355,10 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     syncErrors: true
   })
 
-  async function loadMonitorSnapshot(scanJobId, {
-    area = scanjobMonitorArea.Boxes,
-    boxId = null,
-    bucketIndex = null
-  } = {}) {
+  async function loadMonitorSnapshot(
+    scanJobId,
+    { area = scanjobMonitorArea.Boxes, boxId = null, bucketIndex = null } = {}
+  ) {
     monitorLoading.value = true
     monitorError.value = null
     monitorClosed.value = null
@@ -371,7 +372,9 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
         params.append('bucketIndex', String(bucketIndex ?? 0))
       }
 
-      const snapshot = await fetchWrapper.get(`${baseUrl}/${scanJobId}/monitor?${params.toString()}`)
+      const snapshot = await fetchWrapper.get(
+        `${baseUrl}/${scanJobId}/monitor?${params.toString()}`
+      )
       monitorSnapshot.value = snapshot
       return snapshot
     } catch (err) {
@@ -405,13 +408,16 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     }
   }
 
-  async function startMonitor(scanJobId, {
-    area = scanjobMonitorArea.Boxes,
-    boxId = null,
-    bucketIndex = null,
-    onSnapshot = null,
-    onClosed = null
-  } = {}) {
+  async function startMonitor(
+    scanJobId,
+    {
+      area = scanjobMonitorArea.Boxes,
+      boxId = null,
+      bucketIndex = null,
+      onSnapshot = null,
+      onClosed = null
+    } = {}
+  ) {
     return monitorChannel.start(scanJobId, {
       area,
       boxId,
@@ -429,9 +435,7 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     return monitorChannel.stop()
   }
 
-  async function startMonitorFollowUser(scanJobId, userId, {
-    onFollowEvent = null
-  } = {}) {
+  async function startMonitorFollowUser(scanJobId, userId, { onFollowEvent = null } = {}) {
     return monitorChannel.followUser(scanJobId, userId, {
       onFollowEvent
     })
@@ -495,10 +499,7 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     return connection
   }
 
-  async function startScanJobsListMonitor({
-    onChanged = null,
-    onClosed = null
-  } = {}) {
+  async function startScanJobsListMonitor({ onChanged = null, onClosed = null } = {}) {
     scanJobsListChangedHandler = onChanged
     scanJobsListClosedHandler = onClosed
 
@@ -561,9 +562,11 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
 
     parcelExtIdConnection.onreconnected?.(() => {
       if (parcelExtIdRegisterId != null) {
-        parcelExtIdConnection.invoke('ObserveParcelExtIds', Number(parcelExtIdRegisterId)).catch((err) => {
-          error.value = err
-        })
+        parcelExtIdConnection
+          .invoke('ObserveParcelExtIds', Number(parcelExtIdRegisterId))
+          .catch((err) => {
+            error.value = err
+          })
       }
     })
 
@@ -587,9 +590,7 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     return connection
   }
 
-  async function startParcelExtIdMonitor(registerId, {
-    onChanged = null
-  } = {}) {
+  async function startParcelExtIdMonitor(registerId, { onChanged = null } = {}) {
     const normalizedRegisterId = Number(registerId)
     if (!Number.isFinite(normalizedRegisterId) || normalizedRegisterId <= 0) {
       throw new Error('registerId must be a positive number')
@@ -633,7 +634,7 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
       return scanjob.value
     } catch (err) {
       error.value = err
-      return null
+      throw err
     } finally {
       loading.value = false
     }
@@ -641,20 +642,22 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
 
   async function markScanJobReadOnly(id, err) {
     if (
-      err?.status !== 409
-      || !String(err?.message || err?.data?.msg || '').includes('Изменения запрещены')
-    ) return
+      err?.status !== 409 ||
+      !String(err?.message || err?.data?.msg || '').includes('Изменения запрещены')
+    )
+      return
     const numericId = Number(id)
     let refreshed = null
     if (Number(scanjob.value?.id) === numericId) {
       try {
         refreshed = await fetchWrapper.get(`${baseUrl}/${numericId}`)
         scanjob.value = refreshed
-      } catch {
+      } catch (refreshError) {
         scanjob.value = { ...scanjob.value, readOnly: true }
+        reportError(refreshError, { context: 'scanjobs conflict refresh' })
       }
     }
-    const index = items.value.findIndex(job => Number(job.id) === numericId)
+    const index = items.value.findIndex((job) => Number(job.id) === numericId)
     if (index !== -1) {
       items.value[index] = refreshed
         ? { ...items.value[index], ...refreshed }
@@ -768,7 +771,7 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
       return ops.value
     } catch (err) {
       opsError.value = err
-      return null
+      throw err
     } finally {
       opsLoading.value = false
     }
@@ -823,6 +826,6 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     stopScanJobsListMonitor,
     startParcelExtIdMonitor,
     stopParcelExtIdMonitor,
-    scanjobMonitorArea,
+    scanjobMonitorArea
   }
 })

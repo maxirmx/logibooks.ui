@@ -1,11 +1,12 @@
 <script setup>
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import router from '@/router'
 
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useUsersStore } from '@/stores/users.store.js'
 import { useWarehousesStore } from '@/stores/warehouses.store.js'
@@ -16,6 +17,7 @@ import ActionButton from '@/components/ActionButton.vue'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
 import { getCredentials, hasAllWarehouseAccess } from '@/helpers/user.roles.js'
+import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
 
 const authStore = useAuthStore()
 
@@ -23,10 +25,14 @@ const usersStore = useUsersStore()
 const { users, loading } = storeToRefs(usersStore)
 const warehousesStore = useWarehousesStore()
 const alertStore = useAlertStore()
-const { alert } = storeToRefs(alertStore)
 const runningAction = ref(false)
-usersStore.ensureLoaded().catch((error) => alertStore.error(error?.message || String(error)))
-warehousesStore.ensureLoaded().catch((error) => alertStore.error(error?.message || String(error)))
+
+onMounted(() =>
+  runWithRetryAlert(
+    () => Promise.all([usersStore.ensureLoaded(), warehousesStore.ensureLoaded()]),
+    { fallback: 'Не удалось загрузить пользователей и склады' }
+  )
+)
 
 const confirm = useConfirm()
 
@@ -75,7 +81,6 @@ function filterUsers(value, query, item) {
   return false
 }
 
-
 async function deleteUser(item) {
   if (runningAction.value) return
   runningAction.value = true
@@ -123,7 +128,7 @@ const headers = [
   <div class="settings table-3">
     <div class="header-with-actions">
       <h1 class="primary-heading">Пользователи</h1>
-      <div style="display:flex; align-items:center;">
+      <div style="display: flex; align-items: center">
         <div v-if="runningAction || loading" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
         </div>
@@ -141,6 +146,8 @@ const headers = [
     </div>
 
     <hr class="hr" />
+
+    <PageAlertRegion />
 
     <div>
       <v-text-field
@@ -179,35 +186,34 @@ const headers = [
         </template>
 
         <template v-slot:[`item.warehouses`]="{ item }">
-          <div v-for="(warehouseName, warehouseIndex) in getWarehouseNames(item)" :key="`${item.id}-${warehouseIndex}`">
+          <div
+            v-for="(warehouseName, warehouseIndex) in getWarehouseNames(item)"
+            :key="`${item.id}-${warehouseIndex}`"
+          >
             {{ warehouseName }}
           </div>
         </template>
 
         <template v-slot:[`item.actions`]="{ item }">
           <div class="actions-container">
-            <ActionButton 
-              :item="item" 
-              icon="fa-solid fa-pen" 
-              tooltip-text="Редактировать информацию о пользователе" 
-              @click="userSettings" 
-              :disabled="runningAction || loading" 
+            <ActionButton
+              :item="item"
+              icon="fa-solid fa-pen"
+              tooltip-text="Редактировать информацию о пользователе"
+              @click="userSettings"
+              :disabled="runningAction || loading"
             />
-            <ActionButton 
-              :item="item" 
-              icon="fa-solid fa-trash-can" 
-              tooltip-text="Удалить информацию о пользователе" 
-              @click="deleteUser" 
-              :disabled="runningAction || loading" 
+            <ActionButton
+              :item="item"
+              icon="fa-solid fa-trash-can"
+              tooltip-text="Удалить информацию о пользователе"
+              @click="deleteUser"
+              :disabled="runningAction || loading"
             />
           </div>
         </template>
       </v-data-table>
     </v-card>
-    <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
-      <button @click="alertStore.clear()" class="btn btn-link close">×</button>
-      {{ alert.message }}
-    </div>
   </div>
 </template>
 

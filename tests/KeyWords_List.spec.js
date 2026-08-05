@@ -2,7 +2,7 @@
 
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
@@ -16,11 +16,15 @@ const getAllKeyWords = vi.hoisted(() => vi.fn())
 const removeKeyWord = vi.hoisted(() => vi.fn())
 const uploadKeyWords = vi.hoisted(() => vi.fn())
 const ensureLoaded = vi.hoisted(() => vi.fn())
-const getMatchTypeName = vi.hoisted(() => vi.fn((id) => id === 1 ? 'Exact' : id === 41 ? 'Morphology' : `Type ${id}`))
+const getMatchTypeName = vi.hoisted(() =>
+  vi.fn((id) => (id === 1 ? 'Exact' : id === 41 ? 'Morphology' : `Type ${id}`))
+)
 const mockPush = vi.hoisted(() => vi.fn())
 const mockConfirm = vi.hoisted(() => vi.fn())
 const mockError = vi.hoisted(() => vi.fn())
 const mockSuccess = vi.hoisted(() => vi.fn())
+const mockAlert = ref(null)
+const mockDismiss = vi.hoisted(() => vi.fn())
 
 // Mock router
 vi.mock('@/router', () => ({
@@ -54,7 +58,10 @@ vi.mock('@/stores/key.words.store.js', () => ({
 
 vi.mock('@/stores/word.match.types.store.js', () => ({
   useWordMatchTypesStore: () => ({
-    matchTypes: ref([{ id: 1, name: 'Exact' }, { id: 41, name: 'Morphology' }]),
+    matchTypes: ref([
+      { id: 1, name: 'Exact' },
+      { id: 41, name: 'Morphology' }
+    ]),
     ensureLoaded: ensureLoaded,
     getName: getMatchTypeName
   })
@@ -77,8 +84,10 @@ vi.mock('@/stores/auth.store.js', () => ({
 
 vi.mock('@/stores/alert.store.js', () => ({
   useAlertStore: () => ({
-    alert: ref(null),
-    clear: vi.fn(),
+    get alert() {
+      return mockAlert.value
+    },
+    dismiss: mockDismiss,
     success: mockSuccess,
     error: mockError,
     info: vi.fn()
@@ -129,14 +138,31 @@ const extendedStubs = {
         <slot></slot>
       </div>
     `,
-    props: ['loading', 'headers', 'items', 'search', 'custom-filter', 'items-per-page-options', 'class', 'item-value', 'page', 'items-per-page', 'items-per-page-text', 'page-text', 'sort-by', 'density']
+    props: [
+      'loading',
+      'headers',
+      'items',
+      'search',
+      'custom-filter',
+      'items-per-page-options',
+      'class',
+      'item-value',
+      'page',
+      'items-per-page',
+      'items-per-page-text',
+      'page-text',
+      'sort-by',
+      'density'
+    ]
   },
   'v-text-field': {
-    template: '<input data-testid="v-text-field" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
+    template:
+      '<input data-testid="v-text-field" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
     props: ['modelValue', 'appendInnerIcon', 'label', 'variant', 'hideDetails']
   },
   'v-file-input': {
-    template: '<input data-testid="v-file-input" type="file" ref="fileInput" @change="$emit(\'update:modelValue\', $event.target.files)" :accept="accept" />',
+    template:
+      '<input data-testid="v-file-input" type="file" ref="fileInput" @change="$emit(\'update:modelValue\', $event.target.files)" :accept="accept" />',
     props: ['accept', 'loadingText', 'modelValue'],
     emits: ['update:modelValue']
   },
@@ -178,20 +204,17 @@ describe('KeyWords_List.vue', () => {
   })
 
   describe('Data Display', () => {
-
     it('shows empty table when no keywords exist', async () => {
       mockKeyWords.value = []
       await wrapper.vm.$nextTick()
-      
+
       const dataTable = wrapper.find('[data-testid="v-data-table"]')
       expect(dataTable.exists()).toBe(true)
       expect(wrapper.find('.header-with-actions').exists()).toBe(true)
     })
-
   })
 
   describe('Create Functionality', () => {
-
     it('calls openCreateDialog when create action invoked', async () => {
       await wrapper.vm.openCreateDialog()
       expect(mockPush).toHaveBeenCalledWith('/keyword/create')
@@ -202,13 +225,13 @@ describe('KeyWords_List.vue', () => {
     it('calls openEditDialog when edit button is clicked', async () => {
       // Find the action button for editing in the first row
       const actionButtons = wrapper.findAllComponents({ name: 'ActionButton' })
-      
+
       // Find the edit button (first ActionButton in each row)
-      const editButton = actionButtons.find(button => button.props('icon') === 'fa-solid fa-pen')
-      
+      const editButton = actionButtons.find((button) => button.props('icon') === 'fa-solid fa-pen')
+
       // Simulate a click on the edit button
       await editButton.vm.$emit('click', { id: 1, word: 'стол' })
-      
+
       expect(mockPush).toHaveBeenCalledWith('/keyword/edit/1')
     })
   })
@@ -216,54 +239,58 @@ describe('KeyWords_List.vue', () => {
   describe('Delete Functionality', () => {
     it('shows confirmation dialog when delete button is clicked', async () => {
       mockConfirm.mockResolvedValue(true)
-      
+
       // Find the action button for deleting
       const actionButtons = wrapper.findAllComponents({ name: 'ActionButton' })
-      const deleteButton = actionButtons.find(button => button.props('icon') === 'fa-solid fa-trash-can')
-      
+      const deleteButton = actionButtons.find(
+        (button) => button.props('icon') === 'fa-solid fa-trash-can'
+      )
+
       // Simulate a click on the delete button
       await deleteButton.vm.$emit('click', { id: 1, word: 'стол' })
-      
+
       expect(mockConfirm).toHaveBeenCalled()
       expect(mockConfirm.mock.calls[0][0].title).toBe('Подтверждение')
       expect(mockConfirm.mock.calls[0][0].content).toContain('Удалить ключевое слово "стол"')
     })
-    
+
     it('calls remove when confirmation is confirmed', async () => {
       mockConfirm.mockResolvedValue(true)
-      
+
       // Directly call the deleteKeyWord method with a mock keyword
       await wrapper.vm.deleteKeyWord({ id: 1, word: 'стол' })
-      
+
       expect(removeKeyWord).toHaveBeenCalledWith(1)
     })
-    
+
     it('does not call remove when confirmation is cancelled', async () => {
       mockConfirm.mockResolvedValue(false)
-      
+
       // Directly call the deleteKeyWord method with a mock keyword
       await wrapper.vm.deleteKeyWord({ id: 1, word: 'стол' })
-      
+
       expect(removeKeyWord).not.toHaveBeenCalled()
     })
-    
+
     it('shows error message when delete fails with 409', async () => {
       mockConfirm.mockResolvedValue(true)
       removeKeyWord.mockRejectedValue({ message: '409 Conflict' })
-      
+
       // Directly call the deleteKeyWord method with a mock keyword
       await wrapper.vm.deleteKeyWord({ id: 1, word: 'стол' })
-      
-      expect(mockError).toHaveBeenCalledWith('Нельзя удалить ключевое слово, у которого есть связанные записи')
+
+      expect(mockError).toHaveBeenCalledWith(
+        'Нельзя удалить ключевое слово, у которого есть связанные записи'
+      )
     })
-    
+
     it('shows generic error message when delete fails with other error', async () => {
       mockConfirm.mockResolvedValue(true)
       removeKeyWord.mockRejectedValue({ message: 'Some other error' })
-      
+
       // Directly call the deleteKeyWord method with a mock keyword
       await wrapper.vm.deleteKeyWord({ id: 1, word: 'стол' })
-      
+
       expect(mockError).toHaveBeenCalledWith('Ошибка при удалении ключевого слова')
     })
   })
@@ -290,7 +317,7 @@ describe('KeyWords_List.vue', () => {
       expect(filterFn('test', 'test', { raw: null })).toBe(false)
 
       // Test with undefined word (to cover line 61)
-      expect(filterFn('test', 'test', { raw: { } })).toBe(false)
+      expect(filterFn('test', 'test', { raw: {} })).toBe(false)
     })
   })
 
@@ -298,21 +325,25 @@ describe('KeyWords_List.vue', () => {
     it('gets and displays match type text correctly', () => {
       // Reset the mock counter before making our assertions
       getMatchTypeName.mockClear()
-      
+
       expect(wrapper.vm.getMatchTypeText(1)).toBe('Exact')
       expect(wrapper.vm.getMatchTypeText(41)).toBe('Morphology')
       expect(wrapper.vm.getMatchTypeText(99)).toBe('Type 99')
-      
+
       expect(getMatchTypeName).toHaveBeenCalledTimes(3)
     })
   })
 
   describe('Alert Display', () => {
     it('shows alert when present', async () => {
-      // Set an alert
-      wrapper.vm.alert = { type: 'alert-danger', message: 'Test error message' }
+      mockAlert.value = {
+        id: 47,
+        severity: 'error',
+        message: 'Test error message',
+        action: null
+      }
       await wrapper.vm.$nextTick()
-      
+
       const alert = wrapper.find('.alert')
       expect(alert.exists()).toBe(true)
       expect(alert.text()).toContain('Test error message')
@@ -320,25 +351,26 @@ describe('KeyWords_List.vue', () => {
   })
 
   describe('File Upload Functionality', () => {
-
     it('opens file dialog when upload link is clicked', async () => {
       const fileInputRef = { click: vi.fn() }
       wrapper.vm.fileInput = fileInputRef
 
       await wrapper.vm.openFileDialog()
-      
+
       expect(fileInputRef.click).toHaveBeenCalledOnce()
     })
 
     it('handles successful file upload', async () => {
       uploadKeyWords.mockClear()
       getAllKeyWords.mockClear()
-      
+
       uploadKeyWords.mockResolvedValue()
       getAllKeyWords.mockResolvedValue()
 
-      const mockFile = new File(['test content'], 'keywords.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
-      
+      const mockFile = new File(['test content'], 'keywords.xlsx', {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      })
+
       await wrapper.vm.fileSelected([mockFile])
 
       expect(uploadKeyWords).toHaveBeenCalledWith(mockFile)
@@ -349,9 +381,9 @@ describe('KeyWords_List.vue', () => {
       // Clear mocks to ensure clean state
       uploadKeyWords.mockClear()
       getAllKeyWords.mockClear()
-      
+
       await wrapper.vm.fileSelected([])
-      
+
       expect(uploadKeyWords).not.toHaveBeenCalled()
       expect(getAllKeyWords).not.toHaveBeenCalled()
     })
@@ -359,31 +391,43 @@ describe('KeyWords_List.vue', () => {
     it('handles upload error - bad request', async () => {
       uploadKeyWords.mockRejectedValue({ message: '400 Bad Request' })
 
-      const mockFile = new File(['test content'], 'keywords.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
-      
+      const mockFile = new File(['test content'], 'keywords.xlsx', {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      })
+
       await wrapper.vm.fileSelected([mockFile])
 
-      expect(mockError).toHaveBeenCalledWith(expect.stringMatching(/^Ошибка при загрузке файла с ключевыми словами. /))
+      expect(mockError).toHaveBeenCalledWith(
+        expect.stringMatching(/^Ошибка при загрузке файла с ключевыми словами. /)
+      )
     })
 
     it('handles upload error - file too large', async () => {
       uploadKeyWords.mockRejectedValue({ message: '413 Payload Too Large' })
 
-      const mockFile = new File(['test content'], 'keywords.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
-      
+      const mockFile = new File(['test content'], 'keywords.xlsx', {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      })
+
       await wrapper.vm.fileSelected([mockFile])
 
-      expect(mockError).toHaveBeenCalledWith(expect.stringMatching(/^Ошибка при загрузке файла с ключевыми словами. /))
+      expect(mockError).toHaveBeenCalledWith(
+        expect.stringMatching(/^Ошибка при загрузке файла с ключевыми словами. /)
+      )
     })
 
     it('handles upload error - generic error', async () => {
       uploadKeyWords.mockRejectedValue({ message: 'Some other error' })
 
-      const mockFile = new File(['test content'], 'keywords.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
-      
+      const mockFile = new File(['test content'], 'keywords.xlsx', {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      })
+
       await wrapper.vm.fileSelected([mockFile])
 
-      expect(mockError).toHaveBeenCalledWith(expect.stringMatching(/^Ошибка при загрузке файла с ключевыми словами. /))
+      expect(mockError).toHaveBeenCalledWith(
+        expect.stringMatching(/^Ошибка при загрузке файла с ключевыми словами. /)
+      )
     })
 
     it('clears file input after upload attempt', async () => {
@@ -391,8 +435,10 @@ describe('KeyWords_List.vue', () => {
       wrapper.vm.fileInput = mockFileInput
       uploadKeyWords.mockRejectedValue({ message: 'Some error' })
 
-      const mockFile = new File(['test content'], 'keywords.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
-      
+      const mockFile = new File(['test content'], 'keywords.xlsx', {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      })
+
       await wrapper.vm.fileSelected([mockFile])
 
       expect(mockFileInput.value).toBe(null)

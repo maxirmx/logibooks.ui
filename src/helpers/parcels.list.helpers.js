@@ -1,6 +1,6 @@
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 /**
  * Helper functions for parcels list functionality shared between WBR and Ozon components
@@ -27,10 +27,10 @@ function unrefValue(value) {
  */
 export function navigateToEditParcel(router, item, routeName, queryParams = {}) {
   const { registerId, ...otherQueryParams } = queryParams
-  
+
   router.push({
     name: routeName,
-    params: { 
+    params: {
       id: item.id,
       registerId: registerId
     },
@@ -66,10 +66,9 @@ export function hasParcelEditRouteAccess(authStore) {
  * @returns {string} Space-separated class list for ClickableCell.
  */
 export function buildParcelEditCellClass(canAccess, baseClass = '') {
-  return [
-    String(baseClass || '').trim(),
-    unrefValue(canAccess) ? 'clickable-cell' : ''
-  ].filter(Boolean).join(' ')
+  return [String(baseClass || '').trim(), unrefValue(canAccess) ? 'clickable-cell' : '']
+    .filter(Boolean)
+    .join(' ')
 }
 
 /**
@@ -81,15 +80,24 @@ export function buildParcelEditCellClass(canAccess, baseClass = '') {
  * @returns {Promise<void>}
  */
 export async function validateParcelData(item, parcelsStore, loadOrdersFn, sw) {
+  const alertStore = useAlertStore()
+  let succeeded = false
   try {
     await parcelsStore.validate(item.id, sw)
+    succeeded = true
   } catch (error) {
-    parcelsStore.error = error?.response?.data?.message || 'Ошибка при проверке информации о посылке'
-    const alertStore = useAlertStore()
+    parcelsStore.error =
+      error?.response?.data?.message || 'Ошибка при проверке информации о посылке'
     alertStore.error(parcelsStore.error)
   } finally {
-    loadOrdersFn()
+    try {
+      await loadOrdersFn?.()
+    } catch (refreshError) {
+      alertStore.error(refreshError, { fallback: 'Не удалось обновить список посылок' })
+      succeeded = false
+    }
   }
+  return succeeded
 }
 
 /**
@@ -99,7 +107,8 @@ export async function validateParcelData(item, parcelsStore, loadOrdersFn, sw) {
  * @returns {Object} Props object with CSS class
  */
 export function getRowPropsForParcel(data, passportCheckStatuses = []) {
-  const hasIssues = CheckStatusCode.hasIssues(data.item.checkStatus) ||
+  const hasIssues =
+    CheckStatusCode.hasIssues(data.item.checkStatus) ||
     hasPassportCheckIssues(passportCheckStatuses, data.item.passportCheckStatus)
 
   return { class: hasIssues ? 'parcel-has-issues' : '' }
@@ -131,8 +140,8 @@ export function filterGenericTemplateHeadersForParcel(headers) {
     'passportNumber',
     'frozenOrder'
   ])
-  
-  return headers.filter(h => !h.key.startsWith('actions') && !excluded.has(h.key))
+
+  return headers.filter((h) => !h.key.startsWith('actions') && !excluded.has(h.key))
 }
 
 export function formatPassport(item) {
@@ -157,8 +166,8 @@ const customsChargeHeaders = [
 export function getCustomsChargeHeaders(register) {
   const registerValue = unrefValue(register)
   return customsChargeHeaders
-    .filter(header => registerValue?.[header.key] != null)
-    .map(header => ({ ...header }))
+    .filter((header) => registerValue?.[header.key] != null)
+    .map((header) => ({ ...header }))
 }
 
 /**
@@ -198,13 +207,13 @@ export function getFeacnCodesForKeywords(keywordIds, keyWordsStore) {
 
   return keywordIds
     .reduce((acc, id) => {
-      const keyword = keyWordsStore.keyWords.find(kw => kw.id === id)
+      const keyword = keyWordsStore.keyWords.find((kw) => kw.id === id)
       if (keyword && Array.isArray(keyword.feacnCodes)) {
         acc.push(...keyword.feacnCodes)
       }
       return acc
     }, [])
-    .filter(code => code !== null && code !== '')
+    .filter((code) => code !== null && code !== '')
     .sort((a, b) => {
       const numA = parseInt(a, 10)
       const numB = parseInt(b, 10)
@@ -251,9 +260,9 @@ export function getFeacnCodeItemClass(feacnCode, tnVed, allFeacnCodes) {
   if (!allFeacnCodes || allFeacnCodes.length === 0) {
     return 'feacn-code-item'
   }
-  
+
   const matchType = getMatchType(feacnCode, tnVed)
-  
+
   switch (matchType) {
     case 'exact':
       return 'feacn-code-item clickable matched'
@@ -304,18 +313,18 @@ export async function getTnVedCellClass(tnVed, feacnCodes, matchingFC) {
       return 'tnved-cell not-exists'
     }
   }
- 
+
   if (!allCodes || allCodes.length === 0) {
     return 'tnved-cell orphan'
   }
-  
+
   // Check for exact match first (include matchingFC override)
   if (tnVed && allCodes.includes(tnVed)) {
     return 'tnved-cell matched'
   }
 
   // Check for weak match using getMatchType helper
-  const hasWeakMatch = tnVed && allCodes.some(code => getMatchType(code, tnVed) === 'weak')
+  const hasWeakMatch = tnVed && allCodes.some((code) => getMatchType(code, tnVed) === 'weak')
 
   return hasWeakMatch ? 'tnved-cell matched-weak' : 'tnved-cell unmatched'
 }
@@ -330,15 +339,15 @@ export function getMatchType(code, tnVed) {
   if (!code || !tnVed) {
     return 'none'
   }
-  
+
   if (code === tnVed) {
     return 'exact'
   }
-  
+
   if (code.substring(0, 6) === tnVed.substring(0, 6)) {
     return 'weak'
   }
-  
+
   return 'none'
 }
 
@@ -351,19 +360,24 @@ export function getMatchType(code, tnVed) {
  * @returns {Promise<void>}
  */
 export async function updateParcelTnVed(item, feacnCode, parcelsStore, loadOrdersFn) {
+  const alertStore = useAlertStore()
+  let succeeded = false
   try {
     const updatedItem = { ...item, tnVed: feacnCode }
     await parcelsStore.update(item.id, updatedItem)
+    succeeded = true
   } catch (error) {
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при обновлении ТН ВЭД'
-    const alertStore = useAlertStore()
     alertStore.error(parcelsStore.error)
-  }
-  finally {
-    if (loadOrdersFn) {
-      loadOrdersFn()
+  } finally {
+    try {
+      await loadOrdersFn?.()
+    } catch (refreshError) {
+      alertStore.error(refreshError, { fallback: 'Не удалось обновить список посылок' })
+      succeeded = false
     }
   }
+  return succeeded
 }
 
 /**
@@ -375,7 +389,13 @@ export async function updateParcelTnVed(item, feacnCode, parcelsStore, loadOrder
  * @param {Object} options - Loading options forwarded to parcelsStore.getAll
  * @returns {Promise<void>}
  */
-export async function loadParcels(registerId, parcelsStore, isComponentMounted, alertStore, options = {}) {
+export async function loadParcels(
+  registerId,
+  parcelsStore,
+  isComponentMounted,
+  alertStore,
+  options = {}
+) {
   if (isComponentMounted.value) {
     try {
       // Get data without updating the reactive store yet
@@ -388,15 +408,17 @@ export async function loadParcels(registerId, parcelsStore, isComponentMounted, 
 
       if (response && response.items && response.items.length > 0) {
         const tnvedCodes = response.items
-          .map(parcel => parcel.tnVed)
-          .filter(tnved => tnved && tnved.trim() !== '')
+          .map((parcel) => parcel.tnVed)
+          .filter((tnved) => tnved && tnved.trim() !== '')
 
         if (tnvedCodes.length > 0) {
           try {
             await preloadFeacnInfo(tnvedCodes)
-          } catch {
+          } catch (error) {
             if (alertStore) {
-              alertStore.error('Не удалось загрузить информацию о кодах ТН ВЭД')
+              alertStore.error(error, {
+                fallback: 'Не удалось загрузить информацию о кодах ТН ВЭД'
+              })
             }
           }
         }
@@ -404,12 +426,16 @@ export async function loadParcels(registerId, parcelsStore, isComponentMounted, 
 
       // Now update the reactive store - watchers will fire with FEACN data ready
       parcelsStore.updateItems(response)
+      return true
     } catch (error) {
       if (isComponentMounted.value) {
-        const message = error?.response?.data?.message || error?.message || 'Ошибка при загрузке данных'
+        const message =
+          error?.response?.data?.message || error?.message || 'Ошибка при загрузке данных'
         parcelsStore.error = message
         alertStore?.error(message)
       }
+      return false
     }
   }
+  return false
 }

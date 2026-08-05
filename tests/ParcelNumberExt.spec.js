@@ -8,7 +8,8 @@ import ActionButton from '@/components/ActionButton.vue'
 vi.mock('@/components/ClickableCell.vue', () => ({
   default: {
     name: 'ClickableCell',
-    template: '<div class="clickable-cell" @click="$emit(\'click\', item)">{{ displayValue }}</div>',
+    template:
+      '<div class="clickable-cell" @click="$emit(\'click\', item)">{{ displayValue }}</div>',
     props: ['item', 'displayValue', 'cellClass'],
     emits: ['click']
   }
@@ -17,7 +18,8 @@ vi.mock('@/components/ClickableCell.vue', () => ({
 vi.mock('@/components/ActionButton.vue', () => ({
   default: {
     name: 'ActionButton',
-    template: '<button class="action-button" :class="variant" @click="$emit(\'click\', item)" :disabled="disabled">{{ icon }}</button>',
+    template:
+      '<button class="action-button" :class="variant" @click="$emit(\'click\', item)" :disabled="disabled">{{ icon }}</button>',
     props: ['item', 'icon', 'tooltipText', 'disabled', 'variant'],
     emits: ['click']
   }
@@ -87,7 +89,7 @@ describe('ParcelNumberExt', () => {
       }
       const wrapper = createWrapper({ item: itemWithFellowItems })
       const actionButtons = wrapper.findAllComponents(ActionButton)
-      
+
       // Should have ClickableCell + 1 ActionButton for fellow items
       expect(actionButtons).toHaveLength(1)
       expect(actionButtons[0].props('icon')).toBe('fa-solid fa-comment-dots')
@@ -101,11 +103,13 @@ describe('ParcelNumberExt', () => {
       }
       const wrapper = createWrapper({ item: blockedItem })
       const actionButtons = wrapper.findAllComponents(ActionButton)
-      
+
       expect(actionButtons).toHaveLength(1)
       expect(actionButtons[0].props('icon')).toBe('fa-solid fa-comment-slash')
       expect(actionButtons[0].props('variant')).toBe('red')
-      expect(actionButtons[0].props('tooltipText')).toBe('Есть запрет товара с тем же номером посылки')
+      expect(actionButtons[0].props('tooltipText')).toBe(
+        'Есть запрет товара с тем же номером посылки'
+      )
     })
 
     it('shows excise indicator when excsiseByFellowItem is true', () => {
@@ -115,11 +119,13 @@ describe('ParcelNumberExt', () => {
       }
       const wrapper = createWrapper({ item: exciseItem })
       const actionButtons = wrapper.findAllComponents(ActionButton)
-      
+
       expect(actionButtons).toHaveLength(1)
       expect(actionButtons[0].props('icon')).toBe('fa-solid fa-comment-dollar')
       expect(actionButtons[0].props('variant')).toBe('orange')
-      expect(actionButtons[0].props('tooltipText')).toBe('Есть подакцизный товар с тем же номером посылки')
+      expect(actionButtons[0].props('tooltipText')).toBe(
+        'Есть подакцизный товар с тем же номером посылки'
+      )
     })
 
     it('shows marked indicator when markedByFellowItem is true', () => {
@@ -129,11 +135,13 @@ describe('ParcelNumberExt', () => {
       }
       const wrapper = createWrapper({ item: markedItem })
       const actionButtons = wrapper.findAllComponents(ActionButton)
-      
+
       expect(actionButtons).toHaveLength(1)
       expect(actionButtons[0].props('icon')).toBe('fa-solid fa-comment-nodes')
       expect(actionButtons[0].props('variant')).toBe('blue')
-      expect(actionButtons[0].props('tooltipText')).toBe('Товар с тем же номером посылки помечен партнёром')
+      expect(actionButtons[0].props('tooltipText')).toBe(
+        'Товар с тем же номером посылки помечен партнёром'
+      )
     })
 
     it('does not show fellow items indicator when blocked or excise', () => {
@@ -145,7 +153,7 @@ describe('ParcelNumberExt', () => {
       }
       const wrapper = createWrapper({ item: itemWithFellowItemsButBlocked })
       const actionButtons = wrapper.findAllComponents(ActionButton)
-      
+
       // Should only show blocked indicator, not fellow items indicator
       expect(actionButtons).toHaveLength(1)
       expect(actionButtons[0].props('icon')).toBe('fa-solid fa-comment-slash')
@@ -159,7 +167,7 @@ describe('ParcelNumberExt', () => {
       }
       const wrapper = createWrapper({ item: multiIndicatorItem })
       const actionButtons = wrapper.findAllComponents(ActionButton)
-      
+
       expect(actionButtons).toHaveLength(2)
       expect(actionButtons[0].props('icon')).toBe('fa-solid fa-comment-slash')
       expect(actionButtons[1].props('icon')).toBe('fa-solid fa-comment-nodes')
@@ -172,19 +180,19 @@ describe('ParcelNumberExt', () => {
         ...defaultItem,
         fellowItems: [{ id: 2 }]
       }
-      const wrapper = createWrapper({ 
+      const wrapper = createWrapper({
         item: itemWithFellowItems,
-        disabled: true 
+        disabled: true
       })
       const actionButtons = wrapper.findAllComponents(ActionButton)
-      
+
       expect(actionButtons[0].props('disabled')).toBe(true)
     })
 
     it('does not disable ClickableCell when disabled is true', () => {
       const wrapper = createWrapper({ disabled: true })
       const clickableCell = wrapper.findComponent(ClickableCell)
-      
+
       // ClickableCell should not receive disabled prop
       expect(clickableCell.props('disabled')).toBeUndefined()
     })
@@ -194,9 +202,9 @@ describe('ParcelNumberExt', () => {
     it('emits click event when ClickableCell is clicked', async () => {
       const wrapper = createWrapper()
       const clickableCell = wrapper.findComponent(ClickableCell)
-      
+
       await clickableCell.trigger('click')
-      
+
       expect(wrapper.emitted('click')).toBeTruthy()
       expect(wrapper.emitted('click')[0]).toEqual([defaultItem])
     })
@@ -208,13 +216,12 @@ describe('ParcelNumberExt', () => {
       }
       const wrapper = createWrapper({ item: itemWithFellowItems })
       const actionButton = wrapper.findComponent(ActionButton)
-      
+
       await actionButton.trigger('click')
-      
+
       expect(wrapper.emitted('fellows')).toBeTruthy()
       expect(wrapper.emitted('fellows')[0]).toEqual([itemWithFellowItems])
     })
-
   })
 
   describe('Edge cases', () => {
@@ -225,7 +232,7 @@ describe('ParcelNumberExt', () => {
       }
       const wrapper = createWrapper({ item: itemWithNullFellowItems })
       const actionButtons = wrapper.findAllComponents(ActionButton)
-      
+
       expect(actionButtons).toHaveLength(0)
     })
 
@@ -236,7 +243,7 @@ describe('ParcelNumberExt', () => {
       }
       const wrapper = createWrapper({ item: itemWithUndefinedFellowItems })
       const actionButtons = wrapper.findAllComponents(ActionButton)
-      
+
       expect(actionButtons).toHaveLength(0)
     })
 
@@ -247,7 +254,7 @@ describe('ParcelNumberExt', () => {
       }
       const wrapper = createWrapper({ item: itemWithEmptyFellowItems })
       const actionButtons = wrapper.findAllComponents(ActionButton)
-      
+
       expect(actionButtons).toHaveLength(0)
     })
 
@@ -256,7 +263,7 @@ describe('ParcelNumberExt', () => {
       delete itemWithoutField.postingNumber
       const wrapper = createWrapper({ item: itemWithoutField, fieldName: 'nonExistentField' })
       const clickableCell = wrapper.findComponent(ClickableCell)
-      
+
       expect(clickableCell.props('displayValue')).toBe('')
     })
   })
@@ -276,7 +283,7 @@ describe('ParcelNumberExt', () => {
         markedByFellowItem: true
       }
       const wrapper = createWrapper({ item: itemWithAllIndicators })
-      
+
       expect(wrapper.findComponent(ClickableCell).exists()).toBe(true)
       expect(wrapper.findAllComponents(ActionButton)).toHaveLength(3) // blocked, excise, marked (fellow items hidden due to blocks)
     })

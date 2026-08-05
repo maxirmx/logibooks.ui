@@ -1,11 +1,11 @@
 <script setup>
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { computed, inject, ref } from 'vue'
 import { useKeyWordsStore } from '@/stores/key.words.store.js'
-import { 
+import {
   getFeacnCodesForKeywords,
   getFeacnCodeItemClass,
   updateParcelTnVed,
@@ -14,6 +14,7 @@ import {
 } from '@/helpers/parcels.list.helpers.js'
 import { useParcelsStore } from '@/stores/parcels.store.js'
 import { getFeacnTooltip } from '@/helpers/feacn.info.helpers.js'
+import { useAlertStore } from '@/stores/alert.store.js'
 
 const props = defineProps({
   item: { type: Object, required: true }
@@ -21,6 +22,7 @@ const props = defineProps({
 
 const keyWordsStore = useKeyWordsStore()
 const parcelsStore = useParcelsStore()
+const alertStore = useAlertStore()
 
 // Get the loadParcels function from parent component
 const loadParcels = inject('loadParcels')
@@ -35,9 +37,13 @@ const combinedCodes = computed(() => {
   const codes = feacnCodes.value || []
   const out = []
   if (props.item.matchingFC && props.item.matchingFC !== '') {
-    out.push({ code: props.item.matchingFC, comment: props.item.matchingFCComment || 'Комментарий отсутствует', isMatching: true })
+    out.push({
+      code: props.item.matchingFC,
+      comment: props.item.matchingFCComment || 'Комментарий отсутствует',
+      isMatching: true
+    })
   }
-  codes.forEach(c => out.push({ code: c, isMatching: false }))
+  codes.forEach((c) => out.push({ code: c, isMatching: false }))
   return out
 })
 
@@ -62,8 +68,9 @@ async function loadTooltip(code) {
     try {
       const tooltip = await getFeacnTooltip(code)
       tooltipCache.value[code] = tooltip
-    } catch {
-      tooltipCache.value[code] = 'Загрузка...'
+    } catch (error) {
+      tooltipCache.value[code] = 'Ошибка загрузки'
+      alertStore.error(error, { fallback: 'Не удалось загрузить информацию о коде ТН ВЭД' })
     }
   }
 }
@@ -85,9 +92,11 @@ function getTooltipText(code) {
       <template #activator="{ props }">
         <div
           v-bind="props"
-          :class="entry.isMatching
-            ? getMatchingFeacnCodeItemClass(entry.code, item.tnVed, feacnCodes)
-            : getFeacnCodeItemClass(entry.code, item.tnVed, feacnCodes)"
+          :class="
+            entry.isMatching
+              ? getMatchingFeacnCodeItemClass(entry.code, item.tnVed, feacnCodes)
+              : getFeacnCodeItemClass(entry.code, item.tnVed, feacnCodes)
+          "
           @click="selectCode($event, entry.code)"
           @mouseenter="loadTooltip(entry.code)"
         >
@@ -107,17 +116,13 @@ function getTooltipText(code) {
         </div>
       </template>
       <div v-if="entry.code === item.tnVed">
-        <div>
-          <font-awesome-icon icon="fa-solid fa-check-double" class="mr-3" /> Выбрано
-        </div>
+        <div><font-awesome-icon icon="fa-solid fa-check-double" class="mr-3" /> Выбрано</div>
         <div>
           {{ getTooltipText(entry.code) }}
         </div>
       </div>
       <div v-else>
-        <div>
-          <font-awesome-icon icon="fa-solid fa-check" class="mr-3" /> Выбрать
-        </div>
+        <div><font-awesome-icon icon="fa-solid fa-check" class="mr-3" /> Выбрать</div>
         <div>
           {{ getTooltipText(entry.code) }}
         </div>

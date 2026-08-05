@@ -38,6 +38,4 @@ describe('Scanjobs_View', () => {
 
     expect(wrapper.exists()).toBe(true)
   })
-
-
 })

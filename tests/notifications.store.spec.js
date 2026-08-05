@@ -48,7 +48,6 @@ describe('notifications store', () => {
     vi.clearAllMocks()
   })
 
-
   describe('getAll', () => {
     it('fetches notifications successfully', async () => {
       fetchWrapper.get.mockResolvedValue(mockNotifications)
@@ -67,7 +66,7 @@ describe('notifications store', () => {
       fetchWrapper.get.mockRejectedValue(error)
       const store = useNotificationsStore()
 
-      await store.getAll()
+      await expect(store.getAll()).rejects.toBe(error)
 
       expect(store.notifications).toEqual([])
       expect(store.loading).toBe(false)
@@ -94,9 +93,7 @@ describe('notifications store', () => {
       fetchWrapper.get.mockRejectedValue(error)
       const store = useNotificationsStore()
 
-      const result = await store.getById(999)
-
-      expect(result).toBeNull()
+      await expect(store.getById(999)).rejects.toBe(error)
       expect(store.loading).toBe(false)
       expect(store.error).toBe(error)
     })
@@ -186,5 +183,4 @@ describe('notifications store', () => {
       expect(store.error).toBe(error)
     })
   })
-
 })

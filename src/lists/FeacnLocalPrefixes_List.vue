@@ -1,8 +1,9 @@
 <script setup>
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { onMounted, computed, ref, unref } from 'vue'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
@@ -20,6 +21,7 @@ import {
   getProhibitionReasonLines
 } from '@/helpers/prohibition.scope.helpers.js'
 import { mdiMagnify } from '@mdi/js'
+import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
 import {
   preloadFeacnInfo,
   loadFeacnTooltipOnHover,
@@ -33,8 +35,6 @@ const confirm = useConfirm()
 
 const { prefixes, loading } = storeToRefs(prefixesStore)
 const runningAction = ref(false)
-const { alert } = storeToRefs(alertStore)
-
 // Shared FEACN info cache
 const feacnTooltips = useFeacnTooltips()
 
@@ -67,32 +67,39 @@ function filterLocalPrefixes(value, query, item) {
     procedureText.toLocaleUpperCase().indexOf(q) !== -1 ||
     reasonText.toLocaleUpperCase().indexOf(q) !== -1 ||
     (feacnTooltips.value[i.code]?.name?.toLocaleUpperCase() ?? '').indexOf(q) !== -1 ||
-    (i.exceptions?.some(exc => {
+    (i.exceptions?.some((exc) => {
       const exceptionCode = getExceptionCode(exc)
-      return exceptionCode.toLocaleUpperCase().includes(q) ||
-             (feacnTooltips.value[exceptionCode]?.name?.toLocaleUpperCase() ?? '').indexOf(q) !== -1
-    }) ?? false)
+      return (
+        exceptionCode.toLocaleUpperCase().includes(q) ||
+        (feacnTooltips.value[exceptionCode]?.name?.toLocaleUpperCase() ?? '').indexOf(q) !== -1
+      )
+    }) ??
+      false)
   )
 }
 
 const filteredPrefixes = computed(() => {
   const procedureFilter = unref(authStore.feacnlocalprefixes_procedure)
   if (procedureFilter === 'export') {
-    return prefixes.value.filter(p => p.forExport)
+    return prefixes.value.filter((p) => p.forExport)
   }
   if (procedureFilter === 'import') {
-    return prefixes.value.filter(p => p.forImport)
+    return prefixes.value.filter((p) => p.forImport)
   }
   return prefixes.value
 })
 
-const tablePrefixes = computed(() => filteredPrefixes.value.map(prefix => ({
-  ...prefix,
-  procedure: getProhibitionScopeSortOrder(prefix)
-})))
+const tablePrefixes = computed(() =>
+  filteredPrefixes.value.map((prefix) => ({
+    ...prefix,
+    procedure: getProhibitionScopeSortOrder(prefix)
+  }))
+)
 
 const headers = [
-  ...(authStore.isSrLogistPlus ? [{ title: '', align: 'center', key: 'actions', sortable: false }] : []),
+  ...(authStore.isSrLogistPlus
+    ? [{ title: '', align: 'center', key: 'actions', sortable: false }]
+    : []),
   { title: 'Префикс', key: 'code', align: 'start' },
   { title: 'Описание', key: 'description', align: 'start' },
   { title: 'Исключения', key: 'exceptions', align: 'start' },
@@ -100,15 +107,20 @@ const headers = [
   { title: 'Причина запрета', key: 'prohibitionReason', align: 'start', sortable: false }
 ]
 
-onMounted(async () => {
+async function loadPrefixes() {
   await prefixesStore.getAll()
-  // Extract codes for preloading, handling both string and object formats
-  const codes = prefixes.value.map(p => p.code)
-  const exceptionCodes = prefixes.value.flatMap(p => 
-    p.exceptions ? p.exceptions.map(exc => getExceptionCode(exc)) : []
+  const codes = prefixes.value.map((prefix) => prefix.code)
+  const exceptionCodes = prefixes.value.flatMap((prefix) =>
+    prefix.exceptions ? prefix.exceptions.map((exception) => getExceptionCode(exception)) : []
   )
   await preloadFeacnInfo([...codes, ...exceptionCodes])
-})
+}
+
+onMounted(() =>
+  runWithRetryAlert(loadPrefixes, {
+    fallback: 'Не удалось загрузить локальные префиксы'
+  })
+)
 
 // Helper function to get exception code from either string or FeacnPrefixExceptionDto
 function getExceptionCode(exception) {
@@ -199,6 +211,8 @@ defineExpose({
 
     <hr class="hr" />
 
+    <PageAlertRegion />
+
     <div class="prefix-filter-row">
       <v-select
         v-model="authStore.feacnlocalprefixes_procedure"
@@ -241,17 +255,20 @@ defineExpose({
         </template>
 
         <template v-slot:[`item.procedure`]="{ item }">
-          <template v-for="procedureRows in [getProhibitionScopeRows(item)]" :key="procedureRows.map(row => row.key).join('-')">
-            <span v-if="procedureRows.length" :key="`${procedureRows.map(row => row.key).join('-')}-lines`" class="procedure-lines">
-              <span
-                v-for="row in procedureRows"
-                :key="row.key"
-                class="procedure-line"
-              >
+          <template
+            v-for="procedureRows in [getProhibitionScopeRows(item)]"
+            :key="procedureRows.map((row) => row.key).join('-')"
+          >
+            <span
+              v-if="procedureRows.length"
+              :key="`${procedureRows.map((row) => row.key).join('-')}-lines`"
+              class="procedure-lines"
+            >
+              <span v-for="row in procedureRows" :key="row.key" class="procedure-line">
                 {{ row.label }}
               </span>
             </span>
-            <span v-else :key="`${procedureRows.map(row => row.key).join('-')}-empty`">-</span>
+            <span v-else :key="`${procedureRows.map((row) => row.key).join('-')}-empty`">-</span>
           </template>
         </template>
 
@@ -261,12 +278,11 @@ defineExpose({
 
         <template v-slot:[`item.exceptions`]="{ item }">
           <span v-if="item.exceptions && item.exceptions.length">
-            <span v-for="(exception, index) in item.exceptions" :key="getExceptionKey(exception, index)">
-              <v-tooltip
-                location="top"
-                content-class="feacn-tooltip"
-                :max-width="tooltipMaxWidth"
-              >
+            <span
+              v-for="(exception, index) in item.exceptions"
+              :key="getExceptionKey(exception, index)"
+            >
+              <v-tooltip location="top" content-class="feacn-tooltip" :max-width="tooltipMaxWidth">
                 <template v-slot:activator="{ props }">
                   <span
                     v-bind="props"
@@ -276,7 +292,9 @@ defineExpose({
                     {{ getExceptionCode(exception) }}
                   </span>
                 </template>
-                <span>{{ feacnTooltips[getExceptionCode(exception)]?.name || 'Наведите для загрузки...' }}</span>
+                <span>{{
+                  feacnTooltips[getExceptionCode(exception)]?.name || 'Наведите для загрузки...'
+                }}</span>
               </v-tooltip>
               <span v-if="index < item.exceptions.length - 1">, </span>
             </span>
@@ -285,13 +303,12 @@ defineExpose({
         </template>
 
         <template v-slot:[`item.prohibitionReason`]="{ item }">
-          <template v-for="procedureRows in [getProhibitionScopeRows(item)]" :key="procedureRows.map(row => row.key).join('-')">
+          <template
+            v-for="procedureRows in [getProhibitionScopeRows(item)]"
+            :key="procedureRows.map((row) => row.key).join('-')"
+          >
             <span v-if="procedureRows.length" class="reason-lines">
-              <span
-                v-for="row in procedureRows"
-                :key="row.key"
-                class="reason-line"
-              >
+              <span v-for="row in procedureRows" :key="row.key" class="reason-line">
                 <template v-if="row.reason">{{ row.reason }}</template>
                 <template v-else>&nbsp;</template>
               </span>
@@ -322,10 +339,6 @@ defineExpose({
     </v-card>
 
     <!-- Alert -->
-    <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
-      <button @click="alertStore.clear()" class="btn btn-link close">×</button>
-      {{ alert.message }}
-    </div>
   </div>
 </template>
 

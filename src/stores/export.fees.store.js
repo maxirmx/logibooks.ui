@@ -1,6 +1,6 @@
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { acceptHMRUpdate, defineStore } from 'pinia'
 import { ref } from 'vue'
@@ -23,6 +23,7 @@ export const useExportFeesStore = defineStore('exportFees', () => {
       isInitialized.value = true
     } catch (err) {
       error.value = err
+      throw err
     } finally {
       loading.value = false
     }
@@ -36,6 +37,7 @@ export const useExportFeesStore = defineStore('exportFees', () => {
       await fetchWrapper.post(`${baseUrl}/update`)
     } catch (err) {
       error.value = err
+      throw err
     } finally {
       loading.value = false
     }

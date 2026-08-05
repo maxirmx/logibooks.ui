@@ -1,10 +1,10 @@
 /* @vitest-environment jsdom */
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import ExportFeesList from '@/lists/ExportFees_List.vue'
 import { vuetifyStubs } from './helpers/test-utils.js'
@@ -97,6 +97,7 @@ vi.mock('@/helpers/items.per.page.js', () => ({
 describe('ExportFees_List.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    getAll.mockReset().mockResolvedValue()
     mockFees.value = [
       { id: 1, code: '1000000000', description: 'First fee', fee: 1.25 },
       { id: 2, code: '4401000000', description: null, fee: 12 }
@@ -118,7 +119,8 @@ describe('ExportFees_List.vue', () => {
           ...vuetifyStubs,
           ActionButton: {
             name: 'ActionButton',
-            template: '<button data-testid="update-fees-button" :disabled="disabled" :title="tooltipText" @click="$emit(\'click\')"></button>',
+            template:
+              '<button data-testid="update-fees-button" :disabled="disabled" :title="tooltipText" @click="$emit(\'click\')"></button>',
             props: ['item', 'icon', 'tooltipText', 'disabled', 'iconSize'],
             emits: ['click']
           }
@@ -136,8 +138,8 @@ describe('ExportFees_List.vue', () => {
   it('defines a readonly table with all export fee fields', () => {
     const wrapper = mountList()
 
-    expect(wrapper.vm.headers.map(h => h.key)).toEqual(['code', 'description', 'fee'])
-    expect(wrapper.vm.headers.find(h => h.key === 'fee').title).toBe('Сбор, руб.')
+    expect(wrapper.vm.headers.map((h) => h.key)).toEqual(['code', 'description', 'fee'])
+    expect(wrapper.vm.headers.find((h) => h.key === 'fee').title).toBe('Сбор, руб.')
     expect(wrapper.find('.primary-heading').text()).toBe('Сборы')
     expect(wrapper.findAll('[data-testid="v-data-table"]').length).toBe(1)
     expect(wrapper.text()).toContain('1000000000')
@@ -233,22 +235,34 @@ describe('ExportFees_List.vue', () => {
 
   it('shows spinner and reports store error through alertStore', async () => {
     mockLoading.value = true
-    mockError.value = 'bad'
+    getAll.mockRejectedValueOnce('bad')
 
     const wrapper = mountList()
-    await Promise.resolve()
+    await flushPromises()
 
     expect(wrapper.html()).toContain('spinner-border')
     expect(wrapper.html()).not.toContain('Ошибка при загрузке информации')
-    expect(alertError).toHaveBeenCalledWith('bad')
+    expect(alertError).toHaveBeenCalledWith(
+      'bad',
+      expect.objectContaining({
+        fallback: 'Не удалось загрузить таможенные сборы',
+        action: expect.objectContaining({ label: 'Повторить', handler: expect.any(Function) })
+      })
+    )
   })
 
   it('reports Error object store error as message string through alertStore', async () => {
-    mockError.value = new Error('load fees failed')
+    getAll.mockRejectedValueOnce(new Error('load fees failed'))
 
     mountList()
-    await Promise.resolve()
+    await flushPromises()
 
-    expect(alertError).toHaveBeenCalledWith('load fees failed')
+    expect(alertError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'load fees failed' }),
+      expect.objectContaining({
+        fallback: 'Не удалось загрузить таможенные сборы',
+        action: expect.objectContaining({ label: 'Повторить', handler: expect.any(Function) })
+      })
+    )
   })
 })

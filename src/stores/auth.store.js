@@ -1,6 +1,6 @@
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
@@ -9,6 +9,7 @@ import { apiUrl } from '@/helpers/config.js'
 import router from '@/router'
 import { useStatusStore } from '@/stores/status.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
+import { reportError } from '@/helpers/error.helpers.js'
 import { REGISTER_STATUS_FILTER_IN_PROGRESS } from '@/helpers/register.status.filter.helpers.js'
 import {
   roleShiftLead,
@@ -31,41 +32,27 @@ function readScanjobMonitorFollowUserId() {
 export const useAuthStore = defineStore('auth', () => {
   // initialize state from local storage to enable user to stay logged in
   const user = ref(JSON.parse(localStorage.getItem('user')))
-  const isAdmin = computed(() =>
-    user.value?.roles?.includes(roleAdmin)
+  const isAdmin = computed(() => user.value?.roles?.includes(roleAdmin))
+  const isShiftLead = computed(() => user.value?.roles?.includes(roleShiftLead))
+  const isSrLogist = computed(() => user.value?.roles?.includes(roleSrLogist))
+  const isLogist = computed(() => user.value?.roles?.includes(roleLogist))
+  const isWhOperator = computed(() => user.value?.roles?.includes(roleWhOperator))
+  const isWhManager = computed(() => user.value?.roles?.includes(roleWhManager))
+  const isShiftLeadPlus = computed(() => isAdmin.value || isShiftLead.value)
+  const isSrLogistPlus = computed(() => isAdmin.value || isShiftLead.value || isSrLogist.value)
+  const isWhManagerPlus = computed(() => isAdmin.value || isShiftLead.value || isWhManager.value)
+  const hasLogistRole = computed(() => isLogist.value || isSrLogist.value || isShiftLead.value)
+  const hasWhRole = computed(
+    () => isAdmin.value || isShiftLead.value || isWhManager.value || isWhOperator.value
   )
-  const isShiftLead = computed(() =>
-    user.value?.roles?.includes(roleShiftLead)
-  )
-  const isSrLogist = computed(() =>
-    user.value?.roles?.includes(roleSrLogist)
-  )
-  const isLogist = computed(() =>
-    user.value?.roles?.includes(roleLogist)
-  )
-  const isWhOperator = computed(() =>
-    user.value?.roles?.includes(roleWhOperator)
-  )
-  const isWhManager = computed(() =>
-    user.value?.roles?.includes(roleWhManager)
-  )
-  const isShiftLeadPlus = computed(() =>
-    isAdmin.value || isShiftLead.value 
-  )
-  const isSrLogistPlus = computed(() =>
-    isAdmin.value || isShiftLead.value || isSrLogist.value 
-  )
-  const isWhManagerPlus = computed(() =>
-    isAdmin.value || isShiftLead.value || isWhManager.value
-  )
-  const hasLogistRole = computed(() =>
-    isLogist.value || isSrLogist.value || isShiftLead.value
-  )
-  const hasWhRole = computed(() =>
-    isAdmin.value || isShiftLead.value || isWhManager.value || isWhOperator.value
-  )
-  const hasAnyRole = computed(() =>
-    isAdmin.value || isShiftLead.value || isSrLogist.value || isLogist.value || isWhManager.value || isWhOperator.value
+  const hasAnyRole = computed(
+    () =>
+      isAdmin.value ||
+      isShiftLead.value ||
+      isSrLogist.value ||
+      isLogist.value ||
+      isWhManager.value ||
+      isWhOperator.value
   )
 
   const users_per_page = ref(100)
@@ -228,12 +215,16 @@ export const useAuthStore = defineStore('auth', () => {
       localStorage.setItem('user', JSON.stringify(userData))
     } catch (error) {
       // Ensure status is fetched before re-throwing the error
-      await statusStore.fetchStatus().catch(() => {})
+      await statusStore.fetchStatus().catch((statusError) => {
+        reportError(statusError, { context: 'auth.re status refresh after failure' })
+      })
       throw error
     }
 
     // Fetch status after successful re-authentication as well
-    await statusStore.fetchStatus().catch(() => {})
+    await statusStore.fetchStatus().catch((statusError) => {
+      reportError(statusError, { context: 'auth.re status refresh' })
+    })
   }
 
   async function login(email, password) {
@@ -246,17 +237,24 @@ export const useAuthStore = defineStore('auth', () => {
       localStorage.setItem('user', JSON.stringify(userData))
 
       if (returnUrl.value) {
-        await router.push(returnUrl.value).catch(() => {})
+        await router.push(returnUrl.value).catch((navigationError) => {
+          reportError(navigationError, { context: 'auth.login return navigation' })
+          throw navigationError
+        })
         returnUrl.value = null
       }
     } catch (error) {
       // Ensure status is fetched before re-throwing the error
-      await statusStore.fetchStatus().catch(() => {})
+      await statusStore.fetchStatus().catch((statusError) => {
+        reportError(statusError, { context: 'auth.login status refresh after failure' })
+      })
       throw error
     }
 
     // Fetch status after successful login as well
-    await statusStore.fetchStatus().catch(() => {})
+    await statusStore.fetchStatus().catch((statusError) => {
+      reportError(statusError, { context: 'auth.login status refresh' })
+    })
   }
 
   function logout() {
@@ -269,12 +267,16 @@ export const useAuthStore = defineStore('auth', () => {
       router.push('/login')
     } catch (error) {
       // Ensure status is fetched before re-throwing the error
-      statusStore.fetchStatus().catch(() => {})
+      statusStore.fetchStatus().catch((statusError) => {
+        reportError(statusError, { context: 'auth.logout status refresh after failure' })
+      })
       throw error
     }
 
     // Fetch status after successful logout as well
-    statusStore.fetchStatus().catch(() => {})
+    statusStore.fetchStatus().catch((statusError) => {
+      reportError(statusError, { context: 'auth.logout status refresh' })
+    })
   }
 
   function setScanjobMonitorFollowUserId(userId) {
@@ -300,13 +302,18 @@ export const useAuthStore = defineStore('auth', () => {
       if (snap) {
         if (snap.parcels_sort_by != null) parcels_sort_by.value = snap.parcels_sort_by
         if (snap.parcels_status != null) parcels_status.value = snap.parcels_status
-        if (snap.parcels_check_status_sw != null) parcels_check_status_sw.value = snap.parcels_check_status_sw
-        if (snap.parcels_check_status_fc != null) parcels_check_status_fc.value = snap.parcels_check_status_fc
-        if (snap.parcels_passport_check_status != null) parcels_passport_check_status.value = snap.parcels_passport_check_status
-        if (snap.parcels_hide_legacy_restrictions != null) parcels_hide_legacy_restrictions.value = snap.parcels_hide_legacy_restrictions
+        if (snap.parcels_check_status_sw != null)
+          parcels_check_status_sw.value = snap.parcels_check_status_sw
+        if (snap.parcels_check_status_fc != null)
+          parcels_check_status_fc.value = snap.parcels_check_status_fc
+        if (snap.parcels_passport_check_status != null)
+          parcels_passport_check_status.value = snap.parcels_passport_check_status
+        if (snap.parcels_hide_legacy_restrictions != null)
+          parcels_hide_legacy_restrictions.value = snap.parcels_hide_legacy_restrictions
         if (snap.parcels_tnved != null) parcels_tnved.value = snap.parcels_tnved
         if (snap.parcels_number != null) parcels_number.value = snap.parcels_number
-        if (snap.parcels_product_name != null) parcels_product_name.value = snap.parcels_product_name
+        if (snap.parcels_product_name != null)
+          parcels_product_name.value = snap.parcels_product_name
         if (snap.parcels_page != null) parcels_page.value = snap.parcels_page
         if (snap.parcels_per_page != null) parcels_per_page.value = snap.parcels_per_page
 
@@ -314,7 +321,7 @@ export const useAuthStore = defineStore('auth', () => {
         sessionStorage.removeItem('logibooks.parcelsSnapshot')
       }
     }
-  } catch  {
+  } catch {
     const alertStore = useAlertStore()
     alertStore.error('Не удалось восстановить фильтры и сортировку')
   }

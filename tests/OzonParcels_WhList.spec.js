@@ -80,16 +80,17 @@ vi.mock('pinia', async () => {
 })
 
 vi.mock('@/helpers/parcels.list.helpers.js', () => {
-  const unrefValue = (value) => value && typeof value === 'object' && 'value' in value ? value.value : value
+  const unrefValue = (value) =>
+    value && typeof value === 'object' && 'value' in value ? value.value : value
 
   return {
     loadParcels,
     navigateToEditParcel,
     hasParcelEditRouteAccess: (authStore) => Boolean(unrefValue(authStore?.hasLogistRole)),
-    buildParcelEditCellClass: (canAccess, baseClass = '') => [
-      String(baseClass || '').trim(),
-      unrefValue(canAccess) ? 'clickable-cell' : ''
-    ].filter(Boolean).join(' ')
+    buildParcelEditCellClass: (canAccess, baseClass = '') =>
+      [String(baseClass || '').trim(), unrefValue(canAccess) ? 'clickable-cell' : '']
+        .filter(Boolean)
+        .join(' ')
   }
 })
 
@@ -112,7 +113,7 @@ vi.mock('@/stores/parcel.statuses.store.js', () => ({
   useParcelStatusesStore: () => ({
     ensureLoaded: vi.fn().mockResolvedValue(),
     parcelStatuses: [],
-    getStatusTitle: vi.fn(id => `Status ${id}`)
+    getStatusTitle: vi.fn((id) => `Status ${id}`)
   })
 }))
 
@@ -171,12 +172,14 @@ const globalStubs = {
   RegisterWhHeaderActionBar: {
     props: ['register'],
     emits: ['bulk-change-parcel-status', 'close'],
-    template: '<div data-testid="register-wh-header-action-bar" :data-register-type="register?.registerType"><button type="button" data-testid="open-parcel-status-bulk-dialog" @click="$emit(\'bulk-change-parcel-status\')"></button></div>'
+    template:
+      '<div data-testid="register-wh-header-action-bar" :data-register-type="register?.registerType"><button type="button" data-testid="open-parcel-status-bulk-dialog" @click="$emit(\'bulk-change-parcel-status\')"></button></div>'
   },
   ParcelStatusBulkChangeDialog: {
     props: ['show', 'registerId', 'register', 'statusOptions', 'disabled'],
     emits: ['update:show', 'updated'],
-    template: '<div data-testid="parcel-status-bulk-dialog" :data-show="String(show)" :data-register-id="registerId" :data-register-type="register?.value?.registerType ?? register?.registerType"><button type="button" data-testid="parcel-status-bulk-dialog-updated" @click="$emit(\'updated\')"></button></div>'
+    template:
+      '<div data-testid="parcel-status-bulk-dialog" :data-show="String(show)" :data-register-id="registerId" :data-register-type="register?.value?.registerType ?? register?.registerType"><button type="button" data-testid="parcel-status-bulk-dialog-updated" @click="$emit(\'updated\')"></button></div>'
   }
 }
 
@@ -271,7 +274,9 @@ describe('OzonParcels_WhList.vue', () => {
       'weightKg',
       'quantity'
     ])
-    expect(wrapper.vm.headers.find((header) => header.key === 'checkStatusProjection').sortable).toBe(true)
+    expect(
+      wrapper.vm.headers.find((header) => header.key === 'checkStatusProjection').sortable
+    ).toBe(true)
   })
 
   it('opens parcel status bulk dialog and reloads warehouse parcels after update', async () => {
@@ -332,14 +337,16 @@ describe('OzonParcels_WhList.vue', () => {
 
   it('clears defect from row action and reloads parcels for shift lead', async () => {
     isShiftLead.value = true
-    mockItems.value = [{
-      ...mockItems.value[0],
-      checkStatusProjection: {
-        kind: scanjobCheckStatusProjectionKind.Defect,
-        title: 'Брак',
-        restrictionReason: 'Брак'
+    mockItems.value = [
+      {
+        ...mockItems.value[0],
+        checkStatusProjection: {
+          kind: scanjobCheckStatusProjectionKind.Defect,
+          title: 'Брак',
+          restrictionReason: 'Брак'
+        }
       }
-    }]
+    ]
     const wrapper = mount(OzonParcelsWhList, {
       props: { registerId: 1 },
       global: { stubs: globalStubs }
@@ -367,15 +374,17 @@ describe('OzonParcels_WhList.vue', () => {
 
   it('disables clear defect action for Duplicate2 status that is not defect', async () => {
     isShiftLead.value = true
-    mockItems.value = [{
-      ...mockItems.value[0],
-      checkStatus: CheckStatusCode.Duplicate2.value,
-      checkStatusProjection: {
-        kind: scanjobCheckStatusProjectionKind.Checked,
-        title: 'Проверено',
-        restrictionReason: null
+    mockItems.value = [
+      {
+        ...mockItems.value[0],
+        checkStatus: CheckStatusCode.Duplicate2.value,
+        checkStatusProjection: {
+          kind: scanjobCheckStatusProjectionKind.Checked,
+          title: 'Проверено',
+          restrictionReason: null
+        }
       }
-    }]
+    ]
     const wrapper = mount(OzonParcelsWhList, {
       props: { registerId: 1 },
       global: { stubs: globalStubs }
@@ -443,7 +452,9 @@ describe('OzonParcels_WhList.vue', () => {
 
     const productName = wrapper.get('.warehouse-product-name-cell')
     expect(productName.text()).toBe('Very long Ozon product name that must remain on one line')
-    expect(productName.attributes('title')).toBe('Very long Ozon product name that must remain on one line')
+    expect(productName.attributes('title')).toBe(
+      'Very long Ozon product name that must remain on one line'
+    )
   })
 
   it('opens parcel edit from warehouse table cells', async () => {

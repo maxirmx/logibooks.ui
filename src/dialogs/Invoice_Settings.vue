@@ -1,5 +1,8 @@
 <script setup>
 // Invoice settings dialog implemented to follow Register_EditDialog style & approach
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
+import { focusFirstInvalidField } from '@/helpers/form.validation.helpers.js'
+import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
 import router from '@/router'
 import { Form } from 'vee-validate'
 import * as Yup from 'yup'
@@ -26,9 +29,13 @@ const { item, loading } = storeToRefs(registersStore)
 
 function resolveParcelSelection(value) {
   // Validate and default to All if not WithExcise or WithoutExcise
-  return [InvoiceParcelSelection.WithExcise, InvoiceParcelSelection.WithNotifications, InvoiceParcelSelection.Ordinal].includes(value)
+  return [
+    InvoiceParcelSelection.WithExcise,
+    InvoiceParcelSelection.WithNotifications,
+    InvoiceParcelSelection.Ordinal
+  ].includes(value)
     ? value
-    : InvoiceParcelSelection.All;
+    : InvoiceParcelSelection.All
 }
 
 // State mirrors register dialog style (item used as initial values provider)
@@ -84,7 +91,9 @@ const optionalColumnOptions = computed(() => {
   }
 
   return isReexportRegister.value
-    ? allOptionalColumnOptions.filter((column) => column.value !== InvoiceOptionalColumns.PreviousDteg)
+    ? allOptionalColumnOptions.filter(
+        (column) => column.value !== InvoiceOptionalColumns.PreviousDteg
+      )
     : allOptionalColumnOptions
 })
 const sanitizedOptionalColumns = computed(() => {
@@ -167,11 +176,9 @@ async function onSubmit() {
     }
     router.go(-1)
   } catch (err) {
-    const msg = normalizeError(err) || (
-      isDo1.value
-        ? 'Не удалось сформировать форму ДО1'
-        : 'Не удалось сформировать инвойс'
-    )
+    const msg =
+      normalizeError(err) ||
+      (isDo1.value ? 'Не удалось сформировать форму ДО1' : 'Не удалось сформировать инвойс')
     alertStore.error(msg)
   } finally {
     hideActionDialog()
@@ -191,13 +198,20 @@ watch(
 )
 
 onMounted(() => {
-  registersStore.getById(props.id)
+  return runWithRetryAlert(() => registersStore.getById(props.id), {
+    fallback: 'Не удалось загрузить данные реестра'
+  })
 })
 </script>
 
 <template>
   <div class="settings form-3 form-compact invoice-settings-dialog">
-    <Form :initial-values="{}" :validation-schema="schema" @submit="onSubmit">
+    <Form
+      :initial-values="{}"
+      :validation-schema="schema"
+      @submit="onSubmit"
+      @invalid-submit="focusFirstInvalidField"
+    >
       <div class="header-with-actions">
         <h1 class="primary-heading">{{ heading }}</h1>
         <div class="header-actions">
@@ -221,6 +235,8 @@ onMounted(() => {
       </div>
       <hr class="hr" />
 
+      <PageAlertRegion />
+
       <!-- action dialog shown during invoice preparation -->
 
       <div class="form-section">
@@ -233,7 +249,9 @@ onMounted(() => {
               v-model="parcelSelection"
               :disabled="isFormDisabled"
             >
-              <option v-for="o in parcelSelectionOptions" :key="o.id" :value="o.value">{{ o.label }}</option>
+              <option v-for="o in parcelSelectionOptions" :key="o.id" :value="o.value">
+                {{ o.label }}
+              </option>
             </select>
           </div>
         </div>
@@ -243,11 +261,7 @@ onMounted(() => {
             <label class="label">Дополнительные колонки:</label>
             <div class="checkbox-wrapper">
               <div class="checkbox-grid">
-                <label
-                  v-for="c in optionalColumnOptions"
-                  :key="c.id"
-                  class="custom-checkbox"
-                >
+                <label v-for="c in optionalColumnOptions" :key="c.id" class="custom-checkbox">
                   <input
                     type="checkbox"
                     class="custom-checkbox-input"
@@ -263,10 +277,7 @@ onMounted(() => {
           </div>
         </div>
 
-        <div
-          v-if="showInvoiceWeightCorrection"
-          class="form-row-1 weight-correction-row"
-        >
+        <div v-if="showInvoiceWeightCorrection" class="form-row-1 weight-correction-row">
           <div class="form-group weight-correction-group">
             <label class="custom-checkbox weight-correction-checkbox">
               <input
@@ -280,13 +291,8 @@ onMounted(() => {
             </label>
           </div>
         </div>
-
-
       </div>
     </Form>
-    <div v-if="alertStore.alert" class="mt-3">
-      <div :class="['alert', alertStore.alert.type]" role="alert">{{ alertStore.alert.message }}</div>
-    </div>
     <ActionDialog :action-dialog="actionDialogState" />
   </div>
 </template>
@@ -294,9 +300,13 @@ onMounted(() => {
 <style scoped>
 .invoice-settings-dialog .form-section,
 .invoice-settings-dialog .form-row,
-.invoice-settings-dialog .form-group { overflow: visible; }
+.invoice-settings-dialog .form-group {
+  overflow: visible;
+}
 
-.optional-columns-row { margin-top: 0.5rem; }
+.optional-columns-row {
+  margin-top: 0.5rem;
+}
 
 .weight-correction-row {
   margin-top: 0.5rem;
@@ -343,53 +353,53 @@ onMounted(() => {
 }
 
 @media (max-width: 640px) {
-  .checkbox-grid { grid-template-columns: 1fr; } /* stack on narrow screens */
+  .checkbox-grid {
+    grid-template-columns: 1fr;
+  } /* stack on narrow screens */
 }
 
-.custom-checkbox { 
-  display: flex; 
-  align-items: flex-start; 
-  gap: 0.5rem; 
-  cursor: pointer; 
+.custom-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  cursor: pointer;
 }
-.custom-checkbox-input { 
-  position: absolute; 
-  opacity: 0; 
-  width: 0; 
-  height: 0; 
+.custom-checkbox-input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
 }
-.custom-checkbox-box { 
-  width: 16px; 
-  height: 16px; 
-  background-color: #1976d2; 
-  border-radius: 3px; 
-  position: relative; 
-  margin-top: 0.1rem; 
+.custom-checkbox-box {
+  width: 16px;
+  height: 16px;
+  background-color: #1976d2;
+  border-radius: 3px;
+  position: relative;
+  margin-top: 0.1rem;
 }
-.custom-checkbox-box:after { 
-  content: ''; 
-  position: absolute; 
-  left: 2px; 
+.custom-checkbox-box:after {
+  content: '';
+  position: absolute;
+  left: 2px;
   top: 2px;
-  width: 12px; 
-  height: 12px; 
-  background-image: url('@/assets/check-solid.svg'); 
-  background-size: cover; 
-  opacity: 0; 
-  transition: opacity 0.3s, 
-  transform 0.3s; 
-  transform: translateY(-2px); 
+  width: 12px;
+  height: 12px;
+  background-image: url('@/assets/check-solid.svg');
+  background-size: cover;
+  opacity: 0;
+  transition: opacity 0.3s, transform 0.3s;
+  transform: translateY(-2px);
 }
-.custom-checkbox-input:checked ~ .custom-checkbox-box:after { 
-  opacity: 1; 
-  transform: translateY(0); 
+.custom-checkbox-input:checked ~ .custom-checkbox-box:after {
+  opacity: 1;
+  transform: translateY(0);
 }
-.custom-checkbox-label { 
-  flex: 1; 
-  white-space: normal; 
+.custom-checkbox-label {
+  flex: 1;
+  white-space: normal;
 }
-.custom-checkbox:hover .custom-checkbox-box { 
-  background-color: #1565c0; 
+.custom-checkbox:hover .custom-checkbox-box {
+  background-color: #1565c0;
 }
-
 </style>

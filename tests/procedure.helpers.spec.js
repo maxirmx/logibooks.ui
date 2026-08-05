@@ -95,7 +95,7 @@ describe('procedure.helpers', () => {
           opsProcedures[4]
         ])
 
-        expect(options.map(option => option.value)).toEqual([40, 10, 60])
+        expect(options.map((option) => option.value)).toEqual([40, 10, 60])
         expect(sortSpy).not.toHaveBeenCalled()
       } finally {
         sortSpy.mockRestore()
@@ -104,7 +104,6 @@ describe('procedure.helpers', () => {
   })
 
   describe('normalizeCustomsProcedureCode', () => {
-
     it('returns null for whitespace-only string', () => {
       expect(normalizeCustomsProcedureCode(' ')).toBe(null)
       expect(normalizeCustomsProcedureCode('   ')).toBe(null)
@@ -145,7 +144,6 @@ describe('procedure.helpers', () => {
       expect(isReturnCustomsProcedure(1)).toBe(true)
       expect(isReturnCustomsProcedure('1')).toBe(true)
     })
-
   })
 
   describe('isReexportCustomsProcedure', () => {
@@ -153,7 +151,6 @@ describe('procedure.helpers', () => {
       expect(isReexportCustomsProcedure(31)).toBe(true)
       expect(isReexportCustomsProcedure('31')).toBe(true)
     })
-
   })
 
   describe('isImportCustomsProcedure', () => {
@@ -161,7 +158,6 @@ describe('procedure.helpers', () => {
       expect(isImportCustomsProcedure(40)).toBe(true)
       expect(isImportCustomsProcedure('40')).toBe(true)
     })
-
   })
 
   describe('isReimportCustomsProcedure', () => {
@@ -169,7 +165,6 @@ describe('procedure.helpers', () => {
       expect(isReimportCustomsProcedure(60)).toBe(true)
       expect(isReimportCustomsProcedure('60')).toBe(true)
     })
-
   })
 
   describe('isImportOrReexportCustomsProcedure', () => {
@@ -213,8 +208,6 @@ describe('procedure.helpers', () => {
   })
 
   describe('getProhibitionScopeLabels', () => {
-
-
     it('returns export label when forExport is true', () => {
       expect(getProhibitionScopeLabels({ forExport: true })).toEqual(['Экспорт из РФ'])
     })
@@ -232,7 +225,6 @@ describe('procedure.helpers', () => {
   })
 
   describe('getProhibitionScopeSortOrder', () => {
-
     it('returns 0 when neither forImport nor forExport', () => {
       expect(getProhibitionScopeSortOrder({})).toBe(0)
       expect(getProhibitionScopeSortOrder({ forImport: false, forExport: false })).toBe(0)
@@ -254,8 +246,6 @@ describe('procedure.helpers', () => {
   })
 
   describe('getProhibitionScopeRows', () => {
-
-
     it('returns export row when forExport is true', () => {
       const rows = getProhibitionScopeRows({ forExport: true, explanationForExport: 'Reason A' })
       expect(rows).toEqual([{ key: 'export', label: 'Экспорт из РФ', reason: 'Reason A' }])
@@ -291,9 +281,6 @@ describe('procedure.helpers', () => {
   })
 
   describe('getProhibitionReasonLines', () => {
-
-
-
     it('returns all non-empty reasons', () => {
       const item = {
         forExport: true,
@@ -303,6 +290,5 @@ describe('procedure.helpers', () => {
       }
       expect(getProhibitionReasonLines(item)).toEqual(['Export reason', 'Import reason'])
     })
-
   })
 })

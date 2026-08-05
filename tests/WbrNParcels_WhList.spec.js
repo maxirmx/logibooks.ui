@@ -54,7 +54,7 @@ const ensureRegisterOpsLoaded = vi.fn().mockResolvedValue()
 const ensureStatusesLoaded = vi.fn().mockResolvedValue()
 const ensureWarehouseOpsLoaded = vi.fn().mockResolvedValue()
 const alertError = vi.fn()
-const alertClear = vi.fn()
+const alertDismiss = vi.fn()
 const warehouseOps = ref({
   zones: [
     { value: 1, name: 'Не задана' },
@@ -106,7 +106,8 @@ vi.mock('@/composables/useParcelEditAccess.js', () => ({
     parcelEditAccessOptions = options
     return {
       isParcelEditCellDisabled: editCellDisabled,
-      parcelEditCellClass: (baseClass = '') => `${baseClass} ${editCellDisabled.value ? '' : 'clickable-cell'}`.trim(),
+      parcelEditCellClass: (baseClass = '') =>
+        `${baseClass} ${editCellDisabled.value ? '' : 'clickable-cell'}`.trim(),
       openParcelEdit
     }
   }
@@ -114,13 +115,15 @@ vi.mock('@/composables/useParcelEditAccess.js', () => ({
 
 vi.mock('@/helpers/parcel.defect.helpers.js', () => ({
   canSetParcelDefect: (item) => !item?.setDefectBlocked,
-  canClearParcelDefect: (item) => item?.checkStatusProjection?.kind === scanjobCheckStatusProjectionKind.Defect,
+  canClearParcelDefect: (item) =>
+    item?.checkStatusProjection?.kind === scanjobCheckStatusProjectionKind.Defect,
   getSetParcelDefectErrorMessage: (error) => error?.message || 'set defect failed',
   getClearParcelDefectErrorMessage: (error) => error?.message || 'clear defect failed'
 }))
 
 vi.mock('@/helpers/parcel.ext-id.helpers.js', () => ({
-  canClearParcelExtId: (item, authStore) => Boolean((authStore.isAdmin?.value ?? authStore.isAdmin) && item?.extId),
+  canClearParcelExtId: (item, authStore) =>
+    Boolean((authStore.isAdmin?.value ?? authStore.isAdmin) && item?.extId),
   getClearParcelExtIdErrorMessage: (error) => error?.message || 'clear ext id failed'
 }))
 
@@ -151,7 +154,7 @@ vi.mock('@/stores/parcel.statuses.store.js', () => ({
       { id: 7, title: 'В работе' },
       { id: 8, title: 'Брак' }
     ],
-    getStatusTitle: vi.fn(id => `Status ${id}`)
+    getStatusTitle: vi.fn((id) => `Status ${id}`)
   })
 }))
 
@@ -189,9 +192,11 @@ vi.mock('@/stores/auth.store.js', () => ({
 
 vi.mock('@/stores/alert.store.js', () => ({
   useAlertStore: () => ({
-    alert: mockAlert,
+    get alert() {
+      return mockAlert.value
+    },
     error: alertError,
-    clear: alertClear
+    dismiss: alertDismiss
   })
 }))
 
@@ -220,7 +225,16 @@ const globalStubs = {
   ...vuetifyStubs,
   'v-data-table-server': {
     name: 'v-data-table-server',
-    props: ['items', 'headers', 'loading', 'itemsLength', 'itemsPerPage', 'page', 'sortBy', 'itemsPerPageOptions'],
+    props: [
+      'items',
+      'headers',
+      'loading',
+      'itemsLength',
+      'itemsPerPage',
+      'page',
+      'sortBy',
+      'itemsPerPageOptions'
+    ],
     emits: ['update:itemsPerPage', 'update:page', 'update:sortBy'],
     template: `
       <div class="v-data-table-stub" data-testid="v-data-table">
@@ -245,7 +259,8 @@ const globalStubs = {
   RegisterWhHeaderActionBar: {
     props: ['register', 'zones'],
     emits: ['bulk-change-parcel-status', 'close'],
-    template: '<div data-testid="register-wh-header-action-bar" :data-register-type="register?.registerType" :data-zones="zones?.length"><button type="button" data-testid="open-parcel-status-bulk-dialog" @click="$emit(\'bulk-change-parcel-status\')"></button><button type="button" data-testid="close-list" @click="$emit(\'close\')"></button></div>'
+    template:
+      '<div data-testid="register-wh-header-action-bar" :data-register-type="register?.registerType" :data-zones="zones?.length"><button type="button" data-testid="open-parcel-status-bulk-dialog" @click="$emit(\'bulk-change-parcel-status\')"></button><button type="button" data-testid="close-list" @click="$emit(\'close\')"></button></div>'
   },
   ParcelWhFilterSelectors: {
     props: ['numberLabel', 'zoneOptions', 'statusOptions', 'checkStatusProjectionOptions'],
@@ -273,25 +288,30 @@ const globalStubs = {
   ParcelStatusBulkChangeDialog: {
     props: ['show', 'registerId', 'register', 'statusOptions', 'disabled'],
     emits: ['updated', 'update:show'],
-    template: '<div data-testid="parcel-status-bulk-dialog" :data-show="String(show)" :data-register-id="registerId" :data-register-type="register?.registerType"><button type="button" data-testid="parcel-status-bulk-dialog-updated" @click="$emit(\'updated\')"></button><button type="button" data-testid="parcel-status-bulk-dialog-close" @click="$emit(\'update:show\', false)"></button></div>'
+    template:
+      '<div data-testid="parcel-status-bulk-dialog" :data-show="String(show)" :data-register-id="registerId" :data-register-type="register?.registerType"><button type="button" data-testid="parcel-status-bulk-dialog-updated" @click="$emit(\'updated\')"></button><button type="button" data-testid="parcel-status-bulk-dialog-close" @click="$emit(\'update:show\', false)"></button></div>'
   },
   ClickableCell: {
     props: ['item', 'displayValue', 'cellClass', 'disabled', 'title'],
     emits: ['click'],
-    template: '<button type="button" :class="cellClass" :aria-disabled="disabled ? \'true\' : undefined" :title="title || displayValue" @click="$emit(\'click\', item)"><slot>{{ displayValue }}</slot></button>'
+    template:
+      '<button type="button" :class="cellClass" :aria-disabled="disabled ? \'true\' : undefined" :title="title || displayValue" @click="$emit(\'click\', item)"><slot>{{ displayValue }}</slot></button>'
   },
   CorrectedWeightDisplay: {
     props: ['weight', 'useCorrection'],
-    template: '<span class="corrected-weight-display">{{ Number(weight).toFixed(3) }}<span v-if="useCorrection"> corrected</span></span>'
+    template:
+      '<span class="corrected-weight-display">{{ Number(weight).toFixed(3) }}<span v-if="useCorrection"> corrected</span></span>'
   },
   ActionButton: {
     props: ['item', 'disabled', 'tooltipText'],
     emits: ['click'],
-    template: '<button type="button" v-bind="$attrs" :disabled="disabled" @click="$emit(\'click\', item)">{{ tooltipText }}</button>'
+    template:
+      '<button type="button" v-bind="$attrs" :disabled="disabled" @click="$emit(\'click\', item)">{{ tooltipText }}</button>'
   },
   PaginationFooter: {
     emits: ['update:itemsPerPage', 'update:page'],
-    template: '<div data-testid="pagination-footer"><button data-testid="update-wh-items-per-page" @click="$emit(\'update:itemsPerPage\', 50)"></button><button data-testid="update-wh-page" @click="$emit(\'update:page\', 3)"></button></div>'
+    template:
+      '<div data-testid="pagination-footer"><button data-testid="update-wh-items-per-page" @click="$emit(\'update:itemsPerPage\', 50)"></button><button data-testid="update-wh-page" @click="$emit(\'update:page\', 3)"></button></div>'
   }
 }
 
@@ -345,7 +365,7 @@ describe('WbrNParcels_WhList.vue', () => {
       global: { stubs: globalStubs }
     })
 
-    const headerKeys = wrapper.vm.headers.map(header => header.key)
+    const headerKeys = wrapper.vm.headers.map((header) => header.key)
     expect(headerKeys).toEqual([
       'actions',
       'id',
@@ -389,25 +409,28 @@ describe('WbrNParcels_WhList.vue', () => {
   })
 
   it('renders warehouse fallback branches for alerts, zones, tooltips, and paging', async () => {
-    mockAlert.value = { type: 'alert-warning', message: 'WbrN warehouse alert' }
+    mockAlert.value = {
+      id: 29,
+      severity: 'warning',
+      message: 'WbrN warehouse alert',
+      action: null
+    }
     mockTotalCount.value = 5000
     parcelsWhPage.value = 250
     warehouseOps.value = {
-      zones: [
-        { value: 1, name: 'Не задана' },
-        { value: 2, name: 'Зона 2' },
-        { value: 3 }
-      ]
+      zones: [{ value: 1, name: 'Не задана' }, { value: 2, name: 'Зона 2' }, { value: 3 }]
     }
-    mockItems.value = [{
-      ...baseParcel,
-      zone: 99,
-      checkStatusProjection: {
-        kind: scanjobCheckStatusProjectionKind.Restriction,
-        title: 'Запрет',
-        restrictionReason: 'country mismatch'
+    mockItems.value = [
+      {
+        ...baseParcel,
+        zone: 99,
+        checkStatusProjection: {
+          kind: scanjobCheckStatusProjectionKind.Restriction,
+          title: 'Запрет',
+          restrictionReason: 'country mismatch'
+        }
       }
-    }]
+    ]
 
     const wrapper = mount(WbrNParcelsWhList, {
       props: { registerId: 9 },
@@ -418,13 +441,15 @@ describe('WbrNParcels_WhList.vue', () => {
     expect(wrapper.text()).toContain('country mismatch')
     expect(wrapper.text()).toContain('Запрет')
     expect(wrapper.vm.pageOptions.length).toBeLessThan(200)
-    expect(wrapper.vm.pageOptions.map(option => option.value)).toEqual(
+    expect(wrapper.vm.pageOptions.map((option) => option.value)).toEqual(
       expect.arrayContaining([1, 10, 240, 250, 260, 491, 500])
     )
-    expect(wrapper.get('[data-testid="parcel-wh-filter-selectors"]').attributes('data-zone-options')).toContain('3')
+    expect(
+      wrapper.get('[data-testid="parcel-wh-filter-selectors"]').attributes('data-zone-options')
+    ).toContain('3')
 
     await wrapper.get('.alert .close').trigger('click')
-    expect(alertClear).toHaveBeenCalled()
+    expect(alertDismiss).toHaveBeenCalledWith(29)
 
     mockTotalCount.value = 1
     await resolveAll()
@@ -443,7 +468,10 @@ describe('WbrNParcels_WhList.vue', () => {
     expect(ensureStatusesLoaded).toHaveBeenCalled()
     expect(ensureWarehouseOpsLoaded).toHaveBeenCalled()
     expect(getRegisterById).toHaveBeenCalledWith(9)
-    expect(startParcelExtIdMonitor).toHaveBeenCalledWith(9, expect.objectContaining({ onChanged: expect.any(Function) }))
+    expect(startParcelExtIdMonitor).toHaveBeenCalledWith(
+      9,
+      expect.objectContaining({ onChanged: expect.any(Function) })
+    )
 
     const onChanged = startParcelExtIdMonitor.mock.calls[0][1].onChanged
     onChanged({ registerId: 9, parcelId: 22, extId: 'KGT-78' })
@@ -463,7 +491,9 @@ describe('WbrNParcels_WhList.vue', () => {
     await resolveAll()
 
     await wrapper.get('[data-testid="open-parcel-status-bulk-dialog"]').trigger('click')
-    expect(wrapper.get('[data-testid="parcel-status-bulk-dialog"]').attributes('data-show')).toBe('true')
+    expect(wrapper.get('[data-testid="parcel-status-bulk-dialog"]').attributes('data-show')).toBe(
+      'true'
+    )
 
     loadParcels.mockClear()
     await wrapper.get('[data-testid="parcel-status-bulk-dialog-updated"]').trigger('click')
@@ -486,7 +516,9 @@ describe('WbrNParcels_WhList.vue', () => {
     await resolveAll()
 
     await wrapper.get('.warehouse-product-name-cell').trigger('click')
-    expect(openParcelEdit).toHaveBeenCalledWith(expect.objectContaining({ id: 22, shk: 'SHK-WH-1' }))
+    expect(openParcelEdit).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 22, shk: 'SHK-WH-1' })
+    )
 
     editCellDisabled.value = true
     await wrapper.vm.$nextTick()
@@ -517,14 +549,16 @@ describe('WbrNParcels_WhList.vue', () => {
       { showMarkedByPartner: true }
     )
 
-    mockItems.value = [{
-      ...baseParcel,
-      checkStatusProjection: {
-        kind: scanjobCheckStatusProjectionKind.Defect,
-        title: 'Брак',
-        restrictionReason: 'manual'
+    mockItems.value = [
+      {
+        ...baseParcel,
+        checkStatusProjection: {
+          kind: scanjobCheckStatusProjectionKind.Defect,
+          title: 'Брак',
+          restrictionReason: 'manual'
+        }
       }
-    }]
+    ]
     await wrapper.vm.$nextTick()
     loadParcels.mockRejectedValueOnce(new Error('refresh failed'))
     await wrapper.get('[data-testid="clear-defect-action"]').trigger('click')
@@ -539,11 +573,13 @@ describe('WbrNParcels_WhList.vue', () => {
   })
 
   it('does not render admin-only KGT clearing and disables blocked row actions', async () => {
-    mockItems.value = [{
-      ...baseParcel,
-      setDefectBlocked: true,
-      extId: ''
-    }]
+    mockItems.value = [
+      {
+        ...baseParcel,
+        setDefectBlocked: true,
+        extId: ''
+      }
+    ]
 
     const wrapper = mount(WbrNParcelsWhList, {
       props: { registerId: 9 },
@@ -592,10 +628,14 @@ describe('WbrNParcels_WhList.vue', () => {
     expect(parcelsWhSortBy.value).toEqual([{ key: 'shk', order: 'asc' }])
 
     await wrapper.get('[data-testid="open-parcel-status-bulk-dialog"]').trigger('click')
-    expect(wrapper.get('[data-testid="parcel-status-bulk-dialog"]').attributes('data-show')).toBe('true')
+    expect(wrapper.get('[data-testid="parcel-status-bulk-dialog"]').attributes('data-show')).toBe(
+      'true'
+    )
     await wrapper.get('[data-testid="parcel-status-bulk-dialog-close"]').trigger('click')
     await wrapper.vm.$nextTick()
-    expect(wrapper.get('[data-testid="parcel-status-bulk-dialog"]').attributes('data-show')).toBe('false')
+    expect(wrapper.get('[data-testid="parcel-status-bulk-dialog"]').attributes('data-show')).toBe(
+      'false'
+    )
   })
 
   it('reports action and initialization errors', async () => {
@@ -618,7 +658,13 @@ describe('WbrNParcels_WhList.vue', () => {
     })
     await resolveAll()
 
-    expect(alertError).toHaveBeenCalledWith('Ошибка при инициализации компонента')
+    expect(alertError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'warehouse failed' }),
+      expect.objectContaining({
+        fallback: 'Ошибка при инициализации компонента',
+        action: expect.objectContaining({ label: 'Повторить', handler: expect.any(Function) })
+      })
+    )
   })
 
   it('stops filter sync and KGT monitor on unmount', async () => {

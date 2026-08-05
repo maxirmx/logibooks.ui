@@ -1,6 +1,6 @@
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store.js'
@@ -554,15 +554,36 @@ const router = createRouter({
       props: (route) => ({
         id: Number(route.params.id)
       }),
-      meta: {  }
-    },
+      meta: {}
+    }
   ]
+})
+
+let staleAlertId = null
+let navigationSource = null
+
+router.beforeEach((to, from) => {
+  if (to.fullPath !== from.fullPath && navigationSource !== from.fullPath) {
+    navigationSource = from.fullPath
+    staleAlertId = useAlertStore().alert?.id ?? null
+  }
+  return true
+})
+
+router.afterEach((to, from, failure) => {
+  if (failure || to.fullPath === from.fullPath) return
+
+  const alertStore = useAlertStore()
+  if (staleAlertId !== null && alertStore.alert?.id === staleAlertId) {
+    alertStore.clear()
+  }
+  staleAlertId = null
+  navigationSource = null
 })
 
 router.beforeEach(async (to) => {
   const auth = useAuthStore()
   const alert = useAlertStore()
-  alert.clear()
 
   // Handle password recovery or registration completion
   if (auth.re_jwt) {
@@ -611,7 +632,7 @@ router.beforeEach(async (to) => {
   try {
     // Verify server availability and session validity
     await auth.check()
-    
+
     // If no user after check, route to login
     if (!auth.user) {
       return routeToLogin(to, auth)

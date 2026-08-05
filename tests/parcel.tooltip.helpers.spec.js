@@ -1,6 +1,6 @@
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { getFieldTooltip, getCheckStatusTooltip } from '@/helpers/parcel.tooltip.helpers.js'
@@ -73,7 +73,7 @@ describe('parcel tooltip helpers', () => {
     it('returns title when tooltip exists but title is missing', () => {
       const titlesWithoutKey = { otherKey: 'Other Title' }
       const tooltipsWithKey = { missingTitleKey: 'Some tooltip' }
-      
+
       const result = getFieldTooltip('missingTitleKey', titlesWithoutKey, tooltipsWithKey)
       expect(result).toBeNull()
     })
@@ -81,10 +81,10 @@ describe('parcel tooltip helpers', () => {
     it('handles empty strings correctly', () => {
       const titlesWithEmpty = { emptyTitle: '' }
       const tooltipsWithEmpty = { emptyTooltip: '' }
-      
+
       const result1 = getFieldTooltip('emptyTitle', titlesWithEmpty, mockColumnTooltips)
       expect(result1).toBeNull()
-      
+
       const result2 = getFieldTooltip('statusId', { statusId: 'Title' }, tooltipsWithEmpty)
       expect(result2).toBe('Title')
     })
@@ -108,12 +108,12 @@ describe('parcel tooltip helpers', () => {
       const item = { checkStatus: 50 }
       const feacnOrders = []
       const stopWords = []
-      
+
       mockCheckStatusInstance.toString.mockReturnValue('Статус 50')
       CheckStatusCode.hasIssues.mockReturnValue(false)
-      
+
       const result = getCheckStatusTooltip(item, null, feacnOrders, stopWords)
-      
+
       expect(result).toBe('Статус 50')
       expect(CheckStatusCode).toHaveBeenCalledWith(50)
       expect(CheckStatusCode.hasIssues).toHaveBeenCalledWith(50)
@@ -124,21 +124,25 @@ describe('parcel tooltip helpers', () => {
       const item = { checkStatus: 150 }
       const feacnOrders = []
       const stopWords = []
-      
+
       mockCheckStatusInstance.toString.mockReturnValue('Статус 150')
       CheckStatusCode.hasIssues.mockReturnValue(true)
       vi.mocked(parcelsCheckHelpers.getCheckStatusInfo).mockReturnValue(null)
-      
+
       const result = getCheckStatusTooltip(item, null, feacnOrders, stopWords)
-      
+
       expect(result).toBe('Статус 150')
       expect(CheckStatusCode).toHaveBeenCalledWith(150)
       expect(CheckStatusCode.hasIssues).toHaveBeenCalledWith(150)
-      expect(parcelsCheckHelpers.getCheckStatusInfo).toHaveBeenCalledWith(item, feacnOrders, stopWords)
+      expect(parcelsCheckHelpers.getCheckStatusInfo).toHaveBeenCalledWith(
+        item,
+        feacnOrders,
+        stopWords
+      )
     })
 
     it('returns combined title and check info when item has issues and check info', () => {
-      const item = { 
+      const item = {
         checkStatus: 150,
         stopWordIds: [1, 2],
         feacnOrderIds: [1, 2]
@@ -151,30 +155,37 @@ describe('parcel tooltip helpers', () => {
         { id: 1, word: 'forbidden' },
         { id: 2, word: 'restricted' }
       ]
-      
+
       mockCheckStatusInstance.toString.mockReturnValue('Статус 150')
       CheckStatusCode.hasIssues.mockReturnValue(true)
-      vi.mocked(parcelsCheckHelpers.getCheckStatusInfo).mockReturnValue('Ограничения по коду ТН ВЭД (постановление):\nOrder 1, Order 2\n\nСтоп-слова и фразы:\nforbidden, restricted')
-      
+      vi.mocked(parcelsCheckHelpers.getCheckStatusInfo).mockReturnValue(
+        'Ограничения по коду ТН ВЭД (постановление):\nOrder 1, Order 2\n\nСтоп-слова и фразы:\nforbidden, restricted'
+      )
+
       const result = getCheckStatusTooltip(item, null, feacnOrders, stopWords)
-      
-      expect(result).toBe('Статус 150\nОграничения по коду ТН ВЭД (постановление):\nOrder 1, Order 2\n\nСтоп-слова и фразы:\nforbidden, restricted')
+
+      expect(result).toBe(
+        'Статус 150\nОграничения по коду ТН ВЭД (постановление):\nOrder 1, Order 2\n\nСтоп-слова и фразы:\nforbidden, restricted'
+      )
       expect(CheckStatusCode).toHaveBeenCalledWith(150)
       expect(CheckStatusCode.hasIssues).toHaveBeenCalledWith(150)
-      expect(parcelsCheckHelpers.getCheckStatusInfo).toHaveBeenCalledWith(item, feacnOrders, stopWords)
+      expect(parcelsCheckHelpers.getCheckStatusInfo).toHaveBeenCalledWith(
+        item,
+        feacnOrders,
+        stopWords
+      )
     })
-
 
     it('handles undefined checkStatus', () => {
       const item = {}
       const feacnOrders = []
       const stopWords = []
-      
+
       mockCheckStatusInstance.toString.mockReturnValue('Неизвестный статус')
       CheckStatusCode.hasIssues.mockReturnValue(false)
-      
+
       const result = getCheckStatusTooltip(item, null, feacnOrders, stopWords)
-      
+
       expect(result).toBe('Неизвестный статус')
       expect(CheckStatusCode).toHaveBeenCalledWith(undefined)
     })

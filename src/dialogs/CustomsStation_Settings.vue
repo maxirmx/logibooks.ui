@@ -3,6 +3,10 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
+import { focusFirstInvalidField } from '@/helpers/form.validation.helpers.js'
+import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
+import { reportFormError } from '@/helpers/error.helpers.js'
 import { computed, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { Field, Form } from 'vee-validate'
@@ -27,10 +31,10 @@ const props = defineProps({
 const customsStationsStore = useCustomsStationsStore()
 const countriesStore = useCountriesStore()
 const alertStore = useAlertStore()
-countriesStore.ensureLoaded()
+await runWithRetryAlert(() => countriesStore.ensureLoaded(), {
+  fallback: 'Не удалось загрузить страны'
+})
 const { countries } = storeToRefs(countriesStore)
-const { alert } = storeToRefs(alertStore)
-
 const isCreate = computed(() => props.mode === 'create')
 
 let customsStation = ref({
@@ -45,11 +49,9 @@ let customsStation = ref({
 
 if (!isCreate.value) {
   ;({ customsStation } = storeToRefs(customsStationsStore))
-  const loadedCustomsStation = await customsStationsStore.getById(props.customsStationId)
-  if (!loadedCustomsStation) {
-    alertStore.error('Ошибка при загрузке данных таможенного поста')
-    router.push('/customsstations')
-  }
+  await runWithRetryAlert(() => customsStationsStore.getById(props.customsStationId), {
+    fallback: 'Ошибка при загрузке данных таможенного поста'
+  })
 }
 
 const schema = Yup.object({
@@ -65,9 +67,7 @@ const schema = Yup.object({
 })
 
 function getTitle() {
-  return isCreate.value
-    ? 'Регистрация таможенного поста'
-    : 'Изменить информацию о таможенном посте'
+  return isCreate.value ? 'Регистрация таможенного поста' : 'Изменить информацию о таможенном посте'
 }
 
 function getButtonText() {
@@ -85,7 +85,7 @@ function normalizeValues(values) {
   return values
 }
 
-function onSubmit(values, { setErrors }) {
+function onSubmit(values, { setErrors } = {}) {
   const payload = normalizeValues(values) || {}
   const operation = isCreate.value
     ? customsStationsStore.create(payload)
@@ -97,14 +97,14 @@ function onSubmit(values, { setErrors }) {
     })
     .catch((error) => {
       if (error?.status === 409) {
-        setErrors({ apiError: error.message })
+        alertStore.error(error.message)
         return
       }
 
       const fallback = isCreate.value
         ? 'Ошибка при регистрации таможенного поста'
         : 'Ошибка при сохранении информации о таможенном посте'
-      setErrors({ apiError: error?.message || fallback })
+      reportFormError(error, { setErrors, alertStore, fallback })
     })
 }
 </script>
@@ -113,7 +113,10 @@ function onSubmit(values, { setErrors }) {
   <div class="settings form-2">
     <h1 class="primary-heading">{{ getTitle() }}</h1>
     <hr class="hr" />
+
+    <PageAlertRegion />
     <Form
+      @invalid-submit="focusFirstInvalidField"
       @submit="onSubmit"
       :initial-values="customsStation"
       :validation-schema="schema"
@@ -215,23 +218,11 @@ function onSubmit(values, { setErrors }) {
           <font-awesome-icon size="1x" icon="fa-solid fa-check-double" class="mr-1" />
           {{ getButtonText() }}
         </button>
-        <button
-          class="button secondary"
-          type="button"
-          data-testid="cancel-button"
-          @click="cancel"
-        >
+        <button class="button secondary" type="button" data-testid="cancel-button" @click="cancel">
           <font-awesome-icon size="1x" icon="fa-solid fa-xmark" class="mr-1" />
           Отменить
         </button>
       </div>
-
-      <div v-if="errors.apiError" class="alert alert-danger mt-3 mb-0">{{ errors.apiError }}</div>
     </Form>
-
-    <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
-      <button @click="alertStore.clear()" class="btn btn-link close">×</button>
-      {{ alert.message }}
-    </div>
   </div>
 </template>

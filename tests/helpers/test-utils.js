@@ -1,10 +1,10 @@
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 /**
  * Shared test utilities and configurations
- * 
+ *
  * IMPORTANT: This file is a merged version of the previously separate:
  * - /tests/test-utils.js
  * - /tests/helpers/test-utils.js
@@ -18,7 +18,7 @@ import { flushPromises } from '@vue/test-utils'
  * Helper function to resolve all pending promises in tests
  * This is particularly useful for components with nested async operations
  * or when testing components wrapped in Suspense
- * 
+ *
  * @returns {Promise<void>} A promise that resolves when all promises are flushed
  */
 export async function resolveAll() {
@@ -31,7 +31,7 @@ export async function resolveAll() {
 /**
  * Alternative to resolveAll using Vue's nextTick
  * Can be used in simpler scenarios where a single tick is sufficient
- * 
+ *
  * @returns {Promise<void>} A promise that resolves after the next tick
  */
 export async function waitForNextTick() {
@@ -55,18 +55,64 @@ export async function waitForTicks(ticks = 2) {
 export const vuetifyStubs = {
   'v-select': {
     template: '<div class="v-select-stub" data-testid="v-select"><slot></slot></div>',
-    props: ['modelValue', 'items', 'label', 'clearable', 'prefix', 'itemTitle', 'itemValue', 'multiple', 'variant', 'density', 'hideDetails', 'style', 'errorMessages', 'required', 'disabled', 'placeholder'],
+    props: [
+      'modelValue',
+      'items',
+      'label',
+      'clearable',
+      'prefix',
+      'itemTitle',
+      'itemValue',
+      'multiple',
+      'variant',
+      'density',
+      'hideDetails',
+      'style',
+      'errorMessages',
+      'required',
+      'disabled',
+      'placeholder'
+    ],
     inheritAttrs: false
   },
   'v-text-field': {
-    template: '<label class="v-text-field-stub" data-testid="v-text-field"><span>{{ label }}</span><input v-bind="$attrs" :value="modelValue" :disabled="disabled" @input="$emit(\'update:modelValue\', $event.target.value)" @keydown="$emit(\'keydown\', $event)" /></label>',
-    props: ['modelValue', 'label', 'clearable', 'prefix', 'type', 'variant', 'density', 'hideDetails', 'readonly', 'style', 'errorMessages', 'required', 'disabled', 'placeholder'],
+    template:
+      '<label class="v-text-field-stub" data-testid="v-text-field"><span>{{ label }}</span><input v-bind="$attrs" :value="modelValue" :disabled="disabled" @input="$emit(\'update:modelValue\', $event.target.value)" @keydown="$emit(\'keydown\', $event)" /></label>',
+    props: [
+      'modelValue',
+      'label',
+      'clearable',
+      'prefix',
+      'type',
+      'variant',
+      'density',
+      'hideDetails',
+      'readonly',
+      'style',
+      'errorMessages',
+      'required',
+      'disabled',
+      'placeholder'
+    ],
     inheritAttrs: false,
     emits: ['input', 'update:modelValue', 'keydown']
   },
   'v-textarea': {
     template: '<textarea class="v-textarea-stub" data-testid="v-textarea"></textarea>',
-    props: ['modelValue', 'label', 'rows', 'variant', 'density', 'hideDetails', 'readonly', 'style', 'errorMessages', 'required', 'disabled', 'placeholder'],
+    props: [
+      'modelValue',
+      'label',
+      'rows',
+      'variant',
+      'density',
+      'hideDetails',
+      'readonly',
+      'style',
+      'errorMessages',
+      'required',
+      'disabled',
+      'placeholder'
+    ],
     inheritAttrs: false,
     emits: ['input', 'update:modelValue']
   },
@@ -99,7 +145,23 @@ export const vuetifyStubs = {
         <slot></slot>
       </div>
     `,
-    props: ['items', 'headers', 'loading', 'itemsLength', 'itemsPerPage', 'page', 'sortBy', 'itemsPerPageOptions', 'search', 'customFilter', 'customKeySort', 'density', 'style', 'rowProps', 'noDataText'],
+    props: [
+      'items',
+      'headers',
+      'loading',
+      'itemsLength',
+      'itemsPerPage',
+      'page',
+      'sortBy',
+      'itemsPerPageOptions',
+      'search',
+      'customFilter',
+      'customKeySort',
+      'density',
+      'style',
+      'rowProps',
+      'noDataText'
+    ],
     inheritAttrs: false
   },
   'v-data-table-server': {
@@ -129,14 +191,24 @@ export const vuetifyStubs = {
         <slot></slot>
       </div>
     `,
-    props: ['items', 'headers', 'loading', 'itemsLength', 'itemsPerPage', 'page', 'sortBy', 'itemsPerPageOptions', 'style'],
+    props: [
+      'items',
+      'headers',
+      'loading',
+      'itemsLength',
+      'itemsPerPage',
+      'page',
+      'sortBy',
+      'itemsPerPageOptions',
+      'style'
+    ],
     methods: {
       isSorted(header) {
-        return Array.isArray(this.sortBy) && this.sortBy.some(item => item.key === header.key)
+        return Array.isArray(this.sortBy) && this.sortBy.some((item) => item.key === header.key)
       },
       getSortIcon(header) {
         const item = Array.isArray(this.sortBy)
-          ? this.sortBy.find(item => item.key === header.key)
+          ? this.sortBy.find((item) => item.key === header.key)
           : null
         return item?.order === 'desc' ? '$sortDesc' : '$sortAsc'
       }
@@ -166,7 +238,8 @@ export const vuetifyStubs = {
     inheritAttrs: false
   },
   'v-tooltip': {
-    template: '<div class="v-tooltip-stub" data-testid="v-tooltip"><slot name="activator"></slot><slot></slot></div>',
+    template:
+      '<div class="v-tooltip-stub" data-testid="v-tooltip"><slot name="activator"></slot><slot></slot></div>',
     props: ['text', 'location', 'activator', 'style'],
     inheritAttrs: false
   },
@@ -176,7 +249,8 @@ export const vuetifyStubs = {
     inheritAttrs: false
   },
   'v-progress-circular': {
-    template: '<div class="v-progress-circular-stub" data-testid="v-progress-circular">{{ modelValue }}%</div>',
+    template:
+      '<div class="v-progress-circular-stub" data-testid="v-progress-circular">{{ modelValue }}%</div>',
     props: ['modelValue', 'size', 'width', 'color'],
     inheritAttrs: false
   },
@@ -192,7 +266,16 @@ export const vuetifyStubs = {
   },
   'v-file-input': {
     template: '<input type="file" class="v-file-input-stub" data-testid="v-file-input" />',
-    props: ['modelValue', 'accept', 'multiple', 'loading-text', 'style', 'errorMessages', 'required', 'disabled'],
+    props: [
+      'modelValue',
+      'accept',
+      'multiple',
+      'loading-text',
+      'style',
+      'errorMessages',
+      'required',
+      'disabled'
+    ],
     inheritAttrs: false,
     emits: ['input', 'update:modelValue']
   },
@@ -224,18 +307,35 @@ export const vuetifyStubs = {
         <button v-if="closable" @click="$emit('click:close')" data-testid="alert-close">×</button>
       </div>
     `,
-    props: ['type', 'text', 'variant', 'closable', 'density', 'border', 'borderColor', 'closeIcon', 'closeLabel', 'icon', 'modelValue', 'prominent', 'title', 'style'],
+    props: [
+      'type',
+      'text',
+      'variant',
+      'closable',
+      'density',
+      'border',
+      'borderColor',
+      'closeIcon',
+      'closeLabel',
+      'icon',
+      'modelValue',
+      'prominent',
+      'title',
+      'style'
+    ],
     emits: ['click:close', 'update:modelValue'],
     inheritAttrs: false
   },
   'v-radio-group': {
-    template: '<div class="v-radio-group-stub" data-testid="v-radio-group">{{ label }}<slot></slot></div>',
+    template:
+      '<div class="v-radio-group-stub" data-testid="v-radio-group">{{ label }}<slot></slot></div>',
     props: ['modelValue', 'errorMessages', 'label', 'disabled', 'style', 'required'],
     inheritAttrs: false,
     emits: ['input', 'update:modelValue']
   },
   'v-radio': {
-    template: '<label class="v-radio-stub" data-testid="v-radio"><input type="radio" />{{ label }}</label>',
+    template:
+      '<label class="v-radio-stub" data-testid="v-radio"><input type="radio" />{{ label }}</label>',
     props: ['label', 'value', 'disabled', 'style'],
     inheritAttrs: false
   },
@@ -255,7 +355,8 @@ export const vuetifyStubs = {
     emits: ['update:modelValue']
   },
   'font-awesome-icon': {
-    template: '<i class="fa-icon-stub" data-testid="fa-icon" :data-icon="icon" v-bind="$attrs"></i>',
+    template:
+      '<i class="fa-icon-stub" data-testid="fa-icon" :data-icon="icon" v-bind="$attrs"></i>',
     props: ['icon', 'size', 'color', 'style'],
     inheritAttrs: false
   },
@@ -265,11 +366,13 @@ export const vuetifyStubs = {
     inheritAttrs: false
   },
   'v-list-item': {
-    template: '<div class="v-list-item-stub" data-testid="v-list-item" v-bind="$attrs"><slot name="prepend"></slot><slot></slot></div>',
+    template:
+      '<div class="v-list-item-stub" data-testid="v-list-item" v-bind="$attrs"><slot name="prepend"></slot><slot></slot></div>',
     inheritAttrs: false
   },
   'v-list-item-title': {
-    template: '<span class="v-list-item-title-stub" data-testid="v-list-item-title" v-bind="$attrs"><slot></slot></span>',
+    template:
+      '<span class="v-list-item-title-stub" data-testid="v-list-item-title" v-bind="$attrs"><slot></slot></span>',
     inheritAttrs: false
   }
 }
@@ -314,13 +417,13 @@ export function createMockData(overrides = {}) {
  */
 export function createMockStoreWithRefs(storeData = {}) {
   const store = createMockStore(storeData)
-  
+
   return {
     ...store,
     // Mock storeToRefs behavior by returning refs for reactive properties
     $refs: () => {
       const refs = {}
-      Object.keys(store).forEach(key => {
+      Object.keys(store).forEach((key) => {
         if (typeof store[key] !== 'function') {
           refs[key] = store[key]
         }

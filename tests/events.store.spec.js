@@ -119,7 +119,10 @@ describe('events.store.js', () => {
 
         const result = await store.parcelUpdate(2, { parcelStatusId: 7 })
 
-        expect(mockPut).toHaveBeenCalledWith('http://localhost:3000/api/events/parcels/2', { id: 2, parcelStatusId: 7 })
+        expect(mockPut).toHaveBeenCalledWith('http://localhost:3000/api/events/parcels/2', {
+          id: 2,
+          parcelStatusId: 7
+        })
         expect(mockGet).toHaveBeenCalledWith('http://localhost:3000/api/events/parcels')
         expect(result).toEqual(updatedEvent)
       })
@@ -158,7 +161,9 @@ describe('events.store.js', () => {
         const error = new Error('Batch failed')
         mockPut.mockRejectedValue(error)
 
-        await expect(store.parcelUpdateMany([{ id: 1, parcelStatusId: 4 }])).rejects.toThrow('Batch failed')
+        await expect(store.parcelUpdateMany([{ id: 1, parcelStatusId: 4 }])).rejects.toThrow(
+          'Batch failed'
+        )
       })
     })
   })
@@ -240,7 +245,10 @@ describe('events.store.js', () => {
 
         const result = await store.registerUpdate(2, { parcelStatusId: 7 })
 
-        expect(mockPut).toHaveBeenCalledWith('http://localhost:3000/api/events/registers/2', { id: 2, parcelStatusId: 7 })
+        expect(mockPut).toHaveBeenCalledWith('http://localhost:3000/api/events/registers/2', {
+          id: 2,
+          parcelStatusId: 7
+        })
         expect(mockGet).toHaveBeenCalledWith('http://localhost:3000/api/events/registers')
         expect(result).toEqual(updatedEvent)
       })
@@ -279,7 +287,9 @@ describe('events.store.js', () => {
         const error = new Error('Batch failed')
         mockPut.mockRejectedValue(error)
 
-        await expect(store.registerUpdateMany([{ id: 1, parcelStatusId: 4 }])).rejects.toThrow('Batch failed')
+        await expect(store.registerUpdateMany([{ id: 1, parcelStatusId: 4 }])).rejects.toThrow(
+          'Batch failed'
+        )
       })
     })
   })

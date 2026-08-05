@@ -87,20 +87,22 @@ describe('Scanjob parcel monitor typed tables', () => {
   it('renders Ozon scan and WH columns without box number', () => {
     const wrapper = mount(ScanjobOzonParcelsMonitorTable, {
       props: {
-        parcels: [{
-          stickerScanned: true,
-          scannedSticker: 'SCAN-11',
-          scannedUserName: 'Operator',
-          scannedTime: '2026-01-02T10:00:00',
-          postingNumber: 'POST-11',
-          barcode: 'BAR-11',
-          productName: 'Very long Ozon product name',
-          weightKg: 1.23,
-          quantity: 2,
-          zoneName: 'Green',
-          statusTitle: 'Ready',
-          checkStatusProjection: { kind: 10, title: 'Не проверено', restrictionReason: null }
-        }]
+        parcels: [
+          {
+            stickerScanned: true,
+            scannedSticker: 'SCAN-11',
+            scannedUserName: 'Operator',
+            scannedTime: '2026-01-02T10:00:00',
+            postingNumber: 'POST-11',
+            barcode: 'BAR-11',
+            productName: 'Very long Ozon product name',
+            weightKg: 1.23,
+            quantity: 2,
+            zoneName: 'Green',
+            statusTitle: 'Ready',
+            checkStatusProjection: { kind: 10, title: 'Не проверено', restrictionReason: null }
+          }
+        ]
       },
       global
     })
@@ -119,7 +121,9 @@ describe('Scanjob parcel monitor typed tables', () => {
       'weightKg',
       'quantity'
     ])
-    expect(headers.find((header) => header.key === 'scannedInfo')?.title).toBe('Пользователь\nВремя\nСканированный код')
+    expect(headers.find((header) => header.key === 'scannedInfo')?.title).toBe(
+      'Пользователь\nВремя\nСканированный код'
+    )
     expect(headers.map((header) => header.key)).not.toContain('boxNumber')
     const scannedInfo = wrapper.get('.scanjob-monitor-scanned-info')
     expect(scannedInfo.findAll('span').map((line) => line.text())).toEqual([
@@ -137,20 +141,22 @@ describe('Scanjob parcel monitor typed tables', () => {
   it('renders WBR scan and WH columns without box number', () => {
     const wrapper = mount(ScanjobWbrParcelsMonitorTable, {
       props: {
-        parcels: [{
-          stickerScanned: false,
-          extId: 'KGT-21',
-          shk: 'SHK-21',
-          sticker: 'STICKER-21',
-          stickerCode: 'CODE-21',
-          barcode: 'BAR-21',
-          productName: 'Very long WBR product name',
-          weightKg: 3.45,
-          quantity: 4,
-          zoneName: 'Red',
-          statusTitle: 'Waiting',
-          checkStatusProjection: { kind: 30, title: 'Проверено', restrictionReason: null }
-        }]
+        parcels: [
+          {
+            stickerScanned: false,
+            extId: 'KGT-21',
+            shk: 'SHK-21',
+            sticker: 'STICKER-21',
+            stickerCode: 'CODE-21',
+            barcode: 'BAR-21',
+            productName: 'Very long WBR product name',
+            weightKg: 3.45,
+            quantity: 4,
+            zoneName: 'Red',
+            statusTitle: 'Waiting',
+            checkStatusProjection: { kind: 30, title: 'Проверено', restrictionReason: null }
+          }
+        ]
       },
       global
     })
@@ -183,19 +189,25 @@ describe('Scanjob parcel monitor typed tables', () => {
   it('renders WBR2 scan and WH columns without box number', () => {
     const wrapper = mount(ScanjobWbr2ParcelsMonitorTable, {
       props: {
-        parcels: [{
-          stickerScanned: true,
-          shk: 'SHK-31',
-          stickerCode: 'CODE-31',
-          wbSticker: 'WB-31',
-          sellerSticker: 'SELLER-31',
-          productName: 'Very long WBR2 product name',
-          weightKg: 5.67,
-          quantity: 8,
-          zoneName: 'Yellow',
-          statusTitle: 'Done',
-          checkStatusProjection: { kind: 20, title: 'Запрет', restrictionReason: 'Причина запрета' }
-        }]
+        parcels: [
+          {
+            stickerScanned: true,
+            shk: 'SHK-31',
+            stickerCode: 'CODE-31',
+            wbSticker: 'WB-31',
+            sellerSticker: 'SELLER-31',
+            productName: 'Very long WBR2 product name',
+            weightKg: 5.67,
+            quantity: 8,
+            zoneName: 'Yellow',
+            statusTitle: 'Done',
+            checkStatusProjection: {
+              kind: 20,
+              title: 'Запрет',
+              restrictionReason: 'Причина запрета'
+            }
+          }
+        ]
       },
       global
     })
@@ -230,20 +242,22 @@ describe('Scanjob parcel monitor typed tables', () => {
   it('renders WBRN scan and WH columns without box number', () => {
     const wrapper = mount(ScanjobWbrNParcelsMonitorTable, {
       props: {
-        parcels: [{
-          stickerScanned: true,
-          extId: 'KGT-51',
-          shk: 'SHK-51',
-          article: '29817781',
-          sticker: 'STICKER-51',
-          stickerCode: 'CODE-51',
-          productName: 'Very long WBRN product name',
-          weightKg: 1.11,
-          quantity: 3,
-          zoneName: 'Blue',
-          statusTitle: 'Ready',
-          checkStatusProjection: { kind: 10, title: 'Не проверено', restrictionReason: null }
-        }]
+        parcels: [
+          {
+            stickerScanned: true,
+            extId: 'KGT-51',
+            shk: 'SHK-51',
+            article: '29817781',
+            sticker: 'STICKER-51',
+            stickerCode: 'CODE-51',
+            productName: 'Very long WBRN product name',
+            weightKg: 1.11,
+            quantity: 3,
+            zoneName: 'Blue',
+            statusTitle: 'Ready',
+            checkStatusProjection: { kind: 10, title: 'Не проверено', restrictionReason: null }
+          }
+        ]
       },
       global
     })
@@ -315,12 +329,14 @@ describe('Scanjob parcel monitor typed tables', () => {
   it('renders product name as a non-wrapping tooltip cell and keeps click editing', async () => {
     const wrapper = mount(ScanjobWbr2ParcelsMonitorTable, {
       props: {
-        parcels: [{
-          id: 41,
-          stickerScanned: true,
-          productName: 'Very long product name that should not wrap',
-          checkStatusProjection: { kind: 10, title: 'Не проверено', restrictionReason: null }
-        }]
+        parcels: [
+          {
+            id: 41,
+            stickerScanned: true,
+            productName: 'Very long product name that should not wrap',
+            checkStatusProjection: { kind: 10, title: 'Не проверено', restrictionReason: null }
+          }
+        ]
       },
       global
     })
@@ -328,9 +344,11 @@ describe('Scanjob parcel monitor typed tables', () => {
     const productCell = wrapper.get('.scanjob-monitor-product-name-cell')
     expect(productCell.text()).toBe('Very long product name that should not wrap')
     expect(productCell.attributes('title')).toBeUndefined()
-    expect(wrapper.findAll('[data-testid="v-tooltip"]').some((tooltip) => (
-      tooltip.text().includes('Very long product name that should not wrap')
-    ))).toBe(true)
+    expect(
+      wrapper
+        .findAll('[data-testid="v-tooltip"]')
+        .some((tooltip) => tooltip.text().includes('Very long product name that should not wrap'))
+    ).toBe(true)
 
     await productCell.trigger('click')
     expect(wrapper.emitted('edit-parcel')?.[0][0]).toEqual(expect.objectContaining({ id: 41 }))
@@ -341,12 +359,14 @@ describe('Scanjob parcel monitor typed tables', () => {
 
     const wrapper = mount(ScanjobWbr2ParcelsMonitorTable, {
       props: {
-        parcels: [{
-          id: 41,
-          stickerScanned: true,
-          productName: 'Very long product name that should not wrap',
-          checkStatusProjection: { kind: 10, title: 'Не проверено', restrictionReason: null }
-        }]
+        parcels: [
+          {
+            id: 41,
+            stickerScanned: true,
+            productName: 'Very long product name that should not wrap',
+            checkStatusProjection: { kind: 10, title: 'Не проверено', restrictionReason: null }
+          }
+        ]
       },
       global
     })
@@ -364,13 +384,15 @@ describe('Scanjob parcel monitor typed tables', () => {
 
     const wrapper = mount(ScanjobWbr2ParcelsMonitorTable, {
       props: {
-        parcels: [{
-          id: 41,
-          stickerScanned: true,
-          productName: 'Product',
-          checkStatus: CheckStatusCode.NotChecked.value,
-          checkStatusProjection: { kind: 10, title: 'Не проверено', restrictionReason: null }
-        }]
+        parcels: [
+          {
+            id: 41,
+            stickerScanned: true,
+            productName: 'Product',
+            checkStatus: CheckStatusCode.NotChecked.value,
+            checkStatusProjection: { kind: 10, title: 'Не проверено', restrictionReason: null }
+          }
+        ]
       },
       global
     })
@@ -393,13 +415,19 @@ describe('Scanjob parcel monitor typed tables', () => {
 
     const wrapper = mount(ScanjobWbr2ParcelsMonitorTable, {
       props: {
-        parcels: [{
-          id: 42,
-          stickerScanned: true,
-          productName: 'Product',
-          checkStatus: CheckStatusCode.Defect.value,
-          checkStatusProjection: { kind: scanjobCheckStatusProjectionKind.Defect, title: 'Брак', restrictionReason: null }
-        }]
+        parcels: [
+          {
+            id: 42,
+            stickerScanned: true,
+            productName: 'Product',
+            checkStatus: CheckStatusCode.Defect.value,
+            checkStatusProjection: {
+              kind: scanjobCheckStatusProjectionKind.Defect,
+              title: 'Брак',
+              restrictionReason: null
+            }
+          }
+        ]
       },
       global
     })
@@ -466,9 +494,7 @@ describe('Scanjob parcel monitor typed tables', () => {
     try {
       wrapper = mount(ScanjobParcelsMonitorTable, {
         props: {
-          headers: [
-            { title: 'Посылка', key: 'parcelNumber' }
-          ],
+          headers: [{ title: 'Посылка', key: 'parcelNumber' }],
           selectedParcelId: null,
           parcels: [
             { id: 1, parcelId: 1, parcelNumber: 'P-001' },

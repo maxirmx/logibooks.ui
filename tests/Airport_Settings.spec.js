@@ -37,13 +37,23 @@ vi.mock('@/router', () => ({
   default: mockRouter
 }))
 
-vi.mock('pinia', () => ({
-  storeToRefs: (store) => {
-    if (store.airport) {
-      return { airport: store.airport }
+vi.mock('pinia', async () => {
+  const actual = await vi.importActual('pinia')
+  return {
+    ...actual,
+    storeToRefs: (store) => {
+      if (store.airport) {
+        return { airport: store.airport }
+      }
+      return {}
     }
-    return {}
   }
+})
+
+const alertError = vi.hoisted(() => vi.fn())
+
+vi.mock('@/stores/alert.store.js', () => ({
+  useAlertStore: () => ({ alert: null, error: alertError })
 }))
 
 vi.mock('vee-validate', () => ({
@@ -92,7 +102,8 @@ vi.mock('vee-validate', () => ({
   Field: {
     name: 'Field',
     props: ['name', 'id', 'type', 'class', 'placeholder', 'maxlength', 'style'],
-    template: '<input :name="name" :id="id" :type="type" :placeholder="placeholder" :maxlength="maxlength" :style="style" />'
+    template:
+      '<input :name="name" :id="id" :type="type" :placeholder="placeholder" :maxlength="maxlength" :style="style" />'
   }
 }))
 
@@ -157,10 +168,14 @@ describe('Airport_Settings.vue', () => {
     await resolveAll()
 
     const formComponent = wrapper.findComponent({ name: 'Form' })
-    await formComponent.vm.$emit('submit', {
-      codeIata: 'JFK',
-      name: 'Test Airport'
-    }, { setErrors: vi.fn() })
+    await formComponent.vm.$emit(
+      'submit',
+      {
+        codeIata: 'JFK',
+        name: 'Test Airport'
+      },
+      { setErrors: vi.fn() }
+    )
     await resolveAll()
 
     expect(mockAirportsStore.create).toHaveBeenCalled()
@@ -178,10 +193,14 @@ describe('Airport_Settings.vue', () => {
     await resolveAll()
 
     const formComponent = wrapper.findComponent({ name: 'Form' })
-    await formComponent.vm.$emit('submit', {
-      codeIata: 'LAX',
-      name: 'Los Angeles International Airport'
-    }, { setErrors: vi.fn() })
+    await formComponent.vm.$emit(
+      'submit',
+      {
+        codeIata: 'LAX',
+        name: 'Los Angeles International Airport'
+      },
+      { setErrors: vi.fn() }
+    )
     await resolveAll()
 
     expect(mockAirportsStore.update).toHaveBeenCalledWith(1, expect.any(Object))
@@ -201,15 +220,18 @@ describe('Airport_Settings.vue', () => {
     await resolveAll()
 
     const formComponent = wrapper.findComponent({ name: 'Form' })
-    await formComponent.vm.$emit('submit', {
-      codeIata: 'JFK',
-      name: 'Test Airport'
-    }, { setErrors: vi.fn() })
+    await formComponent.vm.$emit(
+      'submit',
+      {
+        codeIata: 'JFK',
+        name: 'Test Airport'
+      },
+      { setErrors: vi.fn() }
+    )
     await resolveAll()
 
     expect(mockAirportsStore.create).toHaveBeenCalled()
   })
-
 
   it('accepts valid 3-letter IATA codes', async () => {
     mockAirportsStore.create.mockResolvedValueOnce(mockAirportData)
@@ -225,10 +247,14 @@ describe('Airport_Settings.vue', () => {
 
     // Test with valid IATA code - directly trigger the form with valid data
     const formComponent = wrapper.findComponent({ name: 'Form' })
-    await formComponent.vm.$emit('submit', {
-      codeIata: 'JFK',
-      name: 'John F. Kennedy International Airport'
-    }, { setErrors: vi.fn() })
+    await formComponent.vm.$emit(
+      'submit',
+      {
+        codeIata: 'JFK',
+        name: 'John F. Kennedy International Airport'
+      },
+      { setErrors: vi.fn() }
+    )
     await resolveAll()
 
     expect(mockAirportsStore.create).toHaveBeenCalledWith({
@@ -252,10 +278,14 @@ describe('Airport_Settings.vue', () => {
 
     // Test with lowercase IATA code - directly trigger the form with lowercase data
     const formComponent = wrapper.findComponent({ name: 'Form' })
-    await formComponent.vm.$emit('submit', {
-      codeIata: 'jfk',
-      name: 'John F. Kennedy International Airport'
-    }, { setErrors: vi.fn() })
+    await formComponent.vm.$emit(
+      'submit',
+      {
+        codeIata: 'jfk',
+        name: 'John F. Kennedy International Airport'
+      },
+      { setErrors: vi.fn() }
+    )
     await resolveAll()
 
     expect(mockAirportsStore.create).toHaveBeenCalledWith({
@@ -278,10 +308,14 @@ describe('Airport_Settings.vue', () => {
 
     // Test with mixed case IATA code in edit mode - directly trigger the form
     const formComponent = wrapper.findComponent({ name: 'Form' })
-    await formComponent.vm.$emit('submit', {
-      codeIata: 'jFk',
-      name: 'John F. Kennedy International Airport'
-    }, { setErrors: vi.fn() })
+    await formComponent.vm.$emit(
+      'submit',
+      {
+        codeIata: 'jFk',
+        name: 'John F. Kennedy International Airport'
+      },
+      { setErrors: vi.fn() }
+    )
     await resolveAll()
 
     expect(mockAirportsStore.update).toHaveBeenCalledWith(1, {

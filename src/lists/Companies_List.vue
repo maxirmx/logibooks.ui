@@ -1,8 +1,9 @@
 <script setup>
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { onMounted, ref } from 'vue'
 import router from '@/router'
 import { storeToRefs } from 'pinia'
@@ -14,6 +15,7 @@ import { useAlertStore } from '@/stores/alert.store.js'
 import { useConfirm } from 'vuetify-use-dialog'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
+import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
 
 const companiesStore = useCompaniesStore()
 const countriesStore = useCountriesStore()
@@ -22,8 +24,6 @@ const alertStore = useAlertStore()
 const confirm = useConfirm()
 
 const { companies, loading } = storeToRefs(companiesStore)
-countriesStore.ensureLoaded()
-const { alert } = storeToRefs(alertStore)
 const runningAction = ref(false)
 
 // Remove local search and itemsPerPage refs - use auth store instead
@@ -60,7 +60,9 @@ function filterCompanies(value, query, item) {
 
 // Table headers
 const headers = [
-  ...(authStore.isSrLogistPlus ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '120px' }] : []),
+  ...(authStore.isSrLogistPlus
+    ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '120px' }]
+    : []),
   { title: 'Название', key: 'displayName', sortable: false },
   { title: 'Страна', key: 'countryIsoNumeric', sortable: true },
   { title: 'Город', key: 'city', sortable: true },
@@ -117,10 +119,11 @@ async function deleteCompany(company) {
 }
 
 // Initialize data
-onMounted(async () => {
-  await companiesStore.getAll()
-  // Fetch countries using ensureLoaded pattern
-})
+onMounted(() =>
+  runWithRetryAlert(() => Promise.all([countriesStore.ensureLoaded(), companiesStore.getAll()]), {
+    fallback: 'Не удалось загрузить компании'
+  })
+)
 
 // Expose functions for testing
 defineExpose({
@@ -152,6 +155,8 @@ defineExpose({
     </div>
 
     <hr class="hr" />
+
+    <PageAlertRegion />
 
     <div>
       <v-text-field
@@ -191,31 +196,25 @@ defineExpose({
         </template>
 
         <template v-slot:[`item.actions`]="{ item }">
-          <div v-if="authStore.isSrLogistPlus  " class="actions-container">
-            <ActionButton 
-              :item="item" 
-              icon="fa-solid fa-pen" 
-              tooltip-text="Редактировать информацию о компании" 
-              @click="openEditDialog" 
-              :disabled="runningAction || loading" 
+          <div v-if="authStore.isSrLogistPlus" class="actions-container">
+            <ActionButton
+              :item="item"
+              icon="fa-solid fa-pen"
+              tooltip-text="Редактировать информацию о компании"
+              @click="openEditDialog"
+              :disabled="runningAction || loading"
             />
-            <ActionButton 
-              :item="item" 
-              icon="fa-solid fa-trash-can" 
-              tooltip-text="Удалить информацию о компании" 
-              @click="deleteCompany" 
-              :disabled="runningAction || loading" 
+            <ActionButton
+              :item="item"
+              icon="fa-solid fa-trash-can"
+              tooltip-text="Удалить информацию о компании"
+              @click="deleteCompany"
+              :disabled="runningAction || loading"
             />
           </div>
         </template>
       </v-data-table>
     </v-card>
-
-    <div v-if="alert" class="alert alert-dismissable mt-3 mb-0" :class="alert.type">
-      <button @click="alertStore.clear()" class="btn btn-link close">×</button>
-      {{ alert.message }}
-    </div>
-
   </div>
 </template>
 

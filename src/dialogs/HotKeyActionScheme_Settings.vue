@@ -3,6 +3,12 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
+import FieldError from '@/components/FieldError.vue'
+import { useAlertStore } from '@/stores/alert.store.js'
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
+import { focusFirstInvalidField } from '@/helpers/form.validation.helpers.js'
+import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
+import { reportFormError } from '@/helpers/error.helpers.js'
 import { ref, computed } from 'vue'
 import router from '@/router'
 import { storeToRefs } from 'pinia'
@@ -11,6 +17,8 @@ import * as Yup from 'yup'
 import { useHotKeyActionSchemesStore } from '@/stores/hotkey.action.schemes.store.js'
 import ActionButton from '@/components/ActionButton.vue'
 import KeyCaptureInput from '@/components/KeyCaptureInput.vue'
+
+const alertStore = useAlertStore()
 
 const props = defineProps({
   mode: {
@@ -35,19 +43,23 @@ let hotKeyActionScheme = ref({
 })
 
 // Load ops data
-await hotKeyActionSchemesStore.ensureOpsLoaded()
+await runWithRetryAlert(() => hotKeyActionSchemesStore.ensureOpsLoaded(), {
+  fallback: 'Не удалось загрузить список действий'
+})
 
 if (!isCreate.value) {
   ;({ hotKeyActionScheme } = storeToRefs(hotKeyActionSchemesStore))
-  await hotKeyActionSchemesStore.getById(props.hotKeyActionSchemeId)
-  
+  await runWithRetryAlert(() => hotKeyActionSchemesStore.getById(props.hotKeyActionSchemeId), {
+    fallback: 'Не удалось загрузить схему настройки клавиатуры'
+  })
+
   // Ensure actions array exists
   if (!hotKeyActionScheme.value.actions) {
     hotKeyActionScheme.value.actions = []
   }
 } else {
   // In create mode, initialize with all actions from ops
-  hotKeyActionScheme.value.actions = ops.value.actions.map(action => ({
+  hotKeyActionScheme.value.actions = ops.value.actions.map((action) => ({
     id: 0,
     action: action.value,
     keyCode: '',
@@ -76,7 +88,7 @@ const schema = Yup.object({
   name: Yup.string().required('Название обязательно')
 })
 
-function onSubmit(values, { setErrors }) {
+function onSubmit(values, { setErrors } = {}) {
   if (isSubmitting.value) return
 
   isSubmitting.value = true
@@ -94,9 +106,13 @@ function onSubmit(values, { setErrors }) {
       })
       .catch((error) => {
         if (error.message?.includes('409')) {
-          setErrors({ apiError: 'Схема настройки клавиатуры с таким названием уже существует' })
+          alertStore.error('Схема настройки клавиатуры с таким названием уже существует')
         } else {
-          setErrors({ apiError: error.message || 'Ошибка при создании схемы настройки клавиатуры' })
+          reportFormError(error, {
+            setErrors,
+            alertStore,
+            fallback: 'Ошибка при создании схемы настройки клавиатуры'
+          })
         }
       })
       .finally(() => {
@@ -110,7 +126,11 @@ function onSubmit(values, { setErrors }) {
       router.push('/hotkeyactionschemes')
     })
     .catch((error) => {
-      setErrors({ apiError: error.message || 'Ошибка при сохранении схемы настройки клавиатуры' })
+      reportFormError(error, {
+        setErrors,
+        alertStore,
+        fallback: 'Ошибка при сохранении схемы настройки клавиатуры'
+      })
     })
     .finally(() => {
       isSubmitting.value = false
@@ -125,6 +145,7 @@ function onCancel() {
 <template>
   <div class="settings form-3">
     <Form
+      @invalid-submit="focusFirstInvalidField"
       @submit="onSubmit"
       :initial-values="hotKeyActionScheme"
       :validation-schema="schema"
@@ -152,6 +173,8 @@ function onCancel() {
         </div>
       </div>
       <hr class="hr" />
+
+      <PageAlertRegion />
       <div class="form-group">
         <label for="name" class="label">Название:</label>
         <Field
@@ -162,6 +185,7 @@ function onCancel() {
           :class="{ 'is-invalid': errors.name }"
           placeholder="Название"
         />
+        <FieldError name="name" :errors="errors" />
       </div>
 
       <div class="form-group mt-4">
@@ -215,9 +239,6 @@ function onCancel() {
           </table>
         </div>
       </div>
-
-      <div v-if="errors.name" class="alert alert-danger mt-3 mb-0">{{ errors.name }}</div>
-      <div v-if="errors.apiError" class="alert alert-danger mt-3 mb-0">{{ errors.apiError }}</div>
     </Form>
   </div>
 </template>
@@ -268,7 +289,7 @@ function onCancel() {
   width: 80px;
 }
 
-.checkbox-col input[type="checkbox"] {
+.checkbox-col input[type='checkbox'] {
   margin: 0;
 }
 

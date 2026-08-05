@@ -1,7 +1,7 @@
 /* @vitest-environment jsdom */
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
@@ -20,16 +20,23 @@ const FormStub = {
       return () => callback({}, { setErrors: setErrorsMock })
     }
   },
-  template: '<form @submit.prevent="$emit(\'submit\')"><slot :errors="{}" :isSubmitting="false" :handleSubmit="handleSubmit" :values="initialValues" /></form>'
+  template:
+    '<form @submit.prevent="$emit(\'submit\')"><slot :errors="{}" :isSubmitting="false" :handleSubmit="handleSubmit" :values="initialValues" /></form>'
 }
 const FieldStub = {
   name: 'Field',
-  props: ['name','id','type'],
+  props: ['name', 'id', 'type'],
   template: '<input :id="id" :type="type" />'
 }
 
 let isAdmin
-const mockUser = ref({ id: 1, firstName: 'John', lastName: 'Doe', email: 'john@example.com', roles: [roleLogist] })
+const mockUser = ref({
+  id: 1,
+  firstName: 'John',
+  lastName: 'Doe',
+  email: 'john@example.com',
+  roles: [roleLogist]
+})
 const mockHotKeyActionSchemes = ref([
   { id: 1, name: 'Scheme 1' },
   { id: 2, name: 'Scheme 2' }
@@ -46,12 +53,13 @@ const ensureLoaded = vi.hoisted(() => vi.fn(() => Promise.resolve()))
 const ensureWarehousesLoaded = vi.hoisted(() => vi.fn(() => Promise.resolve()))
 const routerPush = vi.hoisted(() => vi.fn(() => Promise.resolve()))
 const successAlert = vi.hoisted(() => vi.fn())
+const errorAlert = vi.hoisted(() => vi.fn())
 const setErrorsMock = vi.hoisted(() => vi.fn())
 
 vi.mock('pinia', async () => {
   const actual = await vi.importActual('pinia')
-  return { 
-    ...actual, 
+  return {
+    ...actual,
     storeToRefs: (store) => {
       // Return hotkey schemes store refs if it has the hotKeyActionSchemes property
       if (store && 'hotKeyActionSchemes' in store) {
@@ -67,12 +75,13 @@ vi.mock('pinia', async () => {
 })
 
 vi.mock('@/stores/users.store.js', () => ({
-  useUsersStore: () => createMockStore({
-    user: mockUser,
-    getById,
-    add: addUser,
-    update: updateUser
-  })
+  useUsersStore: () =>
+    createMockStore({
+      user: mockUser,
+      getById,
+      add: addUser,
+      update: updateUser
+    })
 }))
 
 vi.mock('@/stores/auth.store.js', () => ({
@@ -84,25 +93,27 @@ vi.mock('@/stores/auth.store.js', () => ({
 }))
 
 vi.mock('@/stores/alert.store.js', () => ({
-  useAlertStore: () => ({ success: successAlert })
+  useAlertStore: () => ({ success: successAlert, error: errorAlert })
 }))
 
 vi.mock('@/stores/hotkey.action.schemes.store.js', () => ({
-  useHotKeyActionSchemesStore: () => createMockStore({
-    hotKeyActionSchemes: mockHotKeyActionSchemes,
-    loading: ref(false),
-    error: ref(null),
-    ensureLoaded
-  })
+  useHotKeyActionSchemesStore: () =>
+    createMockStore({
+      hotKeyActionSchemes: mockHotKeyActionSchemes,
+      loading: ref(false),
+      error: ref(null),
+      ensureLoaded
+    })
 }))
 
 vi.mock('@/stores/warehouses.store.js', () => ({
-  useWarehousesStore: () => createMockStore({
-    warehouses: mockWarehouses,
-    loading: ref(false),
-    error: ref(null),
-    ensureLoaded: ensureWarehousesLoaded
-  })
+  useWarehousesStore: () =>
+    createMockStore({
+      warehouses: mockWarehouses,
+      loading: ref(false),
+      error: ref(null),
+      ensureLoaded: ensureWarehousesLoaded
+    })
 }))
 
 vi.mock('@/router', () => ({
@@ -118,7 +129,13 @@ const Parent = {
 beforeEach(() => {
   vi.clearAllMocks()
   isAdmin = false
-  mockUser.value = { id: 1, firstName: 'John', lastName: 'Doe', email: 'john@example.com', roles: [roleLogist] }
+  mockUser.value = {
+    id: 1,
+    firstName: 'John',
+    lastName: 'Doe',
+    email: 'john@example.com',
+    roles: [roleLogist]
+  }
   mockHotKeyActionSchemes.value = [
     { id: 1, name: 'Scheme 1' },
     { id: 2, name: 'Scheme 2' }
@@ -133,12 +150,12 @@ describe('User_Settings.vue real component', () => {
   it('fetches user by id when editing', async () => {
     mount(Parent, {
       props: { register: false, id: 5 },
-      global: { 
-        stubs: { 
+      global: {
+        stubs: {
           ...defaultGlobalStubs,
-          Form: FormStub, 
-          Field: FieldStub 
-        } 
+          Form: FormStub,
+          Field: FieldStub
+        }
       }
     })
     await resolveAll()
@@ -146,15 +163,18 @@ describe('User_Settings.vue real component', () => {
   })
 
   it('calls auth register when registering as non-admin', async () => {
-    Object.defineProperty(window, 'location', { writable: true, value: { href: 'http://localhost/path' } })
+    Object.defineProperty(window, 'location', {
+      writable: true,
+      value: { href: 'http://localhost/path' }
+    })
     const wrapper = mount(Parent, {
       props: { register: true },
-      global: { 
-        stubs: { 
+      global: {
+        stubs: {
           ...defaultGlobalStubs,
-          Form: FormStub, 
-          Field: FieldStub 
-        } 
+          Form: FormStub,
+          Field: FieldStub
+        }
       }
     })
     await resolveAll()
@@ -173,12 +193,12 @@ describe('User_Settings.vue real component', () => {
     isAdmin = true
     const wrapper = mount(Parent, {
       props: { register: true },
-      global: { 
-        stubs: { 
+      global: {
+        stubs: {
           ...defaultGlobalStubs,
-          Form: FormStub, 
-          Field: FieldStub 
-        } 
+          Form: FormStub,
+          Field: FieldStub
+        }
       }
     })
     await resolveAll()
@@ -194,12 +214,12 @@ describe('User_Settings.vue real component', () => {
     isAdmin = true
     const wrapper = mount(Parent, {
       props: { register: false, id: 7 },
-      global: { 
-        stubs: { 
+      global: {
+        stubs: {
           ...defaultGlobalStubs,
-          Form: FormStub, 
-          Field: FieldStub 
-        } 
+          Form: FormStub,
+          Field: FieldStub
+        }
       }
     })
     await resolveAll()
@@ -215,12 +235,12 @@ describe('User_Settings.vue real component', () => {
     mockUser.value.roles = [roleLogist]
     const wrapper = mount(Parent, {
       props: { register: false, id: 1 },
-      global: { 
-        stubs: { 
+      global: {
+        stubs: {
           ...defaultGlobalStubs,
-          Form: FormStub, 
-          Field: FieldStub 
-        } 
+          Form: FormStub,
+          Field: FieldStub
+        }
       }
     })
     await resolveAll()
@@ -237,12 +257,12 @@ describe('User_Settings.vue real component', () => {
     mockUser.value.roles = [roleWhManager]
     const wrapper = mount(Parent, {
       props: { register: false, id: 1 },
-      global: { 
-        stubs: { 
+      global: {
+        stubs: {
           ...defaultGlobalStubs,
-          Form: FormStub, 
-          Field: FieldStub 
-        } 
+          Form: FormStub,
+          Field: FieldStub
+        }
       }
     })
     await resolveAll()
@@ -254,12 +274,12 @@ describe('User_Settings.vue real component', () => {
     isAdmin = true
     const wrapper = mount(Parent, {
       props: { register: false, id: 1 },
-      global: { 
-        stubs: { 
+      global: {
+        stubs: {
           ...defaultGlobalStubs,
-          Form: FormStub, 
-          Field: FieldStub 
-        } 
+          Form: FormStub,
+          Field: FieldStub
+        }
       }
     })
     await resolveAll()
@@ -269,81 +289,90 @@ describe('User_Settings.vue real component', () => {
   })
 
   // Error handling tests
-  it('sets errors when addUser rejects', async () => {
+  it('publishes an error when addUser rejects', async () => {
     isAdmin = true
     const errorMessage = 'Failed to add user'
     addUser.mockRejectedValueOnce(new Error(errorMessage))
-    
+
     const wrapper = mount(Parent, {
       props: { register: true },
-      global: { 
-        stubs: { 
+      global: {
+        stubs: {
           ...defaultGlobalStubs,
-          Form: FormStub, 
-          Field: FieldStub 
-        } 
+          Form: FormStub,
+          Field: FieldStub
+        }
       }
     })
     await resolveAll()
-    
+
     const child = wrapper.findComponent(UserSettings)
     await child.vm.$.setupState.onSubmit({ firstName: 'Test' }, { setErrors: setErrorsMock })
     await resolveAll()
-    
+
     expect(addUser).toHaveBeenCalled()
-    expect(setErrorsMock).toHaveBeenCalledWith({ apiError: errorMessage })
+    expect(errorAlert).toHaveBeenCalledWith(errorMessage, {
+      fallback: 'Не удалось создать пользователя'
+    })
     expect(routerPush).not.toHaveBeenCalled()
   })
 
-  it('sets errors when updateUser rejects', async () => {
+  it('publishes an error when updateUser rejects', async () => {
     const errorMessage = 'Failed to update user'
     updateUser.mockRejectedValueOnce(new Error(errorMessage))
-    
+
     const wrapper = mount(Parent, {
       props: { register: false, id: 5 },
-      global: { 
-        stubs: { 
+      global: {
+        stubs: {
           ...defaultGlobalStubs,
-          Form: FormStub, 
-          Field: FieldStub 
-        } 
+          Form: FormStub,
+          Field: FieldStub
+        }
       }
     })
     await resolveAll()
-    
+
     const child = wrapper.findComponent(UserSettings)
     await child.vm.$.setupState.onSubmit({ firstName: 'Test' }, { setErrors: setErrorsMock })
     await resolveAll()
-    
+
     expect(updateUser).toHaveBeenCalled()
-    expect(setErrorsMock).toHaveBeenCalledWith({ apiError: errorMessage })
+    expect(errorAlert).toHaveBeenCalledWith(errorMessage, {
+      fallback: 'Не удалось сохранить пользователя'
+    })
     expect(routerPush).not.toHaveBeenCalled()
   })
 
-  it('sets errors when registerUser rejects', async () => {
+  it('publishes an error when registerUser rejects', async () => {
     isAdmin = false
     const errorMessage = 'Failed to register user'
     registerUser.mockRejectedValueOnce(new Error(errorMessage))
-    
-    Object.defineProperty(window, 'location', { writable: true, value: { href: 'http://localhost/path' } })
+
+    Object.defineProperty(window, 'location', {
+      writable: true,
+      value: { href: 'http://localhost/path' }
+    })
     const wrapper = mount(Parent, {
       props: { register: true },
-      global: { 
-        stubs: { 
+      global: {
+        stubs: {
           ...defaultGlobalStubs,
-          Form: FormStub, 
-          Field: FieldStub 
-        } 
+          Form: FormStub,
+          Field: FieldStub
+        }
       }
     })
     await resolveAll()
-    
+
     const child = wrapper.findComponent(UserSettings)
     await child.vm.$.setupState.onSubmit({ firstName: 'Test' }, { setErrors: setErrorsMock })
     await resolveAll()
-    
+
     expect(registerUser).toHaveBeenCalled()
-    expect(setErrorsMock).toHaveBeenCalledWith({ apiError: errorMessage })
+    expect(errorAlert).toHaveBeenCalledWith(errorMessage, {
+      fallback: 'Не удалось зарегистрировать пользователя'
+    })
     expect(routerPush).not.toHaveBeenCalled()
     expect(successAlert).not.toHaveBeenCalled()
   })
@@ -352,12 +381,12 @@ describe('User_Settings.vue real component', () => {
   it('calls ensureLoaded on hotkey action schemes store', async () => {
     mount(Parent, {
       props: { register: true },
-      global: { 
-        stubs: { 
+      global: {
+        stubs: {
           ...defaultGlobalStubs,
-          Form: FormStub, 
-          Field: FieldStub 
-        } 
+          Form: FormStub,
+          Field: FieldStub
+        }
       }
     })
     await resolveAll()
@@ -377,12 +406,12 @@ describe('User_Settings.vue real component', () => {
     }
     const wrapper = mount(Parent, {
       props: { register: false, id: 1 },
-      global: { 
-        stubs: { 
+      global: {
+        stubs: {
           ...defaultGlobalStubs,
-          Form: FormStub, 
-          Field: FieldStub 
-        } 
+          Form: FormStub,
+          Field: FieldStub
+        }
       }
     })
     await resolveAll()
@@ -431,12 +460,12 @@ describe('User_Settings.vue real component', () => {
     }
     const wrapper = mount(Parent, {
       props: { register: false, id: 5 },
-      global: { 
-        stubs: { 
+      global: {
+        stubs: {
           ...defaultGlobalStubs,
-          Form: FormStub, 
-          Field: FieldStub 
-        } 
+          Form: FormStub,
+          Field: FieldStub
+        }
       }
     })
     await resolveAll()
@@ -454,12 +483,12 @@ describe('User_Settings.vue real component', () => {
     isAdmin = true
     const wrapper = mount(Parent, {
       props: { register: true },
-      global: { 
-        stubs: { 
+      global: {
+        stubs: {
           ...defaultGlobalStubs,
-          Form: FormStub, 
-          Field: FieldStub 
-        } 
+          Form: FormStub,
+          Field: FieldStub
+        }
       }
     })
     await resolveAll()
@@ -477,15 +506,15 @@ describe('User_Settings.vue real component', () => {
   it('renders schemeId selector with default option', async () => {
     const wrapper = mount(Parent, {
       props: { register: true },
-      global: { 
-        stubs: { 
+      global: {
+        stubs: {
           ...defaultGlobalStubs,
           Form: FormStub
-        } 
+        }
       }
     })
     await resolveAll()
-    
+
     const select = wrapper.find('#schemeId')
     expect(select.exists()).toBe(true)
     const options = select.findAll('option')
@@ -497,15 +526,15 @@ describe('User_Settings.vue real component', () => {
   it('renders schemeId selector with all schemes from store', async () => {
     const wrapper = mount(Parent, {
       props: { register: true },
-      global: { 
-        stubs: { 
+      global: {
+        stubs: {
           ...defaultGlobalStubs,
           Form: FormStub
-        } 
+        }
       }
     })
     await resolveAll()
-    
+
     const select = wrapper.find('#schemeId')
     const options = select.findAll('option')
     expect(options[1].text()).toBe('Scheme 1')
@@ -518,19 +547,19 @@ describe('User_Settings.vue real component', () => {
     isAdmin = true
     const wrapper = mount(Parent, {
       props: { register: true },
-      global: { 
-        stubs: { 
+      global: {
+        stubs: {
           ...defaultGlobalStubs,
-          Form: FormStub, 
-          Field: FieldStub 
-        } 
+          Form: FormStub,
+          Field: FieldStub
+        }
       }
     })
     await resolveAll()
     const child = wrapper.findComponent(UserSettings)
     await child.vm.$.setupState.onSubmit({ firstName: 'Test', schemeId: 1 }, { setErrors: vi.fn() })
     await resolveAll()
-    
+
     expect(addUser).toHaveBeenCalledWith(expect.objectContaining({ schemeId: 1 }), true)
   })
 
@@ -538,12 +567,12 @@ describe('User_Settings.vue real component', () => {
     isAdmin = true
     const wrapper = mount(Parent, {
       props: { register: true },
-      global: { 
-        stubs: { 
+      global: {
+        stubs: {
           ...defaultGlobalStubs,
-          Form: FormStub, 
-          Field: FieldStub 
-        } 
+          Form: FormStub,
+          Field: FieldStub
+        }
       }
     })
     await resolveAll()
@@ -551,7 +580,7 @@ describe('User_Settings.vue real component', () => {
     // Submit without explicitly providing schemeId - it should still be included as 0
     await child.vm.$.setupState.onSubmit({ firstName: 'Test' }, { setErrors: vi.fn() })
     await resolveAll()
-    
+
     // The initial values should include schemeId: 0, so it should be submitted
     expect(addUser).toHaveBeenCalledWith(expect.objectContaining({ firstName: 'Test' }), true)
   })
@@ -560,19 +589,19 @@ describe('User_Settings.vue real component', () => {
     isAdmin = true
     const wrapper = mount(Parent, {
       props: { register: false, id: 5 },
-      global: { 
-        stubs: { 
+      global: {
+        stubs: {
           ...defaultGlobalStubs,
-          Form: FormStub, 
-          Field: FieldStub 
-        } 
+          Form: FormStub,
+          Field: FieldStub
+        }
       }
     })
     await resolveAll()
     const child = wrapper.findComponent(UserSettings)
     await child.vm.$.setupState.onSubmit({ firstName: 'Test', schemeId: 2 }, { setErrors: vi.fn() })
     await resolveAll()
-    
+
     expect(updateUser).toHaveBeenCalledWith(5, expect.objectContaining({ schemeId: 2 }), true)
   })
 
@@ -580,19 +609,19 @@ describe('User_Settings.vue real component', () => {
     isAdmin = true
     const wrapper = mount(Parent, {
       props: { register: true },
-      global: { 
-        stubs: { 
+      global: {
+        stubs: {
           ...defaultGlobalStubs,
-          Form: FormStub, 
-          Field: FieldStub 
-        } 
+          Form: FormStub,
+          Field: FieldStub
+        }
       }
     })
     await resolveAll()
     const child = wrapper.findComponent(UserSettings)
     await child.vm.$.setupState.onSubmit({ firstName: 'Test', schemeId: 0 }, { setErrors: vi.fn() })
     await resolveAll()
-    
+
     expect(addUser).toHaveBeenCalledWith(expect.objectContaining({ schemeId: 0 }), true)
   })
 
@@ -600,15 +629,15 @@ describe('User_Settings.vue real component', () => {
     mockHotKeyActionSchemes.value = []
     const wrapper = mount(Parent, {
       props: { register: true },
-      global: { 
-        stubs: { 
+      global: {
+        stubs: {
           ...defaultGlobalStubs,
           Form: FormStub
-        } 
+        }
       }
     })
     await resolveAll()
-    
+
     const select = wrapper.find('#schemeId')
     expect(select.exists()).toBe(true)
     const options = select.findAll('option')
@@ -617,47 +646,50 @@ describe('User_Settings.vue real component', () => {
   })
 
   it('displays user schemeId value when editing', async () => {
-    mockUser.value = { 
-      id: 1, 
-      firstName: 'John', 
-      lastName: 'Doe', 
-      email: 'john@example.com', 
+    mockUser.value = {
+      id: 1,
+      firstName: 'John',
+      lastName: 'Doe',
+      email: 'john@example.com',
       roles: [roleLogist],
       schemeId: 1
     }
     const wrapper = mount(Parent, {
       props: { register: false, id: 1 },
-      global: { 
-        stubs: { 
+      global: {
+        stubs: {
           ...defaultGlobalStubs,
           Form: FormStub
-        } 
+        }
       }
     })
     await resolveAll()
-    
+
     const select = wrapper.find('#schemeId')
     expect(select.exists()).toBe(true)
   })
 
   it('submits schemeId when registering as non-admin', async () => {
     isAdmin = false
-    Object.defineProperty(window, 'location', { writable: true, value: { href: 'http://localhost/path' } })
+    Object.defineProperty(window, 'location', {
+      writable: true,
+      value: { href: 'http://localhost/path' }
+    })
     const wrapper = mount(Parent, {
       props: { register: true },
-      global: { 
-        stubs: { 
+      global: {
+        stubs: {
           ...defaultGlobalStubs,
-          Form: FormStub, 
-          Field: FieldStub 
-        } 
+          Form: FormStub,
+          Field: FieldStub
+        }
       }
     })
     await resolveAll()
     const child = wrapper.findComponent(UserSettings)
     await child.vm.$.setupState.onSubmit({ firstName: 'Test', schemeId: 2 }, { setErrors: vi.fn() })
     await resolveAll()
-    
+
     expect(registerUser).toHaveBeenCalledWith(expect.objectContaining({ schemeId: 2 }))
   })
 
@@ -666,42 +698,43 @@ describe('User_Settings.vue real component', () => {
     mockUser.value.roles = [roleLogist]
     const wrapper = mount(Parent, {
       props: { register: false, id: 1 },
-      global: { 
-        stubs: { 
+      global: {
+        stubs: {
           ...defaultGlobalStubs,
-          Form: FormStub, 
-          Field: FieldStub 
-        } 
+          Form: FormStub,
+          Field: FieldStub
+        }
       }
     })
     await resolveAll()
     const child = wrapper.findComponent(UserSettings)
     await child.vm.$.setupState.onSubmit({ firstName: 'Test', schemeId: 1 }, { setErrors: vi.fn() })
     await resolveAll()
-    
+
     expect(updateUser).toHaveBeenCalledWith(1, expect.objectContaining({ schemeId: 1 }), true)
   })
 
   it('defaults schemeId to 0 when user data has null schemeId', async () => {
-    mockUser.value = { 
-      id: 1, 
-      firstName: 'John', 
-      lastName: 'Doe', 
-      email: 'john@example.com', 
+    mockUser.value = {
+      id: 1,
+      firstName: 'John',
+      lastName: 'Doe',
+      email: 'john@example.com',
       roles: [roleLogist],
       schemeId: null
     }
     const wrapper = mount(Parent, {
       props: { register: false, id: 1 },
-      global: { 
-        stubs: { 
+      global: {
+        stubs: {
           ...defaultGlobalStubs,
           Form: FormStub
-        } 
+        }
       }
     })
     await resolveAll()
-    
+
     const child = wrapper.findComponent(UserSettings)
     expect(child.vm.$.setupState.user.schemeId).toBe(0)
-  })})
+  })
+})

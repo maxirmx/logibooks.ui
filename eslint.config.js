@@ -1,38 +1,38 @@
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 // eslint.config.js
-import js from '@eslint/js';
-import pluginVue from 'eslint-plugin-vue';
-import vueParser from 'vue-eslint-parser';
+import js from '@eslint/js'
+import pluginVue from 'eslint-plugin-vue'
+import vueParser from 'vue-eslint-parser'
 
 export default [
   // Global ignore patterns
   {
     ignores: [
       'doc/**',
-        'logs',
-        '*.log',
-        'npm-debug.log*',
-        'yarn-debug.log*',
-        'yarn-error.log*',
-        'pnpm-debug.log*',
-        'lerna-debug.log*',
-        'node_modules/**',
-        '.DS_Store',
-        '__MACOSX',
-        'dist/**',        
-        'dist-ssr/**',    
-        'coverage/**',    
-        '*.local',
-        '.idea',
-        '*.suo',
-        '*.ntvs*',
-        '*.njsproj',
-        '*.sln',
-        '*.sw?',
-        '.env'
+      'logs',
+      '*.log',
+      'npm-debug.log*',
+      'yarn-debug.log*',
+      'yarn-error.log*',
+      'pnpm-debug.log*',
+      'lerna-debug.log*',
+      'node_modules/**',
+      '.DS_Store',
+      '__MACOSX',
+      'dist/**',
+      'dist-ssr/**',
+      'coverage/**',
+      '*.local',
+      '.idea',
+      '*.suo',
+      '*.ntvs*',
+      '*.njsproj',
+      '*.sln',
+      '*.sw?',
+      '.env'
     ]
   },
   // Global configuration for all files
@@ -64,9 +64,9 @@ export default [
         setInterval: 'readonly',
         clearInterval: 'readonly',
         setTimeout: 'readonly',
-        clearTimeout: 'readonly',
+        clearTimeout: 'readonly'
       }
-    },
+    }
   },
   // Base JavaScript configuration
   js.configs.recommended,
@@ -74,7 +74,8 @@ export default [
     rules: {
       // Keep the ESLint 9 policy when using ESLint 10's recommended rules.
       'preserve-caught-error': 'off',
-    },
+      'no-empty': ['error', { allowEmptyCatch: false }]
+    }
   },
   // Vue configuration - use flat config format
   ...pluginVue.configs['flat/essential'],
@@ -93,11 +94,11 @@ export default [
           ts: null,
           '<template>': null
         }
-      },
+      }
     },
     rules: {
-      'vue/comment-directive': 'off', 
-    },
+      'vue/comment-directive': 'off'
+    }
   },
   // Overrides for test files
   {
@@ -120,9 +121,9 @@ export default [
         beforeEach: 'readonly',
         afterEach: 'readonly',
         vi: 'readonly',
-        MessageEvent: 'readonly',
+        MessageEvent: 'readonly'
       }
-    },
+    }
   },
   // Overrides for Node.js files
   {
@@ -133,8 +134,8 @@ export default [
         require: 'readonly',
         process: 'readonly',
         __dirname: 'readonly',
-        __filename: 'readonly',
+        __filename: 'readonly'
       }
-    },
-  },
-];
+    }
+  }
+]

@@ -1,6 +1,6 @@
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
-// This file is a part of Logibooks ui application 
+// This file is a part of Logibooks ui application
 
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
@@ -24,6 +24,7 @@ export const useFeacnOrdersStore = defineStore('feacn.orders', () => {
       isInitialized.value = true
     } catch (err) {
       error.value = err
+      throw err
     } finally {
       loading.value = false
     }
@@ -46,6 +47,7 @@ export const useFeacnOrdersStore = defineStore('feacn.orders', () => {
       prefixes.value = await fetchWrapper.get(`${baseUrl}/orders/${orderId}/prefixes`)
     } catch (err) {
       error.value = err
+      throw err
     } finally {
       loading.value = false
     }
@@ -60,6 +62,7 @@ export const useFeacnOrdersStore = defineStore('feacn.orders', () => {
       await getOrders()
     } catch (err) {
       error.value = err
+      throw err
     } finally {
       loading.value = false
     }
@@ -69,10 +72,13 @@ export const useFeacnOrdersStore = defineStore('feacn.orders', () => {
     loading.value = true
     error.value = null
     try {
-      await fetchWrapper.post(`${baseUrl}/orders/${orderId}/${enabled ? 'enable' : 'disable'}-for-${flag}`)
+      await fetchWrapper.post(
+        `${baseUrl}/orders/${orderId}/${enabled ? 'enable' : 'disable'}-for-${flag}`
+      )
       await getOrders()
     } catch (err) {
       error.value = err
+      throw err
     } finally {
       loading.value = false
     }
@@ -101,14 +107,14 @@ export const useFeacnOrdersStore = defineStore('feacn.orders', () => {
   async function toggleEnabledForImport(id, enabled) {
     await setOrderFlag(id, 'import', enabled)
   }
- 
-  return { 
-    orders, 
-    prefixes, 
-    loading, 
-    error, 
-    isInitialized, 
-    getOrders, 
+
+  return {
+    orders,
+    prefixes,
+    loading,
+    error,
+    isInitialized,
+    getOrders,
     getPrefixes,
     update,
     enableForExport,

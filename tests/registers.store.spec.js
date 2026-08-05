@@ -548,7 +548,7 @@ describe('registers store', () => {
         expect(calledUrl).not.toContain('customsProcedureCode=')
       })
 
-      it('includes search parameter when provided', async () => {
+      it('forwards a numeric register ID through the existing search parameter', async () => {
         fetchWrapper.get.mockResolvedValue({
           items: [],
           pagination: { totalCount: 0, hasNextPage: false, hasPreviousPage: false }
@@ -559,7 +559,7 @@ describe('registers store', () => {
           registers_page: 1,
           registers_per_page: 10,
           registers_sort_by: [{ key: 'id', order: 'asc' }],
-          registers_search: 'test search',
+          registers_search: '123',
           registers_procedure: 'all'
         })
 
@@ -567,7 +567,7 @@ describe('registers store', () => {
         await store.getAll()
 
         expect(fetchWrapper.get).toHaveBeenCalledWith(
-          `${apiUrl}/registers?page=1&pageSize=10&sortBy=id&sortOrder=asc&whOnly=false&search=test+search`
+          `${apiUrl}/registers?page=1&pageSize=10&sortBy=id&sortOrder=asc&whOnly=false&search=123`
         )
       })
 

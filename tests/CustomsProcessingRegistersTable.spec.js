@@ -179,7 +179,7 @@ describe('CustomsProcessingRegistersTable', () => {
     })
 
     expect(wrapper.find('[data-testid="header-keys"]').text()).toBe(
-      'actions,dealNumber,invoice,countries,senderRecipient,parcelsTotal,weight,price,customsCharges,date'
+      'actions,id,dealNumber,invoice,countries,senderRecipient,parcelsTotal,weight,price,customsCharges,date'
     )
     expect(
       wrapper

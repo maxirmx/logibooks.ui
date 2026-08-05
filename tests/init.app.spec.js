@@ -73,11 +73,12 @@ vi.mock('@/stores/alert.store.js', () => ({
 }))
 
 describe('init.app', () => {
-  it('registers the passport Font Awesome icon with the app icon set', async () => {
+  it('registers all explicitly used account icons with the app icon set', async () => {
     await import('@/init.app.js')
 
     expect(libraryAdd).toHaveBeenCalledTimes(1)
-    expect(libraryAdd.mock.calls[0].some((icon) => icon?.iconName === 'passport')).toBe(true)
+    const registeredIconNames = libraryAdd.mock.calls[0].map((icon) => icon?.iconName)
+    expect(registeredIconNames).toEqual(expect.arrayContaining(['passport', 'user', 'robot']))
   })
 
   it('installs generic reporters for Vue and unhandled promise errors', async () => {

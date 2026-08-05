@@ -46,6 +46,23 @@ const router = createRouter({
       component: () => import('@/views/User_RegisterView.vue')
     },
     {
+      path: '/automated-system/register',
+      name: 'Регистрация автоматизированной системы',
+      component: () => import('@/views/AutomatedSystem_SettingsView.vue'),
+      props: { register: true },
+      meta: { reqAdmin: true }
+    },
+    {
+      path: '/automated-system/edit/:id',
+      name: 'Настройки автоматизированной системы',
+      component: () => import('@/views/AutomatedSystem_SettingsView.vue'),
+      props: (route) => ({
+        register: false,
+        id: Number(route.params.id)
+      }),
+      meta: { reqAdmin: true }
+    },
+    {
       path: '/users',
       name: 'Пользователи',
       component: () => import('@/views/Users_View.vue'),
@@ -639,6 +656,10 @@ router.beforeEach(async (to) => {
     }
 
     // Check role-specific permissions
+    if (to.meta.reqAdmin && !auth.isAdmin) {
+      return routeToLogin(to, auth)
+    }
+
     if (to.meta.reqAdminOrSrLogist && !auth.isSrLogistPlus) {
       return routeToLogin(to, auth)
     }

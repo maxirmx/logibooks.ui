@@ -7,8 +7,15 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import UsersList from '@/lists/Users_List.vue'
+import ActionButton2L from '@/components/ActionButton2L.vue'
 import { vuetifyStubs } from './helpers/test-utils'
-import { roleAdmin, roleLogist, roleWhManager, roleWhOperator } from '@/helpers/user.roles.js'
+import {
+  roleAdapter1C,
+  roleAdmin,
+  roleLogist,
+  roleWhManager,
+  roleWhOperator
+} from '@/helpers/user.roles.js'
 
 // Centralized mock data
 const mockUsers = ref([
@@ -211,7 +218,10 @@ describe('Users_List.vue', () => {
       global: {
         stubs: {
           ...vuetifyStubs,
-          'font-awesome-icon': true,
+          'font-awesome-icon': {
+            props: ['icon'],
+            template: '<i class="fa-icon-stub" :data-icon="icon"></i>'
+          },
           ActionButton: {
             template: '<button><slot></slot></button>',
             props: ['item', 'icon', 'tooltipText', 'disabled', 'iconSize']
@@ -236,6 +246,35 @@ describe('Users_List.vue', () => {
       expect(wrapper.text()).toContain('Пользователи')
       // Check that the data table is shown
       expect(wrapper.find('[data-testid="v-data-table"]').exists()).toBe(true)
+    })
+
+    it('prefixes human and automated-system names with their account icons', () => {
+      mockUsers.value = [
+        {
+          id: 1,
+          firstName: 'John',
+          lastName: 'Doe',
+          patronymic: '',
+          email: 'john@example.com',
+          roles: [roleLogist]
+        },
+        {
+          id: 2,
+          firstName: '',
+          lastName: 'Production 1C',
+          patronymic: '',
+          email: 'adapter-1c/prod',
+          roles: [roleAdapter1C]
+        }
+      ]
+      createWrapper()
+
+      const accountIcons = wrapper.findAll('.account-type-icon')
+      expect(accountIcons).toHaveLength(2)
+      expect(accountIcons[0].attributes('data-icon')).toBe('fa-solid fa-user')
+      expect(accountIcons[0].attributes('aria-label')).toBe('Пользователь')
+      expect(accountIcons[1].attributes('data-icon')).toBe('fa-solid fa-robot')
+      expect(accountIcons[1].attributes('aria-label')).toBe('Автоматизированная система')
     })
 
     it('shows empty message when users array is empty', () => {
@@ -290,7 +329,34 @@ describe('Users_List.vue', () => {
     it('navigates to user edit page when userSettings is called', () => {
       const userItem = { id: 123 }
       wrapper.vm.userSettings(userItem)
-      expect(router.push).toHaveBeenCalledWith('user/edit/123')
+      expect(router.push).toHaveBeenCalledWith('/user/edit/123')
+    })
+
+    it('navigates automated systems to their dedicated editor', () => {
+      wrapper.vm.userSettings({ id: 321, roles: [roleAdapter1C] })
+      expect(router.push).toHaveBeenCalledWith('/automated-system/edit/321')
+    })
+
+    it('exposes both create actions through ActionButton2L', async () => {
+      const actionMenu = wrapper.findComponent(ActionButton2L)
+      expect(actionMenu.exists()).toBe(true)
+      expect(actionMenu.props('disabled')).toBe(false)
+      expect(actionMenu.props('options').map((option) => option.label)).toEqual([
+        'Зарегистрировать пользователя',
+        'Зарегистрировать автоматизированную систему'
+      ])
+
+      await actionMenu.props('options')[0].action()
+      expect(router.push).toHaveBeenCalledWith('/register')
+      await actionMenu.props('options')[1].action()
+      expect(router.push).toHaveBeenCalledWith('/automated-system/register')
+    })
+
+    it('disables the create action menu while users are loading', async () => {
+      mockLoading.value = true
+      await wrapper.vm.$nextTick()
+      expect(wrapper.findComponent(ActionButton2L).props('disabled')).toBe(true)
+      mockLoading.value = false
     })
 
     it('returns correct credentials for administrator role', () => {
@@ -309,6 +375,17 @@ describe('Users_List.vue', () => {
       const userItem = { roles: [roleWhManager] }
       const result = wrapper.vm.getCredentials(userItem)
       expect(result).toBe('Менеджер склада')
+    })
+
+    it('returns the automated-system name without human name parts', () => {
+      const automatedSystem = {
+        lastName: 'Production 1C',
+        firstName: '',
+        patronymic: '',
+        roles: [roleAdapter1C]
+      }
+      expect(wrapper.vm.getDisplayName(automatedSystem)).toBe('Production 1C')
+      expect(wrapper.vm.getCredentials(automatedSystem)).toBe('Адаптер 1С')
     })
 
     it('returns correct credentials for multiple roles', () => {
@@ -493,10 +570,49 @@ describe('Users_List.vue', () => {
         confirmationButtonProps: {
           color: 'orange-darken-3'
         },
-        content: 'Удалить пользователя "John Doe" ?'
+        content: 'Удалить пользователя "Doe John" ?'
       })
       expect(mockUsersStore.delete).toHaveBeenCalledWith(1)
       expect(mockUsersStore.getAll).toHaveBeenCalled()
+    })
+
+    it('uses the automated-system name in deletion confirmation', async () => {
+      confirmMock.mockResolvedValue(true)
+      const system = {
+        id: 9,
+        firstName: '',
+        lastName: 'Production 1C',
+        patronymic: '',
+        roles: [roleAdapter1C]
+      }
+
+      await wrapper.vm.deleteUser(system)
+
+      expect(confirmMock).toHaveBeenCalledWith(expect.objectContaining({
+        content: 'Удалить автоматизированную систему "Production 1C" ?'
+      }))
+    })
+
+    it('keeps the create menu disabled until another action finishes', async () => {
+      confirmMock.mockResolvedValue(true)
+      let finishDelete
+      mockUsersStore.delete.mockImplementationOnce(() => new Promise((resolve) => {
+        finishDelete = resolve
+      }))
+
+      const deletion = wrapper.vm.deleteUser({
+        id: 10,
+        firstName: 'John',
+        lastName: 'Doe',
+        patronymic: '',
+        roles: [roleLogist]
+      })
+      await flushPromises()
+      expect(wrapper.findComponent(ActionButton2L).props('disabled')).toBe(true)
+
+      finishDelete()
+      await deletion
+      expect(wrapper.findComponent(ActionButton2L).props('disabled')).toBe(false)
     })
 
     it('does not delete user when confirmation is declined', async () => {
@@ -571,7 +687,7 @@ describe('Users_List.vue', () => {
     it('tests data table item actions for edit user', () => {
       const testUser = { id: 123 }
       wrapper.vm.userSettings(testUser)
-      expect(router.push).toHaveBeenCalledWith('user/edit/123')
+      expect(router.push).toHaveBeenCalledWith('/user/edit/123')
     })
 
     it('tests data table item actions for delete user', async () => {

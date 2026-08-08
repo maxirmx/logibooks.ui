@@ -367,6 +367,21 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
+  async function updateWeightsFromFile(registerId, file) {
+    loading.value = true
+    error.value = null
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      return await fetchWrapper.postFile(`${baseUrl}/${registerId}/weights/upload`, formData)
+    } catch (err) {
+      error.value = err
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function getById(id) {
     const passportCheckStateWatermark = livePassportCheckStateArrival
     item.value = { loading: true }
@@ -1003,6 +1018,7 @@ export const useRegistersStore = defineStore('registers', () => {
     getAll,
     getRegisters,
     upload,
+    updateWeightsFromFile,
     getById,
     update,
     getReturnRegisterPairs,

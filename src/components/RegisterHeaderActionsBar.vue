@@ -21,6 +21,7 @@ const props = defineProps({
   loading: { type: Boolean, default: false },
   noHistoricData: { type: Boolean, default: false },
   showPassportCheck: { type: Boolean, default: false },
+  showWeightUpdate: { type: Boolean, default: false },
 })
 
 const emit = defineEmits([
@@ -38,6 +39,7 @@ const emit = defineEmits([
   'download-additional-restrictions',
   'download-techdoc',
   'bulk-change-parcel-status',
+  'update-weights-from-file',
   'calculate-customs-charges',
   'freeze-check-status',
   'freeze-tnved-order',
@@ -53,6 +55,7 @@ const mutationEvents = new Set([
   'check-passports',
   'finish-passport-check',
   'bulk-change-parcel-status',
+  'update-weights-from-file',
   'calculate-customs-charges',
   'freeze-check-status',
   'freeze-tnved-order'
@@ -134,7 +137,11 @@ const documentOptions = computed(() => {
 })
 
 function run(evt) {
-  if (props.disabled || (props.mutationDisabled && mutationEvents.has(evt))) return
+  if (
+    props.disabled ||
+    props.loading ||
+    (props.mutationDisabled && mutationEvents.has(evt))
+  ) return
   emit(evt)
 }
 
@@ -290,6 +297,16 @@ function openCmrSettings() {
       />
     </div>
     <div class="header-actions header-actions-group">
+      <ActionButton
+        v-if="isSrLogistPlus && showWeightUpdate"
+        :item="item"
+        icon="fa-solid fa-file-arrow-up"
+        tooltip-text="Обновить веса из файла реестра"
+        :iconSize="iconSize"
+        :disabled="disabled || mutationDisabled || loading"
+        data-testid="register-weight-update-action"
+        @click="run('update-weights-from-file')"
+      />
       <ActionButton
         v-if="isSrLogistPlus && canCalculateCustomsCharges"
         :item="item"

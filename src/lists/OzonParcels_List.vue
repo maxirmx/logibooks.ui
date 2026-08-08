@@ -29,6 +29,7 @@ import {
   createCheckStatusFilterOptions
 } from '@/helpers/check.status.code.js'
 import { formatPrice } from '@/helpers/number.formatters.js'
+import { getErrorMessage } from '@/helpers/error.helpers.js'
 import { ensureHttps } from '@/helpers/url.helpers.js'
 import {
   isImportCustomsProcedure,
@@ -57,6 +58,8 @@ import FeacnCodeSelector from '@/components/FeacnCodeSelector.vue'
 import FeacnCodeCurrent from '@/components/FeacnCodeCurrent.vue'
 import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
 import RegisterActionsDialogs from '@/l2/RegisterActionsDialogs.vue'
+import ActionDialog from '@/l2/ActionDialog.vue'
+import ErrorDialog from '@/l2/ErrorDialog.vue'
 import AssignTnvedDialog from '@/l2/AssignTnvedDialog.vue'
 import ParcelStatusBulkChangeDialog from '@/l2/ParcelStatusBulkChangeDialog.vue'
 import PaginationFooter from '@/components/PaginationFooter.vue'
@@ -64,6 +67,7 @@ import ParcelFilterSelectors from '@/components/ParcelFilterSelectors.vue'
 import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync.js'
 import { useParcelSelectionRestore } from '@/composables/useParcelSelectionRestore.js'
 import { useParcelMultiSelect } from '@/composables/useParcelMultiSelect.js'
+import { useActionDialog } from '@/composables/useActionDialog.js'
 
 const props = defineProps({
   registerId: { type: Number, required: true }
@@ -139,6 +143,19 @@ const {
 
 const showAssignTnvedDialog = ref(false)
 const showParcelStatusBulkDialog = ref(false)
+const weightUpdateFileInput = ref(null)
+const weightUpdateErrorDialog = ref({
+  show: false,
+  title: '',
+  message: '',
+  missingHeaders: [],
+  missingColumns: []
+})
+const {
+  actionDialogState: weightUpdateActionDialogState,
+  showActionDialog: showWeightUpdateActionDialog,
+  hideActionDialog: hideWeightUpdateActionDialog
+} = useActionDialog()
 
 async function handleAssignTnvedConfirm(ids, tnVed) {
   if (registersStore.item?.readOnly === true || runningAction.value) return
@@ -166,6 +183,84 @@ async function handleAssignTnvedConfirm(ids, tnVed) {
 
 async function handleParcelStatusBulkUpdated() {
   await loadParcelsWrapper()
+}
+
+function openWeightUpdateFileDialog() {
+  if (
+    !authStore.isSrLogistPlus ||
+    registersStore.item?.readOnly === true ||
+    runningAction.value ||
+    loading.value ||
+    isInitializing.value
+  ) {
+    return
+  }
+
+  const input = weightUpdateFileInput.value
+  if (input && typeof input.click === 'function') {
+    input.value = ''
+    input.click()
+  }
+}
+
+function hideWeightUpdateError() {
+  weightUpdateErrorDialog.value.show = false
+}
+
+function showWeightUpdateError(error) {
+  const payload = error?.data ?? error
+  weightUpdateErrorDialog.value = {
+    show: true,
+    title: 'Ошибка обновления посылок',
+    message:
+      payload?.errMsg ||
+      getErrorMessage(error, 'Не удалось обновить вес посылок из файла реестра'),
+    missingHeaders: payload?.missingHeaders || [],
+    missingColumns: payload?.missingColumns || []
+  }
+}
+
+async function onWeightUpdateFileSelected(event) {
+  const input = event?.target
+  const file = input?.files?.[0]
+  if (
+    !file ||
+    !authStore.isSrLogistPlus ||
+    registersStore.item?.readOnly === true ||
+    runningAction.value ||
+    loading.value ||
+    isInitializing.value
+  ) {
+    if (input) input.value = ''
+    return
+  }
+
+  runningAction.value = true
+  showWeightUpdateActionDialog('update-register-weights')
+  try {
+    const result = await registersStore.updateWeightsFromFile(props.registerId, file)
+    if (!isComponentMounted.value) return
+
+    if (result?.success === false) {
+      showWeightUpdateError(result)
+      return
+    }
+
+    try {
+      await fetchRegister()
+    } catch (error) {
+      alertStore.error(error, { fallback: 'Веса обновлены, но не удалось обновить реестр' })
+      return
+    }
+
+    await loadParcelsWrapper()
+  } catch (error) {
+    if (isComponentMounted.value) showWeightUpdateError(error)
+  } finally {
+    if (input) input.value = ''
+    hideWeightUpdateActionDialog()
+    runningAction.value = false
+  }
 }
 
 const maxPage = computed(() =>
@@ -593,6 +688,7 @@ function getGenericTemplateHeaders() {
         :mutation-disabled="registersStore.item?.readOnly === true"
         :loading="runningAction || loading || isInitializing"
         :show-passport-check="showPassportVerification"
+        :show-weight-update="true"
         @validate-sw="validateRegisterSwHeader"
         @validate-sw-ex="validateRegisterSwHeaderEx"
         @validate-fc="validateRegisterFcHeader"
@@ -608,11 +704,21 @@ function getGenericTemplateHeaders() {
         @check-passports="checkPassportsHeader"
         @finish-passport-check="finishPassportCheckHeader"
         @bulk-change-parcel-status="showParcelStatusBulkDialog = true"
+        @update-weights-from-file="openWeightUpdateFileDialog"
         @freeze-check-status="freezeCheckStatusAndRefetch"
         @freeze-tnved-order="freezeTnVedOrderAndRefetch"
         @close="closeList"
       />
     </div>
+    <input
+      v-if="authStore.isSrLogistPlus"
+      ref="weightUpdateFileInput"
+      type="file"
+      accept=".xls,.xlsx,.zip,.rar"
+      data-testid="ozon-weight-update-file-input"
+      style="display: none"
+      @change="onWeightUpdateFileSelected"
+    />
     <hr class="hr" />
 
     <PageAlertRegion />
@@ -927,6 +1033,15 @@ function getGenericTemplateHeaders() {
       "
       @update:show="showParcelStatusBulkDialog = $event"
       @updated="handleParcelStatusBulkUpdated"
+    />
+    <ActionDialog :action-dialog="weightUpdateActionDialogState" />
+    <ErrorDialog
+      :show="weightUpdateErrorDialog.show"
+      :title="weightUpdateErrorDialog.title"
+      :message="weightUpdateErrorDialog.message"
+      :missing-headers="weightUpdateErrorDialog.missingHeaders"
+      :missing-columns="weightUpdateErrorDialog.missingColumns"
+      @close="hideWeightUpdateError"
     />
   </div>
 </template>

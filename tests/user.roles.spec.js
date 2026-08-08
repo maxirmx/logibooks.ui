@@ -14,6 +14,7 @@ import {
   keyWhOperator,
   roleAdmin,
   roleAdapter1C,
+  roleAdapterAlta,
   roleLogist,
   roleShiftLead,
   roleSrLogist,
@@ -65,9 +66,10 @@ describe('user role helpers', () => {
   })
 
   it('formats and detects automated-system roles', () => {
-    const automatedSystem = { roles: [roleAdapter1C] }
+    const automatedSystem = { roles: [roleAdapter1C, roleAdapterAlta] }
     expect(isAutomatedSystem(automatedSystem)).toBe(true)
+    expect(isAutomatedSystem({ roles: [roleAdapterAlta] })).toBe(true)
     expect(isAutomatedSystem({ roles: [roleAdmin] })).toBe(false)
-    expect(getCredentials(automatedSystem)).toBe('Адаптер 1С')
+    expect(getCredentials(automatedSystem)).toBe('Адаптер 1С, Адаптер Альта')
   })
 })

@@ -15,7 +15,8 @@ import { reportFormError } from '@/helpers/error.helpers.js'
 import {
   automatedSystemRoles,
   isAutomatedSystem,
-  roleAdapter1C
+  roleAdapter1C,
+  roleAdapterAlta
 } from '@/helpers/user.roles.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useUsersStore } from '@/stores/users.store.js'
@@ -41,19 +42,21 @@ const initialValues = ref({
   email: '',
   password: '',
   password2: '',
-  roles: [roleAdapter1C]
+  roles: []
 })
 
 const pwdErr =
   'Пароль должен быть не короче 8 символов и содержать хотя бы одну цифру и один специальный символ (!@#$%^&*()\\-_=+{};:,<.>)'
 const pwdReg = /^.*(?=.{8,})((?=.*[!@#$%^&*()\-_=+{};:,<.>]){1})((?=.*\d){1}).*$/
+const roleRequiredErr = 'Необходимо выбрать роль автоматизированной системы'
 
 const schema = Yup.object().shape({
   lastName: Yup.string().required('Необходимо указать название автоматизированной системы'),
   email: Yup.string().required('Необходимо указать идентификатор автоматизированной системы'),
   roles: Yup.array()
     .of(Yup.string().oneOf(automatedSystemRoles))
-    .min(1, 'Необходимо выбрать роль автоматизированной системы'),
+    .required(roleRequiredErr)
+    .min(1, roleRequiredErr),
   password: Yup.string().concat(
     props.register
       ? Yup.string().required('Необходимо указать пароль').matches(pwdReg, pwdErr)
@@ -262,6 +265,14 @@ async function onSubmit(values, { setErrors } = {}) {
               :value="roleAdapter1C"
             />
             <label for="roleAdapter1C">Адаптер 1С</label>
+            <Field
+              id="roleAdapterAlta"
+              name="roles"
+              type="checkbox"
+              class="checkbox checkbox-styled"
+              :value="roleAdapterAlta"
+            />
+            <label for="roleAdapterAlta">Адаптер Альта</label>
           </div>
           <FieldError name="roles" :errors="errors" />
         </div>

@@ -1698,7 +1698,8 @@ describe('registers store', () => {
       const result = await store.generate(5)
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
         `${apiUrl}/registers/5/generate`,
-        'IndPost_5.zip'
+        'IndPost_5.zip',
+        { pollAccepted: true }
       )
       expect(result).toBe(true)
     })
@@ -1709,7 +1710,8 @@ describe('registers store', () => {
       await store.generate(5, 'INV')
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
         `${apiUrl}/registers/5/generate`,
-        'IndPost_INV.zip'
+        'IndPost_INV.zip',
+        { pollAccepted: true }
       )
     })
 
@@ -1719,7 +1721,8 @@ describe('registers store', () => {
       await store.generate(5, null)
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
         `${apiUrl}/registers/5/generate`,
-        'IndPost_5.zip'
+        'IndPost_5.zip',
+        { pollAccepted: true }
       )
     })
 
@@ -1729,7 +1732,8 @@ describe('registers store', () => {
       await store.generate(5, undefined)
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
         `${apiUrl}/registers/5/generate`,
-        'IndPost_5.zip'
+        'IndPost_5.zip',
+        { pollAccepted: true }
       )
     })
 
@@ -1747,13 +1751,15 @@ describe('registers store', () => {
       await store.generateExcise(6, 'INV-E')
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
         `${apiUrl}/registers/6/generate-excise`,
-        'IndPost_INV-E-акциз.zip'
+        'IndPost_INV-E-акциз.zip',
+        { pollAccepted: true }
       )
 
       await store.generateExcise(7, null)
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
         `${apiUrl}/registers/7/generate-excise`,
-        'IndPost_7-акциз.zip'
+        'IndPost_7-акциз.zip',
+        { pollAccepted: true }
       )
     })
 
@@ -1763,13 +1769,15 @@ describe('registers store', () => {
       await store.generateNotifications(8, 'INV-N')
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
         `${apiUrl}/registers/8/generate-notifications`,
-        'IndPost_INV-N-нотификации.zip'
+        'IndPost_INV-N-нотификации.zip',
+        { pollAccepted: true }
       )
 
       await store.generateNotifications(9, undefined)
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
         `${apiUrl}/registers/9/generate-notifications`,
-        'IndPost_9-нотификации.zip'
+        'IndPost_9-нотификации.zip',
+        { pollAccepted: true }
       )
     })
 
@@ -1779,13 +1787,15 @@ describe('registers store', () => {
       await store.generateOrdinary(11, 'INV-O')
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
         `${apiUrl}/registers/11/generate-ordinary`,
-        'IndPost_INV-O-без-акциза-и-нотификаций.zip'
+        'IndPost_INV-O-без-акциза-и-нотификаций.zip',
+        { pollAccepted: true }
       )
 
       await store.generateOrdinary(12)
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
         `${apiUrl}/registers/12/generate-ordinary`,
-        'IndPost_12-без-акциза-и-нотификаций.zip'
+        'IndPost_12-без-акциза-и-нотификаций.zip',
+        { pollAccepted: true }
       )
     })
 
@@ -1796,25 +1806,29 @@ describe('registers store', () => {
       await store.generate(5, 'INV', true)
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
         `${apiUrl}/registers/5/generate?applyWeightCorrection=true`,
-        'IndPost_INV.zip'
+        'IndPost_INV.zip',
+        { pollAccepted: true }
       )
 
       await store.generateExcise(6, 'INV-E', true)
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
         `${apiUrl}/registers/6/generate-excise?applyWeightCorrection=true`,
-        'IndPost_INV-E-акциз.zip'
+        'IndPost_INV-E-акциз.zip',
+        { pollAccepted: true }
       )
 
       await store.generateNotifications(8, 'INV-N', true)
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
         `${apiUrl}/registers/8/generate-notifications?applyWeightCorrection=true`,
-        'IndPost_INV-N-нотификации.zip'
+        'IndPost_INV-N-нотификации.zip',
+        { pollAccepted: true }
       )
 
       await store.generateOrdinary(11, 'INV-O', true)
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
         `${apiUrl}/registers/11/generate-ordinary?applyWeightCorrection=true`,
-        'IndPost_INV-O-без-акциза-и-нотификаций.zip'
+        'IndPost_INV-O-без-акциза-и-нотификаций.zip',
+        { pollAccepted: true }
       )
     })
   })

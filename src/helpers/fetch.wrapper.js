@@ -346,7 +346,7 @@ function parseContentDispositionFilename(disposition) {
  * Downloads a file from the server and initiates browser download
  * @param {string} fileUrl - The URL to download from
  * @param {string} defaultFilename - Fallback filename if none provided in headers
- * @param {{ method?: string, body?: object }} options - Optional authenticated request options
+ * @param {{ method?: string, body?: object, pollAccepted?: boolean, pollIntervalMs?: number, onProgress?: function }} options - Optional authenticated request and polling options
  * @returns {Promise<boolean>} - True if download initiated successfully
  */
 async function downloadFile(fileUrl, defaultFilename, options = {}) {
@@ -354,7 +354,35 @@ async function downloadFile(fileUrl, defaultFilename, options = {}) {
   if ((method === 'GET' || method === 'HEAD') && options.body !== undefined) {
     throw new Error('downloadFile does not support request bodies for GET/HEAD requests')
   }
-  const response = await requestBlob(method)(fileUrl, options.body)
+  const fetchBlob = requestBlob(method)
+  let response = await fetchBlob(fileUrl, options.body)
+
+  while (response.status === 202) {
+    let progress = null
+    try {
+      progress = await response.json()
+    } catch {
+      // A malformed progress response must never be saved as the requested file.
+    }
+
+    if (options.pollAccepted !== true) {
+      const error = new Error('Файл еще формируется')
+      error.status = 202
+      error.data = progress
+      throw error
+    }
+
+    if (typeof options.onProgress === 'function') {
+      options.onProgress(progress)
+    }
+
+    const pollIntervalMs = Math.max(0, Number(options.pollIntervalMs ?? 1000) || 0)
+    if (pollIntervalMs > 0) {
+      await new Promise((resolve) => setTimeout(resolve, pollIntervalMs))
+    }
+    response = await fetchBlob(fileUrl, options.body)
+  }
+
   let filename = defaultFilename
   const disposition = response.headers.get('Content-Disposition')
   const dispositionFilename = parseContentDispositionFilename(disposition)

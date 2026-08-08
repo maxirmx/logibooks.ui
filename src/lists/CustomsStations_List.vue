@@ -8,7 +8,7 @@ import { onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { mdiMagnify } from '@mdi/js'
 import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
-import { useConfirm } from 'vuetify-use-dialog'
+import { useAppConfirm } from '@/composables/useAppConfirm.js'
 import router from '@/router'
 import ActionButton from '@/components/ActionButton.vue'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
@@ -21,7 +21,7 @@ const customsStationsStore = useCustomsStationsStore()
 const countriesStore = useCountriesStore()
 const authStore = useAuthStore()
 const alertStore = useAlertStore()
-const confirm = useConfirm()
+const confirm = useAppConfirm()
 
 const { customsStations, loading } = storeToRefs(customsStationsStore)
 const runningAction = ref(false)
@@ -74,13 +74,6 @@ async function deleteCustomsStation(station) {
       title: 'Подтверждение',
       confirmationText: 'Удалить',
       cancellationText: 'Не удалять',
-      dialogProps: {
-        width: '30%',
-        minWidth: '250px'
-      },
-      confirmationButtonProps: {
-        color: 'orange-darken-3'
-      },
       content: `Удалить таможенный пост "${station.name}"?`
     })
 

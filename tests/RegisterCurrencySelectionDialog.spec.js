@@ -27,7 +27,7 @@ describe('RegisterCurrencySelectionDialog', () => {
     expect(wrapper.text()).toContain('В реестре несколько валют')
     expect(wrapper.text()).toContain('Посылки в других валютах будут пропущены')
     expect(wrapper.vm.selectedCurrency).toBeNull()
-    expect(wrapper.findComponent(VDialogStub).props('width')).toBe('420')
+    expect(wrapper.findComponent(VDialogStub).props('width')).toBe(440)
     expect(wrapper.findAll('.radio-styled')).toHaveLength(2)
     expect(wrapper.findAll('.radio-mark')).toHaveLength(2)
     expect(

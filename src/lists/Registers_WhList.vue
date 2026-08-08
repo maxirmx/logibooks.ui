@@ -36,7 +36,7 @@ import { useAlertStore } from '@/stores/alert.store.js'
 import { mdiMagnify } from '@mdi/js'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
-import { useConfirm } from 'vuetify-use-dialog'
+import { useAppConfirm } from '@/composables/useAppConfirm.js'
 import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync.js'
 import ActionButton from '@/components/ActionButton.vue'
 import WarehouseRegistersTable from '@/components/WarehouseRegistersTable.vue'
@@ -62,7 +62,7 @@ const warehousesStore = useWarehousesStore()
 const registerStatusesStore = useRegisterStatusesStore()
 
 const alertStore = useAlertStore()
-const confirm = useConfirm()
+const confirm = useAppConfirm()
 
 const { validationState, progressPercent, stopPolling } = createRegisterActionHandlers(
   registersStore,
@@ -258,13 +258,6 @@ async function deleteRegister(item) {
       title: 'Подтверждение',
       confirmationText: 'Удалить',
       cancellationText: 'Не удалять',
-      dialogProps: {
-        width: '30%',
-        minWidth: '250px'
-      },
-      confirmationButtonProps: {
-        color: 'orange-darken-3'
-      },
       content: `Удалить ${registerNouns.value.accusative} "${item.fileName}" ?`
     })
 

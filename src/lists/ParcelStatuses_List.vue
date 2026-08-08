@@ -11,7 +11,7 @@ import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import ActionButton from '@/components/ActionButton.vue'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
-import { useConfirm } from 'vuetify-use-dialog'
+import { useAppConfirm } from '@/composables/useAppConfirm.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
 import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
@@ -19,7 +19,7 @@ import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
 const parcelStatusesStore = useParcelStatusesStore()
 const authStore = useAuthStore()
 const alertStore = useAlertStore()
-const confirm = useConfirm()
+const confirm = useAppConfirm()
 
 const { parcelStatuses, loading } = storeToRefs(parcelStatusesStore)
 const runningAction = ref(false)
@@ -70,13 +70,6 @@ async function deleteParcelStatus(parcelStatus) {
       title: 'Подтверждение',
       confirmationText: 'Удалить',
       cancellationText: 'Не удалять',
-      dialogProps: {
-        width: '30%',
-        minWidth: '250px'
-      },
-      confirmationButtonProps: {
-        color: 'orange-darken-3'
-      },
       content: content
     })
 

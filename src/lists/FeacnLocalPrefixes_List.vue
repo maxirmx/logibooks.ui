@@ -11,7 +11,7 @@ import { useFeacnPrefixesStore } from '@/stores/feacn.prefixes.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import ActionButton from '@/components/ActionButton.vue'
-import { useConfirm } from 'vuetify-use-dialog'
+import { useAppConfirm } from '@/composables/useAppConfirm.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import {
   prohibitionScopeFilterItems,
@@ -31,7 +31,7 @@ import {
 const prefixesStore = useFeacnPrefixesStore()
 const authStore = useAuthStore()
 const alertStore = useAlertStore()
-const confirm = useConfirm()
+const confirm = useAppConfirm()
 
 const { prefixes, loading } = storeToRefs(prefixesStore)
 const runningAction = ref(false)
@@ -148,13 +148,6 @@ async function deletePrefix(item) {
       title: 'Подтверждение',
       confirmationText: 'Удалить',
       cancellationText: 'Не удалять',
-      dialogProps: {
-        width: '30%',
-        minWidth: '250px'
-      },
-      confirmationButtonProps: {
-        color: 'orange-darken-3'
-      },
       content: 'Удалить префикс?'
     })
 

@@ -11,7 +11,7 @@ import { useRegisterStatusesStore } from '@/stores/register.statuses.store.js'
 import ActionButton from '@/components/ActionButton.vue'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
-import { useConfirm } from 'vuetify-use-dialog'
+import { useAppConfirm } from '@/composables/useAppConfirm.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
 import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
@@ -20,7 +20,7 @@ import RegisterStatusIcon from '@/components/RegisterStatusIcon.vue'
 const registerStatusesStore = useRegisterStatusesStore()
 const authStore = useAuthStore()
 const alertStore = useAlertStore()
-const confirm = useConfirm()
+const confirm = useAppConfirm()
 
 const { registerStatuses, loading } = storeToRefs(registerStatusesStore)
 const runningAction = ref(false)
@@ -69,13 +69,6 @@ async function deleteRegisterStatus(registerStatus) {
       title: 'Подтверждение',
       confirmationText: 'Удалить',
       cancellationText: 'Не удалять',
-      dialogProps: {
-        width: '30%',
-        minWidth: '250px'
-      },
-      confirmationButtonProps: {
-        color: 'orange-darken-3'
-      },
       content: content
     })
 

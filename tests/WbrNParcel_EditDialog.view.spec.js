@@ -643,7 +643,7 @@ describe('WbrNParcel_EditDialog.vue', () => {
       parcelItem,
       expect.any(Object),
       expect.stringMatching(/SHK-N-EDIT$/),
-      expect.objectContaining({ confirm: confirmMock })
+      expect.objectContaining({ confirm: expect.any(Function) })
     )
     expect(parcelGetById).toHaveBeenCalledWith(3)
 
@@ -821,7 +821,7 @@ describe('WbrNParcel_EditDialog.vue', () => {
       expect.any(Object),
       expect.any(Object),
       expect.any(Object),
-      confirmMock,
+      expect.any(Function),
       expect.any(Object)
     )
 

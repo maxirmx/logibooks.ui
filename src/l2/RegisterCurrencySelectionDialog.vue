@@ -1,5 +1,11 @@
 <script setup>
 import { onUnmounted, ref, watch } from 'vue'
+import AppDialogFrame from '@/components/AppDialogFrame.vue'
+import {
+  APP_DIALOG_BUTTON_PROPS,
+  APP_DIALOG_MAX_WIDTH,
+  APP_DIALOG_SIZES
+} from '@/helpers/dialog.helpers.js'
 
 const props = defineProps({
   show: { type: Boolean, default: false },
@@ -46,12 +52,15 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <v-dialog v-if="show" :model-value="show" width="420" persistent>
-    <v-card>
-      <v-card-title class="primary-heading">
-        В реестре несколько валют
-      </v-card-title>
-      <v-card-text>
+  <v-dialog
+    v-if="show"
+    :model-value="show"
+    :width="APP_DIALOG_SIZES.small"
+    :max-width="APP_DIALOG_MAX_WIDTH"
+    aria-label="В реестре несколько валют"
+    persistent
+  >
+    <AppDialogFrame title="В реестре несколько валют">
         <p>
           Выберите валюту посылок для загрузки. Посылки в других валютах будут пропущены.
         </p>
@@ -74,24 +83,23 @@ onUnmounted(() => {
             {{ currency }}
           </label>
         </div>
-      </v-card-text>
-      <v-card-actions class="justify-end">
+      <template #actions>
         <v-btn
-          variant="text"
+          v-bind="APP_DIALOG_BUTTON_PROPS.secondary"
           data-testid="cancel-currency-selection"
           @click="cancelSelection"
         >
           Отменить
         </v-btn>
         <v-btn
-          color="primary"
+          v-bind="APP_DIALOG_BUTTON_PROPS.primary"
           :disabled="!selectedCurrency"
           data-testid="confirm-currency-selection"
           @click="confirmSelection"
         >
           Загрузить
         </v-btn>
-      </v-card-actions>
-    </v-card>
+      </template>
+    </AppDialogFrame>
   </v-dialog>
 </template>

@@ -12,7 +12,7 @@ import { useUsersStore } from '@/stores/users.store.js'
 import { useWarehousesStore } from '@/stores/warehouses.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
-import { useConfirm } from 'vuetify-use-dialog'
+import { useAppConfirm } from '@/composables/useAppConfirm.js'
 import ActionButton from '@/components/ActionButton.vue'
 import ActionButton2L from '@/components/ActionButton2L.vue'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
@@ -39,7 +39,7 @@ onMounted(() =>
   )
 )
 
-const confirm = useConfirm()
+const confirm = useAppConfirm()
 
 function userSettings(item) {
   const id = item.id
@@ -124,13 +124,6 @@ async function deleteUser(item) {
       title: 'Подтверждение',
       confirmationText: 'Удалить',
       cancellationText: 'Не удалять',
-      dialogProps: {
-        width: '30%',
-        minWidth: '250px'
-      },
-      confirmationButtonProps: {
-        color: 'orange-darken-3'
-      },
       content: content
     })
 

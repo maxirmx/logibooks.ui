@@ -42,7 +42,7 @@ import { useAlertStore } from '@/stores/alert.store.js'
 import { mdiMagnify } from '@mdi/js'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
-import { useConfirm } from 'vuetify-use-dialog'
+import { useAppConfirm } from '@/composables/useAppConfirm.js'
 import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync.js'
 import ActionButton2L from '@/components/ActionButton2L.vue'
 import CustomsProcessingRegistersTable from '@/components/CustomsProcessingRegistersTable.vue'
@@ -66,7 +66,7 @@ const countriesStore = useCountriesStore()
 const airportsStore = useAirportsStore()
 
 const alertStore = useAlertStore()
-const confirm = useConfirm()
+const confirm = useAppConfirm()
 
 const { validationState, progressPercent, calculateCustomsCharges, stopPolling } =
   createRegisterActionHandlers(registersStore, alertStore, { mode: OP_MODE_PAPERWORK })
@@ -337,13 +337,6 @@ async function deleteRegister(item) {
       title: 'Подтверждение',
       confirmationText: 'Удалить',
       cancellationText: 'Не удалять',
-      dialogProps: {
-        width: '30%',
-        minWidth: '250px'
-      },
-      confirmationButtonProps: {
-        color: 'orange-darken-3'
-      },
       content: content
     })
 

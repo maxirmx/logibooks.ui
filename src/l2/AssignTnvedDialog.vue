@@ -5,8 +5,14 @@
 
 import { computed, ref, watch, onUnmounted, nextTick } from 'vue'
 import ActionButton from '@/components/ActionButton.vue'
+import AppDialogFrame from '@/components/AppDialogFrame.vue'
 import FeacnCodeSearch from '@/components/FeacnCodeSearch.vue'
 import FeacnCodeSearchByKeyword from '@/components/FeacnCodeSearchByKeyword.vue'
+import {
+  APP_DIALOG_BUTTON_PROPS,
+  APP_DIALOG_MAX_WIDTH,
+  APP_DIALOG_SIZES
+} from '@/helpers/dialog.helpers.js'
 import { getFeacnInfo } from '@/helpers/feacn.info.helpers.js'
 import { getErrorMessage } from '@/helpers/error.helpers.js'
 
@@ -202,70 +208,75 @@ watch(
   <v-dialog
     :model-value="show"
     :scrim="!searchActive && !keywordSearchActive"
+    :width="APP_DIALOG_SIZES.medium"
+    :max-width="APP_DIALOG_MAX_WIDTH"
     content-class="assign-tnved-dialog-position"
+    aria-label="Код ТН ВЭД для выбранных посылок"
     @update:model-value="onDialogUpdate"
   >
     <div class="assign-tnved-layout">
-      <v-card class="assign-tnved-card">
-        <v-card-title class="primary-heading"> Код ТН ВЭД для выбранных посылок </v-card-title>
-        <v-card-text>
-          <div class="target-input-row">
-            <input
-              ref="inputRef"
-              id="target-tnved"
-              v-model="targetTnVed"
-              type="text"
-              class="input target-tnved-input"
-              maxlength="10"
-              placeholder="Код ТН ВЭД (10 цифр)"
-              data-testid="target-tnved-input"
-              autofocus
-            />
-            <ActionButton
-              :item="selectedIds"
-              :icon="searchActive ? 'fa-solid fa-arrow-up' : 'fa-solid fa-arrow-down'"
-              :tooltip-text="searchActive ? 'Скрыть дерево кодов' : 'Выбрать код (дерево ТН ВЭД)'"
-              class="button-o-c"
-              @click="toggleSearch"
-              :iconSize="'1x'"
-            />
-            <ActionButton
-              :item="selectedIds"
-              :icon="
-                keywordSearchActive ? 'fa-solid fa-arrow-up-z-a' : 'fa-solid fa-arrow-down-a-z'
-              "
-              :tooltip-text="
-                keywordSearchActive
-                  ? 'Скрыть подбор по ключевым словам'
-                  : 'Выбрать код (ключевые слова)'
-              "
-              class="button-o-c"
-              @click="toggleKeywordSearch"
-              :iconSize="'1x'"
-            />
-          </div>
-          <div
-            v-if="validationMessage || tnvedName"
-            :class="validationMessageClass"
-            data-testid="target-tnved-message"
+      <AppDialogFrame title="Код ТН ВЭД для выбранных посылок">
+        <div class="target-input-row">
+          <input
+            ref="inputRef"
+            id="target-tnved"
+            v-model="targetTnVed"
+            type="text"
+            class="input target-tnved-input"
+            maxlength="10"
+            placeholder="Код ТН ВЭД (10 цифр)"
+            data-testid="target-tnved-input"
+            autofocus
+          />
+          <ActionButton
+            :item="selectedIds"
+            :icon="searchActive ? 'fa-solid fa-arrow-up' : 'fa-solid fa-arrow-down'"
+            :tooltip-text="searchActive ? 'Скрыть дерево кодов' : 'Выбрать код (дерево ТН ВЭД)'"
+            class="button-o-c"
+            @click="toggleSearch"
+            :iconSize="'1x'"
+          />
+          <ActionButton
+            :item="selectedIds"
+            :icon="
+              keywordSearchActive ? 'fa-solid fa-arrow-up-z-a' : 'fa-solid fa-arrow-down-a-z'
+            "
+            :tooltip-text="
+              keywordSearchActive
+                ? 'Скрыть подбор по ключевым словам'
+                : 'Выбрать код (ключевые слова)'
+            "
+            class="button-o-c"
+            @click="toggleKeywordSearch"
+            :iconSize="'1x'"
+          />
+        </div>
+        <div
+          v-if="validationMessage || tnvedName"
+          :class="validationMessageClass"
+          data-testid="target-tnved-message"
+        >
+          <v-progress-circular
+            v-if="tnvedChecking"
+            indeterminate
+            :size="14"
+            :width="2"
+            class="mr-1"
+          />
+          {{ tnvedName || validationMessage }}
+        </div>
+
+        <template #actions>
+          <v-btn v-bind="APP_DIALOG_BUTTON_PROPS.secondary" @click="close">Отменить</v-btn>
+          <v-btn
+            v-bind="APP_DIALOG_BUTTON_PROPS.primary"
+            :disabled="!isTnVedValid"
+            @click="confirm"
           >
-            <v-progress-circular
-              v-if="tnvedChecking"
-              indeterminate
-              :size="14"
-              :width="2"
-              class="mr-1"
-            />
-            {{ tnvedName || validationMessage }}
-          </div>
-        </v-card-text>
-        <v-card-actions class="justify-end">
-          <v-btn variant="text" @click="close">Отменить</v-btn>
-          <v-btn color="orange-darken-3" variant="flat" :disabled="!isTnVedValid" @click="confirm"
-            >Применить</v-btn
-          >
-        </v-card-actions>
-      </v-card>
+            Применить
+          </v-btn>
+        </template>
+      </AppDialogFrame>
 
       <div
         v-if="show && searchActive"
@@ -295,12 +306,6 @@ watch(
   position: relative;
   overflow: visible;
   width: 100%;
-}
-
-.assign-tnved-card {
-  border: 2px solid #797979;
-  box-shadow: 0px 3px 7px rgba(0, 0, 0, 0.1);
-  border-radius: 0.25rem;
 }
 
 .target-input-row {
@@ -349,8 +354,8 @@ watch(
   position: absolute !important;
   top: 10vh !important;
   left: 2vw !important;
-  width: 30% !important;
-  min-width: 250px !important;
+  width: min(560px, calc(100vw - 32px)) !important;
+  min-width: 0 !important;
   overflow: visible !important;
 }
 </style>

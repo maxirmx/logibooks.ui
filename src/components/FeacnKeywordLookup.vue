@@ -2,6 +2,12 @@
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useKeyWordsStore } from '@/stores/key.words.store.js'
 import { keywordMatchesSearch } from '@/helpers/keywords.filter.js'
+import AppDialogFrame from '@/components/AppDialogFrame.vue'
+import {
+  APP_DIALOG_BUTTON_PROPS,
+  APP_DIALOG_MAX_WIDTH,
+  APP_DIALOG_SIZES
+} from '@/helpers/dialog.helpers.js'
 
 const props = defineProps({
   modelValue: {
@@ -146,10 +152,18 @@ onMounted(async () => {
 </script>
 
 <template>
-  <v-dialog v-model="isOpen" width="640" max-width="90vw" persistent>
-    <v-card class="feacn-keyword-selector" data-testid="feacn-keyword-selector">
-      <v-card-title>Подбор кода ТН ВЭД по ключевым словам</v-card-title>
-      <v-card-text>
+  <v-dialog
+    v-model="isOpen"
+    :width="APP_DIALOG_SIZES.search"
+    :max-width="APP_DIALOG_MAX_WIDTH"
+    aria-label="Подбор кода ТН ВЭД по ключевым словам"
+    persistent
+  >
+    <AppDialogFrame
+      title="Подбор кода ТН ВЭД по ключевым словам"
+      class="feacn-keyword-selector"
+      data-testid="feacn-keyword-selector"
+    >
         <v-text-field
           ref="searchInput"
           v-model="searchTerm"
@@ -185,12 +199,10 @@ onMounted(async () => {
             Нет подходящих записей
           </div>
         </div>
-      </v-card-text>
-      <v-card-actions>
-        <v-spacer />
-        <v-btn variant="text" color="primary" @click="closeSelector">Закрыть</v-btn>
-      </v-card-actions>
-    </v-card>
+      <template #actions>
+        <v-btn v-bind="APP_DIALOG_BUTTON_PROPS.primary" @click="closeSelector">Закрыть</v-btn>
+      </template>
+    </AppDialogFrame>
   </v-dialog>
 </template>
 

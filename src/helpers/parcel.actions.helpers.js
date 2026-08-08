@@ -168,13 +168,6 @@ export async function deleteProductImage(values, isComponentMounted, runningActi
       title: 'Подтверждение',
       confirmationText: 'Удалить',
       cancellationText: 'Не удалять',
-      dialogProps: {
-        width: '30%',
-        minWidth: '250px'
-      },
-      confirmationButtonProps: {
-        color: 'orange-darken-3'
-      },
       content: 'Удалить изображение для этой посылки?'
     })
     if (confirmed) {

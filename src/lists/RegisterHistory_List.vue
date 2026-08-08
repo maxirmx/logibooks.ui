@@ -19,6 +19,7 @@ import { useWarehousesStore } from '@/stores/warehouses.store.js'
 import { buildParcelListHeading } from '@/helpers/register.heading.helpers.js'
 import { formatRegisterHistoryValue } from '@/helpers/register.history.formatters.js'
 import { formatDateTime } from '@/helpers/date.formatters.js'
+import { formatIntegerThousands, formatWeight } from '@/helpers/number.formatters.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { getRegisterNouns, OP_MODE_PAPERWORK } from '@/helpers/op.mode.js'
 import ActionButton from '@/components/ActionButton.vue'
@@ -93,8 +94,29 @@ const fieldLabels = {
   WarehouseId: 'Склад',
   WarehouseArrivalDate: 'Дата прибытия на склад',
   CustomsFee: 'Таможенные сборы',
-  CustomsDuty: 'Таможенные пошлины'
+  CustomsDuty: 'Таможенные пошлины',
+  OzonWeightUpdateProcessedRows: 'Обработано строк файла',
+  OzonWeightUpdateUpdatedParcels: 'Обновлено посылок',
+  OzonWeightUpdateUnchangedParcels: 'Посылок без изменения веса',
+  OzonWeightUpdateSkippedRows: 'Пропущено строк',
+  OzonWeightUpdateUnmatchedRows: 'Строк без совпадений',
+  OzonWeightUpdateSupersededRows: 'Переопределено последующими строками'
 }
+
+const weightUpdateSummaryFields = new Set([
+  'OzonWeightUpdateProcessedRows',
+  'OzonWeightUpdateUpdatedParcels',
+  'OzonWeightUpdateUnchangedParcels',
+  'OzonWeightUpdateSkippedRows',
+  'OzonWeightUpdateUnmatchedRows',
+  'OzonWeightUpdateSupersededRows'
+])
+
+const weightFields = new Set([
+  'TotalWeightKg',
+  'RealWeightKg',
+  'TotalWeightKgToRelease'
+])
 
 function ensureReferenceData() {
   if (!referenceDataPromise) {
@@ -143,6 +165,13 @@ function getFieldLabel(field) {
 }
 
 function formatValue(change, value) {
+  if (weightUpdateSummaryFields.has(change?.field)) {
+    return formatIntegerThousands(value)
+  }
+  if (weightFields.has(change?.field)) {
+    return formatWeight(value)
+  }
+
   const operations = unref(registersStore.ops)
   return formatRegisterHistoryValue(change?.field, value, {
     companies: unref(companiesStore.companies),
@@ -157,6 +186,13 @@ function formatValue(change, value) {
 }
 
 function formatChange(change) {
+  if (
+    weightUpdateSummaryFields.has(change?.field) &&
+    (change.oldValue === null || change.oldValue === undefined || change.oldValue === '')
+  ) {
+    return `${getFieldLabel(change.field)}: ${formatValue(change, change.newValue)}`
+  }
+
   return `${getFieldLabel(change.field)}: ${formatValue(change, change.oldValue)} → ${formatValue(
     change,
     change.newValue

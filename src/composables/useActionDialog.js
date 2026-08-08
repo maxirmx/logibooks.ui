@@ -6,6 +6,7 @@ export const ACTION_DIALOG_TITLES = {
   'download-register': 'Подготовка файла реестра',
   'download-additional-restrictions': 'Подготовка файла реестра',
   'upload-register': 'Загрузка реестра',
+  'update-register-weights': 'Обновление посылок',
   'upload-report': 'Загрузка отчёта',
   'download-invoice': 'Подготовка файла инвойса',
   'download-do1': 'Подготовка файла ДО1',

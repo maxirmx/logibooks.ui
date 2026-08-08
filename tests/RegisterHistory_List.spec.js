@@ -347,4 +347,34 @@ describe('RegisterHistory_List.vue', () => {
     expect(wrapper.text()).toContain('Аэропорт отправления: Неизвестный аэропорт → не указано')
     expect(wrapper.text()).not.toContain('999')
   })
+
+  it('renders the Ozon weight update summary without empty old-value arrows', async () => {
+    mockRefs.items.value[0].reason = 'Обновление веса посылок из файла реестра'
+    mockRefs.items.value[0].changes = [
+      { field: 'OzonWeightUpdateProcessedRows', oldValue: null, newValue: '12' },
+      { field: 'OzonWeightUpdateUpdatedParcels', oldValue: null, newValue: '4' },
+      { field: 'OzonWeightUpdateUnchangedParcels', oldValue: null, newValue: '5' },
+      { field: 'OzonWeightUpdateSkippedRows', oldValue: null, newValue: '1' },
+      { field: 'OzonWeightUpdateUnmatchedRows', oldValue: null, newValue: '2' },
+      { field: 'OzonWeightUpdateSupersededRows', oldValue: null, newValue: '3' },
+      { field: 'TotalWeightKg', oldValue: '10.5', newValue: '11.75' }
+    ]
+
+    const wrapper = mount(RegisterHistoryList, {
+      props: { registerId: 42 },
+      global: { stubs: defaultGlobalStubs }
+    })
+    await flushPromises()
+
+    const text = wrapper.text()
+    expect(text).toContain('Обновление веса посылок из файла реестра')
+    expect(text).toContain('Обработано строк файла: 12')
+    expect(text).toContain('Обновлено посылок: 4')
+    expect(text).toContain('Посылок без изменения веса: 5')
+    expect(text).toContain('Пропущено строк: 1')
+    expect(text).toContain('Строк без совпадений: 2')
+    expect(text).toContain('Переопределено последующими строками: 3')
+    expect(text).not.toContain('Обработано строк файла: не указано → 12')
+    expect(text).toContain('Общий вес: 10.500 → 11.750')
+  })
 })

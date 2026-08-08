@@ -977,6 +977,46 @@ describe('registers store', () => {
     })
   })
 
+  describe('updateWeightsFromFile method', () => {
+    it('posts the selected file to the register weight upload endpoint', async () => {
+      const file = new File(['data'], 'ozon.xlsx')
+      const response = {
+        processedRows: 4,
+        skippedRows: 0,
+        unmatchedRows: 1,
+        supersededRows: 0,
+        updatedParcels: 2,
+        unchangedParcels: 1,
+        totalWeightKgBefore: 3,
+        totalWeightKgAfter: 4
+      }
+      fetchWrapper.postFile.mockResolvedValue(response)
+
+      const store = useRegistersStore()
+      await expect(store.updateWeightsFromFile(42, file)).resolves.toEqual(response)
+
+      expect(fetchWrapper.postFile).toHaveBeenCalledWith(
+        `${apiUrl}/registers/42/weights/upload`,
+        expect.any(FormData)
+      )
+      expect(fetchWrapper.postFile.mock.calls[0][1].get('file')).toBe(file)
+      expect(store.loading).toBe(false)
+    })
+
+    it('stores and rethrows weight upload errors', async () => {
+      const error = new Error('weight upload failed')
+      fetchWrapper.postFile.mockRejectedValue(error)
+
+      const store = useRegistersStore()
+      await expect(
+        store.updateWeightsFromFile(42, new File(['data'], 'ozon.xlsx'))
+      ).rejects.toThrow('weight upload failed')
+
+      expect(store.error).toBe(error)
+      expect(store.loading).toBe(false)
+    })
+  })
+
   describe('setParcelStatuses method', () => {
     beforeEach(() => {
       // Mock fetchWrapper.put for setParcelStatuses tests

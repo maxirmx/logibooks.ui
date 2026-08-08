@@ -24,6 +24,8 @@ const mockError = ref(null)
 const mockTotalCount = ref(5)
 const selectedParcelId = ref(null)
 const mockBulkAssignTnved = vi.fn().mockResolvedValue(true)
+const mockUpdateWeightsFromFile = vi.fn()
+const mockGetRegister = vi.fn().mockResolvedValue()
 const alertSuccess = vi.fn()
 const alertError = vi.fn()
 
@@ -159,7 +161,8 @@ vi.mock('@/stores/registers.store.js', () => ({
       return mockRegisterItem.value
     },
     ops: { customsProcedures: mockCustomsProcedures, transportationTypes: [] },
-    getById: vi.fn().mockResolvedValue(),
+    getById: mockGetRegister,
+    updateWeightsFromFile: mockUpdateWeightsFromFile,
     ensureOpsLoaded: vi.fn().mockResolvedValue(),
     getTransportationDocument: vi.fn(() => 'Документ')
   })
@@ -167,6 +170,7 @@ vi.mock('@/stores/registers.store.js', () => ({
 
 vi.mock('@/stores/auth.store.js', () => ({
   useAuthStore: () => ({
+    isSrLogistPlus: true,
     parcels_per_page: parcelsPerPage,
     parcels_sort_by: parcelsSortBy,
     parcels_page: parcelsPage,
@@ -224,10 +228,28 @@ vi.mock('@/router', () => ({ default: { push: vi.fn() } }))
 const globalStubs = {
   ...vuetifyStubs,
   RegisterHeadingWithStats: { template: '<div data-testid="register-heading"></div>' },
-  RegisterHeaderActionsBar: { template: '<div data-testid="register-header-actions"></div>' },
+  RegisterHeaderActionsBar: {
+    name: 'RegisterHeaderActionsBar',
+    props: ['showWeightUpdate', 'disabled', 'mutationDisabled', 'loading'],
+    emits: ['update-weights-from-file'],
+    template:
+      '<button data-testid="register-header-actions" @click="$emit(\'update-weights-from-file\')"></button>'
+  },
   PaginationFooter: { template: '<div data-testid="pagination-footer"></div>' },
   RegisterActionsDialogs: { template: '<div></div>' },
   AssignTnvedDialog: { template: '<div></div>' },
+  ActionDialog: {
+    name: 'ActionDialog',
+    props: ['actionDialog'],
+    template: '<div data-testid="weight-action-dialog">{{ actionDialog?.title }}</div>'
+  },
+  ErrorDialog: {
+    name: 'ErrorDialog',
+    props: ['show', 'title', 'message', 'missingHeaders', 'missingColumns'],
+    emits: ['close'],
+    template:
+      '<div data-testid="weight-error-dialog" :data-show="String(show)">{{ message }}<button @click="$emit(\'close\')"></button></div>'
+  },
   ParcelStatusBulkChangeDialog: { template: '<div></div>' },
   ParcelFilterSelectors: { template: '<div data-testid="parcel-filter-selectors"></div>' },
   FeacnCodeSelector: { template: '<div></div>' },
@@ -243,6 +265,17 @@ describe('OzonParcels_List.vue – multi-select', () => {
   beforeEach(async () => {
     vi.clearAllMocks()
     mockBulkAssignTnved.mockResolvedValue(true)
+    mockUpdateWeightsFromFile.mockResolvedValue({
+      processedRows: 4,
+      skippedRows: 0,
+      unmatchedRows: 1,
+      supersededRows: 0,
+      updatedParcels: 2,
+      unchangedParcels: 1,
+      totalWeightKgBefore: 3,
+      totalWeightKgAfter: 4
+    })
+    mockGetRegister.mockResolvedValue()
     selectedParcelId.value = null
     mockRegisterItem.value = { dealNumber: 'D-1' }
     mockItems.value = [
@@ -491,6 +524,130 @@ describe('OzonParcels_List.vue – multi-select', () => {
     expect(alertError).toHaveBeenCalledWith('failed')
     expect(wrapper.vm.runningAction).toBe(false)
     expect(wrapper.vm.showAssignTnvedDialog).toBe(true)
+  })
+
+  it('opts the Ozon page into the authorized weight update header action', () => {
+    const header = wrapper.findComponent({ name: 'RegisterHeaderActionsBar' })
+
+    expect(header.props('showWeightUpdate')).toBe(true)
+    expect(header.props('mutationDisabled')).toBe(false)
+  })
+
+  it('opens the register file picker directly from the header', async () => {
+    const input = wrapper.get('[data-testid="ozon-weight-update-file-input"]')
+    const click = vi.spyOn(input.element, 'click').mockImplementation(() => {})
+
+    await wrapper.get('[data-testid="register-header-actions"]').trigger('click')
+
+    expect(click).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows a compact title while parcel weights are being updated', async () => {
+    let completeUpload
+    mockUpdateWeightsFromFile.mockReturnValueOnce(
+      new Promise((resolve) => {
+        completeUpload = resolve
+      })
+    )
+    const file = new File(['data'], 'weights.xlsx')
+
+    const upload = wrapper.vm.onWeightUpdateFileSelected({
+      target: { files: [file], value: 'weights.xlsx' }
+    })
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.get('[data-testid="weight-action-dialog"]').text()).toBe('Обновление посылок')
+
+    completeUpload({
+      processedRows: 1,
+      skippedRows: 0,
+      unmatchedRows: 0,
+      supersededRows: 0,
+      updatedParcels: 1,
+      unchangedParcels: 0,
+      totalWeightKgBefore: 1,
+      totalWeightKgAfter: 2
+    })
+    await upload
+  })
+
+  it('uploads weights and refreshes the register and parcels without a success alert', async () => {
+    const { loadParcels } = await import('@/helpers/parcels.list.helpers.js')
+    loadParcels.mockClear()
+    mockGetRegister.mockClear()
+    mockUpdateWeightsFromFile.mockResolvedValueOnce({
+      processedRows: 9,
+      skippedRows: 1,
+      unmatchedRows: 2,
+      supersededRows: 3,
+      updatedParcels: 4,
+      unchangedParcels: 5,
+      totalWeightKgBefore: 10,
+      totalWeightKgAfter: 11
+    })
+    const file = new File(['data'], 'weights.xlsx')
+    const input = { files: [file], value: 'weights.xlsx' }
+
+    await wrapper.vm.onWeightUpdateFileSelected({ target: input })
+
+    expect(mockUpdateWeightsFromFile).toHaveBeenCalledWith(1, file)
+    expect(mockGetRegister).toHaveBeenCalledWith(1)
+    expect(loadParcels).toHaveBeenCalledWith(
+      1,
+      expect.any(Object),
+      expect.any(Object),
+      expect.any(Object)
+    )
+    expect(alertSuccess).not.toHaveBeenCalled()
+    expect(input.value).toBe('')
+    expect(wrapper.vm.runningAction).toBe(false)
+  })
+
+  it('shows import errors exactly once and allows the same file to be selected again', async () => {
+    const file = new File(['data'], 'broken.xlsx')
+    const firstInput = { files: [file], value: 'broken.xlsx' }
+    const error = Object.assign(new Error('Некорректный файл'), {
+      data: {
+        msg: 'Некорректный файл',
+        missingHeaders: ['Вес'],
+        missingColumns: ['Артикул']
+      }
+    })
+    mockUpdateWeightsFromFile.mockRejectedValueOnce(error)
+
+    await wrapper.vm.onWeightUpdateFileSelected({ target: firstInput })
+    await wrapper.vm.$nextTick()
+
+    const errorDialog = wrapper.findComponent({ name: 'ErrorDialog' })
+    expect(errorDialog.props('show')).toBe(true)
+    expect(errorDialog.props('message')).toBe('Некорректный файл')
+    expect(errorDialog.props('missingHeaders')).toEqual(['Вес'])
+    expect(errorDialog.props('missingColumns')).toEqual(['Артикул'])
+    expect(alertError).not.toHaveBeenCalled()
+    expect(firstInput.value).toBe('')
+
+    const retryInput = { files: [file], value: 'broken.xlsx' }
+    await wrapper.vm.onWeightUpdateFileSelected({ target: retryInput })
+    expect(mockUpdateWeightsFromFile).toHaveBeenCalledTimes(2)
+    expect(retryInput.value).toBe('')
+  })
+
+  it('blocks the file picker and upload for a read-only register', async () => {
+    mockRegisterItem.value = { dealNumber: 'D-1', readOnly: true }
+    await wrapper.vm.$nextTick()
+    const input = wrapper.get('[data-testid="ozon-weight-update-file-input"]')
+    const click = vi.spyOn(input.element, 'click').mockImplementation(() => {})
+
+    await wrapper.get('[data-testid="register-header-actions"]').trigger('click')
+    await wrapper.vm.onWeightUpdateFileSelected({
+      target: { files: [new File(['data'], 'weights.xlsx')], value: 'weights.xlsx' }
+    })
+
+    expect(click).not.toHaveBeenCalled()
+    expect(mockUpdateWeightsFromFile).not.toHaveBeenCalled()
+    expect(wrapper.findComponent({ name: 'RegisterHeaderActionsBar' }).props('mutationDisabled')).toBe(
+      true
+    )
   })
 
   it('shows INN and combined passport columns for import and reexport registers', async () => {

@@ -11,6 +11,7 @@ import ActionButton2L from '@/components/ActionButton2L.vue'
 import { vuetifyStubs } from './helpers/test-utils'
 import {
   roleAdapter1C,
+  roleAdapterAlta,
   roleAdmin,
   roleLogist,
   roleWhManager,
@@ -333,7 +334,7 @@ describe('Users_List.vue', () => {
     })
 
     it('navigates automated systems to their dedicated editor', () => {
-      wrapper.vm.userSettings({ id: 321, roles: [roleAdapter1C] })
+      wrapper.vm.userSettings({ id: 321, roles: [roleAdapterAlta] })
       expect(router.push).toHaveBeenCalledWith('/automated-system/edit/321')
     })
 
@@ -382,10 +383,10 @@ describe('Users_List.vue', () => {
         lastName: 'Production 1C',
         firstName: '',
         patronymic: '',
-        roles: [roleAdapter1C]
+        roles: [roleAdapter1C, roleAdapterAlta]
       }
       expect(wrapper.vm.getDisplayName(automatedSystem)).toBe('Production 1C')
-      expect(wrapper.vm.getCredentials(automatedSystem)).toBe('Адаптер 1С')
+      expect(wrapper.vm.getCredentials(automatedSystem)).toBe('Адаптер 1С, Адаптер Альта')
     })
 
     it('returns correct credentials for multiple roles', () => {

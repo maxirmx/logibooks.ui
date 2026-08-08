@@ -10,7 +10,7 @@ import UserSettings from '@/dialogs/User_Settings.vue'
 import { defaultGlobalStubs, createMockStore } from './helpers/test-utils.js'
 import { resolveAll } from './helpers/test-utils'
 import {
-  roleAdapter1C,
+  roleAdapterAlta,
   roleLogist,
   roleWhManager,
   roleWhOperator
@@ -156,10 +156,10 @@ describe('User_Settings.vue real component', () => {
     mockUser.value = {
       id: 7,
       firstName: '',
-      lastName: 'Production 1C',
+      lastName: 'Production Alta',
       patronymic: '',
-      email: 'adapter-1c/prod',
-      roles: [roleAdapter1C]
+      email: 'adapter-alta/prod',
+      roles: [roleAdapterAlta]
     }
     const wrapper = mount(Parent, {
       props: { register: false, id: 7 },

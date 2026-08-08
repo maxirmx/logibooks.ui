@@ -6,7 +6,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import AutomatedSystemSettings from '@/dialogs/AutomatedSystem_Settings.vue'
-import { roleAdapter1C, roleLogist } from '@/helpers/user.roles.js'
+import { roleAdapter1C, roleAdapterAlta, roleLogist } from '@/helpers/user.roles.js'
 
 const mocks = vi.hoisted(() => ({
   add: vi.fn(),
@@ -103,40 +103,62 @@ describe('AutomatedSystem_Settings.vue', () => {
     mocks.push.mockResolvedValue(undefined)
   })
 
-  it('renders only automated-system identity and role fields', async () => {
-    const { wrapper } = await mountDialog({ register: true, id: undefined })
+  it('renders only automated-system identity and role fields without a default role', async () => {
+    const { wrapper, dialog } = await mountDialog({ register: true, id: undefined })
 
     expect(wrapper.text()).toContain('Название:')
     expect(wrapper.text()).toContain('Идентификатор:')
     expect(wrapper.text()).toContain('Адаптер 1С')
+    expect(wrapper.text()).toContain('Адаптер Альта')
     expect(wrapper.text()).not.toContain('Фамилия:')
     expect(wrapper.text()).not.toContain('Имя:')
     expect(wrapper.text()).not.toContain('Отчество:')
     expect(wrapper.text()).not.toContain('Схема настройки клавиатуры')
     expect(wrapper.find('#roleAdapter1C').exists()).toBe(true)
+    expect(wrapper.find('#roleAdapterAlta').exists()).toBe(true)
+    expect(dialog.vm.$.setupState.initialValues.roles).toEqual([])
   })
 
-  it('creates an automated system with empty human-name fields', async () => {
+  it('requires at least one automated-system role and accepts both roles together', async () => {
+    const { dialog } = await mountDialog({ register: true, id: undefined })
+    const rolesSchema = dialog.vm.$.setupState.schema.fields.roles
+
+    await expect(rolesSchema.validate(undefined)).rejects.toThrow(
+      'Необходимо выбрать роль автоматизированной системы'
+    )
+    await expect(rolesSchema.validate(null)).rejects.toThrow(
+      'Необходимо выбрать роль автоматизированной системы'
+    )
+    await expect(rolesSchema.validate([])).rejects.toThrow(
+      'Необходимо выбрать роль автоматизированной системы'
+    )
+    await expect(rolesSchema.validate([roleAdapter1C, roleAdapterAlta])).resolves.toEqual([
+      roleAdapter1C,
+      roleAdapterAlta
+    ])
+  })
+
+  it('creates an Alta automated system with empty human-name fields', async () => {
     const { dialog } = await mountDialog({ register: true, id: undefined })
 
     await dialog.vm.$.setupState.onSubmit(
       {
-        lastName: 'Production 1C',
-        email: 'adapter-1c/prod',
+        lastName: 'Production Alta',
+        email: 'adapter-alta/prod',
         password: 'Password1!',
         password2: 'Password1!',
-        roles: [roleAdapter1C]
+        roles: [roleAdapterAlta]
       },
       { setErrors: vi.fn() }
     )
 
     expect(mocks.add).toHaveBeenCalledWith({
-      lastName: 'Production 1C',
-      email: 'adapter-1c/prod',
+      lastName: 'Production Alta',
+      email: 'adapter-alta/prod',
       firstName: '',
       patronymic: '',
       password: 'Password1!',
-      roles: [roleAdapter1C]
+      roles: [roleAdapterAlta]
     })
     expect(mocks.push).toHaveBeenCalledWith('/users')
   })

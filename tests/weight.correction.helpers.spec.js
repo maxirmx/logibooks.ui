@@ -18,7 +18,7 @@ describe('weight correction helpers', () => {
     expect(getCorrectedWeight(null, { realWeightKg: 5, totalWeightKgToRelease: 10 })).toBeNull()
   })
 
-  it('opens shared confirm dialog with standard confirmation color', async () => {
+  it('opens the supplied confirmation dialog with the weight correction message', async () => {
     const confirm = vi.fn().mockResolvedValue(false)
 
     const choice = await chooseOutputWeightCorrection(confirm, {
@@ -32,13 +32,6 @@ describe('weight correction helpers', () => {
         title: 'Подтверждение',
         confirmationText: 'Да',
         cancellationText: 'Нет',
-        dialogProps: {
-          width: '30%',
-          minWidth: '250px'
-        },
-        confirmationButtonProps: {
-          color: 'orange-darken-3'
-        },
         content: 'Применить поправочный коэффициент 0,500 для веса посылок?'
       })
     )

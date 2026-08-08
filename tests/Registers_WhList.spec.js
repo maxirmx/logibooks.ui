@@ -481,19 +481,12 @@ describe('Registers_WhList.vue', () => {
 
     await wrapper.vm.deleteRegister(item)
 
-    expect(confirmMock).toHaveBeenCalledWith({
+    expect(confirmMock).toHaveBeenCalledWith(expect.objectContaining({
       title: 'Подтверждение',
       confirmationText: 'Удалить',
       cancellationText: 'Не удалять',
-      dialogProps: {
-        width: '30%',
-        minWidth: '250px'
-      },
-      confirmationButtonProps: {
-        color: 'orange-darken-3'
-      },
       content: 'Удалить партию "party.xlsx" ?'
-    })
+    }))
     expect(registersStore.remove).toHaveBeenCalledWith(12)
   })
 

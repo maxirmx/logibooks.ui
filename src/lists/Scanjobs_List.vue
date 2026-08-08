@@ -14,7 +14,7 @@ import { useCompaniesStore } from '@/stores/companies.store.js'
 import ActionButton from '@/components/ActionButton.vue'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
-import { useConfirm } from 'vuetify-use-dialog'
+import { useAppConfirm } from '@/composables/useAppConfirm.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync.js'
 import { mdiMagnify } from '@mdi/js'
@@ -31,7 +31,7 @@ const registersStore = useRegistersStore()
 const companiesStore = useCompaniesStore()
 const authStore = useAuthStore()
 const alertStore = useAlertStore()
-const confirm = useConfirm()
+const confirm = useAppConfirm()
 
 const { items, loading, ops, totalCount } = storeToRefs(scanJobsStore)
 const { companies } = storeToRefs(companiesStore)
@@ -80,13 +80,6 @@ async function deleteScanjob(scanJob) {
       title: 'Подтверждение',
       confirmationText: 'Удалить',
       cancellationText: 'Не удалять',
-      dialogProps: {
-        width: '30%',
-        minWidth: '250px'
-      },
-      confirmationButtonProps: {
-        color: 'orange-darken-3'
-      },
       content: content
     })
 
@@ -155,13 +148,6 @@ async function finishScanjob(scanJob) {
       title: 'Подтверждение',
       confirmationText: 'Завершить',
       cancellationText: 'Не завершать',
-      dialogProps: {
-        width: '30%',
-        minWidth: '250px'
-      },
-      confirmationButtonProps: {
-        color: 'orange-darken-3'
-      },
       content: content
     })
 

@@ -559,19 +559,12 @@ describe('Users_List.vue', () => {
 
       await wrapper.vm.deleteUser(userItem)
 
-      expect(confirmMock).toHaveBeenCalledWith({
+      expect(confirmMock).toHaveBeenCalledWith(expect.objectContaining({
         title: 'Подтверждение',
         confirmationText: 'Удалить',
         cancellationText: 'Не удалять',
-        dialogProps: {
-          width: '30%',
-          minWidth: '250px'
-        },
-        confirmationButtonProps: {
-          color: 'orange-darken-3'
-        },
         content: 'Удалить пользователя "Doe John" ?'
-      })
+      }))
       expect(mockUsersStore.delete).toHaveBeenCalledWith(1)
       expect(mockUsersStore.getAll).toHaveBeenCalled()
     })

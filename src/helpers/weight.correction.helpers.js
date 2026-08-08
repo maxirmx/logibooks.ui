@@ -7,15 +7,6 @@ export const WEIGHT_CORRECTION_CHOICE = {
   Skip: 'skip'
 }
 
-export const WEIGHT_CORRECTION_CONFIRM_DIALOG_PROPS = {
-  width: '30%',
-  minWidth: '250px'
-}
-
-export const WEIGHT_CORRECTION_CONFIRM_BUTTON_PROPS = {
-  color: 'orange-darken-3'
-}
-
 export function parseWeightCorrectionValue(value) {
   if (value === null || value === undefined || value === '') return null
 
@@ -74,8 +65,6 @@ export async function chooseOutputWeightCorrection(confirm, register, options = 
     title: 'Подтверждение',
     confirmationText: 'Да',
     cancellationText: 'Нет',
-    dialogProps: WEIGHT_CORRECTION_CONFIRM_DIALOG_PROPS,
-    confirmationButtonProps: WEIGHT_CORRECTION_CONFIRM_BUTTON_PROPS,
     content: buildWeightCorrectionMessage(correction.coefficientText, options)
   })
 

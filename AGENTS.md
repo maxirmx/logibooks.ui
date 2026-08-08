@@ -25,6 +25,22 @@ These instructions apply to the entire repository. Follow them for every new fea
 - Errors remain visible until dismissed, replaced, or cleared by successful route navigation.
 - Successful route changes must clear the active alert so messages from the previous page are not retained.
 
+## Dialog consistency
+
+- Build modal shells with `AppDialogFrame` and use the shared sizes from `dialog.helpers.js`; do not add page-specific card, title, content, or action-bar styling for a new dialog.
+- Open confirmation message boxes through `useAppConfirm`; direct `useConfirm` usage and per-call width or button styling are not allowed.
+- Extend the shared dialog primitives when a new tone or layout is needed so the change remains consistent application-wide.
+- Dialog colors communicate a documented semantic role; they are not selected independently for individual dialogs:
+  - Blue header: normal information, progress, selection, or workflow dialog.
+  - Red header and error indicator: blocking failure that requires acknowledgement.
+  - Amber header and warning indicator: warning that is not itself a failure.
+  - Blue flat button: primary non-destructive action or acknowledgement.
+  - Orange flat button: destructive, irreversible, or explicitly high-risk confirmation.
+  - Text button: cancellation or secondary action.
+- Use `APP_DIALOG_BUTTON_PROPS` for dialog buttons. Do not hardcode dialog button colors or variants at call sites.
+- Color must not be the only indication of meaning: error and warning dialogs also use a tone indicator, while destructive confirmations use explicit action text.
+- `ParcelStatusBulkChangeDialog.vue` is an explicit legacy exception and must not be restyled without a separate user request.
+
 ## Testing requirements
 
 - Add a rejection-path test whenever an asynchronous operation is added or changed.

@@ -3,7 +3,7 @@
 // This file is a part of Logibooks ui application
 
 import { computed, watch, ref, unref, reactive } from 'vue'
-import { useConfirm } from 'vuetify-use-dialog'
+import { useAppConfirm } from '@/composables/useAppConfirm.js'
 import { useActionDialog } from '@/composables/useActionDialog.js'
 import { FeacnMatchMode } from '@/models/feacn.match.mode.js'
 import { SwValidationMatchMode } from '@/models/sw.validation.match.mode.js'
@@ -364,7 +364,7 @@ export function useRegisterHeaderActions({
   const runningActionRef = runningAction ?? ref(false)
 
   const { actionDialogState, showActionDialog, hideActionDialog } = useActionDialog()
-  const confirm = useConfirm()
+  const confirm = useAppConfirm()
   const weightCorrectionChoicePending = ref(false)
   const passportFinishConfirmationPending = ref(false)
 
@@ -552,8 +552,7 @@ export function useRegisterHeaderActions({
           title: 'Завершение проверки паспортов',
           confirmationText: 'Завершить',
           cancellationText: 'Отмена',
-          confirmationButtonProps: { color: 'orange-darken-3' },
-          dialogProps: { width: '40%', minWidth: '320px' },
+          size: 'medium',
           content:
             'Из таможенного оформления могут быть исключены посылки с незавершённой проверкой паспорта получателя. Продолжить?'
         })

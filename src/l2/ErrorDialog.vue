@@ -1,6 +1,12 @@
 <script setup>
  
 import { computed, onUnmounted, watch } from 'vue'
+import AppDialogFrame from '@/components/AppDialogFrame.vue'
+import {
+  APP_DIALOG_BUTTON_PROPS,
+  APP_DIALOG_MAX_WIDTH,
+  APP_DIALOG_SIZES
+} from '@/helpers/dialog.helpers.js'
 
 const props = defineProps({
   show: { type: Boolean, default: false },
@@ -47,17 +53,12 @@ onUnmounted(() => {
 <template>
   <v-dialog
     :model-value="dialogVisible"
-    width="560"
-    max-width="calc(100vw - 32px)"
+    :width="APP_DIALOG_SIZES.medium"
+    :max-width="APP_DIALOG_MAX_WIDTH"
     persistent
-    aria-labelledby="error-dialog-title"
+    :aria-label="title"
   >
-    <v-card class="error-dialog">
-      <v-card-title id="error-dialog-title" class="error-dialog__title">
-        <span class="error-dialog__icon" aria-hidden="true">!</span>
-        <span>{{ title }}</span>
-      </v-card-title>
-      <v-card-text class="error-dialog__content">
+    <AppDialogFrame :title="title" tone="error">
         <p v-if="message" class="error-dialog__message" data-testid="error-dialog-message">
           {{ message }}
         </p>
@@ -88,59 +89,20 @@ onUnmounted(() => {
             </ul>
           </section>
         </div>
-      </v-card-text>
-      <v-card-actions class="error-dialog__actions">
-        <v-btn color="primary" variant="flat" data-testid="error-dialog-close" @click="closeDialog">
+      <template #actions>
+        <v-btn
+          v-bind="APP_DIALOG_BUTTON_PROPS.primary"
+          data-testid="error-dialog-close"
+          @click="closeDialog"
+        >
           Закрыть
         </v-btn>
-      </v-card-actions>
-    </v-card>
+      </template>
+    </AppDialogFrame>
   </v-dialog>
 </template>
 
 <style scoped>
-.error-dialog {
-  max-height: min(80vh, 640px);
-  overflow: hidden;
-  border-radius: 12px;
-}
-
-.error-dialog__title {
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
-  padding: 22px 24px 12px;
-  color: #b42318;
-  font-size: 1.25rem;
-  font-weight: 600;
-  line-height: 1.35;
-  white-space: normal;
-  overflow-wrap: anywhere;
-}
-
-.error-dialog__icon {
-  display: inline-flex;
-  flex: 0 0 28px;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  margin-top: 1px;
-  border-radius: 50%;
-  color: #fff;
-  background: #d92d20;
-  font-size: 1rem;
-  font-weight: 700;
-  line-height: 1;
-}
-
-.error-dialog__content {
-  min-height: 0;
-  padding: 8px 24px 20px;
-  overflow-y: auto;
-  color: rgba(0, 0, 0, 0.78);
-}
-
 .error-dialog__message {
   margin: 0;
   font-size: 1rem;
@@ -191,29 +153,9 @@ onUnmounted(() => {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #d92d20;
+  background: #000;
   content: '';
   transform: translateY(-50%);
 }
 
-.error-dialog__actions {
-  justify-content: flex-end;
-  padding: 12px 20px 16px;
-  border-top: 1px solid #eaecf0;
-}
-
-@media (max-width: 600px) {
-  .error-dialog__title {
-    padding: 18px 18px 10px;
-    font-size: 1.1rem;
-  }
-
-  .error-dialog__content {
-    padding: 8px 18px 18px;
-  }
-
-  .error-dialog__actions {
-    padding: 10px 14px 14px;
-  }
-}
 </style>

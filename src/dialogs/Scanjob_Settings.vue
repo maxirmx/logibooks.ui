@@ -24,7 +24,7 @@ import { GTC_COMPANY_ID } from '@/helpers/company.constants.js'
 import { getCompanyDisplayName } from '@/helpers/register.display.helpers.js'
 import { formatRegisterInvoice } from '@/helpers/register.heading.helpers.js'
 import ActionButton from '@/components/ActionButton.vue'
-import { useConfirm } from 'vuetify-use-dialog'
+import { useAppConfirm } from '@/composables/useAppConfirm.js'
 
 const props = defineProps({
   mode: {
@@ -60,7 +60,7 @@ const companiesStore = useCompaniesStore()
 const parcelStatusesStore = useParcelStatusesStore()
 const alertStore = useAlertStore()
 const authStore = useAuthStore()
-const confirm = useConfirm()
+const confirm = useAppConfirm()
 const { ops } = storeToRefs(scanJobsStore)
 const { companies } = storeToRefs(companiesStore)
 
@@ -532,13 +532,6 @@ async function finishScanjob() {
       title: 'Подтверждение',
       confirmationText: 'Завершить',
       cancellationText: 'Не завершать',
-      dialogProps: {
-        width: '30%',
-        minWidth: '250px'
-      },
-      confirmationButtonProps: {
-        color: 'orange-darken-3'
-      },
       content: 'Завершить задание на сканирование "' + actionName + '" ?'
     })
 

@@ -5,7 +5,7 @@
 
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { computed, onUnmounted, ref, toRef, unref, watch } from 'vue'
-import { useConfirm } from 'vuetify-use-dialog'
+import { useAppConfirm } from '@/composables/useAppConfirm.js'
 import TruncateTooltipCell from '@/components/TruncateTooltipCell.vue'
 import ClickableCell from '@/components/ClickableCell.vue'
 import { storeToRefs } from 'pinia'
@@ -29,7 +29,7 @@ const { reports, loading, reportsTotalCount } = storeToRefs(customsReportsStore)
 const fileInput = ref(null)
 const runningAction = ref(false)
 const { actionDialogState, showActionDialog, hideActionDialog } = useActionDialog()
-const confirm = useConfirm()
+const confirm = useAppConfirm()
 const uploadcustomsreports_page = toRef(authStore, 'uploadcustomsreports_page')
 const uploadcustomsreports_per_page = toRef(authStore, 'uploadcustomsreports_per_page')
 const uploadcustomsreports_sort_by = toRef(authStore, 'uploadcustomsreports_sort_by')
@@ -172,13 +172,6 @@ async function handleDeleteReport(report) {
       title: 'Подтверждение',
       confirmationText: 'Удалить',
       cancellationText: 'Не удалять',
-      dialogProps: {
-        width: '30%',
-        minWidth: '250px'
-      },
-      confirmationButtonProps: {
-        color: 'orange-darken-3'
-      },
       content
     })
 

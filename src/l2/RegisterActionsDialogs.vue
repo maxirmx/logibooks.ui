@@ -1,6 +1,12 @@
 <script setup>
 import { computed, unref } from 'vue'
 import ActionDialog from '@/l2/ActionDialog.vue'
+import AppDialogFrame from '@/components/AppDialogFrame.vue'
+import {
+  APP_DIALOG_BUTTON_PROPS,
+  APP_DIALOG_MAX_WIDTH,
+  APP_DIALOG_SIZES
+} from '@/helpers/dialog.helpers.js'
 
 const props = defineProps({
   validationState: { type: Object, required: true },
@@ -25,20 +31,23 @@ const onValidationDialogUpdate = (value) => {
 </script>
 
 <template>
-  <v-dialog :model-value="validationState.show" width="300" @update:model-value="onValidationDialogUpdate">
-    <v-card>
-      <v-card-title class="primary-heading">
-        {{ validationTitle }}
-      </v-card-title>
-      <v-card-text class="text-center">
-        <v-progress-circular :model-value="progressValue" :size="70" :width="7" color="primary">
-          {{ progressValue }}%
-        </v-progress-circular>
-      </v-card-text>
-      <v-card-actions class="justify-end">
-        <v-btn variant="text" @click="cancelValidation">Отменить</v-btn>
-      </v-card-actions>
-    </v-card>
+  <v-dialog
+    :model-value="validationState.show"
+    :width="APP_DIALOG_SIZES.progress"
+    :max-width="APP_DIALOG_MAX_WIDTH"
+    :aria-label="validationTitle"
+    @update:model-value="onValidationDialogUpdate"
+  >
+    <AppDialogFrame :title="validationTitle" compact>
+      <v-progress-circular :model-value="progressValue" :size="70" :width="7" color="primary">
+        {{ progressValue }}%
+      </v-progress-circular>
+      <template #actions>
+        <v-btn v-bind="APP_DIALOG_BUTTON_PROPS.secondary" @click="cancelValidation">
+          Отменить
+        </v-btn>
+      </template>
+    </AppDialogFrame>
   </v-dialog>
 
   <ActionDialog :action-dialog="actionDialog" />

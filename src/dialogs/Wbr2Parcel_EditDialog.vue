@@ -22,7 +22,7 @@ import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { storeToRefs } from 'pinia'
 import { computed, ref, watch, onMounted, onUnmounted } from 'vue'
-import { useConfirm } from 'vuetify-use-dialog'
+import { useAppConfirm } from '@/composables/useAppConfirm.js'
 import {
   wbr2RegisterColumnTitles,
   wbr2RegisterColumnTooltips
@@ -104,7 +104,7 @@ async function initialize() {
 }
 
 await initialize()
-const confirm = useConfirm()
+const confirm = useAppConfirm()
 const { imageOverlayOpen, imageUrl, imageLoading, openImageOverlay, closeImageOverlay } =
   useParcelImageOverlay(parcelsStore, alertStore)
 

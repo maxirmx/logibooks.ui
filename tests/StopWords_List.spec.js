@@ -315,19 +315,12 @@ describe('StopWords_List.vue', () => {
 
       await wrapper.vm.deleteStopWord(testStopWord)
 
-      expect(mockConfirm).toHaveBeenCalledWith({
+      expect(mockConfirm).toHaveBeenCalledWith(expect.objectContaining({
         title: 'Подтверждение',
         confirmationText: 'Удалить',
         cancellationText: 'Не удалять',
-        dialogProps: {
-          width: '30%',
-          minWidth: '250px'
-        },
-        confirmationButtonProps: {
-          color: 'orange-darken-3'
-        },
         content: 'Удалить стоп-слово "' + testStopWord.word + '" ?'
-      })
+      }))
     })
 
     it('calls remove when deletion is confirmed', async () => {

@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref, unref } from 'vue'
-import { useConfirm } from 'vuetify-use-dialog'
+import { useAppConfirm } from '@/composables/useAppConfirm.js'
 import ActionButton from '@/components/ActionButton.vue'
 import ActionButton2L from '@/components/ActionButton2L.vue'
 import { useAuthStore } from '@/stores/auth.store.js'
@@ -22,7 +22,7 @@ const emit = defineEmits(['bulk-change-parcel-status', 'close'])
 
 const registersStore = useRegistersStore()
 const authStore = useAuthStore()
-const confirm = useConfirm()
+const confirm = useAppConfirm()
 const canExport = computed(() => Boolean(unref(authStore.isWhManagerPlus)))
 const canBulkChangeParcelStatus = computed(() => Boolean(unref(authStore.isSrLogistPlus)))
 const exportPending = ref(false)

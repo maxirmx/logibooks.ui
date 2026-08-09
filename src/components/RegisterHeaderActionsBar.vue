@@ -11,6 +11,7 @@ import {
   isCustomsChargesCalculationProcedure,
   isImportCustomsProcedure
 } from '@/helpers/customs.procedure.helpers.js'
+import { canChangeParcelWeights } from '@/helpers/weight.correction.helpers.js'
 const authStore = useAuthStore()
 
 const props = defineProps({
@@ -71,6 +72,13 @@ const {
 const canCalculateCustomsCharges = computed(() => {
   return isCustomsChargesCalculationProcedure(props.item?.customsProcedureCode)
 })
+
+const weightChangesAllowed = computed(() => canChangeParcelWeights(props.item))
+const weightUpdateTooltip = computed(() =>
+  weightChangesAllowed.value
+    ? 'Обновить веса из файла реестра'
+    : 'Обновление весов недоступно: задан фактический вес к оформлению'
+)
 
 const documentOptions = computed(() => {
   const options = [
@@ -140,7 +148,8 @@ function run(evt) {
   if (
     props.disabled ||
     props.loading ||
-    (props.mutationDisabled && mutationEvents.has(evt))
+    (props.mutationDisabled && mutationEvents.has(evt)) ||
+    (evt === 'update-weights-from-file' && !weightChangesAllowed.value)
   ) return
   emit(evt)
 }
@@ -301,9 +310,9 @@ function openCmrSettings() {
         v-if="isSrLogistPlus && showWeightUpdate"
         :item="item"
         icon="fa-solid fa-file-arrow-up"
-        tooltip-text="Обновить веса из файла реестра"
+        :tooltip-text="weightUpdateTooltip"
         :iconSize="iconSize"
-        :disabled="disabled || mutationDisabled || loading"
+        :disabled="disabled || mutationDisabled || loading || !weightChangesAllowed"
         data-testid="register-weight-update-action"
         @click="run('update-weights-from-file')"
       />

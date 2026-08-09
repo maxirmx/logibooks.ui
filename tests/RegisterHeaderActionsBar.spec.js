@@ -546,6 +546,31 @@ describe('RegisterHeaderActionsBar', () => {
     expect(wrapper.emitted('update-weights-from-file')).toBeUndefined()
   })
 
+  it('disables only the weight update action when manual final weight is set', () => {
+    const wrapper = mount(RegisterHeaderActionsBar, {
+      props: {
+        ...baseProps,
+        item: { ...baseProps.item, realWeightKg: 12.345 },
+        showWeightUpdate: true
+      },
+      global: { stubs: vuetifyStubs }
+    })
+
+    const weightUpdateAction = findActionButtonByTooltip(
+      wrapper,
+      'Обновление весов недоступно: задан фактический вес к оформлению'
+    )
+    const calculateChargesAction = findActionButtonByTooltip(
+      wrapper,
+      'Рассчитать сборы и пошлины'
+    )
+
+    expect(weightUpdateAction.props('disabled')).toBe(true)
+    expect(calculateChargesAction.props('disabled')).toBe(false)
+    weightUpdateAction.vm.$emit('click')
+    expect(wrapper.emitted('update-weights-from-file')).toBeUndefined()
+  })
+
   it('shows custom charges calculation for import and reimport procedures', () => {
     for (const customsProcedureCode of [CUSTOMS_PROCEDURE_IMPORT, CUSTOMS_PROCEDURE_REIMPORT]) {
       const wrapper = mount(RegisterHeaderActionsBar, {

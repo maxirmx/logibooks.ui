@@ -17,6 +17,11 @@ export function parseWeightCorrectionValue(value) {
   return Number.isFinite(parsed) ? parsed : null
 }
 
+export function canChangeParcelWeights(register) {
+  const realWeightKg = parseWeightCorrectionValue(register?.realWeightKg)
+  return realWeightKg === null || realWeightKg <= 0
+}
+
 export function getWeightCorrection(register) {
   const realWeightKg = parseWeightCorrectionValue(register?.realWeightKg)
   const weightToRelease = parseWeightCorrectionValue(register?.totalWeightKgToRelease)

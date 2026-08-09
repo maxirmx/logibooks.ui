@@ -650,6 +650,21 @@ describe('OzonParcels_List.vue – multi-select', () => {
     )
   })
 
+  it('blocks the file picker and upload when manual final weight is set', async () => {
+    mockRegisterItem.value = { dealNumber: 'D-1', realWeightKg: 12.345 }
+    await wrapper.vm.$nextTick()
+    const input = wrapper.get('[data-testid="ozon-weight-update-file-input"]')
+    const click = vi.spyOn(input.element, 'click').mockImplementation(() => {})
+
+    await wrapper.get('[data-testid="register-header-actions"]').trigger('click')
+    await wrapper.vm.onWeightUpdateFileSelected({
+      target: { files: [new File(['data'], 'weights.xlsx')], value: 'weights.xlsx' }
+    })
+
+    expect(click).not.toHaveBeenCalled()
+    expect(mockUpdateWeightsFromFile).not.toHaveBeenCalled()
+  })
+
   it('shows INN and combined passport columns for import and reexport registers', async () => {
     for (const customsProcedureCode of [CUSTOMS_PROCEDURE_IMPORT, CUSTOMS_PROCEDURE_REEXPORT]) {
       wrapper.unmount()

@@ -5,10 +5,19 @@ import {
   chooseOutputWeightCorrection,
   confirmOutputWeightCorrection,
   getCorrectedWeight,
+  canChangeParcelWeights,
   WEIGHT_CORRECTION_CHOICE
 } from '@/helpers/weight.correction.helpers.js'
 
 describe('weight correction helpers', () => {
+  it('allows parcel weight changes only when no manual final register weight is set', () => {
+    expect(canChangeParcelWeights({ realWeightKg: 5 })).toBe(false)
+    expect(canChangeParcelWeights({ realWeightKg: ' 5,25 ' })).toBe(false)
+    expect(canChangeParcelWeights({ realWeightKg: null })).toBe(true)
+    expect(canChangeParcelWeights({ realWeightKg: 0 })).toBe(true)
+    expect(canChangeParcelWeights({ realWeightKg: -1 })).toBe(true)
+  })
+
   it('calculates corrected parcel weight only when register correction is possible', () => {
     expect(getCorrectedWeight(2.4, { realWeightKg: 5, totalWeightKgToRelease: 10 })).toBe(1.2)
     expect(getCorrectedWeight(2.4, { realWeightKg: null, totalWeightKgToRelease: 10 })).toBeNull()

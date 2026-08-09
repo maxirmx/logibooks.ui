@@ -56,6 +56,16 @@ describe('ParcelWeightAutoField', () => {
     expect(wrapper.get('[data-icon="fa-solid fa-arrow-right"]').exists()).toBe(true)
   })
 
+  it('disables manual weight editing whenever a manual final register weight is set', () => {
+    const wrapper = mountField({
+      item: { weightKg: 2.4, weightCorrectionEligible: true },
+      register: { realWeightKg: 5, totalWeightKgToRelease: 0 }
+    })
+
+    expect(wrapper.find('[data-testid="editable-weight-field"]').exists()).toBe(false)
+    expect(wrapper.find('.parcel-weight-auto-field').exists()).toBe(true)
+  })
+
   it('renders readonly original weight without correction for non-eligible parcels', () => {
     const wrapper = mountField({
       item: { weightKg: 2.4, weightCorrectionEligible: false },

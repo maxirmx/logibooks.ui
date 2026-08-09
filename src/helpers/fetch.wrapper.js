@@ -351,6 +351,9 @@ function parseContentDispositionFilename(disposition) {
  */
 async function downloadFile(fileUrl, defaultFilename, options = {}) {
   const method = String(options.method || 'GET').toUpperCase()
+  if (options.pollAccepted === true && method !== 'GET') {
+    throw new Error('downloadFile polling supports GET requests only')
+  }
   if ((method === 'GET' || method === 'HEAD') && options.body !== undefined) {
     throw new Error('downloadFile does not support request bodies for GET/HEAD requests')
   }
@@ -358,11 +361,21 @@ async function downloadFile(fileUrl, defaultFilename, options = {}) {
   let response = await fetchBlob(fileUrl, options.body)
 
   while (response.status === 202) {
-    let progress = null
+    let progress
     try {
       progress = await response.json()
-    } catch {
-      // A malformed progress response must never be saved as the requested file.
+    } catch (cause) {
+      const error = new Error('Некорректный ответ о ходе формирования файла')
+      error.status = 202
+      error.cause = cause
+      throw error
+    }
+
+    if (progress === null || typeof progress !== 'object' || Array.isArray(progress)) {
+      const error = new Error('Некорректный ответ о ходе формирования файла')
+      error.status = 202
+      error.data = progress
+      throw error
     }
 
     if (options.pollAccepted !== true) {

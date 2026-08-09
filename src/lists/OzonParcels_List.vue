@@ -30,6 +30,7 @@ import {
 } from '@/helpers/check.status.code.js'
 import { formatPrice } from '@/helpers/number.formatters.js'
 import { getErrorMessage } from '@/helpers/error.helpers.js'
+import { canChangeParcelWeights } from '@/helpers/weight.correction.helpers.js'
 import { ensureHttps } from '@/helpers/url.helpers.js'
 import {
   isImportCustomsProcedure,
@@ -144,6 +145,7 @@ const {
 const showAssignTnvedDialog = ref(false)
 const showParcelStatusBulkDialog = ref(false)
 const weightUpdateFileInput = ref(null)
+const weightChangesAllowed = computed(() => canChangeParcelWeights(registersStore.item))
 const weightUpdateErrorDialog = ref({
   show: false,
   title: '',
@@ -189,6 +191,7 @@ function openWeightUpdateFileDialog() {
   if (
     !authStore.isSrLogistPlus ||
     registersStore.item?.readOnly === true ||
+    !weightChangesAllowed.value ||
     runningAction.value ||
     loading.value ||
     isInitializing.value
@@ -227,6 +230,7 @@ async function onWeightUpdateFileSelected(event) {
     !file ||
     !authStore.isSrLogistPlus ||
     registersStore.item?.readOnly === true ||
+    !weightChangesAllowed.value ||
     runningAction.value ||
     loading.value ||
     isInitializing.value

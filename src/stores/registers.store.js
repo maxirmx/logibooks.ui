@@ -598,7 +598,8 @@ export const useRegistersStore = defineStore('registers', () => {
       }
       return await fetchWrapper.downloadFile(
         buildXmlRequestUrl(id, 'generate', applyWeightCorrection),
-        filename
+        filename,
+        { pollAccepted: true }
       )
     } catch (err) {
       error.value = err
@@ -620,7 +621,8 @@ export const useRegistersStore = defineStore('registers', () => {
       }
       return await fetchWrapper.downloadFile(
         buildXmlRequestUrl(id, 'generate-excise', applyWeightCorrection),
-        filename
+        filename,
+        { pollAccepted: true }
       )
     } catch (err) {
       error.value = err
@@ -642,7 +644,8 @@ export const useRegistersStore = defineStore('registers', () => {
       }
       return await fetchWrapper.downloadFile(
         buildXmlRequestUrl(id, 'generate-notifications', applyWeightCorrection),
-        filename
+        filename,
+        { pollAccepted: true }
       )
     } catch (err) {
       error.value = err
@@ -664,7 +667,8 @@ export const useRegistersStore = defineStore('registers', () => {
       }
       return await fetchWrapper.downloadFile(
         buildXmlRequestUrl(id, 'generate-ordinary', applyWeightCorrection),
-        filename
+        filename,
+        { pollAccepted: true }
       )
     } catch (err) {
       error.value = err

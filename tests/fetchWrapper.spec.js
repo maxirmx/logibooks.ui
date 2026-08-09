@@ -550,6 +550,134 @@ describe('fetchWrapper', () => {
       expect(anchor.download).toBe('default-name.txt')
     })
 
+    it('polls accepted responses and downloads only the completed file', async () => {
+      const progress = { handleId: 'job-1', total: 1000, processed: 250 }
+      const progressResponse = {
+        ok: true,
+        status: 202,
+        statusText: 'Accepted',
+        headers: { get: () => 'application/json' },
+        json: vi.fn().mockResolvedValue(progress),
+        blob: vi.fn()
+      }
+      const fileResponse = mockDownloadResponse(
+        'attachment; filename="IndPost_ready.zip"'
+      )
+      global.fetch = vi
+        .fn()
+        .mockResolvedValueOnce(progressResponse)
+        .mockResolvedValueOnce(fileResponse)
+      const onProgress = vi.fn()
+
+      const result = await fetchWrapper.downloadFile(
+        `${baseUrl}/registers/1/generate`,
+        'fallback.zip',
+        { pollAccepted: true, pollIntervalMs: 0, onProgress }
+      )
+
+      expect(result).toBe(true)
+      expect(global.fetch).toHaveBeenCalledTimes(2)
+      expect(progressResponse.json).toHaveBeenCalledOnce()
+      expect(progressResponse.blob).not.toHaveBeenCalled()
+      expect(onProgress).toHaveBeenCalledWith(progress)
+      expect(fileResponse.blob).toHaveBeenCalledOnce()
+      const anchor = global.document.createElement.mock.results[0].value
+      expect(anchor.download).toBe('IndPost_ready.zip')
+      expect(anchor.click).toHaveBeenCalledOnce()
+    })
+
+    it('rejects malformed accepted progress without invoking the callback or downloading it', async () => {
+      const parseError = new SyntaxError('Unexpected token')
+      const progressResponse = {
+        ok: true,
+        status: 202,
+        statusText: 'Accepted',
+        headers: { get: () => 'application/json' },
+        json: vi.fn().mockRejectedValue(parseError),
+        blob: vi.fn()
+      }
+      global.fetch = vi.fn().mockResolvedValue(progressResponse)
+      const onProgress = vi.fn()
+
+      await expect(
+        fetchWrapper.downloadFile(
+          `${baseUrl}/registers/1/generate`,
+          'must-not-download.zip',
+          { pollAccepted: true, pollIntervalMs: 0, onProgress }
+        )
+      ).rejects.toMatchObject({
+        message: 'Некорректный ответ о ходе формирования файла',
+        status: 202,
+        cause: parseError
+      })
+
+      expect(global.fetch).toHaveBeenCalledOnce()
+      expect(onProgress).not.toHaveBeenCalled()
+      expect(progressResponse.blob).not.toHaveBeenCalled()
+      expect(global.document.createElement).not.toHaveBeenCalled()
+    })
+
+    it('rejects a null accepted progress payload without invoking the callback', async () => {
+      const progressResponse = {
+        ok: true,
+        status: 202,
+        statusText: 'Accepted',
+        headers: { get: () => 'application/json' },
+        json: vi.fn().mockResolvedValue(null),
+        blob: vi.fn()
+      }
+      global.fetch = vi.fn().mockResolvedValue(progressResponse)
+      const onProgress = vi.fn()
+
+      await expect(
+        fetchWrapper.downloadFile(
+          `${baseUrl}/registers/1/generate`,
+          'must-not-download.zip',
+          { pollAccepted: true, pollIntervalMs: 0, onProgress }
+        )
+      ).rejects.toMatchObject({
+        message: 'Некорректный ответ о ходе формирования файла',
+        status: 202,
+        data: null
+      })
+
+      expect(global.fetch).toHaveBeenCalledOnce()
+      expect(onProgress).not.toHaveBeenCalled()
+      expect(progressResponse.blob).not.toHaveBeenCalled()
+    })
+
+    it('never saves an accepted progress response when polling is disabled', async () => {
+      const progressResponse = {
+        ok: true,
+        status: 202,
+        statusText: 'Accepted',
+        headers: { get: () => 'application/json' },
+        json: vi.fn().mockResolvedValue({ handleId: 'job-2', total: 1000, processed: 0 }),
+        blob: vi.fn()
+      }
+      global.fetch = vi.fn().mockResolvedValue(progressResponse)
+
+      await expect(
+        fetchWrapper.downloadFile(`${baseUrl}/registers/2/generate`, 'must-not-download.zip')
+      ).rejects.toMatchObject({ status: 202 })
+
+      expect(progressResponse.blob).not.toHaveBeenCalled()
+      expect(global.document.createElement).not.toHaveBeenCalled()
+    })
+
+    it('rejects polling for non-GET methods before sending a request', async () => {
+      await expect(
+        fetchWrapper.downloadFile(`${baseUrl}/registers/7/download-cmr`, 'CMR_7.docx', {
+          method: 'post',
+          body: { documentDate: '2026-07-19', senderCompanyId: 4 },
+          pollAccepted: true
+        })
+      ).rejects.toThrow('downloadFile polling supports GET requests only')
+
+      expect(global.fetch).not.toHaveBeenCalled()
+      expect(global.document.createElement).not.toHaveBeenCalled()
+    })
+
     it('supports authenticated JSON POST downloads without changing GET defaults', async () => {
       const mockResponse = mockDownloadResponse(null)
       const payload = { documentDate: '2026-07-19', senderCompanyId: 4 }

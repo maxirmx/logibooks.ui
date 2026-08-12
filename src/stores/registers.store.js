@@ -34,6 +34,7 @@ export const useRegistersStore = defineStore('registers', () => {
   const ops = ref({
     customsProcedures: [],
     transportationTypes: [],
+    incoterms: [],
     passportCheckStatuses: []
   })
   const opsLoading = ref(false)
@@ -153,6 +154,9 @@ export const useRegistersStore = defineStore('registers', () => {
         Array.isArray(response.customsProcedures) &&
         Array.isArray(response.transportationTypes)
       ) {
+        if (!Array.isArray(response.incoterms) || response.incoterms.length === 0) {
+          throw new Error('Справочник условий поставки не загружен')
+        }
         ops.value = {
           ...response,
           passportCheckStatuses: Array.isArray(response.passportCheckStatuses)
@@ -335,7 +339,8 @@ export const useRegistersStore = defineStore('registers', () => {
     customsProcedure,
     checkForDuplicates,
     transfer2Re = false,
-    selectedCurrency = null
+    selectedCurrency = null,
+    incotermsCode = 2
   ) {
     loading.value = true
     error.value = null
@@ -352,6 +357,7 @@ export const useRegistersStore = defineStore('registers', () => {
       params.append('customsProcedure', customsProcedure)
       params.append('checkForDuplicates', checkForDuplicates ? 'true' : 'false')
       params.append('transfer2Re', transfer2Re ? 'true' : 'false')
+      params.append('incotermsCode', String(incotermsCode ?? 2))
       if (selectedCurrency) {
         params.append('selectedCurrency', selectedCurrency)
       }

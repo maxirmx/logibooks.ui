@@ -84,6 +84,7 @@ const fieldLabels = {
   ArrivalAirportId: 'Аэропорт прибытия',
   TransportationTypeCode: 'Тип транспорта',
   CustomsProcedureCode: 'Таможенная процедура',
+  IncotermsCode: 'Условия поставки',
   LookupByArticle: 'Поиск по артикулу',
   PlacesTotal: 'Количество мест',
   TotalWeightKg: 'Общий вес',
@@ -180,6 +181,10 @@ function formatValue(change, value) {
     getTransportationTypeName: (id) =>
       registersStore.getOpsLabel(operations?.transportationTypes, id),
     getCustomsProcedureName: (id) => registersStore.getOpsLabel(operations?.customsProcedures, id),
+    getIncotermsName: (id) => {
+      const term = operations?.incoterms?.find((item) => Number(item.value) === Number(id))
+      return term ? `${term.charCode} — ${term.name}` : String(id)
+    },
     getWarehouseName: warehousesStore.getWarehouseName,
     getStatusName: (id) => registerStatusesStore.getStatusById(Number(id))?.title
   })

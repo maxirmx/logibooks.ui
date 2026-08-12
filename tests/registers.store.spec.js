@@ -87,6 +87,10 @@ const originalConsoleLog = console.log
 const originalConsoleError = console.error
 
 describe('registers store', () => {
+  const validIncoterms = [
+    { value: 2, name: 'Перевозка оплачена до', charCode: 'CPT' }
+  ]
+
   // Default mock auth store values
   const defaultAuthStore = {
     registers_page: 1,
@@ -881,7 +885,7 @@ describe('registers store', () => {
 
       expect(fetchWrapper.postFile).toHaveBeenCalled()
       expect(fetchWrapper.postFile.mock.calls[0][0]).toBe(
-        `${apiUrl}/registers/upload?registerType=123&customsProcedure=1&checkForDuplicates=false&transfer2Re=false`
+        `${apiUrl}/registers/upload?registerType=123&customsProcedure=1&checkForDuplicates=false&transfer2Re=false&incotermsCode=2`
       )
       const formData = fetchWrapper.postFile.mock.calls[0][1]
       expect(formData instanceof FormData).toBe(true)
@@ -899,7 +903,7 @@ describe('registers store', () => {
 
       expect(fetchWrapper.postFile).toHaveBeenCalled()
       expect(fetchWrapper.postFile.mock.calls[0][0]).toBe(
-        `${apiUrl}/registers/upload?registerType=123&customsProcedure=2&checkForDuplicates=true&transfer2Re=false`
+        `${apiUrl}/registers/upload?registerType=123&customsProcedure=2&checkForDuplicates=true&transfer2Re=false&incotermsCode=2`
       )
       const formData = fetchWrapper.postFile.mock.calls[0][1]
       expect(formData instanceof FormData).toBe(true)
@@ -917,7 +921,7 @@ describe('registers store', () => {
 
       expect(fetchWrapper.postFile).toHaveBeenCalled()
       expect(fetchWrapper.postFile.mock.calls[0][0]).toBe(
-        `${apiUrl}/registers/upload?registerType=123&customsProcedure=1&checkForDuplicates=false&transfer2Re=true`
+        `${apiUrl}/registers/upload?registerType=123&customsProcedure=1&checkForDuplicates=false&transfer2Re=true&incotermsCode=2`
       )
       const formData = fetchWrapper.postFile.mock.calls[0][1]
       expect(formData instanceof FormData).toBe(true)
@@ -935,7 +939,7 @@ describe('registers store', () => {
 
       expect(fetchWrapper.postFile).toHaveBeenCalled()
       expect(fetchWrapper.postFile.mock.calls[0][0]).toBe(
-        `${apiUrl}/registers/upload?registerType=123&customsProcedure=3&checkForDuplicates=true&transfer2Re=true`
+        `${apiUrl}/registers/upload?registerType=123&customsProcedure=3&checkForDuplicates=true&transfer2Re=true&incotermsCode=2`
       )
       const formData = fetchWrapper.postFile.mock.calls[0][1]
       expect(formData instanceof FormData).toBe(true)
@@ -950,9 +954,33 @@ describe('registers store', () => {
       await store.upload(file, 123, 1, true, false, 'UZS')
 
       expect(fetchWrapper.postFile.mock.calls[0][0]).toBe(
-        `${apiUrl}/registers/upload?registerType=123&customsProcedure=1&checkForDuplicates=true&transfer2Re=false&selectedCurrency=UZS`
+        `${apiUrl}/registers/upload?registerType=123&customsProcedure=1&checkForDuplicates=true&transfer2Re=false&incotermsCode=2&selectedCurrency=UZS`
       )
       expect(fetchWrapper.postFile.mock.calls[0][1].get('file')).toBe(file)
+    })
+
+    it('sends the selected Incoterms code', async () => {
+      const file = new File(['data'], 'fca.xlsx')
+      fetchWrapper.postFile.mockResolvedValue({ success: true, registerId: 6 })
+
+      const store = useRegistersStore()
+      await store.upload(file, 123, 10, true, false, null, 1)
+
+      expect(fetchWrapper.postFile.mock.calls[0][0]).toBe(
+        `${apiUrl}/registers/upload?registerType=123&customsProcedure=10&checkForDuplicates=true&transfer2Re=false&incotermsCode=1`
+      )
+    })
+
+    it.each([null, undefined])('defaults a missing Incoterms code to CPT (%s)', async (value) => {
+      const file = new File(['data'], 'default-incoterms.xlsx')
+      fetchWrapper.postFile.mockResolvedValue({ success: true, registerId: 7 })
+
+      const store = useRegistersStore()
+      await store.upload(file, 123, 10, true, false, null, value)
+
+      expect(fetchWrapper.postFile.mock.calls[0][0]).toBe(
+        `${apiUrl}/registers/upload?registerType=123&customsProcedure=10&checkForDuplicates=true&transfer2Re=false&incotermsCode=2`
+      )
     })
 
     it('throws when checkForDuplicates is missing', async () => {
@@ -1367,7 +1395,8 @@ describe('registers store', () => {
     it('preserves hub passport state in a legacy array register response', async () => {
       fetchWrapper.get.mockResolvedValueOnce({
         customsProcedures: [],
-        transportationTypes: []
+        transportationTypes: [],
+        incoterms: validIncoterms
       })
       const store = useRegistersStore()
       await store.getOps()
@@ -1402,7 +1431,8 @@ describe('registers store', () => {
     it('preserves hub passport state that arrives during a register REST request', async () => {
       fetchWrapper.get.mockResolvedValueOnce({
         customsProcedures: [],
-        transportationTypes: []
+        transportationTypes: [],
+        incoterms: validIncoterms
       })
       const store = useRegistersStore()
       await store.getOps()
@@ -1502,7 +1532,11 @@ describe('registers store', () => {
   describe('getById and update', () => {
     it('retrieves single register', async () => {
       const data = { id: 5, fileName: 'r' }
-      fetchWrapper.get.mockResolvedValueOnce({ customsProcedures: [], transportationTypes: [] })
+      fetchWrapper.get.mockResolvedValueOnce({
+        customsProcedures: [],
+        transportationTypes: [],
+        incoterms: validIncoterms
+      })
       fetchWrapper.get.mockResolvedValueOnce(data)
       const store = useRegistersStore()
       await store.getById(5)
@@ -1512,7 +1546,11 @@ describe('registers store', () => {
 
     it('handles getById error', async () => {
       const error = new Error('Not found')
-      fetchWrapper.get.mockResolvedValueOnce({ customsProcedures: [], transportationTypes: [] })
+      fetchWrapper.get.mockResolvedValueOnce({
+        customsProcedures: [],
+        transportationTypes: [],
+        incoterms: validIncoterms
+      })
       fetchWrapper.get.mockRejectedValueOnce(error)
       const store = useRegistersStore()
       await expect(store.getById(5)).rejects.toBe(error)
@@ -2194,6 +2232,10 @@ describe('registers store', () => {
           { value: 0, name: 'Авиа', document: 'AWB', isAvia: true },
           { value: 1, name: 'Авто', document: 'CMR', isAvia: false }
         ],
+        incoterms: [
+          { value: 1, name: 'Франко перевозчик', charCode: 'FCA' },
+          { value: 2, name: 'Перевозка оплачена до', charCode: 'CPT' }
+        ],
         passportCheckStatuses: [
           { value: 0, code: 'NotChecked', name: 'Не проверен' },
           { value: 30, code: 'Checked', name: 'Проверен' }
@@ -2208,6 +2250,7 @@ describe('registers store', () => {
       expect(result).toEqual(opsData)
       expect(store.ops.customsProcedures).toHaveLength(2)
       expect(store.ops.transportationTypes).toHaveLength(2)
+      expect(store.ops.incoterms).toEqual(opsData.incoterms)
       expect(store.ops.passportCheckStatuses).toEqual(opsData.passportCheckStatuses)
       expect(store.ops.customsProcedures.map((item) => item.initialRegisterStatusId)).toEqual([
         2, 3
@@ -2217,7 +2260,8 @@ describe('registers store', () => {
     it('getOps normalizes missing optional metadata', async () => {
       const opsData = {
         customsProcedures: [],
-        transportationTypes: []
+        transportationTypes: [],
+        incoterms: [{ value: 2, name: 'Перевозка оплачена до', charCode: 'CPT' }]
       }
       fetchWrapper.get.mockResolvedValue(opsData)
 
@@ -2229,6 +2273,22 @@ describe('registers store', () => {
       expect(result).not.toHaveProperty('initialRegisterStatusId')
       expect(store.ops).not.toHaveProperty('initialRegisterStatusId')
     })
+
+    it.each([undefined, null, []])(
+      'getOps rejects missing or empty Incoterms metadata (%s)',
+      async (incoterms) => {
+        const response = {
+          customsProcedures: [],
+          transportationTypes: []
+        }
+        if (incoterms !== undefined) response.incoterms = incoterms
+        fetchWrapper.get.mockResolvedValue(response)
+
+        const store = useRegistersStore()
+        await expect(store.getOps()).rejects.toThrow('Справочник условий поставки не загружен')
+        expect(store.opsError).toBeInstanceOf(Error)
+      }
+    )
 
     it('getOps sets opsError on failure', async () => {
       const error = new Error('Ops fetch failed')
@@ -2246,7 +2306,11 @@ describe('registers store', () => {
       await store.ensureOpsLoaded() // opsInitialized should remain false
 
       // Since opsInitialized is still false, a subsequent ensureOpsLoaded should re-fetch
-      fetchWrapper.get.mockResolvedValue({ customsProcedures: [], transportationTypes: [] })
+      fetchWrapper.get.mockResolvedValue({
+        customsProcedures: [],
+        transportationTypes: [],
+        incoterms: [{ value: 2, name: 'Перевозка оплачена до', charCode: 'CPT' }]
+      })
       await store.ensureOpsLoaded()
 
       // Two fetches: first returned null (invalid), second returned valid data
@@ -2280,7 +2344,8 @@ describe('registers store', () => {
     it('getAll awaits ops before applying setDestinationField', async () => {
       const opsData = {
         customsProcedures: [{ value: 1, name: 'Экспорт', isExport: true, charCode: 'ЭК10' }],
-        transportationTypes: []
+        transportationTypes: [],
+        incoterms: validIncoterms
       }
       const register = {
         id: 1,
@@ -2304,7 +2369,11 @@ describe('registers store', () => {
     })
 
     it('ensureOpsLoaded calls getOps on first load', async () => {
-      const opsData = { customsProcedures: [], transportationTypes: [] }
+      const opsData = {
+        customsProcedures: [],
+        transportationTypes: [],
+        incoterms: validIncoterms
+      }
       fetchWrapper.get.mockResolvedValue(opsData)
 
       const store = useRegistersStore()
@@ -2314,7 +2383,11 @@ describe('registers store', () => {
     })
 
     it('ensureOpsLoaded does not call getOps again if already initialized', async () => {
-      const opsData = { customsProcedures: [], transportationTypes: [] }
+      const opsData = {
+        customsProcedures: [],
+        transportationTypes: [],
+        incoterms: validIncoterms
+      }
       fetchWrapper.get.mockResolvedValue(opsData)
 
       const store = useRegistersStore()
@@ -2325,7 +2398,11 @@ describe('registers store', () => {
     })
 
     it('ensureOpsLoaded deduplicates concurrent calls', async () => {
-      const opsData = { customsProcedures: [], transportationTypes: [] }
+      const opsData = {
+        customsProcedures: [],
+        transportationTypes: [],
+        incoterms: validIncoterms
+      }
       fetchWrapper.get.mockResolvedValue(opsData)
 
       const store = useRegistersStore()

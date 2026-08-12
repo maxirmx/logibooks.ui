@@ -42,6 +42,7 @@ import RegisterStatusSelect from '@/components/RegisterStatusSelect.vue'
 
 const DEFAULT_OTHER_COUNTRY_CODE = 860 // UZ
 const DEFAULT_TRANSPORTATION_TYPE_NAME = 'Авто'
+const DEFAULT_INCOTERMS_CODE = 2 // CPT
 
 const props = defineProps({
   id: { type: Number, required: false },
@@ -327,6 +328,14 @@ function ensureDefaultCustomsProcedure() {
   }
 }
 
+function ensureDefaultIncoterms() {
+  if (!item.value) return
+  const currentValue = parseNumber(item.value.incotermsCode, null)
+  if (currentValue === null) {
+    item.value.incotermsCode = DEFAULT_INCOTERMS_CODE
+  }
+}
+
 const filteredCustomsProcedures = computed(() => {
   const all = ops.value?.customsProcedures
   if (!Array.isArray(all)) return []
@@ -476,6 +485,7 @@ async function loadRegister() {
     }
     originalCustomsProcedureCode.value = parseNumber(item.value.customsProcedureCode, null)
     ensureDefaultOtherCountry()
+    ensureDefaultIncoterms()
   } catch (error) {
     registerLoadFailed.value = true
     alertStore.error(error, {
@@ -490,6 +500,7 @@ if (!props.create) {
 } else {
   // Set default values for new records
   ensureDefaultCustomsProcedure()
+  ensureDefaultIncoterms()
   if (item.value.transportationTypeCode == null) {
     item.value.transportationTypeCode = getDefaultTransportationTypeCode()
   }
@@ -523,6 +534,7 @@ async function initializeDependencies() {
 
     await registersStore.ensureOpsLoaded()
     if (!isComponentMounted.value) return
+    ensureDefaultIncoterms()
 
     await registerStatusesStore.ensureLoaded()
     if (!isComponentMounted.value) return
@@ -599,6 +611,10 @@ const schema = Yup.object().shape({
     ),
   transportationTypeCode: Yup.number().nullable(),
   customsProcedureCode: Yup.number().nullable(),
+  incotermsCode: Yup.number()
+    .typeError('Необходимо выбрать условия поставки')
+    .default(DEFAULT_INCOTERMS_CODE)
+    .required('Необходимо выбрать условия поставки'),
   theOtherCompanyId: Yup.number().nullable(),
   theOtherCountryCode: Yup.number()
     .transform((value) => (value === '' ? null : value))
@@ -895,6 +911,10 @@ function prepareRegisterPayload(formValues) {
   payload.customsProcedureCode = getCustomsProcedureCodeOrDefault(
     getFieldOrItemValue(formValues.customsProcedureCode, item.value?.customsProcedureCode)
   )
+  payload.incotermsCode = parseNumber(
+    getFieldOrItemValue(formValues.incotermsCode, item.value?.incotermsCode),
+    DEFAULT_INCOTERMS_CODE
+  )
 
   // Handle boolean checkbox value
   payload.lookupByArticle = Boolean(
@@ -977,9 +997,11 @@ async function onSubmit(values, { setErrors } = {}) {
     let result
 
     while (true) {
-      result = selectedCurrency
-        ? await registersStore.upload(...uploadArgs, selectedCurrency)
-        : await registersStore.upload(...uploadArgs)
+      result = await registersStore.upload(
+        ...uploadArgs,
+        selectedCurrency,
+        payload.incotermsCode
+      )
 
       if (!isComponentMounted.value) return
       if (!result?.requiresCurrencySelection) break
@@ -1445,6 +1467,47 @@ const loadReportFields = computed(() => {
             </div>
           </div>
 
+          <div class="form-row">
+            <div class="form-group">
+              <label
+                v-if="!props.create && props.mode === OP_MODE_PAPERWORK"
+                class="custom-checkbox"
+              >
+                <Field
+                  id="lookupByArticle"
+                  type="checkbox"
+                  name="lookupByArticle"
+                  :value="true"
+                  :unchecked-value="false"
+                  class="custom-checkbox-input"
+                />
+                <span class="custom-checkbox-box"></span>
+                <span class="label custom-checkbox-label"
+                  >Использовать для подбора кода ТН ВЭД и анализа стоп-слов</span
+                >
+              </label>
+            </div>
+            <div class="form-group">
+              <label for="incotermsCode" class="label">Условия поставки:</label>
+              <Field
+                as="select"
+                name="incotermsCode"
+                id="incotermsCode"
+                class="form-control input"
+                :class="{ 'is-invalid': errors.incotermsCode }"
+              >
+                <option
+                  v-for="term in ops.incoterms"
+                  :key="term.value"
+                  :value="term.value"
+                >
+                  {{ term.charCode }} — {{ term.name }}
+                </option>
+              </Field>
+              <FieldError name="incotermsCode" :errors="errors" />
+            </div>
+          </div>
+
           <div class="form-row" v-if="props.create || shouldShowEditDuplicateCheck">
             <div class="form-group">
               <label for="checkForDuplicates" class="custom-checkbox">
@@ -1475,25 +1538,6 @@ const loadReportFields = computed(() => {
                 <span class="custom-checkbox-box"></span>
                 <span class="label custom-checkbox-label"
                   >Для реимпорта и реэкспорта использовать предшествующие данные</span
-                >
-              </label>
-            </div>
-          </div>
-
-          <div class="form-row" v-if="!props.create && props.mode === OP_MODE_PAPERWORK">
-            <div class="form-group">
-              <label class="custom-checkbox">
-                <Field
-                  id="lookupByArticle"
-                  type="checkbox"
-                  name="lookupByArticle"
-                  :value="true"
-                  :unchecked-value="false"
-                  class="custom-checkbox-input"
-                />
-                <span class="custom-checkbox-box"></span>
-                <span class="label custom-checkbox-label"
-                  >Использовать для подбора кода ТН ВЭД и анализа стоп-слов</span
                 >
               </label>
             </div>

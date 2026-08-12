@@ -87,6 +87,10 @@ export function formatRegisterHistoryValue(
         ? String(value)
         : displayValue
     }
+    case 'WithTransit':
+      return value === true || value === 1 || ['true', '1'].includes(String(value).toLowerCase())
+        ? 'Да'
+        : 'Нет'
     case 'WarehouseId':
       return resolveReference(value, getWarehouseName, 'Неизвестный склад')
     case 'DTime':

@@ -339,6 +339,25 @@ describe('RegisterHistory_List.vue', () => {
     expect(text).not.toContain(`Тип реестра: 1 → ${WBRN_REGISTER_ID}`)
   })
 
+  it('renders inspection count and transit changes with user-facing labels and values', async () => {
+    mockRefs.items.value[0].changes = [
+      { field: 'InspectionsCount', oldValue: null, newValue: '12' },
+      { field: 'WithTransit', oldValue: false, newValue: true }
+    ]
+
+    const wrapper = mount(RegisterHistoryList, {
+      props: { registerId: 42 },
+      global: { stubs: defaultGlobalStubs }
+    })
+    await flushPromises()
+
+    const text = wrapper.text()
+    expect(text).toContain('Количество досмотренных посылок: не указано → 12')
+    expect(text).toContain('Транзит: Нет → Да')
+    expect(text).not.toContain('InspectionsCount')
+    expect(text).not.toContain('WithTransit')
+  })
+
   it('uses descriptive fallbacks for references that no longer exist', async () => {
     mockRefs.items.value[0].changes = [
       { field: 'StatusId', oldValue: '999', newValue: null },

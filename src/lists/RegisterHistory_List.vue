@@ -86,6 +86,8 @@ const fieldLabels = {
   CustomsProcedureCode: 'Таможенная процедура',
   IncotermsCode: 'Условия поставки',
   LookupByArticle: 'Поиск по артикулу',
+  InspectionsCount: 'Количество досмотренных посылок',
+  WithTransit: 'Транзит',
   PlacesTotal: 'Количество мест',
   TotalWeightKg: 'Общий вес',
   RealWeightKg: 'Фактический вес',

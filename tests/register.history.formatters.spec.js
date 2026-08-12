@@ -54,6 +54,10 @@ describe('register history formatters', () => {
 
   it('formats non-reference values without lookup dependencies', () => {
     expect(formatRegisterHistoryValue('LookupByArticle', 'True', context)).toBe('Да')
+    expect(formatRegisterHistoryValue('WithTransit', true, context)).toBe('Да')
+    expect(formatRegisterHistoryValue('WithTransit', '1', context)).toBe('Да')
+    expect(formatRegisterHistoryValue('WithTransit', false, context)).toBe('Нет')
+    expect(formatRegisterHistoryValue('WithTransit', '0', context)).toBe('Нет')
     expect(formatRegisterHistoryValue('InvoiceDate', '2026-07-31', context)).toBe('31.07.2026')
     expect(formatRegisterHistoryValue('DealNumber', 'D-42', context)).toBe('D-42')
   })

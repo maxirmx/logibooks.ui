@@ -159,6 +159,10 @@ describe('RegisterHistory_List.vue', () => {
       customsProcedures: [
         { value: 10, name: 'Экспорт' },
         { value: 40, name: 'Выпуск для внутреннего потребления' }
+      ],
+      incoterms: [
+        { value: 1, charCode: 'FCA', name: 'Франко перевозчик' },
+        { value: 2, charCode: 'CPT', name: 'Перевозка оплачена до' }
       ]
     }
     mocks.companies = [
@@ -308,6 +312,7 @@ describe('RegisterHistory_List.vue', () => {
       { field: 'DepartureAirportId', oldValue: '1', newValue: '2' },
       { field: 'TransportationTypeCode', oldValue: '1', newValue: '2' },
       { field: 'CustomsProcedureCode', oldValue: '10', newValue: '40' },
+      { field: 'IncotermsCode', oldValue: '2', newValue: '1' },
       { field: 'WarehouseId', oldValue: '1', newValue: '2' }
     ]
 
@@ -326,6 +331,9 @@ describe('RegisterHistory_List.vue', () => {
     expect(text).toContain('Аэропорт отправления: Шереметьево (SVO) → Домодедово (DME)')
     expect(text).toContain('Тип транспорта: Авиа → Авто')
     expect(text).toContain('Таможенная процедура: Экспорт → Выпуск для внутреннего потребления')
+    expect(text).toContain(
+      'Условия поставки: CPT — Перевозка оплачена до → FCA — Франко перевозчик'
+    )
     expect(text).toContain('Склад: Склад Север → Склад Юг')
     expect(text).not.toContain('Контрагент: 11 → 5')
     expect(text).not.toContain(`Тип реестра: 1 → ${WBRN_REGISTER_ID}`)

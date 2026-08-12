@@ -15,6 +15,8 @@ const context = {
   getCountryName: (value) => (Number(value) === 860 ? 'Узбекистан' : value),
   getTransportationTypeName: (value) => (Number(value) === 0 ? 'Авиа' : String(value)),
   getCustomsProcedureName: (value) => (Number(value) === 10 ? 'Экспорт' : String(value)),
+  getIncotermsName: (value) =>
+    Number(value) === 1 ? 'FCA — Франко перевозчик' : String(value),
   getWarehouseName: (value) => (Number(value) === 5 ? 'Основной склад' : String(value)),
   getStatusName: (value) => (Number(value) === 2 ? 'На складе' : null)
 }
@@ -30,6 +32,9 @@ describe('register history formatters', () => {
     expect(formatRegisterHistoryValue('DepartureAirportId', 1, context)).toBe('Шереметьево (SVO)')
     expect(formatRegisterHistoryValue('TransportationTypeCode', 0, context)).toBe('Авиа')
     expect(formatRegisterHistoryValue('CustomsProcedureCode', 10, context)).toBe('Экспорт')
+    expect(formatRegisterHistoryValue('IncotermsCode', 1, context)).toBe(
+      'FCA — Франко перевозчик'
+    )
     expect(formatRegisterHistoryValue('WarehouseId', 5, context)).toBe('Основной склад')
   })
 
@@ -44,6 +49,7 @@ describe('register history formatters', () => {
     )
     expect(formatRegisterHistoryValue('WarehouseId', 999, context)).toBe('Неизвестный склад')
     expect(formatRegisterHistoryValue('StatusId', 0, context)).toBe('не указано')
+    expect(formatRegisterHistoryValue('IncotermsCode', 999, context)).toBe('999')
   })
 
   it('formats non-reference values without lookup dependencies', () => {

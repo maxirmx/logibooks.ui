@@ -33,6 +33,7 @@ const baseRegisterItem = {
   registerType: 2,
   dealNumber: 'D1',
   customsProcedureCode: CUSTOMS_PROCEDURE_IMPORT,
+  incotermsCode: 2,
   transportationTypeCode: 1,
   theOtherCompanyId: null,
   theOtherCountryCode: null,
@@ -87,6 +88,11 @@ const mockOps = ref({
   transportationTypes: [
     { value: 1, name: 'Авто', document: 'CMR', isAvia: false },
     { value: 0, name: 'Авиа', document: 'AWB', isAvia: true }
+  ],
+  incoterms: [
+    { value: 0, charCode: 'EXW', name: 'Франко завод' },
+    { value: 1, charCode: 'FCA', name: 'Франко перевозчик' },
+    { value: 2, charCode: 'CPT', name: 'Перевозка оплачена до' }
   ]
 })
 
@@ -404,6 +410,11 @@ describe('Register_EditDialog', () => {
       transportationTypes: [
         { value: 1, name: 'Авто', document: 'CMR', isAvia: false },
         { value: 0, name: 'Авиа', document: 'AWB', isAvia: true }
+      ],
+      incoterms: [
+        { value: 0, charCode: 'EXW', name: 'Франко завод' },
+        { value: 1, charCode: 'FCA', name: 'Франко перевозчик' },
+        { value: 2, charCode: 'CPT', name: 'Перевозка оплачена до' }
       ]
     }
   })
@@ -431,6 +442,14 @@ describe('Register_EditDialog', () => {
     expect(warehousesStore.ensureLoaded).toHaveBeenCalled()
     expect(wrapper.find('#invoiceNumber').exists()).toBe(true)
     expect(wrapper.find('#customsProcedureCode').exists()).toBe(true)
+    expect(wrapper.find('#incotermsCode').exists()).toBe(true)
+    expect(wrapper.findAll('#incotermsCode option').map((option) => option.text())).toEqual([
+      'EXW — Франко завод',
+      'FCA — Франко перевозчик',
+      'CPT — Перевозка оплачена до'
+    ])
+    const incotermsRow = wrapper.find('#incotermsCode').element.closest('.form-row')
+    expect(incotermsRow.contains(wrapper.find('#lookupByArticle').element)).toBe(true)
     const departureSelect = wrapper.find('select#departureAirportId')
     expect(departureSelect.exists()).toBe(true)
     expect(departureSelect.element.disabled).toBe(true)
@@ -1266,7 +1285,9 @@ describe('Register_EditDialog', () => {
       mockItem.value.companyId,
       mockItem.value.customsProcedureCode,
       true,
-      false
+      false,
+      null,
+      2
     )
     expect(router.push).toHaveBeenCalledWith('/registers?mode=modePaperwork')
   })
@@ -2157,7 +2178,9 @@ describe('Register_EditDialog', () => {
       mockItem.value.companyId,
       mockItem.value.customsProcedureCode,
       true,
-      false
+      false,
+      null,
+      2
     )
   })
 
@@ -2166,7 +2189,7 @@ describe('Register_EditDialog', () => {
     registersStore.uploadFile.value = new File(['data'], 'test.xlsx')
     mockItem.value = { ...baseRegisterItem, fileName: 'test.xlsx', registerType: 2, companyId: 2 }
     registerItems.value = []
-    const formValues = { dealNumber: 'D42', invoiceNumber: 'INV42' }
+    const formValues = { dealNumber: 'D42', invoiceNumber: 'INV42', incotermsCode: 1 }
 
     const Parent = {
       template: '<Suspense><RegisterEditDialog :create="true" /></Suspense>',
@@ -2194,7 +2217,9 @@ describe('Register_EditDialog', () => {
       mockItem.value.companyId,
       mockItem.value.customsProcedureCode,
       true,
-      false
+      false,
+      null,
+      1
     )
 
     // Verify update was called with the Id from the Reference object and the sanitized form values
@@ -2203,6 +2228,7 @@ describe('Register_EditDialog', () => {
       expect.objectContaining({
         dealNumber: 'D42',
         invoiceNumber: 'INV42',
+        incotermsCode: 1,
         transportationTypeCode: 1,
         departureAirportId: 0,
         arrivalAirportId: 0
@@ -2313,7 +2339,9 @@ describe('Register_EditDialog', () => {
       mockItem.value.registerType,
       mockItem.value.customsProcedureCode,
       true,
-      false
+      false,
+      null,
+      2
     )
     expect(upload).toHaveBeenNthCalledWith(
       2,
@@ -2322,7 +2350,8 @@ describe('Register_EditDialog', () => {
       mockItem.value.customsProcedureCode,
       true,
       false,
-      'UZS'
+      'UZS',
+      2
     )
     expect(update).toHaveBeenCalledWith(42, expect.any(Object))
     expect(router.push).toHaveBeenCalledWith('/registers?mode=modePaperwork')
@@ -2576,7 +2605,9 @@ describe('Register_EditDialog', () => {
       mockItem.value.registerType,
       CUSTOMS_PROCEDURE_EXPORT,
       true,
-      false
+      false,
+      null,
+      2
     )
     expect(update).toHaveBeenCalledWith(
       42,
@@ -2586,14 +2617,15 @@ describe('Register_EditDialog', () => {
     )
   })
 
-  it('defaults missing transportation type to Auto when transportation types load later', async () => {
+  it('defaults missing transportation type to Auto and missing Incoterms to CPT', async () => {
     mockOps.value = {
       ...mockOps.value,
       transportationTypes: []
     }
     mockItem.value = {
       ...baseRegisterItem,
-      transportationTypeCode: null
+      transportationTypeCode: null,
+      incotermsCode: null
     }
 
     const Parent = {
@@ -2623,6 +2655,7 @@ describe('Register_EditDialog', () => {
 
     const dialog = wrapper.findComponent(RegisterEditDialog)
     expect(dialog.vm.item.transportationTypeCode).toBe(1)
+    expect(dialog.vm.item.incotermsCode).toBe(2)
   })
 
   it('renders default customs procedure when procedures load later', async () => {
@@ -3057,7 +3090,9 @@ describe('Register_EditDialog', () => {
       mockItem.value.companyId,
       mockItem.value.customsProcedureCode,
       true,
-      false
+      false,
+      null,
+      2
     )
 
     // The upload created register 42, so a metadata failure opens that register for correction.

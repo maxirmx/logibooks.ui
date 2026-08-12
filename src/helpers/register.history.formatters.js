@@ -42,6 +42,7 @@ export function formatRegisterHistoryValue(
     getCountryName,
     getTransportationTypeName,
     getCustomsProcedureName,
+    getIncotermsName,
     getWarehouseName,
     getStatusName
   } = {}
@@ -80,6 +81,12 @@ export function formatRegisterHistoryValue(
         getCustomsProcedureName,
         'Неизвестная таможенная процедура'
       )
+    case 'IncotermsCode': {
+      const displayValue = getIncotermsName?.(value)
+      return isEmpty(displayValue) || String(displayValue) === String(value)
+        ? String(value)
+        : displayValue
+    }
     case 'WarehouseId':
       return resolveReference(value, getWarehouseName, 'Неизвестный склад')
     case 'DTime':

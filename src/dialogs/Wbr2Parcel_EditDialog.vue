@@ -168,6 +168,11 @@ function initNextParcelsPromise(id) {
       return result
     })
     .catch((error) => {
+      if (!isComponentMounted.value) {
+        // The request can finish after route navigation; the destination page must not show it.
+        return null
+      }
+
       alertStore.error(error, { fallback: 'Не удалось определить соседние посылки' })
       return null
     })

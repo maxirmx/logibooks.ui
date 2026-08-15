@@ -16,6 +16,8 @@ export const scanjobBoxHeaders = [
   { title: '', key: 'boxStickerScanned', align: 'start' },
   { title: 'Посылки', key: 'parcelsProgress', align: 'start', sortable: false },
   { title: 'Номер коробки', key: 'boxCode', align: 'center' },
+  { title: 'Габариты', key: 'dimensions', align: 'center', sortable: false },
+  { title: 'Вес, кг', key: 'weightKg', align: 'end' },
   { title: 'Пользователь', key: 'boxScannedUserName', align: 'start' },
   { title: 'Время сканирования', key: 'boxScannedTime', align: 'start' },
   { title: 'Сканированный код', key: 'boxScannedSticker', align: 'center' }
@@ -111,6 +113,30 @@ export function formatCount(value) {
   return Number(value ?? 0).toLocaleString('ru-RU')
 }
 
+export const boxMetricNotSetText = 'не задано'
+
+export function formatBoxDimensions(box) {
+  const values = [box?.lengthCm, box?.widthCm, box?.heightCm]
+  if (values.some((value) => value == null || value === '' || !Number.isFinite(Number(value)))) {
+    return boxMetricNotSetText
+  }
+
+  return `${values.map((value) => Number(value).toLocaleString('ru-RU', {
+    maximumFractionDigits: 2
+  })).join(' × ')} см`
+}
+
+export function formatBoxWeight(value) {
+  if (value == null || value === '' || !Number.isFinite(Number(value))) {
+    return boxMetricNotSetText
+  }
+
+  return `${Number(value).toLocaleString('ru-RU', {
+    minimumFractionDigits: 3,
+    maximumFractionDigits: 3
+  })} кг`
+}
+
 export function formatParcelProgress(item) {
   return [
     item?.totalParcels,
@@ -174,6 +200,10 @@ export function stickerClass(scanned, notFound = false) {
 export function isUnassignedMonitorBox(box) {
   return Number(box?.area) === scanjobMonitorArea.Unassigned
     || (box?.boxId == null && box?.bucketIndex != null)
+}
+
+export function isPhysicalMonitorBox(box) {
+  return Number(box?.area) === scanjobMonitorArea.Box && box?.boxId != null
 }
 
 export function monitorBoxStickerText(box) {

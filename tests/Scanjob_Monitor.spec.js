@@ -123,6 +123,10 @@ const registerSnapshot = {
     {
       boxId: 7,
       boxCode: 'BOX-7',
+      lengthCm: 10.5,
+      widthCm: 20,
+      heightCm: 30.25,
+      weightKg: 4.125,
       boxStickerScanned: true,
       boxScannedSticker: 'BOX-7-ACTUAL',
       boxScannedUserName: 'Иванов Иван',
@@ -162,8 +166,13 @@ const boxSnapshot = {
   scannedItemsNotInRegister: 1,
   boxes: [],
   box: {
+    area: 1,
     boxId: 7,
     boxCode: 'BOX-7',
+    lengthCm: 10.5,
+    widthCm: 20,
+    heightCm: 30.25,
+    weightKg: 4.125,
     boxStickerScanned: true,
     boxScannedSticker: 'BOX-7-ACTUAL',
     boxScannedUserName: 'Иванов Иван',
@@ -521,6 +530,9 @@ describe('Scanjob_Monitor.vue', () => {
     expect(registerSection.text()).toContain('BOX-7-ACTUAL')
     expect(registerSection.text()).toContain('Иванов Иван')
     expect(registerSection.text()).toContain('09:30 02.01')
+    expect(registerSection.text()).toContain('10,5 × 20 × 30,25 см')
+    expect(registerSection.text()).toContain('4,125 кг')
+    expect(registerSection.text()).toContain('не задано')
     const parcelProgressPanel = registerSection.get('.scanjob-monitor-parcel-progress-panel')
     expect(
       parcelProgressPanel
@@ -541,6 +553,10 @@ describe('Scanjob_Monitor.vue', () => {
     expect(
       boxesTable.props('headers').find((header) => header.key === 'parcelsProgress')?.title
     ).toBe('Посылки')
+    expect(boxesTable.props('headers').find((header) => header.key === 'dimensions')?.title)
+      .toBe('Габариты')
+    expect(boxesTable.props('headers').find((header) => header.key === 'weightKg')?.title)
+      .toBe('Вес, кг')
     expect(boxesTable.props('itemsPerPage')).toBe(25)
     expect(boxesTable.props('page')).toBe(2)
     expect(boxesTable.props('sortBy')).toEqual([{ key: 'boxCode', order: 'desc' }])
@@ -1147,7 +1163,9 @@ describe('Scanjob_Monitor.vue', () => {
     }))
     expect(summaryItems).toEqual([
       { label: 'Статус сканирования коробки', value: 'Сканирована' },
-      { label: 'Посылки всего / сканировано / не сканировано / запретов', value: '3 / 2 / 1 / 1' }
+      { label: 'Посылки всего / сканировано / не сканировано / запретов', value: '3 / 2 / 1 / 1' },
+      { label: 'Габариты', value: '10,5 × 20 × 30,25 см' },
+      { label: 'Вес', value: '4,125 кг' }
     ])
 
     expect(wrapper.text()).toContain('P-70')
@@ -1365,7 +1383,7 @@ describe('Scanjob_Monitor.vue', () => {
 
     const registerSection = wrapper.get('[data-testid="scanjob-monitor-register"]')
     expect(registerSection.findAll('.clickable-cell')).toHaveLength(
-      registerSnapshot.boxes.length * 6
+      registerSnapshot.boxes.length * 8
     )
 
     await registerSection.find('.monitor-status').trigger('click')

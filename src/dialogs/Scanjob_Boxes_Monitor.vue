@@ -10,6 +10,8 @@ import ClickableCell from '@/components/ClickableCell.vue'
 import ScanjobMonitorSummary from '@/components/ScanjobMonitorSummary.vue'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import {
+  formatBoxDimensions,
+  formatBoxWeight,
   formatParcelProgress,
   formatScanTime,
   getParcelProgressStats,
@@ -97,6 +99,26 @@ function openBox(item) {
             :display-value="item.boxCode"
             cell-class="clickable-cell"
             data-testid="scanjob-monitor-box-row"
+            :disabled="props.loading"
+            @click="openBox(item)"
+          />
+        </template>
+
+        <template #[`item.dimensions`]="{ item }">
+          <ClickableCell
+            :item="item"
+            :display-value="formatBoxDimensions(item)"
+            cell-class="clickable-cell"
+            :disabled="props.loading"
+            @click="openBox(item)"
+          />
+        </template>
+
+        <template #[`item.weightKg`]="{ item }">
+          <ClickableCell
+            :item="item"
+            :display-value="formatBoxWeight(item.weightKg)"
+            cell-class="clickable-cell"
             :disabled="props.loading"
             @click="openBox(item)"
           />

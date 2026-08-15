@@ -72,9 +72,33 @@ vi.mock('@/stores/registers.store.js', () => ({ useRegistersStore: () => registe
 
 const authMock = { selectedParcelId: null, isAdmin: ref(false), isSrLogistPlus: true }
 vi.mock('@/stores/auth.store.js', () => ({ useAuthStore: () => authMock }))
-const alertErrorMock = vi.fn()
+const alertRef = ref(null)
+const alertErrorMock = vi.fn((error, options = {}) => {
+  alertRef.value = {
+    id: 1,
+    severity: 'error',
+    message: error?.message || options.fallback
+  }
+})
+const alertStoreMock = {
+  get alert() {
+    return alertRef.value
+  },
+  get activePageHosts() {
+    return 0
+  },
+  error: alertErrorMock,
+  clear: vi.fn(() => {
+    alertRef.value = null
+  }),
+  dismiss: vi.fn(),
+  pause: vi.fn(),
+  resume: vi.fn(),
+  registerPageHost: vi.fn(),
+  unregisterPageHost: vi.fn()
+}
 vi.mock('@/stores/alert.store.js', () => ({
-  useAlertStore: () => ({ alert: ref(null), error: alertErrorMock, clear: vi.fn() })
+  useAlertStore: () => alertStoreMock
 }))
 
 vi.mock('@/components/ProductLinkWithActions.vue', () => ({
@@ -112,6 +136,7 @@ describe('WbrParcel_EditDialog image overlay', () => {
     parcelsMock.lookupFeacnCode.mockResolvedValue()
     parcelsMock.checkPassport.mockResolvedValue()
     parcelsMock.clearPassportCheck.mockResolvedValue()
+    alertRef.value = null
     registersMock.item.value = { id: 1, customsProcedureCode: 40 }
     registersMock.nextParcels.mockResolvedValue({ withoutIssues: null, withIssues: null })
     parcelViewsBack.mockResolvedValue(null)
@@ -315,5 +340,67 @@ describe('WbrParcel_EditDialog image overlay', () => {
     expect(parcelsMock.lookupFeacnCode).not.toHaveBeenCalled()
     expect(parcelsMock.generate).toHaveBeenCalled()
     expect(routerMocks.push).toHaveBeenCalled()
+  })
+
+  it('reports next-parcel prefetch failures only while the editor is mounted', async () => {
+    const mountDialog = () =>
+      mount(
+        {
+          components: { WbrParcel_EditDialog },
+          template: '<Suspense><WbrParcel_EditDialog :registerId="1" :id="3" /></Suspense>'
+        },
+        {
+          global: {
+            stubs: {
+              Field: { template: '<input />' },
+              Form: {
+                template:
+                  '<div><slot :errors="{}" :values="{ id: 3 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
+              },
+              ParcelHeaderActionsBar: true,
+              ParcelStatusSection: true,
+              FeacnCodeEditor: true,
+              ParcelNumberExt: true,
+              ActionButton: true,
+              'font-awesome-icon': true,
+              VTooltip: true
+            }
+          }
+        }
+      )
+
+    const mountedError = new Error('next parcels failed')
+    registersMock.nextParcels.mockRejectedValueOnce(mountedError)
+    let wrapper = mountDialog()
+    await nextTick()
+    await resolveAll()
+
+    expect(alertErrorMock).toHaveBeenCalledWith(mountedError, {
+      fallback: 'Не удалось определить соседние посылки'
+    })
+    expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain(
+      'next parcels failed'
+    )
+    wrapper.unmount()
+
+    alertErrorMock.mockClear()
+    alertRef.value = null
+    let rejectPrefetch
+    registersMock.nextParcels.mockImplementationOnce(
+      () =>
+        new Promise((_, reject) => {
+          rejectPrefetch = reject
+        })
+    )
+    wrapper = mountDialog()
+    await nextTick()
+    await resolveAll()
+
+    wrapper.unmount()
+    rejectPrefetch(new Error('late next parcels failure'))
+    await resolveAll()
+
+    expect(alertErrorMock).not.toHaveBeenCalled()
+    expect(alertRef.value).toBeNull()
   })
 })

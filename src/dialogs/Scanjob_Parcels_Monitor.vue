@@ -12,7 +12,10 @@ import ScanjobWbr2ParcelsMonitorTable from '@/dialogs/Scanjob_Wbr2_Parcels_Monit
 import ScanjobWbrNParcelsMonitorTable from '@/dialogs/Scanjob_WbrN_Parcels_Monitor_Table.vue'
 import { OZON_COMPANY_ID, WBR_COMPANY_ID, WBR2_REGISTER_ID, WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
 import {
+  formatBoxDimensions,
+  formatBoxWeight,
   formatParcelProgress,
+  isPhysicalMonitorBox,
   isUnassignedMonitorBox,
   scanjobParcelHeaders,
   monitorBoxStickerClass,
@@ -59,7 +62,7 @@ const summaryCards = computed(() => {
   if (!box) return []
   const isUnassigned = isUnassignedMonitorBox(box)
 
-  return [
+  const cards = [
     {
       key: 'boxStatus',
       label: isUnassigned ? 'Группа посылок' : 'Статус сканирования коробки',
@@ -72,6 +75,23 @@ const summaryCards = computed(() => {
       value: formatParcelProgress(box)
     }
   ]
+
+  if (isPhysicalMonitorBox(box)) {
+    cards.push(
+      {
+        key: 'boxDimensions',
+        label: 'Габариты',
+        value: formatBoxDimensions(box)
+      },
+      {
+        key: 'boxWeight',
+        label: 'Вес',
+        value: formatBoxWeight(box.weightKg)
+      }
+    )
+  }
+
+  return cards
 })
 
 const emptyText = computed(() => (

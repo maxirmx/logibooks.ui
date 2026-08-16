@@ -122,6 +122,27 @@ describe('Parcels List Helpers', () => {
       })
     })
 
+    it('keeps exact-box and return context when opening parcel editing', () => {
+      const mockRouter = { push: vi.fn() }
+
+      navigateToEditParcel(mockRouter, { id: 123 }, 'parcel-edit', {
+        registerId: 456,
+        mode: 'modeWarehouse',
+        boxId: 17,
+        returnUrl: '/registers/456/parcels?mode=modeWarehouse&boxId=17'
+      })
+
+      expect(mockRouter.push).toHaveBeenCalledWith({
+        name: 'parcel-edit',
+        params: { id: 123, registerId: 456 },
+        query: {
+          mode: 'modeWarehouse',
+          returnUrl: '/registers/456/parcels?mode=modeWarehouse&boxId=17',
+          boxId: '17'
+        }
+      })
+    })
+
     it('should navigate with empty query parameters when only registerId provided', () => {
       const mockRouter = {
         push: vi.fn()

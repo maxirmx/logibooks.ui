@@ -209,7 +209,7 @@ export const useParcelsStore = defineStore('parcels', () => {
   }
 
   async function getAll(registerId, options = {}) {
-    const { updateStore = true, showMarkedByPartner = false } = options
+    const { updateStore = true, showMarkedByPartner = false, boxId = null } = options
     const authStore = useAuthStore()
     const checkStatusWatermark = liveCheckStatusArrival
     if (updateStore) {
@@ -224,11 +224,16 @@ export const useParcelsStore = defineStore('parcels', () => {
       const pageSize = showMarkedByPartner
         ? authStore.parcels_wh_per_page
         : authStore.parcels_per_page
-      const params = filterBuilder(authStore, {
+      const additionalParams = {
         registerId: registerId.toString(),
         page: page.toString(),
         pageSize: pageSize.toString()
-      })
+      }
+      const normalizedBoxId = Number(boxId)
+      if (Number.isInteger(normalizedBoxId) && normalizedBoxId > 0) {
+        additionalParams.boxId = normalizedBoxId.toString()
+      }
+      const params = filterBuilder(authStore, additionalParams)
 
       const listEndpoint = showMarkedByPartner ? `${baseUrl}/a` : baseUrl
       const response = await fetchWrapper.get(`${listEndpoint}?${params.toString()}`)

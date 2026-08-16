@@ -11,6 +11,10 @@ import ActionButton from '@/components/ActionButton.vue'
 import { vuetifyStubs, resolveAll } from './helpers/test-utils.js'
 
 const confirmMock = vi.hoisted(() => vi.fn())
+const scopedMocks = vi.hoisted(() => ({
+  loadParcels: vi.fn().mockResolvedValue(),
+  routerPush: vi.fn()
+}))
 
 vi.mock('vuetify-use-dialog', () => ({
   useConfirm: () => confirmMock
@@ -66,7 +70,7 @@ vi.mock('@/helpers/parcels.list.helpers.js', async () => {
   const actual = await vi.importActual('@/helpers/parcels.list.helpers.js')
   return {
     ...actual,
-    loadParcels: vi.fn().mockResolvedValue()
+    loadParcels: scopedMocks.loadParcels
   }
 })
 
@@ -122,9 +126,31 @@ vi.mock('vue-router', async () => {
   return {
     ...actual,
     useRoute: () => ({ query: {} }),
-    useRouter: () => ({ push: vi.fn(), replace: vi.fn() })
+    useRouter: () => ({
+      push: scopedMocks.routerPush,
+      replace: vi.fn(),
+      currentRoute: {
+        value: {
+          fullPath:
+            '/registers/1/parcels?mode=modeWarehouse&boxId=17&boxCode=BOX-17&returnUrl=/registers/1/boxes'
+        }
+      }
+    })
   }
 })
+
+vi.mock('@/router', () => ({
+  default: {
+    push: scopedMocks.routerPush,
+    replace: vi.fn(),
+    currentRoute: {
+      value: {
+        fullPath:
+          '/registers/1/parcels?mode=modeWarehouse&boxId=17&boxCode=BOX-17&returnUrl=/registers/1/boxes'
+      }
+    }
+  }
+}))
 
 vi.mock('@/stores/alert.store.js', () => ({
   useAlertStore: () => ({
@@ -167,6 +193,7 @@ describe('GtcParcels_List.vue', () => {
     vi.clearAllMocks()
     mockItems.value = [createMockItem()]
     registerItem.value = { dealNumber: 'D-1' }
+    parcelsPage.value = 1
     bulkAssignTnved.mockResolvedValue()
     getById.mockResolvedValue()
   })
@@ -257,6 +284,94 @@ describe('GtcParcels_List.vue', () => {
     } finally {
       wrapper?.unmount()
     }
+  })
+
+  it('loads and edits parcels inside the exact box scope', async () => {
+    const wrapper = mount(GtcParcels_List, {
+      props: {
+        registerId: 1,
+        mode: 'modeWarehouse',
+        boxId: 17,
+        boxCode: 'BOX-17'
+      },
+      global: { plugins: [createPinia()], stubs: globalStubs }
+    })
+    await resolveAll()
+
+    wrapper.vm.editParcel(mockItems.value[0])
+
+    expect(scopedMocks.loadParcels).toHaveBeenCalledWith(
+      1,
+      expect.any(Object),
+      expect.objectContaining({ value: true }),
+      expect.any(Object),
+      { boxId: 17 }
+    )
+    expect(scopedMocks.routerPush).toHaveBeenCalledWith({
+      name: 'Редактирование посылки',
+      params: { id: 1, registerId: 1 },
+      query: {
+        mode: 'modeWarehouse',
+        returnUrl:
+          '/registers/1/parcels?mode=modeWarehouse&boxId=17&boxCode=BOX-17&returnUrl=/registers/1/boxes',
+        boxId: '17'
+      }
+    })
+  })
+
+  it('normalizes an initial exact box scope before the first request', async () => {
+    parcelsPage.value = 3
+    let firstRequestPage
+    scopedMocks.loadParcels.mockImplementationOnce(async () => {
+      firstRequestPage = parcelsPage.value
+    })
+
+    const wrapper = mount(GtcParcels_List, {
+      props: { registerId: 1, mode: 'modeWarehouse', boxId: 17, boxCode: 'BOX-17' },
+      global: { plugins: [createPinia()], stubs: globalStubs }
+    })
+    await resolveAll()
+
+    expect(firstRequestPage).toBe(1)
+
+    wrapper.unmount()
+  })
+
+  it('resets pagination, reloads, and forwards clearing when box scope changes', async () => {
+    parcelsPage.value = 3
+    const wrapper = mount(GtcParcels_List, {
+      props: { registerId: 1, mode: 'modeWarehouse' },
+      global: { plugins: [createPinia()], stubs: globalStubs }
+    })
+    await resolveAll()
+
+    wrapper.vm.editParcel(mockItems.value[0])
+    expect(scopedMocks.routerPush).toHaveBeenCalledWith({
+      name: 'Редактирование посылки',
+      params: { id: 1, registerId: 1 },
+      query: { mode: 'modeWarehouse' }
+    })
+
+    await wrapper.setProps({ boxId: 17, boxCode: 'BOX-17' })
+    expect(parcelsPage.value).toBe(1)
+
+    scopedMocks.loadParcels.mockClear()
+    await wrapper.setProps({ boxId: 18, boxCode: 'BOX-18' })
+    await resolveAll()
+
+    expect(scopedMocks.loadParcels).toHaveBeenCalledWith(
+      1,
+      expect.any(Object),
+      expect.objectContaining({ value: true }),
+      expect.any(Object),
+      { boxId: 18 }
+    )
+
+    wrapper.findComponent({ name: 'ParcelBoxScopeChip' }).vm.$emit('clear')
+    await wrapper.vm.$nextTick()
+    expect(wrapper.emitted('clear-box-scope')).toHaveLength(1)
+
+    wrapper.unmount()
   })
 
   it('handles read-only, partial, and conflicting bulk assignments', async () => {

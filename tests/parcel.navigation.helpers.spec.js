@@ -10,6 +10,8 @@ import {
   buildParcelNavigationQuery,
   getCurrentInternalRoute,
   normalizeInternalReturnUrl,
+  normalizeParcelBoxCode,
+  normalizeParcelBoxId,
   normalizeParcelNavigationMode,
   resolveParcelReturnLocation
 } from '@/helpers/parcel.navigation.helpers.js'
@@ -32,6 +34,18 @@ describe('parcel navigation helpers', () => {
     expect(normalizeInternalReturnUrl(['/registers'])).toBeNull()
   })
 
+  it('normalizes positive box ids and display codes', () => {
+    expect(normalizeParcelBoxId('17')).toBe(17)
+    expect(normalizeParcelBoxId(['18', '19'])).toBe(18)
+    expect(normalizeParcelBoxId(0)).toBeNull()
+    expect(normalizeParcelBoxId('-1')).toBeNull()
+    expect(normalizeParcelBoxId('1.5')).toBeNull()
+    expect(normalizeParcelBoxId('box')).toBeNull()
+    expect(normalizeParcelBoxCode(' BOX-17 ')).toBe('BOX-17')
+    expect(normalizeParcelBoxCode(['BOX-18'])).toBe('BOX-18')
+    expect(normalizeParcelBoxCode('   ')).toBeNull()
+  })
+
   it('reads the current full route only when it is safe', () => {
     expect(
       getCurrentInternalRoute({ currentRoute: { value: { fullPath: '/parcels/by-number' } } })
@@ -49,6 +63,7 @@ describe('parcel navigation helpers', () => {
         parcelId: 4,
         mode: OP_MODE_WAREHOUSE,
         returnUrl: '/scanjobs/42/monitor/boxes/7',
+        boxId: 17,
         query: { tab: 'details' }
       })
     ).toEqual({
@@ -57,7 +72,8 @@ describe('parcel navigation helpers', () => {
       query: {
         tab: 'details',
         mode: OP_MODE_WAREHOUSE,
-        returnUrl: '/scanjobs/42/monitor/boxes/7'
+        returnUrl: '/scanjobs/42/monitor/boxes/7',
+        boxId: '17'
       }
     })
 
@@ -66,13 +82,38 @@ describe('parcel navigation helpers', () => {
     })
   })
 
+  it('builds an exact box list location only for a valid box id', () => {
+    expect(
+      buildParcelListLocation({
+        registerId: 12,
+        mode: OP_MODE_WAREHOUSE,
+        boxId: 17,
+        boxCode: ' BOX-17 ',
+        returnUrl: '/registers/12/boxes'
+      })
+    ).toEqual({
+      path: '/registers/12/parcels',
+      query: {
+        mode: OP_MODE_WAREHOUSE,
+        returnUrl: '/registers/12/boxes',
+        boxId: '17',
+        boxCode: 'BOX-17'
+      }
+    })
+
+    expect(
+      buildParcelListLocation({ registerId: 12, boxId: 0, boxCode: 'IGNORED' }).query
+    ).toEqual({ mode: OP_MODE_PAPERWORK })
+  })
+
   it('returns to a safe source before using the mode-correct parcel-list fallback', () => {
     expect(
       resolveParcelReturnLocation({
         returnUrl: '/customs-reports/5/rows',
         registerId: 12,
         parcelId: 4,
-        mode: OP_MODE_WAREHOUSE
+        mode: OP_MODE_WAREHOUSE,
+        boxId: 17
       })
     ).toBe('/customs-reports/5/rows')
 
@@ -81,13 +122,15 @@ describe('parcel navigation helpers', () => {
         returnUrl: '//example.com/phishing',
         registerId: 12,
         parcelId: 4,
-        mode: OP_MODE_WAREHOUSE
+        mode: OP_MODE_WAREHOUSE,
+        boxId: 17
       })
     ).toEqual(
       buildParcelListLocation({
         registerId: 12,
         parcelId: 4,
-        mode: OP_MODE_WAREHOUSE
+        mode: OP_MODE_WAREHOUSE,
+        boxId: 17
       })
     )
   })

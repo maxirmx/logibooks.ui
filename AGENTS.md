@@ -53,6 +53,7 @@ These instructions apply to the entire repository. Follow them for every new fea
 
 ## Testing requirements
 
+- Maintain at least 95% patch coverage for all new or modified code, measured against the target branch.
 - Add a rejection-path test whenever an asynchronous operation is added or changed.
 - Verify both propagation and visible presentation, not merely that an alert-store mock was called.
 - Test that failed forms do not navigate and that retries execute the intended operation.

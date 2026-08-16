@@ -96,7 +96,15 @@ vi.mock('@/helpers/parcels.list.helpers.js', () => {
 })
 
 vi.mock('@/router', () => ({
-  default: { push: vi.fn() }
+  default: {
+    push: vi.fn(),
+    currentRoute: {
+      value: {
+        fullPath:
+          '/registers/1/parcels?mode=modeWarehouse&boxId=17&boxCode=BOX-17&returnUrl=/registers/1/boxes'
+      }
+    }
+  }
 }))
 
 vi.mock('@/stores/parcels.store.js', () => ({
@@ -236,6 +244,33 @@ describe('OzonParcels_WhList.vue', () => {
       expect.any(Object),
       { showMarkedByPartner: true }
     )
+  })
+
+  it('normalizes an initial exact box scope before the first request', async () => {
+    parcelsWhPage.value = 3
+    parcelsWhBoxNumber.value = 'STALE-PREFIX'
+    let firstRequestState
+    loadParcels.mockImplementationOnce(async (...args) => {
+      firstRequestState = {
+        page: parcelsWhPage.value,
+        boxNumber: parcelsWhBoxNumber.value,
+        options: args[4]
+      }
+    })
+
+    const wrapper = mount(OzonParcelsWhList, {
+      props: { registerId: 1, boxId: 17, boxCode: 'BOX-17' },
+      global: { stubs: globalStubs }
+    })
+    await resolveAll()
+
+    expect(firstRequestState).toEqual({
+      page: 1,
+      boxNumber: '',
+      options: { showMarkedByPartner: true, boxId: 17 }
+    })
+
+    wrapper.unmount()
   })
 
   it('renders projected status, check status, and zone fields in the table', async () => {
@@ -459,12 +494,16 @@ describe('OzonParcels_WhList.vue', () => {
   })
 
   it('opens parcel edit from warehouse table cells', async () => {
+    parcelsWhBoxNumber.value = 'STALE-PREFIX'
     const wrapper = mount(OzonParcelsWhList, {
-      props: { registerId: 1 },
+      props: { registerId: 1, boxId: 17, boxCode: 'BOX-17' },
       global: { stubs: globalStubs }
     })
 
     await resolveAll()
+
+    expect(parcelsWhBoxNumber.value).toBe('')
+    expect(wrapper.vm.localBoxNumberSearch).toBe('')
 
     const productNameCell = wrapper.get('.warehouse-product-name-cell')
     expect(productNameCell.classes()).toContain('clickable-cell')
@@ -476,8 +515,66 @@ describe('OzonParcels_WhList.vue', () => {
       expect.any(Object),
       mockItems.value[0],
       'Редактирование посылки',
+      {
+        registerId: 1,
+        mode: OP_MODE_WAREHOUSE,
+        boxId: 17,
+        returnUrl:
+          '/registers/1/parcels?mode=modeWarehouse&boxId=17&boxCode=BOX-17&returnUrl=/registers/1/boxes'
+      }
+    )
+    expect(loadParcels).toHaveBeenCalledWith(
+      1,
+      expect.any(Object),
+      expect.objectContaining({ value: true }),
+      expect.any(Object),
+      { showMarkedByPartner: true, boxId: 17 }
+    )
+  })
+
+  it('reloads and forwards clear when an exact box scope is applied', async () => {
+    parcelsWhPage.value = 1
+    parcelsWhBoxNumber.value = 'STALE-PREFIX'
+    const wrapper = mount(OzonParcelsWhList, {
+      props: { registerId: 1 },
+      global: { stubs: globalStubs }
+    })
+
+    await resolveAll()
+    await wrapper.get('.warehouse-product-name-cell').trigger('click')
+    expect(navigateToEditParcel).toHaveBeenCalledWith(
+      expect.any(Object),
+      mockItems.value[0],
+      'Редактирование посылки',
       { registerId: 1, mode: OP_MODE_WAREHOUSE }
     )
+
+    parcelsWhPage.value = 2
+    await wrapper.vm.$nextTick()
+    loadParcels.mockClear()
+
+    await wrapper.setProps({ boxId: 17, boxCode: 'BOX-17' })
+    await resolveAll()
+
+    expect(parcelsWhPage.value).toBe(1)
+    expect(wrapper.vm.localBoxNumberSearch).toBe('')
+    expect(parcelsWhBoxNumber.value).toBe('')
+    expect(loadParcels).toHaveBeenCalledWith(
+      1,
+      expect.any(Object),
+      expect.objectContaining({ value: true }),
+      expect.any(Object),
+      { showMarkedByPartner: true, boxId: 17 }
+    )
+
+    wrapper.findComponent({ name: 'ParcelWhFilterSelectors' }).vm.$emit('clear-box-scope')
+    await wrapper.vm.$nextTick()
+    expect(wrapper.emitted('clear-box-scope')).toHaveLength(1)
+
+    await wrapper.setProps({ boxId: null, boxCode: null })
+    await resolveAll()
+
+    wrapper.unmount()
   })
 
   it('disables parcel edit cells without parcel edit route access', async () => {

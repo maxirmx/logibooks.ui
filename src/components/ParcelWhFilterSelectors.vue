@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue'
+import ParcelBoxScopeChip from '@/components/ParcelBoxScopeChip.vue'
 
 const props = defineProps({
   statusOptions: { type: Array, required: true },
@@ -16,6 +17,8 @@ const props = defineProps({
   localBoxNumberSearch: { type: String, default: '' },
   localStickerSearch: { type: String, default: '' },
   localProductNameSearch: { type: String, default: '' },
+  boxScopeId: { type: Number, default: null },
+  boxScopeCode: { type: String, default: null }
 })
 
 const emit = defineEmits([
@@ -26,6 +29,7 @@ const emit = defineEmits([
   'update:localBoxNumberSearch',
   'update:localStickerSearch',
   'update:localProductNameSearch',
+  'clear-box-scope'
 ])
 
 const disabledState = computed(() => {
@@ -114,7 +118,15 @@ const localProductNameSearchModel = computed({
       style="min-width: 210px;"
       :disabled="disabledState.textFieldsDisabled"
     />
+    <ParcelBoxScopeChip
+      v-if="boxScopeId"
+      :box-id="boxScopeId"
+      :box-code="boxScopeCode"
+      :disabled="disabledState.textFieldsDisabled"
+      @clear="$emit('clear-box-scope')"
+    />
     <v-text-field
+      v-else
       v-model="localBoxNumberSearchModel"
       label="Номер коробки"
       density="compact"

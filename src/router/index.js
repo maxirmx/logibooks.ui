@@ -8,6 +8,8 @@ import { useAlertStore } from '@/stores/alert.store.js'
 import { getHomeRoute } from '@/helpers/login.navigation.js'
 import { OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 import {
+  normalizeParcelBoxCode,
+  normalizeParcelBoxId,
   normalizeInternalReturnUrl,
   normalizeParcelNavigationMode
 } from '@/helpers/parcel.navigation.helpers.js'
@@ -522,7 +524,14 @@ const router = createRouter({
         const rawMode = route.query.mode
         const queryMode = typeof rawMode === 'string' ? rawMode : undefined
         const mode = validModes.includes(queryMode) ? queryMode : OP_MODE_PAPERWORK
-        return { id: Number(route.params.id), mode }
+        const boxId = normalizeParcelBoxId(route.query.boxId)
+        return {
+          id: Number(route.params.id),
+          mode,
+          boxId,
+          boxCode: boxId == null ? null : normalizeParcelBoxCode(route.query.boxCode),
+          returnUrl: normalizeInternalReturnUrl(route.query.returnUrl)
+        }
       },
       meta: { reqAnyRole: true, hideSidebar: true }
     },
@@ -534,7 +543,8 @@ const router = createRouter({
         registerId: Number(route.params.registerId),
         id: Number(route.params.id),
         mode: normalizeParcelNavigationMode(route.query.mode),
-        returnUrl: normalizeInternalReturnUrl(route.query.returnUrl)
+        returnUrl: normalizeInternalReturnUrl(route.query.returnUrl),
+        boxId: normalizeParcelBoxId(route.query.boxId)
       }),
       meta: { reqLogistOrSrLogist: true, hideSidebar: true }
     },

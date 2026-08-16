@@ -59,14 +59,19 @@ import AssignTnvedDialog from '@/l2/AssignTnvedDialog.vue'
 import ParcelStatusBulkChangeDialog from '@/l2/ParcelStatusBulkChangeDialog.vue'
 import PaginationFooter from '@/components/PaginationFooter.vue'
 import ParcelFilterSelectors from '@/components/ParcelFilterSelectors.vue'
+import ParcelBoxScopeChip from '@/components/ParcelBoxScopeChip.vue'
 import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync.js'
 import { useParcelSelectionRestore } from '@/composables/useParcelSelectionRestore.js'
 import { useParcelMultiSelect } from '@/composables/useParcelMultiSelect.js'
+import { getCurrentInternalRoute } from '@/helpers/parcel.navigation.helpers.js'
 
 const props = defineProps({
-  registerId: { type: Number, required: true }
+  registerId: { type: Number, required: true },
+  mode: { type: String, default: OP_MODE_PAPERWORK },
+  boxId: { type: Number, default: null },
+  boxCode: { type: String, default: null }
 })
-const emit = defineEmits(['close'])
+const emit = defineEmits(['close', 'clear-box-scope'])
 
 const parcelsStore = useParcelsStore()
 const registersStore = useRegistersStore()
@@ -93,6 +98,10 @@ const {
   parcels_product_name,
   selectedParcelId
 } = storeToRefs(authStore)
+
+if (props.boxId) {
+  parcels_page.value = 1
+}
 
 const localTnvedSearch = ref(parcels_tnved.value || '')
 const localParcelNumberSearch = ref(parcels_number.value || '')
@@ -244,7 +253,9 @@ async function fetchRegister() {
 }
 
 async function loadParcelsWrapper() {
-  await loadParcels(props.registerId, parcelsStore, isComponentMounted, alertStore)
+  await loadParcels(props.registerId, parcelsStore, isComponentMounted, alertStore, {
+    ...(props.boxId ? { boxId: props.boxId } : {})
+  })
 }
 
 // Provide the loadParcels function for child components
@@ -308,6 +319,14 @@ const watcherStop = watch(
   ],
   () => triggerLoad(),
   { immediate: false }
+)
+
+const boxScopeWatcherStop = watch(
+  () => props.boxId,
+  () => {
+    if (parcels_page.value !== 1) parcels_page.value = 1
+    else triggerLoad()
+  }
 )
 
 async function initializeList() {
@@ -382,6 +401,7 @@ onUnmounted(() => {
   if (watcherStop) {
     watcherStop()
   }
+  boxScopeWatcherStop()
   // event listener for DEC_REPORT_UPLOADED_EVENT removed
 })
 
@@ -619,7 +639,10 @@ function editParcel(item) {
   selectedParcelId.value = item.id
   navigateToEditParcel(router, item, 'Редактирование посылки', {
     registerId: props.registerId,
-    mode: OP_MODE_PAPERWORK
+    mode: props.mode,
+    ...(props.boxId
+      ? { boxId: props.boxId, returnUrl: getCurrentInternalRoute(router) }
+      : {})
   })
 }
 
@@ -683,6 +706,13 @@ function getGenericTemplateHeaders() {
       class="d-flex mb-2 align-center flex-wrap-reverse justify-space-between"
       style="width: 100%; gap: 10px"
     >
+      <ParcelBoxScopeChip
+        v-if="props.boxId"
+        :box-id="props.boxId"
+        :box-code="props.boxCode"
+        :disabled="loading || isInitializing"
+        @clear="emit('clear-box-scope')"
+      />
       <ParcelFilterSelectors
         v-model:parcels-status="parcels_status"
         v-model:parcels-check-status-sw="parcels_check_status_sw"

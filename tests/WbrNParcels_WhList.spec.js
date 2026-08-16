@@ -83,7 +83,13 @@ vi.mock('pinia', async () => {
 vi.mock('@/router', () => ({
   default: {
     push: vi.fn(),
-    replace: vi.fn()
+    replace: vi.fn(),
+    currentRoute: {
+      value: {
+        fullPath:
+          '/registers/9/parcels?mode=modeWarehouse&boxId=17&boxCode=BOX-17&returnUrl=/registers/9/boxes'
+      }
+    }
   }
 }))
 
@@ -272,7 +278,8 @@ const globalStubs = {
       'update:localParcelNumberSearch',
       'update:localBoxNumberSearch',
       'update:localStickerSearch',
-      'update:localProductNameSearch'
+      'update:localProductNameSearch',
+      'clear-box-scope'
     ],
     template: `
       <div data-testid="parcel-wh-filter-selectors" :data-number-label="numberLabel" :data-zone-options="zoneOptions.map(o => o.title).join(',')" :data-status-count="statusOptions.length" :data-check-count="checkStatusProjectionOptions.length">
@@ -283,6 +290,7 @@ const globalStubs = {
         <button data-testid="update-wh-box" @click="$emit('update:localBoxNumberSearch', 'BOX')"></button>
         <button data-testid="update-wh-sticker" @click="$emit('update:localStickerSearch', 'Sticker')"></button>
         <button data-testid="update-wh-product" @click="$emit('update:localProductNameSearch', 'boots')"></button>
+        <button data-testid="clear-box-scope" @click="$emit('clear-box-scope')"></button>
       </div>
     `
   },
@@ -385,6 +393,31 @@ describe('WbrNParcels_WhList.vue', () => {
     expect(headerKeys).not.toContain('countryCode')
     expect(headerKeys).not.toContain('paymentAmount')
     expect(headerKeys).not.toContain('paymentCurrency')
+  })
+
+  it('initializes and loads directly inside an exact box scope', async () => {
+    parcelsWhPage.value = 3
+    parcelsWhBoxNumber.value = 'STALE-PREFIX'
+    const wrapper = mount(WbrNParcelsWhList, {
+      props: { registerId: 9, boxId: 17, boxCode: 'BOX-17' },
+      global: { stubs: globalStubs }
+    })
+    await resolveAll()
+
+    expect(parcelsWhPage.value).toBe(1)
+    expect(parcelsWhBoxNumber.value).toBe('')
+    expect(wrapper.vm.localBoxNumberSearch).toBe('')
+    await wrapper.get('[data-testid="parcel-status-bulk-dialog-updated"]').trigger('click')
+    await resolveAll()
+    expect(loadParcels).toHaveBeenCalledWith(
+      9,
+      expect.any(Object),
+      expect.any(Object),
+      expect.any(Object),
+      { showMarkedByPartner: true, boxId: 17 }
+    )
+
+    wrapper.unmount()
   })
 
   it('renders WbrN warehouse data and uses SHK as the warehouse number label', () => {
@@ -603,9 +636,33 @@ describe('WbrNParcels_WhList.vue', () => {
       registerId: 9,
       mode: OP_MODE_WAREHOUSE
     })
+    wrapper.vm.localBoxNumberSearch = 'STALE-PREFIX'
+    parcelsWhBoxNumber.value = 'STALE-PREFIX'
+    parcelsWhPage.value = 3
+    await wrapper.setProps({ boxId: 17, boxCode: 'BOX-17' })
+    expect(parcelEditAccessOptions.getQueryParams()).toEqual({
+      registerId: 9,
+      mode: OP_MODE_WAREHOUSE,
+      boxId: 17,
+      returnUrl:
+        '/registers/9/parcels?mode=modeWarehouse&boxId=17&boxCode=BOX-17&returnUrl=/registers/9/boxes'
+    })
+    expect(parcelsWhPage.value).toBe(1)
+    expect(wrapper.vm.localBoxNumberSearch).toBe('')
+    expect(parcelsWhBoxNumber.value).toBe('')
     expect(parcelEditAccessOptions.disabled.value).toBe(true)
     await resolveAll()
     expect(parcelEditAccessOptions.disabled.value).toBe(false)
+
+    triggerLoad.mockClear()
+    await wrapper.setProps({ boxId: 18, boxCode: 'BOX-18' })
+    expect(triggerLoad).toHaveBeenCalled()
+
+    await wrapper.get('[data-testid="clear-box-scope"]').trigger('click')
+    expect(wrapper.emitted('clear-box-scope')).toHaveLength(1)
+
+    await wrapper.setProps({ boxId: null, boxCode: null })
+    expect(triggerLoad).toHaveBeenCalled()
 
     await wrapper.get('[data-testid="update-wh-status"]').trigger('click')
     await wrapper.get('[data-testid="update-wh-check"]').trigger('click')

@@ -22,16 +22,23 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useParcelsStore } from '@/stores/parcels.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
+import { useAlertStore } from '@/stores/alert.store.js'
 import { useParcelCheckStatusSubscription } from '@/composables/useParcelCheckStatusSubscription.js'
+import { normalizeInternalReturnUrl } from '@/helpers/parcel.navigation.helpers.js'
+import { getErrorMessage } from '@/helpers/error.helpers.js'
 
 const props = defineProps({
   id: { type: Number, required: true },
-  mode: { type: String, default: OP_MODE_PAPERWORK }
+  mode: { type: String, default: OP_MODE_PAPERWORK },
+  boxId: { type: Number, default: null },
+  boxCode: { type: String, default: null },
+  returnUrl: { type: String, default: null }
 })
 const router = useRouter()
 const authStore = useAuthStore()
 const parcelsStore = useParcelsStore()
 const registersStore = useRegistersStore()
+const alertStore = useAlertStore()
 
 const register = ref(null)
 const loading = ref(true)
@@ -49,7 +56,13 @@ let filteredRefreshPending = false
 let lastFilteredRefreshAt = 0
 
 async function refreshVisibleParcels() {
-  const response = await parcelsStore.getAll(props.id, { updateStore: false })
+  const response = await parcelsStore.getAll(props.id, {
+    updateStore: false,
+    ...(props.mode === OP_MODE_WAREHOUSE
+      ? { showMarkedByPartner: true }
+      : {}),
+    ...(props.boxId ? { boxId: props.boxId } : {})
+  })
   parcelsStore.updateItems(response)
 }
 
@@ -115,6 +128,13 @@ const listComponent = computed(() => {
   return null
 })
 
+const listProps = computed(() => ({
+  registerId: props.id,
+  mode: props.mode,
+  boxId: props.boxId,
+  boxCode: props.boxCode
+}))
+
 onMounted(async () => {
   try {
     loading.value = true
@@ -132,19 +152,50 @@ onUnmounted(() => {
   filteredRefreshPending = false
 })
 
-function closeList() {
-  router.push({
-    path: '/registers',
-    query: { mode: props.mode }
-  })
+async function clearBoxScope() {
+  if (props.boxId == null) return
+
+  const currentRoute = router.currentRoute.value
+  const query = { ...currentRoute.query }
+  delete query.boxId
+  delete query.boxCode
+
+  try {
+    await router.replace({ path: currentRoute.path, query })
+  } catch (error) {
+    alertStore.error(error, { fallback: 'Не удалось очистить фильтр по коробке' })
+  }
+}
+
+async function closeList() {
+  const returnUrl = normalizeInternalReturnUrl(props.returnUrl)
+  const destination =
+    returnUrl || {
+      path: '/registers',
+      query: { mode: props.mode }
+    }
+
+  try {
+    await router.push(destination)
+  } catch (error) {
+    alertStore.error(error, { fallback: 'Не удалось закрыть список посылок' })
+  }
 }
 </script>
 
 <template>
   <div v-if="loading">Загрузка...</div>
-  <div v-else-if="error">Ошибка загрузки: {{ error.message }}</div>
+  <div v-else-if="error">
+    Ошибка загрузки: {{ getErrorMessage(error, 'Не удалось загрузить реестр') }}
+  </div>
   <Suspense v-else>
-    <component v-if="listComponent" :is="listComponent" :register-id="props.id" @close="closeList" />
+    <component
+      v-if="listComponent"
+      :is="listComponent"
+      v-bind="listProps"
+      @close="closeList"
+      @clear-box-scope="clearBoxScope"
+    />
     <div v-else>Неизвестный тип компании</div>
   </Suspense>
 </template>

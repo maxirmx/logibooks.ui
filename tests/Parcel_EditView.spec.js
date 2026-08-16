@@ -169,7 +169,8 @@ describe('Parcel_EditView.vue', () => {
         registerId: 12,
         id: 4,
         mode: OP_MODE_WAREHOUSE,
-        returnUrl: '/scanjobs/42/monitor/boxes/7'
+        returnUrl: '/scanjobs/42/monitor/boxes/7',
+        boxId: 17
       },
       global: { stubs: commonStubs }
     })
@@ -181,7 +182,8 @@ describe('Parcel_EditView.vue', () => {
       registerId: 12,
       id: 4,
       mode: OP_MODE_WAREHOUSE,
-      returnUrl: '/scanjobs/42/monitor/boxes/7'
+      returnUrl: '/scanjobs/42/monitor/boxes/7',
+      boxId: 17
     })
   })
 

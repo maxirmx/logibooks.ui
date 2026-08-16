@@ -27,6 +27,17 @@ const textFieldStub = {
   emits: ['update:modelValue']
 }
 
+const chipStub = {
+  name: 'v-chip',
+  template: `
+    <button data-testid="parcel-box-scope" :disabled="disabled" @click="$emit('click:close')">
+      <slot />
+    </button>
+  `,
+  props: ['disabled', 'color', 'variant', 'closable'],
+  emits: ['click:close']
+}
+
 function mountSelector(props = {}) {
   return mount(ParcelWhFilterSelectors, {
     props: {
@@ -51,7 +62,8 @@ function mountSelector(props = {}) {
     global: {
       stubs: {
         'v-select': selectStub,
-        'v-text-field': textFieldStub
+        'v-text-field': textFieldStub,
+        'v-chip': chipStub
       }
     }
   })
@@ -89,5 +101,22 @@ describe('ParcelWhFilterSelectors.vue', () => {
     expect(wrapper.emitted('update:localBoxNumberSearch')?.[0]).toEqual(['BOX-'])
     expect(wrapper.emitted('update:localStickerSearch')?.[0]).toEqual(['ST-'])
     expect(wrapper.emitted('update:localProductNameSearch')?.[0]).toEqual(['описание'])
+  })
+
+  it('shows a clearable exact box scope instead of the editable box-prefix field', async () => {
+    const wrapper = mountSelector({ boxScopeId: 17, boxScopeCode: 'BOX-17' })
+
+    expect(wrapper.get('[data-testid="parcel-box-scope"]').text()).toContain('Коробка: BOX-17')
+    expect(wrapper.text()).not.toContain('Номер коробки')
+    expect(wrapper.findAll('input')).toHaveLength(3)
+
+    await wrapper.get('[data-testid="parcel-box-scope"]').trigger('click')
+    expect(wrapper.emitted('clear-box-scope')).toHaveLength(1)
+  })
+
+  it('falls back to the box id when a scoped box has no display code', () => {
+    const wrapper = mountSelector({ boxScopeId: 17, boxScopeCode: null })
+
+    expect(wrapper.get('[data-testid="parcel-box-scope"]').text()).toContain('Коробка: #17')
   })
 })

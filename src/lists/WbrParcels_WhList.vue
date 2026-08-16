@@ -45,11 +45,14 @@ import { storeToRefs } from 'pinia'
 import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync.js'
 import { useParcelEditAccess } from '@/composables/useParcelEditAccess.js'
 import { OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
+import { getCurrentInternalRoute } from '@/helpers/parcel.navigation.helpers.js'
 
 const props = defineProps({
-  registerId: { type: Number, required: true }
+  registerId: { type: Number, required: true },
+  boxId: { type: Number, default: null },
+  boxCode: { type: String, default: null }
 })
-const emit = defineEmits(['close'])
+const emit = defineEmits(['close', 'clear-box-scope'])
 
 const parcelsStore = useParcelsStore()
 const scanJobsStore = useScanjobsStore()
@@ -73,8 +76,13 @@ const {
 } = storeToRefs(authStore)
 const { ops } = storeToRefs(warehousesStore)
 
+if (props.boxId) {
+  parcels_wh_page.value = 1
+  parcels_wh_box_number.value = ''
+}
+
 const localParcelNumberSearch = ref(parcels_wh_number.value || '')
-const localBoxNumberSearch = ref(parcels_wh_box_number.value || '')
+const localBoxNumberSearch = ref(props.boxId ? '' : parcels_wh_box_number.value || '')
 const localStickerSearch = ref(parcels_wh_sticker.value || '')
 const localProductNameSearch = ref(parcels_wh_product_name.value || '')
 
@@ -180,7 +188,8 @@ async function fetchRegister() {
 
 async function loadParcelsWrapper() {
   await loadParcels(props.registerId, parcelsStore, isComponentMounted, alertStore, {
-    showMarkedByPartner: true
+    showMarkedByPartner: true,
+    ...(props.boxId ? { boxId: props.boxId } : {})
   })
 }
 
@@ -230,8 +239,26 @@ const { triggerLoad, stop: stopFilterSync } = useDebouncedFilterSync({
 const { isParcelEditCellDisabled, parcelEditCellClass, openParcelEdit } = useParcelEditAccess({
   router,
   disabled: computed(() => loading.value || isInitializing.value),
-  getQueryParams: () => ({ registerId: props.registerId, mode: OP_MODE_WAREHOUSE })
+  getQueryParams: () => ({
+    registerId: props.registerId,
+    mode: OP_MODE_WAREHOUSE,
+    ...(props.boxId
+      ? { boxId: props.boxId, returnUrl: getCurrentInternalRoute(router) }
+      : {})
+  })
 })
+
+const boxScopeWatcherStop = watch(
+  () => props.boxId,
+  (boxId) => {
+    if (boxId) {
+      localBoxNumberSearch.value = ''
+      parcels_wh_box_number.value = ''
+    }
+    if (parcels_wh_page.value !== 1) parcels_wh_page.value = 1
+    else triggerLoad()
+  }
+)
 
 const watcherStop = watch(
   [
@@ -284,6 +311,7 @@ onUnmounted(() => {
   if (watcherStop) {
     watcherStop()
   }
+  boxScopeWatcherStop()
   scanJobsStore.stopParcelExtIdMonitor().catch((error) => {
     reportError(error, { context: 'warehouse parcel monitor cleanup' })
   })
@@ -383,6 +411,9 @@ function handleParcelExtIdChanged(change) {
         :running-action="runningAction"
         :loading="loading"
         :is-initializing="isInitializing"
+        :box-scope-id="props.boxId"
+        :box-scope-code="props.boxCode"
+        @clear-box-scope="emit('clear-box-scope')"
       />
     </div>
 

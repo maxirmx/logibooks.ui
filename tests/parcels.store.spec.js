@@ -105,6 +105,32 @@ describe('parcels store', () => {
     )
   })
 
+  it('passes an exact box id to both parcel list endpoints', async () => {
+    fetchWrapper.get.mockResolvedValue({ items: [], pagination: {} })
+    const store = useParcelsStore()
+
+    await store.getAll(1, { boxId: 17 })
+    expect(fetchWrapper.get).toHaveBeenLastCalledWith(
+      `${apiUrl}/parcels?registerId=1&page=1&pageSize=100&boxId=17&sortBy=id&sortOrder=asc`
+    )
+
+    await store.getAll(1, { showMarkedByPartner: true, boxId: 17 })
+    expect(fetchWrapper.get).toHaveBeenLastCalledWith(
+      `${apiUrl}/parcels/a?registerId=1&page=1&pageSize=100&boxId=17&sortBy=id&sortOrder=asc`
+    )
+  })
+
+  it('omits invalid box ids', async () => {
+    fetchWrapper.get.mockResolvedValue({ items: [], pagination: {} })
+    const store = useParcelsStore()
+
+    await store.getAll(1, { boxId: 0 })
+
+    expect(fetchWrapper.get).toHaveBeenCalledWith(
+      `${apiUrl}/parcels?registerId=1&page=1&pageSize=100&sortBy=id&sortOrder=asc`
+    )
+  })
+
   it('fetches warehouse data with warehouse-specific filters only on extended endpoint', async () => {
     mockAuthStore.parcels_status = 99
     mockAuthStore.parcels_number = 'REGULAR-SUBSTRING'
@@ -312,6 +338,21 @@ describe('parcels store', () => {
 
     expect(store.error).toBe(error)
     expect(store.loading).toBe(false)
+  })
+
+  it('propagates an exact-box request failure with its scope intact', async () => {
+    const error = new Error('Scoped parcels unavailable')
+    fetchWrapper.get.mockRejectedValue(error)
+    const store = useParcelsStore()
+
+    await expect(
+      store.getAll(1, { showMarkedByPartner: true, boxId: 17 })
+    ).rejects.toBe(error)
+
+    expect(fetchWrapper.get).toHaveBeenCalledWith(
+      `${apiUrl}/parcels/a?registerId=1&page=1&pageSize=100&boxId=17&sortBy=id&sortOrder=asc`
+    )
+    expect(store.error).toBe(error)
   })
 
   it('clears check status for parcel', async () => {

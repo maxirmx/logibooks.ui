@@ -974,13 +974,18 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
-  async function nextParcels(parcelId) {
+  async function nextParcels(parcelId, { boxId = null } = {}) {
     const authStore = useAuthStore()
 
     loading.value = true
     error.value = null
     try {
-      const params = buildParcelsFilterParams(authStore)
+      const normalizedBoxId = Number(boxId)
+      const additionalParams =
+        Number.isInteger(normalizedBoxId) && normalizedBoxId > 0
+          ? { boxId: normalizedBoxId.toString() }
+          : {}
+      const params = buildParcelsFilterParams(authStore, additionalParams)
 
       const result = await fetchWrapper.get(
         `${baseUrl}/nextparcels/${parcelId}?${params.toString()}`

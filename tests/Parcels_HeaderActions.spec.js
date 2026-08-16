@@ -61,6 +61,7 @@ function createRegisterHeaderActionsMock() {
     calculateCustomsCharges: vi.fn().mockResolvedValue(),
     downloadRegister: vi.fn(),
     downloadAdditionalRestrictions: vi.fn(),
+    downloadPackingList: vi.fn(),
     downloadTechdoc: vi.fn(),
     cancelValidation: vi.fn(),
     stop: vi.fn()
@@ -391,6 +392,18 @@ describe.each([
     await resolveAll()
 
     expect(useParcelMultiSelectMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('wires packing list download from the shared header action bar', async () => {
+    const wrapper = mount(Component, {
+      props: { registerId: 11 },
+      global: { stubs: vuetifyStubs }
+    })
+
+    await resolveAll()
+    wrapper.findComponent({ name: 'RegisterHeaderActionsBar' }).vm.$emit('download-packing-list')
+
+    expect(registerHeaderActionsMock.downloadPackingList).toHaveBeenCalledTimes(1)
   })
 
   it('includes Duplicate2 in both check-status filter selectors', () => {

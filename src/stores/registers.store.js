@@ -839,6 +839,26 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
+  async function downloadPackingList(id, invoiceNumber) {
+    loading.value = true
+    error.value = null
+    try {
+      const trimmedInvoiceNumber =
+        typeof invoiceNumber === 'string' ? invoiceNumber.trim() : invoiceNumber
+      const hasInvoiceNumber =
+        trimmedInvoiceNumber !== null &&
+        trimmedInvoiceNumber !== undefined &&
+        String(trimmedInvoiceNumber).length > 0
+      const filename = `Packing_List_${hasInvoiceNumber ? trimmedInvoiceNumber : id}.xlsx`
+      return await fetchWrapper.downloadFile(`${baseUrl}/${id}/download-packing-list`, filename)
+    } catch (err) {
+      error.value = err
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function downloadAdditionalRestrictions(id, invoiceNumber, applyWeightCorrection = false) {
     loading.value = true
     error.value = null
@@ -1056,6 +1076,7 @@ export const useRegistersStore = defineStore('registers', () => {
     downloadDo1File,
     downloadCmrFile,
     download,
+    downloadPackingList,
     downloadTechdoc,
     downloadAdditionalRestrictions,
     freezeCheckStatus,

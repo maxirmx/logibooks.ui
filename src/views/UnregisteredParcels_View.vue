@@ -5,6 +5,7 @@
 
 import UnregisteredParcelsList from '@/lists/UnregisteredParcels_List.vue'
 import { useRoute, useRouter } from 'vue-router'
+import { normalizeInternalReturnUrl } from '@/helpers/parcel.navigation.helpers.js'
 
 const props = defineProps({
   registerId: { type: Number, required: true }
@@ -13,12 +14,8 @@ const props = defineProps({
 const router = useRouter()
 const route = useRoute()
 
-function isSafeReturnUrl(value) {
-  return typeof value === 'string' && value.startsWith('/') && !value.startsWith('//')
-}
-
 function closeList() {
-  const returnUrl = isSafeReturnUrl(route.query.returnUrl) ? route.query.returnUrl : null
+  const returnUrl = normalizeInternalReturnUrl(route.query.returnUrl)
   if (returnUrl) {
     router.push(returnUrl)
     return

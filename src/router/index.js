@@ -7,6 +7,10 @@ import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { getHomeRoute } from '@/helpers/login.navigation.js'
 import { OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
+import {
+  normalizeInternalReturnUrl,
+  normalizeParcelNavigationMode
+} from '@/helpers/parcel.navigation.helpers.js'
 import { scanjobMonitorArea } from '@/helpers/scanjob.monitor.helpers.js'
 
 const publicPages = ['/recover', '/register']
@@ -528,7 +532,9 @@ const router = createRouter({
       component: () => import('@/views/Parcel_EditView.vue'),
       props: (route) => ({
         registerId: Number(route.params.registerId),
-        id: Number(route.params.id)
+        id: Number(route.params.id),
+        mode: normalizeParcelNavigationMode(route.query.mode),
+        returnUrl: normalizeInternalReturnUrl(route.query.returnUrl)
       }),
       meta: { reqLogistOrSrLogist: true, hideSidebar: true }
     },

@@ -7,6 +7,7 @@ import { beforeEach, describe, it, expect, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import ScanjobMonitor from '@/dialogs/Scanjob_Monitor.vue'
 import { defaultGlobalStubs } from './helpers/test-utils'
+import { OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 
 const mockBack = vi.hoisted(() => vi.fn())
 const mockPush = vi.hoisted(() => vi.fn())
@@ -463,6 +464,7 @@ describe('Scanjob_Monitor.vue', () => {
   beforeEach(() => {
     vi.useRealTimers()
     vi.clearAllMocks()
+    mockCurrentRoute.value = { fullPath: '/scanjobs/42/monitor' }
     mockAlert.value = null
     monitorLoading.value = false
     monitorError.value = null
@@ -1230,6 +1232,7 @@ describe('Scanjob_Monitor.vue', () => {
   })
 
   it('opens parcel edit from box monitor', async () => {
+    mockCurrentRoute.value = { fullPath: '/scanjobs/42/monitor/boxes/7' }
     loadMonitorSnapshot.mockResolvedValueOnce(registerSnapshot).mockResolvedValueOnce(boxSnapshot)
 
     const wrapper = mount(ScanjobMonitor, {
@@ -1250,7 +1253,38 @@ describe('Scanjob_Monitor.vue', () => {
         id: 70,
         registerId: 101
       },
-      query: {}
+      query: {
+        mode: OP_MODE_WAREHOUSE,
+        returnUrl: '/scanjobs/42/monitor/boxes/7'
+      }
+    })
+  })
+
+  it('opens parcel edit with the unassigned monitor return context', async () => {
+    mockCurrentRoute.value = { fullPath: '/scanjobs/42/monitor/unassigned/1' }
+    loadMonitorSnapshot
+      .mockResolvedValueOnce(registerSnapshotWithUnassignedBucket)
+      .mockResolvedValueOnce(unassignedBucketSnapshot)
+
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: monitorGlobalStubs }
+    })
+
+    await flushPromises()
+    await wrapper.setProps({ monitorScope: unassignedBucket1MonitorScope })
+    await flushPromises()
+
+    wrapper.findComponent({ name: 'Scanjob_Parcels_Monitor' }).vm.$emit('edit-parcel', { id: 90 })
+    await flushPromises()
+
+    expect(mockPush).toHaveBeenCalledWith({
+      name: 'Редактирование посылки',
+      params: { id: 90, registerId: 101 },
+      query: {
+        mode: OP_MODE_WAREHOUSE,
+        returnUrl: '/scanjobs/42/monitor/unassigned/1'
+      }
     })
   })
 

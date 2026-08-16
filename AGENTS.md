@@ -41,6 +41,16 @@ These instructions apply to the entire repository. Follow them for every new fea
 - Color must not be the only indication of meaning: error and warning dialogs also use a tone indicator, while destructive confirmations use explicit action text.
 - `ParcelStatusBulkChangeDialog.vue` is an explicit legacy exception and must not be restyled without a separate user request.
 
+## Parcel navigation context
+
+- Every route that opens parcel editing must carry an explicit operation `mode`: `modePaperwork` for customs/paperwork workflows or `modeWarehouse` for warehouse workflows.
+- A specialized caller such as a scan-job monitor, customs-report row list, or cross-register parcel search must also pass its current safe internal path as `returnUrl`.
+- Build and consume parcel edit, adjacent-parcel, list, and return routes through the shared parcel navigation helpers; do not assemble these URLs independently at call sites.
+- Preserve both `mode` and `returnUrl` when replacing the route for next or previous parcel navigation.
+- Close, successful Save, read-only exit, and exhausted next/previous navigation must return to a valid internal `returnUrl` when present; otherwise return to the register parcel list in the normalized operation mode and restore the selected parcel.
+- Invalid modes fall back to `modePaperwork`. Ignore external, protocol-relative, or otherwise unsafe return URLs and use the mode-correct parcel-list fallback.
+- Do not use browser-history navigation for parcel workflow returns. Failed parcel submissions must remain on the editor and must not navigate.
+
 ## Testing requirements
 
 - Add a rejection-path test whenever an asynchronous operation is added or changed.

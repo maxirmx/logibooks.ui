@@ -11,6 +11,7 @@ import ClickableCell from '@/components/ClickableCell.vue'
 import TruncateTooltipCell from '@/components/TruncateTooltipCell.vue'
 import PaginationFooter from '@/components/PaginationFooter.vue'
 import { defaultGlobalStubs } from './helpers/test-utils.js'
+import { OP_MODE_PAPERWORK } from '@/helpers/op.mode.js'
 
 const reportRowsRef = ref([])
 const reportRowsColumnsRef = ref([])
@@ -289,7 +290,8 @@ vi.mock('@/stores/auth.store.js', () => ({
 
 vi.mock('@/router', () => ({
   default: {
-    push: routerPushMock
+    push: routerPushMock,
+    currentRoute: ref({ fullPath: '/customs-reports/5/rows' })
   }
 }))
 
@@ -895,7 +897,14 @@ describe('CustomsReportRows_List.vue', () => {
     const cell = wrapper.findComponent(ClickableCell)
     await cell.trigger('click')
 
-    expect(routerPushMock).toHaveBeenCalledWith('/registers/5/parcels/edit/12')
+    expect(routerPushMock).toHaveBeenCalledWith({
+      name: 'Редактирование посылки',
+      params: { id: 12, registerId: 5 },
+      query: {
+        mode: OP_MODE_PAPERWORK,
+        returnUrl: '/customs-reports/5/rows'
+      }
+    })
   })
 
   it('does not route when registerId is missing', async () => {

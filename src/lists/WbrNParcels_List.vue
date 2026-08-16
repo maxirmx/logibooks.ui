@@ -42,6 +42,7 @@ import {
   getCustomsChargeHeaders
 } from '@/helpers/parcels.list.helpers.js'
 import { handleFellowsClick } from '@/helpers/parcel.number.ext.helpers.js'
+import { OP_MODE_PAPERWORK } from '@/helpers/op.mode.js'
 import { useRegisterHeaderActions } from '@/helpers/register.actions.js'
 import ClickableCell from '@/components/ClickableCell.vue'
 import CorrectedWeightDisplay from '@/components/CorrectedWeightDisplay.vue'
@@ -554,7 +555,10 @@ async function freezeCheckStatusAndRefetch() {
 
 function editParcel(item) {
   selectedParcelId.value = item.id
-  navigateToEditParcel(router, item, 'Редактирование посылки', { registerId: props.registerId })
+  navigateToEditParcel(router, item, 'Редактирование посылки', {
+    registerId: props.registerId,
+    mode: OP_MODE_PAPERWORK
+  })
 }
 
 function handleFellows(item) {

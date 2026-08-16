@@ -18,6 +18,9 @@ import SortableMultilineHeader from '@/components/SortableMultilineHeader.vue'
 import { mdiMagnify } from '@mdi/js'
 import router from '@/router'
 import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync.js'
+import { navigateToEditParcel } from '@/helpers/parcels.list.helpers.js'
+import { getCurrentInternalRoute } from '@/helpers/parcel.navigation.helpers.js'
+import { OP_MODE_PAPERWORK } from '@/helpers/op.mode.js'
 const props = defineProps({
   reportId: {
     type: Number,
@@ -69,7 +72,11 @@ function openParcel(item) {
   const parcelId = item?.parcelId
   const registerId = item?.registerId
   if (!parcelId || !registerId) return
-  router.push(`/registers/${registerId}/parcels/edit/${parcelId}`)
+  navigateToEditParcel(router, { ...item, id: parcelId }, 'Редактирование посылки', {
+    registerId,
+    mode: OP_MODE_PAPERWORK,
+    returnUrl: getCurrentInternalRoute(router)
+  })
 }
 
 function getColumnAlignmentClass(column) {

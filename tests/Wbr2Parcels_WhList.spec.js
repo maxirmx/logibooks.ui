@@ -11,6 +11,7 @@ import { vuetifyStubs, resolveAll } from './helpers/test-utils.js'
 import { scanjobCheckStatusProjectionKind } from '@/helpers/scanjob.check-status.helpers.js'
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
 import { WBR2_REGISTER_ID } from '@/helpers/company.constants.js'
+import { OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 
 const { loadParcels, navigateToEditParcel, setDefect, clearDefect } = vi.hoisted(() => ({
   loadParcels: vi.fn().mockResolvedValue(),
@@ -346,7 +347,7 @@ describe('Wbr2Parcels_WhList.vue', () => {
       expect.any(Object),
       mockItems.value[0],
       'Редактирование посылки',
-      { registerId: 1 }
+      { registerId: 1, mode: OP_MODE_WAREHOUSE }
     )
   })
 

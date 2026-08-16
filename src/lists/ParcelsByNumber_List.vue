@@ -19,6 +19,8 @@ import router from '@/router'
 import ActionButton from '@/components/ActionButton.vue'
 import TruncateTooltipCell from '@/components/TruncateTooltipCell.vue'
 import ClickableCell from '@/components/ClickableCell.vue'
+import { getCurrentInternalRoute } from '@/helpers/parcel.navigation.helpers.js'
+import { OP_MODE_PAPERWORK } from '@/helpers/op.mode.js'
 
 const parcelsStore = useParcelsStore()
 const parcelStatusStore = useParcelStatusesStore()
@@ -77,7 +79,11 @@ function openRegister(item) {
 function openParcel(item) {
   const registerId = getRegisterId(item)
   if (!registerId || !item?.id) return
-  navigateToEditParcel(router, item, 'Редактирование посылки', { registerId })
+  navigateToEditParcel(router, item, 'Редактирование посылки', {
+    registerId,
+    mode: OP_MODE_PAPERWORK,
+    returnUrl: getCurrentInternalRoute(router)
+  })
 }
 
 function handleCellClick(item, key) {

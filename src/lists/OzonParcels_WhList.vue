@@ -38,6 +38,7 @@ import {
 import { storeToRefs } from 'pinia'
 import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync.js'
 import { useParcelEditAccess } from '@/composables/useParcelEditAccess.js'
+import { OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 
 const props = defineProps({
   registerId: { type: Number, required: true }
@@ -214,7 +215,7 @@ const { triggerLoad, stop: stopFilterSync } = useDebouncedFilterSync({
 const { isParcelEditCellDisabled, parcelEditCellClass, openParcelEdit } = useParcelEditAccess({
   router,
   disabled: computed(() => loading.value || isInitializing.value),
-  getQueryParams: () => ({ registerId: props.registerId })
+  getQueryParams: () => ({ registerId: props.registerId, mode: OP_MODE_WAREHOUSE })
 })
 
 const watcherStop = watch(

@@ -658,8 +658,10 @@ describe('parcels store', () => {
 
     it('falls back to marking the loaded parcel read-only when conflict refresh fails', async () => {
       const conflict = Object.assign(new Error('Изменения запрещены для реестра'), { status: 409 })
+      const refreshError = new Error('refresh failed')
+      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
       fetchWrapper.put.mockRejectedValue(conflict)
-      fetchWrapper.get.mockRejectedValue(new Error('refresh failed'))
+      fetchWrapper.get.mockRejectedValue(refreshError)
       const store = useParcelsStore()
       store.item = { id: '5', statusId: 1, readOnly: false }
       store.items = [{ id: '5', statusId: 1, readOnly: false }]
@@ -668,6 +670,9 @@ describe('parcels store', () => {
 
       expect(store.item).toEqual({ id: '5', statusId: 1, readOnly: true })
       expect(store.items[0]).toEqual({ id: '5', statusId: 1, readOnly: true })
+      expect(consoleError).toHaveBeenCalledTimes(1)
+      expect(consoleError).toHaveBeenCalledWith('[parcels conflict refresh]', refreshError)
+      consoleError.mockRestore()
     })
 
     it('does not update item when loaded item has different id', async () => {
@@ -886,8 +891,10 @@ describe('parcels store', () => {
 
     it('marks loaded and listed parcels read-only when conflict refresh fails', async () => {
       const conflict = Object.assign(new Error('Изменения запрещены для реестра'), { status: 409 })
+      const refreshError = new Error('refresh failed')
+      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
       fetchWrapper.post.mockRejectedValue(conflict)
-      fetchWrapper.get.mockRejectedValue(new Error('refresh failed'))
+      fetchWrapper.get.mockRejectedValue(refreshError)
       const store = useParcelsStore()
       store.item = { id: 123, statusId: 1, readOnly: false }
       store.items = [{ id: 123, statusId: 1, readOnly: false }]
@@ -896,6 +903,9 @@ describe('parcels store', () => {
 
       expect(store.item).toEqual({ id: 123, statusId: 1, readOnly: true })
       expect(store.items[0]).toEqual({ id: 123, statusId: 1, readOnly: true })
+      expect(consoleError).toHaveBeenCalledTimes(1)
+      expect(consoleError).toHaveBeenCalledWith('[parcels conflict refresh]', refreshError)
+      consoleError.mockRestore()
     })
   })
 

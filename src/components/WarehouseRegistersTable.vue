@@ -69,6 +69,7 @@ const emit = defineEmits([
   'update:sortBy',
   'update:selectedIds',
   'open-parcels',
+  'open-boxes',
   'open-history',
   'edit-register',
   'delete-register',
@@ -441,6 +442,14 @@ function getRegisterStatusTitle(item) {
             icon="fa-solid fa-list"
             tooltip-text="Список посылок"
             @click="() => emit('open-parcels', item)"
+            :disabled="runningAction || loading"
+          />
+          <ActionButton
+            v-if="hasWhRole"
+            :item="item"
+            icon="fa-solid fa-boxes-stacked"
+            tooltip-text="Коробки"
+            @click="() => emit('open-boxes', item)"
             :disabled="runningAction || loading"
           />
           <ActionButton

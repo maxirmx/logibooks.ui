@@ -106,6 +106,10 @@ export const useAuthStore = defineStore('auth', () => {
   const registers_wh_status = ref(REGISTER_STATUS_FILTER_IN_PROGRESS)
   const registers_wh_sort_by = ref([{ key: 'id', order: 'desc' }])
   const registers_wh_page = ref(1)
+  const boxes_per_page = ref(100)
+  const boxes_search = ref('')
+  const boxes_sort_by = ref([{ key: 'code', order: 'asc' }])
+  const boxes_page = ref(1)
   const registerevents_per_page = ref(50)
   const registerevents_page = ref(1)
   const parcels_per_page = ref(100)
@@ -380,6 +384,10 @@ export const useAuthStore = defineStore('auth', () => {
     registers_wh_status,
     registers_wh_sort_by,
     registers_wh_page,
+    boxes_per_page,
+    boxes_search,
+    boxes_sort_by,
+    boxes_page,
     parcels_per_page,
     parcels_sort_by,
     parcels_page,

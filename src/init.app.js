@@ -89,6 +89,7 @@ import {
   faFileSignature,
   faClockRotateLeft,
   faFileArrowUp,
+  faBoxesStacked,
 } from '@fortawesome/free-solid-svg-icons'
 
 library.add(
@@ -169,7 +170,8 @@ library.add(
   faCheckToSlot,
   faFileSignature,
   faClockRotateLeft,
-  faFileArrowUp
+  faFileArrowUp,
+  faBoxesStacked
 )
 
 import 'vuetify/styles'

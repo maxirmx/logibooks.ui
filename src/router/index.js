@@ -466,6 +466,34 @@ const router = createRouter({
       meta: { reqShiftLeadPlus: true, hideSidebar: true }
     },
     {
+      path: '/registers/:registerId/boxes',
+      name: 'Коробки',
+      component: () => import('@/views/Boxes_View.vue'),
+      props: (route) => ({
+        registerId: Number(route.params.registerId)
+      }),
+      meta: { reqWhRole: true, hideSidebar: true }
+    },
+    {
+      path: '/registers/:registerId/boxes/create',
+      name: 'Создание коробки',
+      component: () => import('@/views/Box_CreateView.vue'),
+      props: (route) => ({
+        registerId: Number(route.params.registerId)
+      }),
+      meta: { reqWhRole: true, hideSidebar: true }
+    },
+    {
+      path: '/registers/:registerId/boxes/edit/:id',
+      name: 'Редактирование коробки',
+      component: () => import('@/views/Box_EditView.vue'),
+      props: (route) => ({
+        registerId: Number(route.params.registerId),
+        id: Number(route.params.id)
+      }),
+      meta: { reqWhRole: true, hideSidebar: true }
+    },
+    {
       path: '/parcels/by-number',
       name: 'Посылки по номеру',
       component: () => import('@/views/ParcelsByNumber_View.vue'),

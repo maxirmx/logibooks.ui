@@ -246,6 +246,11 @@ function openHistory(item) {
   router.push(`/registers/${item.id}/history?mode=${OP_MODE_WAREHOUSE}`)
 }
 
+function openBoxes(item) {
+  if (!item?.id) return
+  router.push(`/registers/${item.id}/boxes`)
+}
+
 function editRegister(item) {
   router.push(`/register/edit/${item.id}?mode=${OP_MODE_WAREHOUSE}`)
 }
@@ -389,6 +394,7 @@ defineExpose({
       :apply-register-status-change="applyRegisterStatusToRegister"
       show-register-status-icon
       @open-parcels="openParcels"
+      @open-boxes="openBoxes"
       @open-history="openHistory"
       @edit-register="editRegister"
       @delete-register="deleteRegister"

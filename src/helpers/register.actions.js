@@ -254,6 +254,10 @@ export function createRegisterActionHandlers(registersStore, alertStore, { mode 
     await registersStore.downloadAdditionalRestrictions(item.id, item.invoiceNumber)
   }
 
+  async function downloadPackingList(item) {
+    await registersStore.downloadPackingList(item.id, item.invoiceNumber)
+  }
+
   async function downloadTechdoc(item) {
     await registersStore.downloadTechdoc(item.id, item.invoiceNumber)
   }
@@ -317,6 +321,7 @@ export function createRegisterActionHandlers(registersStore, alertStore, { mode 
     exportAllXmlNotifications,
     downloadRegister,
     downloadAdditionalRestrictions,
+    downloadPackingList,
     downloadTechdoc,
     freezeCheckStatus,
     checkPassports,
@@ -350,6 +355,7 @@ export function useRegisterHeaderActions({
     exportAllXmlNotifications,
     downloadRegister,
     downloadAdditionalRestrictions,
+    downloadPackingList,
     downloadTechdoc,
     freezeCheckStatus,
     checkPassports,
@@ -508,6 +514,10 @@ export function useRegisterHeaderActions({
     await runActionWithDialog(downloadAdditionalRestrictions, 'download-additional-restrictions')
   }
 
+  const runDownloadPackingList = async () => {
+    await runActionWithDialog(downloadPackingList, 'download-packing-list')
+  }
+
   const runDownloadTechdoc = async () => {
     await runActionWithDialog(downloadTechdoc, 'download-techdoc')
   }
@@ -623,6 +633,7 @@ export function useRegisterHeaderActions({
     exportAllXmlNotifications: runExportAllXmlNotifications,
     downloadRegister: runDownloadRegister,
     downloadAdditionalRestrictions: runDownloadAdditionalRestrictions,
+    downloadPackingList: runDownloadPackingList,
     downloadTechdoc: runDownloadTechdoc,
     freezeCheckStatus: runFreezeCheckStatus,
     checkPassports: runCheckPassports,

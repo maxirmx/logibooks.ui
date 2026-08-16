@@ -61,6 +61,7 @@ describe('useRegisterHeaderActions', () => {
       generateExcise: vi.fn().mockResolvedValue(),
       download: vi.fn().mockResolvedValue(),
       downloadAdditionalRestrictions: vi.fn().mockResolvedValue(),
+      downloadPackingList: vi.fn().mockResolvedValue(),
       freezeCheckStatus: vi.fn().mockResolvedValue(),
       freezeTnVedOrder: vi.fn().mockResolvedValue(),
       checkPassports: vi.fn().mockResolvedValue(),
@@ -357,6 +358,36 @@ describe('useRegisterHeaderActions', () => {
     deferred.resolve()
     await firstPromise
     await secondPromise
+  })
+
+  it('shows packing list progress, locks duplicates, and presents a failure once', async () => {
+    const deferred = createDeferred()
+    registersStore.downloadPackingList.mockReturnValueOnce(deferred.promise)
+    const actions = useRegisterHeaderActions({
+      registersStore,
+      alertStore,
+      runningAction,
+      tableLoading,
+      registerLoading,
+      loadParcels,
+      isComponentMounted
+    })
+
+    const firstPromise = actions.downloadPackingList()
+    const duplicatePromise = actions.downloadPackingList()
+
+    expect(actions.actionDialog.show).toBe(true)
+    expect(actions.actionDialog.title).toBe('Подготовка файла packing list')
+    expect(registersStore.downloadPackingList).toHaveBeenCalledTimes(1)
+    expect(registersStore.downloadPackingList).toHaveBeenCalledWith(1, 'INV-1')
+
+    deferred.reject(new Error('Box metrics are missing'))
+    await firstPromise
+    await duplicatePromise
+
+    expect(actions.actionDialog.show).toBe(false)
+    expect(alertStore.error).toHaveBeenCalledTimes(1)
+    expect(alertStore.error).toHaveBeenCalledWith('Box metrics are missing')
   })
 
   it('reports export errors through alertStore without rejecting', async () => {

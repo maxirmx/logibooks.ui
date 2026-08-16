@@ -37,6 +37,7 @@ const emit = defineEmits([
   'export-excise',
   'export-notifications',
   'download',
+  'download-packing-list',
   'download-additional-restrictions',
   'download-techdoc',
   'bulk-change-parcel-status',
@@ -123,6 +124,18 @@ const documentOptions = computed(() => {
       icon: 'fa-solid fa-file-signature',
       color: 'not-checked',
       action: openCmrSettings
+    })
+  }
+
+  if (
+    Number(props.item?.transportationTypeCode) === 0 &&
+    Number(props.item?.warehouseId) > 0
+  ) {
+    options.push({
+      label: 'packing list',
+      icon: 'fa-solid fa-file-invoice',
+      color: 'not-checked',
+      action: () => run('download-packing-list')
     })
   }
 

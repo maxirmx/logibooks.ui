@@ -248,6 +248,55 @@ describe('RegisterHeaderActionsBar', () => {
   })
 
   it.each([
+    [0, 1, true],
+    [0, 0, false],
+    [0, null, false],
+    [1, 1, false],
+    [2, 1, false]
+  ])(
+    'shows packing list only for Avia registers with a warehouse (%s, %s)',
+    (transportationTypeCode, warehouseId, expected) => {
+      const wrapper = mount(RegisterHeaderActionsBar, {
+        props: {
+          ...baseProps,
+          item: { ...baseProps.item, transportationTypeCode, warehouseId }
+        },
+        global: { stubs: vuetifyStubs }
+      })
+
+      const labels = findActionMenuByTooltip(wrapper, 'Сформировать документы')
+        .props('options')
+        .map((option) => option.label)
+      expect(labels.includes('packing list')).toBe(expected)
+    }
+  )
+
+  it('emits packing list download and respects disabled state', async () => {
+    const item = { ...baseProps.item, transportationTypeCode: 0, warehouseId: 5 }
+    const wrapper = mount(RegisterHeaderActionsBar, {
+      props: { ...baseProps, item },
+      global: { stubs: vuetifyStubs }
+    })
+    const option = findActionMenuByTooltip(wrapper, 'Сформировать документы')
+      .props('options')
+      .find((candidate) => candidate.label === 'packing list')
+
+    await option.action()
+    expect(wrapper.emitted('download-packing-list')).toHaveLength(1)
+
+    const disabledWrapper = mount(RegisterHeaderActionsBar, {
+      props: { ...baseProps, item, disabled: true },
+      global: { stubs: vuetifyStubs }
+    })
+    const disabledOption = findActionMenuByTooltip(disabledWrapper, 'Сформировать документы')
+      .props('options')
+      .find((candidate) => candidate.label === 'packing list')
+
+    await disabledOption.action()
+    expect(disabledWrapper.emitted('download-packing-list')).toBeUndefined()
+  })
+
+  it.each([
     CUSTOMS_PROCEDURE_RETURN,
     CUSTOMS_PROCEDURE_EXPORT,
     CUSTOMS_PROCEDURE_REEXPORT,

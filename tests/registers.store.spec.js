@@ -1680,6 +1680,38 @@ describe('registers store', () => {
     })
   })
 
+  describe('downloadPackingList method', () => {
+    it('uses a trimmed invoice number and calls packing list endpoint', async () => {
+      const store = useRegistersStore()
+      fetchWrapper.downloadFile.mockResolvedValue(true)
+
+      const result = await store.downloadPackingList(24, ' INV-24 ')
+
+      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
+        `${apiUrl}/registers/24/download-packing-list`,
+        'Packing_List_INV-24.xlsx'
+      )
+      expect(result).toBe(true)
+      expect(store.loading).toBe(false)
+      expect(store.error).toBeNull()
+    })
+
+    it('falls back to register id and stores then rethrows download errors', async () => {
+      const store = useRegistersStore()
+      const error = new Error('packing list failed')
+      fetchWrapper.downloadFile.mockRejectedValue(error)
+
+      await expect(store.downloadPackingList(25, '   ')).rejects.toThrow(error)
+
+      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
+        `${apiUrl}/registers/25/download-packing-list`,
+        'Packing_List_25.xlsx'
+      )
+      expect(store.error).toBe(error)
+      expect(store.loading).toBe(false)
+    })
+  })
+
   describe('downloadAdditionalRestrictions method', () => {
     it('uses invoice number in filename and calls additional restrictions endpoint', async () => {
       const store = useRegistersStore()

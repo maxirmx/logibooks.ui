@@ -278,6 +278,7 @@ const {
   exportAllXmlNotifications: exportRegisterXmlNotifications,
   downloadRegister: downloadRegisterFile,
   downloadAdditionalRestrictions: downloadAdditionalRestrictionsFile,
+  downloadPackingList: downloadPackingListFile,
   downloadTechdoc: downloadTechdocFile,
   freezeCheckStatus: freezeCheckStatusHeader,
   freezeTnVedOrder: freezeTnVedOrderHeader,
@@ -684,6 +685,7 @@ function getGenericTemplateHeaders() {
         @export-excise="exportRegisterXmlExcise"
         @export-notifications="exportRegisterXmlNotifications"
         @download="downloadRegisterFile"
+        @download-packing-list="downloadPackingListFile"
         @download-additional-restrictions="downloadAdditionalRestrictionsFile"
         @download-techdoc="downloadTechdocFile"
         @calculate-customs-charges="calculateCustomsChargesHeader"

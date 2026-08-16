@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref, nextTick } from 'vue'
 import { resolveAll } from './helpers/test-utils'
+import { OP_MODE_PAPERWORK } from '@/helpers/op.mode.js'
 
 let confirmMock = null
 vi.mock('vuetify-use-dialog', () => ({
@@ -425,7 +426,11 @@ describe('OzonParcel_EditDialog image overlay', () => {
     expect(parcelViewsMock.back).toHaveBeenCalled()
     expect(registersMock.getById).toHaveBeenCalledWith(9)
     expect(registersMock.getById).toHaveBeenCalledTimes(2)
-    expect(routerMocks.replace).toHaveBeenCalledWith('/registers/9/parcels/edit/7')
+    expect(routerMocks.replace).toHaveBeenCalledWith({
+      name: 'Редактирование посылки',
+      params: { id: 7, registerId: 9 },
+      query: { mode: OP_MODE_PAPERWORK }
+    })
   })
 
   it('keeps read-only navigation and downloads while blocking all mutations', async () => {

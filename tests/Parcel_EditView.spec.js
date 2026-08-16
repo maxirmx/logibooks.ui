@@ -19,6 +19,7 @@ import {
   WBR2_REGISTER_ID,
   WBRN_REGISTER_ID
 } from '@/helpers/company.constants.js'
+import { OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 
 const subscriptionOptions = vi.hoisted(() => [])
 vi.mock('@/composables/useParcelCheckStatusSubscription.js', () => ({
@@ -158,6 +159,30 @@ describe('Parcel_EditView.vue', () => {
 
     expect(mockGet).toHaveBeenCalledWith(`http://test-api/registers/${registerId}`)
     expect(wrapper.vm.editComponent).toBe(expectedComponent)
+  })
+
+  it('passes normalized navigation context to the selected parcel editor', async () => {
+    mockGet.mockResolvedValue({ id: 12, registerType: WBR_COMPANY_ID })
+
+    const wrapper = mount(ParcelEditView, {
+      props: {
+        registerId: 12,
+        id: 4,
+        mode: OP_MODE_WAREHOUSE,
+        returnUrl: '/scanjobs/42/monitor/boxes/7'
+      },
+      global: { stubs: commonStubs }
+    })
+
+    await flushPromises()
+    const editor = wrapper.findComponent({ name: 'WbrParcelEditDialog' })
+
+    expect(editor.props()).toMatchObject({
+      registerId: 12,
+      id: 4,
+      mode: OP_MODE_WAREHOUSE,
+      returnUrl: '/scanjobs/42/monitor/boxes/7'
+    })
   })
 
   it('shows loading state initially', () => {

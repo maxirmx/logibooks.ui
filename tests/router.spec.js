@@ -5,7 +5,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { scanjobMonitorArea } from '@/helpers/scanjob.monitor.helpers.js'
-import { OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
+import { OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 
 let authStore
 const alertClear = vi.fn()
@@ -476,6 +476,39 @@ describe('router guards', () => {
     await router.isReady()
 
     expect(router.currentRoute.value.fullPath).toBe('/registers/1/parcels/edit/2')
+  })
+
+  it('normalizes parcel edit navigation context into route props', () => {
+    const routeRecord = router
+      .getRoutes()
+      .find((route) => route.name === 'Редактирование посылки')
+
+    expect(
+      routeRecord.props.default({
+        params: { registerId: '12', id: '4' },
+        query: {
+          mode: OP_MODE_WAREHOUSE,
+          returnUrl: '/scanjobs/42/monitor/boxes/7'
+        }
+      })
+    ).toEqual({
+      registerId: 12,
+      id: 4,
+      mode: OP_MODE_WAREHOUSE,
+      returnUrl: '/scanjobs/42/monitor/boxes/7'
+    })
+
+    expect(
+      routeRecord.props.default({
+        params: { registerId: '12', id: '4' },
+        query: { mode: 'warehouse', returnUrl: '//example.com/phishing' }
+      })
+    ).toEqual({
+      registerId: 12,
+      id: 4,
+      mode: OP_MODE_PAPERWORK,
+      returnUrl: null
+    })
   })
 
   describe('scanjob monitor route props', () => {

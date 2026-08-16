@@ -16,10 +16,13 @@ import { isImportCustomsProcedure } from '@/helpers/customs.procedure.helpers.js
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useParcelsStore } from '@/stores/parcels.store.js'
 import { useParcelCheckStatusSubscription } from '@/composables/useParcelCheckStatusSubscription.js'
+import { OP_MODE_PAPERWORK } from '@/helpers/op.mode.js'
 
 const props = defineProps({
   registerId: { type: Number, required: true },
-  id: { type: Number, required: true }
+  id: { type: Number, required: true },
+  mode: { type: String, default: OP_MODE_PAPERWORK },
+  returnUrl: { type: String, default: null }
 })
 
 const register = ref(null)
@@ -79,7 +82,9 @@ onUnmounted(() => {
       v-if="editComponent" 
       :is="editComponent" 
       :register-id="props.registerId" 
-      :id="props.id" 
+      :id="props.id"
+      :mode="props.mode"
+      :return-url="props.returnUrl"
     />
     <div v-else>Неизвестный тип компании</div>
   </Suspense>

@@ -9,10 +9,12 @@ import { ref } from 'vue'
 import ParcelsByNumberList from '@/lists/ParcelsByNumber_List.vue'
 import { vuetifyStubs } from './helpers/test-utils.js'
 import { CheckStatusCode, FCCheckStatus, SWCheckStatus } from '@/helpers/check.status.code.js'
+import { OP_MODE_PAPERWORK } from '@/helpers/op.mode.js'
 
 vi.mock('@/router', () => ({
   default: {
-    push: vi.fn()
+    push: vi.fn(),
+    currentRoute: ref({ fullPath: '/parcels/by-number' })
   }
 }))
 
@@ -251,7 +253,10 @@ describe('ParcelsByNumber_List.vue', () => {
     const expectedNavigation = {
       name: 'Редактирование посылки',
       params: { id: 100, registerId: 8 },
-      query: {}
+      query: {
+        mode: OP_MODE_PAPERWORK,
+        returnUrl: '/parcels/by-number'
+      }
     }
 
     const wrapper = mount(ParcelsByNumberList, {
@@ -310,7 +315,10 @@ describe('ParcelsByNumber_List.vue', () => {
         id: 11,
         registerId: 4
       },
-      query: {}
+      query: {
+        mode: OP_MODE_PAPERWORK,
+        returnUrl: '/parcels/by-number'
+      }
     })
   })
 

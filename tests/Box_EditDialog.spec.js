@@ -131,7 +131,7 @@ describe('Box_EditDialog.vue', () => {
 
     expect(registerGetById).toHaveBeenCalledWith(42)
     expect(boxGetById).not.toHaveBeenCalled()
-    expect(wrapper.get('h1').text()).toContain('cоздание коробки')
+    expect(wrapper.get('h1').text()).toContain('создание коробки')
 
     await dialog.vm.onSubmit(
       {
@@ -278,15 +278,32 @@ describe('Box_EditDialog.vue', () => {
   it('shows retry for a failed load and renders the form after retry', async () => {
     boxGetById.mockRejectedValueOnce(new Error('load failed')).mockResolvedValue(mockBox.value)
     const wrapper = await mountDialog({ mode: 'edit', registerId: 42, boxId: 7 })
+    const dialog = wrapper.findComponent(BoxEditDialog)
+    const save = wrapper
+      .findAllComponents(ActionButton)
+      .find((item) => item.props('tooltipText') === 'Сохранить')
 
     expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain('load failed')
     expect(wrapper.find('#code').exists()).toBe(false)
+    expect(save.props('disabled')).toBe(true)
+    expect(
+      await dialog.vm.onSubmit(
+        { code: 'STALE-BOX', lengthCm: 1, widthCm: 2, heightCm: 3, weightKg: 4 },
+        { setErrors: vi.fn() }
+      )
+    ).toBe(false)
+    expect(boxUpdate).not.toHaveBeenCalled()
+    expect(routerPush).not.toHaveBeenCalled()
 
     await wrapper.get('[data-testid="alert-retry"]').trigger('click')
     await flushPromises()
 
     expect(boxGetById).toHaveBeenCalledTimes(2)
     expect(wrapper.get('#code').element.value).toBe('BOX-7')
+    const retriedSave = wrapper
+      .findAllComponents(ActionButton)
+      .find((item) => item.props('tooltipText') === 'Сохранить')
+    expect(retriedSave.props('disabled')).toBe(false)
   })
 
   it('rejects an edit URL whose box belongs to another register', async () => {

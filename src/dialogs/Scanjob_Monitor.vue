@@ -19,6 +19,8 @@ import ScanjobBoxesMonitor from '@/dialogs/Scanjob_Boxes_Monitor.vue'
 import ScanjobParcelsMonitor from '@/dialogs/Scanjob_Parcels_Monitor.vue'
 import { buildParcelListHeading } from '@/helpers/register.heading.helpers.js'
 import { navigateToEditParcel } from '@/helpers/parcels.list.helpers.js'
+import { getCurrentInternalRoute } from '@/helpers/parcel.navigation.helpers.js'
+import { OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 import { reportError } from '@/helpers/error.helpers.js'
 import {
   getClearParcelDefectErrorMessage,
@@ -322,7 +324,9 @@ function editParcel(item) {
   }
 
   navigateToEditParcel(router, { ...item, id: parcelId }, 'Редактирование посылки', {
-    registerId: registerId.value
+    registerId: registerId.value,
+    mode: OP_MODE_WAREHOUSE,
+    returnUrl: getCurrentInternalRoute(router)
   })
 }
 

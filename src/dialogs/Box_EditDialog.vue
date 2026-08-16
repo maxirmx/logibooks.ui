@@ -97,7 +97,7 @@ const schema = Yup.object({
 
 function getTitle() {
   return isCreate.value
-    ? `${registerHeading.value} - cоздание коробки`
+    ? `${registerHeading.value} - создание коробки`
     : `Редактирование коробки ${box.value?.code || ''}`
 }
 
@@ -155,6 +155,10 @@ await runWithRetryAlert(loadData, {
 })
 
 async function onSubmit(values, { setErrors } = {}) {
+  if (!formReady.value) {
+    return false
+  }
+
   if (readOnly.value) {
     alertStore.warning('Изменения запрещены для этого реестра', { timeout: null })
     return false
@@ -219,7 +223,7 @@ async function onSubmit(values, { setErrors } = {}) {
             icon="fa-solid fa-check-double"
             icon-size="2x"
             :tooltip-text="getButtonText()"
-            :disabled="isSubmitting || loading || readOnly"
+            :disabled="!formReady || isSubmitting || loading || readOnly"
             data-testid="box-save-action"
           />
           <ActionButton

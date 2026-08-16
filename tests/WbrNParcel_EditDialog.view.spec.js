@@ -13,10 +13,10 @@ import {
   CUSTOMS_PROCEDURE_EXPORT,
   CUSTOMS_PROCEDURE_IMPORT
 } from '@/helpers/customs.procedure.helpers.js'
+import { OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 
 let WbrNParcelEditDialog
 let confirmMock = null
-let routeQuery = {}
 let formValues = {}
 
 const routerPush = vi.fn()
@@ -108,14 +108,6 @@ vi.mock('@/router', () => ({
     replace: routerReplace
   }
 }))
-
-vi.mock('vue-router', async () => {
-  const actual = await vi.importActual('vue-router')
-  return {
-    ...actual,
-    useRoute: () => ({ query: routeQuery })
-  }
-})
 
 vi.mock('@/helpers/parcel.number.ext.helpers.js', () => ({
   handleFellowsClick
@@ -386,7 +378,6 @@ const stubs = {
 function resetState() {
   vi.clearAllMocks()
   confirmMock = vi.fn()
-  routeQuery = {}
   formValues = { ...baseParcel }
   parcelItem.value = { ...baseParcel }
   parcelLoading.value = false
@@ -421,12 +412,15 @@ function resetState() {
   runCheckStatusAction.mockResolvedValue()
 }
 
-async function mountDialog() {
+async function mountDialog({ mode = OP_MODE_PAPERWORK, returnUrl = null } = {}) {
   const TestWrapper = {
     components: { WbrNParcelEditDialog },
-    template: '<Suspense><WbrNParcelEditDialog :registerId="12" :id="3" /></Suspense>'
+    props: ['mode', 'returnUrl'],
+    template:
+      '<Suspense><WbrNParcelEditDialog :registerId="12" :id="3" :mode="mode" :return-url="returnUrl" /></Suspense>'
   }
   const wrapper = mount(TestWrapper, {
+    props: { mode, returnUrl },
     global: {
       stubs
     }
@@ -628,8 +622,8 @@ describe('WbrNParcel_EditDialog.vue', () => {
   })
 
   it('saves, cancels, and generates XML using the WbrN SHK number', async () => {
-    routeQuery = { mode: 'warehouse' }
-    const wrapper = await mountDialog()
+    const returnUrl = '/scanjobs/42/monitor/boxes/7'
+    const wrapper = await mountDialog({ mode: OP_MODE_WAREHOUSE, returnUrl })
 
     await wrapper.get('[data-testid="download"]').trigger('click')
     await resolveAll()
@@ -649,16 +643,10 @@ describe('WbrNParcel_EditDialog.vue', () => {
 
     await wrapper.get('[data-testid="save"]').trigger('click')
     await resolveAll()
-    expect(routerPush).toHaveBeenCalledWith({
-      path: '/registers/12/parcels',
-      query: { selectedParcelId: '3', mode: 'warehouse' }
-    })
+    expect(routerPush).toHaveBeenCalledWith(returnUrl)
 
     await wrapper.get('[data-testid="cancel"]').trigger('click')
-    expect(routerPush).toHaveBeenCalledWith({
-      path: '/registers/12/parcels',
-      query: { selectedParcelId: '3', mode: 'warehouse' }
-    })
+    expect(routerPush).toHaveBeenCalledWith(returnUrl)
   })
 
   it('leaves a read-only parcel without sending an update', async () => {
@@ -677,16 +665,17 @@ describe('WbrNParcel_EditDialog.vue', () => {
     expect(parcelUpdate).not.toHaveBeenCalled()
     expect(routerPush).toHaveBeenCalledWith({
       path: '/registers/12/parcels',
-      query: { selectedParcelId: '3' }
+      query: { selectedParcelId: '3', mode: OP_MODE_PAPERWORK }
     })
   })
 
-  it('moves to next, issue, previous, and fallback list targets', async () => {
+  it('preserves navigation context across next and previous parcel targets', async () => {
+    const returnUrl = '/scanjobs/42/monitor/boxes/7'
     nextParcels.mockResolvedValueOnce({
       withoutIssues: { ...baseParcel, id: 4, shk: 'SHK-NEXT' },
       withIssues: { ...baseParcel, id: 5, shk: 'SHK-ISSUE' }
     })
-    const wrapper = await mountDialog()
+    const wrapper = await mountDialog({ mode: OP_MODE_WAREHOUSE, returnUrl })
 
     await wrapper.get('[data-testid="next-parcel"]').trigger('click')
     await resolveAll()
@@ -694,25 +683,30 @@ describe('WbrNParcel_EditDialog.vue', () => {
     expect(parcelUpdate).toHaveBeenCalledWith(3, expect.objectContaining({ id: 3 }))
     expect(parcelItem.value.id).toBe(4)
     expect(authStore.selectedParcelId).toBe(4)
-    expect(routerReplace).toHaveBeenCalledWith('/registers/12/parcels/edit/4')
+    expect(routerReplace).toHaveBeenCalledWith({
+      name: 'Редактирование посылки',
+      params: { id: 4, registerId: 12 },
+      query: { mode: OP_MODE_WAREHOUSE, returnUrl }
+    })
 
     Object.assign(formValues, { ...baseParcel, id: 4 })
     nextParcels.mockResolvedValueOnce({ withoutIssues: null, withIssues: null })
     await wrapper.get('[data-testid="next-issue"]').trigger('click')
     await resolveAll()
-    expect(routerPush).toHaveBeenCalledWith({
-      path: '/registers/12/parcels',
-      query: { selectedParcelId: '4' }
-    })
+    expect(routerPush).toHaveBeenCalledWith(returnUrl)
 
     resetState()
     parcelViewsBack.mockResolvedValueOnce({ ...baseParcel, id: 2, shk: 'SHK-PREV' })
-    const backWrapper = await mountDialog()
+    const backWrapper = await mountDialog({ mode: OP_MODE_WAREHOUSE, returnUrl })
     await backWrapper.get('[data-testid="back"]').trigger('click')
     await resolveAll()
     expect(parcelItem.value.id).toBe(2)
     expect(authStore.selectedParcelId).toBe(2)
-    expect(routerReplace).toHaveBeenCalledWith('/registers/12/parcels/edit/2')
+    expect(routerReplace).toHaveBeenCalledWith({
+      name: 'Редактирование посылки',
+      params: { id: 2, registerId: 12 },
+      query: { mode: OP_MODE_WAREHOUSE, returnUrl }
+    })
   })
 
   it('runs WbrN validation, approval, notification, check-status, and lookup actions', async () => {
@@ -903,16 +897,15 @@ describe('WbrNParcel_EditDialog.vue', () => {
   })
 
   it('falls back to list when back navigation has no previous parcel', async () => {
-    routeQuery = { mode: 'warehouse' }
     parcelViewsBack.mockResolvedValueOnce(null)
-    const wrapper = await mountDialog()
+    const wrapper = await mountDialog({ mode: OP_MODE_WAREHOUSE })
 
     await wrapper.get('[data-testid="back"]').trigger('click')
     await resolveAll()
 
     expect(routerPush).toHaveBeenCalledWith({
       path: '/registers/12/parcels',
-      query: { selectedParcelId: '3', mode: 'warehouse' }
+      query: { selectedParcelId: '3', mode: OP_MODE_WAREHOUSE }
     })
   })
 
@@ -945,6 +938,8 @@ describe('WbrNParcel_EditDialog.vue', () => {
     expect(alertError).toHaveBeenCalledWith('submit failed', {
       fallback: 'Не удалось сохранить посылку'
     })
+    expect(routerPush).not.toHaveBeenCalled()
+    expect(routerReplace).not.toHaveBeenCalled()
 
     parcelUpdate.mockResolvedValueOnce()
     parcelViewsBack.mockRejectedValueOnce(new Error('back failed'))

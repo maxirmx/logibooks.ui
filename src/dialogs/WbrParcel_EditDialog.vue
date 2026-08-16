@@ -58,17 +58,22 @@ import {
 import { DEC_REPORT_UPLOADED_EVENT } from '@/helpers/dec.report.events.js'
 import { SwValidationMatchMode } from '@/models/sw.validation.match.mode.js'
 import { useParcelImageOverlay } from '@/helpers/parcel.image.overlay.js'
-import { useRoute } from 'vue-router'
+import {
+  buildParcelEditLocation,
+  resolveParcelReturnLocation
+} from '@/helpers/parcel.navigation.helpers.js'
+import { OP_MODE_PAPERWORK } from '@/helpers/op.mode.js'
 
 const props = defineProps({
   registerId: { type: Number, required: true },
-  id: { type: Number, required: true }
+  id: { type: Number, required: true },
+  mode: { type: String, default: OP_MODE_PAPERWORK },
+  returnUrl: { type: String, default: null }
 })
 
 // track current parcel id so we can swap inline without changing route
 const currentParcelId = ref(props.id)
 const isComponentMounted = ref(true)
-const route = useRoute()
 
 const parcelsStore = useParcelsStore()
 const registersStore = useRegistersStore()
@@ -186,25 +191,15 @@ function ensureNextParcelsPromise() {
   return nextParcelsPromise
 }
 
-function getModeQueryParam() {
-  return typeof route.query.mode === 'string' && route.query.mode.length > 0
-    ? route.query.mode
-    : undefined
-}
-
 function goToParcelsList() {
-  const mode = getModeQueryParam()
-  const query = {
-    selectedParcelId: String(currentParcelId.value)
-  }
-  if (mode) {
-    query.mode = mode
-  }
-
-  router.push({
-    path: `/registers/${props.registerId}/parcels`,
-    query
-  })
+  router.push(
+    resolveParcelReturnLocation({
+      returnUrl: props.returnUrl,
+      registerId: props.registerId,
+      parcelId: currentParcelId.value,
+      mode: props.mode
+    })
+  )
 }
 
 // Track overlay state for disabling form elements
@@ -368,8 +363,14 @@ async function onSubmit(values, submitContext = false) {
       initNextParcelsPromise(currentParcelId.value)
 
       // update URL without remount
-      const newUrl = `/registers/${props.registerId}/parcels/edit/${nextParcel.id}`
-      router.replace(newUrl)
+      router.replace(
+        buildParcelEditLocation({
+          registerId: props.registerId,
+          parcelId: nextParcel.id,
+          mode: props.mode,
+          returnUrl: props.returnUrl
+        })
+      )
 
       // fetch full parcel data
       // await parcelsStore.getById(nextParcel.id)
@@ -425,8 +426,14 @@ async function onBack(values) {
 
       // fetch full parcel data in background
       // update URL without remount
-      const prevUrl = `/registers/${props.registerId}/parcels/edit/${prevParcel.id}`
-      router.replace(prevUrl)
+      router.replace(
+        buildParcelEditLocation({
+          registerId: props.registerId,
+          parcelId: prevParcel.id,
+          mode: props.mode,
+          returnUrl: props.returnUrl
+        })
+      )
     } else {
       goToParcelsList()
     }

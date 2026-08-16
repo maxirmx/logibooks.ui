@@ -11,6 +11,7 @@ import { hasPassportCheckIssues } from '@/helpers/passport.check.status.helpers.
 import { preloadFeacnInfo, getCachedFeacnInfo } from '@/helpers/feacn.info.helpers.js'
 import { formatDate } from '@/helpers/date.formatters.js'
 import { formatPrice } from '@/helpers/number.formatters.js'
+import { buildParcelEditLocation } from '@/helpers/parcel.navigation.helpers.js'
 
 import { useAlertStore } from '@/stores/alert.store.js'
 
@@ -26,16 +27,18 @@ function unrefValue(value) {
  * @param {Object} queryParams - Query parameters to pass
  */
 export function navigateToEditParcel(router, item, routeName, queryParams = {}) {
-  const { registerId, ...otherQueryParams } = queryParams
+  const { registerId, mode, returnUrl, ...otherQueryParams } = queryParams
 
-  router.push({
-    name: routeName,
-    params: {
-      id: item.id,
-      registerId: registerId
-    },
-    query: otherQueryParams
-  })
+  router.push(
+    buildParcelEditLocation({
+      routeName,
+      registerId,
+      parcelId: item.id,
+      mode,
+      returnUrl,
+      query: otherQueryParams
+    })
+  )
 }
 
 /**

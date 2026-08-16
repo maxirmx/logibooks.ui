@@ -12,6 +12,7 @@ import {
   CUSTOMS_PROCEDURE_EXPORT,
   CUSTOMS_PROCEDURE_IMPORT
 } from '@/helpers/customs.procedure.helpers.js'
+import { OP_MODE_PAPERWORK } from '@/helpers/op.mode.js'
 
 let WbrNParcelsList
 let WbrParcelsList
@@ -937,7 +938,7 @@ describe('WbrNParcels_List.vue', () => {
       expect.any(Object),
       expect.objectContaining({ id: 10, shk: 'SHK-N-1' }),
       'Редактирование посылки',
-      { registerId: 7 }
+      { registerId: 7, mode: OP_MODE_PAPERWORK }
     )
 
     await wrapper.get('[data-testid="fellows"]').trigger('click')

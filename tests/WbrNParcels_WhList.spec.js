@@ -8,6 +8,7 @@ import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import { vuetifyStubs, resolveAll } from './helpers/test-utils.js'
 import { scanjobCheckStatusProjectionKind } from '@/helpers/scanjob.check-status.helpers.js'
+import { OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 
 let WbrNParcelsWhList
 
@@ -598,7 +599,10 @@ describe('WbrNParcels_WhList.vue', () => {
       global: { stubs: globalStubs }
     })
 
-    expect(parcelEditAccessOptions.getQueryParams()).toEqual({ registerId: 9 })
+    expect(parcelEditAccessOptions.getQueryParams()).toEqual({
+      registerId: 9,
+      mode: OP_MODE_WAREHOUSE
+    })
     expect(parcelEditAccessOptions.disabled.value).toBe(true)
     await resolveAll()
     expect(parcelEditAccessOptions.disabled.value).toBe(false)

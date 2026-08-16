@@ -84,7 +84,7 @@ describe('Parcels List Helpers', () => {
       expect(mockRouter.push).toHaveBeenCalledWith({
         name: 'wbr-parcel-edit',
         params: { id: 456, registerId: 123 },
-        query: {}
+        query: { mode: 'modePaperwork' }
       })
     })
 
@@ -99,7 +99,7 @@ describe('Parcels List Helpers', () => {
       expect(mockRouter.push).toHaveBeenCalledWith({
         name: 'ozon-parcel-edit',
         params: { id: 789, registerId: 456 },
-        query: {}
+        query: { mode: 'modePaperwork' }
       })
     })
 
@@ -118,7 +118,7 @@ describe('Parcels List Helpers', () => {
       expect(mockRouter.push).toHaveBeenCalledWith({
         name: 'parcel-edit',
         params: { id: 123, registerId: 456 },
-        query: { returnTo: 'list', tab: 'details' }
+        query: { returnTo: 'list', tab: 'details', mode: 'modePaperwork' }
       })
     })
 
@@ -133,7 +133,7 @@ describe('Parcels List Helpers', () => {
       expect(mockRouter.push).toHaveBeenCalledWith({
         name: 'parcel-edit',
         params: { id: 123, registerId: 456 },
-        query: {}
+        query: { mode: 'modePaperwork' }
       })
     })
   })

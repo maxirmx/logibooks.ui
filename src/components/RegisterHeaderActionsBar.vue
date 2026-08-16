@@ -128,7 +128,8 @@ const documentOptions = computed(() => {
   }
 
   if (
-    Number(props.item?.transportationTypeCode) === 0 &&
+    props.item?.transportationTypeCode != null &&
+    Number(props.item.transportationTypeCode) === 0 &&
     Number(props.item?.warehouseId) > 0
   ) {
     options.push({

@@ -150,12 +150,14 @@ describe('useParcelCheckStatusSubscription', () => {
 
   it('invalidates pending work, stops watching, and absorbs stop failures on unmount', async () => {
     let finishStart
+    const stopError = new Error('stop failed')
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     parcelChecksStoreMock.start.mockReturnValueOnce(
       new Promise((resolve) => {
         finishStart = resolve
       })
     )
-    parcelChecksStoreMock.stop.mockRejectedValueOnce(new Error('stop failed'))
+    parcelChecksStoreMock.stop.mockRejectedValueOnce(stopError)
     const registerId = ref(7)
     const refresh = vi.fn().mockResolvedValue()
 
@@ -167,6 +169,8 @@ describe('useParcelCheckStatusSubscription', () => {
     await flushPromises()
 
     expect(parcelChecksStoreMock.stop).toHaveBeenCalledTimes(1)
+    expect(consoleError).toHaveBeenCalledTimes(1)
+    expect(consoleError).toHaveBeenCalledWith('[parcel check subscription cleanup]', stopError)
 
     registerId.value = 8
     await nextTick()
@@ -177,6 +181,7 @@ describe('useParcelCheckStatusSubscription', () => {
     await flushPromises()
     await staleResync()
     expect(refresh).not.toHaveBeenCalled()
+    consoleError.mockRestore()
   })
 
   it('publishes an observable error when the initial subscription fails', async () => {

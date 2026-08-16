@@ -526,6 +526,31 @@ describe('router guards', () => {
     })
   })
 
+  describe('register box routes', () => {
+    it('maps numeric props and requires warehouse access', () => {
+      const routes = router.getRoutes()
+      const list = routes.find((route) => route.path === '/registers/:registerId/boxes')
+      const create = routes.find(
+        (route) => route.path === '/registers/:registerId/boxes/create'
+      )
+      const edit = routes.find(
+        (route) => route.path === '/registers/:registerId/boxes/edit/:id'
+      )
+
+      expect(list?.props.default({ params: { registerId: '42' } })).toEqual({ registerId: 42 })
+      expect(create?.props.default({ params: { registerId: '42' } })).toEqual({ registerId: 42 })
+      expect(edit?.props.default({ params: { registerId: '42', id: '7' } })).toEqual({
+        registerId: 42,
+        id: 7
+      })
+
+      for (const route of [list, create, edit]) {
+        expect(route?.meta.reqWhRole).toBe(true)
+        expect(route?.meta.hideSidebar).toBe(true)
+      }
+    })
+  })
+
   describe('customs station routes', () => {
     it('exposes the role-protected list and mutation routes', () => {
       const routes = router.getRoutes()

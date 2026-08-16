@@ -635,7 +635,9 @@ describe('Scanjobs_List.vue', () => {
   })
 
   it('stops live monitor on unmount and swallows stop errors', async () => {
-    stopScanJobsListMonitorFn.mockRejectedValueOnce(new Error('Stop failed'))
+    const stopError = new Error('Stop failed')
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    stopScanJobsListMonitorFn.mockRejectedValueOnce(stopError)
 
     const wrapper = mount(ScanjobsList, {
       global: {
@@ -645,7 +647,12 @@ describe('Scanjobs_List.vue', () => {
 
     await wrapper.vm.$nextTick()
     expect(() => wrapper.unmount()).not.toThrow()
+    await Promise.resolve()
+
     expect(stopScanJobsListMonitorFn).toHaveBeenCalledTimes(1)
+    expect(consoleError).toHaveBeenCalledTimes(1)
+    expect(consoleError).toHaveBeenCalledWith('[scan jobs list monitor cleanup]', stopError)
+    consoleError.mockRestore()
   })
 
   describe('startScanjob', () => {

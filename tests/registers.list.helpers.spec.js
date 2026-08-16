@@ -820,17 +820,26 @@ describe('registers.list.helpers', () => {
         expect(stopPollingFn).toHaveBeenCalled()
       })
 
-      it('handles cancellation errors silently', () => {
+      it('reports cancellation errors without throwing', async () => {
+        const cancellationError = new Error('Cancellation failed')
+        const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
         validationState.handleId = 'test-handle-123'
         validationState.show = true
-        mockRegistersStore.cancelValidation.mockRejectedValueOnce(new Error('Cancellation failed'))
+        mockRegistersStore.cancelValidation.mockRejectedValueOnce(cancellationError)
 
         expect(() => {
           cancelValidation(validationState, mockRegistersStore, stopPollingFn)
         }).not.toThrow()
+        await Promise.resolve()
 
         expect(validationState.show).toBe(false)
         expect(stopPollingFn).toHaveBeenCalled()
+        expect(consoleError).toHaveBeenCalledTimes(1)
+        expect(consoleError).toHaveBeenCalledWith(
+          '[register validation cancellation cleanup]',
+          cancellationError
+        )
+        consoleError.mockRestore()
       })
     })
 

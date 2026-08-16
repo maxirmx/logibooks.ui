@@ -1205,6 +1205,34 @@ describe('Registers_WhList.vue', () => {
     expect(router.push).toHaveBeenCalledWith('/registers/77/unregistered-parcels')
   })
 
+  it('navigates to register boxes when boxes action is clicked', async () => {
+    mockItems.value = [{ id: 77 }]
+
+    const wrapper = createWrapper()
+    await wrapper.vm.$nextTick()
+
+    const actionButtons = wrapper.findAllComponents(ActionButton)
+    const boxesButton = actionButtons.find((button) => button.props('tooltipText') === 'Коробки')
+    expect(boxesButton).toBeTruthy()
+
+    const router = (await import('@/router')).default
+    await boxesButton.find('button').trigger('click')
+    expect(router.push).toHaveBeenCalledWith('/registers/77/boxes')
+  })
+
+  it('hides the register boxes action without a warehouse role', async () => {
+    mockHasWhRole.value = false
+    mockItems.value = [{ id: 77 }]
+
+    const wrapper = createWrapper()
+    await wrapper.vm.$nextTick()
+
+    expect(
+      wrapper.findAllComponents(ActionButton).some((button) => button.props('tooltipText') === 'Коробки')
+    ).toBe(false)
+    mockHasWhRole.value = true
+  })
+
   it('navigates to create scan job when barcode action is clicked', async () => {
     mockItems.value = [{ id: 7, warehouseId: 12, dealNumber: 'D-77' }]
 

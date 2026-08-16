@@ -372,8 +372,10 @@ describe('scanjobs store', () => {
 
     it('marks the scan job read-only when conflict refresh fails', async () => {
       const conflict = Object.assign(new Error('Изменения запрещены для реестра'), { status: 409 })
+      const refreshError = new Error('refresh failed')
+      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
       fetchWrapper.put.mockRejectedValue(conflict)
-      fetchWrapper.get.mockRejectedValue(new Error('refresh failed'))
+      fetchWrapper.get.mockRejectedValue(refreshError)
       const store = useScanjobsStore()
       store.items = [{ ...mockScanjob, readOnly: false }]
       store.scanjob = { ...mockScanjob, readOnly: false }
@@ -382,6 +384,9 @@ describe('scanjobs store', () => {
 
       expect(store.scanjob.readOnly).toBe(true)
       expect(store.items[0].readOnly).toBe(true)
+      expect(consoleError).toHaveBeenCalledTimes(1)
+      expect(consoleError).toHaveBeenCalledWith('[scanjobs conflict refresh]', refreshError)
+      consoleError.mockRestore()
     })
   })
 

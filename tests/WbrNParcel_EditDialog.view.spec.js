@@ -412,15 +412,15 @@ function resetState() {
   runCheckStatusAction.mockResolvedValue()
 }
 
-async function mountDialog({ mode = OP_MODE_PAPERWORK, returnUrl = null } = {}) {
+async function mountDialog({ mode = OP_MODE_PAPERWORK, returnUrl = null, boxId = null } = {}) {
   const TestWrapper = {
     components: { WbrNParcelEditDialog },
-    props: ['mode', 'returnUrl'],
+    props: ['mode', 'returnUrl', 'boxId'],
     template:
-      '<Suspense><WbrNParcelEditDialog :registerId="12" :id="3" :mode="mode" :return-url="returnUrl" /></Suspense>'
+      '<Suspense><WbrNParcelEditDialog :registerId="12" :id="3" :mode="mode" :return-url="returnUrl" :box-id="boxId" /></Suspense>'
   }
   const wrapper = mount(TestWrapper, {
-    props: { mode, returnUrl },
+    props: { mode, returnUrl, boxId },
     global: {
       stubs
     }
@@ -671,11 +671,14 @@ describe('WbrNParcel_EditDialog.vue', () => {
 
   it('preserves navigation context across next and previous parcel targets', async () => {
     const returnUrl = '/scanjobs/42/monitor/boxes/7'
+    const boxId = 17
     nextParcels.mockResolvedValueOnce({
       withoutIssues: { ...baseParcel, id: 4, shk: 'SHK-NEXT' },
       withIssues: { ...baseParcel, id: 5, shk: 'SHK-ISSUE' }
     })
-    const wrapper = await mountDialog({ mode: OP_MODE_WAREHOUSE, returnUrl })
+    const wrapper = await mountDialog({ mode: OP_MODE_WAREHOUSE, returnUrl, boxId })
+
+    expect(nextParcels).toHaveBeenCalledWith(3, { boxId })
 
     await wrapper.get('[data-testid="next-parcel"]').trigger('click')
     await resolveAll()
@@ -686,7 +689,7 @@ describe('WbrNParcel_EditDialog.vue', () => {
     expect(routerReplace).toHaveBeenCalledWith({
       name: 'Редактирование посылки',
       params: { id: 4, registerId: 12 },
-      query: { mode: OP_MODE_WAREHOUSE, returnUrl }
+      query: { mode: OP_MODE_WAREHOUSE, returnUrl, boxId: String(boxId) }
     })
 
     Object.assign(formValues, { ...baseParcel, id: 4 })
@@ -697,7 +700,7 @@ describe('WbrNParcel_EditDialog.vue', () => {
 
     resetState()
     parcelViewsBack.mockResolvedValueOnce({ ...baseParcel, id: 2, shk: 'SHK-PREV' })
-    const backWrapper = await mountDialog({ mode: OP_MODE_WAREHOUSE, returnUrl })
+    const backWrapper = await mountDialog({ mode: OP_MODE_WAREHOUSE, returnUrl, boxId })
     await backWrapper.get('[data-testid="back"]').trigger('click')
     await resolveAll()
     expect(parcelItem.value.id).toBe(2)
@@ -705,7 +708,7 @@ describe('WbrNParcel_EditDialog.vue', () => {
     expect(routerReplace).toHaveBeenCalledWith({
       name: 'Редактирование посылки',
       params: { id: 2, registerId: 12 },
-      query: { mode: OP_MODE_WAREHOUSE, returnUrl }
+      query: { mode: OP_MODE_WAREHOUSE, returnUrl, boxId: String(boxId) }
     })
   })
 

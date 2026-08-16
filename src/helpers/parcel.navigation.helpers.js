@@ -10,6 +10,17 @@ export function normalizeParcelNavigationMode(value) {
   return parcelNavigationModes.has(value) ? value : OP_MODE_PAPERWORK
 }
 
+export function normalizeParcelBoxId(value) {
+  const rawValue = Array.isArray(value) ? value[0] : value
+  const parsedValue = Number(rawValue)
+  return Number.isInteger(parsedValue) && parsedValue > 0 ? parsedValue : null
+}
+
+export function normalizeParcelBoxCode(value) {
+  const rawValue = Array.isArray(value) ? value[0] : value
+  return typeof rawValue === 'string' && rawValue.trim() ? rawValue.trim() : null
+}
+
 export function normalizeInternalReturnUrl(value) {
   if (typeof value !== 'string' || !/^\/(?![\\/])/.test(value)) {
     return null
@@ -41,8 +52,10 @@ export function buildParcelEditLocation({
   parcelId,
   mode,
   returnUrl,
+  boxId,
   query = {}
 }) {
+  const normalizedBoxId = normalizeParcelBoxId(boxId)
   return {
     name: routeName,
     params: {
@@ -51,24 +64,41 @@ export function buildParcelEditLocation({
     },
     query: {
       ...query,
-      ...buildParcelNavigationQuery({ mode, returnUrl })
+      ...buildParcelNavigationQuery({ mode, returnUrl }),
+      ...(normalizedBoxId != null ? { boxId: String(normalizedBoxId) } : {})
     }
   }
 }
 
-export function buildParcelListLocation({ registerId, parcelId, mode }) {
+export function buildParcelListLocation({
+  registerId,
+  parcelId,
+  mode,
+  returnUrl,
+  boxId,
+  boxCode
+}) {
+  const query = buildParcelNavigationQuery({ mode, returnUrl })
+  const normalizedBoxId = normalizeParcelBoxId(boxId)
+  const normalizedBoxCode = normalizeParcelBoxCode(boxCode)
+
+  if (parcelId != null) {
+    query.selectedParcelId = String(parcelId)
+  }
+  if (normalizedBoxId != null) {
+    query.boxId = String(normalizedBoxId)
+    if (normalizedBoxCode) query.boxCode = normalizedBoxCode
+  }
+
   return {
     path: `/registers/${registerId}/parcels`,
-    query: {
-      selectedParcelId: String(parcelId),
-      mode: normalizeParcelNavigationMode(mode)
-    }
+    query
   }
 }
 
-export function resolveParcelReturnLocation({ returnUrl, registerId, parcelId, mode }) {
+export function resolveParcelReturnLocation({ returnUrl, registerId, parcelId, mode, boxId }) {
   return (
     normalizeInternalReturnUrl(returnUrl) ||
-    buildParcelListLocation({ registerId, parcelId, mode })
+    buildParcelListLocation({ registerId, parcelId, mode, boxId })
   )
 }

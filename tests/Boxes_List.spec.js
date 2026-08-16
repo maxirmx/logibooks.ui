@@ -39,7 +39,9 @@ const authStore = {
   boxes_per_page: 25,
   boxes_search: '',
   boxes_sort_by: [{ key: 'code', order: 'asc' }],
-  boxes_page: 2
+  boxes_page: 2,
+  parcels_wh_page: 3,
+  parcels_wh_box_number: 'PREVIOUS-'
 }
 
 vi.mock('pinia', async () => {
@@ -98,6 +100,8 @@ describe('Boxes_List.vue', () => {
     authStore.boxes_search = ''
     authStore.boxes_sort_by = [{ key: 'code', order: 'asc' }]
     authStore.boxes_page = 2
+    authStore.parcels_wh_page = 3
+    authStore.parcels_wh_box_number = 'PREVIOUS-'
     mockRegister.value = {
       id: 42,
       dealNumber: 'DEAL-42',
@@ -186,12 +190,47 @@ describe('Boxes_List.vue', () => {
     const actions = wrapper.findAllComponents(ActionButton)
     const create = actions.find((item) => item.props('tooltipText') === 'Создать коробку')
     const edit = actions.find((item) => item.props('tooltipText') === 'Редактировать коробку')
+    const parcels = actions.find((item) => item.props('tooltipText') === 'Список посылок')
     expect(create.props('disabled')).toBe(true)
     expect(edit.props('disabled')).toBe(true)
+    expect(parcels.props('disabled')).toBe(false)
 
     wrapper.vm.openCreateView()
     wrapper.vm.openEditView(mockBoxes.value[0])
     expect(routerPush).not.toHaveBeenCalled()
+  })
+
+  it('opens the exact box parcel scope in warehouse mode for read-only registers', async () => {
+    mockRegister.value = { ...mockRegister.value, readOnly: true }
+    registerGetById.mockResolvedValue(mockRegister.value)
+    const wrapper = createWrapper()
+    await flushPromises()
+
+    await wrapper.vm.openParcels(mockBoxes.value[0])
+
+    expect(routerPush).toHaveBeenCalledWith({
+      path: '/registers/42/parcels',
+      query: {
+        mode: 'modeWarehouse',
+        returnUrl: '/registers/42/boxes',
+        boxId: '7',
+        boxCode: 'BOX-7'
+      }
+    })
+    expect(authStore.parcels_wh_page).toBe(1)
+    expect(authStore.parcels_wh_box_number).toBe('')
+  })
+
+  it('reports parcel navigation failure once and restores the previous filters', async () => {
+    routerPush.mockRejectedValueOnce(new Error('navigation failed'))
+    const wrapper = createWrapper()
+    await flushPromises()
+
+    await wrapper.vm.openParcels(mockBoxes.value[0])
+
+    expect(authStore.parcels_wh_page).toBe(3)
+    expect(authStore.parcels_wh_box_number).toBe('PREVIOUS-')
+    expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain('navigation failed')
   })
 
   it('shows a retryable load error and successfully retries', async () => {

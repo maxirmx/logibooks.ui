@@ -18,9 +18,17 @@ import {
 import { OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 
 const pushMock = vi.hoisted(() => vi.fn())
+const replaceMock = vi.hoisted(() => vi.fn())
 const backMock = vi.hoisted(() => vi.fn())
 const mockGet = vi.hoisted(() => vi.fn())
 const subscriptionOptions = vi.hoisted(() => [])
+const currentRouteMock = vi.hoisted(() => ({
+  value: {
+    path: '/registers/1/parcels',
+    fullPath: '/registers/1/parcels',
+    query: {}
+  }
+}))
 
 vi.mock('@/composables/useParcelCheckStatusSubscription.js', () => ({
   useParcelCheckStatusSubscription: (options) => subscriptionOptions.push(options)
@@ -45,7 +53,7 @@ vi.mock('@/lists/OzonParcels_List.vue', () => ({
 vi.mock('@/lists/OzonParcels_WhList.vue', () => ({
   default: {
     name: 'OzonParcels_WhList',
-    props: ['register-id'],
+    props: ['registerId', 'mode', 'boxId', 'boxCode'],
     template: '<div data-test="ozon-wh-list">OZON WH: {{ registerId }}</div>'
   }
 }))
@@ -85,7 +93,7 @@ vi.mock('@/lists/WbrNParcels_WhList.vue', () => ({
 vi.mock('@/lists/WbrParcels_WhList.vue', () => ({
   default: {
     name: 'WbrParcels_WhList',
-    props: ['register-id'],
+    props: ['registerId', 'mode', 'boxId', 'boxCode'],
     template: '<div data-test="wbr-wh-list">WBR WH: {{ registerId }}</div>'
   }
 }))
@@ -104,7 +112,9 @@ vi.mock('vue-router', async (importOriginal) => {
     ...actual,
     useRouter: () => ({
       back: backMock,
-      push: pushMock
+      push: pushMock,
+      replace: replaceMock,
+      currentRoute: currentRouteMock
     })
   }
 })
@@ -121,6 +131,11 @@ describe('Parcels_View', () => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
     subscriptionOptions.length = 0
+    currentRouteMock.value = {
+      path: '/registers/1/parcels',
+      fullPath: '/registers/1/parcels',
+      query: {}
+    }
     const { fetchWrapper } = await import('@/helpers/fetch.wrapper.js')
     fetchWrapper.get.mockImplementation(mockGet)
   })
@@ -212,6 +227,42 @@ describe('Parcels_View', () => {
     wrapper.unmount()
   })
 
+  it('refreshes only the selected box in warehouse mode', async () => {
+    const { useParcelsStore } = await import('@/stores/parcels.store.js')
+    const parcelsStore = useParcelsStore()
+    const response = { items: [{ id: 102 }], pagination: { totalCount: 1 } }
+    const getParcels = vi.spyOn(parcelsStore, 'getAll').mockResolvedValue(response)
+    const updateItems = vi.spyOn(parcelsStore, 'updateItems')
+    mockGet.mockResolvedValue({ registerType: WBR_COMPANY_ID, customsProcedureCode: 40 })
+
+    const wrapper = mount(ParcelsView, {
+      props: { id: 19, mode: OP_MODE_WAREHOUSE, boxId: 17, boxCode: 'BOX-17' }
+    })
+    await flushPromises()
+    await subscriptionOptions[0].refresh()
+
+    expect(getParcels).toHaveBeenCalledWith(19, {
+      updateStore: false,
+      showMarkedByPartner: true,
+      boxId: 17
+    })
+    expect(updateItems).toHaveBeenCalledWith(response)
+
+    wrapper.unmount()
+  })
+
+  it.each([
+    ['a string rejection', 'register load failed', 'register load failed'],
+    ['an unknown rejection shape', {}, 'Не удалось загрузить реестр']
+  ])('renders a safe register load error for %s', async (_case, rejection, expectedMessage) => {
+    mockGet.mockRejectedValueOnce(rejection)
+
+    const wrapper = mount(ParcelsView, { props: { id: 20 } })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain(`Ошибка загрузки: ${expectedMessage}`)
+  })
+
   it('renders WbrParcels_List when register has WBR registerType', async () => {
     mockGet.mockResolvedValue({ registerType: WBR_COMPANY_ID })
 
@@ -247,6 +298,87 @@ describe('Parcels_View', () => {
     expect(wrapper.find('[data-test="wbr-list"]').exists()).toBe(false)
     expect(wrapper.find('[data-test="ozon-list"]').exists()).toBe(false)
     expect(wrapper.find('[data-test="wbr2-list"]').exists()).toBe(false)
+  })
+
+  it('passes exact box scope to the selected warehouse list and clears only that scope', async () => {
+    mockGet.mockResolvedValue({ registerType: WBR_COMPANY_ID })
+    currentRouteMock.value = {
+      path: '/registers/10/parcels',
+      fullPath:
+        '/registers/10/parcels?mode=modeWarehouse&boxId=17&boxCode=BOX-17&returnUrl=/registers/10/boxes',
+      query: {
+        mode: OP_MODE_WAREHOUSE,
+        boxId: '17',
+        boxCode: 'BOX-17',
+        returnUrl: '/registers/10/boxes',
+        statusId: '3'
+      }
+    }
+    const wrapper = mount(ParcelsView, {
+      props: {
+        id: 10,
+        mode: OP_MODE_WAREHOUSE,
+        boxId: 17,
+        boxCode: 'BOX-17',
+        returnUrl: '/registers/10/boxes'
+      }
+    })
+    await flushPromises()
+
+    const list = wrapper.findComponent({ name: 'WbrParcels_WhList' })
+    expect(list.props()).toMatchObject({
+      registerId: 10,
+      mode: OP_MODE_WAREHOUSE,
+      boxId: 17,
+      boxCode: 'BOX-17'
+    })
+
+    list.vm.$emit('clear-box-scope')
+    await flushPromises()
+
+    expect(replaceMock).toHaveBeenCalledWith({
+      path: '/registers/10/parcels',
+      query: {
+        mode: OP_MODE_WAREHOUSE,
+        returnUrl: '/registers/10/boxes',
+        statusId: '3'
+      }
+    })
+  })
+
+  it('reports a box-scope clearing failure and keeps the current route intact', async () => {
+    const { useAlertStore } = await import('@/stores/alert.store.js')
+    mockGet.mockResolvedValue({ registerType: WBR_COMPANY_ID })
+    const query = { mode: OP_MODE_WAREHOUSE, boxId: '17', boxCode: 'BOX-17' }
+    currentRouteMock.value = {
+      path: '/registers/10/parcels',
+      fullPath: '/registers/10/parcels?mode=modeWarehouse&boxId=17&boxCode=BOX-17',
+      query
+    }
+    replaceMock.mockRejectedValueOnce(new Error('replace failed'))
+    const wrapper = mount(ParcelsView, {
+      props: { id: 10, mode: OP_MODE_WAREHOUSE, boxId: 17, boxCode: 'BOX-17' }
+    })
+    await flushPromises()
+
+    wrapper.findComponent({ name: 'WbrParcels_WhList' }).vm.$emit('clear-box-scope')
+    await flushPromises()
+
+    expect(currentRouteMock.value.query).toBe(query)
+    expect(useAlertStore().alert.message).toBe('replace failed')
+  })
+
+  it('ignores a clear-scope event when the parcel list is not scoped', async () => {
+    mockGet.mockResolvedValue({ registerType: WBR_COMPANY_ID })
+    const wrapper = mount(ParcelsView, {
+      props: { id: 10, mode: OP_MODE_WAREHOUSE }
+    })
+    await flushPromises()
+
+    wrapper.findComponent({ name: 'WbrParcels_WhList' }).vm.$emit('clear-box-scope')
+    await flushPromises()
+
+    expect(replaceMock).not.toHaveBeenCalled()
   })
 
   it('renders OzonParcels_List when register has OZON registerType', async () => {
@@ -460,5 +592,57 @@ describe('Parcels_View', () => {
       query: { mode: OP_MODE_WAREHOUSE }
     })
     expect(backMock).not.toHaveBeenCalled()
+  })
+
+  it('returns a scoped parcel list to its safe boxes URL', async () => {
+    mockGet.mockResolvedValue({ registerType: OZON_COMPANY_ID })
+    const wrapper = mount(ParcelsView, {
+      props: {
+        id: 321,
+        mode: OP_MODE_WAREHOUSE,
+        boxId: 17,
+        returnUrl: '/registers/321/boxes'
+      }
+    })
+    await flushPromises()
+
+    wrapper.findComponent({ name: 'OzonParcels_WhList' }).vm.$emit('close')
+    await flushPromises()
+
+    expect(pushMock).toHaveBeenCalledWith('/registers/321/boxes')
+  })
+
+  it('reports a scoped close failure and keeps the current scope', async () => {
+    const { useAlertStore } = await import('@/stores/alert.store.js')
+    mockGet.mockResolvedValue({ registerType: OZON_COMPANY_ID })
+    const query = {
+      mode: OP_MODE_WAREHOUSE,
+      boxId: '17',
+      boxCode: 'BOX-17',
+      returnUrl: '/registers/321/boxes'
+    }
+    currentRouteMock.value = {
+      path: '/registers/321/parcels',
+      fullPath:
+        '/registers/321/parcels?mode=modeWarehouse&boxId=17&boxCode=BOX-17&returnUrl=/registers/321/boxes',
+      query
+    }
+    pushMock.mockRejectedValueOnce(new Error('close failed'))
+    const wrapper = mount(ParcelsView, {
+      props: {
+        id: 321,
+        mode: OP_MODE_WAREHOUSE,
+        boxId: 17,
+        boxCode: 'BOX-17',
+        returnUrl: '/registers/321/boxes'
+      }
+    })
+    await flushPromises()
+
+    wrapper.findComponent({ name: 'OzonParcels_WhList' }).vm.$emit('close')
+    await flushPromises()
+
+    expect(currentRouteMock.value.query).toBe(query)
+    expect(useAlertStore().alert.message).toBe('close failed')
   })
 })

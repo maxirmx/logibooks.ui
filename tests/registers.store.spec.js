@@ -2107,6 +2107,17 @@ describe('registers store', () => {
       })
     })
 
+    it('keeps adjacent navigation inside the exact box', async () => {
+      fetchWrapper.get.mockResolvedValue({ WithoutIssues: { id: 6 }, WithIssues: null })
+      const store = useRegistersStore()
+
+      await store.nextParcels(5, { boxId: 17 })
+
+      expect(fetchWrapper.get).toHaveBeenCalledWith(
+        `${apiUrl}/registers/nextparcels/5?boxId=17&sortBy=id&sortOrder=asc`
+      )
+    })
+
     it('requests next parcels with filtering parameters', async () => {
       const customAuthStore = {
         ...defaultAuthStore,
@@ -2174,6 +2185,18 @@ describe('registers store', () => {
       expect(store.error).toEqual(error)
       expect(fetchWrapper.get).toHaveBeenCalledWith(
         `${apiUrl}/registers/nextparcels/5?sortBy=id&sortOrder=asc`
+      )
+    })
+
+    it('rethrows an exact-box adjacent request failure with its scope intact', async () => {
+      const error = new Error('scoped next failed')
+      fetchWrapper.get.mockRejectedValue(error)
+      const store = useRegistersStore()
+
+      await expect(store.nextParcels(5, { boxId: 17 })).rejects.toBe(error)
+      expect(store.error).toBe(error)
+      expect(fetchWrapper.get).toHaveBeenCalledWith(
+        `${apiUrl}/registers/nextparcels/5?boxId=17&sortBy=id&sortOrder=asc`
       )
     })
 

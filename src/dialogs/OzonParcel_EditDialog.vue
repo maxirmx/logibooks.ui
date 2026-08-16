@@ -72,7 +72,8 @@ const props = defineProps({
   registerId: { type: Number, required: true },
   id: { type: Number, required: true },
   mode: { type: String, default: OP_MODE_PAPERWORK },
-  returnUrl: { type: String, default: null }
+  returnUrl: { type: String, default: null },
+  boxId: { type: Number, default: null }
 })
 
 // track current parcel id so we can swap inline without changing route
@@ -177,7 +178,7 @@ function initNextParcelsPromise(id) {
   nextParcelsResult.value = { withoutIssues: null, withIssues: null }
 
   nextParcelsPromise = registersStore
-    .nextParcels(id)
+    .nextParcels(id, ...(props.boxId ? [{ boxId: props.boxId }] : []))
     .then((result) => {
       nextParcelsResult.value = result
       return result
@@ -204,6 +205,7 @@ function goToParcelsList() {
   router.push(
     resolveParcelReturnLocation({
       returnUrl: props.returnUrl,
+      boxId: props.boxId,
       registerId: currentRegisterId.value,
       parcelId: currentParcelId.value,
       mode: props.mode
@@ -395,7 +397,8 @@ async function onSubmit(values, submitContext = false) {
           registerId: currentRegisterId.value,
           parcelId: nextParcel.id,
           mode: props.mode,
-          returnUrl: props.returnUrl
+          returnUrl: props.returnUrl,
+          boxId: props.boxId
         })
       )
 
@@ -464,7 +467,8 @@ async function onBack(values) {
           registerId: currentRegisterId.value,
           parcelId: prevParcel.id,
           mode: props.mode,
-          returnUrl: props.returnUrl
+          returnUrl: props.returnUrl,
+          boxId: props.boxId
         })
       )
     } else {

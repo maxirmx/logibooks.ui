@@ -10,12 +10,14 @@ import router from '@/router'
 import ActionButton from '@/components/ActionButton.vue'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { useAuthStore } from '@/stores/auth.store.js'
+import { useAlertStore } from '@/stores/alert.store.js'
 import { useBoxesStore } from '@/stores/boxes.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { buildParcelListHeading } from '@/helpers/register.heading.helpers.js'
 import { getRegisterNouns, OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
+import { buildParcelListLocation } from '@/helpers/parcel.navigation.helpers.js'
 
 const props = defineProps({
   registerId: {
@@ -25,6 +27,7 @@ const props = defineProps({
 })
 
 const authStore = useAuthStore()
+const alertStore = useAlertStore()
 const boxesStore = useBoxesStore()
 const registersStore = useRegistersStore()
 const { boxes, loading: boxesLoading } = storeToRefs(boxesStore)
@@ -41,7 +44,7 @@ const registerHeading = computed(() =>
 )
 
 const headers = [
-  { title: '', key: 'actions', align: 'center', sortable: false, width: '56px' },
+  { title: '', key: 'actions', align: 'center', sortable: false, width: '96px' },
   { title: 'Номер коробки', key: 'code', sortable: true },
   { title: 'Длина, см', key: 'lengthCm', align: 'end', sortable: true },
   { title: 'Ширина, см', key: 'widthCm', align: 'end', sortable: true },
@@ -75,6 +78,31 @@ function openEditView(box) {
   router.push(`/registers/${props.registerId}/boxes/edit/${box.id}`)
 }
 
+async function openParcels(box) {
+  if (loading.value || !box?.id) return
+
+  const previousPage = authStore.parcels_wh_page
+  const previousBoxNumber = authStore.parcels_wh_box_number
+  authStore.parcels_wh_page = 1
+  authStore.parcels_wh_box_number = ''
+
+  try {
+    await router.push(
+      buildParcelListLocation({
+        registerId: props.registerId,
+        mode: OP_MODE_WAREHOUSE,
+        boxId: box.id,
+        boxCode: box.code,
+        returnUrl: `/registers/${props.registerId}/boxes`
+      })
+    )
+  } catch (error) {
+    authStore.parcels_wh_page = previousPage
+    authStore.parcels_wh_box_number = previousBoxNumber
+    alertStore.error(error, { fallback: 'Не удалось открыть список посылок' })
+  }
+}
+
 function close() {
   router.push({ path: '/registers', query: { mode: OP_MODE_WAREHOUSE } })
 }
@@ -97,6 +125,7 @@ defineExpose({
   loadData,
   openCreateView,
   openEditView,
+  openParcels,
   close,
   formatBoxMetric
 })
@@ -167,6 +196,14 @@ defineExpose({
       >
         <template #[`item.actions`]="{ item }">
           <div class="actions-container">
+            <ActionButton
+              :item="item"
+              icon="fa-solid fa-list"
+              tooltip-text="Список посылок"
+              :disabled="loading"
+              data-testid="box-parcels-action"
+              @click="openParcels"
+            />
             <ActionButton
               :item="item"
               icon="fa-solid fa-pen"

@@ -22,7 +22,8 @@ const props = defineProps({
   registerId: { type: Number, required: true },
   id: { type: Number, required: true },
   mode: { type: String, default: OP_MODE_PAPERWORK },
-  returnUrl: { type: String, default: null }
+  returnUrl: { type: String, default: null },
+  boxId: { type: Number, default: null }
 })
 
 const register = ref(null)
@@ -85,6 +86,7 @@ onUnmounted(() => {
       :id="props.id"
       :mode="props.mode"
       :return-url="props.returnUrl"
+      :box-id="props.boxId"
     />
     <div v-else>Неизвестный тип компании</div>
   </Suspense>

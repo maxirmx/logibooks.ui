@@ -488,14 +488,16 @@ describe('router guards', () => {
         params: { registerId: '12', id: '4' },
         query: {
           mode: OP_MODE_WAREHOUSE,
-          returnUrl: '/scanjobs/42/monitor/boxes/7'
+          returnUrl: '/scanjobs/42/monitor/boxes/7',
+          boxId: '17'
         }
       })
     ).toEqual({
       registerId: 12,
       id: 4,
       mode: OP_MODE_WAREHOUSE,
-      returnUrl: '/scanjobs/42/monitor/boxes/7'
+      returnUrl: '/scanjobs/42/monitor/boxes/7',
+      boxId: 17
     })
 
     expect(
@@ -507,6 +509,42 @@ describe('router guards', () => {
       registerId: 12,
       id: 4,
       mode: OP_MODE_PAPERWORK,
+      returnUrl: null,
+      boxId: null
+    })
+  })
+
+  it('normalizes exact-box parcel-list context into route props', () => {
+    const routeRecord = router.getRoutes().find((route) => route.name === 'Посылки')
+
+    expect(
+      routeRecord.props.default({
+        params: { id: '12' },
+        query: {
+          mode: OP_MODE_WAREHOUSE,
+          boxId: '17',
+          boxCode: ' BOX-17 ',
+          returnUrl: '/registers/12/boxes'
+        }
+      })
+    ).toEqual({
+      id: 12,
+      mode: OP_MODE_WAREHOUSE,
+      boxId: 17,
+      boxCode: 'BOX-17',
+      returnUrl: '/registers/12/boxes'
+    })
+
+    expect(
+      routeRecord.props.default({
+        params: { id: '12' },
+        query: { boxId: '-2', boxCode: 'BOX-17', returnUrl: '//example.com' }
+      })
+    ).toEqual({
+      id: 12,
+      mode: OP_MODE_PAPERWORK,
+      boxId: null,
+      boxCode: null,
       returnUrl: null
     })
   })

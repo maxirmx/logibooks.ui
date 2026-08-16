@@ -27,7 +27,7 @@ function unrefValue(value) {
  * @param {Object} queryParams - Query parameters to pass
  */
 export function navigateToEditParcel(router, item, routeName, queryParams = {}) {
-  const { registerId, mode, returnUrl, ...otherQueryParams } = queryParams
+  const { registerId, mode, returnUrl, boxId, ...otherQueryParams } = queryParams
 
   router.push(
     buildParcelEditLocation({
@@ -36,6 +36,7 @@ export function navigateToEditParcel(router, item, routeName, queryParams = {}) 
       parcelId: item.id,
       mode,
       returnUrl,
+      boxId,
       query: otherQueryParams
     })
   )

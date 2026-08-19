@@ -25,7 +25,7 @@ describe('register.history.store.js', () => {
 
   it('loads a paged register history', async () => {
     const response = {
-      items: [{ id: 5, registerId: 42, reason: 'Сохранение изменений' }],
+      items: [{ id: 5, registerId: 42, reason: 'Сохранение изменений', eventCount: 3 }],
       pagination: { totalCount: 7 },
       filterOptions: {
         users: [{ userId: 3, userName: 'Иванов Иван', userEmail: 'ivan@example.com' }],
@@ -42,6 +42,7 @@ describe('register.history.store.js', () => {
     )
     expect(result).toEqual(response)
     expect(store.items).toEqual(response.items)
+    expect(store.items[0].eventCount).toBe(3)
     expect(store.totalCount).toBe(7)
     expect(store.userOptions).toEqual(response.filterOptions.users)
     expect(store.reasonOptions).toEqual(response.filterOptions.reasons)

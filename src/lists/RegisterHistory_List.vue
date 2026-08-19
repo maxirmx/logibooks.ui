@@ -258,6 +258,10 @@ function formatChange(change) {
   )}`
 }
 
+function isCollapsedHistoryItem(item) {
+  return Number.isInteger(item?.eventCount) && item.eventCount > 1
+}
+
 function returnToRegisters() {
   router.push({
     path: '/registers',
@@ -386,6 +390,9 @@ watch(
         </template>
 
         <template #[`item.changes`]="{ item }">
+          <div v-if="isCollapsedHistoryItem(item)" class="history-event-count">
+            Количество изменений: {{ item.eventCount }}
+          </div>
           <ul v-if="item.changes?.length" class="history-changes">
             <li v-for="(change, index) in item.changes" :key="`${item.id}-${index}`">
               {{ formatChange(change) }}
@@ -417,6 +424,11 @@ watch(
 
 .history-changes li {
   margin: 2px 0;
+}
+
+.history-event-count {
+  font-weight: 500;
+  padding-top: 4px;
 }
 
 @media (max-width: 700px) {

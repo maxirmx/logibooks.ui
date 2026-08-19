@@ -272,6 +272,55 @@ describe('RegisterHistory_List.vue', () => {
     expect(wrapper.text()).toContain('Статус: Получен → На складе')
   })
 
+  it('renders the collapsed event count before the newest event changes', async () => {
+    mockRefs.items.value[0].eventCount = 3
+
+    const wrapper = mount(RegisterHistoryList, {
+      props: { registerId: 42 },
+      global: { stubs: defaultGlobalStubs }
+    })
+    await flushPromises()
+
+    expect(wrapper.get('.history-event-count').text()).toBe('Количество изменений: 3')
+    expect(wrapper.text().indexOf('Количество изменений: 3')).toBeLessThan(
+      wrapper.text().indexOf('Статус: Получен → На складе')
+    )
+  })
+
+  it.each([
+    ['one', 1],
+    ['missing', undefined],
+    ['zero', 0],
+    ['negative', -1],
+    ['fractional', 2.5],
+    ['string', '3'],
+    ['null', null]
+  ])('hides a non-grouped or invalid %s event count', async (_case, eventCount) => {
+    mockRefs.items.value[0].eventCount = eventCount
+
+    const wrapper = mount(RegisterHistoryList, {
+      props: { registerId: 42 },
+      global: { stubs: defaultGlobalStubs }
+    })
+    await flushPromises()
+
+    expect(wrapper.find('.history-event-count').exists()).toBe(false)
+  })
+
+  it('shows a collapsed event count when the newest event has no change details', async () => {
+    mockRefs.items.value[0].eventCount = 4
+    mockRefs.items.value[0].changes = []
+
+    const wrapper = mount(RegisterHistoryList, {
+      props: { registerId: 42 },
+      global: { stubs: defaultGlobalStubs }
+    })
+    await flushPromises()
+
+    expect(wrapper.get('.history-event-count').text()).toBe('Количество изменений: 4')
+    expect(wrapper.text()).toContain('Нет данных')
+  })
+
   it('renders register-specific selectors and requests AND-combined filters from page one', async () => {
     const wrapper = mount(RegisterHistoryList, {
       props: { registerId: 42 },

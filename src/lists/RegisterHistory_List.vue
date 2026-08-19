@@ -44,10 +44,13 @@ const countriesStore = useCountriesStore()
 const companiesStore = useCompaniesStore()
 const airportsStore = useAirportsStore()
 const warehousesStore = useWarehousesStore()
-const { items, totalCount, loading } = storeToRefs(historyStore)
+const { items, totalCount, userOptions, reasonOptions, loading } = storeToRefs(historyStore)
 
 const page = ref(1)
 const itemsPerPage = ref(50)
+const sortBy = ref([{ key: 'changedAt', order: 'desc' }])
+const selectedUserId = ref(null)
+const selectedReason = ref(null)
 const pageLoading = ref(false)
 const canView = computed(() => Boolean(authStore.isShiftLeadPlus))
 const registerHeading = computed(() =>
@@ -61,13 +64,44 @@ const historyItemsPerPageOptions = itemsPerPageOptions.filter(
   (option) => option.value > 0 && option.value <= 100
 )
 let referenceDataPromise = null
+let latestLoadRequestId = 0
 
 const headers = [
-  { title: 'Дата и время', key: 'changedAt', sortable: false },
-  { title: 'Пользователь', key: 'user', sortable: false },
-  { title: 'Причина', key: 'reason', sortable: false },
+  { title: 'Дата и время', key: 'changedAt', sortable: true },
+  { title: 'Пользователь', key: 'user', sortable: true },
+  { title: 'Причина', key: 'reason', sortable: true },
   { title: 'Что изменилось', key: 'changes', sortable: false }
 ]
+
+const activeSort = computed(() => {
+  const candidate = sortBy.value?.[0]
+  const key = ['changedAt', 'user', 'reason'].includes(candidate?.key)
+    ? candidate.key
+    : 'changedAt'
+  return {
+    key,
+    order: candidate?.order === 'asc' ? 'asc' : 'desc'
+  }
+})
+
+function getUserOptionTitle(option) {
+  const name = typeof option?.userName === 'string' ? option.userName.trim() : ''
+  const email = typeof option?.userEmail === 'string' ? option.userEmail.trim() : ''
+  if (name && email && name !== email) return `${name} (${email})`
+  return name || email || `Пользователь ${option?.userId}`
+}
+
+const userFilterItems = computed(() => [
+  { title: 'Все пользователи', value: null },
+  ...(userOptions.value ?? []).map((option) => ({
+    title: getUserOptionTitle(option),
+    value: option.userId
+  }))
+])
+const reasonFilterItems = computed(() => [
+  { title: 'Все причины', value: null },
+  ...(reasonOptions.value ?? []).map((reason) => ({ title: reason, value: reason }))
+])
 
 const fieldLabels = {
   FileName: 'Имя файла',
@@ -139,7 +173,9 @@ function ensureReferenceData() {
 }
 
 async function loadHistory() {
+  const requestId = ++latestLoadRequestId
   if (!canView.value || !Number.isInteger(props.registerId) || props.registerId <= 0) {
+    if (requestId === latestLoadRequestId) pageLoading.value = false
     return
   }
 
@@ -150,17 +186,33 @@ async function loadHistory() {
       registersStore.getById(props.registerId),
       historyStore.getHistory(props.registerId, {
         page: page.value,
-        pageSize: itemsPerPage.value
+        pageSize: itemsPerPage.value,
+        sortBy: activeSort.value.key,
+        sortOrder: activeSort.value.order,
+        userId: selectedUserId.value,
+        reason: selectedReason.value
       })
     ])
   } catch (error) {
-    alertStore.error(error, {
-      fallback: 'Не удалось загрузить историю реестра',
-      action: { label: 'Повторить', handler: loadHistory }
-    })
+    if (requestId === latestLoadRequestId) {
+      alertStore.error(error, {
+        fallback: 'Не удалось загрузить историю реестра',
+        action: { label: 'Повторить', handler: loadHistory }
+      })
+    }
   } finally {
-    pageLoading.value = false
+    if (requestId === latestLoadRequestId) pageLoading.value = false
   }
+}
+
+function onUserFilterChange(value) {
+  selectedUserId.value = value === null || value === undefined || value === '' ? null : Number(value)
+  page.value = 1
+}
+
+function onReasonFilterChange(value) {
+  selectedReason.value = value === null || value === undefined || value === '' ? null : String(value)
+  page.value = 1
 }
 
 function getFieldLabel(field) {
@@ -213,7 +265,34 @@ function returnToRegisters() {
   })
 }
 
-watch([() => props.registerId, page, itemsPerPage, canView], loadHistory, { immediate: true })
+watch(
+  () => props.registerId,
+  () => {
+    latestLoadRequestId += 1
+    page.value = 1
+    sortBy.value = [{ key: 'changedAt', order: 'desc' }]
+    selectedUserId.value = null
+    selectedReason.value = null
+    pageLoading.value = false
+    historyStore.reset()
+  },
+  { immediate: true, flush: 'sync' }
+)
+
+watch(
+  [
+    () => props.registerId,
+    page,
+    itemsPerPage,
+    () => activeSort.value.key,
+    () => activeSort.value.order,
+    selectedUserId,
+    selectedReason,
+    canView
+  ],
+  loadHistory,
+  { immediate: true }
+)
 </script>
 
 <template>
@@ -249,10 +328,42 @@ watch([() => props.registerId, page, itemsPerPage, canView], loadHistory, { imme
       История реестра доступна только администраторам и старшим смены.
     </div>
 
-    <v-card v-else class="table-card">
+    <div v-else class="history-filter-row">
+      <v-select
+        :model-value="selectedUserId"
+        :items="userFilterItems"
+        item-title="title"
+        item-value="value"
+        label="Пользователь"
+        variant="solo"
+        hide-details
+        :loading="pageLoading || loading"
+        :disabled="pageLoading || loading"
+        class="history-filter"
+        data-testid="register-history-user-filter"
+        @update:model-value="onUserFilterChange"
+      />
+      <v-select
+        :model-value="selectedReason"
+        :items="reasonFilterItems"
+        item-title="title"
+        item-value="value"
+        label="Причина"
+        variant="solo"
+        hide-details
+        :loading="pageLoading || loading"
+        :disabled="pageLoading || loading"
+        class="history-filter"
+        data-testid="register-history-reason-filter"
+        @update:model-value="onReasonFilterChange"
+      />
+    </div>
+
+    <v-card v-if="canView" class="table-card">
       <v-data-table-server
         v-model:items-per-page="itemsPerPage"
         v-model:page="page"
+        v-model:sort-by="sortBy"
         :headers="headers"
         :items="items"
         :items-length="totalCount"
@@ -261,6 +372,7 @@ watch([() => props.registerId, page, itemsPerPage, canView], loadHistory, { imme
         items-per-page-text="Записей на странице"
         page-text="{0}-{1} из {2}"
         density="compact"
+        must-sort
         class="elevation-1 interlaced-table"
         data-testid="register-history-table"
       >
@@ -287,6 +399,17 @@ watch([() => props.registerId, page, itemsPerPage, canView], loadHistory, { imme
 </template>
 
 <style scoped>
+.history-filter-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.history-filter {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
 .history-changes {
   margin: 0;
   padding: 4px 0 4px 20px;
@@ -294,5 +417,11 @@ watch([() => props.registerId, page, itemsPerPage, canView], loadHistory, { imme
 
 .history-changes li {
   margin: 2px 0;
+}
+
+@media (max-width: 700px) {
+  .history-filter-row {
+    flex-direction: column;
+  }
 }
 </style>

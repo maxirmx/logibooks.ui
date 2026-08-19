@@ -60,6 +60,7 @@ export const vuetifyStubs = {
     emits: ['click:close']
   },
   'v-select': {
+    name: 'v-select',
     template: '<div class="v-select-stub" data-testid="v-select"><slot></slot></div>',
     props: [
       'modelValue',
@@ -77,8 +78,10 @@ export const vuetifyStubs = {
       'errorMessages',
       'required',
       'disabled',
+      'loading',
       'placeholder'
     ],
+    emits: ['update:modelValue'],
     inheritAttrs: false
   },
   'v-text-field': {
@@ -159,6 +162,7 @@ export const vuetifyStubs = {
       'itemsPerPage',
       'page',
       'sortBy',
+      'mustSort',
       'itemsPerPageOptions',
       'search',
       'customFilter',
@@ -205,6 +209,7 @@ export const vuetifyStubs = {
       'itemsPerPage',
       'page',
       'sortBy',
+      'mustSort',
       'itemsPerPageOptions',
       'style'
     ],

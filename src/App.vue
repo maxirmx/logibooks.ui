@@ -148,7 +148,7 @@ function getUserName() {
         <span
           class="exchange-rate-eur font-weight-bold text-purple-darken-2"
           data-testid="exchange-rate-eur"
-        >EUR {{ exchangeRatesDisplay.eur }}</span>
+        > EUR {{ exchangeRatesDisplay.eur }}</span>
         {{ exchangeRatesDisplay.uzs }}
       </div>
     </v-app-bar>

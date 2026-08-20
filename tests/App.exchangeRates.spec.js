@@ -124,6 +124,18 @@ describe('App exchange rates display', () => {
     expect(line).toBe(
       `${ruDate} USD 92,1234 EUR 101,9876 UZS (за ${unitFormatter.format(10000)}) 65,4321`
     )
+
+    const usdRate = wrapper.get('[data-testid="exchange-rate-usd"]')
+    expect(usdRate.text()).toBe('USD 92,1234')
+    expect(usdRate.classes()).toEqual(
+      expect.arrayContaining(['exchange-rate-usd', 'font-weight-bold', 'text-green-darken-3'])
+    )
+
+    const eurRate = wrapper.get('[data-testid="exchange-rate-eur"]')
+    expect(eurRate.text()).toBe('EUR 101,9876')
+    expect(eurRate.classes()).toEqual(
+      expect.arrayContaining(['exchange-rate-eur', 'font-weight-bold', 'text-purple-darken-2'])
+    )
   })
 
   it('shows rates when API returns date-only values for today', async () => {

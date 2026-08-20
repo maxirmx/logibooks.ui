@@ -75,7 +75,7 @@ function isSameRateDate(rateDate, today) {
   return isSameDay(d, today)
 }
 
-const exchangeRatesLine = computed(() => {
+const exchangeRatesDisplay = computed(() => {
   const today = new Date()
   const todayStr = ruDateFormatter.format(today)
 
@@ -105,7 +105,12 @@ const exchangeRatesLine = computed(() => {
   const uzsLabel = formatUzsLabel(uzs)
   //  const eurUzsText = formatEntry(eurUzs)
 
-  return `${todayStr} USD ${usdText} EUR ${eurText} ${uzsLabel} ${uzsText}`
+  return {
+    date: todayStr,
+    usd: usdText,
+    eur: eurText,
+    uzs: `${uzsLabel} ${uzsText}`
+  }
 })
 
 import { drawer, toggleDrawer } from '@/helpers/drawer.js'
@@ -134,7 +139,18 @@ function getUserName() {
       </template>
       <v-app-bar-title class="primary-heading">Logibooks {{ getUserName() }} </v-app-bar-title>
       <v-spacer />
-      <div class="primary-heading exchange-rates">{{ exchangeRatesLine }}</div>
+      <div class="primary-heading exchange-rates">
+        {{ exchangeRatesDisplay.date }}
+        <span
+          class="exchange-rate-usd font-weight-bold text-green-darken-3"
+          data-testid="exchange-rate-usd"
+        >USD {{ exchangeRatesDisplay.usd }}</span>
+        <span
+          class="exchange-rate-eur font-weight-bold text-purple-darken-2"
+          data-testid="exchange-rate-eur"
+        > EUR {{ exchangeRatesDisplay.eur }}</span>
+        {{ exchangeRatesDisplay.uzs }}
+      </div>
     </v-app-bar>
     <v-navigation-drawer v-model="drawer" elevation="4">
       <template v-slot:prepend>

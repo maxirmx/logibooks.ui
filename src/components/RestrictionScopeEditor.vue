@@ -9,7 +9,8 @@ import ActionButton from '@/components/ActionButton.vue'
 const props = defineProps({
   modelValue: { type: Array, default: () => [] },
   countries: { type: Array, default: () => [] },
-  disabled: { type: Boolean, default: false }
+  disabled: { type: Boolean, default: false },
+  errors: { type: Object, default: () => ({}) }
 })
 
 const emit = defineEmits(['update:modelValue'])
@@ -62,7 +63,53 @@ function isDuplicate(index) {
   )
 }
 
-defineExpose({ addScope, removeScope, updateScope, isDuplicate })
+function scopeFieldName(index, field) {
+  return `scopes[${index}].${field}`
+}
+
+function getScopeFieldError(index, field) {
+  const bracketPath = scopeFieldName(index, field)
+  const dotPath = `scopes.${index}.${field}`
+  const indexedError = props.errors?.[bracketPath] || props.errors?.[dotPath]
+  if (indexedError) return indexedError
+  if (!props.errors?.scopes) return null
+
+  const scope = props.modelValue[index]
+  if (field === 'countryIsoNumeric' && scope?.countryIsoNumeric == null) {
+    return 'Выберите страну'
+  }
+  if (
+    field === 'customsProcedureCode' &&
+    ![10, 40].includes(Number(scope?.customsProcedureCode))
+  ) {
+    return 'Выберите процедуру'
+  }
+  return null
+}
+
+const firstScopeFieldErrorName = computed(() => {
+  for (let index = 0; index < props.modelValue.length; index += 1) {
+    for (const field of ['countryIsoNumeric', 'customsProcedureCode']) {
+      if (getScopeFieldError(index, field)) return scopeFieldName(index, field)
+    }
+  }
+  return null
+})
+
+const generalScopeError = computed(() => {
+  if (!props.errors?.scopes || firstScopeFieldErrorName.value) return null
+  if (props.modelValue.some((_, index) => isDuplicate(index))) return null
+  return props.errors.scopes
+})
+
+function isScopeFocusTarget(index, field) {
+  if (firstScopeFieldErrorName.value) {
+    return firstScopeFieldErrorName.value === scopeFieldName(index, field)
+  }
+  return Boolean(props.errors?.scopes) && index === 0 && field === 'countryIsoNumeric'
+}
+
+defineExpose({ addScope, removeScope, updateScope, isDuplicate, getScopeFieldError })
 </script>
 
 <template>
@@ -92,35 +139,71 @@ defineExpose({ addScope, removeScope, updateScope, isDuplicate })
       :data-testid="`restriction-scope-${index}`"
     >
       <div class="scope-row">
-        <v-autocomplete
-          :model-value="scope.countryIsoNumeric"
-          :items="countryItems"
-          label="Страна"
-          variant="solo"
-          hide-details
-          :disabled="disabled"
-          class="scope-country"
-          @update:model-value="updateScope(index, 'countryIsoNumeric', $event)"
-        />
-        <v-select
-          :model-value="scope.customsProcedureCode"
-          :items="procedureItems"
-          label="Процедура"
-          variant="solo"
-          hide-details
-          :disabled="disabled"
-          class="scope-procedure"
-          @update:model-value="updateScope(index, 'customsProcedureCode', $event)"
-        />
-        <v-text-field
-          :model-value="scope.explanation"
-          label="Причина ограничения"
-          variant="solo"
-          hide-details
-          :disabled="disabled"
-          class="scope-explanation"
-          @update:model-value="updateScope(index, 'explanation', $event)"
-        />
+        <div
+          class="scope-field scope-country"
+          :data-field="isScopeFocusTarget(index, 'countryIsoNumeric') ? 'scopes' : undefined"
+        >
+          <v-autocomplete
+            :id="scopeFieldName(index, 'countryIsoNumeric')"
+            :name="scopeFieldName(index, 'countryIsoNumeric')"
+            :data-field="scopeFieldName(index, 'countryIsoNumeric')"
+            :model-value="scope.countryIsoNumeric"
+            :items="countryItems"
+            label="Страна"
+            variant="solo"
+            hide-details
+            :error="Boolean(getScopeFieldError(index, 'countryIsoNumeric'))"
+            :aria-invalid="Boolean(getScopeFieldError(index, 'countryIsoNumeric'))"
+            :disabled="disabled"
+            class="scope-control"
+            @update:model-value="updateScope(index, 'countryIsoNumeric', $event)"
+          />
+          <div
+            v-if="getScopeFieldError(index, 'countryIsoNumeric')"
+            class="invalid-feedback scope-field-error"
+            :data-field-error="scopeFieldName(index, 'countryIsoNumeric')"
+          >
+            {{ getScopeFieldError(index, 'countryIsoNumeric') }}
+          </div>
+        </div>
+        <div
+          class="scope-field scope-procedure"
+          :data-field="isScopeFocusTarget(index, 'customsProcedureCode') ? 'scopes' : undefined"
+        >
+          <v-select
+            :id="scopeFieldName(index, 'customsProcedureCode')"
+            :name="scopeFieldName(index, 'customsProcedureCode')"
+            :data-field="scopeFieldName(index, 'customsProcedureCode')"
+            :model-value="scope.customsProcedureCode"
+            :items="procedureItems"
+            label="Процедура"
+            variant="solo"
+            hide-details
+            :error="Boolean(getScopeFieldError(index, 'customsProcedureCode'))"
+            :aria-invalid="Boolean(getScopeFieldError(index, 'customsProcedureCode'))"
+            :disabled="disabled"
+            class="scope-control"
+            @update:model-value="updateScope(index, 'customsProcedureCode', $event)"
+          />
+          <div
+            v-if="getScopeFieldError(index, 'customsProcedureCode')"
+            class="invalid-feedback scope-field-error"
+            :data-field-error="scopeFieldName(index, 'customsProcedureCode')"
+          >
+            {{ getScopeFieldError(index, 'customsProcedureCode') }}
+          </div>
+        </div>
+        <div class="scope-field scope-explanation">
+          <v-text-field
+            :model-value="scope.explanation"
+            label="Причина ограничения"
+            variant="solo"
+            hide-details
+            :disabled="disabled"
+            class="scope-control"
+            @update:model-value="updateScope(index, 'explanation', $event)"
+          />
+        </div>
         <ActionButton
           :item="index"
           icon="fa-solid fa-trash-can"
@@ -132,6 +215,9 @@ defineExpose({ addScope, removeScope, updateScope, isDuplicate })
       <div v-if="isDuplicate(index)" class="invalid-feedback scope-error">
         Такая страна и процедура уже добавлены
       </div>
+    </div>
+    <div v-if="generalScopeError" class="invalid-feedback scope-error">
+      {{ generalScopeError }}
     </div>
   </div>
 </template>
@@ -170,12 +256,23 @@ defineExpose({ addScope, removeScope, updateScope, isDuplicate })
   flex: 2 1 320px;
 }
 
+.scope-field {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.scope-control {
+  width: 100%;
+}
+
 .scope-empty {
   color: #5f6368;
   font-size: 0.9rem;
 }
 
-.scope-error {
+.scope-error,
+.scope-field-error {
   display: block;
   margin-top: 0.25rem;
 }

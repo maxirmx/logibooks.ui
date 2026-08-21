@@ -8,9 +8,10 @@ import RestrictionScopeEditor from '@/components/RestrictionScopeEditor.vue'
 
 const FieldStub = (name, className) => ({
   name,
-  props: ['modelValue', 'items', 'label', 'disabled'],
+  props: ['modelValue', 'items', 'label', 'disabled', 'id', 'name', 'error'],
   emits: ['update:modelValue'],
-  template: `<div class="${className}"></div>`
+  template: `<input :id="id" :name="name" :class="className" />`,
+  data: () => ({ className })
 })
 
 const ActionButtonStub = {
@@ -20,11 +21,12 @@ const ActionButtonStub = {
   template: '<button class="remove-scope" :disabled="disabled" @click="$emit(\'click\', item)"></button>'
 }
 
-function createWrapper(modelValue = [], disabled = false) {
+function createWrapper(modelValue = [], disabled = false, errors = {}) {
   return mount(RestrictionScopeEditor, {
     props: {
       modelValue,
       disabled,
+      errors,
       countries: [
         { isoNumeric: 643, isoAlpha2: 'RU', nameRuShort: 'Россия' },
         { isoNumeric: 860, isoAlpha2: 'UZ', nameRuShort: 'Узбекистан' }
@@ -85,6 +87,46 @@ describe('RestrictionScopeEditor', () => {
       scopes[0],
       scopes[2]
     ]])
+  })
+
+  it('renders indexed validation errors beneath their focusable controls', () => {
+    const wrapper = createWrapper(
+      [{ countryIsoNumeric: null, customsProcedureCode: null, explanation: '' }],
+      false,
+      {
+        'scopes[0].countryIsoNumeric': 'Выберите страну',
+        'scopes.0.customsProcedureCode': 'Выберите процедуру'
+      }
+    )
+
+    const country = wrapper.findComponent({ name: 'VAutocomplete' })
+    const procedure = wrapper.findComponent({ name: 'VSelect' })
+    const fieldErrors = wrapper.findAll('.scope-field-error')
+
+    expect(country.props()).toMatchObject({
+      id: 'scopes[0].countryIsoNumeric',
+      name: 'scopes[0].countryIsoNumeric',
+      error: true
+    })
+    expect(procedure.props('error')).toBe(true)
+    expect(fieldErrors.map((error) => error.text())).toEqual([
+      'Выберите страну',
+      'Выберите процедуру'
+    ])
+    expect(fieldErrors.every((error) => error.element.parentElement?.classList.contains('scope-field')))
+      .toBe(true)
+  })
+
+  it('maps a collapsed scope error to an invalid procedure control', () => {
+    const wrapper = createWrapper(
+      [{ countryIsoNumeric: 643, customsProcedureCode: null, explanation: '' }],
+      false,
+      { scopes: 'Выберите процедуру' }
+    )
+
+    const procedureField = wrapper.get('.scope-procedure')
+    expect(procedureField.attributes('data-field')).toBe('scopes')
+    expect(procedureField.get('.scope-field-error').text()).toBe('Выберите процедуру')
   })
 
   it('keeps all controls disabled when editing is locked', async () => {

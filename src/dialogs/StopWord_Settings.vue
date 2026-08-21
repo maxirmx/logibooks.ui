@@ -7,7 +7,7 @@ import FieldError from '@/components/FieldError.vue'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { focusFirstInvalidField } from '@/helpers/form.validation.helpers.js'
 import { reportFormError } from '@/helpers/error.helpers.js'
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useForm, useField } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/yup'
 import * as Yup from 'yup'
@@ -83,6 +83,21 @@ const { errors, handleSubmit, resetForm, setFieldValue, setErrors } = useForm({
 const { value: word } = useField('word')
 const { value: matchTypeId } = useField('matchTypeId')
 const { value: scopes } = useField('scopes')
+const scopeSubmissionErrors = ref({})
+const scopeEditorErrors = computed(() => ({
+  ...errors.value,
+  ...scopeSubmissionErrors.value
+}))
+
+function handleInvalidSubmit(submission) {
+  const scopeError = submission?.errors?.scopes
+  scopeSubmissionErrors.value = scopeError ? { scopes: scopeError } : {}
+  return focusFirstInvalidField(submission)
+}
+
+watch(scopes, () => {
+  scopeSubmissionErrors.value = {}
+}, { deep: true })
 
 function isOptionDisabled(value) {
   return isMatchTypeDisabled(value, word.value)
@@ -127,6 +142,7 @@ function onWordInput(event) {
 }
 
 const onSubmit = handleSubmit(async (values) => {
+  scopeSubmissionErrors.value = {}
   saving.value = true
 
   const stopWordData = {
@@ -160,7 +176,7 @@ const onSubmit = handleSubmit(async (values) => {
   } finally {
     saving.value = false
   }
-}, focusFirstInvalidField)
+}, handleInvalidSubmit)
 
 function cancel() {
   router.push('/stopwords')
@@ -205,8 +221,12 @@ defineExpose({
       </div>
 
       <div class="form-group">
-        <RestrictionScopeEditor v-model="scopes" :countries="countries" :disabled="saving" />
-        <FieldError name="scopes" :errors="errors" />
+        <RestrictionScopeEditor
+          v-model="scopes"
+          :countries="countries"
+          :disabled="saving"
+          :errors="scopeEditorErrors"
+        />
       </div>
 
       <div class="form-group match-type-group">

@@ -22,15 +22,18 @@ export function getProcedureTitle(customsProcedureCode) {
 
 export function getProhibitionScopeRows(item, getCountryName = (code) => String(code ?? '')) {
   return (item?.scopes || [])
-    .map((scope) => ({
-      key: `${scope.countryIsoNumeric}:${scope.customsProcedureCode}`,
-      countryIsoNumeric: scope.countryIsoNumeric,
-      country: getCountryName(scope.countryIsoNumeric),
-      customsProcedureCode: Number(scope.customsProcedureCode),
-      procedure: getProcedureTitle(scope.customsProcedureCode),
-      label: `${getCountryName(scope.countryIsoNumeric)} — ${getProcedureTitle(scope.customsProcedureCode)}`,
-      reason: scope.explanation || ''
-    }))
+    .map((scope) => {
+      const country = String(getCountryName(scope.countryIsoNumeric) ?? scope.countryIsoNumeric ?? '')
+      return {
+        key: `${scope.countryIsoNumeric}:${scope.customsProcedureCode}`,
+        countryIsoNumeric: scope.countryIsoNumeric,
+        country,
+        customsProcedureCode: Number(scope.customsProcedureCode),
+        procedure: getProcedureTitle(scope.customsProcedureCode),
+        label: `${country} — ${getProcedureTitle(scope.customsProcedureCode)}`,
+        reason: scope.explanation || ''
+      }
+    })
     .sort(
       (left, right) =>
         left.country.localeCompare(right.country, 'ru') ||

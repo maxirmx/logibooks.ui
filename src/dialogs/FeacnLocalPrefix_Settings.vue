@@ -40,6 +40,32 @@ const isCreate = computed(() => props.mode === 'create')
 const saving = ref(false)
 const loading = ref(false)
 
+function normalizePrefixCode(value) {
+  return String(value ?? '').trim()
+}
+
+function scopeKey(scope) {
+  return `${Number(scope?.countryIsoNumeric)}:${Number(scope?.customsProcedureCode)}`
+}
+
+function conflictsWithExistingPrefix(scopes, code) {
+  const normalizedCode = normalizePrefixCode(code)
+  if (!normalizedCode || !scopes?.length) return false
+
+  const occupiedScopes = new Set(
+    prefixesStore.prefixes
+      .filter((prefix) => {
+        const isCurrentPrefix =
+          props.prefixId != null && String(prefix.id) === String(props.prefixId)
+        return !isCurrentPrefix && normalizePrefixCode(prefix.code) === normalizedCode
+      })
+      .flatMap((prefix) => prefix.scopes || [])
+      .map(scopeKey)
+  )
+
+  return scopes.some((scope) => occupiedScopes.has(scopeKey(scope)))
+}
+
 const schema = toTypedSchema(
   Yup.object({
     code: Yup.string().required('Префикс обязателен'),
@@ -60,7 +86,14 @@ const schema = toTypedSchema(
           (scope) => `${scope.countryIsoNumeric}:${scope.customsProcedureCode}`
         )
         return new Set(keys).size === keys.length
-      }),
+      })
+      .test(
+        'available-scopes',
+        'Страна и процедура уже используются для этого префикса',
+        function (scopes) {
+          return !conflictsWithExistingPrefix(scopes, this.parent?.code)
+        }
+      ),
     description: Yup.string().nullable(),
     feacnOrderId: Yup.number().nullable()
   })
@@ -80,6 +113,21 @@ const { errors, handleSubmit, resetForm, setFieldValue, setErrors } = useForm({
 
 const { value: code } = useField('code')
 const { value: scopes } = useField('scopes')
+const scopeSubmissionErrors = ref({})
+const scopeEditorErrors = computed(() => ({
+  ...errors.value,
+  ...scopeSubmissionErrors.value
+}))
+
+function handleInvalidSubmit(submission) {
+  const scopeError = submission?.errors?.scopes
+  scopeSubmissionErrors.value = scopeError ? { scopes: scopeError } : {}
+  return focusFirstInvalidField(submission)
+}
+
+watch([code, scopes], () => {
+  scopeSubmissionErrors.value = {}
+}, { deep: true })
 
 const codeSearchActive = ref(false)
 const exceptionSearchIndex = ref(null)
@@ -192,6 +240,7 @@ async function initialize() {
 onMounted(initialize)
 
 const onSubmit = handleSubmit(async (values) => {
+  scopeSubmissionErrors.value = {}
   saving.value = true
   try {
     // Prepare data for API - convert UI format to DTO format
@@ -224,7 +273,7 @@ const onSubmit = handleSubmit(async (values) => {
   } finally {
     saving.value = false
   }
-}, focusFirstInvalidField)
+}, handleInvalidSubmit)
 
 function cancel() {
   router.push('/feacn/prefixes')
@@ -278,8 +327,12 @@ function cancel() {
       </div>
 
       <div class="form-group">
-        <RestrictionScopeEditor v-model="scopes" :countries="countries" :disabled="saving" />
-        <div v-if="errors.scopes" class="invalid-feedback">{{ errors.scopes }}</div>
+        <RestrictionScopeEditor
+          v-model="scopes"
+          :countries="countries"
+          :disabled="saving"
+          :errors="scopeEditorErrors"
+        />
       </div>
 
       <div class="feacn-search-wrapper">

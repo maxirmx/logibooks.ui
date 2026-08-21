@@ -248,6 +248,13 @@ describe('procedure.helpers', () => {
       expect(getProhibitionScopeSortOrder(rule)).toBe('643:10|860:40')
     })
 
+    it('sorts rows when the country lookup falls back to a numeric code', () => {
+      const rows = getProhibitionScopeRows(rule, (code) => code)
+
+      expect(rows.map((row) => row.country)).toEqual(['643', '860'])
+      expect(rows.map((row) => row.label)).toEqual(['643 — Экспорт', '860 — Импорт'])
+    })
+
     it('matches country and procedure filters against the same scope', () => {
       expect(matchesProhibitionScope(rule, 'export', 643)).toBe(true)
       expect(matchesProhibitionScope(rule, 'import', 860)).toBe(true)

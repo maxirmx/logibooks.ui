@@ -235,6 +235,41 @@ describe('FeacnLocalPrefix_Settings.vue', () => {
     expect(wrapper.find('.scope-explanation').exists()).toBe(true)
   })
 
+  it('rejects a scope already assigned to another record with the same code', async () => {
+    mockPrefixes = [{
+      id: 1,
+      code: ' 0505 ',
+      scopes: [{ countryIsoNumeric: 643, customsProcedureCode: 10 }]
+    }]
+    const wrapper = mountComponent()
+    wrapper.vm.setFieldValue('code', '0505')
+    wrapper.vm.setFieldValue('scopes', [
+      { countryIsoNumeric: 643, customsProcedureCode: 10, explanation: '' }
+    ])
+
+    await wrapper.vm.onSubmit()
+    await flushPromises()
+
+    expect(create).not.toHaveBeenCalled()
+    expect(wrapper.text()).toContain('Страна и процедура уже используются для этого префикса')
+  })
+
+  it('allows an edited record to retain its own scope', async () => {
+    const scope = { countryIsoNumeric: 643, customsProcedureCode: 10, explanation: 'reason' }
+    mockPrefixes = [{ id: 7, code: '0505', scopes: [scope] }]
+    getById.mockResolvedValue({ id: 7, code: '0505', scopes: [scope], exceptions: [] })
+    update.mockResolvedValue({})
+    const wrapper = mountComponent({ mode: 'edit', prefixId: 7 })
+    await flushPromises()
+
+    await wrapper.vm.onSubmit()
+
+    expect(update).toHaveBeenCalledWith(7, expect.objectContaining({
+      code: '0505',
+      scopes: [scope]
+    }))
+  })
+
   it('does not render an editable comment input', () => {
     const wrapper = mountComponent()
     expect(wrapper.find('#comment').exists()).toBe(false)

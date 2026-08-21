@@ -166,6 +166,28 @@ describe('StopWord_Settings.vue', () => {
       await wrapper.find('[data-testid="add-restriction-scope"]').trigger('click')
       expect(wrapper.findAll('.scope-row-wrapper')).toHaveLength(1)
     })
+
+    it('shows an indexed country error and keeps an invalid form open', async () => {
+      const wrapper = mountComponent()
+      await resolveAll()
+      const component = wrapper.vm
+      component.word = 'новое'
+      component.matchTypeId = 1
+      component.scopes = [
+        { countryIsoNumeric: null, customsProcedureCode: 10, explanation: '' }
+      ]
+
+      await component.onSubmit()
+      await resolveAll()
+
+      await vi.waitFor(() => {
+        expect(wrapper.find('.scope-field-error').exists()).toBe(true)
+      })
+
+      expect(create).not.toHaveBeenCalled()
+      expect(wrapper.get('.scope-field-error').text()).toBe('Выберите страну')
+      expect(routerPush).not.toHaveBeenCalled()
+    })
   })
 
   describe('Multi-word Input Handling', () => {

@@ -9,7 +9,7 @@ import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 
 vi.mock('@/helpers/fetch.wrapper.js', () => ({
-  fetchWrapper: { get: vi.fn(), post: vi.fn() }
+  fetchWrapper: { get: vi.fn(), post: vi.fn(), put: vi.fn() }
 }))
 
 vi.mock('@/helpers/config.js', () => ({
@@ -109,6 +109,32 @@ describe('feacn.orders store', () => {
     expect(fetchWrapper.get).not.toHaveBeenCalled()
     expect(store.loading).toBe(false)
     expect(store.error).toBe(testError)
+  })
+
+  it('replaces regulatory-order scopes and refreshes orders', async () => {
+    const scopes = [{ countryIsoNumeric: 860, customsProcedureCode: 40, explanation: 'Reason' }]
+    fetchWrapper.put.mockResolvedValue({})
+    fetchWrapper.get.mockResolvedValue([{ id: 9, scopes }])
+
+    const store = useFeacnOrdersStore()
+    await store.updateScopes(9, scopes)
+
+    expect(fetchWrapper.put).toHaveBeenCalledWith(`${apiUrl}/feacnorders/orders/9/scopes`, scopes)
+    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/feacnorders/orders`)
+    expect(store.orders).toEqual([{ id: 9, scopes }])
+    expect(store.loading).toBe(false)
+  })
+
+  it('rejects a regulatory-order scope update without refreshing', async () => {
+    const error = new Error('scope update failed')
+    fetchWrapper.put.mockRejectedValue(error)
+
+    const store = useFeacnOrdersStore()
+    await expect(store.updateScopes(9, [])).rejects.toBe(error)
+
+    expect(fetchWrapper.get).not.toHaveBeenCalled()
+    expect(store.error).toBe(error)
+    expect(store.loading).toBe(false)
   })
 
   it('calls enable-for-export endpoint', async () => {

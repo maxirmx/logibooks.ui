@@ -66,4 +66,19 @@ describe('ActionButton', () => {
     await button.trigger('click')
     expect(wrapper.emitted('click')).toBeFalsy()
   })
+
+  it('keeps a disabled action explanation keyboard-accessible', () => {
+    const wrapper = createWrapper({ disabled: true, tooltipText: 'Сначала укажите страну' })
+    const activator = wrapper.get('.action-button-tooltip-activator--disabled')
+    const tooltip = wrapper.findComponent({ name: 'VTooltip' })
+
+    expect(activator.attributes()).toMatchObject({
+      tabindex: '0',
+      role: 'button',
+      'aria-disabled': 'true',
+      'aria-label': 'Сначала укажите страну'
+    })
+    expect(tooltip.props('disabled')).toBe(false)
+    expect(wrapper.get('button').attributes('disabled')).toBeDefined()
+  })
 })

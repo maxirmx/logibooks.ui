@@ -15,7 +15,10 @@ import FieldArrayWithButtons from '@/components/FieldArrayWithButtons.vue'
 import FeacnCodeSearch from '@/components/FeacnCodeSearch.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import { useFeacnPrefixesStore } from '@/stores/feacn.prefixes.store.js'
+import { useCountriesStore } from '@/stores/countries.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
+import { storeToRefs } from 'pinia'
+import RestrictionScopeEditor from '@/components/RestrictionScopeEditor.vue'
 
 const props = defineProps({
   mode: {
@@ -30,20 +33,67 @@ const props = defineProps({
 })
 
 const prefixesStore = useFeacnPrefixesStore()
+const countriesStore = useCountriesStore()
 const alertStore = useAlertStore()
+const { countries } = storeToRefs(countriesStore)
 const isCreate = computed(() => props.mode === 'create')
 const saving = ref(false)
 const loading = ref(false)
+
+function normalizePrefixCode(value) {
+  return String(value ?? '').trim()
+}
+
+function scopeKey(scope) {
+  return `${Number(scope?.countryIsoNumeric)}:${Number(scope?.customsProcedureCode)}`
+}
+
+function conflictsWithExistingPrefix(scopes, code) {
+  const normalizedCode = normalizePrefixCode(code)
+  if (!normalizedCode || !scopes?.length) return false
+
+  const occupiedScopes = new Set(
+    prefixesStore.prefixes
+      .filter((prefix) => {
+        const isCurrentPrefix =
+          props.prefixId != null && String(prefix.id) === String(props.prefixId)
+        return !isCurrentPrefix && normalizePrefixCode(prefix.code) === normalizedCode
+      })
+      .flatMap((prefix) => prefix.scopes || [])
+      .map(scopeKey)
+  )
+
+  return scopes.some((scope) => occupiedScopes.has(scopeKey(scope)))
+}
 
 const schema = toTypedSchema(
   Yup.object({
     code: Yup.string().required('Префикс обязателен'),
     exceptions: Yup.array().of(Yup.string()),
     comment: Yup.string().nullable(),
-    explanationForExport: Yup.string().nullable(),
-    explanationForImport: Yup.string().nullable(),
-    forExport: Yup.boolean(),
-    forImport: Yup.boolean(),
+    scopes: Yup.array()
+      .of(
+        Yup.object({
+          countryIsoNumeric: Yup.number().required('Выберите страну'),
+          customsProcedureCode: Yup.number()
+            .oneOf([10, 40], 'Выберите процедуру')
+            .required('Выберите процедуру'),
+          explanation: Yup.string().nullable()
+        })
+      )
+      .test('unique-scopes', 'Страна и процедура не должны повторяться', (scopes) => {
+        const keys = (scopes || []).map(
+          (scope) => `${scope.countryIsoNumeric}:${scope.customsProcedureCode}`
+        )
+        return new Set(keys).size === keys.length
+      })
+      .test(
+        'available-scopes',
+        'Страна и процедура уже используются для этого префикса',
+        function (scopes) {
+          return !conflictsWithExistingPrefix(scopes, this.parent?.code)
+        }
+      ),
     description: Yup.string().nullable(),
     feacnOrderId: Yup.number().nullable()
   })
@@ -55,20 +105,29 @@ const { errors, handleSubmit, resetForm, setFieldValue, setErrors } = useForm({
     code: '',
     exceptions: [''],
     comment: '',
-    explanationForExport: '',
-    explanationForImport: '',
-    forExport: false,
-    forImport: false,
+    scopes: [],
     description: null,
     feacnOrderId: null
   }
 })
 
 const { value: code } = useField('code')
-const { value: explanationForExport } = useField('explanationForExport')
-const { value: explanationForImport } = useField('explanationForImport')
-const { value: forExport } = useField('forExport')
-const { value: forImport } = useField('forImport')
+const { value: scopes } = useField('scopes')
+const scopeSubmissionErrors = ref({})
+const scopeEditorErrors = computed(() => ({
+  ...errors.value,
+  ...scopeSubmissionErrors.value
+}))
+
+function handleInvalidSubmit(submission) {
+  const scopeError = submission?.errors?.scopes
+  scopeSubmissionErrors.value = scopeError ? { scopes: scopeError } : {}
+  return focusFirstInvalidField(submission)
+}
+
+watch([code, scopes], () => {
+  scopeSubmissionErrors.value = {}
+}, { deep: true })
 
 const codeSearchActive = ref(false)
 const exceptionSearchIndex = ref(null)
@@ -76,27 +135,7 @@ const lastFocusedElement = ref(null)
 const lastExceptionSearchIndex = ref(null)
 
 const searchActive = computed(() => codeSearchActive.value || exceptionSearchIndex.value !== null)
-const normalizedCode = computed(() => (code.value || '').trim())
-const sameCodePrefixes = computed(() => {
-  if (!normalizedCode.value) {
-    return []
-  }
-
-  return prefixesStore.prefixes.filter((prefix) => {
-    const isCurrentPrefix =
-      props.prefixId !== undefined && String(prefix.id) === String(props.prefixId)
-    return !isCurrentPrefix && (prefix.code || '').trim() === normalizedCode.value
-  })
-})
-const forExportDisabled = computed(
-  () => !forExport.value && sameCodePrefixes.value.some((prefix) => prefix.forExport)
-)
-const forImportDisabled = computed(
-  () => !forImport.value && sameCodePrefixes.value.some((prefix) => prefix.forImport)
-)
-const saveDisabled = computed(
-  () => saving.value || searchActive.value || (!forExport.value && !forImport.value)
-)
+const saveDisabled = computed(() => saving.value || searchActive.value)
 
 function toggleCodeSearch() {
   if (!codeSearchActive.value) {
@@ -163,7 +202,7 @@ async function initialize() {
     loading.value = true
   }
   try {
-    await prefixesStore.ensureLoaded()
+    await Promise.all([prefixesStore.ensureLoaded(), countriesStore.ensureLoaded()])
 
     if (!isCreate.value) {
       const item = await prefixesStore.getById(props.prefixId)
@@ -179,10 +218,7 @@ async function initialize() {
             code: item.code || '',
             exceptions: exceptionCodes,
             comment: item.comment || '',
-            explanationForExport: item.explanationForExport || '',
-            explanationForImport: item.explanationForImport || '',
-            forExport: !!item.forExport,
-            forImport: !!item.forImport,
+            scopes: (item.scopes || []).map((scope) => ({ ...scope })),
             description: item.description ?? null,
             feacnOrderId: item.feacnOrderId ?? null
           }
@@ -204,6 +240,7 @@ async function initialize() {
 onMounted(initialize)
 
 const onSubmit = handleSubmit(async (values) => {
+  scopeSubmissionErrors.value = {}
   saving.value = true
   try {
     // Prepare data for API - convert UI format to DTO format
@@ -212,10 +249,11 @@ const onSubmit = handleSubmit(async (values) => {
       // Filter out empty strings and convert to the format expected by CreateDto
       exceptions: values.exceptions.filter((exc) => exc && exc.trim() !== ''),
       comment: values.comment ?? '',
-      explanationForExport: values.explanationForExport ? values.explanationForExport.trim() : '',
-      explanationForImport: values.explanationForImport ? values.explanationForImport.trim() : '',
-      forExport: !!values.forExport,
-      forImport: !!values.forImport,
+      scopes: (values.scopes || []).map((scope) => ({
+        countryIsoNumeric: Number(scope.countryIsoNumeric),
+        customsProcedureCode: Number(scope.customsProcedureCode),
+        explanation: scope.explanation?.trim() || null
+      })),
       description: values.description ?? null,
       feacnOrderId: values.feacnOrderId ?? null
     }
@@ -235,7 +273,7 @@ const onSubmit = handleSubmit(async (values) => {
   } finally {
     saving.value = false
   }
-}, focusFirstInvalidField)
+}, handleInvalidSubmit)
 
 function cancel() {
   router.push('/feacn/prefixes')
@@ -289,64 +327,12 @@ function cancel() {
       </div>
 
       <div class="form-group">
-        <span class="label">Таможенная процедура:</span>
-        <div class="procedure-grid">
-          <div class="procedure-item">
-            <input
-              id="forExport"
-              type="checkbox"
-              name="forExport"
-              class="checkbox checkbox-styled"
-              v-model="forExport"
-              :disabled="forExportDisabled"
-            />
-            <label for="forExport">Экспорт из РФ</label>
-          </div>
-
-          <div class="procedure-item">
-            <input
-              id="forImport"
-              type="checkbox"
-              name="forImport"
-              class="checkbox checkbox-styled"
-              v-model="forImport"
-              :disabled="forImportDisabled"
-            />
-            <label for="forImport">Импорт в РФ</label>
-          </div>
-        </div>
-      </div>
-
-      <div v-if="forExport" class="form-group">
-        <label for="explanationForExport" class="label">Причина запрета экспорта:</label>
-        <input
-          name="explanationForExport"
-          id="explanationForExport"
-          type="text"
-          class="form-control input"
-          :class="{ 'is-invalid': errors.explanationForExport }"
-          placeholder="Причина запрета экспорта"
-          v-model="explanationForExport"
+        <RestrictionScopeEditor
+          v-model="scopes"
+          :countries="countries"
+          :disabled="saving"
+          :errors="scopeEditorErrors"
         />
-        <div v-if="errors.explanationForExport" class="invalid-feedback">
-          {{ errors.explanationForExport }}
-        </div>
-      </div>
-
-      <div v-if="forImport" class="form-group">
-        <label for="explanationForImport" class="label">Причина запрета импорта:</label>
-        <input
-          name="explanationForImport"
-          id="explanationForImport"
-          type="text"
-          class="form-control input"
-          :class="{ 'is-invalid': errors.explanationForImport }"
-          placeholder="Причина запрета импорта"
-          v-model="explanationForImport"
-        />
-        <div v-if="errors.explanationForImport" class="invalid-feedback">
-          {{ errors.explanationForImport }}
-        </div>
       </div>
 
       <div class="feacn-search-wrapper">
@@ -421,22 +407,4 @@ function cancel() {
   z-index: 100;
 }
 
-.procedure-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px 16px;
-  align-items: center;
-}
-
-.procedure-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-@media (max-width: 850px) {
-  .procedure-grid {
-    grid-template-columns: 1fr;
-  }
-}
 </style>

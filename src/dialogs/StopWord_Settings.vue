@@ -7,14 +7,17 @@ import FieldError from '@/components/FieldError.vue'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { focusFirstInvalidField } from '@/helpers/form.validation.helpers.js'
 import { reportFormError } from '@/helpers/error.helpers.js'
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useForm, useField } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/yup'
 import * as Yup from 'yup'
 import router from '@/router'
 import { useStopWordsStore } from '@/stores/stop.words.store.js'
 import { useWordMatchTypesStore } from '@/stores/word.match.types.store.js'
+import { useCountriesStore } from '@/stores/countries.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
+import { storeToRefs } from 'pinia'
+import RestrictionScopeEditor from '@/components/RestrictionScopeEditor.vue'
 import {
   isMatchTypeDisabled,
   createMatchTypeValidationTest
@@ -29,7 +32,9 @@ const props = defineProps({
 
 const stopWordsStore = useStopWordsStore()
 const matchTypesStore = useWordMatchTypesStore()
+const countriesStore = useCountriesStore()
 const alertStore = useAlertStore()
+const { countries } = storeToRefs(countriesStore)
 const isEdit = computed(() => props.id !== null && props.id !== undefined)
 const saving = ref(false)
 const loading = ref(false)
@@ -47,10 +52,22 @@ const schema = toTypedSchema(
         'Выбранный тип соответствия недоступен для текущего слова/фразы',
         createMatchTypeValidationTest()
       ),
-    explanationForExport: Yup.string().nullable(),
-    explanationForImport: Yup.string().nullable(),
-    forExport: Yup.boolean(),
-    forImport: Yup.boolean()
+    scopes: Yup.array()
+      .of(
+        Yup.object({
+          countryIsoNumeric: Yup.number().required('Выберите страну'),
+          customsProcedureCode: Yup.number()
+            .oneOf([10, 40], 'Выберите процедуру')
+            .required('Выберите процедуру'),
+          explanation: Yup.string().nullable()
+        })
+      )
+      .test('unique-scopes', 'Страна и процедура не должны повторяться', (scopes) => {
+        const keys = (scopes || []).map(
+          (scope) => `${scope.countryIsoNumeric}:${scope.customsProcedureCode}`
+        )
+        return new Set(keys).size === keys.length
+      })
   })
 )
 
@@ -59,19 +76,28 @@ const { errors, handleSubmit, resetForm, setFieldValue, setErrors } = useForm({
   initialValues: {
     word: '',
     matchTypeId: 41,
-    explanationForExport: '',
-    explanationForImport: '',
-    forExport: false,
-    forImport: false
+    scopes: []
   }
 })
 
 const { value: word } = useField('word')
 const { value: matchTypeId } = useField('matchTypeId')
-const { value: explanationForExport } = useField('explanationForExport')
-const { value: explanationForImport } = useField('explanationForImport')
-const { value: forExport } = useField('forExport')
-const { value: forImport } = useField('forImport')
+const { value: scopes } = useField('scopes')
+const scopeSubmissionErrors = ref({})
+const scopeEditorErrors = computed(() => ({
+  ...errors.value,
+  ...scopeSubmissionErrors.value
+}))
+
+function handleInvalidSubmit(submission) {
+  const scopeError = submission?.errors?.scopes
+  scopeSubmissionErrors.value = scopeError ? { scopes: scopeError } : {}
+  return focusFirstInvalidField(submission)
+}
+
+watch(scopes, () => {
+  scopeSubmissionErrors.value = {}
+}, { deep: true })
 
 function isOptionDisabled(value) {
   return isMatchTypeDisabled(value, word.value)
@@ -80,7 +106,7 @@ function isOptionDisabled(value) {
 async function initialize() {
   loading.value = true
   try {
-    await matchTypesStore.ensureLoaded()
+    await Promise.all([matchTypesStore.ensureLoaded(), countriesStore.ensureLoaded()])
     if (isEdit.value) {
       const loadedStopWord = await stopWordsStore.getById(props.id)
       if (loadedStopWord) {
@@ -88,10 +114,7 @@ async function initialize() {
           values: {
             word: loadedStopWord.word,
             matchTypeId: loadedStopWord.matchTypeId,
-            explanationForExport: loadedStopWord.explanationForExport || '',
-            explanationForImport: loadedStopWord.explanationForImport || '',
-            forExport: !!loadedStopWord.forExport,
-            forImport: !!loadedStopWord.forImport
+            scopes: (loadedStopWord.scopes || []).map((scope) => ({ ...scope }))
           }
         })
         await nextTick()
@@ -119,15 +142,17 @@ function onWordInput(event) {
 }
 
 const onSubmit = handleSubmit(async (values) => {
+  scopeSubmissionErrors.value = {}
   saving.value = true
 
   const stopWordData = {
     word: values.word.trim(),
     matchTypeId: values.matchTypeId,
-    explanationForExport: values.explanationForExport ? values.explanationForExport.trim() : '',
-    explanationForImport: values.explanationForImport ? values.explanationForImport.trim() : '',
-    forExport: !!values.forExport,
-    forImport: !!values.forImport
+    scopes: (values.scopes || []).map((scope) => ({
+      countryIsoNumeric: Number(scope.countryIsoNumeric),
+      customsProcedureCode: Number(scope.customsProcedureCode),
+      explanation: scope.explanation?.trim() || null
+    }))
   }
 
   // Include id for updates
@@ -151,7 +176,7 @@ const onSubmit = handleSubmit(async (values) => {
   } finally {
     saving.value = false
   }
-}, focusFirstInvalidField)
+}, handleInvalidSubmit)
 
 function cancel() {
   router.push('/stopwords')
@@ -196,62 +221,12 @@ defineExpose({
       </div>
 
       <div class="form-group">
-        <span class="label">Таможенная процедура:</span>
-        <div class="procedure-grid">
-          <div class="procedure-item">
-            <input
-              id="forExport"
-              type="checkbox"
-              name="forExport"
-              class="checkbox checkbox-styled"
-              v-model="forExport"
-            />
-            <label for="forExport">Экспорт из РФ</label>
-          </div>
-
-          <div class="procedure-item">
-            <input
-              id="forImport"
-              type="checkbox"
-              name="forImport"
-              class="checkbox checkbox-styled"
-              v-model="forImport"
-            />
-            <label for="forImport">Импорт в РФ</label>
-          </div>
-        </div>
-      </div>
-
-      <div v-if="forExport" class="form-group">
-        <label for="explanationForExport" class="label">Причина запрета экспорта:</label>
-        <input
-          name="explanationForExport"
-          id="explanationForExport"
-          type="text"
-          class="form-control input"
-          :class="{ 'is-invalid': errors.explanationForExport }"
-          placeholder="Причина запрета экспорта"
-          v-model="explanationForExport"
+        <RestrictionScopeEditor
+          v-model="scopes"
+          :countries="countries"
+          :disabled="saving"
+          :errors="scopeEditorErrors"
         />
-        <div v-if="errors.explanationForExport" class="invalid-feedback">
-          {{ errors.explanationForExport }}
-        </div>
-      </div>
-
-      <div v-if="forImport" class="form-group">
-        <label for="explanationForImport" class="label">Причина запрета импорта:</label>
-        <input
-          name="explanationForImport"
-          id="explanationForImport"
-          type="text"
-          class="form-control input"
-          :class="{ 'is-invalid': errors.explanationForImport }"
-          placeholder="Причина запрета импорта"
-          v-model="explanationForImport"
-        />
-        <div v-if="errors.explanationForImport" class="invalid-feedback">
-          {{ errors.explanationForImport }}
-        </div>
       </div>
 
       <div class="form-group match-type-group">
@@ -289,23 +264,3 @@ defineExpose({
   </div>
 </template>
 
-<style scoped>
-.procedure-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px 16px;
-  align-items: center;
-}
-
-.procedure-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-@media (max-width: 850px) {
-  .procedure-grid {
-    grid-template-columns: 1fr;
-  }
-}
-</style>

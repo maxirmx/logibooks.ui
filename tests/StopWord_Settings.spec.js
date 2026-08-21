@@ -7,17 +7,17 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import StopWordSettings from '@/dialogs/StopWord_Settings.vue'
-import { resolveAll } from './helpers/test-utils'
+import { resolveAll, vuetifyStubs } from './helpers/test-utils'
 
 // Mock data
 const mockStopWord = {
   id: 1,
   word: 'тест',
   matchTypeId: 1,
-  explanationForExport: 'export reason',
-  explanationForImport: 'import reason',
-  forExport: true,
-  forImport: true
+  scopes: [
+    { countryIsoNumeric: 643, customsProcedureCode: 10, explanation: 'export reason' },
+    { countryIsoNumeric: 860, customsProcedureCode: 40, explanation: 'import reason' }
+  ]
 }
 
 // Create hoisted mock functions
@@ -51,6 +51,16 @@ vi.mock('@/stores/word.match.types.store.js', () => ({
   })
 }))
 
+vi.mock('@/stores/countries.store.js', () => ({
+  useCountriesStore: () => ({
+    countries: ref([
+      { isoNumeric: 643, nameRuShort: 'Россия' },
+      { isoNumeric: 860, nameRuShort: 'Узбекистан' }
+    ]),
+    ensureLoaded: vi.fn().mockResolvedValue(undefined)
+  })
+}))
+
 vi.mock('@/stores/alert.store.js', () => ({
   useAlertStore: () => ({
     get alert() {
@@ -74,7 +84,12 @@ describe('StopWord_Settings.vue', () => {
       props,
       global: {
         stubs: {
-          'font-awesome-icon': true
+          ...vuetifyStubs,
+          'font-awesome-icon': true,
+          'v-autocomplete': {
+            template: '<div class="v-autocomplete-stub scope-country"></div>',
+            props: ['modelValue', 'items', 'label', 'disabled']
+          }
         }
       }
     })
@@ -97,7 +112,7 @@ describe('StopWord_Settings.vue', () => {
       expect(wrapper.find('h1').text()).toBe('Регистрация стоп слова или фразы')
       expect(wrapper.find('input[name="word"]').exists()).toBe(true)
       expect(wrapper.findAll('input[type="radio"][name="matchTypeId"]').length).toBeGreaterThan(0)
-      expect(wrapper.findAll('input[type="checkbox"].checkbox-styled')).toHaveLength(2)
+      expect(wrapper.find('[data-testid="restriction-scope-editor"]').exists()).toBe(true)
       expect(wrapper.find('button[type="submit"]').text()).toContain('Сохранить')
     })
 
@@ -135,27 +150,43 @@ describe('StopWord_Settings.vue', () => {
       expect(radios.length).toBeGreaterThan(0)
     })
 
-    it('renders styled procedure checkboxes', async () => {
+    it('renders the reusable scope editor', async () => {
       const wrapper = mountComponent()
       await resolveAll()
 
-      expect(wrapper.find('#forExport').exists()).toBe(true)
-      expect(wrapper.find('#forImport').exists()).toBe(true)
-      expect(wrapper.findAll('input[type="checkbox"].checkbox-styled')).toHaveLength(2)
+      expect(wrapper.find('[data-testid="restriction-scope-editor"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="add-restriction-scope"]').exists()).toBe(true)
     })
 
-    it('hides explanation fields until respective flags are enabled', async () => {
+    it('starts inactive and allows scope rows to be added', async () => {
       const wrapper = mountComponent()
       await resolveAll()
 
-      expect(wrapper.find('#explanationForExport').exists()).toBe(false)
-      expect(wrapper.find('#explanationForImport').exists()).toBe(false)
+      expect(wrapper.findAll('.scope-row-wrapper')).toHaveLength(0)
+      await wrapper.find('[data-testid="add-restriction-scope"]').trigger('click')
+      expect(wrapper.findAll('.scope-row-wrapper')).toHaveLength(1)
+    })
 
-      await wrapper.find('#forExport').setValue(true)
-      expect(wrapper.find('#explanationForExport').exists()).toBe(true)
+    it('shows an indexed country error and keeps an invalid form open', async () => {
+      const wrapper = mountComponent()
+      await resolveAll()
+      const component = wrapper.vm
+      component.word = 'новое'
+      component.matchTypeId = 1
+      component.scopes = [
+        { countryIsoNumeric: null, customsProcedureCode: 10, explanation: '' }
+      ]
 
-      await wrapper.find('#forImport').setValue(true)
-      expect(wrapper.find('#explanationForImport').exists()).toBe(true)
+      await component.onSubmit()
+      await resolveAll()
+
+      await vi.waitFor(() => {
+        expect(wrapper.find('.scope-field-error').exists()).toBe(true)
+      })
+
+      expect(create).not.toHaveBeenCalled()
+      expect(wrapper.get('.scope-field-error').text()).toBe('Выберите страну')
+      expect(routerPush).not.toHaveBeenCalled()
     })
   })
 
@@ -232,9 +263,9 @@ describe('StopWord_Settings.vue', () => {
       const component = wrapper.vm
       component.word = 'новое'
       component.matchTypeId = 1
-      component.forExport = true
-      component.explanationForExport = ' export text '
-      component.explanationForImport = ' import text '
+      component.scopes = [
+        { countryIsoNumeric: 643, customsProcedureCode: 10, explanation: ' export text ' }
+      ]
 
       await wrapper.vm.$nextTick()
 
@@ -244,10 +275,9 @@ describe('StopWord_Settings.vue', () => {
       expect(create).toHaveBeenCalledWith({
         word: 'новое',
         matchTypeId: 1,
-        explanationForExport: 'export text',
-        explanationForImport: 'import text',
-        forExport: true,
-        forImport: false
+        scopes: [
+          { countryIsoNumeric: 643, customsProcedureCode: 10, explanation: 'export text' }
+        ]
       })
     })
 
@@ -311,10 +341,9 @@ describe('StopWord_Settings.vue', () => {
       const component = wrapper.vm
       component.word = 'обновленное'
       component.matchTypeId = 41
-      component.forExport = false
-      component.forImport = true
-      component.explanationForExport = ' hidden export reason '
-      component.explanationForImport = ' import update '
+      component.scopes = [
+        { countryIsoNumeric: 860, customsProcedureCode: 40, explanation: ' import update ' }
+      ]
 
       await component.onSubmit()
 
@@ -322,10 +351,9 @@ describe('StopWord_Settings.vue', () => {
         id: 1,
         word: 'обновленное',
         matchTypeId: 41,
-        explanationForExport: 'hidden export reason',
-        explanationForImport: 'import update',
-        forExport: false,
-        forImport: true
+        scopes: [
+          { countryIsoNumeric: 860, customsProcedureCode: 40, explanation: 'import update' }
+        ]
       })
     })
 
@@ -337,10 +365,8 @@ describe('StopWord_Settings.vue', () => {
 
       const wordInput = wrapper.find('input[name="word"]')
       expect(wordInput.element.value).toBe('тест')
-      expect(wrapper.vm.forExport).toBe(true)
-      expect(wrapper.vm.forImport).toBe(true)
-      expect(wrapper.find('#explanationForExport').element.value).toBe('export reason')
-      expect(wrapper.find('#explanationForImport').element.value).toBe('import reason')
+      expect(wrapper.vm.scopes).toEqual(mockStopWord.scopes)
+      expect(wrapper.findAll('.scope-row-wrapper')).toHaveLength(2)
     })
 
     it('handles loading errors', async () => {
@@ -362,7 +388,8 @@ describe('StopWord_Settings.vue', () => {
       const wrapper = mountComponent()
       await resolveAll()
 
-      const cancelButton = wrapper.find('button.secondary')
+      const cancelButton = wrapper.findAll('button.secondary').find(button => button.text().includes('Отменить'))
+      expect(cancelButton).toBeDefined()
       await cancelButton.trigger('click')
 
       expect(routerPush).toHaveBeenCalledWith('/stopwords')
@@ -383,7 +410,8 @@ describe('StopWord_Settings.vue', () => {
       const wrapper = mountComponent()
       await resolveAll()
 
-      const cancelButton = wrapper.find('button.secondary')
+      const cancelButton = wrapper.findAll('button.secondary').find(button => button.text().includes('Отменить'))
+      expect(cancelButton).toBeDefined()
       expect(cancelButton.text()).toContain('Отменить')
       expect(cancelButton.exists()).toBe(true)
     })

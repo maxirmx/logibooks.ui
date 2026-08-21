@@ -8,6 +8,7 @@ import { mount, flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { ref } from 'vue'
 import FeacnLocalPrefix_Settings from '@/dialogs/FeacnLocalPrefix_Settings.vue'
+import { vuetifyStubs } from './helpers/test-utils.js'
 
 // Stub FieldArrayWithButtons
 vi.mock('@/components/FieldArrayWithButtons.vue', () => ({
@@ -34,7 +35,7 @@ vi.mock('@/components/ActionButton.vue', () => ({
     name: 'ActionButton',
     props: ['icon', 'item', 'tooltipText', 'disabled'],
     emits: ['click'],
-    template: '<button data-test="action-button" @click="$emit(\'click\')">{{ icon }}</button>'
+    template: '<button data-test="action-button" @click="$emit(\'click\', item)">{{ icon }}</button>'
   }
 }))
 
@@ -52,6 +53,16 @@ vi.mock('@/stores/feacn.prefixes.store.js', () => ({
     getById,
     create,
     update
+  })
+}))
+
+vi.mock('@/stores/countries.store.js', () => ({
+  useCountriesStore: () => ({
+    countries: ref([
+      { isoNumeric: 643, nameRuShort: 'Россия' },
+      { isoNumeric: 860, nameRuShort: 'Узбекистан' }
+    ]),
+    ensureLoaded: vi.fn().mockResolvedValue(undefined)
   })
 }))
 
@@ -75,9 +86,9 @@ vi.mock('pinia', async () => {
   const actual = await vi.importActual('pinia')
   return {
     ...actual,
-    storeToRefs: () => ({
-      alert: ref(null)
-    })
+    storeToRefs: (store) => store.countries
+      ? { countries: store.countries }
+      : { alert: ref(null) }
   }
 })
 
@@ -93,7 +104,14 @@ describe('FeacnLocalPrefix_Settings.vue', () => {
     mount(FeacnLocalPrefix_Settings, {
       props,
       global: {
-        stubs: { 'font-awesome-icon': true }
+        stubs: {
+          ...vuetifyStubs,
+          'font-awesome-icon': true,
+          'v-autocomplete': {
+            template: '<div class="v-autocomplete-stub scope-country"></div>',
+            props: ['modelValue', 'items', 'label', 'disabled']
+          }
+        }
       }
     })
 
@@ -101,10 +119,7 @@ describe('FeacnLocalPrefix_Settings.vue', () => {
     code: '',
     exceptions: [],
     comment: '',
-    explanationForExport: '',
-    explanationForImport: '',
-    forExport: false,
-    forImport: false,
+    scopes: [],
     description: null,
     feacnOrderId: null,
     ...overrides
@@ -132,10 +147,9 @@ describe('FeacnLocalPrefix_Settings.vue', () => {
     getById.mockResolvedValue({
       code: '0202',
       comment: ' legacy comment ',
-      explanationForExport: 'export reason',
-      explanationForImport: 'import reason',
-      forExport: true,
-      forImport: false,
+      scopes: [
+        { countryIsoNumeric: 643, customsProcedureCode: 10, explanation: 'export reason' }
+      ],
       description: 'server description',
       feacnOrderId: 7,
       exceptions: [{ id: 1, code: '222', feacnPrefixId: 1 }]
@@ -149,10 +163,9 @@ describe('FeacnLocalPrefix_Settings.vue', () => {
       code: '0202',
       exceptions: ['222'],
       comment: ' legacy comment ',
-      explanationForExport: 'export reason',
-      explanationForImport: 'import reason',
-      forExport: true,
-      forImport: false,
+      scopes: [
+        { countryIsoNumeric: 643, customsProcedureCode: 10, explanation: 'export reason' }
+      ],
       description: 'server description',
       feacnOrderId: 7
     })
@@ -178,69 +191,83 @@ describe('FeacnLocalPrefix_Settings.vue', () => {
     )
   })
 
-  it('renders styled export and import checkboxes', () => {
+  it('renders the reusable scope editor', () => {
     const wrapper = mountComponent()
-    const checkboxes = wrapper.findAll('input[type="checkbox"].checkbox-styled')
-    expect(checkboxes).toHaveLength(2)
-    expect(wrapper.find('#forExport').exists()).toBe(true)
-    expect(wrapper.find('#forImport').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="restriction-scope-editor"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="add-restriction-scope"]').exists()).toBe(true)
   })
 
-  it('disables save button when no procedure flag is selected', async () => {
+  it('allows an empty scope collection to make a prefix inactive', () => {
     const wrapper = mountComponent()
     const saveButton = wrapper.find('button.primary')
-    expect(saveButton.attributes('disabled')).toBeDefined()
-
-    await wrapper.find('#forExport').setValue(true)
     expect(saveButton.attributes('disabled')).toBeUndefined()
   })
 
-  it('disables unchecked procedure checkboxes when the same code already has that flag in the store', async () => {
-    mockPrefixes = [
-      { id: 1, code: '0505', forExport: true, forImport: false },
-      { id: 2, code: '0505', forExport: false, forImport: true }
-    ]
+  it('adds and removes independent scope rows', async () => {
     const wrapper = mountComponent()
-
-    wrapper.vm.setFieldValue('code', '0505')
+    await wrapper.find('[data-testid="add-restriction-scope"]').trigger('click')
     await wrapper.vm.$nextTick()
-
-    expect(wrapper.find('#forExport').attributes('disabled')).toBeDefined()
-    expect(wrapper.find('#forImport').attributes('disabled')).toBeDefined()
-
-    wrapper.vm.setFieldValue('forExport', true)
-    await wrapper.vm.$nextTick()
-    expect(wrapper.find('#forExport').attributes('disabled')).toBeUndefined()
+    expect(wrapper.findAll('.scope-row-wrapper')).toHaveLength(1)
+    await wrapper.find('.scope-row-wrapper [data-test="action-button"]').trigger('click')
+    expect(wrapper.findAll('.scope-row-wrapper')).toHaveLength(0)
   })
 
-  it('does not disable checked procedure flags for the prefix currently being edited', async () => {
-    mockPrefixes = [{ id: 1, code: '0606', forExport: true, forImport: true }]
+  it('loads submitted scope rows when editing', async () => {
     getById.mockResolvedValue({
       id: 1,
       code: '0606',
-      forExport: true,
-      forImport: false,
+      scopes: [
+        { countryIsoNumeric: 643, customsProcedureCode: 10, explanation: 'reason' }
+      ],
       exceptions: []
     })
     const wrapper = mountComponent({ mode: 'edit', prefixId: 1 })
     await flushPromises()
 
-    expect(wrapper.find('#forExport').element.checked).toBe(true)
-    expect(wrapper.find('#forExport').attributes('disabled')).toBeUndefined()
-    expect(wrapper.find('#forImport').attributes('disabled')).toBeUndefined()
+    expect(wrapper.vm.scopes).toEqual([
+      { countryIsoNumeric: 643, customsProcedureCode: 10, explanation: 'reason' }
+    ])
   })
 
-  it('hides explanation fields until respective flags are enabled', async () => {
+  it('shows an explanation input on each scope row', async () => {
     const wrapper = mountComponent()
-    expect(wrapper.find('#explanationForExport').exists()).toBe(false)
-    expect(wrapper.find('#explanationForImport').exists()).toBe(false)
+    await wrapper.find('[data-testid="add-restriction-scope"]').trigger('click')
+    expect(wrapper.find('.scope-explanation').exists()).toBe(true)
+  })
 
-    await wrapper.find('#forExport').setValue(true)
-    expect(wrapper.find('#explanationForExport').exists()).toBe(true)
-    expect(wrapper.find('#explanationForImport').exists()).toBe(false)
+  it('rejects a scope already assigned to another record with the same code', async () => {
+    mockPrefixes = [{
+      id: 1,
+      code: ' 0505 ',
+      scopes: [{ countryIsoNumeric: 643, customsProcedureCode: 10 }]
+    }]
+    const wrapper = mountComponent()
+    wrapper.vm.setFieldValue('code', '0505')
+    wrapper.vm.setFieldValue('scopes', [
+      { countryIsoNumeric: 643, customsProcedureCode: 10, explanation: '' }
+    ])
 
-    await wrapper.find('#forImport').setValue(true)
-    expect(wrapper.find('#explanationForImport').exists()).toBe(true)
+    await wrapper.vm.onSubmit()
+    await flushPromises()
+
+    expect(create).not.toHaveBeenCalled()
+    expect(wrapper.text()).toContain('Страна и процедура уже используются для этого префикса')
+  })
+
+  it('allows an edited record to retain its own scope', async () => {
+    const scope = { countryIsoNumeric: 643, customsProcedureCode: 10, explanation: 'reason' }
+    mockPrefixes = [{ id: 7, code: '0505', scopes: [scope] }]
+    getById.mockResolvedValue({ id: 7, code: '0505', scopes: [scope], exceptions: [] })
+    update.mockResolvedValue({})
+    const wrapper = mountComponent({ mode: 'edit', prefixId: 7 })
+    await flushPromises()
+
+    await wrapper.vm.onSubmit()
+
+    expect(update).toHaveBeenCalledWith(7, expect.objectContaining({
+      code: '0505',
+      scopes: [scope]
+    }))
   })
 
   it('does not render an editable comment input', () => {
@@ -253,18 +280,18 @@ describe('FeacnLocalPrefix_Settings.vue', () => {
     create.mockResolvedValue({})
     const wrapper = mountComponent()
     wrapper.vm.setFieldValue('code', '0505')
-    wrapper.vm.setFieldValue('forExport', true)
-    wrapper.vm.setFieldValue('forImport', true)
-    wrapper.vm.setFieldValue('explanationForExport', ' export text ')
-    wrapper.vm.setFieldValue('explanationForImport', ' import text ')
+    wrapper.vm.setFieldValue('scopes', [
+      { countryIsoNumeric: 643, customsProcedureCode: 10, explanation: ' export text ' },
+      { countryIsoNumeric: 860, customsProcedureCode: 40, explanation: ' import text ' }
+    ])
     await wrapper.vm.onSubmit()
     expect(create).toHaveBeenCalledWith(
       expectedCreatePayload({
         code: '0505',
-        explanationForExport: 'export text',
-        explanationForImport: 'import text',
-        forExport: true,
-        forImport: true
+        scopes: [
+          { countryIsoNumeric: 643, customsProcedureCode: 10, explanation: 'export text' },
+          { countryIsoNumeric: 860, customsProcedureCode: 40, explanation: 'import text' }
+        ]
       })
     )
   })

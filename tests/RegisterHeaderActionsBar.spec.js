@@ -48,7 +48,12 @@ vi.mock('@/stores/auth.store.js', () => ({
 
 describe('RegisterHeaderActionsBar', () => {
   const baseProps = {
-    item: { id: 1, invoiceNumber: 'INV-1', customsProcedureCode: CUSTOMS_PROCEDURE_IMPORT },
+    item: {
+      id: 1,
+      invoiceNumber: 'INV-1',
+      customsProcedureCode: CUSTOMS_PROCEDURE_IMPORT,
+      theOtherCountryCode: 860
+    },
     disabled: false,
     iconSize: '1x'
   }
@@ -74,6 +79,32 @@ describe('RegisterHeaderActionsBar', () => {
     authRefs.hasLogistRole.value = true
     authRefs.isSrLogistPlus.value = true
     authRefs.isShiftLeadPlus.value = true
+  })
+
+  it('keeps restriction actions visible but disabled when counterpart country is missing', async () => {
+    const wrapper = mount(RegisterHeaderActionsBar, {
+      props: { ...baseProps, item: { ...baseProps.item, theOtherCountryCode: null } },
+      global: { stubs: vuetifyStubs }
+    })
+
+    const stopWords = findActionMenuByTooltip(
+      wrapper,
+      'Сначала укажите страну отправления или назначения реестра'
+    )
+    const feacn = findActionButtonByTooltip(
+      wrapper,
+      'Сначала укажите страну отправления или назначения реестра'
+    )
+    expect(stopWords).toBeTruthy()
+    expect(feacn).toBeTruthy()
+    expect(stopWords.props('disabled')).toBe(true)
+    expect(feacn.props('disabled')).toBe(true)
+
+    await stopWords.props('options')[0].action()
+    await feacn.trigger('click')
+    expect(wrapper.emitted('validate-sw')).toBeUndefined()
+    expect(wrapper.emitted('validate-sw-ex')).toBeUndefined()
+    expect(wrapper.emitted('validate-fc')).toBeUndefined()
   })
 
   it('navigates to invoice settings with selected scope when invoice action option is used', async () => {

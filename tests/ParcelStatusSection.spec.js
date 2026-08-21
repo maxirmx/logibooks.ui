@@ -237,4 +237,36 @@ describe('ParcelStatusSection', () => {
     // validate-sw-ex (index 1) should not be disabled
     expect(buttons[1].props('disabled')).toBe(false)
   })
+
+  it('disables only restriction validations and explains the missing route country', async () => {
+    const wrapper = createWrapper({ restrictionValidationDisabled: true })
+    const buttons = wrapper.findAllComponents(ActionButton)
+
+    expect(buttons.slice(0, 3).every((button) => button.props('disabled'))).toBe(true)
+    expect(buttons.slice(0, 3).every((button) =>
+      button.props('tooltipText').includes('страну отправления или назначения')
+    )).toBe(true)
+    expect(buttons.slice(3).every((button) => !button.props('disabled'))).toBe(true)
+
+    await buttons[0].find('button').trigger('click')
+    await buttons[1].find('button').trigger('click')
+    await buttons[2].find('button').trigger('click')
+    expect(wrapper.emitted('validate-sw')).toBeUndefined()
+    expect(wrapper.emitted('validate-sw-ex')).toBeUndefined()
+    expect(wrapper.emitted('validate-fc')).toBeUndefined()
+  })
+
+  it('composes route-country disabling with existing disable conditions', () => {
+    const wrapper = createWrapper({
+      restrictionValidationDisabled: true,
+      disabled: true,
+      noHistoricData: true,
+      clearCheckStatusDisabled: true,
+      approvalDisabled: true
+    })
+
+    wrapper.findAllComponents(ActionButton).forEach((button) => {
+      expect(button.props('disabled')).toBe(true)
+    })
+  })
 })

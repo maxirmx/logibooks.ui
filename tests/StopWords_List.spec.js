@@ -19,6 +19,10 @@ const removeStopWord = vi.hoisted(() => vi.fn())
 const getStopWordById = vi.hoisted(() => vi.fn())
 const mockPush = vi.hoisted(() => vi.fn())
 const mockConfirm = vi.hoisted(() => vi.fn())
+const mockCountries = ref([
+  { isoNumeric: 643, nameRuShort: 'Россия' },
+  { isoNumeric: 860, nameRuShort: 'Узбекистан' }
+])
 
 // Mock router
 vi.mock('@/router', () => ({
@@ -38,37 +42,31 @@ const mockStopWords = ref([
     id: 1,
     word: 'и',
     matchTypeId: 41,
-    explanationForExport: 'export stop reason',
-    explanationForImport: '',
-    forExport: true,
-    forImport: false
+    scopes: [{ countryIsoNumeric: 643, customsProcedureCode: 10, explanation: 'export stop reason' }]
   },
   {
     id: 2,
     word: 'или',
     matchTypeId: 1,
-    explanationForExport: '',
-    explanationForImport: 'import stop reason',
-    forExport: false,
-    forImport: true
+    scopes: [{ countryIsoNumeric: 860, customsProcedureCode: 40, explanation: 'import stop reason' }]
   },
   {
     id: 3,
     word: 'но',
     matchTypeId: 41,
-    explanationForExport: 'dual export stop reason',
-    explanationForImport: 'dual import stop reason',
-    forExport: true,
-    forImport: true
+    scopes: [
+      { countryIsoNumeric: 643, customsProcedureCode: 10, explanation: 'dual export stop reason' },
+      { countryIsoNumeric: 860, customsProcedureCode: 40, explanation: 'dual import stop reason' }
+    ]
   },
   {
     id: 4,
     word: 'кроме',
     matchTypeId: 1,
-    explanationForExport: '',
-    explanationForImport: 'import only dual stop reason',
-    forExport: true,
-    forImport: true
+    scopes: [
+      { countryIsoNumeric: 643, customsProcedureCode: 10, explanation: '' },
+      { countryIsoNumeric: 860, customsProcedureCode: 40, explanation: 'import only dual stop reason' }
+    ]
   }
 ])
 
@@ -97,6 +95,14 @@ vi.mock('@/stores/word.match.types.store.js', () => ({
   })
 }))
 
+vi.mock('@/stores/countries.store.js', () => ({
+  useCountriesStore: () => ({
+    countries: mockCountries.value,
+    ensureLoaded: vi.fn().mockResolvedValue(undefined),
+    getCountryShortName: vi.fn((code) => Number(code) === 643 ? 'Россия' : 'Узбекистан')
+  })
+}))
+
 vi.mock('@/stores/auth.store.js', () => ({
   useAuthStore: () => ({
     user: ref({ id: 1, roles: [roleAdmin] }),
@@ -108,6 +114,7 @@ vi.mock('@/stores/auth.store.js', () => ({
     stopwords_per_page: ref(10),
     stopwords_search: ref(''),
     stopwords_procedure: ref('all'),
+    stopwords_country: ref('all'),
     stopwords_sort_by: ref(['id']),
     stopwords_page: ref(1)
   })
@@ -185,6 +192,11 @@ const extendedStubs = {
       '<select data-testid="v-select" :value="modelValue" @change="$emit(\'update:modelValue\', $event.target.value)"><option v-for="item in items" :key="item.value" :value="item.value">{{ item.title }}</option></select>',
     props: ['modelValue', 'items', 'label', 'variant', 'hide-details', 'disabled']
   },
+  'v-autocomplete': {
+    template:
+      '<select data-testid="v-autocomplete" :value="modelValue" @change="$emit(\'update:modelValue\', $event.target.value)"><option v-for="item in items" :key="item.value" :value="item.value">{{ item.title }}</option></select>',
+    props: ['modelValue', 'items', 'label', 'variant', 'hide-details', 'disabled']
+  },
   'v-tooltip': {
     template: '<div data-testid="v-tooltip"><slot name="activator" :props="{}" /><slot /></div>',
     props: ['text']
@@ -208,37 +220,31 @@ describe('StopWords_List.vue', () => {
         id: 1,
         word: 'и',
         matchTypeId: 41,
-        explanationForExport: 'export stop reason',
-        explanationForImport: '',
-        forExport: true,
-        forImport: false
+        scopes: [{ countryIsoNumeric: 643, customsProcedureCode: 10, explanation: 'export stop reason' }]
       },
       {
         id: 2,
         word: 'или',
         matchTypeId: 1,
-        explanationForExport: '',
-        explanationForImport: 'import stop reason',
-        forExport: false,
-        forImport: true
+        scopes: [{ countryIsoNumeric: 860, customsProcedureCode: 40, explanation: 'import stop reason' }]
       },
       {
         id: 3,
         word: 'но',
         matchTypeId: 41,
-        explanationForExport: 'dual export stop reason',
-        explanationForImport: 'dual import stop reason',
-        forExport: true,
-        forImport: true
+        scopes: [
+          { countryIsoNumeric: 643, customsProcedureCode: 10, explanation: 'dual export stop reason' },
+          { countryIsoNumeric: 860, customsProcedureCode: 40, explanation: 'dual import stop reason' }
+        ]
       },
       {
         id: 4,
         word: 'кроме',
         matchTypeId: 1,
-        explanationForExport: '',
-        explanationForImport: 'import only dual stop reason',
-        forExport: true,
-        forImport: true
+        scopes: [
+          { countryIsoNumeric: 643, customsProcedureCode: 10, explanation: '' },
+          { countryIsoNumeric: 860, customsProcedureCode: 40, explanation: 'import only dual stop reason' }
+        ]
       }
     ]
 
@@ -269,11 +275,12 @@ describe('StopWords_List.vue', () => {
     it('displays customs procedure selector next to search field', () => {
       const filters = wrapper.find('.stopwords-filter-row')
       expect(filters.find('[data-testid="v-select"]').exists()).toBe(true)
+      expect(filters.find('[data-testid="v-autocomplete"]').exists()).toBe(true)
       expect(filters.find('[data-testid="v-text-field"]').exists()).toBe(true)
       expect(wrapper.vm.prohibitionScopeFilterItems).toEqual([
         { title: 'Любая', value: 'all' },
-        { title: 'Экспорт из РФ', value: 'export' },
-        { title: 'Импорт в РФ', value: 'import' }
+        { title: 'Экспорт', value: 'export' },
+        { title: 'Импорт', value: 'import' }
       ])
     })
   })
@@ -385,8 +392,8 @@ describe('StopWords_List.vue', () => {
       const mockItem = { raw: mockStopWords.value[2] }
       expect(wrapper.vm.filterStopWords(null, 'dual export', mockItem)).toBe(true)
       expect(wrapper.vm.filterStopWords(null, 'dual import', mockItem)).toBe(true)
-      expect(wrapper.vm.filterStopWords(null, 'Экспорт из РФ', mockItem)).toBe(true)
-      expect(wrapper.vm.filterStopWords(null, 'Импорт в РФ', mockItem)).toBe(true)
+      expect(wrapper.vm.filterStopWords(null, 'Россия — Экспорт', mockItem)).toBe(true)
+      expect(wrapper.vm.filterStopWords(null, 'Узбекистан — Импорт', mockItem)).toBe(true)
       expect(wrapper.vm.filterStopWords(null, 'Morphology', mockItem)).toBe(true)
     })
 
@@ -443,6 +450,7 @@ describe('StopWords_List.vue', () => {
         { title: '', align: 'center', key: 'actions', sortable: false, width: '10%' },
         { title: 'Стоп-слово или фраза', key: 'word', sortable: true },
         { title: 'Тип соответствия', key: 'matchTypeId', sortable: true },
+        { title: 'Страна', key: 'country', align: 'start', sortable: false },
         { title: 'Процедура', key: 'procedure', align: 'start' },
         { title: 'Причина запрета', key: 'prohibitionReason', align: 'start', sortable: false }
       ])
@@ -465,26 +473,33 @@ describe('StopWords_List.vue', () => {
 
     it('uses requested procedure sort order from import and export flags', () => {
       const combinations = [
-        { forImport: false, forExport: false },
-        { forImport: false, forExport: true },
-        { forImport: true, forExport: true },
-        { forImport: true, forExport: false }
+        { scopes: [] },
+        { scopes: [{ countryIsoNumeric: 643, customsProcedureCode: 10 }] },
+        { scopes: [
+          { countryIsoNumeric: 643, customsProcedureCode: 10 },
+          { countryIsoNumeric: 860, customsProcedureCode: 40 }
+        ] },
+        { scopes: [{ countryIsoNumeric: 860, customsProcedureCode: 40 }] }
       ]
 
       expect(combinations.map((item) => wrapper.vm.getProhibitionScopeSortOrder(item))).toEqual([
-        0, 1, 2, 3
+        '', '643:10', '643:10|860:40', '860:40'
       ])
-      expect(wrapper.vm.tableStopWords.map((item) => item.procedure)).toEqual([1, 3, 2, 2])
+      expect(wrapper.vm.tableStopWords.map((item) => item.procedure)).toEqual([
+        '643:10', '860:40', '643:10|860:40', '643:10|860:40'
+      ])
     })
 
     it('renders procedure and prohibition reason columns', () => {
       const rows = wrapper.findAll('[data-testid="v-data-table"] .v-data-table-row')
-      expect(rows[0].findAll('.v-data-table-cell')[3].text()).toBe('Экспорт из РФ')
-      expect(rows[1].findAll('.v-data-table-cell')[3].text()).toBe('Импорт в РФ')
+      expect(rows[0].findAll('.v-data-table-cell')[3].text()).toBe('Россия')
+      expect(rows[0].findAll('.v-data-table-cell')[4].text()).toBe('Экспорт')
+      expect(rows[1].findAll('.v-data-table-cell')[3].text()).toBe('Узбекистан')
+      expect(rows[1].findAll('.v-data-table-cell')[4].text()).toBe('Импорт')
 
-      const procedureLines = rows[2].findAll('.v-data-table-cell')[3].findAll('.procedure-line')
-      const reasonLines = rows[2].findAll('.v-data-table-cell')[4].findAll('.reason-line')
-      expect(procedureLines.map((line) => line.text())).toEqual(['Экспорт из РФ', 'Импорт в РФ'])
+      const procedureLines = rows[2].findAll('.v-data-table-cell')[4].findAll('.procedure-line')
+      const reasonLines = rows[2].findAll('.v-data-table-cell')[5].findAll('.reason-line')
+      expect(procedureLines.map((line) => line.text())).toEqual(['Экспорт', 'Импорт'])
       expect(reasonLines.map((line) => line.text())).toEqual([
         'dual export stop reason',
         'dual import stop reason'
@@ -493,9 +508,9 @@ describe('StopWords_List.vue', () => {
 
     it('keeps import reason aligned with import procedure when export reason is empty', () => {
       const rows = wrapper.findAll('[data-testid="v-data-table"] .v-data-table-row')
-      const procedureLines = rows[3].findAll('.v-data-table-cell')[3].findAll('.procedure-line')
-      const reasonLines = rows[3].findAll('.v-data-table-cell')[4].findAll('.reason-line')
-      expect(procedureLines.map((line) => line.text())).toEqual(['Экспорт из РФ', 'Импорт в РФ'])
+      const procedureLines = rows[3].findAll('.v-data-table-cell')[4].findAll('.procedure-line')
+      const reasonLines = rows[3].findAll('.v-data-table-cell')[5].findAll('.reason-line')
+      expect(procedureLines.map((line) => line.text())).toEqual(['Экспорт', 'Импорт'])
       expect(reasonLines).toHaveLength(2)
       expect(reasonLines[0].text()).toBe('')
       expect(reasonLines[1].text()).toBe('import only dual stop reason')
@@ -588,7 +603,12 @@ describe('StopWords_List.vue', () => {
   describe('Reactive State', () => {
     it('updates when stop words change', async () => {
       const newStopWords = [
-        { id: 5, word: 'новое', matchTypeId: 1, forExport: false, forImport: true }
+        {
+          id: 5,
+          word: 'новое',
+          matchTypeId: 1,
+          scopes: [{ countryIsoNumeric: 860, customsProcedureCode: 40 }]
+        }
       ]
 
       mockStopWords.value = newStopWords

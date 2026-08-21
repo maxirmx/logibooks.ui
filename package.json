@@ -1,6 +1,6 @@
 {
   "name": "logibooks-ui",
-  "version": "1.33.1",
+  "version": "1.34.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -47,5 +47,8 @@
     "vite": "^8.0.16",
     "vitest": "^4.1.8",
     "vue-eslint-parser": "^10.1.4"
+  },
+  "allowScripts": {
+    "vue-demi@0.14.10": true
   }
 }

@@ -20,7 +20,10 @@ import {
   getProhibitionScopeLabels,
   getProhibitionScopeSortOrder,
   getProhibitionScopeRows,
-  getProhibitionReasonLines
+  getProhibitionReasonLines,
+  matchesProhibitionScope,
+  getRestrictionRouteScopeKeys,
+  getApplicableScopeExplanations
 } from '@/helpers/prohibition.scope.helpers.js'
 
 describe('procedure.helpers', () => {
@@ -207,88 +210,75 @@ describe('procedure.helpers', () => {
     })
   })
 
-  describe('getProhibitionScopeLabels', () => {
-    it('returns export label when forExport is true', () => {
-      expect(getProhibitionScopeLabels({ forExport: true })).toEqual(['Экспорт из РФ'])
-    })
+  describe('restriction scopes', () => {
+    const rule = {
+      scopes: [
+        { countryIsoNumeric: 643, customsProcedureCode: 10, explanation: 'RU export' },
+        { countryIsoNumeric: 860, customsProcedureCode: 40, explanation: 'UZ import' }
+      ]
+    }
 
-    it('returns import label when forImport is true', () => {
-      expect(getProhibitionScopeLabels({ forImport: true })).toEqual(['Импорт в РФ'])
-    })
-
-    it('returns both labels when both are true', () => {
-      expect(getProhibitionScopeLabels({ forExport: true, forImport: true })).toEqual([
-        'Экспорт из РФ',
-        'Импорт в РФ'
+    it('renders country, procedure and reason rows', () => {
+      const countryName = (code) => (Number(code) === 643 ? 'Россия' : 'Узбекистан')
+      expect(getProhibitionScopeLabels(rule, countryName)).toEqual([
+        'Россия — Экспорт',
+        'Узбекистан — Импорт'
       ])
-    })
-  })
-
-  describe('getProhibitionScopeSortOrder', () => {
-    it('returns 0 when neither forImport nor forExport', () => {
-      expect(getProhibitionScopeSortOrder({})).toBe(0)
-      expect(getProhibitionScopeSortOrder({ forImport: false, forExport: false })).toBe(0)
-    })
-
-    it('returns 1 when only forExport is true', () => {
-      expect(getProhibitionScopeSortOrder({ forExport: true, forImport: false })).toBe(1)
-      expect(getProhibitionScopeSortOrder({ forExport: true })).toBe(1)
-    })
-
-    it('returns 2 when both forImport and forExport are true', () => {
-      expect(getProhibitionScopeSortOrder({ forImport: true, forExport: true })).toBe(2)
-    })
-
-    it('returns 3 when only forImport is true', () => {
-      expect(getProhibitionScopeSortOrder({ forImport: true, forExport: false })).toBe(3)
-      expect(getProhibitionScopeSortOrder({ forImport: true })).toBe(3)
-    })
-  })
-
-  describe('getProhibitionScopeRows', () => {
-    it('returns export row when forExport is true', () => {
-      const rows = getProhibitionScopeRows({ forExport: true, explanationForExport: 'Reason A' })
-      expect(rows).toEqual([{ key: 'export', label: 'Экспорт из РФ', reason: 'Reason A' }])
-    })
-
-    it('returns export row with empty reason when explanation is missing', () => {
-      const rows = getProhibitionScopeRows({ forExport: true })
-      expect(rows).toEqual([{ key: 'export', label: 'Экспорт из РФ', reason: '' }])
-    })
-
-    it('returns import row when forImport is true', () => {
-      const rows = getProhibitionScopeRows({ forImport: true, explanationForImport: 'Reason B' })
-      expect(rows).toEqual([{ key: 'import', label: 'Импорт в РФ', reason: 'Reason B' }])
-    })
-
-    it('returns import row with empty reason when explanation is missing', () => {
-      const rows = getProhibitionScopeRows({ forImport: true })
-      expect(rows).toEqual([{ key: 'import', label: 'Импорт в РФ', reason: '' }])
-    })
-
-    it('returns both rows when both are true', () => {
-      const rows = getProhibitionScopeRows({
-        forExport: true,
-        forImport: true,
-        explanationForExport: 'Export reason',
-        explanationForImport: 'Import reason'
-      })
-      expect(rows).toEqual([
-        { key: 'export', label: 'Экспорт из РФ', reason: 'Export reason' },
-        { key: 'import', label: 'Импорт в РФ', reason: 'Import reason' }
+      expect(getProhibitionScopeRows(rule, countryName)).toEqual([
+        {
+          key: '643:10',
+          countryIsoNumeric: 643,
+          country: 'Россия',
+          customsProcedureCode: 10,
+          procedure: 'Экспорт',
+          label: 'Россия — Экспорт',
+          reason: 'RU export'
+        },
+        {
+          key: '860:40',
+          countryIsoNumeric: 860,
+          country: 'Узбекистан',
+          customsProcedureCode: 40,
+          procedure: 'Импорт',
+          label: 'Узбекистан — Импорт',
+          reason: 'UZ import'
+        }
       ])
+      expect(getProhibitionReasonLines(rule)).toEqual(['RU export', 'UZ import'])
+      expect(getProhibitionScopeSortOrder(rule)).toBe('643:10|860:40')
     })
-  })
 
-  describe('getProhibitionReasonLines', () => {
-    it('returns all non-empty reasons', () => {
-      const item = {
-        forExport: true,
-        forImport: true,
-        explanationForExport: 'Export reason',
-        explanationForImport: 'Import reason'
+    it('matches country and procedure filters against the same scope', () => {
+      expect(matchesProhibitionScope(rule, 'export', 643)).toBe(true)
+      expect(matchesProhibitionScope(rule, 'import', 860)).toBe(true)
+      expect(matchesProhibitionScope(rule, 'export', 860)).toBe(false)
+      expect(matchesProhibitionScope(rule, 'all', 'all')).toBe(true)
+    })
+
+    it('resolves bilateral routes for all supported families without fallback', () => {
+      expect(getRestrictionRouteScopeKeys({
+        theOtherCountryCode: 860,
+        customsProcedureCode: 31
+      })).toEqual(['643:10', '860:40'])
+      expect(getRestrictionRouteScopeKeys({
+        theOtherCountryCode: 860,
+        customsProcedureCode: 60
+      })).toEqual(['860:10', '643:40'])
+      expect(getRestrictionRouteScopeKeys({ customsProcedureCode: 10 })).toEqual([])
+    })
+
+    it('returns distinct explanations only from active route scopes', () => {
+      const routeRule = {
+        scopes: [
+          { countryIsoNumeric: 643, customsProcedureCode: 10, explanation: 'same' },
+          { countryIsoNumeric: 860, customsProcedureCode: 40, explanation: 'same' },
+          { countryIsoNumeric: 156, customsProcedureCode: 40, explanation: 'other' }
+        ]
       }
-      expect(getProhibitionReasonLines(item)).toEqual(['Export reason', 'Import reason'])
+      expect(getApplicableScopeExplanations(routeRule, {
+        theOtherCountryCode: 860,
+        customsProcedureCode: 10
+      })).toEqual(['same'])
     })
   })
 })

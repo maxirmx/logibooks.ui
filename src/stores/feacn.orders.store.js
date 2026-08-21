@@ -68,6 +68,20 @@ export const useFeacnOrdersStore = defineStore('feacn.orders', () => {
     }
   }
 
+  async function updateScopes(orderId, scopes) {
+    loading.value = true
+    error.value = null
+    try {
+      await fetchWrapper.put(`${baseUrl}/orders/${orderId}/scopes`, scopes)
+      await getOrders()
+    } catch (err) {
+      error.value = err
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function setOrderFlag(orderId, flag, enabled) {
     loading.value = true
     error.value = null
@@ -117,6 +131,7 @@ export const useFeacnOrdersStore = defineStore('feacn.orders', () => {
     getOrders,
     getPrefixes,
     update,
+    updateScopes,
     enableForExport,
     disableForExport,
     enableForImport,

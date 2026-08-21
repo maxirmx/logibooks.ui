@@ -10,45 +10,87 @@ export const PROHIBITION_SCOPE = Object.freeze({
 
 export const prohibitionScopeFilterItems = [
   { title: 'Любая', value: PROHIBITION_SCOPE.All },
-  { title: 'Экспорт из РФ', value: PROHIBITION_SCOPE.Export },
-  { title: 'Импорт в РФ', value: PROHIBITION_SCOPE.Import }
+  { title: 'Экспорт', value: PROHIBITION_SCOPE.Export },
+  { title: 'Импорт', value: PROHIBITION_SCOPE.Import }
 ]
 
-export function getProhibitionScopeLabels(item) {
-  const labels = []
-  if (item?.forExport) labels.push('Экспорт из РФ')
-  if (item?.forImport) labels.push('Импорт в РФ')
-  return labels
+export function getProcedureTitle(customsProcedureCode) {
+  if (Number(customsProcedureCode) === 10) return 'Экспорт'
+  if (Number(customsProcedureCode) === 40) return 'Импорт'
+  return String(customsProcedureCode ?? '')
+}
+
+export function getProhibitionScopeRows(item, getCountryName = (code) => String(code ?? '')) {
+  return (item?.scopes || [])
+    .map((scope) => ({
+      key: `${scope.countryIsoNumeric}:${scope.customsProcedureCode}`,
+      countryIsoNumeric: scope.countryIsoNumeric,
+      country: getCountryName(scope.countryIsoNumeric),
+      customsProcedureCode: Number(scope.customsProcedureCode),
+      procedure: getProcedureTitle(scope.customsProcedureCode),
+      label: `${getCountryName(scope.countryIsoNumeric)} — ${getProcedureTitle(scope.customsProcedureCode)}`,
+      reason: scope.explanation || ''
+    }))
+    .sort(
+      (left, right) =>
+        left.country.localeCompare(right.country, 'ru') ||
+        left.customsProcedureCode - right.customsProcedureCode
+    )
+}
+
+export function getProhibitionScopeLabels(item, getCountryName) {
+  return getProhibitionScopeRows(item, getCountryName).map((row) => row.label)
 }
 
 export function getProhibitionScopeSortOrder(item) {
-  if (!item?.forImport && !item?.forExport) return 0
-  if (!item?.forImport && item?.forExport) return 1
-  if (item?.forImport && item?.forExport) return 2
-  return 3
-}
-
-export function getProhibitionScopeRows(item) {
-  const rows = []
-  if (item?.forExport) {
-    rows.push({
-      key: PROHIBITION_SCOPE.Export,
-      label: 'Экспорт из РФ',
-      reason: item.explanationForExport || ''
-    })
-  }
-  if (item?.forImport) {
-    rows.push({
-      key: PROHIBITION_SCOPE.Import,
-      label: 'Импорт в РФ',
-      reason: item.explanationForImport || ''
-    })
-  }
-  return rows
+  return (item?.scopes || [])
+    .map((scope) => `${String(scope.countryIsoNumeric).padStart(3, '0')}:${scope.customsProcedureCode}`)
+    .sort()
+    .join('|')
 }
 
 export function getProhibitionReasonLines(item) {
   return getProhibitionScopeRows(item)
     .map(row => row.reason)
     .filter(Boolean)
+}
+
+export function matchesProhibitionScope(item, procedureFilter, countryFilter) {
+  return (item?.scopes || []).some((scope) => {
+    const procedureMatches =
+      procedureFilter === PROHIBITION_SCOPE.All ||
+      (procedureFilter === PROHIBITION_SCOPE.Export && Number(scope.customsProcedureCode) === 10) ||
+      (procedureFilter === PROHIBITION_SCOPE.Import && Number(scope.customsProcedureCode) === 40)
+    const countryMatches =
+      countryFilter == null ||
+      countryFilter === PROHIBITION_SCOPE.All ||
+      Number(scope.countryIsoNumeric) === Number(countryFilter)
+    return procedureMatches && countryMatches
+  })
+}
+
+export function getRestrictionRouteScopeKeys(register) {
+  const otherCountry = Number(register?.theOtherCountryCode)
+  const procedure = Number(register?.customsProcedureCode)
+  if (!otherCountry) return []
+
+  if (procedure === 10 || procedure === 31) {
+    return [`643:10`, `${otherCountry}:40`]
+  }
+  if (procedure === 40 || procedure === 60) {
+    return [`${otherCountry}:10`, `643:40`]
+  }
+  return []
+}
+
+export function getApplicableScopeExplanations(item, register) {
+  const routeKeys = new Set(getRestrictionRouteScopeKeys(register))
+  return [...new Set(
+    (item?.scopes || [])
+      .filter((scope) =>
+        routeKeys.has(`${Number(scope.countryIsoNumeric)}:${Number(scope.customsProcedureCode)}`)
+      )
+      .map((scope) => scope.explanation?.trim())
+      .filter(Boolean)
+  )]
 }

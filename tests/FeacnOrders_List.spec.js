@@ -50,8 +50,8 @@ vi.mock('pinia', async () => {
 
 const mockFeacnOrdersStore = createMockStore({
   orders: ref([
-    { id: 1, title: 'Doc1', url: 'http://a', enabledForExport: true, enabledForImport: false },
-    { id: 2, title: 'Doc2', url: 'http://b', enabledForExport: false, enabledForImport: true }
+    { id: 1, title: 'Doc1', url: 'http://a', scopes: [{ countryIsoNumeric: 643, customsProcedureCode: 10, explanation: 'reason' }] },
+    { id: 2, title: 'Doc2', url: 'http://b', scopes: [{ countryIsoNumeric: 860, customsProcedureCode: 40, explanation: null }] }
   ]),
   prefixes: ref([]),
   loading: ref(false),
@@ -61,16 +61,15 @@ const mockFeacnOrdersStore = createMockStore({
   getPrefixes: vi.fn(),
   update: vi.fn(),
   ensureLoaded: vi.fn(),
-  toggleEnabledForExport: vi.fn().mockResolvedValue(),
-  toggleEnabledForImport: vi.fn().mockResolvedValue()
+  updateScopes: vi.fn().mockResolvedValue()
 })
 
 const mockAlertStore = createMockStore({
   alert: ref(null),
   loading: false,
-  error: null,
   success: vi.fn(),
-  clear: vi.fn()
+  clear: vi.fn(),
+  error: vi.fn()
 })
 
 const mockAuthStore = createMockStore({
@@ -102,6 +101,17 @@ vi.mock('@/stores/auth.store.js', () => ({
   useAuthStore: vi.fn(() => mockAuthStore)
 }))
 
+vi.mock('@/stores/countries.store.js', () => ({
+  useCountriesStore: () => ({
+    countries: ref([
+      { isoNumeric: 643, nameRuShort: 'Россия' },
+      { isoNumeric: 860, nameRuShort: 'Узбекистан' }
+    ]),
+    ensureLoaded: vi.fn().mockResolvedValue(undefined),
+    getCountryShortName: vi.fn((code) => Number(code) === 643 ? 'Россия' : 'Узбекистан')
+  })
+}))
+
 vi.mock('@/helpers/items.per.page.js', () => ({
   itemsPerPageOptions: [{ value: 10, title: '10' }]
 }))
@@ -111,9 +121,10 @@ const mountOptions = {
     stubs: {
       ...vuetifyStubs,
       ActionButton: {
-        template: '<button @click="$emit(\'click\')"><slot></slot></button>',
+        template: '<button @click="$emit(\'click\', item)"><slot></slot></button>',
         props: ['item', 'icon', 'tooltipText', 'disabled', 'iconSize']
-      }
+      },
+      FeacnOrderScopesDialog: true
     }
   }
 }
@@ -125,8 +136,8 @@ describe('FeacnOrders_List.vue', () => {
 
     vi.clearAllMocks()
     mockFeacnOrdersStore.orders.value = [
-      { id: 1, title: 'Doc1', url: 'http://a', enabledForExport: true, enabledForImport: false },
-      { id: 2, title: 'Doc2', url: 'http://b', enabledForExport: false, enabledForImport: true }
+      { id: 1, title: 'Doc1', url: 'http://a', scopes: [{ countryIsoNumeric: 643, customsProcedureCode: 10, explanation: 'reason' }] },
+      { id: 2, title: 'Doc2', url: 'http://b', scopes: [{ countryIsoNumeric: 860, customsProcedureCode: 40, explanation: null }] }
     ]
     mockFeacnOrdersStore.loading.value = false
     mockFeacnOrdersStore.error.value = null
@@ -168,32 +179,31 @@ describe('FeacnOrders_List.vue', () => {
     expect(wrapper.find('.header-actions .spinner-border').exists()).toBe(true)
   })
 
-  it('renders separate export and import toggle columns', () => {
+  it('renders scope summaries instead of Russian toggle columns', () => {
     const wrapper = mount(FeacnOrdersList, mountOptions)
     expect(wrapper.vm.orderHeaders.map((h) => h.title)).toEqual([
-      'Экспорт',
-      'Импорт',
+      'Области действия',
       'Нормативный документ',
       'Ссылка'
     ])
   })
 
-  it('toggles export flag through store', async () => {
+  it('opens the scope editor for administrators', async () => {
     mockAuthStore.isAdmin.value = true
     const wrapper = mount(FeacnOrdersList, mountOptions)
 
-    await wrapper.vm.handleToggleOrderEnabledForExport(mockFeacnOrdersStore.orders.value[0])
+    wrapper.vm.editOrderScopes(mockFeacnOrdersStore.orders.value[0])
 
-    expect(mockFeacnOrdersStore.toggleEnabledForExport).toHaveBeenCalledWith(1, false)
+    expect(wrapper.vm.scopeDialogOpen).toBe(true)
+    expect(wrapper.vm.scopeDialogOrder.id).toBe(1)
   })
 
-  it('toggles import flag through store', async () => {
-    mockAuthStore.isAdmin.value = true
+  it('does not open the scope editor for non-administrators', () => {
     const wrapper = mount(FeacnOrdersList, mountOptions)
 
-    await wrapper.vm.handleToggleOrderEnabledForImport(mockFeacnOrdersStore.orders.value[0])
+    wrapper.vm.editOrderScopes(mockFeacnOrdersStore.orders.value[0])
 
-    expect(mockFeacnOrdersStore.toggleEnabledForImport).toHaveBeenCalledWith(1, true)
+    expect(wrapper.vm.scopeDialogOpen).toBe(false)
   })
 
   describe('filterOrders function', () => {

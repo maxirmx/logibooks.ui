@@ -63,6 +63,34 @@ describe('feacn.orders store', () => {
     expect(store.error).toBeNull()
   })
 
+  it('fetches one order for route-based editing', async () => {
+    const mockOrder = {
+      id: 7,
+      title: 'Order 7',
+      scopes: [{ countryIsoNumeric: 643, customsProcedureCode: 10 }]
+    }
+    fetchWrapper.get.mockResolvedValue(mockOrder)
+
+    const store = useFeacnOrdersStore()
+    await expect(store.getById(7)).resolves.toEqual(mockOrder)
+
+    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/feacnorders/orders/7`)
+    expect(store.order).toEqual(mockOrder)
+    expect(store.loading).toBe(false)
+    expect(store.error).toBeNull()
+  })
+
+  it('rejects when one order cannot be loaded', async () => {
+    const error = new Error('order load failed')
+    fetchWrapper.get.mockRejectedValue(error)
+
+    const store = useFeacnOrdersStore()
+    await expect(store.getById(7)).rejects.toBe(error)
+
+    expect(store.error).toBe(error)
+    expect(store.loading).toBe(false)
+  })
+
   it('handles error when fetching prefixes', async () => {
     const testError = new Error('API error')
     fetchWrapper.get.mockRejectedValue(testError)
@@ -112,7 +140,7 @@ describe('feacn.orders store', () => {
   })
 
   it('replaces regulatory-order scopes and refreshes orders', async () => {
-    const scopes = [{ countryIsoNumeric: 860, customsProcedureCode: 40, explanation: 'Reason' }]
+    const scopes = [{ countryIsoNumeric: 860, customsProcedureCode: 40 }]
     fetchWrapper.put.mockResolvedValue({})
     fetchWrapper.get.mockResolvedValue([{ id: 9, scopes }])
 

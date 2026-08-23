@@ -125,7 +125,6 @@ export function getCheckStatusInfo(
 
   const matchedRules = [
     ...(item?.stopWordIds || []).map(id => stopWordsCollection.find(rule => rule.id === id)),
-    ...(item?.feacnOrderIds || []).map(id => feacnOrdersCollection.find(rule => rule.id === id)),
     ...(item?.feacnPrefixIds || []).map(id => feacnPrefixesCollection.find(rule => rule.id === id))
   ].filter(Boolean)
   const routeReasons = [...new Set(

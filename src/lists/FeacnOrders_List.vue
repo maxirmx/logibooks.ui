@@ -14,8 +14,8 @@ import ActionButton from '@/components/ActionButton.vue'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
 import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
-import FeacnOrderScopesDialog from '@/dialogs/FeacnOrderScopes_Dialog.vue'
 import { getProhibitionScopeRows } from '@/helpers/prohibition.scope.helpers.js'
+import router from '@/router'
 
 const feacnStore = useFeacnOrdersStore()
 const countriesStore = useCountriesStore()
@@ -24,8 +24,6 @@ const authStore = useAuthStore()
 
 const { orders, prefixes, loading } = storeToRefs(feacnStore)
 const runningAction = ref(false)
-const scopeDialogOpen = ref(false)
-const scopeDialogOrder = ref(null)
 const {
   feacnorders_search,
   feacnorders_sort_by,
@@ -112,7 +110,7 @@ function filterOrders(value, query, item) {
   const q = query.toString().toUpperCase()
   const i = item.raw
   const scopes = getProhibitionScopeRows(i, countriesStore.getCountryShortName)
-    .map((scope) => `${scope.label} ${scope.reason}`)
+    .map((scope) => scope.label)
     .join(' ')
   return (
     i.title.toUpperCase().includes(q) ||
@@ -141,12 +139,12 @@ const prefixItems = computed(() =>
 )
 
 const orderHeaders = [
-  { title: 'Правила применения', key: 'scopes', sortable: false, align: 'start' },
-  { title: 'Нормативный документ', key: 'title', align: 'start' },
-  { title: 'Ссылка', key: 'url', align: 'start' },
   ...(isAdmin.value
     ? [{ title: '', key: 'actions', sortable: false, align: 'center', width: '70px' }]
-    : [])
+    : []),
+  { title: 'Правила применения', key: 'scopes', sortable: false, align: 'start' },
+  { title: 'Нормативный документ', key: 'title', align: 'start' },
+  { title: 'Ссылка', key: 'url', align: 'start' }
 ]
 
 const prefixHeaders = [
@@ -157,11 +155,10 @@ const prefixHeaders = [
 
 function editOrderScopes(order) {
   if (!isAdmin.value || runningAction.value || loading.value) return
-  scopeDialogOrder.value = order
-  scopeDialogOpen.value = true
+  router.push(`/feacn/order/edit/${order.id}`)
 }
 
-defineExpose({ editOrderScopes, scopeDialogOpen, scopeDialogOrder, filterOrders, orderHeaders })
+defineExpose({ editOrderScopes, filterOrders, orderHeaders })
 </script>
 
 <template>
@@ -293,11 +290,6 @@ defineExpose({ editOrderScopes, scopeDialogOpen, scopeDialogOrder, filterOrders,
       </v-data-table>
     </v-card>
 
-    <FeacnOrderScopesDialog
-      v-model="scopeDialogOpen"
-      :order="scopeDialogOrder"
-      @saved="scopeDialogOrder = null"
-    />
   </div>
 </template>
 

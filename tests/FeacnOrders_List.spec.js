@@ -10,6 +10,12 @@ import { createPinia, setActivePinia } from 'pinia'
 import FeacnOrdersList from '@/lists/FeacnOrders_List.vue'
 import { vuetifyStubs, createMockStore } from './helpers/test-utils.js'
 
+const routerPush = vi.hoisted(() => vi.fn())
+
+vi.mock('@/router', () => ({
+  default: { push: routerPush }
+}))
+
 // Mock Pinia's storeToRefs to return the mock values
 vi.mock('pinia', async () => {
   const actual = await vi.importActual('pinia')
@@ -124,8 +130,7 @@ const mountOptions = {
         template: '<button @click="$emit(\'click\', item)"><slot></slot></button>',
         props: ['item', 'icon', 'tooltipText', 'disabled', 'iconSize'],
         emits: ['click']
-      },
-      FeacnOrderScopesDialog: true
+      }
     }
   }
 }
@@ -180,12 +185,16 @@ describe('FeacnOrders_List.vue', () => {
     expect(wrapper.find('.header-actions .spinner-border').exists()).toBe(true)
   })
 
-  it('renders scope summaries instead of Russian toggle columns', () => {
+
+  it('renders the administrator edit action in the leftmost column', () => {
+    mockAuthStore.isAdmin.value = true
     const wrapper = mount(FeacnOrdersList, mountOptions)
-    expect(wrapper.vm.orderHeaders.map((h) => h.title)).toEqual([
-      'Правила применения',
-      'Нормативный документ',
-      'Ссылка'
+
+    expect(wrapper.vm.orderHeaders.map((header) => header.key)).toEqual([
+      'actions',
+      'scopes',
+      'title',
+      'url'
     ])
   })
 
@@ -202,22 +211,21 @@ describe('FeacnOrders_List.vue', () => {
     expect(scopeCells[1].text()).toBe('Узбекистан — Импорт')
   })
 
-  it('opens the scope editor for administrators', async () => {
+  it('navigates administrators to the order settings route', async () => {
     mockAuthStore.isAdmin.value = true
     const wrapper = mount(FeacnOrdersList, mountOptions)
 
     await wrapper.findAll('[data-testid="edit-order-scopes"]')[0].trigger('click')
 
-    expect(wrapper.vm.scopeDialogOpen).toBe(true)
-    expect(wrapper.vm.scopeDialogOrder.id).toBe(1)
+    expect(routerPush).toHaveBeenCalledWith('/feacn/order/edit/1')
   })
 
-  it('does not open the scope editor for non-administrators', () => {
+  it('does not navigate non-administrators to order settings', () => {
     const wrapper = mount(FeacnOrdersList, mountOptions)
 
     wrapper.vm.editOrderScopes(mockFeacnOrdersStore.orders.value[0])
 
-    expect(wrapper.vm.scopeDialogOpen).toBe(false)
+    expect(routerPush).not.toHaveBeenCalled()
   })
 
   describe('filterOrders function', () => {

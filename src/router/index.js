@@ -378,6 +378,15 @@ const router = createRouter({
       meta: { reqAnyRole: true }
     },
     {
+      path: '/feacn/order/edit/:id',
+      name: 'Редактирование правил применения нормативного документа',
+      component: () => import('@/views/FeacnOrder_EditView.vue'),
+      props: (route) => ({
+        id: Number(route.params.id)
+      }),
+      meta: { reqAdmin: true }
+    },
+    {
       path: '/feacn/prefixes',
       name: 'Запреты по ТН ВЭД',
       component: () => import('@/views/FeacnLocalPrefixes_View.vue'),

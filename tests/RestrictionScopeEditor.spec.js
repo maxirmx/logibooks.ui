@@ -26,12 +26,13 @@ const ActionButtonStub = {
   ></button>`
 }
 
-function createWrapper(modelValue = [], disabled = false, errors = {}) {
+function createWrapper(modelValue = [], disabled = false, errors = {}, explanationsEnabled = true) {
   return mount(RestrictionScopeEditor, {
     props: {
       modelValue,
       disabled,
       errors,
+      explanationsEnabled,
       countries: [
         { isoNumeric: 643, isoAlpha2: 'RU', nameRuShort: 'Россия' },
         { isoNumeric: 860, isoAlpha2: 'UZ', nameRuShort: 'Узбекистан' }
@@ -84,6 +85,12 @@ describe('RestrictionScopeEditor', () => {
       'Процедура',
       'Причина ограничения'
     ])
+    expect(table.props('headers').map(({ width }) => width)).toEqual([
+      '64px',
+      '30%',
+      '20%',
+      undefined
+    ])
     expect(table.vm.$attrs.class).toContain('elevation-1 interlaced-table')
     expect(table.vm.$attrs).not.toHaveProperty('hide-default-header')
     expect(fields.every((field) => field.props('variant') === 'outlined')).toBe(true)
@@ -94,6 +101,27 @@ describe('RestrictionScopeEditor', () => {
     ])
     expect(wrapper.find('.scope-editor-heading .header-actions').exists()).toBe(true)
     expect(wrapper.find('.actions-container.scope-row-actions').exists()).toBe(true)
+  })
+
+  it('supports key-only scopes when explanations are disabled', async () => {
+    const existing = { countryIsoNumeric: 860, customsProcedureCode: 40 }
+    const wrapper = createWrapper([existing], false, {}, false)
+    const table = wrapper.findComponent(vuetifyStubs['v-data-table'])
+
+    expect(table.props('headers').map(({ key }) => key)).toEqual([
+      'actions',
+      'countryIsoNumeric',
+      'customsProcedureCode'
+    ])
+    expect(table.props('headers').map(({ width }) => width)).toEqual(['64px', '60%', '40%'])
+    expect(wrapper.findComponent({ name: 'VTextField' }).exists()).toBe(false)
+
+    await wrapper.get('[data-testid="add-restriction-scope"]').trigger('click')
+
+    expect(wrapper.emitted('update:modelValue')?.[0]).toEqual([[
+      existing,
+      { countryIsoNumeric: 643, customsProcedureCode: 10 }
+    ]])
   })
 
   it('updates country, procedure and explanation without mutating the input', async () => {

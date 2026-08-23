@@ -10,7 +10,8 @@ const props = defineProps({
   modelValue: { type: Array, default: () => [] },
   countries: { type: Array, default: () => [] },
   disabled: { type: Boolean, default: false },
-  errors: { type: Object, default: () => ({}) }
+  errors: { type: Object, default: () => ({}) },
+  explanationsEnabled: { type: Boolean, default: true }
 })
 
 const emit = defineEmits(['update:modelValue'])
@@ -22,12 +23,24 @@ const procedureItems = [
   { title: 'Импорт', value: 40 }
 ]
 
-const headers = [
+const headers = computed(() => [
   { title: '', key: 'actions', sortable: false, width: '64px', align: 'center' },
-  { title: 'Страна', key: 'countryIsoNumeric', sortable: false, width: '30%' },
-  { title: 'Процедура', key: 'customsProcedureCode', sortable: false, width: '20%' },
-  { title: 'Причина ограничения', key: 'explanation', sortable: false }
-]
+  {
+    title: 'Страна',
+    key: 'countryIsoNumeric',
+    sortable: false,
+    width: props.explanationsEnabled ? '30%' : '60%'
+  },
+  {
+    title: 'Процедура',
+    key: 'customsProcedureCode',
+    sortable: false,
+    width: props.explanationsEnabled ? '20%' : '40%'
+  },
+  ...(props.explanationsEnabled
+    ? [{ title: 'Причина ограничения', key: 'explanation', sortable: false }]
+    : [])
+])
 
 const countryItems = computed(() =>
   props.countries.map((country) => ({
@@ -52,9 +65,14 @@ function updateScope(index, field, value) {
 }
 
 function addScope() {
+  const scope = {
+    countryIsoNumeric: RUSSIA_ISO_NUMERIC,
+    customsProcedureCode: 10
+  }
+  if (props.explanationsEnabled) scope.explanation = ''
   emit('update:modelValue', [
     ...props.modelValue.map((scope) => ({ ...scope })),
-    { countryIsoNumeric: RUSSIA_ISO_NUMERIC, customsProcedureCode: 10, explanation: '' }
+    scope
   ])
 }
 
@@ -240,7 +258,7 @@ defineExpose({
           </div>
         </template>
 
-        <template #[`item.explanation`]="{ item }">
+        <template v-if="explanationsEnabled" #[`item.explanation`]="{ item }">
           <v-text-field
             :model-value="item.explanation"
             aria-label="Причина ограничения"
@@ -322,6 +340,9 @@ defineExpose({
 
 .restriction-scope-table :deep(th:first-child),
 .restriction-scope-table :deep(td:first-child) {
+  width: 64px !important;
+  min-width: 64px !important;
+  max-width: 64px !important;
   padding-left: 0.25rem !important;
   padding-right: 0.25rem !important;
 }

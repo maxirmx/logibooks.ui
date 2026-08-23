@@ -357,6 +357,55 @@ describe('parcels.check.helpers', () => {
         "Ограничения по коду ТН ВЭД (установлено вручную): '1234'; Prefix comment"
       )
     })
+
+    it('keeps FEACN order comments and excludes arbitrary order-scope explanations', () => {
+      const register = { theOtherCountryCode: 860, customsProcedureCode: 10 }
+      const orders = [
+        {
+          id: 10,
+          comment: 'Imported order comment',
+          scopes: [
+            {
+              countryIsoNumeric: 643,
+              customsProcedureCode: 10,
+              explanation: 'Arbitrary order reason'
+            }
+          ]
+        }
+      ]
+      const stopWords = [
+        {
+          id: 20,
+          word: 'blocked',
+          scopes: [
+            { countryIsoNumeric: 643, customsProcedureCode: 10, explanation: 'Stop reason' }
+          ]
+        }
+      ]
+      const prefixes = [
+        {
+          id: 30,
+          code: '1234',
+          scopes: [
+            { countryIsoNumeric: 860, customsProcedureCode: 40, explanation: 'Prefix reason' }
+          ]
+        }
+      ]
+
+      const result = getCheckStatusInfo(
+        { feacnOrderIds: [10], stopWordIds: [20], feacnPrefixIds: [30] },
+        orders,
+        stopWords,
+        prefixes,
+        register
+      )
+
+      expect(result).toContain("Ограничения по коду ТН ВЭД (постановление): 'Imported order comment'")
+      expect(result).toContain('Stop reason')
+      expect(result).toContain('Prefix reason')
+      expect(result).not.toContain('Arbitrary order reason')
+      expect(result.match(/Imported order comment/g)).toHaveLength(1)
+    })
   })
 
   describe('Status Check Functions', () => {

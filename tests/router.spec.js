@@ -622,6 +622,18 @@ describe('router guards', () => {
     })
   })
 
+  describe('FEACN order routes', () => {
+    it('exposes an administrator-only route with a numeric order id', () => {
+      const routes = router.getRoutes()
+      const list = routes.find((route) => route.path === '/feacn/orders')
+      const edit = routes.find((route) => route.path === '/feacn/order/edit/:id')
+
+      expect(list?.meta.reqAnyRole).toBe(true)
+      expect(edit?.meta.reqAdmin).toBe(true)
+      expect(edit?.props.default({ params: { id: '42' } })).toEqual({ id: 42 })
+    })
+  })
+
   describe('customs station routes', () => {
     it('exposes the role-protected list and mutation routes', () => {
       const routes = router.getRoutes()

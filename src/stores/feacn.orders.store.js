@@ -11,6 +11,7 @@ const baseUrl = `${apiUrl}/feacnorders`
 
 export const useFeacnOrdersStore = defineStore('feacn.orders', () => {
   const orders = ref([])
+  const order = ref(null)
   const prefixes = ref([])
   const loading = ref(false)
   const error = ref(null)
@@ -53,6 +54,21 @@ export const useFeacnOrdersStore = defineStore('feacn.orders', () => {
     }
   }
 
+  async function getById(orderId) {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await fetchWrapper.get(`${baseUrl}/orders/${orderId}`)
+      order.value = response
+      return response
+    } catch (err) {
+      error.value = err
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function update() {
     loading.value = true
     error.value = null
@@ -84,11 +100,13 @@ export const useFeacnOrdersStore = defineStore('feacn.orders', () => {
 
   return {
     orders,
+    order,
     prefixes,
     loading,
     error,
     isInitialized,
     getOrders,
+    getById,
     getPrefixes,
     update,
     updateScopes,

@@ -157,7 +157,7 @@ function getRegisterStatusTitle(item) {
 </script>
 
 <template>
-  <v-card class="table-card">
+  <v-card class="table-card customs-processing-registers-table-card">
     <v-data-table-server
       v-model:items-per-page="itemsPerPageModel"
       :items-per-page-text="`${registerNouns.genitivePluralCapitalized} на странице`"
@@ -450,6 +450,17 @@ function getRegisterStatusTitle(item) {
 </template>
 
 <style scoped>
+.customs-processing-registers-table-card.table-card {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.customs-processing-registers-table-card.table-card :deep(.v-table__wrapper) {
+  overflow-x: auto;
+}
+
 .arrow-icon {
   opacity: 0.8;
 }

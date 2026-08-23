@@ -132,6 +132,12 @@ function mountTable(props = {}) {
 }
 
 describe('WarehouseRegistersTable matching-count column', () => {
+  it('uses a viewport-bound card for the horizontally scrollable table', () => {
+    const wrapper = mountTable()
+
+    expect(wrapper.get('.warehouse-registers-table-card').exists()).toBe(true)
+  })
+
   it('does not add the matching-count header for the normal warehouse list', () => {
     const headers = createWarehouseRegisterHeaders({ showActions: true, selectable: false })
 

@@ -167,6 +167,12 @@ function mountTable(props = {}) {
 }
 
 describe('CustomsProcessingRegistersTable', () => {
+  it('uses a viewport-bound card for the horizontally scrollable table', () => {
+    const wrapper = mountTable()
+
+    expect(wrapper.get('.customs-processing-registers-table-card').exists()).toBe(true)
+  })
+
   it('renders extracted customs-processing register headers and status icon', () => {
     const wrapper = mountTable({
       items: [{ id: 1, statusId: 2 }]

@@ -153,9 +153,15 @@ const prefixHeaders = [
   { title: 'Исключения', key: 'exceptions', align: 'start' }
 ]
 
-function editOrderScopes(order) {
+async function editOrderScopes(order) {
   if (!isAdmin.value || runningAction.value || loading.value) return
-  router.push(`/feacn/order/edit/${order.id}`)
+  try {
+    await router.push(`/feacn/order/edit/${order.id}`)
+  } catch (error) {
+    alertStore.error(error, {
+      fallback: 'Не удалось открыть правила применения нормативного документа'
+    })
+  }
 }
 
 defineExpose({ editOrderScopes, filterOrders, orderHeaders })

@@ -77,24 +77,35 @@ async function initialize() {
 async function save() {
   if (loading.value || saving.value || !order.value || validationError.value) return
   saving.value = true
+  let scopesSaved = false
   try {
     const payload = scopes.value.map((scope) => ({
       countryIsoNumeric: Number(scope.countryIsoNumeric),
       customsProcedureCode: Number(scope.customsProcedureCode)
     }))
     await feacnStore.updateScopes(props.orderId, payload)
+    scopesSaved = true
     await router.push('/feacn/orders')
   } catch (error) {
     alertStore.error(error, {
-      fallback: 'Не удалось сохранить правила применения нормативного документа'
+      fallback: scopesSaved
+        ? 'Правила сохранены, но не удалось вернуться к списку нормативных документов'
+        : 'Не удалось сохранить правила применения нормативного документа'
     })
   } finally {
     saving.value = false
   }
 }
 
-function cancel() {
-  if (!loading.value && !saving.value) router.push('/feacn/orders')
+async function cancel() {
+  if (loading.value || saving.value) return
+  try {
+    await router.push('/feacn/orders')
+  } catch (error) {
+    alertStore.error(error, {
+      fallback: 'Не удалось вернуться к списку нормативных документов'
+    })
+  }
 }
 
 onMounted(initialize)

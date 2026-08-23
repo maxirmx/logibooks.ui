@@ -4,8 +4,8 @@
 // This file is a part of Logibooks ui application
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
-import { ref } from 'vue'
+import { flushPromises, mount } from '@vue/test-utils'
+import { reactive, ref } from 'vue'
 import { createPinia, setActivePinia } from 'pinia'
 import FeacnOrdersList from '@/lists/FeacnOrders_List.vue'
 import { vuetifyStubs, createMockStore } from './helpers/test-utils.js'
@@ -70,13 +70,19 @@ const mockFeacnOrdersStore = createMockStore({
   updateScopes: vi.fn().mockResolvedValue()
 })
 
-const mockAlertStore = createMockStore({
-  alert: ref(null),
+const mockAlertStore = reactive(createMockStore({
+  alert: null,
   loading: false,
   success: vi.fn(),
   clear: vi.fn(),
-  error: vi.fn()
-})
+  error: vi.fn((value, options = {}) => {
+    mockAlertStore.alert = {
+      id: 1,
+      severity: 'error',
+      message: value?.message || options.fallback || String(value)
+    }
+  })
+}))
 
 const mockAuthStore = createMockStore({
   feacnorders_per_page: ref(10),
@@ -150,6 +156,8 @@ describe('FeacnOrders_List.vue', () => {
     mockFeacnOrdersStore.prefixes.value = []
     mockAuthStore.feacnorders_search.value = ''
     mockAuthStore.isAdmin.value = false
+    mockAlertStore.alert = null
+    routerPush.mockResolvedValue()
   })
 
   it('calls ensureLoaded on mount', () => {
@@ -218,6 +226,20 @@ describe('FeacnOrders_List.vue', () => {
     await wrapper.findAll('[data-testid="edit-order-scopes"]')[0].trigger('click')
 
     expect(routerPush).toHaveBeenCalledWith('/feacn/order/edit/1')
+  })
+
+  it('shows a page-level error when opening the order settings route fails', async () => {
+    mockAuthStore.isAdmin.value = true
+    routerPush.mockRejectedValueOnce({})
+    const wrapper = mount(FeacnOrdersList, mountOptions)
+
+    await wrapper.findAll('[data-testid="edit-order-scopes"]')[0].trigger('click')
+    await flushPromises()
+
+    expect(mockAlertStore.error).toHaveBeenCalledOnce()
+    expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain(
+      'Не удалось открыть правила применения нормативного документа'
+    )
   })
 
   it('does not navigate non-administrators to order settings', () => {

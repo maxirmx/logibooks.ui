@@ -5,13 +5,14 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
 import FeacnOrderSettings from '@/dialogs/FeacnOrder_Settings.vue'
+import { useAlertStore } from '@/stores/alert.store.js'
 
 const mocks = vi.hoisted(() => ({
   getById: vi.fn(),
   updateScopes: vi.fn(),
   ensureCountriesLoaded: vi.fn(),
-  alertError: vi.fn(),
   routerPush: vi.fn(),
   countries: [
     { isoNumeric: 643, nameRuShort: 'Россия' },
@@ -33,13 +34,11 @@ vi.mock('@/stores/countries.store.js', () => ({
   })
 }))
 
-vi.mock('@/stores/alert.store.js', () => ({
-  useAlertStore: () => ({ error: mocks.alertError })
-}))
-
 vi.mock('@/router', () => ({
   default: { push: mocks.routerPush }
 }))
+
+let pinia
 
 const order = {
   id: 7,
@@ -57,8 +56,8 @@ function createWrapper() {
   return mount(FeacnOrderSettings, {
     props: { orderId: 7 },
     global: {
+      plugins: [pinia],
       stubs: {
-        PageAlertRegion: true,
         ActionButton: {
           name: 'ActionButton',
           props: ['item', 'icon', 'iconSize', 'tooltipText', 'disabled'],
@@ -84,6 +83,8 @@ function createWrapper() {
 
 describe('FeacnOrder_Settings', () => {
   beforeEach(() => {
+    pinia = createPinia()
+    setActivePinia(pinia)
     vi.clearAllMocks()
     mocks.getById.mockResolvedValue(order)
     mocks.ensureCountriesLoaded.mockResolvedValue()
@@ -163,6 +164,7 @@ describe('FeacnOrder_Settings', () => {
   it('reports a rejected save once, preserves values and stays on the page', async () => {
     const error = new Error('save failed')
     mocks.updateScopes.mockRejectedValue(error)
+    const alertError = vi.spyOn(useAlertStore(), 'error')
     const wrapper = createWrapper()
     await flushPromises()
     const submitted = [{ countryIsoNumeric: 860, customsProcedureCode: 40 }]
@@ -170,10 +172,11 @@ describe('FeacnOrder_Settings', () => {
 
     await wrapper.vm.save()
 
-    expect(mocks.alertError).toHaveBeenCalledOnce()
-    expect(mocks.alertError).toHaveBeenCalledWith(error, {
+    expect(alertError).toHaveBeenCalledOnce()
+    expect(alertError).toHaveBeenCalledWith(error, {
       fallback: 'Не удалось сохранить правила применения нормативного документа'
     })
+    expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain('save failed')
     expect(wrapper.vm.scopes).toEqual(submitted)
     expect(mocks.routerPush).not.toHaveBeenCalled()
   })
@@ -181,11 +184,14 @@ describe('FeacnOrder_Settings', () => {
   it('offers a retry after a rejected load', async () => {
     const error = new Error('load failed')
     mocks.getById.mockRejectedValueOnce(error)
+    const alertStore = useAlertStore()
+    const alertError = vi.spyOn(alertStore, 'error')
     const wrapper = createWrapper()
     await flushPromises()
 
-    expect(mocks.alertError).toHaveBeenCalledOnce()
-    const options = mocks.alertError.mock.calls[0][1]
+    expect(alertError).toHaveBeenCalledOnce()
+    expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain('load failed')
+    const options = alertError.mock.calls[0][1]
     expect(options.fallback).toBe('Не удалось загрузить правила применения нормативного документа')
 
     await options.action.handler()
@@ -199,8 +205,35 @@ describe('FeacnOrder_Settings', () => {
     const wrapper = createWrapper()
     await flushPromises()
 
-    wrapper.vm.cancel()
+    await wrapper.vm.cancel()
 
     expect(mocks.routerPush).toHaveBeenCalledWith('/feacn/orders')
+  })
+
+  it('shows a page-level error when cancel navigation fails', async () => {
+    mocks.routerPush.mockRejectedValueOnce({})
+    const wrapper = createWrapper()
+    await flushPromises()
+
+    await wrapper.vm.cancel()
+
+    expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain(
+      'Не удалось вернуться к списку нормативных документов'
+    )
+    expect(wrapper.get('[data-testid="feacn-order-settings"]').exists()).toBe(true)
+  })
+
+  it('reports a failed post-save navigation without repeating the save', async () => {
+    mocks.routerPush.mockRejectedValueOnce({})
+    const wrapper = createWrapper()
+    await flushPromises()
+
+    await wrapper.vm.save()
+
+    expect(mocks.updateScopes).toHaveBeenCalledOnce()
+    expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain(
+      'Правила сохранены, но не удалось вернуться к списку нормативных документов'
+    )
+    expect(wrapper.get('[data-testid="feacn-order-settings"]').exists()).toBe(true)
   })
 })

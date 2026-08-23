@@ -7,6 +7,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { ref } from 'vue'
 import RegistersWhList from '@/lists/Registers_WhList.vue'
+import ResponsiveFilterBar from '@/components/ResponsiveFilterBar.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import ActionButton2L from '@/components/ActionButton2L.vue'
 import { vuetifyStubs } from './helpers/test-utils.js'
@@ -635,6 +636,8 @@ describe('Registers_WhList.vue', () => {
     await flushPromises()
 
     const filters = wrapper.find('.registers-filter-row')
+    expect(wrapper.findComponent(ResponsiveFilterBar).exists()).toBe(true)
+    expect(filters.attributes('aria-label')).toBe('Фильтры реестров')
     const selectors = filters.findAll('[data-testid="v-select"]')
     expect(selectors).toHaveLength(2)
     expect(filters.find('[data-testid="v-text-field"]').exists()).toBe(true)

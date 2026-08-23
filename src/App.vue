@@ -317,18 +317,27 @@ function getUserName() {
       </template>
     </v-navigation-drawer>
 
-    <v-main class="d-flex align-center justify-center vvv">
-      <RouterView />
-      <PageAlertRegion fallback />
+    <v-main class="app-main">
+      <div class="app-page-shell">
+        <RouterView />
+        <PageAlertRegion fallback />
+      </div>
     </v-main>
   </v-app>
 </template>
 
 <style scoped>
-.vvv {
-  width: 96.5vw;
-  margin: 1rem;
-  min-width: 480px;
+.app-main {
+  width: auto;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.app-page-shell {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  padding: clamp(0.75rem, 2vw, 2rem);
 }
 
 .logo {

@@ -7,6 +7,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { ref } from 'vue'
 import RegistersList from '@/lists/Registers_List.vue'
+import ResponsiveFilterBar from '@/components/ResponsiveFilterBar.vue'
 import {
   OZON_COMPANY_ID,
   WBR_COMPANY_ID,
@@ -1375,6 +1376,8 @@ describe('Registers_List.vue', () => {
       await flushPromises()
 
       const filters = wrapper.find('.registers-filter-row')
+      expect(wrapper.findComponent(ResponsiveFilterBar).exists()).toBe(true)
+      expect(filters.attributes('aria-label')).toBe('Фильтры реестров')
       const selectors = filters.findAll('[data-testid="v-select"]')
       expect(selectors).toHaveLength(2)
       expect(filters.find('[data-testid="v-text-field"]').exists()).toBe(true)

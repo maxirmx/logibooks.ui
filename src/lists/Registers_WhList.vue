@@ -41,6 +41,7 @@ import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync.js'
 import ActionButton from '@/components/ActionButton.vue'
 import WarehouseRegistersTable from '@/components/WarehouseRegistersTable.vue'
 import RegisterStatusSelect from '@/components/RegisterStatusSelect.vue'
+import ResponsiveFilterBar from '@/components/ResponsiveFilterBar.vue'
 import ParcelStatusBulkChangeDialog from '@/l2/ParcelStatusBulkChangeDialog.vue'
 
 const registersStore = useRegistersStore()
@@ -338,7 +339,7 @@ defineExpose({
 
     <PageAlertRegion />
 
-    <div class="registers-filter-row">
+    <ResponsiveFilterBar class="registers-filter-row" aria-label="Фильтры реестров">
       <v-select
         v-model="localProcedure"
         :items="procedureFilterItems"
@@ -347,7 +348,7 @@ defineExpose({
         hide-details
         :loading="loading || isInitializing"
         :disabled="runningAction || isInitializing"
-        class="procedure-filter"
+        class="procedure-filter responsive-filter-bar__item--compact"
       />
       <RegisterStatusSelect
         v-model="localStatus"
@@ -357,7 +358,7 @@ defineExpose({
         hide-details
         :loading="loading || isInitializing"
         :disabled="runningAction || isInitializing"
-        class="status-filter"
+        class="status-filter responsive-filter-bar__item--regular"
       />
       <v-text-field
         v-model="localSearch"
@@ -367,8 +368,9 @@ defineExpose({
         hide-details
         :loading="loading || isInitializing"
         :disabled="runningAction || isInitializing"
+        class="responsive-filter-bar__item--regular responsive-filter-bar__item--grow"
       />
-    </div>
+    </ResponsiveFilterBar>
 
     <WarehouseRegistersTable
       v-model:items-per-page="registers_per_page"
@@ -417,51 +419,11 @@ defineExpose({
 <style scoped>
 @import '@/assets/styles/scrollable-table.css';
 
-.registers-filter-row {
-  display: flex;
-  gap: 12px;
-  align-items: stretch;
-}
-
-.registers-filter-row .v-text-field-stub,
-.registers-filter-row :deep(.v-text-field) {
-  flex: 1 1 auto;
-}
-
-.procedure-filter {
-  flex: 0 0 220px !important;
-  width: 220px;
-  max-width: 220px;
-  min-width: 220px;
-}
-
-.status-filter {
-  flex: 0 0 320px !important;
-  width: 320px;
-  max-width: 320px;
-  min-width: 320px;
-}
-
-.procedure-filter :deep(.v-field__input),
-.status-filter :deep(.v-field__input) {
+.registers-filter-row :deep(.v-field__input) {
   min-width: 0;
 }
 
-.status-filter :deep(.v-label.v-field-label--floating) {
+.registers-filter-row :deep(.status-filter .v-label.v-field-label--floating) {
   margin-inline-start: calc(var(--v-field-padding-start) + 36px);
-}
-
-@media (max-width: 700px) {
-  .registers-filter-row {
-    flex-direction: column;
-  }
-
-  .procedure-filter,
-  .status-filter {
-    flex: 0 1 auto !important;
-    width: 100%;
-    max-width: none;
-    min-width: 0;
-  }
 }
 </style>

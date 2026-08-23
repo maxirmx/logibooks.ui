@@ -138,6 +138,13 @@ describe('App exchange rates display', () => {
     )
   })
 
+  it('renders route content inside the responsive page shell', () => {
+    const wrapper = mountApp()
+
+    expect(wrapper.get('main').classes()).toContain('app-main')
+    expect(wrapper.get('.app-page-shell').exists()).toBe(true)
+  })
+
   it('shows rates when API returns date-only values for today', async () => {
     vi.useFakeTimers()
     const today = new Date(2024, 5, 24, 12, 0, 0)

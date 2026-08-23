@@ -122,7 +122,8 @@ const mountOptions = {
       ...vuetifyStubs,
       ActionButton: {
         template: '<button @click="$emit(\'click\', item)"><slot></slot></button>',
-        props: ['item', 'icon', 'tooltipText', 'disabled', 'iconSize']
+        props: ['item', 'icon', 'tooltipText', 'disabled', 'iconSize'],
+        emits: ['click']
       },
       FeacnOrderScopesDialog: true
     }
@@ -182,17 +183,30 @@ describe('FeacnOrders_List.vue', () => {
   it('renders scope summaries instead of Russian toggle columns', () => {
     const wrapper = mount(FeacnOrdersList, mountOptions)
     expect(wrapper.vm.orderHeaders.map((h) => h.title)).toEqual([
-      'Области действия',
+      'Правила применения',
       'Нормативный документ',
       'Ссылка'
     ])
+  })
+
+  it('renders scope labels without explanations or bold emphasis', () => {
+    const wrapper = mount(FeacnOrdersList, mountOptions)
+    const scopeCells = wrapper
+      .findAll('[data-testid="v-data-table"]')[0]
+      .findAll('.v-data-table-row')
+      .map((row) => row.findAll('.v-data-table-cell')[0])
+
+    expect(scopeCells[0].text()).toBe('Россия — Экспорт')
+    expect(scopeCells[0].text()).not.toContain('reason')
+    expect(scopeCells[0].find('strong').exists()).toBe(false)
+    expect(scopeCells[1].text()).toBe('Узбекистан — Импорт')
   })
 
   it('opens the scope editor for administrators', async () => {
     mockAuthStore.isAdmin.value = true
     const wrapper = mount(FeacnOrdersList, mountOptions)
 
-    wrapper.vm.editOrderScopes(mockFeacnOrdersStore.orders.value[0])
+    await wrapper.findAll('[data-testid="edit-order-scopes"]')[0].trigger('click')
 
     expect(wrapper.vm.scopeDialogOpen).toBe(true)
     expect(wrapper.vm.scopeDialogOrder.id).toBe(1)

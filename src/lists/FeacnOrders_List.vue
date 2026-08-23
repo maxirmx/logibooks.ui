@@ -141,7 +141,7 @@ const prefixItems = computed(() =>
 )
 
 const orderHeaders = [
-  { title: 'Области действия', key: 'scopes', sortable: false, align: 'start' },
+  { title: 'Правила применения', key: 'scopes', sortable: false, align: 'start' },
   { title: 'Нормативный документ', key: 'title', align: 'start' },
   { title: 'Ссылка', key: 'url', align: 'start' },
   ...(isAdmin.value
@@ -226,22 +226,22 @@ defineExpose({ editOrderScopes, scopeDialogOpen, scopeDialogOrder, filterOrders,
               :key="scope.key"
               class="scope-summary-line"
             >
-              <strong>{{ scope.label }}</strong>
-              <template v-if="scope.reason"> — {{ scope.reason }}</template>
+              {{ scope.label }}
             </span>
           </span>
           <span v-else>Неактивно</span>
         </template>
         <template #[`item.actions`]="{ item }">
-          <ActionButton
-            v-if="isAdmin"
-            :item="item"
-            icon="fa-solid fa-pen"
-            tooltip-text="Изменить области действия"
-            :disabled="runningAction || loading"
-            data-testid="edit-order-scopes"
-            @click.stop="editOrderScopes"
-          />
+          <span v-if="isAdmin" @click.stop>
+            <ActionButton
+              :item="item"
+              icon="fa-solid fa-pen"
+              tooltip-text="Изменить области действия"
+              :disabled="runningAction || loading"
+              data-testid="edit-order-scopes"
+              @click="editOrderScopes"
+            />
+          </span>
         </template>
         <template #[`item.url`]="{ item }">
           <a

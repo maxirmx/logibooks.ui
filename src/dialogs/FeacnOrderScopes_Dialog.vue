@@ -97,9 +97,9 @@ defineExpose({ scopes, validationError, save, close })
     :width="APP_DIALOG_SIZES.workflow"
     :max-width="APP_DIALOG_MAX_WIDTH"
     persistent
-    aria-label="Области действия нормативного документа"
+    aria-label="Правила применения нормативного документа"
   >
-    <AppDialogFrame :title="`Области действия: ${order?.title || ''}`">
+    <AppDialogFrame :title="`${order?.title || ''}`">
       <PageAlertRegion />
       <RestrictionScopeEditor
         v-model="scopes"

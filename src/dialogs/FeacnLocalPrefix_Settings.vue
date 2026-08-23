@@ -135,7 +135,7 @@ const lastFocusedElement = ref(null)
 const lastExceptionSearchIndex = ref(null)
 
 const searchActive = computed(() => codeSearchActive.value || exceptionSearchIndex.value !== null)
-const saveDisabled = computed(() => saving.value || searchActive.value)
+const saveDisabled = computed(() => loading.value || saving.value || searchActive.value)
 
 function toggleCodeSearch() {
   if (!codeSearchActive.value) {
@@ -282,9 +282,31 @@ function cancel() {
 
 <template>
   <div class="settings form-3">
-    <h1 class="primary-heading">
-      {{ isCreate ? 'Создание префикса ТН ВЭД' : 'Редактирование префикса ТН ВЭД' }}
-    </h1>
+    <div class="header-with-actions">
+      <h1 class="primary-heading">
+        {{ isCreate ? 'Создание префикса ТН ВЭД' : 'Редактирование префикса ТН ВЭД' }}
+      </h1>
+      <div class="header-actions">
+        <ActionButton
+          :item="null"
+          icon="fa-solid fa-check-double"
+          icon-size="2x"
+          :tooltip-text="isCreate ? 'Создать' : 'Сохранить'"
+          :disabled="saveDisabled"
+          data-testid="feacn-prefix-save-action"
+          @click="onSubmit"
+        />
+        <ActionButton
+          :item="{}"
+          icon="fa-solid fa-xmark"
+          icon-size="2x"
+          tooltip-text="Отменить"
+          :disabled="loading || saving || searchActive"
+          data-testid="feacn-prefix-cancel-action"
+          @click="cancel"
+        />
+      </div>
+    </div>
     <hr class="hr" />
 
     <PageAlertRegion />
@@ -315,6 +337,7 @@ function cancel() {
             class="ml-2 mr-2"
             :tooltip-text="codeSearchActive ? 'Скрыть дерево кодов' : 'Выбрать код'"
             :disabled="false"
+            data-testid="feacn-code-search-action"
           />
           <div v-if="errors.code" class="invalid-feedback">{{ errors.code }}</div>
           <FeacnCodeSearch
@@ -378,18 +401,6 @@ function cancel() {
         />
       </div>
       <div v-if="errors.exceptions" class="invalid-feedback">{{ errors.exceptions }}</div>
-
-      <div class="form-group mt-8">
-        <button class="button primary" type="submit" :disabled="saveDisabled">
-          <span v-show="saving" class="spinner-border spinner-border-sm mr-1"></span>
-          <font-awesome-icon size="1x" icon="fa-solid fa-check-double" class="mr-1" />
-          {{ isCreate ? 'Создать' : 'Сохранить' }}
-        </button>
-        <button class="button secondary" type="button" @click="cancel" :disabled="searchActive">
-          <font-awesome-icon size="1x" icon="fa-solid fa-xmark" class="mr-1" />
-          Отменить
-        </button>
-      </div>
     </form>
   </div>
 </template>

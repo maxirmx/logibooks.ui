@@ -5,6 +5,7 @@
 import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import RestrictionScopeEditor from '@/components/RestrictionScopeEditor.vue'
+import { vuetifyStubs } from './helpers/test-utils.js'
 
 const FieldStub = (name, className) => ({
   name,
@@ -16,9 +17,13 @@ const FieldStub = (name, className) => ({
 
 const ActionButtonStub = {
   name: 'ActionButton',
-  props: ['item', 'disabled'],
+  props: ['item', 'disabled', 'icon', 'tooltipText'],
   emits: ['click'],
-  template: '<button class="remove-scope" :disabled="disabled" @click="$emit(\'click\', item)"></button>'
+  template: `<button
+    :class="{ 'remove-scope': icon.includes('trash') }"
+    :disabled="disabled"
+    @click="$emit('click', item)"
+  ></button>`
 }
 
 function createWrapper(modelValue = [], disabled = false, errors = {}) {
@@ -38,6 +43,7 @@ function createWrapper(modelValue = [], disabled = false, errors = {}) {
         'v-autocomplete': FieldStub('VAutocomplete', 'country-field'),
         'v-select': FieldStub('VSelect', 'procedure-field'),
         'v-text-field': FieldStub('VTextField', 'explanation-field'),
+        'v-data-table': vuetifyStubs['v-data-table'],
         ActionButton: ActionButtonStub
       }
     }
@@ -48,6 +54,11 @@ describe('RestrictionScopeEditor', () => {
   it('renders an inactive message and adds a complete draft scope', async () => {
     const wrapper = createWrapper()
 
+    expect(wrapper.find('[data-testid="v-data-table"]').exists()).toBe(true)
+    expect(wrapper.text()).toContain('Правила применения')
+    expect(wrapper.getComponent({ name: 'ActionButton' }).props('tooltipText')).toBe(
+      'Добавить правило'
+    )
     expect(wrapper.text()).toContain('Ограничение неактивно')
     await wrapper.get('[data-testid="add-restriction-scope"]').trigger('click')
 
@@ -81,6 +92,12 @@ describe('RestrictionScopeEditor', () => {
     const wrapper = createWrapper(scopes)
 
     expect(wrapper.findAll('.scope-error')).toHaveLength(2)
+    expect(
+      wrapper
+        .findAllComponents({ name: 'ActionButton' })
+        .filter((button) => button.props('icon').includes('trash'))
+        .every((button) => button.props('tooltipText') === 'Удалить правило')
+    ).toBe(true)
     await wrapper.findAll('.remove-scope')[1].trigger('click')
 
     expect(wrapper.emitted('update:modelValue')?.[0]).toEqual([[

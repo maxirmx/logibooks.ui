@@ -18,6 +18,7 @@ import { useCountriesStore } from '@/stores/countries.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { storeToRefs } from 'pinia'
 import RestrictionScopeEditor from '@/components/RestrictionScopeEditor.vue'
+import ActionButton from '@/components/ActionButton.vue'
 import {
   isMatchTypeDisabled,
   createMatchTypeValidationTest
@@ -192,10 +193,32 @@ defineExpose({
 </script>
 
 <template>
-  <div class="settings form-2">
-    <h1 class="primary-heading">
-      {{ isEdit ? 'Редактировать стоп-слово или фразу' : 'Регистрация стоп слова или фразы' }}
-    </h1>
+  <div class="settings form-3">
+    <div class="header-with-actions">
+      <h1 class="primary-heading">
+        {{ isEdit ? 'Редактировать стоп-слово или фразу' : 'Регистрация стоп слова или фразы' }}
+      </h1>
+      <div class="header-actions">
+        <ActionButton
+          :item="null"
+          icon="fa-solid fa-check-double"
+          icon-size="2x"
+          tooltip-text="Сохранить"
+          :disabled="loading || saving"
+          data-testid="stopword-save-action"
+          @click="onSubmit"
+        />
+        <ActionButton
+          :item="{}"
+          icon="fa-solid fa-xmark"
+          icon-size="2x"
+          tooltip-text="Отменить"
+          :disabled="loading || saving"
+          data-testid="stopword-cancel-action"
+          @click="cancel"
+        />
+      </div>
+    </div>
     <hr class="hr" />
 
     <PageAlertRegion />
@@ -220,15 +243,6 @@ defineExpose({
         <div v-if="errors.word" class="invalid-feedback">{{ errors.word }}</div>
       </div>
 
-      <div class="form-group">
-        <RestrictionScopeEditor
-          v-model="scopes"
-          :countries="countries"
-          :disabled="saving"
-          :errors="scopeEditorErrors"
-        />
-      </div>
-
       <div class="form-group match-type-group">
         <label class="label">Тип соответствия:</label>
         <div class="radio-group" :class="{ 'is-invalid': errors.matchTypeId }">
@@ -247,20 +261,16 @@ defineExpose({
         </div>
         <FieldError name="matchTypeId" :errors="errors" />
       </div>
-      <div class="form-group mt-8">
-        <button class="button primary" type="submit" :disabled="saving">
-          <span v-show="saving" class="spinner-border spinner-border-sm mr-1"></span>
-          <font-awesome-icon size="1x" icon="fa-solid fa-check-double" class="mr-1" />
-          Сохранить
-        </button>
-        <button class="button secondary" type="button" @click="cancel">
-          <font-awesome-icon size="1x" icon="fa-solid fa-xmark" class="mr-1" />
-          Отменить
-        </button>
+
+      <div class="form-group">
+        <RestrictionScopeEditor
+          v-model="scopes"
+          :countries="countries"
+          :disabled="saving"
+          :errors="scopeEditorErrors"
+        />
       </div>
     </form>
-
-    <!-- Alert -->
   </div>
 </template>
 

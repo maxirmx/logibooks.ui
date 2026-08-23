@@ -35,7 +35,7 @@ vi.mock('@/components/ActionButton.vue', () => ({
     name: 'ActionButton',
     props: ['icon', 'item', 'tooltipText', 'disabled'],
     emits: ['click'],
-    template: '<button data-test="action-button" @click="$emit(\'click\', item)">{{ icon }}</button>'
+    template: '<button data-test="action-button" :disabled="disabled" @click="$emit(\'click\', item)">{{ icon }}</button>'
   }
 }))
 
@@ -68,6 +68,7 @@ vi.mock('@/stores/countries.store.js', () => ({
 
 const alertError = vi.fn()
 const alertClear = vi.fn()
+const routerPush = vi.hoisted(() => vi.fn())
 
 vi.mock('@/stores/alert.store.js', () => ({
   useAlertStore: () => ({
@@ -78,7 +79,7 @@ vi.mock('@/stores/alert.store.js', () => ({
 
 vi.mock('@/router', () => ({
   default: {
-    push: vi.fn()
+    push: routerPush
   }
 }))
 
@@ -130,7 +131,12 @@ describe('FeacnLocalPrefix_Settings.vue', () => {
     const wrapper = mountComponent()
     wrapper.vm.setFieldValue('code', '0101')
     wrapper.vm.setFieldValue('exceptions', ['111', ''])
+    const saveAction = wrapper
+      .findAllComponents({ name: 'ActionButton' })
+      .find((action) => action.props('tooltipText') === 'Создать')
+    expect(saveAction.props('item')).toBeNull()
     await wrapper.vm.onSubmit()
+    await flushPromises()
     expect(create).toHaveBeenCalledWith(
       expectedCreatePayload({ code: '0101', exceptions: ['111'] })
     )
@@ -199,8 +205,25 @@ describe('FeacnLocalPrefix_Settings.vue', () => {
 
   it('allows an empty scope collection to make a prefix inactive', () => {
     const wrapper = mountComponent()
-    const saveButton = wrapper.find('button.primary')
+    const saveButton = wrapper.get('[data-testid="feacn-prefix-save-action"]')
     expect(saveButton.attributes('disabled')).toBeUndefined()
+  })
+
+  it('renders header actions without footer action buttons', () => {
+    const wrapper = mountComponent()
+
+    expect(wrapper.find('[data-testid="feacn-prefix-save-action"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="feacn-prefix-cancel-action"]').exists()).toBe(true)
+    expect(wrapper.find('button.primary').exists()).toBe(false)
+    expect(wrapper.find('button.secondary').exists()).toBe(false)
+  })
+
+  it('navigates back to the prefixes list from the header cancel action', async () => {
+    const wrapper = mountComponent()
+
+    await wrapper.get('[data-testid="feacn-prefix-cancel-action"]').trigger('click')
+
+    expect(routerPush).toHaveBeenCalledWith('/feacn/prefixes')
   })
 
   it('adds and removes independent scope rows', async () => {
@@ -311,18 +334,20 @@ describe('FeacnLocalPrefix_Settings.vue', () => {
     expect(wrapper.find('[data-test="feacn-code-search"]').exists()).toBe(false)
 
     // Click the action button to toggle search
-    await wrapper.find('[data-test="action-button"]').trigger('click')
+    await wrapper.get('[data-testid="feacn-code-search-action"]').trigger('click')
     await wrapper.vm.$nextTick()
 
     // Should show search now
     expect(wrapper.find('[data-test="feacn-code-search"]').exists()).toBe(true)
+    expect(wrapper.get('[data-testid="feacn-prefix-save-action"]').attributes('disabled')).toBeDefined()
+    expect(wrapper.get('[data-testid="feacn-prefix-cancel-action"]').attributes('disabled')).toBeDefined()
   })
 
   it('handles code selection from FeacnCodeSearch', async () => {
     const wrapper = mountComponent()
 
     // Toggle search on
-    await wrapper.find('[data-test="action-button"]').trigger('click')
+    await wrapper.get('[data-testid="feacn-code-search-action"]').trigger('click')
     await wrapper.vm.$nextTick()
 
     // Simulate code selection
@@ -335,6 +360,27 @@ describe('FeacnLocalPrefix_Settings.vue', () => {
     // Search should be closed
     await wrapper.vm.$nextTick()
     expect(wrapper.find('[data-test="feacn-code-search"]').exists()).toBe(false)
+  })
+
+  it('keeps the form open and reports a rejected save once', async () => {
+    const error = new Error('Save failed')
+    create.mockRejectedValueOnce(error)
+    const wrapper = mountComponent()
+    wrapper.vm.setFieldValue('code', '0101')
+
+    const saveAction = wrapper
+      .findAllComponents({ name: 'ActionButton' })
+      .find((action) => action.props('tooltipText') === 'Создать')
+    expect(saveAction.props('item')).toBeNull()
+    await wrapper.vm.onSubmit()
+    await flushPromises()
+
+    expect(alertError).toHaveBeenCalledOnce()
+    expect(alertError).toHaveBeenCalledWith('Save failed', {
+      fallback: 'Ошибка при сохранении префикса'
+    })
+    expect(routerPush).not.toHaveBeenCalled()
+    expect(wrapper.find('form').exists()).toBe(true)
   })
 
   it('restores focus to previously active element after code search closes', async () => {

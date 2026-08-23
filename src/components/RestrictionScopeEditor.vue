@@ -15,9 +15,18 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue'])
 
+const RUSSIA_ISO_NUMERIC = 643
+
 const procedureItems = [
   { title: 'Экспорт', value: 10 },
   { title: 'Импорт', value: 40 }
+]
+
+const headers = [
+  { title: '', key: 'actions', sortable: false, width: '64px', align: 'center' },
+  { title: 'Страна', key: 'countryIsoNumeric', sortable: false, width: '30%' },
+  { title: 'Процедура', key: 'customsProcedureCode', sortable: false, width: '20%' },
+  { title: 'Причина ограничения', key: 'explanation', sortable: false }
 ]
 
 const countryItems = computed(() =>
@@ -31,6 +40,10 @@ const countryItems = computed(() =>
   }))
 )
 
+const tableItems = computed(() =>
+  props.modelValue.map((scope, index) => ({ ...scope, __index: index }))
+)
+
 function updateScope(index, field, value) {
   const next = props.modelValue.map((scope, scopeIndex) =>
     scopeIndex === index ? { ...scope, [field]: value } : { ...scope }
@@ -41,7 +54,7 @@ function updateScope(index, field, value) {
 function addScope() {
   emit('update:modelValue', [
     ...props.modelValue.map((scope) => ({ ...scope })),
-    { countryIsoNumeric: null, customsProcedureCode: 10, explanation: '' }
+    { countryIsoNumeric: RUSSIA_ISO_NUMERIC, customsProcedureCode: 10, explanation: '' }
   ])
 }
 
@@ -57,7 +70,7 @@ function isDuplicate(index) {
   if (scope?.countryIsoNumeric == null || scope?.customsProcedureCode == null) return false
   return props.modelValue.some(
     (candidate, candidateIndex) =>
-      candidateIndex !== index &&
+      candidateIndex < index &&
       Number(candidate.countryIsoNumeric) === Number(scope.countryIsoNumeric) &&
       Number(candidate.customsProcedureCode) === Number(scope.customsProcedureCode)
   )
@@ -109,113 +122,157 @@ function isScopeFocusTarget(index, field) {
   return Boolean(props.errors?.scopes) && index === 0 && field === 'countryIsoNumeric'
 }
 
-defineExpose({ addScope, removeScope, updateScope, isDuplicate, getScopeFieldError })
+function getRowProps({ item }) {
+  return {
+    class: ['scope-row-wrapper', { 'scope-row-wrapper--duplicate': isDuplicate(item.__index) }],
+    'data-testid': `restriction-scope-${item.__index}`
+  }
+}
+
+defineExpose({
+  addScope,
+  removeScope,
+  updateScope,
+  isDuplicate,
+  getScopeFieldError,
+  getRowProps
+})
 </script>
 
 <template>
   <div class="restriction-scope-editor" data-testid="restriction-scope-editor">
     <div class="scope-editor-heading">
-      <span class="label">Страны и таможенные процедуры:</span>
-      <button
-        type="button"
-        class="button secondary scope-add-button"
-        :disabled="disabled"
-        data-testid="add-restriction-scope"
-        @click="addScope"
+      <span class="label">Правила применения:</span>
+      <div class="header-actions-bar">
+        <div class="header-actions header-actions-group">
+          <ActionButton
+            :item="null"
+            icon="fa-solid fa-plus"
+            tooltip-text="Добавить правило"
+            class="scope-add-button"
+            :disabled="disabled"
+            data-testid="add-restriction-scope"
+            @click="addScope"
+          />
+        </div>
+      </div>
+    </div>
+
+    <div class="scope-table-shell">
+      <v-data-table
+        :headers="headers"
+        :items="tableItems"
+        item-value="__index"
+        :items-per-page="-1"
+        :row-props="getRowProps"
+        class="restriction-scope-table elevation-1 interlaced-table"
+        density="compact"
+        hide-default-footer
+        no-data-text="Ограничение неактивно"
+        aria-label="Правила применения"
       >
-        <font-awesome-icon icon="fa-solid fa-plus" class="mr-1" />
-        Добавить область
-      </button>
-    </div>
-
-    <div v-if="modelValue.length === 0" class="scope-empty">
-      Ограничение неактивно. Добавьте хотя бы одну страну и процедуру, чтобы применять его.
-    </div>
-
-    <div
-      v-for="(scope, index) in modelValue"
-      :key="index"
-      class="scope-row-wrapper"
-      :data-testid="`restriction-scope-${index}`"
-    >
-      <div class="scope-row">
-        <div
-          class="scope-field scope-country"
-          :data-field="isScopeFocusTarget(index, 'countryIsoNumeric') ? 'scopes' : undefined"
-        >
-          <v-autocomplete
-            :id="scopeFieldName(index, 'countryIsoNumeric')"
-            :name="scopeFieldName(index, 'countryIsoNumeric')"
-            :data-field="scopeFieldName(index, 'countryIsoNumeric')"
-            :model-value="scope.countryIsoNumeric"
-            :items="countryItems"
-            label="Страна"
-            variant="solo"
-            hide-details
-            :error="Boolean(getScopeFieldError(index, 'countryIsoNumeric'))"
-            :aria-invalid="Boolean(getScopeFieldError(index, 'countryIsoNumeric'))"
-            :disabled="disabled"
-            class="scope-control"
-            @update:model-value="updateScope(index, 'countryIsoNumeric', $event)"
-          />
+        <template #[`item.countryIsoNumeric`]="{ item }">
           <div
-            v-if="getScopeFieldError(index, 'countryIsoNumeric')"
-            class="invalid-feedback scope-field-error"
-            :data-field-error="scopeFieldName(index, 'countryIsoNumeric')"
+            class="scope-field scope-country"
+            :data-field="
+              isScopeFocusTarget(item.__index, 'countryIsoNumeric') ? 'scopes' : undefined
+            "
           >
-            {{ getScopeFieldError(index, 'countryIsoNumeric') }}
+            <v-autocomplete
+              :id="scopeFieldName(item.__index, 'countryIsoNumeric')"
+              :name="scopeFieldName(item.__index, 'countryIsoNumeric')"
+              :data-field="scopeFieldName(item.__index, 'countryIsoNumeric')"
+              :model-value="item.countryIsoNumeric"
+              :items="countryItems"
+              aria-label="Страна"
+              variant="outlined"
+              density="compact"
+              hide-details
+              :error="Boolean(getScopeFieldError(item.__index, 'countryIsoNumeric'))"
+              :aria-invalid="Boolean(getScopeFieldError(item.__index, 'countryIsoNumeric'))"
+              :disabled="disabled"
+              class="scope-control"
+              @update:model-value="updateScope(item.__index, 'countryIsoNumeric', $event)"
+            />
+            <div
+              v-if="getScopeFieldError(item.__index, 'countryIsoNumeric')"
+              class="invalid-feedback scope-field-error"
+              :data-field-error="scopeFieldName(item.__index, 'countryIsoNumeric')"
+            >
+              {{ getScopeFieldError(item.__index, 'countryIsoNumeric') }}
+            </div>
+            <div v-if="isDuplicate(item.__index)" class="invalid-feedback scope-error">
+              Такая страна и процедура уже добавлены
+            </div>
           </div>
-        </div>
-        <div
-          class="scope-field scope-procedure"
-          :data-field="isScopeFocusTarget(index, 'customsProcedureCode') ? 'scopes' : undefined"
-        >
-          <v-select
-            :id="scopeFieldName(index, 'customsProcedureCode')"
-            :name="scopeFieldName(index, 'customsProcedureCode')"
-            :data-field="scopeFieldName(index, 'customsProcedureCode')"
-            :model-value="scope.customsProcedureCode"
-            :items="procedureItems"
-            label="Процедура"
-            variant="solo"
-            hide-details
-            :error="Boolean(getScopeFieldError(index, 'customsProcedureCode'))"
-            :aria-invalid="Boolean(getScopeFieldError(index, 'customsProcedureCode'))"
-            :disabled="disabled"
-            class="scope-control"
-            @update:model-value="updateScope(index, 'customsProcedureCode', $event)"
-          />
+        </template>
+
+        <template #[`item.customsProcedureCode`]="{ item }">
           <div
-            v-if="getScopeFieldError(index, 'customsProcedureCode')"
-            class="invalid-feedback scope-field-error"
-            :data-field-error="scopeFieldName(index, 'customsProcedureCode')"
+            class="scope-field scope-procedure"
+            :data-field="
+              isScopeFocusTarget(item.__index, 'customsProcedureCode') ? 'scopes' : undefined
+            "
           >
-            {{ getScopeFieldError(index, 'customsProcedureCode') }}
+            <v-select
+              :id="scopeFieldName(item.__index, 'customsProcedureCode')"
+              :name="scopeFieldName(item.__index, 'customsProcedureCode')"
+              :data-field="scopeFieldName(item.__index, 'customsProcedureCode')"
+              :model-value="item.customsProcedureCode"
+              :items="procedureItems"
+              aria-label="Процедура"
+              variant="outlined"
+              density="compact"
+              hide-details
+              :error="Boolean(getScopeFieldError(item.__index, 'customsProcedureCode'))"
+              :aria-invalid="Boolean(getScopeFieldError(item.__index, 'customsProcedureCode'))"
+              :disabled="disabled"
+              class="scope-control"
+              @update:model-value="updateScope(item.__index, 'customsProcedureCode', $event)"
+            />
+            <div
+              v-if="getScopeFieldError(item.__index, 'customsProcedureCode')"
+              class="invalid-feedback scope-field-error"
+              :data-field-error="scopeFieldName(item.__index, 'customsProcedureCode')"
+            >
+              {{ getScopeFieldError(item.__index, 'customsProcedureCode') }}
+            </div>
           </div>
-        </div>
-        <div class="scope-field scope-explanation">
+        </template>
+
+        <template #[`item.explanation`]="{ item }">
           <v-text-field
-            :model-value="scope.explanation"
-            label="Причина ограничения"
-            variant="solo"
+            :model-value="item.explanation"
+            aria-label="Причина ограничения"
+            variant="outlined"
+            density="compact"
             hide-details
             :disabled="disabled"
-            class="scope-control"
-            @update:model-value="updateScope(index, 'explanation', $event)"
+            class="scope-explanation"
+            @update:model-value="updateScope(item.__index, 'explanation', $event)"
           />
-        </div>
-        <ActionButton
-          :item="index"
-          icon="fa-solid fa-trash-can"
-          tooltip-text="Удалить область"
-          :disabled="disabled"
-          @click="removeScope"
-        />
-      </div>
-      <div v-if="isDuplicate(index)" class="invalid-feedback scope-error">
-        Такая страна и процедура уже добавлены
-      </div>
+        </template>
+
+        <template #[`item.actions`]="{ item }">
+          <div class="actions-container scope-row-actions">
+            <ActionButton
+              :item="item.__index"
+              icon="fa-solid fa-trash-can"
+              tooltip-text="Удалить правило"
+              :disabled="disabled"
+              @click="removeScope"
+            />
+          </div>
+        </template>
+
+        <template #no-data>
+          <div class="scope-empty">
+            Ограничение неактивно. Добавьте хотя бы одну страну и процедуру, чтобы применять его.
+          </div>
+        </template>
+      </v-data-table>
     </div>
+
     <div v-if="generalScopeError" class="invalid-feedback scope-error">
       {{ generalScopeError }}
     </div>
@@ -226,62 +283,78 @@ defineExpose({ addScope, removeScope, updateScope, isDuplicate, getScopeFieldErr
 .restriction-scope-editor {
   display: flex;
   flex-direction: column;
+  flex: 1 1 100%;
   gap: 0.75rem;
-}
-
-.scope-editor-heading,
-.scope-row {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
+  width: 100%;
+  min-width: 0;
 }
 
 .scope-editor-heading {
+  display: flex;
+  align-items: center;
   justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.scope-editor-heading .header-actions-bar {
+  margin-left: auto;
+}
+
+.scope-table-shell {
+  width: 100%;
+  min-width: 0;
+  overflow-x: auto;
 }
 
 .scope-add-button {
-  margin: 0;
+  flex-shrink: 0;
 }
 
-.scope-country {
-  flex: 1.2 1 220px;
+.restriction-scope-table {
+  min-width: 720px;
+  overflow: hidden;
 }
 
-.scope-procedure {
-  flex: 0 1 170px;
+.restriction-scope-table :deep(td) {
+  padding: 0.35rem 0.4rem !important;
+  vertical-align: top;
 }
 
-.scope-explanation {
-  flex: 2 1 320px;
+.restriction-scope-table :deep(th:first-child),
+.restriction-scope-table :deep(td:first-child) {
+  padding-left: 0.25rem !important;
+  padding-right: 0.25rem !important;
+}
+
+.scope-country,
+.scope-procedure,
+.scope-explanation,
+.scope-control {
+  width: 100%;
+  min-width: 0;
 }
 
 .scope-field {
   display: flex;
-  min-width: 0;
   flex-direction: column;
 }
 
-.scope-control {
-  width: 100%;
+.scope-row-actions {
+  justify-content: center;
+  min-height: 40px;
 }
 
 .scope-empty {
   color: #5f6368;
   font-size: 0.9rem;
+  padding: 1.5rem;
+  text-align: center;
 }
 
 .scope-error,
 .scope-field-error {
   display: block;
   margin-top: 0.25rem;
-}
-
-@media (max-width: 850px) {
-  .scope-row,
-  .scope-editor-heading {
-    align-items: stretch;
-    flex-direction: column;
-  }
+  white-space: normal;
 }
 </style>

@@ -113,7 +113,8 @@ describe('StopWord_Settings.vue', () => {
       expect(wrapper.find('input[name="word"]').exists()).toBe(true)
       expect(wrapper.findAll('input[type="radio"][name="matchTypeId"]').length).toBeGreaterThan(0)
       expect(wrapper.find('[data-testid="restriction-scope-editor"]').exists()).toBe(true)
-      expect(wrapper.find('button[type="submit"]').text()).toContain('Сохранить')
+      expect(wrapper.find('[data-testid="stopword-save-action"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="stopword-cancel-action"]').exists()).toBe(true)
     })
 
     it('renders edit mode correctly', async () => {
@@ -129,6 +130,8 @@ describe('StopWord_Settings.vue', () => {
       await wrapper.vm.$nextTick()
 
       expect(wrapper.find('.spinner-border-lg').exists()).toBe(true)
+      expect(wrapper.get('[data-testid="stopword-save-action"]').attributes('disabled')).toBeDefined()
+      expect(wrapper.get('[data-testid="stopword-cancel-action"]').attributes('disabled')).toBeDefined()
     })
   })
 
@@ -156,6 +159,15 @@ describe('StopWord_Settings.vue', () => {
 
       expect(wrapper.find('[data-testid="restriction-scope-editor"]').exists()).toBe(true)
       expect(wrapper.find('[data-testid="add-restriction-scope"]').exists()).toBe(true)
+    })
+
+    it('positions match type before the restriction scopes table', async () => {
+      const wrapper = mountComponent()
+      await resolveAll()
+
+      const groups = wrapper.get('form').findAll('.form-group')
+      expect(groups[1].classes()).toContain('match-type-group')
+      expect(groups[2].find('[data-testid="restriction-scope-editor"]').exists()).toBe(true)
     })
 
     it('starts inactive and allows scope rows to be added', async () => {
@@ -269,8 +281,12 @@ describe('StopWord_Settings.vue', () => {
 
       await wrapper.vm.$nextTick()
 
-      // Call onSubmit directly since the form validation might interfere with submit event
+      const saveAction = wrapper
+        .findAllComponents({ name: 'ActionButton' })
+        .find((action) => action.props('tooltipText') === 'Сохранить')
+      expect(saveAction.props('item')).toBeNull()
       await component.onSubmit()
+      await resolveAll()
 
       expect(create).toHaveBeenCalledWith({
         word: 'новое',
@@ -388,8 +404,7 @@ describe('StopWord_Settings.vue', () => {
       const wrapper = mountComponent()
       await resolveAll()
 
-      const cancelButton = wrapper.findAll('button.secondary').find(button => button.text().includes('Отменить'))
-      expect(cancelButton).toBeDefined()
+      const cancelButton = wrapper.get('[data-testid="stopword-cancel-action"]')
       await cancelButton.trigger('click')
 
       expect(routerPush).toHaveBeenCalledWith('/stopwords')
@@ -397,23 +412,30 @@ describe('StopWord_Settings.vue', () => {
   })
 
   describe('Button States', () => {
-    it('shows submit button correctly', async () => {
+    it('shows header save action without footer buttons', async () => {
       const wrapper = mountComponent()
       await resolveAll()
 
-      const submitButton = wrapper.find('button[type="submit"]')
-      expect(submitButton.text()).toContain('Сохранить')
-      expect(submitButton.exists()).toBe(true)
+      expect(wrapper.find('[data-testid="stopword-save-action"]').exists()).toBe(true)
+      expect(wrapper.find('button.primary').exists()).toBe(false)
     })
 
-    it('shows cancel button correctly', async () => {
+    it('shows header cancel action without a footer cancel button', async () => {
       const wrapper = mountComponent()
       await resolveAll()
 
-      const cancelButton = wrapper.findAll('button.secondary').find(button => button.text().includes('Отменить'))
-      expect(cancelButton).toBeDefined()
-      expect(cancelButton.text()).toContain('Отменить')
-      expect(cancelButton.exists()).toBe(true)
+      expect(wrapper.find('[data-testid="stopword-cancel-action"]').exists()).toBe(true)
+      expect(wrapper.find('button.secondary').exists()).toBe(false)
+    })
+
+    it('disables header actions while saving', async () => {
+      const wrapper = mountComponent()
+      await resolveAll()
+      wrapper.vm.saving = true
+      await wrapper.vm.$nextTick()
+
+      expect(wrapper.get('[data-testid="stopword-save-action"]').attributes('disabled')).toBeDefined()
+      expect(wrapper.get('[data-testid="stopword-cancel-action"]').attributes('disabled')).toBeDefined()
     })
   })
 

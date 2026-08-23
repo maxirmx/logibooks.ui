@@ -10,6 +10,7 @@ import router from '@/router'
 import { useStopWordsStore } from '@/stores/stop.words.store.js'
 import ActionButton from '@/components/ActionButton.vue'
 import { useWordMatchTypesStore } from '@/stores/word.match.types.store.js'
+import { useCountriesStore } from '@/stores/countries.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useAppConfirm } from '@/composables/useAppConfirm.js'
@@ -19,13 +20,15 @@ import {
   getProhibitionScopeLabels,
   getProhibitionScopeSortOrder,
   getProhibitionScopeRows,
-  getProhibitionReasonLines
+  getProhibitionReasonLines,
+  matchesProhibitionScope
 } from '@/helpers/prohibition.scope.helpers.js'
 import { mdiMagnify } from '@mdi/js'
 import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
 
 const stopWordsStore = useStopWordsStore()
 const matchTypesStore = useWordMatchTypesStore()
+const countriesStore = useCountriesStore()
 const authStore = useAuthStore()
 const alertStore = useAlertStore()
 const confirm = useAppConfirm()
@@ -43,14 +46,12 @@ function filterStopWords(value, query, item) {
     return false
   }
   const q = query.toLocaleUpperCase()
-  const procedureText = getProhibitionScopeLabels(i).join(' ')
+  const procedureText = getProhibitionScopeLabels(i, countriesStore.getCountryShortName).join(' ')
   const reasonText = getProhibitionReasonLines(i).join(' ')
   const matchTypeText = getMatchTypeText(i.matchTypeId)
 
   return (
     (i.word?.toLocaleUpperCase() ?? '').indexOf(q) !== -1 ||
-    (i.explanationForExport?.toLocaleUpperCase() ?? '').indexOf(q) !== -1 ||
-    (i.explanationForImport?.toLocaleUpperCase() ?? '').indexOf(q) !== -1 ||
     procedureText.toLocaleUpperCase().indexOf(q) !== -1 ||
     reasonText.toLocaleUpperCase().indexOf(q) !== -1 ||
     matchTypeText.toLocaleUpperCase().indexOf(q) !== -1
@@ -59,14 +60,22 @@ function filterStopWords(value, query, item) {
 
 const filteredStopWords = computed(() => {
   const procedureFilter = unref(authStore.stopwords_procedure)
-  if (procedureFilter === 'export') {
-    return stopWords.value.filter((word) => word.forExport)
-  }
-  if (procedureFilter === 'import') {
-    return stopWords.value.filter((word) => word.forImport)
+  const countryFilter = unref(authStore.stopwords_country)
+  if (procedureFilter !== 'all' || countryFilter !== 'all') {
+    return stopWords.value.filter((word) =>
+      matchesProhibitionScope(word, procedureFilter, countryFilter)
+    )
   }
   return stopWords.value
 })
+
+const countryFilterItems = computed(() => [
+  { title: 'Любая', value: 'all' },
+  ...countriesStore.countries.map((country) => ({
+    title: countriesStore.getCountryShortName(country.isoNumeric),
+    value: country.isoNumeric
+  }))
+])
 
 const tableStopWords = computed(() =>
   filteredStopWords.value.map((word) => ({
@@ -82,6 +91,7 @@ const headers = [
     : []),
   { title: 'Стоп-слово или фраза', key: 'word', sortable: true },
   { title: 'Тип соответствия', key: 'matchTypeId', sortable: true },
+  { title: 'Страна', key: 'country', align: 'start', sortable: false },
   { title: 'Процедура', key: 'procedure', align: 'start' },
   { title: 'Причина запрета', key: 'prohibitionReason', align: 'start', sortable: false }
 ]
@@ -128,7 +138,11 @@ async function deleteStopWord(stopWord) {
 
 // Initialize data
 onMounted(() =>
-  runWithRetryAlert(() => Promise.all([matchTypesStore.ensureLoaded(), stopWordsStore.getAll()]), {
+  runWithRetryAlert(() => Promise.all([
+    matchTypesStore.ensureLoaded(),
+    countriesStore.ensureLoaded(),
+    stopWordsStore.getAll()
+  ]), {
     fallback: 'Не удалось загрузить стоп-слова'
   })
 )
@@ -144,6 +158,7 @@ defineExpose({
   getProhibitionScopeRows,
   getProhibitionReasonLines,
   prohibitionScopeFilterItems,
+  countryFilterItems,
   filteredStopWords,
   tableStopWords,
   filterStopWords,
@@ -185,6 +200,15 @@ defineExpose({
         hide-details
         :disabled="runningAction || loading"
         class="procedure-filter"
+      />
+      <v-autocomplete
+        v-model="authStore.stopwords_country"
+        :items="countryFilterItems"
+        label="Страна"
+        variant="solo"
+        hide-details
+        :disabled="runningAction || loading"
+        class="country-filter"
       />
       <v-text-field
         v-model="authStore.stopwords_search"
@@ -236,9 +260,23 @@ defineExpose({
           {{ getMatchTypeText(item.matchTypeId) }}
         </template>
 
+        <template v-slot:[`item.country`]="{ item }">
+          <template
+            v-for="scopeRows in [getProhibitionScopeRows(item, countriesStore.getCountryShortName)]"
+            :key="scopeRows.map((row) => row.key).join('-')"
+          >
+            <span v-if="scopeRows.length" class="procedure-lines">
+              <span v-for="row in scopeRows" :key="row.key" class="procedure-line">
+                {{ row.country }}
+              </span>
+            </span>
+            <span v-else>-</span>
+          </template>
+        </template>
+
         <template v-slot:[`item.procedure`]="{ item }">
           <template
-            v-for="procedureRows in [getProhibitionScopeRows(item)]"
+            v-for="procedureRows in [getProhibitionScopeRows(item, countriesStore.getCountryShortName)]"
             :key="procedureRows.map((row) => row.key).join('-')"
           >
             <span
@@ -247,7 +285,7 @@ defineExpose({
               class="procedure-lines"
             >
               <span v-for="row in procedureRows" :key="row.key" class="procedure-line">
-                {{ row.label }}
+                {{ row.procedure }}
               </span>
             </span>
             <span v-else :key="`${procedureRows.map((row) => row.key).join('-')}-empty`">-</span>
@@ -256,7 +294,7 @@ defineExpose({
 
         <template v-slot:[`item.prohibitionReason`]="{ item }">
           <template
-            v-for="procedureRows in [getProhibitionScopeRows(item)]"
+            v-for="procedureRows in [getProhibitionScopeRows(item, countriesStore.getCountryShortName)]"
             :key="procedureRows.map((row) => row.key).join('-')"
           >
             <span
@@ -300,6 +338,13 @@ defineExpose({
   min-width: 200px;
 }
 
+.country-filter {
+  flex: 0 0 240px !important;
+  width: 240px;
+  max-width: 240px;
+  min-width: 240px;
+}
+
 .procedure-filter :deep(.v-field__input) {
   min-width: 0;
 }
@@ -317,8 +362,12 @@ defineExpose({
     flex-direction: column;
   }
 
-  .procedure-filter {
+  .procedure-filter,
+  .country-filter {
     flex-basis: auto;
+    width: auto;
+    max-width: none;
+    min-width: 0;
   }
 }
 </style>

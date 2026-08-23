@@ -4,11 +4,17 @@
 // This file is a part of Logibooks ui application
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
-import { ref } from 'vue'
+import { flushPromises, mount } from '@vue/test-utils'
+import { reactive, ref } from 'vue'
 import { createPinia, setActivePinia } from 'pinia'
 import FeacnOrdersList from '@/lists/FeacnOrders_List.vue'
 import { vuetifyStubs, createMockStore } from './helpers/test-utils.js'
+
+const routerPush = vi.hoisted(() => vi.fn())
+
+vi.mock('@/router', () => ({
+  default: { push: routerPush }
+}))
 
 // Mock Pinia's storeToRefs to return the mock values
 vi.mock('pinia', async () => {
@@ -50,8 +56,8 @@ vi.mock('pinia', async () => {
 
 const mockFeacnOrdersStore = createMockStore({
   orders: ref([
-    { id: 1, title: 'Doc1', url: 'http://a', enabledForExport: true, enabledForImport: false },
-    { id: 2, title: 'Doc2', url: 'http://b', enabledForExport: false, enabledForImport: true }
+    { id: 1, title: 'Doc1', url: 'http://a', scopes: [{ countryIsoNumeric: 643, customsProcedureCode: 10, explanation: 'reason' }] },
+    { id: 2, title: 'Doc2', url: 'http://b', scopes: [{ countryIsoNumeric: 860, customsProcedureCode: 40, explanation: null }] }
   ]),
   prefixes: ref([]),
   loading: ref(false),
@@ -61,17 +67,22 @@ const mockFeacnOrdersStore = createMockStore({
   getPrefixes: vi.fn(),
   update: vi.fn(),
   ensureLoaded: vi.fn(),
-  toggleEnabledForExport: vi.fn().mockResolvedValue(),
-  toggleEnabledForImport: vi.fn().mockResolvedValue()
+  updateScopes: vi.fn().mockResolvedValue()
 })
 
-const mockAlertStore = createMockStore({
-  alert: ref(null),
+const mockAlertStore = reactive(createMockStore({
+  alert: null,
   loading: false,
-  error: null,
   success: vi.fn(),
-  clear: vi.fn()
-})
+  clear: vi.fn(),
+  error: vi.fn((value, options = {}) => {
+    mockAlertStore.alert = {
+      id: 1,
+      severity: 'error',
+      message: value?.message || options.fallback || String(value)
+    }
+  })
+}))
 
 const mockAuthStore = createMockStore({
   feacnorders_per_page: ref(10),
@@ -102,6 +113,17 @@ vi.mock('@/stores/auth.store.js', () => ({
   useAuthStore: vi.fn(() => mockAuthStore)
 }))
 
+vi.mock('@/stores/countries.store.js', () => ({
+  useCountriesStore: () => ({
+    countries: ref([
+      { isoNumeric: 643, nameRuShort: 'Россия' },
+      { isoNumeric: 860, nameRuShort: 'Узбекистан' }
+    ]),
+    ensureLoaded: vi.fn().mockResolvedValue(undefined),
+    getCountryShortName: vi.fn((code) => Number(code) === 643 ? 'Россия' : 'Узбекистан')
+  })
+}))
+
 vi.mock('@/helpers/items.per.page.js', () => ({
   itemsPerPageOptions: [{ value: 10, title: '10' }]
 }))
@@ -111,8 +133,9 @@ const mountOptions = {
     stubs: {
       ...vuetifyStubs,
       ActionButton: {
-        template: '<button @click="$emit(\'click\')"><slot></slot></button>',
-        props: ['item', 'icon', 'tooltipText', 'disabled', 'iconSize']
+        template: '<button @click="$emit(\'click\', item)"><slot></slot></button>',
+        props: ['item', 'icon', 'tooltipText', 'disabled', 'iconSize'],
+        emits: ['click']
       }
     }
   }
@@ -125,14 +148,16 @@ describe('FeacnOrders_List.vue', () => {
 
     vi.clearAllMocks()
     mockFeacnOrdersStore.orders.value = [
-      { id: 1, title: 'Doc1', url: 'http://a', enabledForExport: true, enabledForImport: false },
-      { id: 2, title: 'Doc2', url: 'http://b', enabledForExport: false, enabledForImport: true }
+      { id: 1, title: 'Doc1', url: 'http://a', scopes: [{ countryIsoNumeric: 643, customsProcedureCode: 10, explanation: 'reason' }] },
+      { id: 2, title: 'Doc2', url: 'http://b', scopes: [{ countryIsoNumeric: 860, customsProcedureCode: 40, explanation: null }] }
     ]
     mockFeacnOrdersStore.loading.value = false
     mockFeacnOrdersStore.error.value = null
     mockFeacnOrdersStore.prefixes.value = []
     mockAuthStore.feacnorders_search.value = ''
     mockAuthStore.isAdmin.value = false
+    mockAlertStore.alert = null
+    routerPush.mockResolvedValue()
   })
 
   it('calls ensureLoaded on mount', () => {
@@ -168,32 +193,61 @@ describe('FeacnOrders_List.vue', () => {
     expect(wrapper.find('.header-actions .spinner-border').exists()).toBe(true)
   })
 
-  it('renders separate export and import toggle columns', () => {
+
+  it('renders the administrator edit action in the leftmost column', () => {
+    mockAuthStore.isAdmin.value = true
     const wrapper = mount(FeacnOrdersList, mountOptions)
-    expect(wrapper.vm.orderHeaders.map((h) => h.title)).toEqual([
-      'Экспорт',
-      'Импорт',
-      'Нормативный документ',
-      'Ссылка'
+
+    expect(wrapper.vm.orderHeaders.map((header) => header.key)).toEqual([
+      'actions',
+      'scopes',
+      'title',
+      'url'
     ])
   })
 
-  it('toggles export flag through store', async () => {
-    mockAuthStore.isAdmin.value = true
+  it('renders scope labels without explanations or bold emphasis', () => {
     const wrapper = mount(FeacnOrdersList, mountOptions)
+    const scopeCells = wrapper
+      .findAll('[data-testid="v-data-table"]')[0]
+      .findAll('.v-data-table-row')
+      .map((row) => row.findAll('.v-data-table-cell')[0])
 
-    await wrapper.vm.handleToggleOrderEnabledForExport(mockFeacnOrdersStore.orders.value[0])
-
-    expect(mockFeacnOrdersStore.toggleEnabledForExport).toHaveBeenCalledWith(1, false)
+    expect(scopeCells[0].text()).toBe('Россия — Экспорт')
+    expect(scopeCells[0].text()).not.toContain('reason')
+    expect(scopeCells[0].find('strong').exists()).toBe(false)
+    expect(scopeCells[1].text()).toBe('Узбекистан — Импорт')
   })
 
-  it('toggles import flag through store', async () => {
+  it('navigates administrators to the order settings route', async () => {
     mockAuthStore.isAdmin.value = true
     const wrapper = mount(FeacnOrdersList, mountOptions)
 
-    await wrapper.vm.handleToggleOrderEnabledForImport(mockFeacnOrdersStore.orders.value[0])
+    await wrapper.findAll('[data-testid="edit-order-scopes"]')[0].trigger('click')
 
-    expect(mockFeacnOrdersStore.toggleEnabledForImport).toHaveBeenCalledWith(1, true)
+    expect(routerPush).toHaveBeenCalledWith('/feacn/order/edit/1')
+  })
+
+  it('shows a page-level error when opening the order settings route fails', async () => {
+    mockAuthStore.isAdmin.value = true
+    routerPush.mockRejectedValueOnce({})
+    const wrapper = mount(FeacnOrdersList, mountOptions)
+
+    await wrapper.findAll('[data-testid="edit-order-scopes"]')[0].trigger('click')
+    await flushPromises()
+
+    expect(mockAlertStore.error).toHaveBeenCalledOnce()
+    expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain(
+      'Не удалось открыть правила применения нормативного документа'
+    )
+  })
+
+  it('does not navigate non-administrators to order settings', () => {
+    const wrapper = mount(FeacnOrdersList, mountOptions)
+
+    wrapper.vm.editOrderScopes(mockFeacnOrdersStore.orders.value[0])
+
+    expect(routerPush).not.toHaveBeenCalled()
   })
 
   describe('filterOrders function', () => {

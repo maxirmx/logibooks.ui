@@ -48,8 +48,18 @@ const props = defineProps({
   noHistoricData: {
     type: Boolean,
     default: false
+  },
+  restrictionValidationDisabled: {
+    type: Boolean,
+    default: false
   }
 })
+
+const restrictionValidationTooltip = computed(() =>
+  props.restrictionValidationDisabled
+    ? 'Сначала укажите страну отправления или назначения реестра'
+    : null
+)
 
 const hasDuplicate2CheckStatus = computed(() => props.item?.checkStatus === CheckStatusCode.Duplicate2.value)
 
@@ -109,24 +119,24 @@ defineEmits([
           <ActionButton
             :item="item"
             icon="fa-solid fa-spell-check"
-            tooltip-text="Сохранить и проверить по стоп-словам"
-            :disabled="disabled"
+            :tooltip-text="restrictionValidationTooltip || 'Сохранить и проверить по стоп-словам'"
+            :disabled="disabled || restrictionValidationDisabled"
             @click="$emit('validate-sw', values)"
             :iconSize="'2x'"
           />
           <ActionButton
             :item="item"
             icon="fa-solid fa-book-journal-whills"
-            tooltip-text="Сохранить и проверить по стоп-словам с учётом исторических данных"
-            :disabled="disabled || noHistoricData"
+            :tooltip-text="restrictionValidationTooltip || 'Сохранить и проверить по стоп-словам с учётом исторических данных'"
+            :disabled="disabled || noHistoricData || restrictionValidationDisabled"
             @click="$emit('validate-sw-ex', values)"
             :iconSize="'2x'"
           />
           <ActionButton
             :item="item"
             icon="fa-solid fa-anchor-circle-check"
-            tooltip-text="Сохранить и проверить по кодам ТН ВЭД"
-            :disabled="disabled"
+            :tooltip-text="restrictionValidationTooltip || 'Сохранить и проверить по кодам ТН ВЭД'"
+            :disabled="disabled || restrictionValidationDisabled"
             @click="$emit('validate-fc', values)"
             :iconSize="'2x'"
           />

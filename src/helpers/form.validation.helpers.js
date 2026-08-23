@@ -9,6 +9,14 @@ function escapeSelector(value) {
   return String(value).replace(/[^a-zA-Z0-9_-]/g, (character) => `\\${character}`)
 }
 
+function getFocusableTarget(element) {
+  if (!(element instanceof HTMLElement)) return null
+  const focusableSelector =
+    'input, select, textarea, button, a[href], [tabindex]:not([tabindex="-1"])'
+  if (element.matches(focusableSelector)) return element
+  return element.querySelector(focusableSelector)
+}
+
 /**
  * Vee-validate invalid-submit handler. Keeps validation errors next to their
  * fields while moving the viewport and keyboard focus to the first one.
@@ -20,12 +28,14 @@ export async function focusFirstInvalidField(submission = {}) {
   await nextTick()
 
   const escapedName = firstFieldName ? escapeSelector(firstFieldName) : null
-  const target =
+  const fieldContainer =
     (escapedName &&
       document.querySelector(
         `[name="${escapedName}"], #${escapedName}, [data-field="${escapedName}"]`
-      )) ||
-    document.querySelector('.is-invalid, [aria-invalid="true"]')
+      )) || null
+  const target =
+    getFocusableTarget(fieldContainer) ||
+    getFocusableTarget(document.querySelector('.is-invalid, [aria-invalid="true"]'))
 
   if (!(target instanceof HTMLElement)) return
 

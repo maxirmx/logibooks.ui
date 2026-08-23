@@ -7,14 +7,18 @@ import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { onMounted, watch, computed, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useFeacnOrdersStore } from '@/stores/feacn.orders.store.js'
+import { useCountriesStore } from '@/stores/countries.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import ActionButton from '@/components/ActionButton.vue'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
 import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
+import { getProhibitionScopeRows } from '@/helpers/prohibition.scope.helpers.js'
+import router from '@/router'
 
 const feacnStore = useFeacnOrdersStore()
+const countriesStore = useCountriesStore()
 const alertStore = useAlertStore()
 const authStore = useAuthStore()
 
@@ -48,7 +52,7 @@ watch(
     } else {
       // Only update selectedOrderId if current value is invalid or not set
       if (!selectedOrderId.value || !newOrders.some((o) => o.id === selectedOrderId.value)) {
-        const firstEnabled = newOrders.find((o) => o.enabledForExport || o.enabledForImport)
+        const firstEnabled = newOrders.find((o) => o.scopes?.length)
         const newSelectedId = firstEnabled ? firstEnabled.id : newOrders[0].id
         selectedOrderId.value = newSelectedId
         // Update prefixes when new order is selected
@@ -65,11 +69,11 @@ watch(selectedOrderId, async (id) => {
 })
 
 async function loadOrders() {
-  await feacnStore.ensureLoaded()
+  await Promise.all([feacnStore.ensureLoaded(), countriesStore.ensureLoaded()])
   if (orders.value?.length > 0) {
     // Only set selectedOrderId if it's not already set or if the persisted value is invalid
     if (!selectedOrderId.value || !orders.value.some((o) => o.id === selectedOrderId.value)) {
-      const firstEnabled = orders.value.find((o) => o.enabledForExport || o.enabledForImport)
+      const firstEnabled = orders.value.find((o) => o.scopes?.length)
       const newSelectedId = firstEnabled ? firstEnabled.id : orders.value[0].id
       selectedOrderId.value = newSelectedId
     }
@@ -105,7 +109,14 @@ function filterOrders(value, query, item) {
   if (!query) return true
   const q = query.toString().toUpperCase()
   const i = item.raw
-  return i.title.toUpperCase().includes(q) || (i.url || '').toUpperCase().includes(q)
+  const scopes = getProhibitionScopeRows(i, countriesStore.getCountryShortName)
+    .map((scope) => scope.label)
+    .join(' ')
+  return (
+    i.title.toUpperCase().includes(q) ||
+    (i.url || '').toUpperCase().includes(q) ||
+    scopes.toUpperCase().includes(q)
+  )
 }
 
 function filterPrefixes(value, query, item) {
@@ -128,8 +139,10 @@ const prefixItems = computed(() =>
 )
 
 const orderHeaders = [
-  { title: 'Экспорт', key: 'enabledForExport', sortable: false, align: 'center', width: '90px' },
-  { title: 'Импорт', key: 'enabledForImport', sortable: false, align: 'center', width: '90px' },
+  ...(isAdmin.value
+    ? [{ title: '', key: 'actions', sortable: false, align: 'center', width: '70px' }]
+    : []),
+  { title: 'Правила применения', key: 'scopes', sortable: false, align: 'start' },
   { title: 'Нормативный документ', key: 'title', align: 'start' },
   { title: 'Ссылка', key: 'url', align: 'start' }
 ]
@@ -140,25 +153,18 @@ const prefixHeaders = [
   { title: 'Исключения', key: 'exceptions', align: 'start' }
 ]
 
-async function handleToggleOrderEnabledForExport(order) {
-  if (runningAction.value || loading.value) return
-  runningAction.value = true
+async function editOrderScopes(order) {
+  if (!isAdmin.value || runningAction.value || loading.value) return
   try {
-    await feacnStore.toggleEnabledForExport(order.id, !order.enabledForExport)
-  } finally {
-    runningAction.value = false
+    await router.push(`/feacn/order/edit/${order.id}`)
+  } catch (error) {
+    alertStore.error(error, {
+      fallback: 'Не удалось открыть правила применения нормативного документа'
+    })
   }
 }
 
-async function handleToggleOrderEnabledForImport(order) {
-  if (runningAction.value || loading.value) return
-  runningAction.value = true
-  try {
-    await feacnStore.toggleEnabledForImport(order.id, !order.enabledForImport)
-  } finally {
-    runningAction.value = false
-  }
-}
+defineExpose({ editOrderScopes, filterOrders, orderHeaders })
 </script>
 
 <template>
@@ -216,55 +222,29 @@ async function handleToggleOrderEnabledForImport(order) {
           }
         "
       >
-        <template #[`item.enabledForExport`]="{ item }">
-          <v-tooltip
-            :text="
-              item.enabledForExport ? 'Не использовать для экспорта' : 'Использовать для экспорта'
-            "
-          >
-            <template v-slot:activator="{ props }">
-              <button
-                type="button"
-                class="action-btn"
-                :class="{ 'disabled-btn': runningAction || loading || !isAdmin }"
-                v-bind="props"
-                @click.stop="handleToggleOrderEnabledForExport(item)"
-                :disabled="runningAction || loading || !isAdmin"
-                data-testid="toggle-order-enabled-for-export"
-              >
-                <font-awesome-icon
-                  size="1x"
-                  :icon="item.enabledForExport ? 'fa-solid fa-toggle-on' : 'fa-solid fa-toggle-off'"
-                  class="action-btn"
-                />
-              </button>
-            </template>
-          </v-tooltip>
+        <template #[`item.scopes`]="{ item }">
+          <span v-if="item.scopes?.length" class="scope-summary">
+            <span
+              v-for="scope in getProhibitionScopeRows(item, countriesStore.getCountryShortName)"
+              :key="scope.key"
+              class="scope-summary-line"
+            >
+              {{ scope.label }}
+            </span>
+          </span>
+          <span v-else>Неактивно</span>
         </template>
-        <template #[`item.enabledForImport`]="{ item }">
-          <v-tooltip
-            :text="
-              item.enabledForImport ? 'Не использовать для импорта' : 'Использовать для импорта'
-            "
-          >
-            <template v-slot:activator="{ props }">
-              <button
-                type="button"
-                class="action-btn"
-                :class="{ 'disabled-btn': runningAction || loading || !isAdmin }"
-                v-bind="props"
-                @click.stop="handleToggleOrderEnabledForImport(item)"
-                :disabled="runningAction || loading || !isAdmin"
-                data-testid="toggle-order-enabled-for-import"
-              >
-                <font-awesome-icon
-                  size="1x"
-                  :icon="item.enabledForImport ? 'fa-solid fa-toggle-on' : 'fa-solid fa-toggle-off'"
-                  class="action-btn"
-                />
-              </button>
-            </template>
-          </v-tooltip>
+        <template #[`item.actions`]="{ item }">
+          <span v-if="isAdmin" @click.stop>
+            <ActionButton
+              :item="item"
+              icon="fa-solid fa-pen"
+              tooltip-text="Изменить области действия"
+              :disabled="runningAction || loading"
+              data-testid="edit-order-scopes"
+              @click="editOrderScopes"
+            />
+          </span>
         </template>
         <template #[`item.url`]="{ item }">
           <a
@@ -315,6 +295,7 @@ async function handleToggleOrderEnabledForImport(order) {
         </template>
       </v-data-table>
     </v-card>
+
   </div>
 </template>
 
@@ -333,5 +314,15 @@ async function handleToggleOrderEnabledForImport(order) {
 
 .prefixes-table :deep(.v-table__wrapper) {
   max-height: calc(100vh - 750px);
+}
+
+.scope-summary,
+.scope-summary-line {
+  display: block;
+}
+
+.scope-summary-line {
+  min-height: 1.35em;
+  line-height: 1.35;
 }
 </style>

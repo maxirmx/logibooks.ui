@@ -8,6 +8,7 @@ import { mount, flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { ref } from 'vue'
 import FeacnLocalPrefix_Settings from '@/dialogs/FeacnLocalPrefix_Settings.vue'
+import { vuetifyStubs } from './helpers/test-utils.js'
 
 // Stub FieldArrayWithButtons
 vi.mock('@/components/FieldArrayWithButtons.vue', () => ({
@@ -34,7 +35,7 @@ vi.mock('@/components/ActionButton.vue', () => ({
     name: 'ActionButton',
     props: ['icon', 'item', 'tooltipText', 'disabled'],
     emits: ['click'],
-    template: '<button data-test="action-button" @click="$emit(\'click\')">{{ icon }}</button>'
+    template: '<button data-test="action-button" :disabled="disabled" @click="$emit(\'click\', item)">{{ icon }}</button>'
   }
 }))
 
@@ -55,8 +56,19 @@ vi.mock('@/stores/feacn.prefixes.store.js', () => ({
   })
 }))
 
+vi.mock('@/stores/countries.store.js', () => ({
+  useCountriesStore: () => ({
+    countries: ref([
+      { isoNumeric: 643, nameRuShort: 'Россия' },
+      { isoNumeric: 860, nameRuShort: 'Узбекистан' }
+    ]),
+    ensureLoaded: vi.fn().mockResolvedValue(undefined)
+  })
+}))
+
 const alertError = vi.fn()
 const alertClear = vi.fn()
+const routerPush = vi.hoisted(() => vi.fn())
 
 vi.mock('@/stores/alert.store.js', () => ({
   useAlertStore: () => ({
@@ -67,7 +79,7 @@ vi.mock('@/stores/alert.store.js', () => ({
 
 vi.mock('@/router', () => ({
   default: {
-    push: vi.fn()
+    push: routerPush
   }
 }))
 
@@ -75,9 +87,9 @@ vi.mock('pinia', async () => {
   const actual = await vi.importActual('pinia')
   return {
     ...actual,
-    storeToRefs: () => ({
-      alert: ref(null)
-    })
+    storeToRefs: (store) => store.countries
+      ? { countries: store.countries }
+      : { alert: ref(null) }
   }
 })
 
@@ -93,7 +105,14 @@ describe('FeacnLocalPrefix_Settings.vue', () => {
     mount(FeacnLocalPrefix_Settings, {
       props,
       global: {
-        stubs: { 'font-awesome-icon': true }
+        stubs: {
+          ...vuetifyStubs,
+          'font-awesome-icon': true,
+          'v-autocomplete': {
+            template: '<div class="v-autocomplete-stub scope-country"></div>',
+            props: ['modelValue', 'items', 'label', 'disabled']
+          }
+        }
       }
     })
 
@@ -101,10 +120,7 @@ describe('FeacnLocalPrefix_Settings.vue', () => {
     code: '',
     exceptions: [],
     comment: '',
-    explanationForExport: '',
-    explanationForImport: '',
-    forExport: false,
-    forImport: false,
+    scopes: [],
     description: null,
     feacnOrderId: null,
     ...overrides
@@ -115,7 +131,12 @@ describe('FeacnLocalPrefix_Settings.vue', () => {
     const wrapper = mountComponent()
     wrapper.vm.setFieldValue('code', '0101')
     wrapper.vm.setFieldValue('exceptions', ['111', ''])
+    const saveAction = wrapper
+      .findAllComponents({ name: 'ActionButton' })
+      .find((action) => action.props('tooltipText') === 'Создать')
+    expect(saveAction.props('item')).toBeNull()
     await wrapper.vm.onSubmit()
+    await flushPromises()
     expect(create).toHaveBeenCalledWith(
       expectedCreatePayload({ code: '0101', exceptions: ['111'] })
     )
@@ -132,10 +153,9 @@ describe('FeacnLocalPrefix_Settings.vue', () => {
     getById.mockResolvedValue({
       code: '0202',
       comment: ' legacy comment ',
-      explanationForExport: 'export reason',
-      explanationForImport: 'import reason',
-      forExport: true,
-      forImport: false,
+      scopes: [
+        { countryIsoNumeric: 643, customsProcedureCode: 10, explanation: 'export reason' }
+      ],
       description: 'server description',
       feacnOrderId: 7,
       exceptions: [{ id: 1, code: '222', feacnPrefixId: 1 }]
@@ -149,10 +169,9 @@ describe('FeacnLocalPrefix_Settings.vue', () => {
       code: '0202',
       exceptions: ['222'],
       comment: ' legacy comment ',
-      explanationForExport: 'export reason',
-      explanationForImport: 'import reason',
-      forExport: true,
-      forImport: false,
+      scopes: [
+        { countryIsoNumeric: 643, customsProcedureCode: 10, explanation: 'export reason' }
+      ],
       description: 'server description',
       feacnOrderId: 7
     })
@@ -178,69 +197,100 @@ describe('FeacnLocalPrefix_Settings.vue', () => {
     )
   })
 
-  it('renders styled export and import checkboxes', () => {
+  it('renders the reusable scope editor', () => {
     const wrapper = mountComponent()
-    const checkboxes = wrapper.findAll('input[type="checkbox"].checkbox-styled')
-    expect(checkboxes).toHaveLength(2)
-    expect(wrapper.find('#forExport').exists()).toBe(true)
-    expect(wrapper.find('#forImport').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="restriction-scope-editor"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="add-restriction-scope"]').exists()).toBe(true)
   })
 
-  it('disables save button when no procedure flag is selected', async () => {
+  it('allows an empty scope collection to make a prefix inactive', () => {
     const wrapper = mountComponent()
-    const saveButton = wrapper.find('button.primary')
-    expect(saveButton.attributes('disabled')).toBeDefined()
-
-    await wrapper.find('#forExport').setValue(true)
+    const saveButton = wrapper.get('[data-testid="feacn-prefix-save-action"]')
     expect(saveButton.attributes('disabled')).toBeUndefined()
   })
 
-  it('disables unchecked procedure checkboxes when the same code already has that flag in the store', async () => {
-    mockPrefixes = [
-      { id: 1, code: '0505', forExport: true, forImport: false },
-      { id: 2, code: '0505', forExport: false, forImport: true }
-    ]
+  it('renders header actions without footer action buttons', () => {
     const wrapper = mountComponent()
 
-    wrapper.vm.setFieldValue('code', '0505')
-    await wrapper.vm.$nextTick()
-
-    expect(wrapper.find('#forExport').attributes('disabled')).toBeDefined()
-    expect(wrapper.find('#forImport').attributes('disabled')).toBeDefined()
-
-    wrapper.vm.setFieldValue('forExport', true)
-    await wrapper.vm.$nextTick()
-    expect(wrapper.find('#forExport').attributes('disabled')).toBeUndefined()
+    expect(wrapper.find('[data-testid="feacn-prefix-save-action"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="feacn-prefix-cancel-action"]').exists()).toBe(true)
+    expect(wrapper.find('button.primary').exists()).toBe(false)
+    expect(wrapper.find('button.secondary').exists()).toBe(false)
   })
 
-  it('does not disable checked procedure flags for the prefix currently being edited', async () => {
-    mockPrefixes = [{ id: 1, code: '0606', forExport: true, forImport: true }]
+  it('navigates back to the prefixes list from the header cancel action', async () => {
+    const wrapper = mountComponent()
+
+    await wrapper.get('[data-testid="feacn-prefix-cancel-action"]').trigger('click')
+
+    expect(routerPush).toHaveBeenCalledWith('/feacn/prefixes')
+  })
+
+  it('adds and removes independent scope rows', async () => {
+    const wrapper = mountComponent()
+    await wrapper.find('[data-testid="add-restriction-scope"]').trigger('click')
+    await wrapper.vm.$nextTick()
+    expect(wrapper.findAll('.scope-row-wrapper')).toHaveLength(1)
+    await wrapper.find('.scope-row-wrapper [data-test="action-button"]').trigger('click')
+    expect(wrapper.findAll('.scope-row-wrapper')).toHaveLength(0)
+  })
+
+  it('loads submitted scope rows when editing', async () => {
     getById.mockResolvedValue({
       id: 1,
       code: '0606',
-      forExport: true,
-      forImport: false,
+      scopes: [
+        { countryIsoNumeric: 643, customsProcedureCode: 10, explanation: 'reason' }
+      ],
       exceptions: []
     })
     const wrapper = mountComponent({ mode: 'edit', prefixId: 1 })
     await flushPromises()
 
-    expect(wrapper.find('#forExport').element.checked).toBe(true)
-    expect(wrapper.find('#forExport').attributes('disabled')).toBeUndefined()
-    expect(wrapper.find('#forImport').attributes('disabled')).toBeUndefined()
+    expect(wrapper.vm.scopes).toEqual([
+      { countryIsoNumeric: 643, customsProcedureCode: 10, explanation: 'reason' }
+    ])
   })
 
-  it('hides explanation fields until respective flags are enabled', async () => {
+  it('shows an explanation input on each scope row', async () => {
     const wrapper = mountComponent()
-    expect(wrapper.find('#explanationForExport').exists()).toBe(false)
-    expect(wrapper.find('#explanationForImport').exists()).toBe(false)
+    await wrapper.find('[data-testid="add-restriction-scope"]').trigger('click')
+    expect(wrapper.find('.scope-explanation').exists()).toBe(true)
+  })
 
-    await wrapper.find('#forExport').setValue(true)
-    expect(wrapper.find('#explanationForExport').exists()).toBe(true)
-    expect(wrapper.find('#explanationForImport').exists()).toBe(false)
+  it('rejects a scope already assigned to another record with the same code', async () => {
+    mockPrefixes = [{
+      id: 1,
+      code: ' 0505 ',
+      scopes: [{ countryIsoNumeric: 643, customsProcedureCode: 10 }]
+    }]
+    const wrapper = mountComponent()
+    wrapper.vm.setFieldValue('code', '0505')
+    wrapper.vm.setFieldValue('scopes', [
+      { countryIsoNumeric: 643, customsProcedureCode: 10, explanation: '' }
+    ])
 
-    await wrapper.find('#forImport').setValue(true)
-    expect(wrapper.find('#explanationForImport').exists()).toBe(true)
+    await wrapper.vm.onSubmit()
+    await flushPromises()
+
+    expect(create).not.toHaveBeenCalled()
+    expect(wrapper.text()).toContain('Страна и процедура уже используются для этого префикса')
+  })
+
+  it('allows an edited record to retain its own scope', async () => {
+    const scope = { countryIsoNumeric: 643, customsProcedureCode: 10, explanation: 'reason' }
+    mockPrefixes = [{ id: 7, code: '0505', scopes: [scope] }]
+    getById.mockResolvedValue({ id: 7, code: '0505', scopes: [scope], exceptions: [] })
+    update.mockResolvedValue({})
+    const wrapper = mountComponent({ mode: 'edit', prefixId: 7 })
+    await flushPromises()
+
+    await wrapper.vm.onSubmit()
+
+    expect(update).toHaveBeenCalledWith(7, expect.objectContaining({
+      code: '0505',
+      scopes: [scope]
+    }))
   })
 
   it('does not render an editable comment input', () => {
@@ -253,20 +303,36 @@ describe('FeacnLocalPrefix_Settings.vue', () => {
     create.mockResolvedValue({})
     const wrapper = mountComponent()
     wrapper.vm.setFieldValue('code', '0505')
-    wrapper.vm.setFieldValue('forExport', true)
-    wrapper.vm.setFieldValue('forImport', true)
-    wrapper.vm.setFieldValue('explanationForExport', ' export text ')
-    wrapper.vm.setFieldValue('explanationForImport', ' import text ')
+    wrapper.vm.setFieldValue('scopes', [
+      { countryIsoNumeric: 643, customsProcedureCode: 10, explanation: ' export text ' },
+      { countryIsoNumeric: 860, customsProcedureCode: 40, explanation: ' import text ' }
+    ])
     await wrapper.vm.onSubmit()
     expect(create).toHaveBeenCalledWith(
       expectedCreatePayload({
         code: '0505',
-        explanationForExport: 'export text',
-        explanationForImport: 'import text',
-        forExport: true,
-        forImport: true
+        scopes: [
+          { countryIsoNumeric: 643, customsProcedureCode: 10, explanation: 'export text' },
+          { countryIsoNumeric: 860, customsProcedureCode: 40, explanation: 'import text' }
+        ]
       })
     )
+  })
+
+  it('shows duplicate scope feedback only on the later row', async () => {
+    const wrapper = mountComponent()
+    wrapper.vm.setFieldValue('code', '0505')
+    wrapper.vm.setFieldValue('scopes', [
+      { countryIsoNumeric: 643, customsProcedureCode: 10, explanation: 'A' },
+      { countryIsoNumeric: 643, customsProcedureCode: 10, explanation: 'B' }
+    ])
+
+    await wrapper.vm.onSubmit()
+    await flushPromises()
+
+    expect(create).not.toHaveBeenCalled()
+    expect(wrapper.findAll('.scope-error')).toHaveLength(1)
+    expect(wrapper.text()).not.toContain('Страна и процедура не должны повторяться')
   })
 
   it('renders FieldArrayWithButtons', () => {
@@ -284,18 +350,20 @@ describe('FeacnLocalPrefix_Settings.vue', () => {
     expect(wrapper.find('[data-test="feacn-code-search"]').exists()).toBe(false)
 
     // Click the action button to toggle search
-    await wrapper.find('[data-test="action-button"]').trigger('click')
+    await wrapper.get('[data-testid="feacn-code-search-action"]').trigger('click')
     await wrapper.vm.$nextTick()
 
     // Should show search now
     expect(wrapper.find('[data-test="feacn-code-search"]').exists()).toBe(true)
+    expect(wrapper.get('[data-testid="feacn-prefix-save-action"]').attributes('disabled')).toBeDefined()
+    expect(wrapper.get('[data-testid="feacn-prefix-cancel-action"]').attributes('disabled')).toBeDefined()
   })
 
   it('handles code selection from FeacnCodeSearch', async () => {
     const wrapper = mountComponent()
 
     // Toggle search on
-    await wrapper.find('[data-test="action-button"]').trigger('click')
+    await wrapper.get('[data-testid="feacn-code-search-action"]').trigger('click')
     await wrapper.vm.$nextTick()
 
     // Simulate code selection
@@ -308,6 +376,27 @@ describe('FeacnLocalPrefix_Settings.vue', () => {
     // Search should be closed
     await wrapper.vm.$nextTick()
     expect(wrapper.find('[data-test="feacn-code-search"]').exists()).toBe(false)
+  })
+
+  it('keeps the form open and reports a rejected save once', async () => {
+    const error = new Error('Save failed')
+    create.mockRejectedValueOnce(error)
+    const wrapper = mountComponent()
+    wrapper.vm.setFieldValue('code', '0101')
+
+    const saveAction = wrapper
+      .findAllComponents({ name: 'ActionButton' })
+      .find((action) => action.props('tooltipText') === 'Создать')
+    expect(saveAction.props('item')).toBeNull()
+    await wrapper.vm.onSubmit()
+    await flushPromises()
+
+    expect(alertError).toHaveBeenCalledOnce()
+    expect(alertError).toHaveBeenCalledWith('Save failed', {
+      fallback: 'Ошибка при сохранении префикса'
+    })
+    expect(routerPush).not.toHaveBeenCalled()
+    expect(wrapper.find('form').exists()).toBe(true)
   })
 
   it('restores focus to previously active element after code search closes', async () => {

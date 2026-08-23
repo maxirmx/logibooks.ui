@@ -11,6 +11,9 @@ const emit = defineEmits(['click'])
 const attrs = useAttrs()
 
 const buttonClasses = computed(() => buildActionButtonClasses(props, attrs))
+const disabledTooltipAvailable = computed(
+  () => props.disabled && Boolean(props.tooltipText?.trim())
+)
 const forwardedAttrs = computed(() => {
   const rest = { ...attrs }
   // remove 'class' from forwarded attrs to avoid duplicating class binding
@@ -19,17 +22,30 @@ const forwardedAttrs = computed(() => {
 })
 </script>
 <template>
-  <v-tooltip open-delay="300" :disabled="props.disabled">
+  <v-tooltip open-delay="300" :disabled="!props.tooltipText">
     <template #activator="{ props: activatorProps }">
-      <button
-        type="button"
-        @click="emit('click', props.item)"
-        :class="buttonClasses"
-        v-bind="{ ...activatorProps, ...forwardedAttrs }"
-        :disabled="props.disabled"
+      <span
+        class="action-button-tooltip-activator"
+        :class="{ 'action-button-tooltip-activator--disabled': disabledTooltipAvailable }"
+        v-bind="disabledTooltipAvailable ? activatorProps : {}"
+        :tabindex="disabledTooltipAvailable ? 0 : undefined"
+        :role="disabledTooltipAvailable ? 'button' : undefined"
+        :aria-disabled="disabledTooltipAvailable ? 'true' : undefined"
+        :aria-label="disabledTooltipAvailable ? props.tooltipText : undefined"
       >
-        <font-awesome-icon :size="props.iconSize" :icon="props.icon"  class="button-o-c"/>
-      </button>
+        <button
+          type="button"
+          @click="emit('click', props.item)"
+          :class="buttonClasses"
+          v-bind="{
+            ...(disabledTooltipAvailable ? {} : activatorProps),
+            ...forwardedAttrs
+          }"
+          :disabled="props.disabled"
+        >
+          <font-awesome-icon :size="props.iconSize" :icon="props.icon" class="button-o-c" />
+        </button>
+      </span>
     </template>
     <template #default>
       <div style="white-space: pre-line">{{ props.tooltipText }}</div>
@@ -38,6 +54,14 @@ const forwardedAttrs = computed(() => {
 </template>
 
 <style scoped>
+
+.action-button-tooltip-activator {
+  display: contents;
+}
+
+.action-button-tooltip-activator--disabled {
+  display: inline-flex;
+}
 
 .anti-btn {
   float: right;

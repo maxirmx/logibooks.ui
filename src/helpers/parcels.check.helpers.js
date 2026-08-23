@@ -3,6 +3,7 @@
 // This file is a part of Logibooks ui application 
 
 import { CheckStatusCode, SWCheckStatus } from './check.status.code.js'
+import { getApplicableScopeExplanations } from './prohibition.scope.helpers.js'
 
 /**
  * Generates stopwords text for display
@@ -108,13 +109,28 @@ export function getFeacnOrdersInfo(item, feacnOrdersCollection) {
  * @param {Array} feacnPrefixesCollection - Collection of all manually set feacn prefixes
  * @returns {string|null} - Combined formatted information or null if neither present
  */
-export function getCheckStatusInfo(item, feacnOrdersCollection, stopWordsCollection, feacnPrefixesCollection) {
+export function getCheckStatusInfo(
+  item,
+  feacnOrdersCollection,
+  stopWordsCollection,
+  feacnPrefixesCollection,
+  register = null
+) {
   const duplicateInfo = item?.duplicateComment ? item.duplicateComment : null
   const feacnInfo = getFeacnOrdersInfo(item, feacnOrdersCollection)
   const stopWordsInfo = getStopWordsInfo(item, stopWordsCollection)
   const feacnPrefixesInfo = getFeacnPrefixesInfo(item, feacnPrefixesCollection)
   
   const allInfo = [duplicateInfo, feacnInfo, stopWordsInfo, feacnPrefixesInfo].filter(info => info !== null)
+
+  const matchedRules = [
+    ...(item?.stopWordIds || []).map(id => stopWordsCollection.find(rule => rule.id === id)),
+    ...(item?.feacnPrefixIds || []).map(id => feacnPrefixesCollection.find(rule => rule.id === id))
+  ].filter(Boolean)
+  const routeReasons = [...new Set(
+    matchedRules.flatMap(rule => getApplicableScopeExplanations(rule, register))
+  )]
+  allInfo.push(...routeReasons)
   
   // Add matchingSWComment if present
   if (item?.matchingSWComment) {

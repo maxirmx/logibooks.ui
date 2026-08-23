@@ -75,6 +75,12 @@ const canCalculateCustomsCharges = computed(() => {
 })
 
 const weightChangesAllowed = computed(() => canChangeParcelWeights(props.item))
+const restrictionCountryMissing = computed(() => props.item?.theOtherCountryCode == null)
+const restrictionValidationTooltip = computed(() =>
+  restrictionCountryMissing.value
+    ? 'Сначала укажите страну отправления или назначения реестра'
+    : null
+)
 const weightUpdateTooltip = computed(() =>
   weightChangesAllowed.value
     ? 'Обновить веса из файла реестра'
@@ -159,10 +165,12 @@ const documentOptions = computed(() => {
 })
 
 function run(evt) {
+  const isRestrictionValidation = ['validate-sw', 'validate-sw-ex', 'validate-fc'].includes(evt)
   if (
     props.disabled ||
     props.loading ||
     (props.mutationDisabled && mutationEvents.has(evt)) ||
+    (isRestrictionValidation && restrictionCountryMissing.value) ||
     (evt === 'update-weights-from-file' && !weightChangesAllowed.value)
   ) return
   emit(evt)
@@ -209,9 +217,9 @@ function openCmrSettings() {
       <ActionButton2L
         :item="item"
         icon="fa-solid fa-spell-check"
-        tooltip-text="Проверить по стоп-словам"
+        :tooltip-text="restrictionValidationTooltip || 'Проверить по стоп-словам'"
         :iconSize="iconSize"
-        :disabled="disabled || mutationDisabled"
+        :disabled="disabled || mutationDisabled || restrictionCountryMissing"
         :options="[
           {
             label: 'С учётом исторических данных',
@@ -227,9 +235,9 @@ function openCmrSettings() {
       <ActionButton
         :item="item"
         icon="fa-solid fa-anchor-circle-check"
-        tooltip-text="Проверить по кодам ТН ВЭД"
+        :tooltip-text="restrictionValidationTooltip || 'Проверить по кодам ТН ВЭД'"
         :iconSize="iconSize"
-        :disabled="disabled || mutationDisabled"
+        :disabled="disabled || mutationDisabled || restrictionCountryMissing"
         @click="run('validate-fc')"
       />
       <ActionButton2L

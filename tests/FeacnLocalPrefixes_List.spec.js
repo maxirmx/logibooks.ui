@@ -26,6 +26,7 @@ const mockAuthStore = vi.hoisted(() => ({
   hasLogistRole: false,
   feacnlocalprefixes_search: '',
   feacnlocalprefixes_procedure: 'all',
+  feacnlocalprefixes_country: 'all',
   feacnlocalprefixes_per_page: 100,
   feacnlocalprefixes_sort_by: [],
   feacnlocalprefixes_page: 1
@@ -37,40 +38,34 @@ const mockPrefixes = ref([
     code: '0101',
     description: 'd1',
     comment: 'legacy comment',
-    explanationForExport: 'export ban reason',
-    explanationForImport: null,
-    forExport: true,
-    forImport: false,
+    scopes: [{ countryIsoNumeric: 643, customsProcedureCode: 10, explanation: 'export ban reason' }],
     exceptions: [{ id: 1, code: '111', feacnPrefixId: 1 }]
   },
   {
     id: 2,
     code: '0202',
     description: 'd2',
-    explanationForExport: null,
-    explanationForImport: 'import ban reason',
-    forExport: false,
-    forImport: true,
+    scopes: [{ countryIsoNumeric: 860, customsProcedureCode: 40, explanation: 'import ban reason' }],
     exceptions: []
   },
   {
     id: 3,
     code: '0303',
     description: 'd3',
-    explanationForExport: 'dual export reason',
-    explanationForImport: 'dual import reason',
-    forExport: true,
-    forImport: true,
+    scopes: [
+      { countryIsoNumeric: 643, customsProcedureCode: 10, explanation: 'dual export reason' },
+      { countryIsoNumeric: 860, customsProcedureCode: 40, explanation: 'dual import reason' }
+    ],
     exceptions: ['333']
   },
   {
     id: 4,
     code: '0404',
     description: 'd4',
-    explanationForExport: null,
-    explanationForImport: 'import only dual reason',
-    forExport: true,
-    forImport: true,
+    scopes: [
+      { countryIsoNumeric: 643, customsProcedureCode: 10, explanation: null },
+      { countryIsoNumeric: 860, customsProcedureCode: 40, explanation: 'import only dual reason' }
+    ],
     exceptions: []
   }
 ])
@@ -95,6 +90,17 @@ vi.mock('@/stores/feacn.prefixes.store.js', () => ({
 
 vi.mock('@/stores/auth.store.js', () => ({
   useAuthStore: () => mockAuthStore
+}))
+
+vi.mock('@/stores/countries.store.js', () => ({
+  useCountriesStore: () => ({
+    countries: [
+      { isoNumeric: 643, nameRuShort: 'Россия' },
+      { isoNumeric: 860, nameRuShort: 'Узбекистан' }
+    ],
+    ensureLoaded: vi.fn().mockResolvedValue(undefined),
+    getCountryShortName: vi.fn((code) => Number(code) === 643 ? 'Россия' : 'Узбекистан')
+  })
 }))
 
 vi.mock('@/stores/alert.store.js', () => ({
@@ -126,6 +132,10 @@ describe('FeacnLocalPrefixes_List.vue', () => {
       global: {
         stubs: {
           ...vuetifyStubs,
+          'v-autocomplete': {
+            template: '<div class="v-autocomplete-stub"></div>',
+            props: ['modelValue', 'items', 'label', 'disabled']
+          },
           ActionButton: true
         }
       }
@@ -141,6 +151,7 @@ describe('FeacnLocalPrefixes_List.vue', () => {
     mockAlertError.mockClear()
     mockAuthStore.feacnlocalprefixes_search = ''
     mockAuthStore.feacnlocalprefixes_procedure = 'all'
+    mockAuthStore.feacnlocalprefixes_country = 'all'
     mockAuthStore.feacnlocalprefixes_page = 1
     mockAuthStore.feacnlocalprefixes_sort_by = []
     wrapper = mountList()
@@ -148,31 +159,36 @@ describe('FeacnLocalPrefixes_List.vue', () => {
 
   it('uses requested procedure sort order from import and export flags', () => {
     const combinations = [
-      { forImport: false, forExport: false },
-      { forImport: false, forExport: true },
-      { forImport: true, forExport: true },
-      { forImport: true, forExport: false }
+      { scopes: [] },
+      { scopes: [{ countryIsoNumeric: 643, customsProcedureCode: 10 }] },
+      { scopes: [
+        { countryIsoNumeric: 643, customsProcedureCode: 10 },
+        { countryIsoNumeric: 860, customsProcedureCode: 40 }
+      ] },
+      { scopes: [{ countryIsoNumeric: 860, customsProcedureCode: 40 }] }
     ]
 
     expect(combinations.map((item) => wrapper.vm.getProhibitionScopeSortOrder(item))).toEqual([
-      0, 1, 2, 3
+      '', '643:10', '643:10|860:40', '860:40'
     ])
-    expect(wrapper.vm.tablePrefixes.map((item) => item.procedure)).toEqual([1, 3, 2, 2])
+    expect(wrapper.vm.tablePrefixes.map((item) => item.procedure)).toEqual([
+      '643:10', '860:40', '643:10|860:40', '643:10|860:40'
+    ])
   })
 
   it('renders export and import prohibition reasons on separate lines', () => {
     const rows = wrapper.findAll('[data-testid="v-data-table"] .v-data-table-row')
-    const reasonCell = rows[2].findAll('.v-data-table-cell')[5]
+    const reasonCell = rows[2].findAll('.v-data-table-cell')[6]
     const lines = reasonCell.findAll('.reason-line')
     expect(lines.map((line) => line.text())).toEqual(['dual export reason', 'dual import reason'])
   })
 
   it('keeps import reason aligned with import procedure when export reason is empty', () => {
     const rows = wrapper.findAll('[data-testid="v-data-table"] .v-data-table-row')
-    const procedureLines = rows[3].findAll('.v-data-table-cell')[4].findAll('.procedure-line')
-    const reasonLines = rows[3].findAll('.v-data-table-cell')[5].findAll('.reason-line')
+    const procedureLines = rows[3].findAll('.v-data-table-cell')[5].findAll('.procedure-line')
+    const reasonLines = rows[3].findAll('.v-data-table-cell')[6].findAll('.reason-line')
 
-    expect(procedureLines.map((line) => line.text())).toEqual(['Экспорт из РФ', 'Импорт в РФ'])
+    expect(procedureLines.map((line) => line.text())).toEqual(['Экспорт', 'Импорт'])
     expect(reasonLines).toHaveLength(2)
     expect(reasonLines[0].text()).toBe('')
     expect(reasonLines[1].text()).toBe('import only dual reason')
@@ -269,8 +285,8 @@ describe('FeacnLocalPrefixes_List.vue', () => {
     expect(filters.element.firstElementChild).toBe(filters.find('[data-testid="v-select"]').element)
     expect(wrapper.vm.prohibitionScopeFilterItems).toEqual([
       { title: 'Любая', value: 'all' },
-      { title: 'Экспорт из РФ', value: 'export' },
-      { title: 'Импорт в РФ', value: 'import' }
+      { title: 'Экспорт', value: 'export' },
+      { title: 'Импорт', value: 'import' }
     ])
   })
 
@@ -278,8 +294,8 @@ describe('FeacnLocalPrefixes_List.vue', () => {
     const item = { raw: mockPrefixes.value[2] }
     expect(wrapper.vm.filterLocalPrefixes(null, 'dual export', item)).toBe(true)
     expect(wrapper.vm.filterLocalPrefixes(null, 'dual import', item)).toBe(true)
-    expect(wrapper.vm.filterLocalPrefixes(null, 'Экспорт из РФ', item)).toBe(true)
-    expect(wrapper.vm.filterLocalPrefixes(null, 'Импорт в РФ', item)).toBe(true)
+    expect(wrapper.vm.filterLocalPrefixes(null, 'Россия — Экспорт', item)).toBe(true)
+    expect(wrapper.vm.filterLocalPrefixes(null, 'Узбекистан — Импорт', item)).toBe(true)
     expect(wrapper.vm.filterLocalPrefixes(null, 'd3', item)).toBe(true)
     expect(wrapper.vm.filterLocalPrefixes(null, 'Exception 333', item)).toBe(true)
     expect(wrapper.vm.filterLocalPrefixes(null, 'not-found', item)).toBe(false)

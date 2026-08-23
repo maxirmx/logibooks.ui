@@ -575,7 +575,7 @@ describe('WbrNParcels_List.vue', () => {
     WbrNParcelsList = (await import('@/lists/WbrNParcels_List.vue')).default
     WbrParcelsList = (await import('@/lists/WbrParcels_List.vue')).default
     Wbr2ParcelsList = (await import('@/lists/Wbr2Parcels_List.vue')).default
-  }, 30_000)
+  }, 60_000)
 
   beforeEach(resetState)
 

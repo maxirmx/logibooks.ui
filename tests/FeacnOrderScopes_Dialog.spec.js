@@ -108,8 +108,18 @@ describe('FeacnOrderScopes_Dialog', () => {
     await wrapper.vm.save()
 
     expect(wrapper.vm.validationError).toContain('не могут повторяться')
+    expect(wrapper.text()).not.toContain('не могут повторяться')
     expect(mocks.updateScopes).not.toHaveBeenCalled()
     expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+  })
+
+  it('keeps non-duplicate collection validation visible', async () => {
+    const wrapper = createWrapper()
+    await flushPromises()
+    wrapper.vm.scopes = [{ countryIsoNumeric: null, customsProcedureCode: 10, explanation: '' }]
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.text()).toContain('Укажите страну для каждой области действия')
   })
 
   it('reports a rejected save once, preserves values and stays open', async () => {

@@ -82,46 +82,6 @@ export const useFeacnOrdersStore = defineStore('feacn.orders', () => {
     }
   }
 
-  async function setOrderFlag(orderId, flag, enabled) {
-    loading.value = true
-    error.value = null
-    try {
-      await fetchWrapper.post(
-        `${baseUrl}/orders/${orderId}/${enabled ? 'enable' : 'disable'}-for-${flag}`
-      )
-      await getOrders()
-    } catch (err) {
-      error.value = err
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
-  async function enableForExport(orderId) {
-    await setOrderFlag(orderId, 'export', true)
-  }
-
-  async function disableForExport(orderId) {
-    await setOrderFlag(orderId, 'export', false)
-  }
-
-  async function enableForImport(orderId) {
-    await setOrderFlag(orderId, 'import', true)
-  }
-
-  async function disableForImport(orderId) {
-    await setOrderFlag(orderId, 'import', false)
-  }
-
-  async function toggleEnabledForExport(id, enabled) {
-    await setOrderFlag(id, 'export', enabled)
-  }
-
-  async function toggleEnabledForImport(id, enabled) {
-    await setOrderFlag(id, 'import', enabled)
-  }
-
   return {
     orders,
     prefixes,
@@ -132,12 +92,6 @@ export const useFeacnOrdersStore = defineStore('feacn.orders', () => {
     getPrefixes,
     update,
     updateScopes,
-    enableForExport,
-    disableForExport,
-    enableForImport,
-    disableForImport,
-    ensureLoaded,
-    toggleEnabledForExport,
-    toggleEnabledForImport
+    ensureLoaded
   }
 })

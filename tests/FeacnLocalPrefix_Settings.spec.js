@@ -319,6 +319,22 @@ describe('FeacnLocalPrefix_Settings.vue', () => {
     )
   })
 
+  it('shows duplicate scope feedback only on the later row', async () => {
+    const wrapper = mountComponent()
+    wrapper.vm.setFieldValue('code', '0505')
+    wrapper.vm.setFieldValue('scopes', [
+      { countryIsoNumeric: 643, customsProcedureCode: 10, explanation: 'A' },
+      { countryIsoNumeric: 643, customsProcedureCode: 10, explanation: 'B' }
+    ])
+
+    await wrapper.vm.onSubmit()
+    await flushPromises()
+
+    expect(create).not.toHaveBeenCalled()
+    expect(wrapper.findAll('.scope-error')).toHaveLength(1)
+    expect(wrapper.text()).not.toContain('Страна и процедура не должны повторяться')
+  })
+
   it('renders FieldArrayWithButtons', () => {
     const wrapper = mountComponent()
     expect(wrapper.find('[data-test="fab-stub"]').exists()).toBe(true)

@@ -311,6 +311,24 @@ describe('StopWord_Settings.vue', () => {
       expect(routerPush).toHaveBeenCalledWith('/stopwords')
     })
 
+    it('shows duplicate scope feedback only on the later row', async () => {
+      const wrapper = mountComponent()
+      await resolveAll()
+      wrapper.vm.word = 'новое'
+      wrapper.vm.matchTypeId = 1
+      wrapper.vm.scopes = [
+        { countryIsoNumeric: 643, customsProcedureCode: 10, explanation: 'A' },
+        { countryIsoNumeric: 643, customsProcedureCode: 10, explanation: 'B' }
+      ]
+
+      await wrapper.vm.onSubmit()
+      await resolveAll()
+
+      expect(create).not.toHaveBeenCalled()
+      expect(wrapper.findAll('.scope-error')).toHaveLength(1)
+      expect(wrapper.text()).not.toContain('Страна и процедура не должны повторяться')
+    })
+
     it('handles creation errors', async () => {
       create.mockRejectedValueOnce(new Error('409'))
       const wrapper = mountComponent()

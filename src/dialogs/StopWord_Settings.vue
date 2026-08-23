@@ -39,6 +39,17 @@ const { countries } = storeToRefs(countriesStore)
 const isEdit = computed(() => props.id !== null && props.id !== undefined)
 const saving = ref(false)
 const loading = ref(false)
+const UNIQUE_SCOPES_ERROR = 'Страна и процедура не должны повторяться'
+
+function getCompleteScopeKeys(scopes) {
+  return (scopes || [])
+    .filter(
+      (scope) => scope.countryIsoNumeric != null && scope.customsProcedureCode != null
+    )
+    .map(
+      (scope) => `${Number(scope.countryIsoNumeric)}:${Number(scope.customsProcedureCode)}`
+    )
+}
 
 // Validation schema
 const schema = toTypedSchema(
@@ -63,10 +74,8 @@ const schema = toTypedSchema(
           explanation: Yup.string().nullable()
         })
       )
-      .test('unique-scopes', 'Страна и процедура не должны повторяться', (scopes) => {
-        const keys = (scopes || []).map(
-          (scope) => `${scope.countryIsoNumeric}:${scope.customsProcedureCode}`
-        )
+      .test('unique-scopes', UNIQUE_SCOPES_ERROR, (scopes) => {
+        const keys = getCompleteScopeKeys(scopes)
         return new Set(keys).size === keys.length
       })
   })

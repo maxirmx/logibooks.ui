@@ -49,6 +49,10 @@ const validationError = computed(() => {
   return null
 })
 
+const visibleValidationError = computed(() =>
+  validationError.value?.includes('не могут повторяться') ? null : validationError.value
+)
+
 watch(
   () => [props.modelValue, props.order],
   ([open]) => {
@@ -102,8 +106,8 @@ defineExpose({ scopes, validationError, save, close })
         :countries="countriesStore.countries"
         :disabled="saving"
       />
-      <div v-if="validationError" class="invalid-feedback scope-validation-error">
-        {{ validationError }}
+      <div v-if="visibleValidationError" class="invalid-feedback scope-validation-error">
+        {{ visibleValidationError }}
       </div>
 
       <template #actions>

@@ -9,7 +9,7 @@ import { vuetifyStubs } from './helpers/test-utils.js'
 
 const FieldStub = (name, className) => ({
   name,
-  props: ['modelValue', 'items', 'label', 'disabled', 'id', 'name', 'error'],
+  props: ['modelValue', 'items', 'label', 'disabled', 'variant', 'id', 'name', 'error'],
   emits: ['update:modelValue'],
   template: `<input :id="id" :name="name" :class="className" />`,
   data: () => ({ className })
@@ -63,8 +63,37 @@ describe('RestrictionScopeEditor', () => {
     await wrapper.get('[data-testid="add-restriction-scope"]').trigger('click')
 
     expect(wrapper.emitted('update:modelValue')?.[0]).toEqual([[
-      { countryIsoNumeric: null, customsProcedureCode: 10, explanation: '' }
+      { countryIsoNumeric: 643, customsProcedureCode: 10, explanation: '' }
     ]])
+  })
+
+  it('uses the standard compact table presentation for inline editors', () => {
+    const wrapper = createWrapper([
+      { countryIsoNumeric: 643, customsProcedureCode: 10, explanation: 'Причина' }
+    ])
+    const table = wrapper.findComponent(vuetifyStubs['v-data-table'])
+    const fields = [
+      wrapper.findComponent({ name: 'VAutocomplete' }),
+      wrapper.findComponent({ name: 'VSelect' }),
+      wrapper.findComponent({ name: 'VTextField' })
+    ]
+
+    expect(table.props('headers').map(({ title }) => title)).toEqual([
+      '',
+      'Страна',
+      'Процедура',
+      'Причина ограничения'
+    ])
+    expect(table.vm.$attrs.class).toContain('elevation-1 interlaced-table')
+    expect(table.vm.$attrs).not.toHaveProperty('hide-default-header')
+    expect(fields.every((field) => field.props('variant') === 'outlined')).toBe(true)
+    expect(fields.map((field) => field.attributes('aria-label'))).toEqual([
+      'Страна',
+      'Процедура',
+      'Причина ограничения'
+    ])
+    expect(wrapper.find('.scope-editor-heading .header-actions').exists()).toBe(true)
+    expect(wrapper.find('.actions-container.scope-row-actions').exists()).toBe(true)
   })
 
   it('updates country, procedure and explanation without mutating the input', async () => {
@@ -83,7 +112,7 @@ describe('RestrictionScopeEditor', () => {
     expect(original).toEqual([{ countryIsoNumeric: 643, customsProcedureCode: 10, explanation: 'Old' }])
   })
 
-  it('marks duplicate country/procedure pairs and removes the requested row', async () => {
+  it('marks only later duplicate country/procedure rows and removes the requested row', async () => {
     const scopes = [
       { countryIsoNumeric: 643, customsProcedureCode: 10, explanation: 'A' },
       { countryIsoNumeric: 643, customsProcedureCode: 10, explanation: 'B' },
@@ -91,7 +120,9 @@ describe('RestrictionScopeEditor', () => {
     ]
     const wrapper = createWrapper(scopes)
 
-    expect(wrapper.findAll('.scope-error')).toHaveLength(2)
+    expect(wrapper.vm.isDuplicate(0)).toBe(false)
+    expect(wrapper.vm.isDuplicate(1)).toBe(true)
+    expect(wrapper.findAll('.scope-error')).toHaveLength(1)
     expect(
       wrapper
         .findAllComponents({ name: 'ActionButton' })

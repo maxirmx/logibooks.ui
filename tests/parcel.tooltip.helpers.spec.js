@@ -137,7 +137,8 @@ describe('parcel tooltip helpers', () => {
       expect(parcelsCheckHelpers.getCheckStatusInfo).toHaveBeenCalledWith(
         item,
         feacnOrders,
-        stopWords
+        stopWords,
+        []
       )
     })
 
@@ -172,7 +173,8 @@ describe('parcel tooltip helpers', () => {
       expect(parcelsCheckHelpers.getCheckStatusInfo).toHaveBeenCalledWith(
         item,
         feacnOrders,
-        stopWords
+        stopWords,
+        []
       )
     })
 

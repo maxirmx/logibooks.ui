@@ -34,7 +34,7 @@ export function getCheckStatusTooltip(item, getStatusTitle, feacnOrders, stopWor
   const baseTitle = new CheckStatusCode(item.checkStatus).toString()
 
   if (CheckStatusCode.hasIssues(item.checkStatus)) {
-    const checkInfo = getCheckStatusInfo(item, feacnOrders, stopWords)
+    const checkInfo = getCheckStatusInfo(item, feacnOrders, stopWords, [])
     if (checkInfo) {
       return `${baseTitle}\n${checkInfo}`
     }

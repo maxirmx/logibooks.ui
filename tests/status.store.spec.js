@@ -31,12 +31,19 @@ describe('status store', () => {
       exchangeRates: {
         rates: [
           { alphabeticCode: 'USD', rate: 92.12, date: '2024-06-24' },
-          { alphabeticCode: 'EUR', rate: 101.98, date: '2024-06-24' }
+          { alphabeticCode: 'EUR', rate: 101.98, date: '2024-06-24' },
+          { alphabeticCode: 'TJS', rate: 84.8238, units: 10, date: '2024-06-24' }
         ],
         eurUzs: {
           baseAlphabeticCode: 'EUR',
           quoteAlphabeticCode: 'UZS',
           rate: 15586.1234,
+          date: '2024-06-24'
+        },
+        eurTjs: {
+          baseAlphabeticCode: 'EUR',
+          quoteAlphabeticCode: 'TJS',
+          rate: 12.0234,
           date: '2024-06-24'
         }
       }
@@ -50,12 +57,19 @@ describe('status store', () => {
     expect(store.dbVersion).toBe('20240624')
     expect(store.exchangeRates).toEqual([
       { alphabeticCode: 'USD', rate: 92.12, date: '2024-06-24' },
-      { alphabeticCode: 'EUR', rate: 101.98, date: '2024-06-24' }
+      { alphabeticCode: 'EUR', rate: 101.98, date: '2024-06-24' },
+      { alphabeticCode: 'TJS', rate: 84.8238, units: 10, date: '2024-06-24' }
     ])
     expect(store.eurUzs).toEqual({
       baseAlphabeticCode: 'EUR',
       quoteAlphabeticCode: 'UZS',
       rate: 15586.1234,
+      date: '2024-06-24'
+    })
+    expect(store.eurTjs).toEqual({
+      baseAlphabeticCode: 'EUR',
+      quoteAlphabeticCode: 'TJS',
+      rate: 12.0234,
       date: '2024-06-24'
     })
   })
@@ -75,10 +89,30 @@ describe('status store', () => {
       rate: 15586.1234,
       date: '2024-06-01'
     }
+    store.eurTjs = {
+      baseAlphabeticCode: 'EUR',
+      quoteAlphabeticCode: 'TJS',
+      rate: 12.0234,
+      date: '2024-06-01'
+    }
 
     await store.fetchStatus()
 
     expect(store.exchangeRates).toEqual([])
     expect(store.eurUzs).toBeNull()
+    expect(store.eurTjs).toBeNull()
+  })
+
+  it('fetchStatus propagates transport failures after resetting rate state', async () => {
+    const error = new Error('status unavailable')
+    fetchWrapper.get.mockRejectedValue(error)
+    const store = useStatusStore()
+    store.exchangeRates = [{ alphabeticCode: 'TJS', rate: 84.8238, units: 10 }]
+    store.eurTjs = { rate: 12.0234 }
+
+    await expect(store.fetchStatus()).rejects.toBe(error)
+
+    expect(store.exchangeRates).toEqual([])
+    expect(store.eurTjs).toBeNull()
   })
 })

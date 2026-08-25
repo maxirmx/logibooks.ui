@@ -5,7 +5,8 @@
 
 import { RouterLink, RouterView } from 'vue-router'
 import { version } from '@/../package'
-import { computed, onMounted } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { mdiChevronDown, mdiChevronUp } from '@mdi/js'
 import { useStatusStore } from '@/stores/status.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE, getRegisterNouns } from '@/helpers/op.mode.js'
@@ -45,6 +46,18 @@ const unitNumberFormatter = new Intl.NumberFormat('ru-RU', {
   maximumFractionDigits: 0
 })
 const dateOnlyPattern = /^\d{4}-\d{2}-\d{2}$/
+const RATE_UNAVAILABLE_MARK = '—'
+const RATE_UNAVAILABLE_MESSAGE = 'не удалось получить курс'
+const COLLAPSED_APP_BAR_HEIGHT = 64
+const EXPANDED_APP_BAR_VERTICAL_PADDING = 24
+
+const exchangeRatesViewport = ref(null)
+const exchangeRatesContent = ref(null)
+const exchangeRatesOverflow = ref(false)
+const exchangeRatesExpanded = ref(false)
+const appBarHeight = ref(COLLAPSED_APP_BAR_HEIGHT)
+
+let exchangeRatesResizeObserver = null
 
 function findRate(code) {
   return statusStore.exchangeRates?.find((r) => r?.alphabeticCode?.toUpperCase() === code) || null
@@ -82,35 +95,98 @@ const exchangeRatesDisplay = computed(() => {
   const usd = findRate('USD')
   const eur = findRate('EUR')
   const uzs = findRate('UZS')
+  const tjs = findRate('TJS')
 
-  const FAIL_MSG = 'не удалось получить курс'
   function formatEntry(rateObj) {
-    if (!rateObj) return FAIL_MSG
-    if (!isSameRateDate(rateObj.date, today)) return FAIL_MSG
-    if (typeof rateObj.rate !== 'number') return FAIL_MSG
+    if (!rateObj) return RATE_UNAVAILABLE_MARK
+    if (!isSameRateDate(rateObj.date, today)) return RATE_UNAVAILABLE_MARK
+    if (typeof rateObj.rate !== 'number') return RATE_UNAVAILABLE_MARK
     return rateNumberFormatter.format(rateObj.rate)
   }
 
-  function formatUzsLabel(rateObj) {
+  function formatUnitRateLabel(currencyCode, rateObj) {
     if (!rateObj || typeof rateObj.units !== 'number' || rateObj.units <= 0) {
-      return 'UZS'
+      return currencyCode
     }
 
-    return `UZS (за ${unitNumberFormatter.format(rateObj.units)})`
+    return `${currencyCode} (за ${unitNumberFormatter.format(rateObj.units)})`
   }
 
   const usdText = formatEntry(usd)
   const eurText = formatEntry(eur)
   const uzsText = formatEntry(uzs)
-  const uzsLabel = formatUzsLabel(uzs)
+  const tjsText = formatEntry(tjs)
+  const uzsLabel = formatUnitRateLabel('UZS', uzs)
+  const tjsLabel = formatUnitRateLabel('TJS', tjs)
   //  const eurUzsText = formatEntry(eurUzs)
 
   return {
     date: todayStr,
     usd: usdText,
     eur: eurText,
-    uzs: `${uzsLabel} ${uzsText}`
+    uzs: `${uzsLabel} ${uzsText}`,
+    tjs: `${tjsLabel} ${tjsText}`
   }
+})
+
+function getRateTitle(rateText) {
+  return rateText.endsWith(RATE_UNAVAILABLE_MARK) ? RATE_UNAVAILABLE_MESSAGE : undefined
+}
+
+function getExchangeRatesNaturalWidth(content) {
+  const items = Array.from(content.children)
+  const columnGap = Number.parseFloat(window.getComputedStyle(content).columnGap) || 0
+  const itemsWidth = items.reduce(
+    (total, item) => total + item.getBoundingClientRect().width,
+    0
+  )
+
+  return Math.max(content.scrollWidth, itemsWidth + columnGap * Math.max(items.length - 1, 0))
+}
+
+function updateAppBarHeight() {
+  if (!exchangeRatesExpanded.value || !exchangeRatesOverflow.value) {
+    appBarHeight.value = COLLAPSED_APP_BAR_HEIGHT
+    return
+  }
+
+  appBarHeight.value = Math.max(
+    COLLAPSED_APP_BAR_HEIGHT,
+    exchangeRatesContent.value.scrollHeight + EXPANDED_APP_BAR_VERTICAL_PADDING
+  )
+}
+
+function measureExchangeRatesOverflow() {
+  const viewport = exchangeRatesViewport.value
+  const content = exchangeRatesContent.value
+  if (!viewport || !content || viewport.clientWidth <= 0) return
+
+  exchangeRatesOverflow.value = getExchangeRatesNaturalWidth(content) > viewport.clientWidth + 1
+  if (!exchangeRatesOverflow.value) {
+    exchangeRatesExpanded.value = false
+  }
+  updateAppBarHeight()
+}
+
+function toggleExchangeRates() {
+  if (!exchangeRatesOverflow.value) return
+  exchangeRatesExpanded.value = !exchangeRatesExpanded.value
+}
+
+watch(exchangeRatesDisplay, measureExchangeRatesOverflow, { flush: 'post' })
+watch(exchangeRatesExpanded, updateAppBarHeight, { flush: 'post' })
+
+onMounted(() => {
+  measureExchangeRatesOverflow()
+  if (typeof globalThis.ResizeObserver === 'undefined') return
+
+  exchangeRatesResizeObserver = new globalThis.ResizeObserver(measureExchangeRatesOverflow)
+  exchangeRatesResizeObserver.observe(exchangeRatesViewport.value)
+  exchangeRatesResizeObserver.observe(exchangeRatesContent.value)
+})
+
+onBeforeUnmount(() => {
+  exchangeRatesResizeObserver?.disconnect()
 })
 
 import { drawer, toggleDrawer } from '@/helpers/drawer.js'
@@ -133,23 +209,58 @@ function getUserName() {
 
 <template>
   <v-app class="rounded rounded-md">
-    <v-app-bar>
+    <v-app-bar :height="appBarHeight">
       <template v-slot:prepend>
         <v-app-bar-nav-icon @click.stop="toggleDrawer()" color="blue-darken-2"></v-app-bar-nav-icon>
       </template>
       <v-app-bar-title class="primary-heading">Logibooks {{ getUserName() }} </v-app-bar-title>
       <v-spacer />
-      <div class="primary-heading exchange-rates">
-        {{ exchangeRatesDisplay.date }}
-        <span
-          class="exchange-rate-usd font-weight-bold text-green-darken-3"
-          data-testid="exchange-rate-usd"
-        >USD {{ exchangeRatesDisplay.usd }}</span>
-        <span
-          class="exchange-rate-eur font-weight-bold text-purple-darken-2"
-          data-testid="exchange-rate-eur"
-        > EUR {{ exchangeRatesDisplay.eur }}</span>
-        {{ exchangeRatesDisplay.uzs }}
+      <div class="exchange-rates-region">
+        <div
+          ref="exchangeRatesViewport"
+          class="exchange-rates-viewport"
+          :class="{ 'exchange-rates-viewport--expanded': exchangeRatesExpanded }"
+        >
+          <div
+            ref="exchangeRatesContent"
+            class="primary-heading exchange-rates"
+            :class="{ 'exchange-rates--expanded': exchangeRatesExpanded }"
+          >
+            <span class="exchange-rate-item">{{ exchangeRatesDisplay.date }}</span>
+            <span
+              class="exchange-rate-item exchange-rate-usd font-weight-bold text-green-darken-3"
+              data-testid="exchange-rate-usd"
+              :title="getRateTitle(exchangeRatesDisplay.usd)"
+            >USD {{ exchangeRatesDisplay.usd }}</span>
+            <span
+              class="exchange-rate-item exchange-rate-eur font-weight-bold text-purple-darken-2"
+              data-testid="exchange-rate-eur"
+              :title="getRateTitle(exchangeRatesDisplay.eur)"
+            >EUR {{ exchangeRatesDisplay.eur }}</span>
+            <span
+              class="exchange-rate-item"
+              data-testid="exchange-rate-uzs"
+              :title="getRateTitle(exchangeRatesDisplay.uzs)"
+            >{{ exchangeRatesDisplay.uzs }}</span>
+            <span
+              class="exchange-rate-item"
+              data-testid="exchange-rate-tjs"
+              :title="getRateTitle(exchangeRatesDisplay.tjs)"
+            >{{ exchangeRatesDisplay.tjs }}</span>
+          </div>
+        </div>
+        <v-btn
+          v-if="exchangeRatesOverflow"
+          class="exchange-rates-toggle"
+          data-testid="exchange-rates-toggle"
+          :icon="exchangeRatesExpanded ? mdiChevronUp : mdiChevronDown"
+          :aria-label="exchangeRatesExpanded ? 'Свернуть курсы валют' : 'Показать все курсы валют'"
+          :aria-expanded="exchangeRatesExpanded"
+          density="compact"
+          size="small"
+          variant="text"
+          @click="toggleExchangeRates"
+        />
       </div>
     </v-app-bar>
     <v-navigation-drawer v-model="drawer" elevation="4">
@@ -353,18 +464,48 @@ function getUserName() {
   font-size: smaller;
 }
 
-.exchange-rates {
-  display: flex;
+.exchange-rates-region {
   align-items: center;
-  gap: 0.75rem;
-  font-size: 0.875rem;
-  white-space: nowrap;
+  display: flex;
+  flex: 0 1 auto;
+  min-width: 0;
   margin-right: 3rem;
 }
 
-.exchange-rates span {
+.exchange-rates-viewport {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.exchange-rates-viewport--expanded {
+  overflow: visible;
+}
+
+.exchange-rates {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+  white-space: nowrap;
+  width: 100%;
+}
+
+.exchange-rates--expanded {
+  flex-wrap: wrap;
+  row-gap: 0.25rem;
+}
+
+.exchange-rate-item {
+  flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
+}
+
+.exchange-rates-toggle {
+  flex: 0 0 auto;
+  margin-left: 0.25rem;
 }
 
 /* Make the entire menu item hoverable */

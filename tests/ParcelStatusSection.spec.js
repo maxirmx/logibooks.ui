@@ -10,6 +10,7 @@ import * as directives from 'vuetify/directives'
 import ParcelStatusSection from '@/components/ParcelStatusSection.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
+import { getCheckStatusInfo } from '@/helpers/parcels.check.helpers.js'
 
 vi.mock('@fortawesome/vue-fontawesome', () => ({
   FontAwesomeIcon: {
@@ -173,6 +174,31 @@ describe('ParcelStatusSection', () => {
 
     expect(wrapper.find('.stopwords-info').exists()).toBe(true)
     expect(wrapper.find('.stopwords-text').text()).toContain('Проблема с кодом')
+  })
+
+  it('renders matched stop words without route-scope explanations', () => {
+    const checkStatusInfo = getCheckStatusInfo(
+      { stopWordIds: [1] },
+      [],
+      [
+        {
+          id: 1,
+          word: 'браслет',
+          scopes: [
+            {
+              countryIsoNumeric: 643,
+              customsProcedureCode: 10,
+              explanation: '971 приказ ФТС - акция'
+            }
+          ]
+        }
+      ],
+      []
+    )
+    const wrapper = createWrapper({ checkStatusInfo })
+
+    expect(wrapper.find('.stopwords-text').text()).toBe("Стоп-слова и фразы: 'браслет'")
+    expect(wrapper.text()).not.toContain('971 приказ ФТС - акция')
   })
 
   it('shows approved styling when no issues exist', () => {

@@ -6,6 +6,7 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import ParcelFilterSelectors from '@/components/ParcelFilterSelectors.vue'
+import ResponsiveFilterBar from '@/components/ResponsiveFilterBar.vue'
 
 describe('ParcelFilterSelectors', () => {
   const mountComponent = (props = {}) =>
@@ -58,6 +59,31 @@ describe('ParcelFilterSelectors', () => {
       expect(node.attributes('data-disabled')).toBe(String(expectedTextFieldDisabled))
     })
   }
+
+  it('uses an accessible responsive filter bar with role-based control sizes', () => {
+    const wrapper = mountComponent()
+    const filterBar = wrapper.findComponent(ResponsiveFilterBar)
+    const controls = Array.from(filterBar.element.children)
+
+    expect(filterBar.exists()).toBe(true)
+    expect(filterBar.attributes('aria-label')).toBe('Фильтры посылок')
+    expect(controls).toHaveLength(7)
+    expect(controls.map((control) => control.getAttribute('data-label'))).toEqual([
+      'Статус',
+      'Статус проверки по стоп-словам',
+      'Статус проверки по ТН ВЭД',
+      'Применённые запреты',
+      'ТН ВЭД',
+      'Номер посылки',
+      'Товар'
+    ])
+    expect(controls[0].classList).toContain('responsive-filter-bar__item--regular')
+    expect(controls[3].classList).toContain('responsive-filter-bar__item--compact')
+    expect(controls[4].classList).toContain('responsive-filter-bar__item--compact')
+    expect(controls[5].classList).toContain('responsive-filter-bar__item--grow')
+    expect(controls[6].classList).toContain('responsive-filter-bar__item--grow')
+    controls.forEach((control) => expect(control.hasAttribute('style')).toBe(false))
+  })
 
   it('keeps all controls enabled when no flags are active', () => {
     const wrapper = mountComponent({ runningAction: false, loading: false, isInitializing: false })
@@ -142,6 +168,9 @@ describe('ParcelFilterSelectors', () => {
     })
     expect(visibleWrapper.find('[data-label="Статус проверки паспорта"]').exists()).toBe(true)
     expect(visibleWrapper.findAll('.v-select-stub')).toHaveLength(5)
+    expect(
+      visibleWrapper.find('[data-label="Статус проверки паспорта"]').classes()
+    ).toContain('responsive-filter-bar__item--regular')
   })
 
   it('clears passport check status when the selector is hidden after initialization', async () => {

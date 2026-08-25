@@ -1,5 +1,6 @@
 <script setup>
 import { computed, watch } from 'vue'
+import ResponsiveFilterBar from '@/components/ResponsiveFilterBar.vue'
 
 const props = defineProps({
   statusOptions: { type: Array, required: true },
@@ -114,7 +115,7 @@ const localProductNameSearchModel = computed({
 </script>
 
 <template>
-  <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+  <ResponsiveFilterBar class="parcel-filter-selectors" aria-label="Фильтры посылок">
     <v-select
       v-model="parcelsStatusModel"
       :items="statusOptions"
@@ -122,7 +123,7 @@ const localProductNameSearchModel = computed({
       item-value="value"
       label="Статус"
       density="compact"
-      style="min-width: 250px"
+      class="responsive-filter-bar__item--regular"
       :disabled="disabledState.selectsDisabled"
     />
     <v-select
@@ -132,7 +133,7 @@ const localProductNameSearchModel = computed({
       item-value="value"
       label="Статус проверки по стоп-словам"
       density="compact"
-      style="min-width: 250px"
+      class="responsive-filter-bar__item--regular"
       :disabled="disabledState.selectsDisabled"
     />
 
@@ -143,7 +144,7 @@ const localProductNameSearchModel = computed({
       item-value="value"
       label="Статус проверки по ТН ВЭД"
       density="compact"
-      style="min-width: 250px"
+      class="responsive-filter-bar__item--regular"
       :disabled="disabledState.selectsDisabled"
     />
     <v-select
@@ -154,7 +155,7 @@ const localProductNameSearchModel = computed({
       item-value="value"
       label="Статус проверки паспорта"
       density="compact"
-      style="min-width: 250px"
+      class="responsive-filter-bar__item--regular"
       :disabled="disabledState.selectsDisabled"
     />
     <v-select
@@ -164,29 +165,29 @@ const localProductNameSearchModel = computed({
       item-value="value"
       label="Применённые запреты"
       density="compact"
-      style="min-width: 200px"
+      class="responsive-filter-bar__item--compact"
       :disabled="disabledState.selectsDisabled"
     />
     <v-text-field
       v-model="localTnvedSearchModel"
       label="ТН ВЭД"
       density="compact"
-      style="min-width: 200px;"
+      class="responsive-filter-bar__item--compact"
       :disabled="disabledState.textFieldsDisabled"
     />
     <v-text-field
       v-model="localParcelNumberSearchModel"
       label="Номер посылки"
       density="compact"
-      style="min-width: 200px;"
+      class="responsive-filter-bar__item--regular responsive-filter-bar__item--grow"
       :disabled="disabledState.textFieldsDisabled"
     />
     <v-text-field
       v-model="localProductNameSearchModel"
       label="Товар"
       density="compact"
-      style="min-width: 220px;"
+      class="responsive-filter-bar__item--regular responsive-filter-bar__item--grow"
       :disabled="disabledState.textFieldsDisabled"
     />
-  </div>
+  </ResponsiveFilterBar>
 </template>

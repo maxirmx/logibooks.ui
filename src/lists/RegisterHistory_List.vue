@@ -4,6 +4,7 @@
 // This file is a part of Logibooks ui application
 
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
+import ResponsiveFilterBar from '@/components/ResponsiveFilterBar.vue'
 import { computed, ref, unref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
@@ -332,7 +333,7 @@ watch(
       История реестра доступна только администраторам и старшим смены.
     </div>
 
-    <div v-else class="history-filter-row">
+    <ResponsiveFilterBar v-else class="history-filter-row" aria-label="Фильтры истории реестра">
       <v-select
         :model-value="selectedUserId"
         :items="userFilterItems"
@@ -343,7 +344,7 @@ watch(
         hide-details
         :loading="pageLoading || loading"
         :disabled="pageLoading || loading"
-        class="history-filter"
+        class="history-filter responsive-filter-bar__item--regular"
         data-testid="register-history-user-filter"
         @update:model-value="onUserFilterChange"
       />
@@ -357,13 +358,13 @@ watch(
         hide-details
         :loading="pageLoading || loading"
         :disabled="pageLoading || loading"
-        class="history-filter"
+        class="history-filter responsive-filter-bar__item--regular"
         data-testid="register-history-reason-filter"
         @update:model-value="onReasonFilterChange"
       />
-    </div>
+    </ResponsiveFilterBar>
 
-    <v-card v-if="canView" class="table-card">
+    <v-card v-if="canView" class="table-card register-history-table-card">
       <v-data-table-server
         v-model:items-per-page="itemsPerPage"
         v-model:page="page"
@@ -407,14 +408,22 @@ watch(
 
 <style scoped>
 .history-filter-row {
-  display: flex;
-  gap: 12px;
   margin-bottom: 12px;
 }
 
-.history-filter {
-  flex: 1 1 0;
+.history-filter-row :deep(.v-field__input) {
   min-width: 0;
+}
+
+.register-history-table-card.table-card {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.register-history-table-card.table-card :deep(.v-table__wrapper) {
+  overflow-x: auto;
 }
 
 .history-changes {
@@ -431,9 +440,4 @@ watch(
   padding-top: 4px;
 }
 
-@media (max-width: 700px) {
-  .history-filter-row {
-    flex-direction: column;
-  }
-}
 </style>

@@ -8,6 +8,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import FeacnLocalPrefixesList from '@/lists/FeacnLocalPrefixes_List.vue'
+import ResponsiveFilterBar from '@/components/ResponsiveFilterBar.vue'
 import { vuetifyStubs } from './helpers/test-utils.js'
 
 // Hoisted mocks
@@ -278,11 +279,27 @@ describe('FeacnLocalPrefixes_List.vue', () => {
     expect(wrapper.vm.filteredPrefixes.map((p) => p.code)).toEqual(['0202', '0303', '0404'])
   })
 
-  it('renders global procedure selector next to search field', () => {
+  it('renders the responsive filters in their original order above a viewport-bound table', () => {
     const filters = wrapper.find('.prefix-filter-row')
+    expect(wrapper.findComponent(ResponsiveFilterBar).exists()).toBe(true)
+    expect(filters.attributes('aria-label')).toBe('Фильтры локальных префиксов')
     expect(filters.find('[data-testid="v-text-field"]').exists()).toBe(true)
     expect(filters.find('[data-testid="v-select"]').exists()).toBe(true)
     expect(filters.element.firstElementChild).toBe(filters.find('[data-testid="v-select"]').element)
+    expect(filters.element.children[1]).toBe(filters.find('.v-autocomplete-stub').element)
+    expect(filters.element.children[2]).toBe(filters.find('[data-testid="v-text-field"]').element)
+    expect(filters.findComponent('[data-testid="v-select"]').vm.$attrs.class).toContain(
+      'responsive-filter-bar__item--compact'
+    )
+    expect(filters.find('.v-autocomplete-stub').classes()).toContain(
+      'responsive-filter-bar__item--regular'
+    )
+    expect(filters.findComponent('[data-testid="v-text-field"]').vm.$attrs.class).toContain(
+      'responsive-filter-bar__item--grow'
+    )
+    expect(wrapper.findComponent('[data-testid="v-card"]').vm.$attrs.class).toContain(
+      'feacn-prefixes-table-card'
+    )
     expect(wrapper.vm.prohibitionScopeFilterItems).toEqual([
       { title: 'Любая', value: 'all' },
       { title: 'Экспорт', value: 'export' },

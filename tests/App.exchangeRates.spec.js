@@ -12,15 +12,20 @@ import { useStatusStore } from '@/stores/status.store.js'
 import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
+import { mdiChevronDown, mdiChevronUp } from '@mdi/js'
 
-// Mock ResizeObserver
-if (!global.ResizeObserver) {
-  global.ResizeObserver = vi.fn().mockImplementation(() => ({
-    observe: vi.fn(),
+let resizeObserverCallback
+const resizeObserverObserve = vi.fn()
+const resizeObserverDisconnect = vi.fn()
+
+global.ResizeObserver = vi.fn().mockImplementation(function MockResizeObserver(callback) {
+  resizeObserverCallback = callback
+  return {
+    observe: resizeObserverObserve,
     unobserve: vi.fn(),
-    disconnect: vi.fn()
-  }))
-}
+    disconnect: resizeObserverDisconnect
+  }
+})
 
 // Mock Vuetify display composable
 vi.mock('vuetify', async (importOriginal) => {
@@ -53,6 +58,9 @@ describe('App exchange rates display', () => {
   let statusStore
 
   beforeEach(async () => {
+    resizeObserverCallback = undefined
+    resizeObserverObserve.mockClear()
+    resizeObserverDisconnect.mockClear()
     setActivePinia(createPinia())
     statusStore = useStatusStore()
     statusStore.fetchStatus = vi.fn().mockResolvedValue({})
@@ -72,10 +80,18 @@ describe('App exchange rates display', () => {
         stubs: {
           RouterView: true,
           'v-app': { template: '<div class="v-app"><slot /></div>' },
-          'v-app-bar': { template: '<div class="v-app-bar"><slot name="prepend" /><slot /></div>' },
+          'v-app-bar': {
+            props: ['height'],
+            template:
+              '<div class="v-app-bar" :data-height="height"><slot name="prepend" /><slot /></div>'
+          },
           'v-app-bar-nav-icon': { template: '<button class="nav-icon" />' },
           'v-app-bar-title': { template: '<div class="primary-heading"><slot /></div>' },
           'v-spacer': { template: '<div class="spacer" />' },
+          'v-btn': {
+            props: ['icon'],
+            template: '<button class="v-btn-stub" :data-icon="icon"><slot /></button>'
+          },
           'v-navigation-drawer': {
             template:
               '<div class="nav-drawer"><slot name="prepend" /><slot /><slot name="append" /></div>'
@@ -96,7 +112,11 @@ describe('App exchange rates display', () => {
     })
   }
 
-  it('shows current date with rates and EUR/UZS cross rate when they are for today', async () => {
+  function getRateLineText(wrapper) {
+    return wrapper.findAll('.exchange-rate-item').map((item) => item.text()).join(' ')
+  }
+
+  it('shows current date with direct rates when they are for today', async () => {
     const today = new Date()
     const isoToday = today.toISOString()
     const ruDate = new Intl.DateTimeFormat('ru-RU', {
@@ -108,7 +128,8 @@ describe('App exchange rates display', () => {
     statusStore.exchangeRates = [
       { alphabeticCode: 'USD', rate: 92.1234, date: isoToday },
       { alphabeticCode: 'EUR', rate: 101.9876, date: isoToday },
-      { alphabeticCode: 'UZS', rate: 65.4321, units: 10000, date: isoToday }
+      { alphabeticCode: 'UZS', rate: 65.4321, units: 10000, date: isoToday },
+      { alphabeticCode: 'TJS', rate: 84.8238, units: 10, date: isoToday }
     ]
     statusStore.eurUzs = {
       baseAlphabeticCode: 'EUR',
@@ -116,13 +137,19 @@ describe('App exchange rates display', () => {
       rate: 20000.1234,
       date: isoToday
     }
+    statusStore.eurTjs = {
+      baseAlphabeticCode: 'EUR',
+      quoteAlphabeticCode: 'TJS',
+      rate: 12.0234,
+      date: isoToday
+    }
 
     const wrapper = mountApp()
     await wrapper.vm.$nextTick()
 
-    const line = wrapper.find('.exchange-rates').text()
+    const line = getRateLineText(wrapper)
     expect(line).toBe(
-      `${ruDate} USD 92,1234 EUR 101,9876 UZS (за ${unitFormatter.format(10000)}) 65,4321`
+      `${ruDate} USD 92,1234 EUR 101,9876 UZS (за ${unitFormatter.format(10000)}) 65,4321 TJS (за ${unitFormatter.format(10)}) 84,8238`
     )
 
     const usdRate = wrapper.get('[data-testid="exchange-rate-usd"]')
@@ -135,6 +162,10 @@ describe('App exchange rates display', () => {
     expect(eurRate.text()).toBe('EUR 101,9876')
     expect(eurRate.classes()).toEqual(
       expect.arrayContaining(['exchange-rate-eur', 'font-weight-bold', 'text-purple-darken-2'])
+    )
+
+    expect(wrapper.get('[data-testid="exchange-rate-tjs"]').text()).toBe(
+      `TJS (за ${unitFormatter.format(10)}) 84,8238`
     )
   })
 
@@ -159,7 +190,8 @@ describe('App exchange rates display', () => {
     statusStore.exchangeRates = [
       { alphabeticCode: 'USD', rate: 92.1234, date: '2024-06-24' },
       { alphabeticCode: 'EUR', rate: 101.9876, date: '2024-06-24' },
-      { alphabeticCode: 'UZS', rate: 65.4321, units: 10000, date: '2024-06-24' }
+      { alphabeticCode: 'UZS', rate: 65.4321, units: 10000, date: '2024-06-24' },
+      { alphabeticCode: 'TJS', rate: 84.8238, units: 10, date: '2024-06-24' }
     ]
     statusStore.eurUzs = {
       baseAlphabeticCode: 'EUR',
@@ -171,13 +203,13 @@ describe('App exchange rates display', () => {
     const wrapper = mountApp()
     await wrapper.vm.$nextTick()
 
-    const line = wrapper.find('.exchange-rates').text()
+    const line = getRateLineText(wrapper)
     expect(line).toBe(
-      `${ruDate} USD 92,1234 EUR 101,9876 UZS (за ${unitFormatter.format(10000)}) 65,4321`
+      `${ruDate} USD 92,1234 EUR 101,9876 UZS (за ${unitFormatter.format(10000)}) 65,4321 TJS (за ${unitFormatter.format(10)}) 84,8238`
     )
   })
 
-  it('shows failure text when rate date is stale', async () => {
+  it('shows a compact unavailable marker with an explanatory tooltip for stale rates', async () => {
     const today = new Date()
     const ruDate = new Intl.DateTimeFormat('ru-RU', {
       day: '2-digit',
@@ -190,9 +222,63 @@ describe('App exchange rates display', () => {
     const wrapper = mountApp()
     await wrapper.vm.$nextTick()
 
-    const line = wrapper.find('.exchange-rates').text()
-    expect(line).toBe(
-      `${ruDate} USD не удалось получить курс EUR не удалось получить курс UZS не удалось получить курс`
-    )
+    const line = getRateLineText(wrapper)
+    expect(line).toBe(`${ruDate} USD — EUR — UZS — TJS —`)
+
+    for (const code of ['usd', 'eur', 'uzs', 'tjs']) {
+      expect(wrapper.get(`[data-testid="exchange-rate-${code}"]`).attributes('title')).toBe(
+        'не удалось получить курс'
+      )
+    }
+  })
+
+  it('keeps one line by default and toggles wrapped rate lines only when they overflow', async () => {
+    const wrapper = mountApp()
+    const viewport = wrapper.get('.exchange-rates-viewport')
+    const content = wrapper.get('.exchange-rates')
+
+    Object.defineProperty(viewport.element, 'clientWidth', {
+      configurable: true,
+      value: 240
+    })
+    Object.defineProperty(content.element, 'scrollWidth', {
+      configurable: true,
+      value: 600
+    })
+    Object.defineProperty(content.element, 'scrollHeight', {
+      configurable: true,
+      value: 72
+    })
+
+    resizeObserverCallback()
+    await wrapper.vm.$nextTick()
+
+    const toggle = wrapper.get('[data-testid="exchange-rates-toggle"]')
+    expect(content.classes()).not.toContain('exchange-rates--expanded')
+    expect(toggle.attributes('data-icon')).toBe(mdiChevronDown)
+    expect(toggle.attributes('aria-expanded')).toBe('false')
+    expect(wrapper.get('.v-app-bar').attributes('data-height')).toBe('64')
+
+    await toggle.trigger('click')
+    await wrapper.vm.$nextTick()
+
+    expect(content.classes()).toContain('exchange-rates--expanded')
+    expect(toggle.attributes('data-icon')).toBe(mdiChevronUp)
+    expect(toggle.attributes('aria-expanded')).toBe('true')
+    expect(wrapper.get('.v-app-bar').attributes('data-height')).toBe('96')
+
+    Object.defineProperty(viewport.element, 'clientWidth', {
+      configurable: true,
+      value: 700
+    })
+    resizeObserverCallback()
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.find('[data-testid="exchange-rates-toggle"]').exists()).toBe(false)
+    expect(content.classes()).not.toContain('exchange-rates--expanded')
+    expect(wrapper.get('.v-app-bar').attributes('data-height')).toBe('64')
+
+    wrapper.unmount()
+    expect(resizeObserverDisconnect).toHaveBeenCalledOnce()
   })
 })

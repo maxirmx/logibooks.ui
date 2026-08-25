@@ -16,11 +16,13 @@ import * as directives from 'vuetify/directives'
 import { roleAdmin, roleLogist, roleShiftLead, roleSrLogist } from '@/helpers/user.roles.js'
 import { OP_MODE_WAREHOUSE, getRegisterNouns } from '@/helpers/op.mode.js'
 
-global.ResizeObserver = vi.fn().mockImplementation(() => ({
-  observe: vi.fn(),
-  unobserve: vi.fn(),
-  disconnect: vi.fn()
-}))
+global.ResizeObserver = vi.fn().mockImplementation(function MockResizeObserver() {
+  return {
+    observe: vi.fn(),
+    unobserve: vi.fn(),
+    disconnect: vi.fn()
+  }
+})
 
 vi.mock('vuetify', async (importOriginal) => {
   const actual = await importOriginal()

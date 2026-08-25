@@ -15,14 +15,13 @@
  *     portion of the viewport, even if the container is taller.
  *   - Both are needed: the prop allows flexible layouts, while the CSS prevents the table from overflowing the viewport.
  *
+ * Width and horizontal-overflow behavior is defined by the shared `.table-card`
+ * contract in `main.css`. This file only adds fixed-header height and vertical
+ * scrolling behavior.
+ *
  * These styles are regular global CSS. Keep selectors standard so Vite's CSS
  * minifier can parse them without Vue SFC-specific syntax.
  */
- 
-.table-card {
-  overflow: visible;
-}
-
 .table-card .v-data-table {
   height: 100%;
 }

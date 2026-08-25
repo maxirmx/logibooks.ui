@@ -415,17 +415,6 @@ watch(
   min-width: 0;
 }
 
-.register-history-table-card.table-card {
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  overflow: hidden;
-}
-
-.register-history-table-card.table-card :deep(.v-table__wrapper) {
-  overflow-x: auto;
-}
-
 .history-changes {
   margin: 0;
   padding: 4px 0 4px 20px;

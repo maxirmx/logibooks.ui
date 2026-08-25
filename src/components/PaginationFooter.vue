@@ -177,6 +177,8 @@ function scrollToTop() {
   gap: 0.75rem;
   align-items: center;
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .pagination-footer__section {
@@ -184,10 +186,12 @@ function scrollToTop() {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .pagination-footer__items {
-  min-width: 200px;
+  min-width: min(100%, 12.5rem);
 }
 
 .pagination-footer__label {
@@ -204,7 +208,10 @@ function scrollToTop() {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: 0.5rem;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .pagination-footer__page-control {
@@ -212,6 +219,8 @@ function scrollToTop() {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .pagination-footer__page-select {

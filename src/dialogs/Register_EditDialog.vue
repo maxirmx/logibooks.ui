@@ -1194,7 +1194,7 @@ const loadReportFields = computed(() => {
       v-slot="{ errors, setFieldValue, handleSubmit }"
     >
       <div class="header-with-actions">
-        <h1 class="primary-heading">
+        <h1 class="primary-heading responsive-edit-heading">
           {{ getTitle() }}
         </h1>
         <!-- Action buttons moved inside Form scope -->
@@ -1736,34 +1736,6 @@ const loadReportFields = computed(() => {
 </template>
 
 <style scoped>
-/* Header with actions layout */
-.header-with-actions {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 1rem;
-  margin-bottom: 0.5rem;
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  flex-shrink: 0;
-  white-space: nowrap;
-
-  /* Control panel styling */
-  background: #ffffff;
-  border: 1px solid #74777c;
-  border-radius: 0.5rem;
-  padding: 0.5rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.1);
-
-  /* Ensure it flows below heading on narrow screens */
-  min-width: min-content;
-}
-
 .register-fields-fieldset {
   min-width: 0;
   margin: 0;
@@ -1773,21 +1745,6 @@ const loadReportFields = computed(() => {
 
 .register-read-only-notice {
   margin-bottom: 1rem;
-}
-
-/* Primary heading with ellipsis */
-.primary-heading {
-  margin: 0;
-  flex: 1;
-  min-width: 0; /* Allow shrinking */
-
-  /* Ellipsis on overflow */
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-
-  /* Ensure it takes available space but can shrink */
-  max-width: calc(100% - 300px); /* Reserve space for buttons */
 }
 
 .form-section,
@@ -1835,23 +1792,6 @@ const loadReportFields = computed(() => {
 .weight-value,
 .load-report-value {
   min-height: 2.25rem;
-}
-
-/* On small screens, ensure full width for heading and buttons flow below */
-@media (max-width: 768px) {
-  .header-with-actions {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .primary-heading {
-    max-width: 100%;
-    margin-bottom: 0.5rem;
-  }
-
-  .header-actions {
-    align-self: flex-end;
-  }
 }
 
 /* Product name styling */

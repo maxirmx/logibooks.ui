@@ -325,29 +325,6 @@ function onSubmit(values, { setErrors } = {}) {
 </template>
 
 <style scoped>
-.header-with-actions {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 1rem;
-  margin-bottom: 0.5rem;
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  flex-shrink: 0;
-  white-space: nowrap;
-  background: #ffffff;
-  border: 1px solid #74777c;
-  border-radius: 0.5rem;
-  padding: 0.5rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.1);
-  min-width: min-content;
-}
-
 .primary-heading {
   margin: 0;
   flex: 1;
@@ -502,20 +479,6 @@ function onSubmit(values, { setErrors } = {}) {
 }
 
 @media (max-width: 700px) {
-  .header-with-actions {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .primary-heading {
-    max-width: 100%;
-    margin-bottom: 0.5rem;
-  }
-
-  .header-actions {
-    align-self: flex-end;
-  }
-
   .status-settings-row {
     grid-template-columns: 1fr;
     row-gap: 0.35rem;

@@ -18,6 +18,15 @@ defineProps({
 </template>
 
 <style scoped>
+/*
+ * Sizing modifiers:
+ * - compact: short categorical controls (13.75rem preferred width);
+ * - regular: searches or controls with longer labels (20rem preferred width);
+ * - grow: lets a high-value text/search control absorb extra row space.
+ *
+ * Each basis is only a preference. `min(100%, basis)` lets the control fill a
+ * phone row without imposing document-level horizontal overflow.
+ */
 .responsive-filter-bar {
   display: flex;
   flex-wrap: wrap;

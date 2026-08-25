@@ -326,17 +326,6 @@ defineExpose({
   min-width: 0;
 }
 
-.stopwords-table-card.table-card {
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  overflow: hidden;
-}
-
-.stopwords-table-card.table-card :deep(.v-table__wrapper) {
-  overflow-x: auto;
-}
-
 .procedure-line,
 .reason-line {
   display: block;

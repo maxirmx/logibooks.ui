@@ -217,12 +217,12 @@ function handleMouseEnter(code) {
 .keyword-search-overlay {
   position: absolute;
   top: calc(100% + 0.5rem);
-  left: 0;
+  left: auto;
   right: 0;
   z-index: 100;
-  width: 420px;
-  max-width: 600px;
-  min-width: 420px;
+  width: min(420px, 90vw);
+  max-width: calc(100vw - 1rem);
+  min-width: 0;
 }
 
 .keyword-label-row {

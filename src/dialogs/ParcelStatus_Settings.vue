@@ -378,19 +378,4 @@ function onSubmit(values, { setErrors } = {}) {
   cursor: pointer;
 }
 
-@media (max-width: 700px) {
-  .header-with-actions {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .primary-heading {
-    max-width: 100%;
-    margin-bottom: 0.5rem;
-  }
-
-  .header-actions {
-    align-self: flex-end;
-  }
-}
 </style>

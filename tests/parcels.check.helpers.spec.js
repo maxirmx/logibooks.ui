@@ -358,8 +358,7 @@ describe('parcels.check.helpers', () => {
       )
     })
 
-    it('keeps FEACN order comments and excludes arbitrary order-scope explanations', () => {
-      const register = { theOtherCountryCode: 860, customsProcedureCode: 10 }
+    it('excludes route-scope explanations while preserving matched rule details', () => {
       const orders = [
         {
           id: 10,
@@ -393,18 +392,23 @@ describe('parcels.check.helpers', () => {
       ]
 
       const result = getCheckStatusInfo(
-        { feacnOrderIds: [10], stopWordIds: [20], feacnPrefixIds: [30] },
+        {
+          feacnOrderIds: [10],
+          stopWordIds: [20],
+          feacnPrefixIds: [30],
+          matchingSWComment: 'Matching comment'
+        },
         orders,
         stopWords,
-        prefixes,
-        register
+        prefixes
       )
 
-      expect(result).toContain("Ограничения по коду ТН ВЭД (постановление): 'Imported order comment'")
-      expect(result).toContain('Stop reason')
-      expect(result).toContain('Prefix reason')
+      expect(result).toBe(
+        "Ограничения по коду ТН ВЭД (постановление): 'Imported order comment'; Стоп-слова и фразы: 'blocked'; Ограничения по коду ТН ВЭД (установлено вручную): '1234'; Matching comment"
+      )
       expect(result).not.toContain('Arbitrary order reason')
-      expect(result.match(/Imported order comment/g)).toHaveLength(1)
+      expect(result).not.toContain('Stop reason')
+      expect(result).not.toContain('Prefix reason')
     })
   })
 

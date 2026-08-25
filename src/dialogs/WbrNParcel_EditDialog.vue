@@ -570,7 +570,7 @@ async function onLookup(values) {
         :values="values"
         :parcel-statuses="statusStore.parcelStatuses"
         :get-check-status-class="getCheckStatusClass"
-        :check-status-info="getCheckStatusInfo(item, feacnOrders, stopWords, feacnPrefixes, registerItem)"
+        :check-status-info="getCheckStatusInfo(item, feacnOrders, stopWords, feacnPrefixes)"
         :has-check-status-issues="CheckStatusCode.hasIssues(item?.checkStatus)"
         :approval-disabled="CheckStatusCode.isEUR1000(item?.checkStatus)"
         :restriction-validation-disabled="registerItem?.theOtherCountryCode == null"

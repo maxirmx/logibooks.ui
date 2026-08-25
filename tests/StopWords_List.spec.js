@@ -8,6 +8,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import StopWordsList from '@/lists/StopWords_List.vue'
+import ResponsiveFilterBar from '@/components/ResponsiveFilterBar.vue'
 import { defaultGlobalStubs } from './helpers/test-utils.js'
 import { roleAdmin } from '@/helpers/user.roles.js'
 
@@ -272,11 +273,24 @@ describe('StopWords_List.vue', () => {
   })
 
   describe('Data Display', () => {
-    it('displays customs procedure selector next to search field', () => {
+    it('renders the responsive filters in their original order above a viewport-bound table', () => {
       const filters = wrapper.find('.stopwords-filter-row')
+      expect(wrapper.findComponent(ResponsiveFilterBar).exists()).toBe(true)
+      expect(filters.attributes('aria-label')).toBe('Фильтры стоп-слов')
       expect(filters.find('[data-testid="v-select"]').exists()).toBe(true)
       expect(filters.find('[data-testid="v-autocomplete"]').exists()).toBe(true)
       expect(filters.find('[data-testid="v-text-field"]').exists()).toBe(true)
+      expect(filters.element.children[0]).toBe(filters.find('[data-testid="v-select"]').element)
+      expect(filters.element.children[1]).toBe(filters.find('[data-testid="v-autocomplete"]').element)
+      expect(filters.element.children[2]).toBe(filters.find('[data-testid="v-text-field"]').element)
+      expect(filters.element.children[0].classList).toContain(
+        'responsive-filter-bar__item--compact'
+      )
+      expect(filters.element.children[1].classList).toContain(
+        'responsive-filter-bar__item--regular'
+      )
+      expect(filters.element.children[2].classList).toContain('responsive-filter-bar__item--grow')
+      expect(wrapper.find('.stopwords-table-card').exists()).toBe(true)
       expect(wrapper.vm.prohibitionScopeFilterItems).toEqual([
         { title: 'Любая', value: 'all' },
         { title: 'Экспорт', value: 'export' },

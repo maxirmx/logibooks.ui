@@ -4,6 +4,7 @@
 // This file is a part of Logibooks ui application
 
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
+import ResponsiveFilterBar from '@/components/ResponsiveFilterBar.vue'
 import { onMounted, computed, ref, unref } from 'vue'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
@@ -191,7 +192,7 @@ defineExpose({
 
     <PageAlertRegion />
 
-    <div class="stopwords-filter-row">
+    <ResponsiveFilterBar class="stopwords-filter-row" aria-label="Фильтры стоп-слов">
       <v-select
         v-model="authStore.stopwords_procedure"
         :items="prohibitionScopeFilterItems"
@@ -199,7 +200,7 @@ defineExpose({
         variant="solo"
         hide-details
         :disabled="runningAction || loading"
-        class="procedure-filter"
+        class="procedure-filter responsive-filter-bar__item--compact"
       />
       <v-autocomplete
         v-model="authStore.stopwords_country"
@@ -208,7 +209,7 @@ defineExpose({
         variant="solo"
         hide-details
         :disabled="runningAction || loading"
-        class="country-filter"
+        class="country-filter responsive-filter-bar__item--regular"
       />
       <v-text-field
         v-model="authStore.stopwords_search"
@@ -217,10 +218,11 @@ defineExpose({
         variant="solo"
         hide-details
         :disabled="runningAction || loading"
+        class="responsive-filter-bar__item--regular responsive-filter-bar__item--grow"
       />
-    </div>
+    </ResponsiveFilterBar>
 
-    <v-card class="table-card">
+    <v-card class="table-card stopwords-table-card">
       <v-data-table
         v-model:items-per-page="authStore.stopwords_per_page"
         items-per-page-text="Стоп-слов на странице"
@@ -320,33 +322,19 @@ defineExpose({
 <style scoped>
 @import '@/assets/styles/scrollable-table.css';
 
-.stopwords-filter-row {
-  display: flex;
-  gap: 12px;
-  align-items: stretch;
-}
-
-.stopwords-filter-row .v-text-field-stub,
-.stopwords-filter-row :deep(.v-text-field) {
-  flex: 1 1 auto;
-}
-
-.procedure-filter {
-  flex: 0 0 200px !important;
-  width: 200px;
-  max-width: 200px;
-  min-width: 200px;
-}
-
-.country-filter {
-  flex: 0 0 240px !important;
-  width: 240px;
-  max-width: 240px;
-  min-width: 240px;
-}
-
-.procedure-filter :deep(.v-field__input) {
+.stopwords-filter-row :deep(.v-field__input) {
   min-width: 0;
+}
+
+.stopwords-table-card.table-card {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.stopwords-table-card.table-card :deep(.v-table__wrapper) {
+  overflow-x: auto;
 }
 
 .procedure-line,
@@ -357,17 +345,4 @@ defineExpose({
   white-space: nowrap;
 }
 
-@media (max-width: 700px) {
-  .stopwords-filter-row {
-    flex-direction: column;
-  }
-
-  .procedure-filter,
-  .country-filter {
-    flex-basis: auto;
-    width: auto;
-    max-width: none;
-    min-width: 0;
-  }
-}
 </style>

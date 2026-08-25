@@ -6,6 +6,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import RegisterHistoryList from '@/lists/RegisterHistory_List.vue'
+import ResponsiveFilterBar from '@/components/ResponsiveFilterBar.vue'
 import { WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
 import { OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 import { defaultGlobalStubs } from './helpers/test-utils.js'
@@ -329,6 +330,16 @@ describe('RegisterHistory_List.vue', () => {
     await flushPromises()
 
     const selects = wrapper.findAllComponents({ name: 'v-select' })
+    const filters = wrapper.findComponent(ResponsiveFilterBar)
+    expect(filters.exists()).toBe(true)
+    expect(filters.attributes('aria-label')).toBe('Фильтры истории реестра')
+    expect(filters.element.children[0]).toBe(selects[0].element)
+    expect(filters.element.children[1]).toBe(selects[1].element)
+    expect(selects[0].vm.$attrs.class).toContain('responsive-filter-bar__item--regular')
+    expect(selects[1].vm.$attrs.class).toContain('responsive-filter-bar__item--regular')
+    expect(wrapper.findComponent('[data-testid="v-card"]').vm.$attrs.class).toContain(
+      'register-history-table-card'
+    )
     expect(selects).toHaveLength(2)
     expect(selects[0].props('label')).toBe('Пользователь')
     expect(selects[0].props('items')).toEqual([

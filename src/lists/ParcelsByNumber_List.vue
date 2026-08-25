@@ -144,7 +144,7 @@ defineExpose({
         <div v-if="runningAction || loading" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
         </div>
-        <div class="header-actions header-actions-group">
+        <div class="header-actions header-actions-group parcels-number-search-actions">
           <v-text-field
             v-model="authStore.parcels_number"
             density="compact"
@@ -236,11 +236,26 @@ defineExpose({
 
 .header-actions-row {
   display: flex;
+  flex: 1 1 20rem;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: 8px;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.parcels-number-search-actions {
+  flex: 1 1 20rem;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .parcels-number-input {
-  min-width: 250px;
+  flex: 1 1 13.75rem;
+  width: auto;
+  max-width: 100%;
+  min-width: min(100%, 13.75rem);
 }
 </style>

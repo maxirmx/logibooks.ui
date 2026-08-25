@@ -507,20 +507,12 @@ function getRegisterStatusTitle(item) {
 </template>
 
 <style scoped>
-.warehouse-registers-table-card.table-card {
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  overflow: hidden;
-}
-
 .warehouse-registers-table-card.table-card :deep(.v-data-table) {
   height: auto;
 }
 
 .warehouse-registers-table-card.table-card :deep(.v-table__wrapper) {
   max-height: none;
-  overflow-x: auto;
   overflow-y: hidden;
 }
 

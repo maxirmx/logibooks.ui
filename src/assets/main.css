@@ -62,9 +62,19 @@ This file is a part of Logibooks ui application
   margin-bottom: 0.5rem;
 }
 
+.header-with-actions > .primary-heading {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .header-actions-bar {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .header-actions {
@@ -81,10 +91,17 @@ This file is a part of Logibooks ui application
   min-width: min-content;
 }
 
-.header-actions-group + .header-actions-group {
-  margin-left: 8px;
-  padding-left: 8px;
-  border-left: 1px solid #d0d7de;
+@media (max-width: 700px) {
+  .header-with-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .header-with-actions > .header-actions,
+  .header-with-actions > .header-actions-bar,
+  .header-with-actions > .header-actions-row {
+    align-self: flex-end;
+  }
 }
 
 .btns {
@@ -134,6 +151,30 @@ This file is a part of Logibooks ui application
   min-width: 0;
   margin: 0 auto;
   padding: 0;
+}
+
+/*
+ * Wide-table contract:
+ * - the outer card participates in viewport sizing and never widens the page;
+ * - intrinsically wide table content keeps its natural width;
+ * - horizontal overflow belongs to Vuetify's table wrapper, so pagination and
+ *   the rest of the route remain reachable inside the viewport.
+ */
+.table-card {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.table-card .v-data-table {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.table-card .v-table__wrapper {
+  max-width: 100%;
+  overflow-x: auto;
 }
 
 /* Common interlaced row backgrounds for better readability */
@@ -412,32 +453,6 @@ a,
 .notscrollable {
   overflow-y: clip;
 }
-
-.v-data-table-footer .v-data-table-footer__items-per-page > span,
-.v-data-table-footer .v-data-table-footer__items-per-page {
-  padding-inline-end: 5px;
-}
-
-.v-data-table-footer .v-data-table-footer__info {
-  display: block;
-  text-align: right;
-  width: 100%;
-  padding-top: 10px;
-}
-
-.v-data-table-footer .v-data-table-footer__pagination {
-  padding-top: 17px;
-}
-
-/* Make items-per-page dropdown wider to accommodate text like "Все" */
-.v-data-table-footer .v-data-table-footer__items-per-page {
-  min-width: 120px !important;
-}
-
-.v-data-table-footer .v-field__input {
-  min-width: 80px !important;
-}
-
 
 .checkbox-styled {
   visibility: hidden;
@@ -996,6 +1011,9 @@ a,
   padding: 4px 16px;
   border-top: thin solid rgba(var(--v-border-color), var(--v-border-opacity));
   min-height: 52px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .v-data-table-footer__items-per-page {
@@ -1006,10 +1024,13 @@ a,
   font-size: 0.875rem;
   color: rgba(var(--v-theme-on-surface), 0.6);
   padding-inline-end: 5px;
+  max-width: 100%;
+  min-width: min(100%, 7.5rem);
 }
 
 .v-data-table-footer__items-per-page-select {
   width: 80px;
+  max-width: 100%;
   flex: 0 0 auto;
 }
 
@@ -1031,8 +1052,12 @@ a,
 .v-data-table-footer__pagination {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 2px;
   padding-top: 17px;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .v-data-table-footer__pagination .v-btn {
@@ -1090,6 +1115,7 @@ a,
   column-gap: 5rem;   
   row-gap: 1rem;      
   margin-bottom: 0rem;
+  min-width: 0;
 }
 
 .form-row-1 {
@@ -1097,6 +1123,7 @@ a,
   grid-template-columns: 1fr;
   row-gap: 1rem;      /* Keep vertical gap as 1rem */
   margin-bottom: 0rem;
+  min-width: 0;
 }
 
 .form-row-0 {
@@ -1105,12 +1132,21 @@ a,
   row-gap: 1rem;
   margin-bottom: 0rem;
   margin-top: 1rem;
+  min-width: 0;
+}
+
+.form-row > *,
+.form-row-1 > *,
+.form-row-0 > * {
+  min-width: 0;
 }
 
 .product-name-row {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .product-name-row .form-group-1 {
@@ -1218,6 +1254,8 @@ a,
   margin-bottom: 0;
   width: 60%;
   flex-grow: 1;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .input-1 {
@@ -1228,6 +1266,8 @@ a,
   margin-bottom: 0;
   width: 81.5%;
   flex-grow: 1;
+  max-width: 100%;
+  min-width: 0;
 }
 
 /* Allow textareas to use their natural height based on rows attribute */
@@ -1244,6 +1284,19 @@ a,
   margin-bottom: 0;
   width: 100%;
   flex-grow: 1;
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* Full-screen edit routes share an ellipsized title while their action bar wraps. */
+.responsive-edit-heading {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  max-width: calc(100% - 300px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Allow textareas to use their natural height based on rows attribute */
@@ -1596,6 +1649,12 @@ a,
   .form-row {
     grid-template-columns: 1fr;
     gap: 1rem;
+  }
+
+  .responsive-edit-heading {
+    flex-basis: 100%;
+    max-width: 100%;
+    margin-bottom: 0.5rem;
   }
 }
 

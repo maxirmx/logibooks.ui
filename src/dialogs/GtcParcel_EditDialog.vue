@@ -541,7 +541,7 @@ async function onLookup(values) {
       :class="{ 'form-disabled': overlayActive || imageOverlayOpen, 'read-only-form': readOnly }"
     >
       <div class="header-with-actions">
-        <h1 class="primary-heading">
+        <h1 class="primary-heading responsive-edit-heading">
           {{ item?.id ? `№ ${item.id} -- ` : '' }} посылка
           {{ item?.postingNumber ? item.postingNumber : '[без номера]' }}
         </h1>
@@ -787,48 +787,10 @@ async function onLookup(values) {
 </template>
 
 <style scoped>
-/* Header with actions layout */
-.header-with-actions {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 1rem;
-  margin-bottom: 0.5rem;
-}
-
-/* Primary heading with ellipsis */
-.primary-heading {
-  margin: 0;
-  flex: 1;
-  min-width: 0; /* Allow shrinking */
-
-  /* Ellipsis on overflow */
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-
-  /* Ensure it takes available space but can shrink */
-  max-width: calc(100% - 300px); /* Reserve space for buttons */
-}
-
 .form-section,
 .form-row,
 .form-group {
   overflow: visible !important;
-}
-
-/* On small screens, ensure full width for heading and buttons flow below */
-@media (max-width: 768px) {
-  .header-with-actions {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .primary-heading {
-    max-width: 100%;
-    margin-bottom: 0.5rem;
-  }
 }
 
 /* Product name styling */

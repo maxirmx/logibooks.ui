@@ -450,17 +450,6 @@ function getRegisterStatusTitle(item) {
 </template>
 
 <style scoped>
-.customs-processing-registers-table-card.table-card {
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  overflow: hidden;
-}
-
-.customs-processing-registers-table-card.table-card :deep(.v-table__wrapper) {
-  overflow-x: auto;
-}
-
 .arrow-icon {
   opacity: 0.8;
 }

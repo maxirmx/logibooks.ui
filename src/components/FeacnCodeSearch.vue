@@ -201,15 +201,18 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   font-size: 0.875em;
+  min-width: 0;
 }
 
 .search-bar {
   display: flex;
   align-items: center;
   position: relative;
+  min-width: 0;
 }
 .search-input {
   flex: 1;
+  min-width: 0;
   padding: 4px 8px;
   margin-bottom: 8px;
   border-radius: 0.25rem;
@@ -237,8 +240,10 @@ onMounted(async () => {
   overflow-y: auto;
 }
 .tree-container {
+  overflow-x: auto;
   overflow-y: auto;
   flex: 1 1 auto;
+  min-width: 0;
 }
 .search-result-item {
   padding: 4px 8px;

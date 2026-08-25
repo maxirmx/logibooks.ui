@@ -229,12 +229,12 @@ function handleRefocus() {
 .feacn-overlay {
   position: absolute;
   top: calc(100% + 0.5rem);
-  left: 0;
+  left: auto;
   right: 0;
   z-index: 100;
-  width: 90vw;
-  max-width: 1600px;
-  min-width: 600px;
+  width: min(90vw, 1600px);
+  max-width: calc(100vw - 1rem);
+  min-width: 0;
 }
 
 

@@ -603,29 +603,25 @@ function getGenericTemplateHeaders() {
       Изменения запрещены. Просмотр, фильтрация и скачивание документов доступны.
     </div>
 
-    <div
-      class="d-flex mb-2 align-center flex-wrap-reverse justify-space-between"
-      style="width: 100%; gap: 10px"
-    >
-      <ParcelFilterSelectors
-        v-model:parcels-status="parcels_status"
-        v-model:parcels-check-status-sw="parcels_check_status_sw"
-        v-model:parcels-check-status-fc="parcels_check_status_fc"
-        v-model:parcels-passport-check-status="parcels_passport_check_status"
-        v-model:parcels-hide-legacy-restrictions="parcels_hide_legacy_restrictions"
-        v-model:local-tnved-search="localTnvedSearch"
-        v-model:local-parcel-number-search="localParcelNumberSearch"
-        v-model:local-product-name-search="localProductNameSearch"
-        :status-options="statusOptions"
-        :check-status-options-sw="checkStatusOptionsSw"
-        :check-status-options-fc="checkStatusOptionsFc"
-        :passport-check-status-options="passportCheckStatusOptions"
-        :show-passport-check-status="showPassportVerification"
-        :running-action="runningAction"
-        :loading="loading"
-        :is-initializing="isInitializing"
-      />
-    </div>
+    <ParcelFilterSelectors
+      class="mb-2"
+      v-model:parcels-status="parcels_status"
+      v-model:parcels-check-status-sw="parcels_check_status_sw"
+      v-model:parcels-check-status-fc="parcels_check_status_fc"
+      v-model:parcels-passport-check-status="parcels_passport_check_status"
+      v-model:parcels-hide-legacy-restrictions="parcels_hide_legacy_restrictions"
+      v-model:local-tnved-search="localTnvedSearch"
+      v-model:local-parcel-number-search="localParcelNumberSearch"
+      v-model:local-product-name-search="localProductNameSearch"
+      :status-options="statusOptions"
+      :check-status-options-sw="checkStatusOptionsSw"
+      :check-status-options-fc="checkStatusOptionsFc"
+      :passport-check-status-options="passportCheckStatusOptions"
+      :show-passport-check-status="showPassportVerification"
+      :running-action="runningAction"
+      :loading="loading"
+      :is-initializing="isInitializing"
+    />
 
     <v-card class="table-card">
       <v-data-table-server

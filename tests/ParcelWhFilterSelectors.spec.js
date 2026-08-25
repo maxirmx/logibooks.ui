@@ -3,6 +3,7 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import ParcelWhFilterSelectors from '@/components/ParcelWhFilterSelectors.vue'
+import ResponsiveFilterBar from '@/components/ResponsiveFilterBar.vue'
 
 const selectStub = {
   name: 'v-select',
@@ -70,6 +71,33 @@ function mountSelector(props = {}) {
 }
 
 describe('ParcelWhFilterSelectors.vue', () => {
+  it('uses an accessible responsive filter bar with role-based control sizes', () => {
+    const wrapper = mountSelector({ numberLabel: 'ШК' })
+    const filterBar = wrapper.findComponent(ResponsiveFilterBar)
+    const controls = Array.from(filterBar.element.children)
+
+    expect(filterBar.exists()).toBe(true)
+    expect(filterBar.attributes('aria-label')).toBe('Фильтры складских посылок')
+    expect(controls).toHaveLength(7)
+    expect(controls.map((control) => control.textContent.trim())).toEqual([
+      'ПроверкаВсеНе провереноЗапретБракПроверено',
+      'ЗонаВсеНе заданаЗеленая зона',
+      'СтатусВсеНа складе',
+      'ШК',
+      'Номер коробки',
+      'Любой из стикеров',
+      'Товар'
+    ])
+    expect(controls[0].classList).toContain('responsive-filter-bar__item--compact')
+    expect(controls[1].classList).toContain('responsive-filter-bar__item--compact')
+    expect(controls[2].classList).toContain('responsive-filter-bar__item--regular')
+    expect(controls[3].classList).toContain('responsive-filter-bar__item--grow')
+    expect(controls[4].classList).toContain('responsive-filter-bar__item--compact')
+    expect(controls[5].classList).toContain('responsive-filter-bar__item--grow')
+    expect(controls[6].classList).toContain('responsive-filter-bar__item--grow')
+    controls.forEach((control) => expect(control.hasAttribute('style')).toBe(false))
+  })
+
   it('renders warehouse selectors, text filters, and the unassigned zone option', () => {
     const wrapper = mountSelector({ numberLabel: 'ШК' })
 
@@ -107,6 +135,9 @@ describe('ParcelWhFilterSelectors.vue', () => {
     const wrapper = mountSelector({ boxScopeId: 17, boxScopeCode: 'BOX-17' })
 
     expect(wrapper.get('[data-testid="parcel-box-scope"]').text()).toContain('Коробка: BOX-17')
+    expect(wrapper.get('[data-testid="parcel-box-scope"]').classes()).toContain(
+      'responsive-filter-bar__item--compact'
+    )
     expect(wrapper.text()).not.toContain('Номер коробки')
     expect(wrapper.findAll('input')).toHaveLength(3)
 

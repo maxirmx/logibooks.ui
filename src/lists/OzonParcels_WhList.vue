@@ -360,30 +360,26 @@ async function clearParcelDefect(item) {
       Изменения запрещены. Просмотр, фильтрация и экспорт доступны.
     </div>
 
-    <div
-      class="d-flex mb-2 align-center flex-wrap-reverse justify-space-between"
-      style="width: 100%; gap: 10px"
-    >
-      <ParcelWhFilterSelectors
-        v-model:parcels-wh-status="parcels_wh_status"
-        v-model:parcels-wh-check-status-projection="parcels_wh_check_status_projection"
-        v-model:parcels-wh-zone="parcels_wh_zone"
-        v-model:local-parcel-number-search="localParcelNumberSearch"
-        v-model:local-box-number-search="localBoxNumberSearch"
-        v-model:local-sticker-search="localStickerSearch"
-        v-model:local-product-name-search="localProductNameSearch"
-        :status-options="statusOptions"
-        :check-status-projection-options="checkStatusProjectionOptions"
-        :zone-options="zoneOptions"
-        number-label="Номер отправления"
-        :running-action="runningAction"
-        :loading="loading"
-        :is-initializing="isInitializing"
-        :box-scope-id="props.boxId"
-        :box-scope-code="props.boxCode"
-        @clear-box-scope="emit('clear-box-scope')"
-      />
-    </div>
+    <ParcelWhFilterSelectors
+      class="mb-2"
+      v-model:parcels-wh-status="parcels_wh_status"
+      v-model:parcels-wh-check-status-projection="parcels_wh_check_status_projection"
+      v-model:parcels-wh-zone="parcels_wh_zone"
+      v-model:local-parcel-number-search="localParcelNumberSearch"
+      v-model:local-box-number-search="localBoxNumberSearch"
+      v-model:local-sticker-search="localStickerSearch"
+      v-model:local-product-name-search="localProductNameSearch"
+      :status-options="statusOptions"
+      :check-status-projection-options="checkStatusProjectionOptions"
+      :zone-options="zoneOptions"
+      number-label="Номер отправления"
+      :running-action="runningAction"
+      :loading="loading"
+      :is-initializing="isInitializing"
+      :box-scope-id="props.boxId"
+      :box-scope-code="props.boxCode"
+      @clear-box-scope="emit('clear-box-scope')"
+    />
 
     <v-card class="table-card">
       <v-data-table-server

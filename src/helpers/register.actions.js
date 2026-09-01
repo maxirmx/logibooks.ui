@@ -20,11 +20,14 @@ export async function refreshAfterCheckStatusFreeze({
   succeeded,
   hideLegacyRestrictions,
   fetchRegister,
-  loadParcels
+  loadParcels,
+  isComponentMounted
 }) {
-  if (!succeeded) return false
+  if (!succeeded || !(unref(isComponentMounted) ?? true)) return false
 
   await fetchRegister()
+  if (!(unref(isComponentMounted) ?? true)) return false
+
   if (unref(hideLegacyRestrictions)) {
     await loadParcels()
   } else {

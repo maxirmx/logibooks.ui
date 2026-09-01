@@ -537,6 +537,49 @@ describe('useRegisterHeaderActions', () => {
     expect(loadParcelsAfterFreeze).not.toHaveBeenCalled()
   })
 
+  it('does not refresh or change the filter after the initiating component unmounts', async () => {
+    const hideLegacyRestrictions = ref(false)
+    const isComponentMounted = ref(false)
+    const fetchRegister = vi.fn()
+    const loadParcelsAfterFreeze = vi.fn()
+
+    await expect(refreshAfterCheckStatusFreeze({
+      succeeded: true,
+      hideLegacyRestrictions,
+      fetchRegister,
+      loadParcels: loadParcelsAfterFreeze,
+      isComponentMounted
+    })).resolves.toBe(false)
+
+    expect(hideLegacyRestrictions.value).toBe(false)
+    expect(fetchRegister).not.toHaveBeenCalled()
+    expect(loadParcelsAfterFreeze).not.toHaveBeenCalled()
+  })
+
+  it('does not change the filter when the component unmounts while refreshing the register', async () => {
+    const hideLegacyRestrictions = ref(false)
+    const isComponentMounted = ref(true)
+    const registerRefresh = createDeferred()
+    const fetchRegister = vi.fn().mockReturnValue(registerRefresh.promise)
+    const loadParcelsAfterFreeze = vi.fn()
+
+    const refreshPromise = refreshAfterCheckStatusFreeze({
+      succeeded: true,
+      hideLegacyRestrictions,
+      fetchRegister,
+      loadParcels: loadParcelsAfterFreeze,
+      isComponentMounted
+    })
+
+    expect(fetchRegister).toHaveBeenCalledTimes(1)
+    isComponentMounted.value = false
+    registerRefresh.resolve()
+
+    await expect(refreshPromise).resolves.toBe(false)
+    expect(hideLegacyRestrictions.value).toBe(false)
+    expect(loadParcelsAfterFreeze).not.toHaveBeenCalled()
+  })
+
   it('enables the combined filter after a successful check status freeze', async () => {
     const hideLegacyRestrictions = ref(false)
     const fetchRegister = vi.fn().mockResolvedValue()

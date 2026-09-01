@@ -21,20 +21,32 @@ export async function refreshAfterCheckStatusFreeze({
   hideLegacyRestrictions,
   fetchRegister,
   loadParcels,
-  isComponentMounted
+  isComponentMounted,
+  alertStore
 }) {
   if (!succeeded || !(unref(isComponentMounted) ?? true)) return false
 
-  await fetchRegister()
-  if (!(unref(isComponentMounted) ?? true)) return false
+  try {
+    await fetchRegister()
+    if (!(unref(isComponentMounted) ?? true)) return false
 
-  if (unref(hideLegacyRestrictions)) {
-    await loadParcels()
-  } else {
-    hideLegacyRestrictions.value = true
+    if (unref(hideLegacyRestrictions)) {
+      await loadParcels()
+    } else {
+      hideLegacyRestrictions.value = true
+    }
+
+    return true
+  } catch (error) {
+    if ((unref(isComponentMounted) ?? true) && alertStore) {
+      alertStore.error(error, {
+        fallback: 'Запреты применены, но не удалось обновить данные'
+      })
+    } else {
+      reportError(error, { context: 'check status freeze refresh' })
+    }
+    return false
   }
-
-  return true
 }
 
 export function createValidationState() {

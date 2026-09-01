@@ -548,7 +548,8 @@ async function freezeCheckStatusAndRefetch() {
     hideLegacyRestrictions: parcels_hide_legacy_restrictions,
     fetchRegister,
     loadParcels: loadParcelsWrapper,
-    isComponentMounted
+    isComponentMounted,
+    alertStore
   })
 }
 

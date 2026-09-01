@@ -580,6 +580,76 @@ describe('useRegisterHeaderActions', () => {
     expect(loadParcelsAfterFreeze).not.toHaveBeenCalled()
   })
 
+  it('reports a register refresh failure exactly once and leaves the filter unchanged', async () => {
+    const hideLegacyRestrictions = ref(false)
+    const refreshError = new Error('Register refresh failed')
+    const fetchRegister = vi.fn().mockRejectedValue(refreshError)
+    const loadParcelsAfterFreeze = vi.fn()
+
+    await expect(refreshAfterCheckStatusFreeze({
+      succeeded: true,
+      hideLegacyRestrictions,
+      fetchRegister,
+      loadParcels: loadParcelsAfterFreeze,
+      alertStore
+    })).resolves.toBe(false)
+
+    expect(alertStore.error).toHaveBeenCalledTimes(1)
+    expect(alertStore.error).toHaveBeenCalledWith(refreshError, {
+      fallback: 'Запреты применены, но не удалось обновить данные'
+    })
+    expect(hideLegacyRestrictions.value).toBe(false)
+    expect(loadParcelsAfterFreeze).not.toHaveBeenCalled()
+  })
+
+  it('reports a parcel refresh rejection exactly once', async () => {
+    const hideLegacyRestrictions = ref(true)
+    const refreshError = new Error('Parcel refresh failed')
+    const fetchRegister = vi.fn().mockResolvedValue()
+    const loadParcelsAfterFreeze = vi.fn().mockRejectedValue(refreshError)
+
+    await expect(refreshAfterCheckStatusFreeze({
+      succeeded: true,
+      hideLegacyRestrictions,
+      fetchRegister,
+      loadParcels: loadParcelsAfterFreeze,
+      alertStore
+    })).resolves.toBe(false)
+
+    expect(alertStore.error).toHaveBeenCalledTimes(1)
+    expect(alertStore.error).toHaveBeenCalledWith(refreshError, {
+      fallback: 'Запреты применены, но не удалось обновить данные'
+    })
+  })
+
+  it('does not show a refresh error after the component unmounts', async () => {
+    const hideLegacyRestrictions = ref(false)
+    const mounted = ref(true)
+    const registerRefresh = createDeferred()
+    const fetchRegister = vi.fn().mockReturnValue(registerRefresh.promise)
+    const loadParcelsAfterFreeze = vi.fn()
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const refreshPromise = refreshAfterCheckStatusFreeze({
+      succeeded: true,
+      hideLegacyRestrictions,
+      fetchRegister,
+      loadParcels: loadParcelsAfterFreeze,
+      isComponentMounted: mounted,
+      alertStore
+    })
+
+    mounted.value = false
+    registerRefresh.reject(new Error('Refresh failed after unmount'))
+
+    await expect(refreshPromise).resolves.toBe(false)
+    expect(alertStore.error).not.toHaveBeenCalled()
+    expect(consoleError).toHaveBeenCalledTimes(1)
+    expect(hideLegacyRestrictions.value).toBe(false)
+
+    consoleError.mockRestore()
+  })
+
   it('enables the combined filter after a successful check status freeze', async () => {
     const hideLegacyRestrictions = ref(false)
     const fetchRegister = vi.fn().mockResolvedValue()

@@ -186,7 +186,7 @@ defineExpose({
     <v-file-input
       ref="fileInput"
       style="display: none"
-      accept=".xls,.xlsx,.xlxm,.csv,.txt"
+      accept=".xls,.xlsx,.xlsm,.csv,.txt"
       loading-text="Идёт загрузка файла..."
       @update:model-value="fileSelected"
     />

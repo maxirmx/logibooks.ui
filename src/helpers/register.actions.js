@@ -31,7 +31,8 @@ export async function refreshAfterCheckStatusFreeze({
     if (!(unref(isComponentMounted) ?? true)) return false
 
     if (unref(hideLegacyRestrictions)) {
-      await loadParcels()
+      const parcelsRefreshSucceeded = await loadParcels()
+      if (parcelsRefreshSucceeded === false) return false
     } else {
       hideLegacyRestrictions.value = true
     }

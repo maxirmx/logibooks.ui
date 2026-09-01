@@ -541,7 +541,7 @@ async function freezeCheckStatusAndRefetch() {
     succeeded: await freezeCheckStatusHeader(),
     hideLegacyRestrictions: parcels_hide_legacy_restrictions,
     fetchRegister,
-    loadParcels: loadParcelsWrapper,
+    loadParcels: () => loadParcels(props.registerId, parcelsStore, isComponentMounted, alertStore),
     isComponentMounted,
     alertStore
   })

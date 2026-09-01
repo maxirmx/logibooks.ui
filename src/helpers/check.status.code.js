@@ -13,6 +13,9 @@ export const WStatusValues = Object.freeze({
   Duplicate2: 0x0232,
   EUR1000: 0x017C,
   Defect: 0x017D,
+
+  // Obsolete duplicate status retained only for compatibility with historical persisted values.
+  // Current workflows must not assign or add new behavior for this value; use Duplicate2 instead.
   Duplicate: 0x017E,
   MarkedByPartner: 0x01FF
 })
@@ -208,6 +211,7 @@ export class CheckStatusCode {
   static isDuplicate(value) {
     const fc = CheckStatusCode.getFC(value)
     const sw = CheckStatusCode.getSW(value)
+    // The Duplicate branch only recognizes historical persisted values; active workflows use Duplicate2.
     return (fc === FCCheckStatus.Duplicate && sw === SWCheckStatus.Duplicate) ||
            (fc === FCCheckStatus.Duplicate2 && sw === SWCheckStatus.Duplicate2)
   }

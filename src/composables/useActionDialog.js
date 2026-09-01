@@ -11,7 +11,7 @@ export const ACTION_DIALOG_TITLES = {
   'upload-report': 'Загрузка отчёта',
   'download-invoice': 'Подготовка файла инвойса',
   'download-do1': 'Подготовка файла ДО1',
-  'freeze-check-status': 'Применение запретов',
+  'freeze-check-status': 'Применение запретов и скрытие дубликатов',
   'freeze-tnved-order': 'Сортировка',
   'check-passports': 'Проверка паспортов',
   'finish-passport-check': 'Завершение проверки паспортов',

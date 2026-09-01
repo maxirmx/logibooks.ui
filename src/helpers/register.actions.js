@@ -16,6 +16,24 @@ import { reportError } from '@/helpers/error.helpers.js'
 
 export const POLLING_INTERVAL_MS = 1000
 
+export async function refreshAfterCheckStatusFreeze({
+  succeeded,
+  hideLegacyRestrictions,
+  fetchRegister,
+  loadParcels
+}) {
+  if (!succeeded) return false
+
+  await fetchRegister()
+  if (unref(hideLegacyRestrictions)) {
+    await loadParcels()
+  } else {
+    hideLegacyRestrictions.value = true
+  }
+
+  return true
+}
+
 export function createValidationState() {
   return {
     show: false,
@@ -397,9 +415,9 @@ export function useRegisterHeaderActions({
 
   async function runWithLock(action, { lock = true, checkDisabled = true } = {}) {
     const register = currentRegister.value
-    if (!register) return
-    if (checkDisabled && generalActionsDisabled.value) return
-    if (lock && runningActionRef.value) return
+    if (!register) return false
+    if (checkDisabled && generalActionsDisabled.value) return false
+    if (lock && runningActionRef.value) return false
 
     if (lock) {
       runningActionRef.value = true
@@ -407,8 +425,10 @@ export function useRegisterHeaderActions({
 
     try {
       await action(register)
+      return true
     } catch (err) {
       alertStore.error(err?.message || String(err))
+      return false
     } finally {
       if (lock) {
         runningActionRef.value = false
@@ -437,10 +457,10 @@ export function useRegisterHeaderActions({
   }
 
   const runActionWithDialog = async (action, operation) => {
-    if (generalActionsDisabled.value) return
+    if (generalActionsDisabled.value) return false
     showActionDialog(operation)
     try {
-      await runWithLock(action, { lock: true, checkDisabled: false })
+      return await runWithLock(action, { lock: true, checkDisabled: false })
     } finally {
       hideActionDialog()
     }
@@ -527,7 +547,7 @@ export function useRegisterHeaderActions({
   }
 
   const runFreezeCheckStatus = async () => {
-    await runActionWithDialog(freezeCheckStatus, 'freeze-check-status')
+    return await runActionWithDialog(freezeCheckStatus, 'freeze-check-status')
   }
 
   async function refreshPassportCheckData(register) {

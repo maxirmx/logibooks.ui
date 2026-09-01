@@ -7,6 +7,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { ref, reactive } from 'vue'
 import {
   createRegisterActionHandlers,
+  refreshAfterCheckStatusFreeze,
   useRegisterHeaderActions
 } from '@/helpers/register.actions.js'
 import { OP_MODE_PAPERWORK } from '@/helpers/op.mode.js'
@@ -490,14 +491,83 @@ describe('useRegisterHeaderActions', () => {
     const promise = freezeCheckStatus()
 
     expect(actionDialog.show).toBe(true)
-    expect(actionDialog.title).toBe('Применение запретов')
+    expect(actionDialog.title).toBe('Применение запретов и скрытие дубликатов')
     expect(registersStore.freezeCheckStatus).toHaveBeenCalledWith(1)
 
     deferred.resolve()
-    await promise
+    await expect(promise).resolves.toBe(true)
 
     expect(actionDialog.show).toBe(false)
     expect(actionDialog.title).toBe('')
+  })
+
+  it('returns false and reports a freeze check status failure exactly once', async () => {
+    registersStore.freezeCheckStatus.mockRejectedValueOnce(new Error('Freeze failed'))
+    const actions = useRegisterHeaderActions({
+      registersStore,
+      alertStore,
+      runningAction,
+      tableLoading,
+      registerLoading,
+      loadParcels,
+      isComponentMounted
+    })
+
+    await expect(actions.freezeCheckStatus()).resolves.toBe(false)
+
+    expect(alertStore.error).toHaveBeenCalledTimes(1)
+    expect(alertStore.error).toHaveBeenCalledWith('Freeze failed')
+    expect(actions.actionDialog.show).toBe(false)
+  })
+
+  it('does not refresh or change the filter when check status freeze was unsuccessful', async () => {
+    const hideLegacyRestrictions = ref(false)
+    const fetchRegister = vi.fn()
+    const loadParcelsAfterFreeze = vi.fn()
+
+    await expect(refreshAfterCheckStatusFreeze({
+      succeeded: false,
+      hideLegacyRestrictions,
+      fetchRegister,
+      loadParcels: loadParcelsAfterFreeze
+    })).resolves.toBe(false)
+
+    expect(hideLegacyRestrictions.value).toBe(false)
+    expect(fetchRegister).not.toHaveBeenCalled()
+    expect(loadParcelsAfterFreeze).not.toHaveBeenCalled()
+  })
+
+  it('enables the combined filter after a successful check status freeze', async () => {
+    const hideLegacyRestrictions = ref(false)
+    const fetchRegister = vi.fn().mockResolvedValue()
+    const loadParcelsAfterFreeze = vi.fn()
+
+    await expect(refreshAfterCheckStatusFreeze({
+      succeeded: true,
+      hideLegacyRestrictions,
+      fetchRegister,
+      loadParcels: loadParcelsAfterFreeze
+    })).resolves.toBe(true)
+
+    expect(fetchRegister).toHaveBeenCalledTimes(1)
+    expect(hideLegacyRestrictions.value).toBe(true)
+    expect(loadParcelsAfterFreeze).not.toHaveBeenCalled()
+  })
+
+  it('reloads immediately when the combined filter is already enabled', async () => {
+    const hideLegacyRestrictions = ref(true)
+    const fetchRegister = vi.fn().mockResolvedValue()
+    const loadParcelsAfterFreeze = vi.fn().mockResolvedValue()
+
+    await expect(refreshAfterCheckStatusFreeze({
+      succeeded: true,
+      hideLegacyRestrictions,
+      fetchRegister,
+      loadParcels: loadParcelsAfterFreeze
+    })).resolves.toBe(true)
+
+    expect(fetchRegister).toHaveBeenCalledTimes(1)
+    expect(loadParcelsAfterFreeze).toHaveBeenCalledTimes(1)
   })
 
   it('checks register passports and refreshes parcels after completion', async () => {

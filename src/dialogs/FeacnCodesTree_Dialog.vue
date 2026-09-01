@@ -73,7 +73,7 @@ async function fileSelected(file) {
       ref="fileInput"
       type="file"
       style="display: none"
-      accept=".xls,.xlsx,.csv"
+      accept=".xls,.xlsx,.xlsm,.csv"
       :disabled="uploading"
       @change="(e) => fileSelected(e.target.files[0])"
     />

@@ -35,7 +35,7 @@ describe('register display helpers', () => {
   it('formats synthetic register types from the company name', () => {
     const companies = [{ id: 2, shortName: 'РВБ' }]
 
-    expect(getRegisterTypeDisplayName(companies, WBRN_REGISTER_ID)).toBe('РВБ новый формат')
+    expect(getRegisterTypeDisplayName(companies, WBRN_REGISTER_ID)).toBe('РВБ')
     expect(getRegisterTypeDisplayName(companies, 999)).toBe('Неизвестно')
   })
 

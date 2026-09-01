@@ -54,7 +54,7 @@ function createRegisterHeaderActionsMock() {
     exportAllXmlOrdinary: vi.fn(),
     exportAllXmlExcise: vi.fn(),
     exportAllXmlNotifications: vi.fn(),
-    freezeCheckStatus: vi.fn().mockResolvedValue(),
+    freezeCheckStatus: vi.fn().mockResolvedValue(true),
     freezeTnVedOrder: vi.fn().mockResolvedValue(),
     checkPassports: vi.fn().mockResolvedValue(),
     finishPassportCheck: vi.fn().mockResolvedValue(),
@@ -253,7 +253,8 @@ vi.mock('@/stores/alert.store.js', () => ({
   useAlertStore: () => stores.alert
 }))
 
-vi.mock('@/helpers/register.actions.js', () => ({
+vi.mock('@/helpers/register.actions.js', async (importOriginal) => ({
+  ...(await importOriginal()),
   useRegisterHeaderActions: vi.fn(() => registerHeaderActionsMock)
 }))
 
@@ -522,7 +523,7 @@ describe.each([
     expect(loadParcelsMock.mock.calls.length).toBe(callsBeforeWithSort + 1)
   })
 
-  it('refetches register and parcels after check status freeze', async () => {
+  it('enables the combined restriction and duplicate filter after check status freeze', async () => {
     const wrapper = mount(Component, {
       props: { registerId: 14 },
       global: { stubs: vuetifyStubs }
@@ -534,10 +535,48 @@ describe.each([
     registerHeaderActionsMock.freezeCheckStatus.mockClear()
 
     await wrapper.vm.freezeCheckStatusAndRefetch()
+    await resolveAll()
 
     expect(registerHeaderActionsMock.freezeCheckStatus).toHaveBeenCalledTimes(1)
     expect(stores.registers.getById).toHaveBeenCalledWith(14)
+    expect(stores.auth.parcels_hide_legacy_restrictions.value).toBe(true)
     expect(loadParcelsMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('refreshes explicitly when the combined filter is already enabled', async () => {
+    stores.auth.parcels_hide_legacy_restrictions.value = true
+    const wrapper = mount(Component, {
+      props: { registerId: 14 },
+      global: { stubs: vuetifyStubs }
+    })
+
+    await resolveAll()
+    loadParcelsMock.mockClear()
+    stores.registers.getById.mockClear()
+
+    await wrapper.vm.freezeCheckStatusAndRefetch()
+
+    expect(stores.registers.getById).toHaveBeenCalledWith(14)
+    expect(loadParcelsMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not change filters or refresh after a failed check status freeze', async () => {
+    registerHeaderActionsMock.freezeCheckStatus.mockResolvedValueOnce(false)
+    const wrapper = mount(Component, {
+      props: { registerId: 14 },
+      global: { stubs: vuetifyStubs }
+    })
+
+    await resolveAll()
+    loadParcelsMock.mockClear()
+    stores.registers.getById.mockClear()
+
+    await wrapper.vm.freezeCheckStatusAndRefetch()
+    await resolveAll()
+
+    expect(stores.auth.parcels_hide_legacy_restrictions.value).toBe(false)
+    expect(stores.registers.getById).not.toHaveBeenCalled()
+    expect(loadParcelsMock).not.toHaveBeenCalled()
   })
 
   it('shows passport verification controls and indicator for import SrLogistPlus users', async () => {

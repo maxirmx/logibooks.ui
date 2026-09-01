@@ -536,6 +536,7 @@ describe('Registers_WhList.vue', () => {
 
     expect(headerKeys).toEqual([
       'actions',
+      'id',
       'dealNumber',
       'invoice',
       'countries',
@@ -548,6 +549,7 @@ describe('Registers_WhList.vue', () => {
     ])
     expect(headerTitles).toEqual([
       '',
+      '№',
       'Номер сделки',
       'ТСД',
       'Страны',
@@ -777,6 +779,7 @@ describe('Registers_WhList.vue', () => {
     )
 
     expect(sortableByKey.actions).toBe(false)
+    expect(sortableByKey.id).toBe(true)
     expect(sortableByKey.dealNumber).toBe(true)
     expect(sortableByKey.invoice).toBe(true)
     expect(sortableByKey.countries).toBe(true)
@@ -795,6 +798,17 @@ describe('Registers_WhList.vue', () => {
 
     expect(parcelsHeader.align).toBe('end')
     expect(parcelsHeader.width).toBe('150px')
+  })
+
+  it('uses a compact warehouse register ID column', () => {
+    const idHeader = createWarehouseRegisterHeaders().find((header) => header.key === 'id')
+
+    expect(idHeader).toMatchObject({
+      title: '№',
+      sortable: true,
+      align: 'start',
+      width: '80px'
+    })
   })
 
   it('renders warehouse zone distribution counts and hides zero values', async () => {

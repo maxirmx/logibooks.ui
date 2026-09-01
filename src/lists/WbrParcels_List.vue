@@ -44,7 +44,10 @@ import {
 } from '@/helpers/parcels.list.helpers.js'
 import { handleFellowsClick } from '@/helpers/parcel.number.ext.helpers.js'
 import { OP_MODE_PAPERWORK } from '@/helpers/op.mode.js'
-import { useRegisterHeaderActions } from '@/helpers/register.actions.js'
+import {
+  refreshAfterCheckStatusFreeze,
+  useRegisterHeaderActions
+} from '@/helpers/register.actions.js'
 import ClickableCell from '@/components/ClickableCell.vue'
 import CorrectedWeightDisplay from '@/components/CorrectedWeightDisplay.vue'
 import PassportCheckStatusIndicator from '@/components/PassportCheckStatusIndicator.vue'
@@ -534,9 +537,14 @@ async function freezeTnVedOrderAndRefetch() {
 }
 
 async function freezeCheckStatusAndRefetch() {
-  await freezeCheckStatusHeader()
-  await fetchRegister()
-  await loadParcelsWrapper()
+  await refreshAfterCheckStatusFreeze({
+    succeeded: await freezeCheckStatusHeader(),
+    hideLegacyRestrictions: parcels_hide_legacy_restrictions,
+    fetchRegister,
+    loadParcels: () => loadParcels(props.registerId, parcelsStore, isComponentMounted, alertStore),
+    isComponentMounted,
+    alertStore
+  })
 }
 
 function editParcel(item) {

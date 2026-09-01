@@ -106,7 +106,7 @@ const headerActions = {
   downloadAdditionalRestrictions: vi.fn(),
   downloadPackingList: vi.fn(),
   downloadTechdoc: vi.fn(),
-  freezeCheckStatus: vi.fn().mockResolvedValue(),
+  freezeCheckStatus: vi.fn().mockResolvedValue(true),
   freezeTnVedOrder: vi.fn().mockResolvedValue(),
   calculateCustomsCharges: vi.fn().mockResolvedValue(),
   checkPassports: vi.fn().mockResolvedValue(),
@@ -194,7 +194,8 @@ vi.mock('@/helpers/parcel.number.ext.helpers.js', () => ({
   handleFellowsClick
 }))
 
-vi.mock('@/helpers/register.actions.js', () => ({
+vi.mock('@/helpers/register.actions.js', async (importOriginal) => ({
+  ...(await importOriginal()),
   useRegisterHeaderActions: () => ({
     validationState: ref(null),
     progressPercent: ref(0),
@@ -563,7 +564,7 @@ function resetState() {
   ensureStopWordsLoaded.mockResolvedValue()
   ensureKeyWordsLoaded.mockResolvedValue()
   ensureFeacnOrdersLoaded.mockResolvedValue()
-  headerActions.freezeCheckStatus.mockResolvedValue()
+  headerActions.freezeCheckStatus.mockResolvedValue(true)
   headerActions.freezeTnVedOrder.mockResolvedValue()
   headerActions.checkPassports.mockResolvedValue()
   loadParcels.mockResolvedValue()

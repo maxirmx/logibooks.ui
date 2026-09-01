@@ -68,7 +68,8 @@ vi.mock('@/helpers/parcels.list.helpers.js', async () => {
   }
 })
 
-vi.mock('@/helpers/register.actions.js', () => ({
+vi.mock('@/helpers/register.actions.js', async (importOriginal) => ({
+  ...(await importOriginal()),
   useRegisterHeaderActions: () => ({
     validationState: ref(null),
     progressPercent: ref(0),
@@ -85,7 +86,7 @@ vi.mock('@/helpers/register.actions.js', () => ({
     downloadRegister: vi.fn(),
     downloadAdditionalRestrictions: vi.fn(),
     downloadTechdoc: vi.fn(),
-    freezeCheckStatus: vi.fn().mockResolvedValue(),
+    freezeCheckStatus: vi.fn().mockResolvedValue(true),
     freezeTnVedOrder: vi.fn().mockResolvedValue(),
     calculateCustomsCharges: vi.fn().mockResolvedValue(),
     cancelValidation: vi.fn(),

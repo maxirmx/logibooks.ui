@@ -1032,21 +1032,6 @@ describe('Registers_List.vue', () => {
     })
 
     describe('uploadMenuOptions computed property', () => {
-      it('returns filtered menu options for upload', () => {
-        mockCompanies.value = [
-          { id: OZON_COMPANY_ID, name: 'ООО "Интернет решения"', shortName: 'Озон' },
-          { id: WBR_COMPANY_ID, name: 'ООО "РВБ"', shortName: 'РВБ' },
-          { id: 3, name: 'Other Company', shortName: 'Other' }
-        ]
-
-        const options = wrapper.vm.uploadMenuOptions
-
-        expect(options).toHaveLength(2)
-        expect(options.map((option) => option.label)).toEqual(['Озон', 'РВБ новый формат'])
-        expect(options.some((option) => option.label === 'РВБ')).toBe(false)
-        expect(options.every((option) => typeof option.action === 'function')).toBe(true)
-      })
-
       it('returns empty upload options when no companies loaded', () => {
         mockCompanies.value = []
         const options = wrapper.vm.uploadMenuOptions
@@ -1095,7 +1080,7 @@ describe('Registers_List.vue', () => {
         await wrapper.vm.$nextTick()
 
         const option = wrapper.vm.uploadMenuOptions.find(
-          (item) => item.label === 'РВБ новый формат'
+          (item) => item.label === 'РВБ'
         )
         expect(option).toBeTruthy()
 

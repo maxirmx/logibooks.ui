@@ -732,7 +732,7 @@ function getGenericTemplateHeaders() {
       v-if="authStore.isSrLogistPlus"
       ref="weightUpdateFileInput"
       type="file"
-      accept=".xls,.xlsx,.zip,.rar"
+      accept=".xls,.xlsx,.xlxm,.zip,.rar"
       data-testid="ozon-weight-update-file-input"
       style="display: none"
       @change="onWeightUpdateFileSelected"

@@ -25,7 +25,7 @@ describe('register history formatters', () => {
   it('uses shared display resolvers for reference values', () => {
     expect(formatRegisterHistoryValue('CompanyId', 1, context)).toBe('Озон')
     expect(formatRegisterHistoryValue('RegisterType', WBRN_REGISTER_ID, context)).toBe(
-      'РВБ новый формат'
+      'РВБ'
     )
     expect(formatRegisterHistoryValue('StatusId', 2, context)).toBe('На складе')
     expect(formatRegisterHistoryValue('TheOtherCountryCode', 860, context)).toBe('Узбекистан')

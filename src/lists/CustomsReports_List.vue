@@ -223,7 +223,7 @@ function viewReportRows(report) {
         <input
           type="file"
           ref="fileInput"
-          accept=".xls,.xlsx,.zip,.rar"
+          accept=".xls,.xlsx,.xlxm,.zip,.rar"
           data-testid="reports-upload-input"
           style="display: none"
           @change="onReportFileSelected"

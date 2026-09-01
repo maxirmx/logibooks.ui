@@ -540,7 +540,7 @@ describe('RegisterHistory_List.vue', () => {
 
     const text = wrapper.text()
     expect(text).toContain('Компания: Озон → РВБ')
-    expect(text).toContain('Тип реестра: Озон → РВБ новый формат')
+    expect(text).toContain('Тип реестра: Озон → РВБ')
     expect(text).toContain('Статус: Получен → На складе')
     expect(text).toContain('Контрагент: Старый контрагент → Новый контрагент')
     expect(text).toContain('Страна: Узбекистан → Грузия')

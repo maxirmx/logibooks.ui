@@ -391,7 +391,7 @@ defineExpose({
       v-if="isSrLogistPlus"
       ref="fileInput"
       style="display: none"
-      accept=".xls,.xlsx,.zip,.rar"
+      accept=".xls,.xlsx,.xlxm,.zip,.rar"
       :loading-text="`Идёт загрузка ${registerNouns.genitiveSingular}...`"
       @update:model-value="fileSelected"
     />

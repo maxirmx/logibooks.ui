@@ -58,7 +58,15 @@ describe('register history formatters', () => {
     expect(formatRegisterHistoryValue('WithTransit', '1', context)).toBe('Да')
     expect(formatRegisterHistoryValue('WithTransit', false, context)).toBe('Нет')
     expect(formatRegisterHistoryValue('WithTransit', '0', context)).toBe('Нет')
+    expect(formatRegisterHistoryValue('ExportedTo1C', false, context)).toBe(
+      'Выгрузка в 1C не выполнена'
+    )
+    expect(formatRegisterHistoryValue('ExportedTo1C', 'True', context)).toBe(
+      'Выгрузка в 1C выполнена'
+    )
     expect(formatRegisterHistoryValue('InvoiceDate', '2026-07-31', context)).toBe('31.07.2026')
+    expect(formatRegisterHistoryValue('DecDate', '2026-08-01', context)).toBe('01.08.2026')
+    expect(formatRegisterHistoryValue('ReleaseDate', '2026-08-02', context)).toBe('02.08.2026')
     expect(formatRegisterHistoryValue('DealNumber', 'D-42', context)).toBe('D-42')
   })
 })

@@ -91,12 +91,18 @@ export function formatRegisterHistoryValue(
       return value === true || value === 1 || ['true', '1'].includes(String(value).toLowerCase())
         ? 'Да'
         : 'Нет'
+    case 'ExportedTo1C':
+      return value === true || value === 1 || ['true', '1'].includes(String(value).toLowerCase())
+        ? 'Выгрузка в 1C выполнена'
+        : 'Выгрузка в 1C не выполнена'
     case 'WarehouseId':
       return resolveReference(value, getWarehouseName, 'Неизвестный склад')
     case 'DTime':
       return formatDateTime(value)
     case 'InvoiceDate':
     case 'WarehouseArrivalDate':
+    case 'DecDate':
+    case 'ReleaseDate':
       return formatDate(value)
     default:
       if (value === 'True' || value === 'true') return 'Да'

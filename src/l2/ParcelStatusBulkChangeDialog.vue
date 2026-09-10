@@ -4,7 +4,7 @@
 // This file is a part of Logibooks ui application
 
 import { computed, nextTick, ref, watch } from 'vue'
-import { useConfirm } from 'vuetify-use-dialog'
+import { useAppConfirm } from '@/composables/useAppConfirm.js'
 import ActionButton from '@/components/ActionButton.vue'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useParcelsStore } from '@/stores/parcels.store.js'
@@ -15,6 +15,10 @@ import {
   normalizeParcelStatusBulkIds,
   parseParcelStatusBulkInput
 } from '@/helpers/parcel.status.bulk.helpers.js'
+import {
+  buildCustomsExclusionWarning,
+  getStatusById
+} from '@/helpers/lifecycle.warning.helpers.js'
 
 const props = defineProps({
   show: { type: Boolean, required: true },
@@ -29,7 +33,7 @@ const emit = defineEmits(['update:show', 'updated'])
 const parcelsStore = useParcelsStore()
 const registersStore = useRegistersStore()
 const alertStore = useAlertStore()
-const confirm = useConfirm()
+const confirm = useAppConfirm()
 
 const inputRef = ref(null)
 const selectedStatusId = ref(null)
@@ -176,6 +180,17 @@ async function updateFound() {
 
   updateFoundInProgress.value = true
   try {
+    const selectedStatus = getStatusById(statusId.value, { parcelStatuses: props.statusOptions })
+    if (selectedStatus?.useAtCustomsProcessing === false) {
+      const confirmed = await confirm({
+        title: 'Подтверждение',
+        confirmationText: 'Применить',
+        cancellationText: 'Отменить',
+        content: buildCustomsExclusionWarning(selectedStatus.title || '', foundCount.value)
+      })
+      if (!confirmed) return
+    }
+
     const result = await parcelsStore.updateStatusSelection(
       Number(props.registerId),
       statusId.value,
@@ -199,23 +214,27 @@ async function updateAll() {
 
   updateAllInProgress.value = true
   try {
-    const selectedStatus = props.statusOptions.find((option) => Number(option.id) === statusId.value)
+    const selectedStatus = getStatusById(statusId.value, { parcelStatuses: props.statusOptions })
     const statusDescription = selectedStatus?.title
       ? ` на "${selectedStatus.title}"`
       : ''
-    const confirmed = await confirm({
-      title: 'Подтверждение',
-      confirmationText: 'Изменить',
-      cancellationText: 'Не изменять',
-      dialogProps: {
-        width: '30%',
-        minWidth: '250px'
-      },
-      confirmationButtonProps: {
-        color: 'orange-darken-3'
-      },
-      content: `Изменить статус всех посылок в реестре${statusDescription}?`
-    })
+    const excluded = selectedStatus?.useAtCustomsProcessing === false
+    const confirmed = await confirm(excluded
+      ? {
+          title: 'Подтверждение',
+          confirmationText: 'Применить',
+          cancellationText: 'Отменить',
+          content: buildCustomsExclusionWarning(
+            selectedStatus?.title || '',
+            Number(currentRegister.value?.parcelsTotal || 0)
+          )
+        }
+      : {
+          title: 'Подтверждение',
+          confirmationText: 'Изменить',
+          cancellationText: 'Не изменять',
+          content: `Изменить статус всех посылок в реестре${statusDescription}?`
+        })
 
     if (!confirmed) {
       return

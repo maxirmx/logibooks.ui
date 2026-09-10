@@ -95,6 +95,18 @@ describe('parcel actions helpers', () => {
 
       expect(mockParcelsStore.error).toBe('Ошибка при проверке информации о посылке')
     })
+
+    it('does not validate or reload when guarded update is cancelled', async () => {
+      const updateParcel = vi.fn().mockResolvedValue(false)
+
+      await expect(validateParcelData(
+        mockValues, mockItem, mockParcelsStore, true, undefined, updateParcel
+      )).resolves.toBe(false)
+
+      expect(updateParcel).toHaveBeenCalledWith(parcelId, mockValues)
+      expect(mockParcelsStore.validate).not.toHaveBeenCalled()
+      expect(mockParcelsStore.getById).not.toHaveBeenCalled()
+    })
   })
 
   describe('approveParcel', () => {
@@ -187,6 +199,21 @@ describe('parcel actions helpers', () => {
 
       await approveParcel(mockValues, mockItem, mockParcelsStore)
       expect(mockParcelsStore.error).toBe('Custom approval error')
+    })
+
+    it('does not approve or reload when guarded update is cancelled', async () => {
+      const updateParcel = vi.fn().mockResolvedValue(false)
+
+      await expect(approveParcel(
+        mockValues,
+        mockItem,
+        mockParcelsStore,
+        ParcelApprovalMode.SimpleApprove,
+        updateParcel
+      )).resolves.toBe(false)
+
+      expect(mockParcelsStore.approve).not.toHaveBeenCalled()
+      expect(mockParcelsStore.getById).not.toHaveBeenCalled()
     })
   })
 
@@ -401,6 +428,46 @@ describe('parcel actions helpers', () => {
         mockParcelsStore
       )
 
+      expect(mockParcelsStore.getById).not.toHaveBeenCalled()
+    })
+
+    it('runs the pre-action confirmation before saving', async () => {
+      const beforeAction = vi.fn().mockResolvedValue(false)
+      const updateParcel = vi.fn()
+
+      await expect(runCheckStatusAction(
+        mockValues,
+        mockActionFn,
+        mockIsComponentMounted,
+        mockRunningAction,
+        mockCurrentParcelId,
+        mockEnsureNextParcelsPromise,
+        mockParcelsStore,
+        { beforeAction, updateParcel }
+      )).resolves.toBe(false)
+
+      expect(beforeAction).toHaveBeenCalledOnce()
+      expect(updateParcel).not.toHaveBeenCalled()
+      expect(mockActionFn).not.toHaveBeenCalled()
+      expect(mockParcelsStore.getById).not.toHaveBeenCalled()
+      expect(mockRunningAction.value).toBe(false)
+    })
+
+    it('does not run the downstream action when guarded save is cancelled', async () => {
+      const updateParcel = vi.fn().mockResolvedValue(false)
+
+      await expect(runCheckStatusAction(
+        mockValues,
+        mockActionFn,
+        mockIsComponentMounted,
+        mockRunningAction,
+        mockCurrentParcelId,
+        mockEnsureNextParcelsPromise,
+        mockParcelsStore,
+        { updateParcel }
+      )).resolves.toBe(false)
+
+      expect(mockActionFn).not.toHaveBeenCalled()
       expect(mockParcelsStore.getById).not.toHaveBeenCalled()
     })
   })

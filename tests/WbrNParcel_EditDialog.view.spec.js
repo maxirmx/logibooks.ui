@@ -502,7 +502,11 @@ describe('WbrNParcel_EditDialog.vue', () => {
       expect.any(Object),
       expect.any(Object),
       expect.any(Function),
-      expect.any(Object)
+      expect.any(Object),
+      expect.objectContaining({
+        updateParcel: expect.any(Function),
+        beforeAction: expect.any(Function)
+      })
     )
     await wrapper.get('[data-tooltip="Очистить"]').trigger('click')
     await resolveAll()
@@ -513,8 +517,23 @@ describe('WbrNParcel_EditDialog.vue', () => {
       expect.any(Object),
       expect.any(Object),
       expect.any(Function),
-      expect.any(Object)
+      expect.any(Object),
+      expect.objectContaining({
+        updateParcel: expect.any(Function),
+        beforeAction: expect.any(Function)
+      })
     )
+
+    registerItem.value = { ...registerItem.value, passportCheckWasFinished: true }
+    confirmMock.mockResolvedValue(false)
+    const clearCall = runCheckStatusAction.mock.calls.find(
+      (call) => call[1] === parcelClearPassportCheck
+    )
+    await expect(clearCall[7].beforeAction()).resolves.toBe(false)
+    expect(registerGetById).toHaveBeenCalledWith(12)
+    expect(confirmMock).toHaveBeenCalledWith(expect.objectContaining({
+      content: expect.stringContaining('Вы очищаете статус проверки паспорта')
+    }))
     wrapper.unmount()
 
     resetState()
@@ -669,6 +688,25 @@ describe('WbrNParcel_EditDialog.vue', () => {
     })
   })
 
+  it('keeps the editor open when an excluded single-parcel status is cancelled', async () => {
+    formValues.statusId = 6
+    confirmMock.mockResolvedValue(false)
+    const wrapper = await mountDialog()
+    parcelUpdate.mockClear()
+    routerPush.mockClear()
+
+    await wrapper.get('[data-testid="save"]').trigger('click')
+    await resolveAll()
+
+    expect(confirmMock).toHaveBeenCalledWith(expect.objectContaining({
+      confirmationText: 'Применить',
+      cancellationText: 'Отменить',
+      content: expect.stringContaining('статус посылки на «Не выгружать»')
+    }))
+    expect(parcelUpdate).not.toHaveBeenCalled()
+    expect(routerPush).not.toHaveBeenCalled()
+  })
+
   it('preserves navigation context across next and previous parcel targets', async () => {
     const returnUrl = '/scanjobs/42/monitor/boxes/7'
     const boxId = 17
@@ -727,21 +765,24 @@ describe('WbrNParcel_EditDialog.vue', () => {
       parcelItem,
       expect.any(Object),
       true,
-      0
+      0,
+      expect.any(Function)
     )
     expect(validateParcelData).toHaveBeenCalledWith(
       expect.objectContaining({ id: 3 }),
       parcelItem,
       expect.any(Object),
       true,
-      1
+      1,
+      expect.any(Function)
     )
     expect(validateParcelData).toHaveBeenCalledWith(
       expect.objectContaining({ id: 3 }),
       parcelItem,
       expect.any(Object),
       false,
-      undefined
+      undefined,
+      expect.any(Function)
     )
 
     await wrapper.get('[data-testid="approve"]').trigger('click')
@@ -749,7 +790,9 @@ describe('WbrNParcel_EditDialog.vue', () => {
     expect(approveParcel).toHaveBeenCalledWith(
       expect.objectContaining({ id: 3 }),
       parcelItem,
-      expect.any(Object)
+      expect.any(Object),
+      undefined,
+      expect.any(Function)
     )
 
     await wrapper.get('[data-testid="approve-excise"]').trigger('click')
@@ -757,7 +800,8 @@ describe('WbrNParcel_EditDialog.vue', () => {
     expect(approveParcelWithExcise).toHaveBeenCalledWith(
       expect.objectContaining({ id: 3 }),
       parcelItem,
-      expect.any(Object)
+      expect.any(Object),
+      expect.any(Function)
     )
     expect(setFieldValue).toHaveBeenCalledWith('tnVed', '6403999300')
 
@@ -766,7 +810,8 @@ describe('WbrNParcel_EditDialog.vue', () => {
     expect(approveParcelWithNotification).toHaveBeenCalledWith(
       expect.objectContaining({ id: 3 }),
       parcelItem,
-      expect.any(Object)
+      expect.any(Object),
+      expect.any(Function)
     )
 
     await wrapper.get('[data-testid="clear-check-status"]').trigger('click')
@@ -780,7 +825,8 @@ describe('WbrNParcel_EditDialog.vue', () => {
       expect.any(Object),
       expect.any(Object),
       expect.any(Function),
-      expect.any(Object)
+      expect.any(Object),
+      expect.objectContaining({ updateParcel: expect.any(Function), beforeAction: null })
     )
     expect(runCheckStatusAction).toHaveBeenCalledWith(
       expect.objectContaining({ id: 3 }),
@@ -789,7 +835,8 @@ describe('WbrNParcel_EditDialog.vue', () => {
       expect.any(Object),
       expect.any(Object),
       expect.any(Function),
-      expect.any(Object)
+      expect.any(Object),
+      expect.objectContaining({ updateParcel: expect.any(Function), beforeAction: null })
     )
 
     await wrapper.get('[data-testid="lookup"]').trigger('click')

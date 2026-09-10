@@ -124,6 +124,7 @@ const fieldLabels = {
   InspectionsCount: 'Количество досмотренных посылок',
   WithTransit: 'Транзит',
   ExportedTo1C: 'Выгрузка в 1С',
+  PassportCheckWasFinished: 'Операция «Завершить проверку паспортов»',
   DecDate: 'Дата подачи ДТЭГ',
   ReleaseDate: 'Дата выпуска',
   PlacesTotal: 'Количество мест',

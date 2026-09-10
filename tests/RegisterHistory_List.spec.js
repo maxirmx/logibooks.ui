@@ -276,6 +276,7 @@ describe('RegisterHistory_List.vue', () => {
   it('renders localized 1C field names and values', async () => {
     mockRefs.items.value[0].changes = [
       { field: 'ExportedTo1C', oldValue: 'False', newValue: 'True' },
+      { field: 'PassportCheckWasFinished', oldValue: 'False', newValue: 'True' },
       { field: 'DecDate', oldValue: null, newValue: '2026-08-01' },
       { field: 'ReleaseDate', oldValue: '2026-08-01', newValue: '2026-08-02' }
     ]
@@ -289,9 +290,13 @@ describe('RegisterHistory_List.vue', () => {
     expect(wrapper.text()).toContain(
       'Выгрузка в 1С: Выгрузка в 1С не выполнена → Выгрузка в 1С выполнена'
     )
+    expect(wrapper.text()).toContain(
+      'Операция «Завершить проверку паспортов»: Не выполнена → Выполнена'
+    )
     expect(wrapper.text()).toContain('Дата подачи ДТЭГ: не указано → 01.08.2026')
     expect(wrapper.text()).toContain('Дата выпуска: 01.08.2026 → 02.08.2026')
     expect(wrapper.text()).not.toContain('ExportedTo1C')
+    expect(wrapper.text()).not.toContain('PassportCheckWasFinished')
     expect(wrapper.text()).not.toContain('DecDate')
     expect(wrapper.text()).not.toContain('ReleaseDate')
   })

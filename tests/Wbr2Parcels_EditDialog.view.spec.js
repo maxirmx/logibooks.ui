@@ -23,6 +23,8 @@ const parcelsMock = {
   update: vi.fn().mockResolvedValue(),
   generate: vi.fn().mockResolvedValue(),
   lookupFeacnCode: vi.fn().mockResolvedValue(),
+  validate: vi.fn().mockResolvedValue(),
+  approve: vi.fn().mockResolvedValue(),
   checkPassport: vi.fn().mockResolvedValue(),
   clearPassportCheck: vi.fn().mockResolvedValue()
 }
@@ -225,6 +227,16 @@ describe('Wbr2Parcels_EditDialog image overlay', () => {
   })
 
   it('keeps read-only navigation and downloads while blocking all mutations', async () => {
+    const statusSectionStub = {
+      emits: ['validate-sw', 'approve', 'approve-excise'],
+      template: `
+        <div>
+          <button data-testid="validate" @click="$emit('validate-sw', { id: 3, statusId: 1 })"></button>
+          <button data-testid="approve" @click="$emit('approve', { id: 3, statusId: 1 })"></button>
+          <button data-testid="approve-excise" @click="$emit('approve-excise', { id: 3, statusId: 1 })"></button>
+        </div>
+      `
+    }
     const actionBarStub = {
       props: ['mutationDisabled'],
       emits: ['next-parcel', 'back', 'save', 'lookup', 'download'],
@@ -253,7 +265,7 @@ describe('Wbr2Parcels_EditDialog image overlay', () => {
                   '<div><slot :errors="{}" :values="{ id: 3, statusId: 1 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
               },
               ParcelHeaderActionsBar: actionBarStub,
-              ParcelStatusSection: true,
+              ParcelStatusSection: statusSectionStub,
               FeacnCodeEditor: true,
               ParcelNumberExt: true,
               ParcelWeightAutoField: true,
@@ -272,7 +284,11 @@ describe('Wbr2Parcels_EditDialog image overlay', () => {
     }
 
     let wrapper = await mountDialog()
-    for (const testId of ['next', 'back', 'download', 'lookup']) {
+    for (const testId of ['next', 'back', 'download', 'lookup', 'save']) {
+      await wrapper.get(`[data-testid="${testId}"]`).trigger('click')
+      await resolveAll()
+    }
+    for (const testId of ['validate', 'approve', 'approve-excise']) {
       await wrapper.get(`[data-testid="${testId}"]`).trigger('click')
       await resolveAll()
     }

@@ -65,7 +65,8 @@ vi.mock('@/components/ActionButton.vue', () => ({
 
 const statusOptions = [
   { id: 3, title: 'Status 3' },
-  { id: 4, title: 'Status 4' }
+  { id: 4, title: 'Status 4' },
+  { id: 5, title: 'Excluded', useAtCustomsProcessing: false }
 ]
 
 function mountDialog(props = {}) {
@@ -336,19 +337,12 @@ describe('ParcelStatusBulkChangeDialog', () => {
     await wrapper.find('[data-testid="parcel-status-bulk-update-all"]').trigger('click')
     await flushPromises()
 
-    expect(mocks.confirm).toHaveBeenCalledWith({
+    expect(mocks.confirm).toHaveBeenCalledWith(expect.objectContaining({
       title: 'Подтверждение',
       confirmationText: 'Изменить',
       cancellationText: 'Не изменять',
-      dialogProps: {
-        width: '30%',
-        minWidth: '250px'
-      },
-      confirmationButtonProps: {
-        color: 'orange-darken-3'
-      },
       content: 'Изменить статус всех посылок в реестре на "Status 4"?'
-    })
+    }))
     expect(mocks.setParcelStatuses).toHaveBeenCalledWith(7, 4)
     expect(mocks.alertSuccess).toHaveBeenCalledWith(
       'Статус успешно применен ко всем посылкам в реестре'
@@ -368,6 +362,44 @@ describe('ParcelStatusBulkChangeDialog', () => {
     expect(mocks.setParcelStatuses).not.toHaveBeenCalled()
     expect(mocks.alertSuccess).not.toHaveBeenCalled()
     expect(wrapper.emitted('updated')).toBeUndefined()
+  })
+
+  it('uses the exclusion warning for found parcels and cancels the mutation', async () => {
+    mocks.resolveStatusSelection.mockResolvedValue({
+      parcelIds: [11], missingNumbers: [], blockedItems: []
+    })
+    mocks.confirm.mockResolvedValue(false)
+    const wrapper = mountDialog()
+
+    await wrapper.find('[data-testid="parcel-status-bulk-status"]').setValue('5')
+    await wrapper.find('[data-testid="parcel-status-bulk-input"]').setValue('P-1')
+    await wrapper.find('[data-testid="parcel-status-bulk-find"]').trigger('click')
+    await flushPromises()
+    await wrapper.find('[data-testid="parcel-status-bulk-update-found"]').trigger('click')
+    await flushPromises()
+
+    expect(mocks.confirm).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Подтверждение',
+      confirmationText: 'Применить',
+      cancellationText: 'Отменить',
+      content: expect.stringContaining('статус посылки на «Excluded»')
+    }))
+    expect(mocks.updateStatusSelection).not.toHaveBeenCalled()
+  })
+
+  it('replaces the generic all-parcels confirmation with the exclusion warning', async () => {
+    const wrapper = mountDialog({ register: { id: 7, parcelsTotal: 12 } })
+
+    await wrapper.find('[data-testid="parcel-status-bulk-status"]').setValue('5')
+    await wrapper.find('[data-testid="parcel-status-bulk-update-all"]').trigger('click')
+    await flushPromises()
+
+    expect(mocks.confirm).toHaveBeenCalledOnce()
+    expect(mocks.confirm).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Подтверждение',
+      content: expect.stringContaining('статус посылок на «Excluded»')
+    }))
+    expect(mocks.setParcelStatuses).toHaveBeenCalledWith(7, 5)
   })
 
   it('reports update-all errors from backend reason fields', async () => {

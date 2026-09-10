@@ -13,6 +13,10 @@ import {
   WEIGHT_CORRECTION_CHOICE
 } from '@/helpers/weight.correction.helpers.js'
 import { reportError } from '@/helpers/error.helpers.js'
+import {
+  buildFinishPassportCheckWarning,
+  buildRestartPassportCheckWarning
+} from '@/helpers/lifecycle.warning.helpers.js'
 
 export const POLLING_INTERVAL_MS = 1000
 
@@ -406,7 +410,7 @@ export function useRegisterHeaderActions({
   const { actionDialogState, showActionDialog, hideActionDialog } = useActionDialog()
   const confirm = useAppConfirm()
   const weightCorrectionChoicePending = ref(false)
-  const passportFinishConfirmationPending = ref(false)
+  const passportConfirmationPending = ref(false)
 
   const currentRegister = computed(() => {
     const register = unref(registersStore?.item)
@@ -426,7 +430,7 @@ export function useRegisterHeaderActions({
       validationState.show ||
       actionDialogState.show ||
       weightCorrectionChoicePending.value ||
-      passportFinishConfirmationPending.value
+      passportConfirmationPending.value
   )
 
   async function runWithLock(action, { lock = true, checkDisabled = true } = {}) {
@@ -583,27 +587,75 @@ export function useRegisterHeaderActions({
     await refreshPassportCheckData(register)
   }
 
+  async function refreshRegisterForPassportDecision() {
+    const registerId = currentRegister.value?.id
+    if (!registerId) return false
+
+    passportConfirmationPending.value = true
+    try {
+      await registersStore.getById(registerId)
+      return true
+    } catch (error) {
+      alertStore.error(error, { fallback: 'Не удалось обновить данные реестра' })
+      return false
+    } finally {
+      passportConfirmationPending.value = false
+    }
+  }
+
   const runCheckPassports = async () => {
+    if (generalActionsDisabled.value) return
+    if (!(await refreshRegisterForPassportDecision())) return
+
+    if (currentRegister.value?.passportCheckWasFinished === true) {
+      passportConfirmationPending.value = true
+      let confirmed
+      try {
+        confirmed = await confirm({
+          title: 'Подтверждение',
+          confirmationText: 'Применить',
+          cancellationText: 'Отменить',
+          content: buildRestartPassportCheckWarning(currentRegister.value?.parcelsTotal)
+        })
+      } finally {
+        passportConfirmationPending.value = false
+      }
+      if (!confirmed) return
+    }
+
     await runActionWithDialog(checkPassportsForCurrentRegister, 'check-passports')
   }
 
   const runFinishPassportCheck = async () => {
     if (generalActionsDisabled.value) return
 
-    if (currentRegister.value?.hasPendingPassportChecks) {
-      passportFinishConfirmationPending.value = true
+    if (!(await refreshRegisterForPassportDecision())) return
+
+    const register = currentRegister.value
+    const hasExactCounts =
+      register?.passportChecksNotCheckedCount !== undefined &&
+      register?.passportChecksInProgressCount !== undefined
+    const warning = hasExactCounts
+      ? buildFinishPassportCheckWarning(
+          register.passportChecksNotCheckedCount,
+          register.passportChecksInProgressCount
+        )
+      : register?.hasPendingPassportChecks
+        ? 'Из таможенного оформления могут быть исключены посылки с незавершённой проверкой паспорта получателя. Продолжить?'
+        : null
+
+    if (warning) {
+      passportConfirmationPending.value = true
       let confirmed
       try {
         confirmed = await confirm({
-          title: 'Завершение проверки паспортов',
-          confirmationText: 'Завершить',
-          cancellationText: 'Отмена',
-          size: 'medium',
-          content:
-            'Из таможенного оформления могут быть исключены посылки с незавершённой проверкой паспорта получателя. Продолжить?'
+          title: 'Подтверждение',
+          confirmationText: 'Применить',
+          cancellationText: 'Отменить',
+          content: warning
         })
       } finally {
-        passportFinishConfirmationPending.value = false
+        passportConfirmationPending.value = false
       }
 
       if (!confirmed) return
@@ -651,7 +703,7 @@ export function useRegisterHeaderActions({
     stopPolling()
     hideActionDialog()
     weightCorrectionChoicePending.value = false
-    passportFinishConfirmationPending.value = false
+    passportConfirmationPending.value = false
   }
 
   return {

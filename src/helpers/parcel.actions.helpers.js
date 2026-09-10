@@ -18,17 +18,29 @@ import {
  * @param {SWMatchMode} matchMode - Whether to use match mode for validation
  * @returns {Promise<boolean>}
  */
-export async function validateParcelData(values, item, parcelsStore, sw, matchMode) {
+export async function validateParcelData(
+  values,
+  item,
+  parcelsStore,
+  sw,
+  matchMode,
+  updateParcel = (id, data) => parcelsStore.update(id, data)
+) {
   if (item.value.id != values.id) return Promise.resolve(false)
   const alertStore = useAlertStore()
+  let updateAccepted = false
   try {
-    await parcelsStore.update(item.value.id, values)
+    updateAccepted = (await updateParcel(item.value.id, values)) !== false
+    if (!updateAccepted) return false
     await parcelsStore.validate(item.value.id, sw, matchMode)
+    return true
   } catch (error) {
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при проверке информации о посылке'
     alertStore.error(parcelsStore.error)
   } finally {
+    if (updateAccepted) {
       await parcelsStore.getById(item.value.id)
+    }
   }
 }
 
@@ -41,12 +53,19 @@ export async function validateParcelData(values, item, parcelsStore, sw, matchMo
  * @param {ParcelApprovalMode} params.approvalMode - Approval mode (default: SimpleApprove)
  * @returns {Promise<void>}
  */
-export async function approveParcel(values, item, parcelsStore, approvalMode = ParcelApprovalMode.SimpleApprove ) {
+export async function approveParcel(
+  values,
+  item,
+  parcelsStore,
+  approvalMode = ParcelApprovalMode.SimpleApprove,
+  updateParcel = (id, data) => parcelsStore.update(id, data)
+) {
   if (item.value.id != values.id) return Promise.resolve()
   const alertStore = useAlertStore()
   try {
     // First update the parcel with current form values
-    await parcelsStore.update(item.value.id, values)
+    const updateAccepted = (await updateParcel(item.value.id, values)) !== false
+    if (!updateAccepted) return false
     // Then approve the parcel
     await parcelsStore.approve(item.value.id, approvalMode)
     // Reload the order data to reflect any changes
@@ -106,8 +125,8 @@ export async function generateXml(item, parcelsStore, filenameOrGenerator, { con
  * @param {Object} params - Parameters object (same as approveParcel)
  * @returns {Promise<void>}
  */
-export async function approveParcelWithExcise(values, item, parcelsStore) {
-  return approveParcel(values, item, parcelsStore, ParcelApprovalMode.ApproveWithExcise)
+export async function approveParcelWithExcise(values, item, parcelsStore, updateParcel) {
+  return approveParcel(values, item, parcelsStore, ParcelApprovalMode.ApproveWithExcise, updateParcel)
 }
 
 /**
@@ -115,8 +134,8 @@ export async function approveParcelWithExcise(values, item, parcelsStore) {
  * @param {Object} params - Parameters object (same as approveParcel)
  * @returns {Promise<void>}
  */
-export async function approveParcelWithNotification(values, item, parcelsStore) {
-  return approveParcel(values, item, parcelsStore, ParcelApprovalMode.ApproveWithNotification)
+export async function approveParcelWithNotification(values, item, parcelsStore, updateParcel) {
+  return approveParcel(values, item, parcelsStore, ParcelApprovalMode.ApproveWithNotification, updateParcel)
 }
 
 /**
@@ -131,19 +150,38 @@ export async function approveParcelWithNotification(values, item, parcelsStore) 
  * @param {Object} parcelsStore - Parcels store instance
  * @returns {Promise<void>}
  */
-export async function runCheckStatusAction(values, actionFn, isComponentMounted, runningAction, currentParcelId, ensureNextParcelsPromise, parcelsStore) {
+export async function runCheckStatusAction(
+  values,
+  actionFn,
+  isComponentMounted,
+  runningAction,
+  currentParcelId,
+  ensureNextParcelsPromise,
+  parcelsStore,
+  {
+    updateParcel = (id, data) => parcelsStore.update(id, data),
+    beforeAction = null
+  } = {}
+) {
   if (!isComponentMounted.value || runningAction.value || currentParcelId.value != values.id) return
   runningAction.value = true
   const alertStore = useAlertStore()
+  let mutationStarted = false
   try {
+    if (beforeAction && (await beforeAction()) === false) return false
     await ensureNextParcelsPromise()
-    await parcelsStore.update(currentParcelId.value, values)
+    const updateAccepted = (await updateParcel(currentParcelId.value, values)) !== false
+    if (!updateAccepted) return false
+    mutationStarted = true
     await actionFn(currentParcelId.value)
+    return true
   } catch (error) {
     alertStore.error(error?.message || String(error))
   } finally {
-    if (isComponentMounted.value) {
+    if (isComponentMounted.value && mutationStarted) {
       await parcelsStore.getById(currentParcelId.value)
+    }
+    if (isComponentMounted.value) {
       runningAction.value = false
     }
   }

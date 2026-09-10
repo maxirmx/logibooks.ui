@@ -47,6 +47,10 @@ describe('useRegisterHeaderActions', () => {
         invoiceNumber: 'INV-1',
         fileName: 'register.xlsx',
         hasPendingPassportChecks: true,
+        passportChecksNotCheckedCount: 1,
+        passportChecksInProgressCount: 0,
+        passportCheckWasFinished: false,
+        parcelsTotal: 2,
         loading: false,
         error: null
       }),
@@ -699,9 +703,11 @@ describe('useRegisterHeaderActions', () => {
 
     const promise = actions.checkPassports()
 
+    await vi.waitFor(() => {
+      expect(registersStore.checkPassports).toHaveBeenCalledWith(1)
+    })
     expect(actions.actionDialog.show).toBe(true)
     expect(actions.actionDialog.title).toBe('Проверка паспортов')
-    expect(registersStore.checkPassports).toHaveBeenCalledWith(1)
 
     deferred.resolve()
     await promise
@@ -736,15 +742,15 @@ describe('useRegisterHeaderActions', () => {
     })
 
     const promise = actions.finishPassportCheck()
-    await Promise.resolve()
+    await vi.waitFor(() => expect(confirmMock).toHaveBeenCalledOnce())
 
     expect(confirmMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        title: 'Завершение проверки паспортов',
-        confirmationText: 'Завершить',
-        cancellationText: 'Отмена',
+        title: 'Подтверждение',
+        confirmationText: 'Применить',
+        cancellationText: 'Отменить',
         content:
-          'Из таможенного оформления могут быть исключены посылки с незавершённой проверкой паспорта получателя. Продолжить?'
+          'Вы завершаете проверку паспортов, хотя для 1 посылки она не проводилась. Целостность выгружаемых данных может быть нарушена.'
       })
     )
     expect(actions.actionDialog.show).toBe(true)
@@ -774,13 +780,15 @@ describe('useRegisterHeaderActions', () => {
     await actions.finishPassportCheck()
 
     expect(registersStore.finishPassportCheck).not.toHaveBeenCalled()
-    expect(registersStore.getById).not.toHaveBeenCalled()
+    expect(registersStore.getById).toHaveBeenCalledWith(1)
     expect(loadParcels).not.toHaveBeenCalled()
     expect(actions.actionDialog.show).toBe(false)
   })
 
   it('finishes passport checks without confirmation when none are pending', async () => {
     registersStore.item.hasPendingPassportChecks = false
+    registersStore.item.passportChecksNotCheckedCount = 0
+    registersStore.item.passportChecksInProgressCount = 0
     const actions = useRegisterHeaderActions({
       registersStore,
       alertStore,
@@ -821,6 +829,55 @@ describe('useRegisterHeaderActions', () => {
     confirmation.resolve(false)
     await finishPromise
     expect(actions.generalActionsDisabled.value).toBe(false)
+  })
+
+  it('warns before restarting register passport checks after a prior finish', async () => {
+    registersStore.item.passportCheckWasFinished = true
+    registersStore.item.parcelsTotal = 12
+    confirmMock.mockResolvedValueOnce(false)
+    const actions = useRegisterHeaderActions({
+      registersStore,
+      alertStore,
+      runningAction,
+      tableLoading,
+      registerLoading,
+      loadParcels,
+      isComponentMounted
+    })
+
+    await actions.checkPassports()
+
+    expect(registersStore.getById).toHaveBeenCalledWith(1)
+    expect(confirmMock).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Подтверждение',
+      confirmationText: 'Применить',
+      cancellationText: 'Отменить',
+      content: expect.stringContaining('проверку паспортов, хотя')
+    }))
+    expect(registersStore.checkPassports).not.toHaveBeenCalled()
+  })
+
+  it('reports a passport decision refresh failure once and prevents mutation', async () => {
+    const error = new Error('refresh failed')
+    registersStore.getById.mockRejectedValueOnce(error)
+    const actions = useRegisterHeaderActions({
+      registersStore,
+      alertStore,
+      runningAction,
+      tableLoading,
+      registerLoading,
+      loadParcels,
+      isComponentMounted
+    })
+
+    await actions.finishPassportCheck()
+
+    expect(alertStore.error).toHaveBeenCalledOnce()
+    expect(alertStore.error).toHaveBeenCalledWith(error, {
+      fallback: 'Не удалось обновить данные реестра'
+    })
+    expect(confirmMock).not.toHaveBeenCalled()
+    expect(registersStore.finishPassportCheck).not.toHaveBeenCalled()
   })
 
   it('shows action dialog while custom charges are calculated and refreshes current data', async () => {

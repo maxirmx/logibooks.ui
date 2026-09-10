@@ -25,6 +25,8 @@ const parcelsMock = {
   update: vi.fn().mockResolvedValue(),
   generate: vi.fn().mockResolvedValue(),
   lookupFeacnCode: vi.fn().mockResolvedValue(),
+  validate: vi.fn().mockResolvedValue(),
+  approve: vi.fn().mockResolvedValue(),
   checkPassport: vi.fn().mockResolvedValue(),
   clearPassportCheck: vi.fn().mockResolvedValue()
 }
@@ -434,6 +436,20 @@ describe('OzonParcel_EditDialog image overlay', () => {
   })
 
   it('keeps read-only navigation and downloads while blocking all mutations', async () => {
+    const statusSectionStub = {
+      emits: ['validate-sw', 'approve', 'approve-excise'],
+      template: `
+        <div>
+          <button data-testid="validate" @click="$emit('validate-sw', { id: 2, statusId: 1 })"></button>
+          <button data-testid="approve" @click="$emit('approve', { id: 2, statusId: 1 })"></button>
+          <button data-testid="approve-excise" @click="$emit('approve-excise', { id: 2, statusId: 1 })"></button>
+        </div>
+      `
+    }
+    const articleWithHStub = {
+      emits: ['approve-notification'],
+      template: '<button data-testid="approve-notification" @click="$emit(\'approve-notification\')"></button>'
+    }
     const actionBarStub = {
       props: ['mutationDisabled'],
       emits: ['next-parcel', 'save', 'lookup', 'download'],
@@ -461,12 +477,12 @@ describe('OzonParcel_EditDialog image overlay', () => {
                   '<div><slot :errors="{}" :values="{ id: 2, statusId: 1 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
               },
               ParcelHeaderActionsBar: actionBarStub,
-              ParcelStatusSection: true,
+              ParcelStatusSection: statusSectionStub,
               FeacnCodeEditor: true,
               ParcelNumberExt: true,
               ParcelWeightAutoField: true,
               OzonFormField: true,
-              ArticleWithH: true,
+              ArticleWithH: articleWithHStub,
               ActionButton: true,
               DTagSection: true,
               'font-awesome-icon': true,
@@ -481,7 +497,11 @@ describe('OzonParcel_EditDialog image overlay', () => {
     }
 
     let wrapper = await mountDialog()
-    for (const testId of ['next', 'download', 'lookup']) {
+    for (const testId of ['next', 'download', 'lookup', 'save']) {
+      await wrapper.get(`[data-testid="${testId}"]`).trigger('click')
+      await resolveAll()
+    }
+    for (const testId of ['validate', 'approve', 'approve-excise', 'approve-notification']) {
       await wrapper.get(`[data-testid="${testId}"]`).trigger('click')
       await resolveAll()
     }

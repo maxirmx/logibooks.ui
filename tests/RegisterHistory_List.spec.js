@@ -287,7 +287,7 @@ describe('RegisterHistory_List.vue', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain(
-      'Выгрузка в 1С: Выгрузка в 1C не выполнена → Выгрузка в 1C выполнена'
+      'Выгрузка в 1С: Выгрузка в 1С не выполнена → Выгрузка в 1С выполнена'
     )
     expect(wrapper.text()).toContain('Дата подачи ДТЭГ: не указано → 01.08.2026')
     expect(wrapper.text()).toContain('Дата выпуска: 01.08.2026 → 02.08.2026')

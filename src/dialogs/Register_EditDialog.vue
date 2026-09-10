@@ -1644,21 +1644,6 @@ const loadReportFields = computed(() => {
               </label>
             </div>
             <div class="form-group additional-info-field">
-              <label for="exportedTo1C" class="custom-checkbox">
-                <Field
-                  id="exportedTo1C"
-                  name="exportedTo1C"
-                  type="checkbox"
-                  :value="true"
-                  :unchecked-value="false"
-                  class="custom-checkbox-input"
-                  :disabled="readOnly || isInitializing || registerLoadFailed"
-                />
-                <span class="custom-checkbox-box"></span>
-                <span class="label custom-checkbox-label">Выгрузка в 1С выполнена</span>
-              </label>
-            </div>
-            <div class="form-group additional-info-field">
               <label for="decDate" class="label">Дата подачи ДТЭГ:</label>
               <Field
                 id="decDate"
@@ -1681,6 +1666,21 @@ const loadReportFields = computed(() => {
                 :disabled="readOnly || isInitializing || registerLoadFailed"
               />
               <FieldError name="releaseDate" :errors="errors" />
+            </div>
+            <div class="form-group additional-info-field">
+              <label for="exportedTo1C" class="custom-checkbox">
+                <Field
+                  id="exportedTo1C"
+                  name="exportedTo1C"
+                  type="checkbox"
+                  :value="true"
+                  :unchecked-value="false"
+                  class="custom-checkbox-input"
+                  :disabled="readOnly || isInitializing || registerLoadFailed"
+                />
+                <span class="custom-checkbox-box"></span>
+                <span class="label custom-checkbox-label">Выгрузка в 1С выполнена</span>
+              </label>
             </div>
           </div>
         </div>

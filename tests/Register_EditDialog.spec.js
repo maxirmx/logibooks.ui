@@ -1650,6 +1650,8 @@ describe('Register_EditDialog', () => {
     expect(wrapper.get('#decDate').attributes('type')).toBe('date')
     expect(wrapper.get('label[for="releaseDate"]').text()).toBe('Дата выпуска:')
     expect(wrapper.get('#releaseDate').attributes('type')).toBe('date')
+    const additionalFields = wrapper.findAll('#register-additional-info-body > .additional-info-field')
+    expect(additionalFields.at(-1).find('#exportedTo1C').exists()).toBe(true)
     expect(wrapper.findComponent(RegisterEditDialog).vm.prepareRegisterPayload({}).exportedTo1C).toBe(
       false
     )

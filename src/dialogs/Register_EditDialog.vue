@@ -649,6 +649,7 @@ const schema = Yup.object().shape({
     .integer('Количество досмотренных посылок должно быть целым неотрицательным числом')
     .min(0, 'Количество досмотренных посылок должно быть целым неотрицательным числом'),
   withTransit: Yup.boolean().default(false),
+  exportedTo1C: Yup.boolean().default(false),
   decDate: Yup.string()
     .transform((value, originalValue) => (originalValue === '' ? null : value))
     .nullable()
@@ -945,11 +946,15 @@ function prepareRegisterPayload(formValues) {
       0
     )
     payload.withTransit = Boolean(formValues.withTransit ?? item.value?.withTransit ?? false)
+    payload.exportedTo1C = Boolean(
+      formValues.exportedTo1C ?? item.value?.exportedTo1C ?? false
+    )
     payload.decDate = getNullableEditDate(formValues, 'decDate')
     payload.releaseDate = getNullableEditDate(formValues, 'releaseDate')
   } else {
     delete payload.inspectionsCount
     delete payload.withTransit
+    delete payload.exportedTo1C
     delete payload.decDate
     delete payload.releaseDate
   }
@@ -1661,6 +1666,21 @@ const loadReportFields = computed(() => {
                 :disabled="readOnly || isInitializing || registerLoadFailed"
               />
               <FieldError name="releaseDate" :errors="errors" />
+            </div>
+            <div class="form-group additional-info-field">
+              <label for="exportedTo1C" class="custom-checkbox">
+                <Field
+                  id="exportedTo1C"
+                  name="exportedTo1C"
+                  type="checkbox"
+                  :value="true"
+                  :unchecked-value="false"
+                  class="custom-checkbox-input"
+                  :disabled="readOnly || isInitializing || registerLoadFailed"
+                />
+                <span class="custom-checkbox-box"></span>
+                <span class="label custom-checkbox-label">Выгрузка в 1С выполнена</span>
+              </label>
             </div>
           </div>
         </div>

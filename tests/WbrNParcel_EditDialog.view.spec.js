@@ -265,6 +265,7 @@ const stubs = {
       '<textarea v-if="as === \'textarea\'" :name="name" :id="id" :class="classes"></textarea><input v-else :name="name" :id="id" :class="classes" />'
   },
   ParcelHeaderActionsBar: {
+    name: 'ParcelHeaderActionsBar',
     props: [
       'downloadDisabled',
       'lookupDisabled',
@@ -286,6 +287,7 @@ const stubs = {
     `
   },
   ParcelStatusSection: {
+    name: 'ParcelStatusSection',
     props: ['item', 'values', 'disabled', 'clearCheckStatusDisabled'],
     emits: [
       'validate-sw',
@@ -337,6 +339,7 @@ const stubs = {
       '<button type="button" data-testid="parcel-number-ext" :disabled="disabled" @click="$emit(\'click\', item)"><span>{{ item[fieldName] }}</span><span data-testid="fellows" @click.stop="$emit(\'fellows\')">fellows</span></button>'
   },
   ArticleWithH: {
+    name: 'ArticleWithH',
     props: {
       item: { type: Object, required: true },
       disabled: { type: Boolean, default: false },
@@ -681,11 +684,51 @@ describe('WbrNParcel_EditDialog.vue', () => {
     await wrapper.get('[data-testid="save"]').trigger('click')
     await resolveAll()
 
+    const statusSection = wrapper.findComponent({ name: 'ParcelStatusSection' })
+    for (const event of [
+      'validate-sw',
+      'validate-sw-ex',
+      'validate-fc',
+      'approve',
+      'approve-excise',
+      'clear-check-status',
+      'check-for-duplicate'
+    ]) {
+      statusSection.vm.$emit(event, formValues)
+      await resolveAll()
+    }
+    wrapper.findComponent({ name: 'ArticleWithH' }).vm.$emit('approve-notification')
+    await resolveAll()
+
     expect(parcelUpdate).not.toHaveBeenCalled()
+    expect(validateParcelData).not.toHaveBeenCalled()
+    expect(approveParcel).not.toHaveBeenCalled()
+    expect(approveParcelWithExcise).not.toHaveBeenCalled()
+    expect(approveParcelWithNotification).not.toHaveBeenCalled()
+    expect(runCheckStatusAction).not.toHaveBeenCalled()
     expect(routerPush).toHaveBeenCalledWith({
       path: '/registers/12/parcels',
       query: { selectedParcelId: '3', mode: OP_MODE_PAPERWORK }
     })
+  })
+
+  it('locks repeated Save events while an update is in progress', async () => {
+    const wrapper = await mountDialog()
+    let releaseSave
+    parcelUpdate.mockImplementationOnce(() => new Promise((resolve) => {
+      releaseSave = resolve
+    }))
+    const actionBar = wrapper.findComponent({ name: 'ParcelHeaderActionsBar' })
+
+    actionBar.vm.$emit('save')
+    await nextTick()
+    await Promise.resolve()
+    actionBar.vm.$emit('save')
+    await nextTick()
+
+    expect(parcelUpdate).toHaveBeenCalledTimes(1)
+    releaseSave()
+    await resolveAll()
   })
 
   it('keeps the editor open when an excluded single-parcel status is cancelled', async () => {

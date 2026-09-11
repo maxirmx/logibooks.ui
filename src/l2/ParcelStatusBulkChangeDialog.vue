@@ -4,7 +4,7 @@
 // This file is a part of Logibooks ui application
 
 import { computed, nextTick, ref, watch } from 'vue'
-import { useAppConfirm } from '@/composables/useAppConfirm.js'
+import { useConfirm } from 'vuetify-use-dialog'
 import ActionButton from '@/components/ActionButton.vue'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useParcelsStore } from '@/stores/parcels.store.js'
@@ -33,7 +33,17 @@ const emit = defineEmits(['update:show', 'updated'])
 const parcelsStore = useParcelsStore()
 const registersStore = useRegistersStore()
 const alertStore = useAlertStore()
-const confirm = useAppConfirm()
+const confirm = useConfirm()
+
+const legacyConfirmationShell = Object.freeze({
+  dialogProps: Object.freeze({
+    width: '30%',
+    minWidth: '250px'
+  }),
+  confirmationButtonProps: Object.freeze({
+    color: 'orange-darken-3'
+  })
+})
 
 const inputRef = ref(null)
 const selectedStatusId = ref(null)
@@ -183,6 +193,7 @@ async function updateFound() {
     const selectedStatus = getStatusById(statusId.value, { parcelStatuses: props.statusOptions })
     if (selectedStatus?.useAtCustomsProcessing === false) {
       const confirmed = await confirm({
+        ...legacyConfirmationShell,
         title: 'Подтверждение',
         confirmationText: 'Применить',
         cancellationText: 'Отменить',
@@ -221,6 +232,7 @@ async function updateAll() {
     const excluded = selectedStatus?.useAtCustomsProcessing === false
     const confirmed = await confirm(excluded
       ? {
+          ...legacyConfirmationShell,
           title: 'Подтверждение',
           confirmationText: 'Применить',
           cancellationText: 'Отменить',
@@ -230,6 +242,7 @@ async function updateAll() {
           )
         }
       : {
+          ...legacyConfirmationShell,
           title: 'Подтверждение',
           confirmationText: 'Изменить',
           cancellationText: 'Не изменять',

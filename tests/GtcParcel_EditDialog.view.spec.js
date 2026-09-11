@@ -71,8 +71,33 @@ vi.mock('@/stores/registers.store.js', () => ({ useRegistersStore: () => registe
 const authMock = { selectedParcelId: null, isSrLogistPlus: true }
 vi.mock('@/stores/auth.store.js', () => ({ useAuthStore: () => authMock }))
 
+const alertRef = ref(null)
+const alertErrorMock = vi.fn((error) => {
+  alertRef.value = {
+    id: 1,
+    severity: 'error',
+    message: error?.message || String(error)
+  }
+})
+const alertStoreMock = {
+  get alert() {
+    return alertRef.value
+  },
+  get activePageHosts() {
+    return 0
+  },
+  error: alertErrorMock,
+  clear: vi.fn(() => {
+    alertRef.value = null
+  }),
+  dismiss: vi.fn(),
+  pause: vi.fn(),
+  resume: vi.fn(),
+  registerPageHost: vi.fn(),
+  unregisterPageHost: vi.fn()
+}
 vi.mock('@/stores/alert.store.js', () => ({
-  useAlertStore: () => ({ alert: ref(null), error: vi.fn(), clear: vi.fn() })
+  useAlertStore: () => alertStoreMock
 }))
 
 vi.mock('@/components/ProductLinkWithActions.vue', () => ({
@@ -93,6 +118,7 @@ describe('GtcParcel_EditDialog passport verification', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     confirmMock = vi.fn()
+    alertRef.value = null
     authMock.selectedParcelId = null
     authMock.isSrLogistPlus = true
     parcelsMock.item.value = {
@@ -171,6 +197,19 @@ describe('GtcParcel_EditDialog passport verification', () => {
     await resolveAll()
     expect(parcelsMock.clearPassportCheck).toHaveBeenCalledWith(5)
 
+    parcelsMock.update.mockClear()
+    parcelsMock.checkPassport.mockClear()
+    alertErrorMock.mockClear()
+    registersMock.getById.mockRejectedValueOnce(new Error('register refresh failed'))
+    passportField.vm.$emit('check')
+    await resolveAll()
+    expect(alertErrorMock).toHaveBeenCalledOnce()
+    expect(parcelsMock.update).not.toHaveBeenCalled()
+    expect(parcelsMock.checkPassport).not.toHaveBeenCalled()
+    expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain(
+      'register refresh failed'
+    )
+
     parcelsMock.item.value = { ...parcelsMock.item.value, passportCheckStatus: 10 }
     await nextTick()
     expect(passportField.props('inputDisabled')).toBe(true)
@@ -242,6 +281,19 @@ describe('GtcParcel_EditDialog passport verification', () => {
     }
 
     let wrapper = await mountDialog()
+    let releaseSave
+    parcelsMock.update.mockImplementationOnce(() => new Promise((resolve) => {
+      releaseSave = resolve
+    }))
+    await wrapper.get('[data-testid="save"]').trigger('click')
+    await nextTick()
+    await Promise.resolve()
+    await wrapper.get('[data-testid="save"]').trigger('click')
+    expect(parcelsMock.update).toHaveBeenCalledTimes(1)
+    releaseSave()
+    await resolveAll()
+    parcelsMock.update.mockClear()
+
     for (const testId of ['next', 'back', 'download', 'lookup', 'save']) {
       await wrapper.get(`[data-testid="${testId}"]`).trigger('click')
       await resolveAll()
@@ -279,8 +331,14 @@ describe('GtcParcel_EditDialog passport verification', () => {
       await wrapper.get(`[data-testid="${testId}"]`).trigger('click')
       await resolveAll()
     }
+    for (const testId of ['validate', 'approve', 'approve-excise', 'approve-notification']) {
+      await wrapper.get(`[data-testid="${testId}"]`).trigger('click')
+      await resolveAll()
+    }
 
     expect(parcelsMock.update).not.toHaveBeenCalled()
+    expect(parcelsMock.validate).not.toHaveBeenCalled()
+    expect(parcelsMock.approve).not.toHaveBeenCalled()
     expect(parcelsMock.lookupFeacnCode).not.toHaveBeenCalled()
     expect(parcelsMock.generate).toHaveBeenCalled()
     expect(routerMocks.push).toHaveBeenCalled()

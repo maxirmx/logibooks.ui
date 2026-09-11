@@ -284,6 +284,19 @@ describe('Wbr2Parcels_EditDialog image overlay', () => {
     }
 
     let wrapper = await mountDialog()
+    let releaseSave
+    parcelsMock.update.mockImplementationOnce(() => new Promise((resolve) => {
+      releaseSave = resolve
+    }))
+    await wrapper.get('[data-testid="save"]').trigger('click')
+    await nextTick()
+    await Promise.resolve()
+    await wrapper.get('[data-testid="save"]').trigger('click')
+    expect(parcelsMock.update).toHaveBeenCalledTimes(1)
+    releaseSave()
+    await resolveAll()
+    parcelsMock.update.mockClear()
+
     for (const testId of ['next', 'back', 'download', 'lookup', 'save']) {
       await wrapper.get(`[data-testid="${testId}"]`).trigger('click')
       await resolveAll()
@@ -321,7 +334,13 @@ describe('Wbr2Parcels_EditDialog image overlay', () => {
       await wrapper.get(`[data-testid="${testId}"]`).trigger('click')
       await resolveAll()
     }
+    for (const testId of ['validate', 'approve', 'approve-excise']) {
+      await wrapper.get(`[data-testid="${testId}"]`).trigger('click')
+      await resolveAll()
+    }
     expect(parcelsMock.update).not.toHaveBeenCalled()
+    expect(parcelsMock.validate).not.toHaveBeenCalled()
+    expect(parcelsMock.approve).not.toHaveBeenCalled()
     expect(parcelsMock.lookupFeacnCode).not.toHaveBeenCalled()
     expect(parcelsMock.generate).toHaveBeenCalled()
     expect(routerMocks.push).toHaveBeenCalled()

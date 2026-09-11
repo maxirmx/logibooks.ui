@@ -14,10 +14,12 @@ import {
 import { SwValidationMatchMode } from '@/models/sw.validation.match.mode.js'
 import { ParcelApprovalMode } from '@/models/parcel.approval.mode.js'
 
+const alertErrorMock = vi.hoisted(() => vi.fn())
+
 // Mock the alert store
 vi.mock('@/stores/alert.store.js', () => ({
   useAlertStore: vi.fn(() => ({
-    error: vi.fn()
+    error: alertErrorMock
   }))
 }))
 
@@ -447,6 +449,30 @@ describe('parcel actions helpers', () => {
       )).resolves.toBe(false)
 
       expect(beforeAction).toHaveBeenCalledOnce()
+      expect(updateParcel).not.toHaveBeenCalled()
+      expect(mockActionFn).not.toHaveBeenCalled()
+      expect(mockParcelsStore.getById).not.toHaveBeenCalled()
+      expect(mockRunningAction.value).toBe(false)
+    })
+
+    it('reports a rejected pre-action refresh once and prevents both mutations', async () => {
+      const refreshError = new Error('register refresh failed')
+      const beforeAction = vi.fn().mockRejectedValue(refreshError)
+      const updateParcel = vi.fn()
+
+      await expect(runCheckStatusAction(
+        mockValues,
+        mockActionFn,
+        mockIsComponentMounted,
+        mockRunningAction,
+        mockCurrentParcelId,
+        mockEnsureNextParcelsPromise,
+        mockParcelsStore,
+        { beforeAction, updateParcel }
+      )).resolves.toBeUndefined()
+
+      expect(alertErrorMock).toHaveBeenCalledOnce()
+      expect(alertErrorMock).toHaveBeenCalledWith('register refresh failed')
       expect(updateParcel).not.toHaveBeenCalled()
       expect(mockActionFn).not.toHaveBeenCalled()
       expect(mockParcelsStore.getById).not.toHaveBeenCalled()

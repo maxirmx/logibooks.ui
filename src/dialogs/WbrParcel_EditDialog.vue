@@ -130,6 +130,8 @@ const { prefixes: feacnPrefixes } = storeToRefs(feacnPrefixesStore)
 const { countries } = storeToRefs(countriesStore)
 
 async function updateParcelWithLifecycleGuard(id, values) {
+  if (readOnly.value) return false
+
   const confirmed = await confirmCustomsExclusionStatusChange({
     values,
     currentParcel: item.value,
@@ -290,7 +292,7 @@ async function viewProductImage() {
 }
 
 async function validateParcel(values, sw, matchMode) {
-  if (!isComponentMounted.value || runningAction.value) return
+  if (readOnly.value || !isComponentMounted.value || runningAction.value) return
   runningAction.value = true
   try {
     // Wait for next parcels info to complete before calling helper
@@ -305,6 +307,8 @@ async function validateParcel(values, sw, matchMode) {
 }
 
 async function runCheckStatusAction(values, actionFn, passportAction = null) {
+  if (readOnly.value) return false
+
   return runCheckStatusActionHelper(
     values,
     actionFn,
@@ -322,7 +326,7 @@ async function runCheckStatusAction(values, actionFn, passportAction = null) {
 
 // Approve the parcel
 async function approveParcel(values) {
-  if (!isComponentMounted.value || runningAction.value) return
+  if (readOnly.value || !isComponentMounted.value || runningAction.value) return
   runningAction.value = true
   try {
     // Wait for next parcels info to complete before calling helper
@@ -338,7 +342,7 @@ async function approveParcel(values) {
 
 // Approve the parcel with excise
 async function approveParcelWithExcise(values, setFieldValue) {
-  if (!isComponentMounted.value || runningAction.value) return
+  if (readOnly.value || !isComponentMounted.value || runningAction.value) return
   runningAction.value = true
   try {
     // Wait for next parcels info to complete before calling helper
@@ -426,11 +430,16 @@ async function onSave(values) {
     goToParcelsList()
     return Promise.resolve()
   }
+  if (!isComponentMounted.value || runningAction.value || currentParcelId.value != values.id) return
+
+  runningAction.value = true
   try {
     if ((await updateParcelWithLifecycleGuard(currentParcelId.value, values)) === false) return
     goToParcelsList()
   } catch (error) {
     alertStore.error(error?.message || String(error))
+  } finally {
+    if (isComponentMounted.value) runningAction.value = false
   }
 }
 

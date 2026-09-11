@@ -30,11 +30,11 @@ export function buildFinishPassportCheckWarning(notCheckedCount, inProgressCount
 
 export function buildRestartPassportCheckWarning(parcelCount = 1) {
   const passport = Number(parcelCount) === 1 ? 'паспорта' : 'паспортов'
-  return `Вы запрашиваете проверку ${passport}, хотя для данного реестра уже выполнялась операция «Завершить проверку паспортов». Перед выгрузкой накладных или реестра необходимо «Завершить проверку паспортов» ещё раз.`
+  return `Вы запрашиваете проверку ${passport}, хотя для данного реестра уже выполнялась операция «Завершить проверку паспортов».`
 }
 
 export function buildClearPassportCheckWarning() {
-  return 'Вы очищаете статус проверки паспорта, хотя для данного реестра уже выполнялась операция «Завершить проверку паспортов». Перед выгрузкой накладных или реестра необходимо «Завершить проверку паспортов» ещё раз.'
+  return 'Вы очищаете статус проверки паспорта, хотя для данного реестра уже выполнялась операция «Завершить проверку паспортов».'
 }
 
 export function getStatusById(statusId, statusStore) {

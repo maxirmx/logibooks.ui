@@ -29,6 +29,10 @@ const approveParcelWithNotification = vi.fn().mockResolvedValue()
 const generateXml = vi.fn().mockResolvedValue()
 const deleteProductImage = vi.fn().mockResolvedValue()
 const runCheckStatusAction = vi.fn().mockResolvedValue()
+const refreshParcelAfterMutation = vi.fn(async (parcelsStore, parcelId) => {
+  await parcelsStore.getById(parcelId)
+  return true
+})
 const openImageOverlay = vi.fn().mockResolvedValue()
 const closeImageOverlay = vi.fn()
 const imageOverlayOpen = ref(false)
@@ -120,7 +124,8 @@ vi.mock('@/helpers/parcel.actions.helpers.js', () => ({
   approveParcelWithNotification,
   generateXml,
   deleteProductImage,
-  runCheckStatusAction
+  runCheckStatusAction,
+  refreshParcelAfterMutation
 }))
 
 vi.mock('@/helpers/parcel.image.overlay.js', () => ({
@@ -742,8 +747,8 @@ describe('WbrNParcel_EditDialog.vue', () => {
     await resolveAll()
 
     expect(confirmMock).toHaveBeenCalledWith(expect.objectContaining({
-      confirmationText: 'Применить',
-      cancellationText: 'Отменить',
+      confirmationText: 'Изменить',
+      cancellationText: 'Не изменять',
       content: expect.stringContaining('статус посылки на «Не выгружать»')
     }))
     expect(parcelUpdate).not.toHaveBeenCalled()

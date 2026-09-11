@@ -15,10 +15,10 @@ import {
 describe('lifecycle warning helpers', () => {
   it('builds singular and plural customs exclusion warnings', () => {
     expect(buildCustomsExclusionWarning('Исключена', 1)).toBe(
-      'Вы меняете статус посылки на «Исключена». Эта посылка будет исключена из таможенного оформления, проверок и выгрузок.'
+      'Вы меняете статус посылки на «Исключена». Эта посылка будет исключена из таможенного оформления, проверок, выгрузок и групповых операций.'
     )
     expect(buildCustomsExclusionWarning('Исключена', 12)).toBe(
-      'Вы меняете статус посылок на «Исключена». Эти посылки будут исключены из таможенного оформления, проверок и выгрузок.'
+      'Вы меняете статус посылок на «Исключена». Эти посылки будут исключены из таможенного оформления, проверок, выгрузок и групповых операций.'
     )
   })
 
@@ -73,7 +73,7 @@ describe('lifecycle warning helpers', () => {
 
     expect(confirm).toHaveBeenCalledOnce()
     expect(confirm).toHaveBeenCalledWith(expect.objectContaining({
-      title: 'Подтверждение', confirmationText: 'Применить', cancellationText: 'Отменить'
+      title: 'Подтверждение', confirmationText: 'Изменить', cancellationText: 'Не изменять'
     }))
   })
 

@@ -635,14 +635,17 @@ export function useRegisterHeaderActions({
     const hasExactCounts =
       register?.passportChecksNotCheckedCount !== undefined &&
       register?.passportChecksInProgressCount !== undefined
-    const warning = hasExactCounts
+    const exactWarning = hasExactCounts
       ? buildFinishPassportCheckWarning(
           register.passportChecksNotCheckedCount,
           register.passportChecksInProgressCount
         )
-      : register?.hasPendingPassportChecks
+      : null
+    const warning =
+      exactWarning ??
+      (register?.hasPendingPassportChecks
         ? 'Из таможенного оформления могут быть исключены посылки с незавершённой проверкой паспорта получателя. Продолжить?'
-        : null
+        : null)
 
     if (warning) {
       passportConfirmationPending.value = true

@@ -9,7 +9,8 @@ import {
   generateXml,
   approveParcelWithExcise,
   approveParcelWithNotification,
-  runCheckStatusAction
+  runCheckStatusAction,
+  refreshParcelAfterMutation
 } from '@/helpers/parcel.actions.helpers.js'
 import { SwValidationMatchMode } from '@/models/sw.validation.match.mode.js'
 import { ParcelApprovalMode } from '@/models/parcel.approval.mode.js'
@@ -54,6 +55,44 @@ describe('parcel actions helpers', () => {
       getById: vi.fn().mockResolvedValue(),
       error: null
     }
+  })
+
+  describe('refreshParcelAfterMutation', () => {
+    it('reports a refresh failure when no action error was already shown', async () => {
+      const refreshError = new Error('refresh failed')
+      mockParcelsStore.getById.mockRejectedValueOnce(refreshError)
+
+      await expect(
+        refreshParcelAfterMutation(mockParcelsStore, parcelId, { error: alertErrorMock })
+      ).resolves.toBe(false)
+
+      expect(alertErrorMock).toHaveBeenCalledOnce()
+      expect(alertErrorMock).toHaveBeenCalledWith(refreshError, {
+        fallback: 'Не удалось обновить данные посылки'
+      })
+    })
+
+    it('logs a refresh failure without replacing an action error already shown', async () => {
+      const refreshError = new Error('refresh failed')
+      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+      mockParcelsStore.getById.mockRejectedValueOnce(refreshError)
+
+      await expect(
+        refreshParcelAfterMutation(
+          mockParcelsStore,
+          parcelId,
+          { error: alertErrorMock },
+          { errorAlreadyReported: true }
+        )
+      ).resolves.toBe(false)
+
+      expect(alertErrorMock).not.toHaveBeenCalled()
+      expect(consoleError).toHaveBeenCalledWith(
+        '[Failed to refresh parcel after an action failure]',
+        refreshError
+      )
+      consoleError.mockRestore()
+    })
   })
 
   describe('validateParcelData', () => {
@@ -108,6 +147,36 @@ describe('parcel actions helpers', () => {
       expect(updateParcel).toHaveBeenCalledWith(parcelId, mockValues)
       expect(mockParcelsStore.validate).not.toHaveBeenCalled()
       expect(mockParcelsStore.getById).not.toHaveBeenCalled()
+    })
+
+    it('reports a reload failure once and returns false after successful validation', async () => {
+      const refreshError = new Error('refresh failed')
+      mockParcelsStore.getById.mockRejectedValueOnce(refreshError)
+
+      await expect(
+        validateParcelData(mockValues, mockItem, mockParcelsStore, true)
+      ).resolves.toBe(false)
+
+      expect(alertErrorMock).toHaveBeenCalledOnce()
+      expect(alertErrorMock).toHaveBeenCalledWith(refreshError, {
+        fallback: 'Не удалось обновить данные посылки'
+      })
+    })
+
+    it('keeps the validation error visible when the following reload also fails', async () => {
+      const refreshError = new Error('refresh failed')
+      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+      mockParcelsStore.validate.mockRejectedValueOnce(new Error('validation failed'))
+      mockParcelsStore.getById.mockRejectedValueOnce(refreshError)
+
+      await expect(
+        validateParcelData(mockValues, mockItem, mockParcelsStore, true)
+      ).resolves.toBe(false)
+
+      expect(alertErrorMock).toHaveBeenCalledOnce()
+      expect(alertErrorMock).toHaveBeenCalledWith('Ошибка при проверке информации о посылке')
+      expect(consoleError).toHaveBeenCalledOnce()
+      consoleError.mockRestore()
     })
   })
 
@@ -469,7 +538,7 @@ describe('parcel actions helpers', () => {
         mockEnsureNextParcelsPromise,
         mockParcelsStore,
         { beforeAction, updateParcel }
-      )).resolves.toBeUndefined()
+      )).resolves.toBe(false)
 
       expect(alertErrorMock).toHaveBeenCalledOnce()
       expect(alertErrorMock).toHaveBeenCalledWith('register refresh failed')
@@ -495,6 +564,53 @@ describe('parcel actions helpers', () => {
 
       expect(mockActionFn).not.toHaveBeenCalled()
       expect(mockParcelsStore.getById).not.toHaveBeenCalled()
+    })
+
+    it('reports a post-action reload failure and always unlocks the action', async () => {
+      const refreshError = new Error('refresh failed')
+      mockParcelsStore.getById.mockRejectedValueOnce(refreshError)
+
+      await expect(
+        runCheckStatusAction(
+          mockValues,
+          mockActionFn,
+          mockIsComponentMounted,
+          mockRunningAction,
+          mockCurrentParcelId,
+          mockEnsureNextParcelsPromise,
+          mockParcelsStore
+        )
+      ).resolves.toBe(false)
+
+      expect(alertErrorMock).toHaveBeenCalledOnce()
+      expect(alertErrorMock).toHaveBeenCalledWith(refreshError, {
+        fallback: 'Не удалось обновить данные посылки'
+      })
+      expect(mockRunningAction.value).toBe(false)
+    })
+
+    it('does not replace an action error when the following reload also fails', async () => {
+      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+      mockActionFn.mockRejectedValueOnce(new Error('action failed'))
+      mockParcelsStore.getById.mockRejectedValueOnce(new Error('refresh failed'))
+
+      await expect(
+        runCheckStatusAction(
+          mockValues,
+          mockActionFn,
+          mockIsComponentMounted,
+          mockRunningAction,
+          mockCurrentParcelId,
+          mockEnsureNextParcelsPromise,
+          mockParcelsStore
+        )
+      ).resolves.toBe(false)
+
+      expect(alertErrorMock).toHaveBeenCalledOnce()
+      expect(alertErrorMock).toHaveBeenCalledWith('action failed')
+      expect(consoleError).toHaveBeenCalledOnce()
+      expect(mockRunningAction.value).toBe(false)
+      consoleError.mockRestore()
     })
   })
 })

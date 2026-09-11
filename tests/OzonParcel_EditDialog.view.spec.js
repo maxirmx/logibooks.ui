@@ -77,9 +77,33 @@ vi.mock('@/stores/registers.store.js', () => ({ useRegistersStore: () => registe
 
 const authMock = { selectedParcelId: null, isSrLogistPlus: true }
 vi.mock('@/stores/auth.store.js', () => ({ useAuthStore: () => authMock }))
-const alertErrorMock = vi.fn()
+const alertRef = ref(null)
+const alertErrorMock = vi.fn((error) => {
+  alertRef.value = {
+    id: 1,
+    severity: 'error',
+    message: error?.message || String(error)
+  }
+})
+const alertStoreMock = {
+  get alert() {
+    return alertRef.value
+  },
+  get activePageHosts() {
+    return 0
+  },
+  error: alertErrorMock,
+  clear: vi.fn(() => {
+    alertRef.value = null
+  }),
+  dismiss: vi.fn(),
+  pause: vi.fn(),
+  resume: vi.fn(),
+  registerPageHost: vi.fn(),
+  unregisterPageHost: vi.fn()
+}
 vi.mock('@/stores/alert.store.js', () => ({
-  useAlertStore: () => ({ alert: ref(null), error: alertErrorMock, clear: vi.fn() })
+  useAlertStore: () => alertStoreMock
 }))
 
 vi.mock('@/components/ProductLinkWithActions.vue', () => ({
@@ -100,6 +124,7 @@ describe('OzonParcel_EditDialog image overlay', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     confirmMock = vi.fn()
+    alertRef.value = null
     parcelStatusesMock.length = 0
     parcelsMock.item.value = {
       id: 2,
@@ -521,6 +546,23 @@ describe('OzonParcel_EditDialog image overlay', () => {
     expect(parcelsMock.update).toHaveBeenCalled()
     expect(parcelsMock.lookupFeacnCode).toHaveBeenCalledWith(2)
     expect(parcelsMock.generate).toHaveBeenCalled()
+
+    routerMocks.push.mockClear()
+    alertRef.value = null
+    alertErrorMock.mockClear()
+    parcelsMock.update.mockClear()
+    parcelsMock.update.mockRejectedValueOnce(new Error('save failed'))
+    await wrapper.get('[data-testid="save"]').trigger('click')
+    await resolveAll()
+
+    expect(alertErrorMock).toHaveBeenCalledOnce()
+    expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain('save failed')
+    expect(routerMocks.push).not.toHaveBeenCalled()
+
+    await wrapper.get('[data-testid="save"]').trigger('click')
+    await resolveAll()
+    expect(parcelsMock.update).toHaveBeenCalledTimes(2)
+    expect(routerMocks.push).toHaveBeenCalled()
     wrapper.unmount()
 
     vi.clearAllMocks()

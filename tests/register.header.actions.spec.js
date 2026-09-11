@@ -807,6 +807,32 @@ describe('useRegisterHeaderActions', () => {
     expect(loadParcels).toHaveBeenCalledTimes(1)
   })
 
+  it('uses the legacy warning when live pending state is newer than zero exact counts', async () => {
+    registersStore.item.hasPendingPassportChecks = true
+    registersStore.item.passportChecksNotCheckedCount = 0
+    registersStore.item.passportChecksInProgressCount = 0
+    confirmMock.mockResolvedValueOnce(false)
+    const actions = useRegisterHeaderActions({
+      registersStore,
+      alertStore,
+      runningAction,
+      tableLoading,
+      registerLoading,
+      loadParcels,
+      isComponentMounted
+    })
+
+    await actions.finishPassportCheck()
+
+    expect(confirmMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content:
+          'Из таможенного оформления могут быть исключены посылки с незавершённой проверкой паспорта получателя. Продолжить?'
+      })
+    )
+    expect(registersStore.finishPassportCheck).not.toHaveBeenCalled()
+  })
+
   it('locks other header actions while finish confirmation is pending', async () => {
     const confirmation = createDeferred()
     confirmMock.mockReturnValueOnce(confirmation.promise)

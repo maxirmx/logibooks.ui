@@ -11,8 +11,8 @@ function parcelCountForm(count) {
 
 export function buildCustomsExclusionWarning(statusTitle, count = 1) {
   return Number(count) === 1
-    ? `Вы меняете статус посылки на «${statusTitle}». Эта посылка будет исключена из таможенного оформления, проверок и выгрузок.`
-    : `Вы меняете статус посылок на «${statusTitle}». Эти посылки будут исключены из таможенного оформления, проверок и выгрузок.`
+    ? `Вы меняете статус посылки на «${statusTitle}». Эта посылка будет исключена из таможенного оформления, проверок, выгрузок и групповых операций.`
+    : `Вы меняете статус посылок на «${statusTitle}». Эти посылки будут исключены из таможенного оформления, проверок, выгрузок и групповых операций.`
 }
 
 export function buildFinishPassportCheckWarning(notCheckedCount, inProgressCount) {
@@ -57,8 +57,8 @@ export async function confirmCustomsExclusionStatusChange({
   const status = getStatusById(values.statusId, statusStore)
   return confirm({
     title: 'Подтверждение',
-    confirmationText: 'Применить',
-    cancellationText: 'Отменить',
+    confirmationText: 'Изменить',
+    cancellationText: 'Не изменять',
     content: buildCustomsExclusionWarning(status?.title || '', count)
   })
 }

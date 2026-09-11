@@ -4,8 +4,8 @@
 // This file is a part of Logibooks ui application
 
 import { computed, nextTick, ref, watch } from 'vue'
-import { useConfirm } from 'vuetify-use-dialog'
 import ActionButton from '@/components/ActionButton.vue'
+import { useAppConfirm } from '@/composables/useAppConfirm.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useParcelsStore } from '@/stores/parcels.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
@@ -33,17 +33,7 @@ const emit = defineEmits(['update:show', 'updated'])
 const parcelsStore = useParcelsStore()
 const registersStore = useRegistersStore()
 const alertStore = useAlertStore()
-const confirm = useConfirm()
-
-const legacyConfirmationShell = Object.freeze({
-  dialogProps: Object.freeze({
-    width: '30%',
-    minWidth: '250px'
-  }),
-  confirmationButtonProps: Object.freeze({
-    color: 'orange-darken-3'
-  })
-})
+const confirm = useAppConfirm()
 
 const inputRef = ref(null)
 const selectedStatusId = ref(null)
@@ -193,10 +183,9 @@ async function updateFound() {
     const selectedStatus = getStatusById(statusId.value, { parcelStatuses: props.statusOptions })
     if (selectedStatus?.useAtCustomsProcessing === false) {
       const confirmed = await confirm({
-        ...legacyConfirmationShell,
         title: 'Подтверждение',
-        confirmationText: 'Применить',
-        cancellationText: 'Отменить',
+        confirmationText: 'Изменить',
+        cancellationText: 'Не изменять',
         content: buildCustomsExclusionWarning(selectedStatus.title || '', foundCount.value)
       })
       if (!confirmed) return
@@ -232,17 +221,15 @@ async function updateAll() {
     const excluded = selectedStatus?.useAtCustomsProcessing === false
     const confirmed = await confirm(excluded
       ? {
-          ...legacyConfirmationShell,
           title: 'Подтверждение',
-          confirmationText: 'Применить',
-          cancellationText: 'Отменить',
+          confirmationText: 'Изменить',
+          cancellationText: 'Не изменять',
           content: buildCustomsExclusionWarning(
             selectedStatus?.title || '',
             Number(currentRegister.value?.parcelsTotal || 0)
           )
         }
       : {
-          ...legacyConfirmationShell,
           title: 'Подтверждение',
           confirmationText: 'Изменить',
           cancellationText: 'Не изменять',

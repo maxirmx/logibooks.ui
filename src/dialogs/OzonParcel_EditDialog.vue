@@ -61,7 +61,8 @@ import {
   approveParcelWithNotification as approveParcelWithNotificationHelper,
   generateXml as generateXmlHelper,
   deleteProductImage as deleteProductImageHelper,
-  runCheckStatusAction as runCheckStatusActionHelper
+  runCheckStatusAction as runCheckStatusActionHelper,
+  refreshParcelAfterMutation
 } from '@/helpers/parcel.actions.helpers.js'
 import { DEC_REPORT_UPLOADED_EVENT } from '@/helpers/dec.report.events.js'
 import { SwValidationMatchMode } from '@/models/sw.validation.match.mode.js'
@@ -464,7 +465,7 @@ async function onSave(values) {
     if ((await updateParcelWithLifecycleGuard(currentParcelId.value, values)) === false) return
     goToParcelsList()
   } catch (error) {
-    parcelsStore.error = error?.message || String(error)
+    alertStore.error(error, { fallback: 'Не удалось сохранить посылку' })
   } finally {
     if (isComponentMounted.value) runningAction.value = false
   }
@@ -554,6 +555,7 @@ async function onLookup(values) {
   if (readOnly.value) return
   runningAction.value = true
   let mutationStarted = false
+  let actionSucceeded = false
   try {
     // Wait for neighbor promises if present
     await ensureNextParcelsPromise()
@@ -561,11 +563,14 @@ async function onLookup(values) {
     if ((await updateParcelWithLifecycleGuard(currentParcelId.value, values)) === false) return
     mutationStarted = true
     await parcelsStore.lookupFeacnCode(currentParcelId.value)
+    actionSucceeded = true
   } catch (error) {
     alertStore.error(error?.message || String(error))
   } finally {
     if (isComponentMounted.value && mutationStarted) {
-      await parcelsStore.getById(currentParcelId.value)
+      await refreshParcelAfterMutation(parcelsStore, currentParcelId.value, alertStore, {
+        errorAlreadyReported: !actionSucceeded
+      })
     }
     if (isComponentMounted.value) {
       runningAction.value = false

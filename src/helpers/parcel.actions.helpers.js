@@ -4,10 +4,30 @@
 
 import { useAlertStore } from '@/stores/alert.store.js'
 import { ParcelApprovalMode } from '@/models/parcel.approval.mode.js'
+import { reportError } from '@/helpers/error.helpers.js'
 import {
   chooseOutputWeightCorrection,
   WEIGHT_CORRECTION_CHOICE
 } from '@/helpers/weight.correction.helpers.js'
+
+export async function refreshParcelAfterMutation(
+  parcelsStore,
+  parcelId,
+  alertStore,
+  { errorAlreadyReported = false } = {}
+) {
+  try {
+    await parcelsStore.getById(parcelId)
+    return true
+  } catch (error) {
+    if (errorAlreadyReported) {
+      reportError(error, { context: 'Failed to refresh parcel after an action failure' })
+    } else {
+      alertStore.error(error, { fallback: 'Не удалось обновить данные посылки' })
+    }
+    return false
+  }
+}
 
 /**
  * Validates parcel data
@@ -29,19 +49,24 @@ export async function validateParcelData(
   if (item.value.id != values.id) return Promise.resolve(false)
   const alertStore = useAlertStore()
   let updateAccepted = false
+  let validationSucceeded = false
   try {
     updateAccepted = (await updateParcel(item.value.id, values)) !== false
     if (!updateAccepted) return false
     await parcelsStore.validate(item.value.id, sw, matchMode)
-    return true
+    validationSucceeded = true
   } catch (error) {
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при проверке информации о посылке'
     alertStore.error(parcelsStore.error)
   } finally {
     if (updateAccepted) {
-      await parcelsStore.getById(item.value.id)
+      const refreshed = await refreshParcelAfterMutation(parcelsStore, item.value.id, alertStore, {
+        errorAlreadyReported: !validationSucceeded
+      })
+      if (!refreshed) validationSucceeded = false
     }
   }
+  return validationSucceeded
 }
 
 /**
@@ -167,6 +192,7 @@ export async function runCheckStatusAction(
   runningAction.value = true
   const alertStore = useAlertStore()
   let mutationStarted = false
+  let actionSucceeded = false
   try {
     if (beforeAction && (await beforeAction()) === false) return false
     await ensureNextParcelsPromise()
@@ -174,17 +200,24 @@ export async function runCheckStatusAction(
     if (!updateAccepted) return false
     mutationStarted = true
     await actionFn(currentParcelId.value)
-    return true
+    actionSucceeded = true
   } catch (error) {
     alertStore.error(error?.message || String(error))
   } finally {
     if (isComponentMounted.value && mutationStarted) {
-      await parcelsStore.getById(currentParcelId.value)
+      const refreshed = await refreshParcelAfterMutation(
+        parcelsStore,
+        currentParcelId.value,
+        alertStore,
+        { errorAlreadyReported: !actionSucceeded }
+      )
+      if (!refreshed) actionSucceeded = false
     }
     if (isComponentMounted.value) {
       runningAction.value = false
     }
   }
+  return actionSucceeded
 }
 
 /**

@@ -305,6 +305,23 @@ describe('GtcParcel_EditDialog passport verification', () => {
     expect(parcelsMock.update).toHaveBeenCalled()
     expect(parcelsMock.lookupFeacnCode).toHaveBeenCalledWith(5)
     expect(parcelsMock.generate).toHaveBeenCalled()
+
+    routerMocks.push.mockClear()
+    alertRef.value = null
+    alertErrorMock.mockClear()
+    parcelsMock.update.mockClear()
+    parcelsMock.update.mockRejectedValueOnce(new Error('save failed'))
+    await wrapper.get('[data-testid="save"]').trigger('click')
+    await resolveAll()
+
+    expect(alertErrorMock).toHaveBeenCalledOnce()
+    expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain('save failed')
+    expect(routerMocks.push).not.toHaveBeenCalled()
+
+    await wrapper.get('[data-testid="save"]').trigger('click')
+    await resolveAll()
+    expect(parcelsMock.update).toHaveBeenCalledTimes(2)
+    expect(routerMocks.push).toHaveBeenCalled()
     wrapper.unmount()
 
     vi.clearAllMocks()

@@ -341,8 +341,12 @@ describe('ParcelStatusBulkChangeDialog', () => {
       title: 'Подтверждение',
       confirmationText: 'Изменить',
       cancellationText: 'Не изменять',
-      dialogProps: { width: '30%', minWidth: '250px' },
-      confirmationButtonProps: { color: 'orange-darken-3' },
+      dialogProps: { width: 440, maxWidth: 'calc(100vw - 32px)' },
+      cardProps: { class: 'app-dialog-frame' },
+      cardTitleProps: { class: 'app-dialog-frame__title' },
+      cardActionsProps: { class: 'app-dialog-frame__actions' },
+      confirmationButtonProps: { color: 'orange-darken-3', variant: 'flat' },
+      cancellationButtonProps: { variant: 'text' },
       content: 'Изменить статус всех посылок в реестре на "Status 4"?'
     }))
     expect(mocks.setParcelStatuses).toHaveBeenCalledWith(7, 4)
@@ -382,10 +386,12 @@ describe('ParcelStatusBulkChangeDialog', () => {
 
     expect(mocks.confirm).toHaveBeenCalledWith(expect.objectContaining({
       title: 'Подтверждение',
-      confirmationText: 'Применить',
-      cancellationText: 'Отменить',
-      dialogProps: { width: '30%', minWidth: '250px' },
-      confirmationButtonProps: { color: 'orange-darken-3' },
+      confirmationText: 'Изменить',
+      cancellationText: 'Не изменять',
+      dialogProps: { width: 440, maxWidth: 'calc(100vw - 32px)' },
+      cardProps: { class: 'app-dialog-frame' },
+      confirmationButtonProps: { color: 'orange-darken-3', variant: 'flat' },
+      cancellationButtonProps: { variant: 'text' },
       content: expect.stringContaining('статус посылки на «Excluded»')
     }))
     expect(mocks.updateStatusSelection).not.toHaveBeenCalled()
@@ -401,8 +407,12 @@ describe('ParcelStatusBulkChangeDialog', () => {
     expect(mocks.confirm).toHaveBeenCalledOnce()
     expect(mocks.confirm).toHaveBeenCalledWith(expect.objectContaining({
       title: 'Подтверждение',
-      dialogProps: { width: '30%', minWidth: '250px' },
-      confirmationButtonProps: { color: 'orange-darken-3' },
+      confirmationText: 'Изменить',
+      cancellationText: 'Не изменять',
+      dialogProps: { width: 440, maxWidth: 'calc(100vw - 32px)' },
+      cardProps: { class: 'app-dialog-frame' },
+      confirmationButtonProps: { color: 'orange-darken-3', variant: 'flat' },
+      cancellationButtonProps: { variant: 'text' },
       content: expect.stringContaining('статус посылок на «Excluded»')
     }))
     expect(mocks.setParcelStatuses).toHaveBeenCalledWith(7, 5)

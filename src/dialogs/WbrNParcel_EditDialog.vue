@@ -48,13 +48,18 @@ import DTagSection from '@/components/DTagSection.vue'
 import { handleFellowsClick } from '@/helpers/parcel.number.ext.helpers.js'
 import { isCustomsProcessingDisabled } from '@/helpers/parcel.statuses.helpers.js'
 import {
+  confirmCustomsExclusionStatusChange,
+  confirmPassportCheckRestart
+} from '@/helpers/lifecycle.warning.helpers.js'
+import {
   validateParcelData,
   approveParcel as approveParcelHelper,
   approveParcelWithExcise as approveParcelWithExciseHelper,
   approveParcelWithNotification as approveParcelWithNotificationHelper,
   generateXml as generateXmlHelper,
   deleteProductImage as deleteProductImageHelper,
-  runCheckStatusAction as runCheckStatusActionHelper
+  runCheckStatusAction as runCheckStatusActionHelper,
+  refreshParcelAfterMutation
 } from '@/helpers/parcel.actions.helpers.js'
 import { DEC_REPORT_UPLOADED_EVENT } from '@/helpers/dec.report.events.js'
 import { SwValidationMatchMode } from '@/models/sw.validation.match.mode.js'
@@ -122,6 +127,30 @@ const { item: registerItem } = storeToRefs(registersStore)
 const { stopWords } = storeToRefs(stopWordsStore)
 const { orders: feacnOrders } = storeToRefs(feacnOrdersStore)
 const { prefixes: feacnPrefixes } = storeToRefs(feacnPrefixesStore)
+
+async function updateParcelWithLifecycleGuard(id, values) {
+  if (readOnly.value) return false
+
+  const confirmed = await confirmCustomsExclusionStatusChange({
+    values,
+    currentParcel: item.value,
+    statusStore,
+    confirm
+  })
+  if (!confirmed) return false
+  await parcelsStore.update(id, values)
+  return true
+}
+
+function confirmPassportRestart(action = 'check') {
+  return confirmPassportCheckRestart({
+    registerId: props.registerId,
+    registersStore,
+    confirm,
+    parcelCount: 1,
+    action
+  })
+}
 const markedByPartnerActionsDisabled = computed(() =>
   CheckStatusCode.isMarkedByPartner(item.value?.checkStatus)
 )
@@ -261,13 +290,13 @@ async function viewProductImage() {
 }
 
 async function validateParcel(values, sw, matchMode) {
-  if (!isComponentMounted.value || runningAction.value) return
+  if (readOnly.value || !isComponentMounted.value || runningAction.value) return
   runningAction.value = true
   try {
     // Wait for next parcels info to complete before calling helper
     await ensureNextParcelsPromise()
 
-    await validateParcelData(values, item, parcelsStore, sw, matchMode)
+    await validateParcelData(values, item, parcelsStore, sw, matchMode, updateParcelWithLifecycleGuard)
   } catch (error) {
     alertStore.error(error?.message || String(error))
   } finally {
@@ -275,7 +304,9 @@ async function validateParcel(values, sw, matchMode) {
   }
 }
 
-async function runCheckStatusAction(values, actionFn) {
+async function runCheckStatusAction(values, actionFn, passportAction = null) {
+  if (readOnly.value) return false
+
   return runCheckStatusActionHelper(
     values,
     actionFn,
@@ -283,19 +314,23 @@ async function runCheckStatusAction(values, actionFn) {
     runningAction,
     currentParcelId,
     ensureNextParcelsPromise,
-    parcelsStore
+    parcelsStore,
+    {
+      updateParcel: updateParcelWithLifecycleGuard,
+      beforeAction: passportAction ? () => confirmPassportRestart(passportAction) : null
+    }
   )
 }
 
 // Approve the parcel
 async function approveParcel(values) {
-  if (!isComponentMounted.value || runningAction.value) return
+  if (readOnly.value || !isComponentMounted.value || runningAction.value) return
   runningAction.value = true
   try {
     // Wait for next parcels info to complete before calling helper
     await ensureNextParcelsPromise()
 
-    await approveParcelHelper(values, item, parcelsStore)
+    await approveParcelHelper(values, item, parcelsStore, undefined, updateParcelWithLifecycleGuard)
   } catch (error) {
     alertStore.error(error?.message || String(error))
   } finally {
@@ -305,13 +340,13 @@ async function approveParcel(values) {
 
 // Approve the parcel with excise
 async function approveParcelWithExcise(values, setFieldValue) {
-  if (!isComponentMounted.value || runningAction.value) return
+  if (readOnly.value || !isComponentMounted.value || runningAction.value) return
   runningAction.value = true
   try {
     // Wait for next parcels info to complete before calling helper
     await ensureNextParcelsPromise()
 
-    const result = await approveParcelWithExciseHelper(values, item, parcelsStore)
+    const result = await approveParcelWithExciseHelper(values, item, parcelsStore, updateParcelWithLifecycleGuard)
     if (result?.tnVed != null) {
       setFieldValue('tnVed', result.tnVed)
     }
@@ -323,12 +358,12 @@ async function approveParcelWithExcise(values, setFieldValue) {
 }
 
 async function approveParcelWithNotification(values) {
-  if (!isComponentMounted.value || runningAction.value) return
+  if (readOnly.value || !isComponentMounted.value || runningAction.value) return
   runningAction.value = true
   try {
     await ensureNextParcelsPromise()
 
-    await approveParcelWithNotificationHelper(values, item, parcelsStore)
+    await approveParcelWithNotificationHelper(values, item, parcelsStore, updateParcelWithLifecycleGuard)
   } catch (error) {
     alertStore.error(error?.message || String(error))
   } finally {
@@ -358,7 +393,7 @@ async function onSubmit(values, submitContext = false) {
   runningAction.value = true
   try {
     if (!readOnly.value) {
-      await parcelsStore.update(currentParcelId.value, values)
+      if ((await updateParcelWithLifecycleGuard(currentParcelId.value, values)) === false) return
     }
 
     // Wait for the appropriate next parcel promise to resolve
@@ -402,19 +437,22 @@ async function onSubmit(values, submitContext = false) {
   }
 }
 
-function onSave(values) {
+async function onSave(values) {
   if (readOnly.value) {
     goToParcelsList()
     return Promise.resolve()
   }
-  return parcelsStore
-    .update(currentParcelId.value, values)
-    .then(() => {
-      goToParcelsList()
-    })
-    .catch((error) => {
-      alertStore.error(error?.message || String(error))
-    })
+  if (!isComponentMounted.value || runningAction.value || currentParcelId.value != values.id) return
+
+  runningAction.value = true
+  try {
+    if ((await updateParcelWithLifecycleGuard(currentParcelId.value, values)) === false) return
+    goToParcelsList()
+  } catch (error) {
+    alertStore.error(error?.message || String(error))
+  } finally {
+    if (isComponentMounted.value) runningAction.value = false
+  }
 }
 
 // Save current parcel and navigate to the previous one if available
@@ -425,7 +463,7 @@ async function onBack(values) {
     // Wait for next parcels info to complete before processing
     await ensureNextParcelsPromise()
     if (!readOnly.value) {
-      await parcelsStore.update(currentParcelId.value, values)
+      if ((await updateParcelWithLifecycleGuard(currentParcelId.value, values)) === false) return
     }
     const prevParcel = await parcelViewsStore.back()
 
@@ -465,10 +503,8 @@ async function generateXml(values) {
   runningAction.value = true
   try {
     // Wait for next parcels info to complete before calling helper
-    const updatePromise = readOnly.value
-      ? Promise.resolve()
-      : parcelsStore.update(currentParcelId.value, values)
-    await Promise.all([ensureNextParcelsPromise(), updatePromise])
+    await ensureNextParcelsPromise()
+    if (!readOnly.value && (await updateParcelWithLifecycleGuard(currentParcelId.value, values)) === false) return
     await registersStore.getById(props.registerId)
 
     await generateXmlHelper(item, parcelsStore, String(item.value?.shk || '').padStart(20, '0'), {
@@ -499,17 +535,25 @@ async function onLookup(values) {
   )
     return
   runningAction.value = true
+  let mutationStarted = false
+  let actionSucceeded = false
   try {
     // Wait for neighbor promises if present
     await ensureNextParcelsPromise()
 
-    await parcelsStore.update(currentParcelId.value, values)
+    if ((await updateParcelWithLifecycleGuard(currentParcelId.value, values)) === false) return
+    mutationStarted = true
     await parcelsStore.lookupFeacnCode(currentParcelId.value)
+    actionSucceeded = true
   } catch (error) {
     alertStore.error(error?.message || String(error))
   } finally {
+    if (isComponentMounted.value && mutationStarted) {
+      await refreshParcelAfterMutation(parcelsStore, currentParcelId.value, alertStore, {
+        errorAlreadyReported: !actionSucceeded
+      })
+    }
     if (isComponentMounted.value) {
-      await parcelsStore.getById(currentParcelId.value)
       runningAction.value = false
     }
   }
@@ -734,8 +778,8 @@ async function onLookup(values) {
             :disabled="isSubmitting || runningAction || loading || markedByPartnerActionsDisabled"
             :input-disabled="passportCheckInProgress"
             :check-disabled="passportCheckInProgress"
-            @check="runCheckStatusAction(values, parcelsStore.checkPassport)"
-            @clear="runCheckStatusAction(values, parcelsStore.clearPassportCheck)"
+            @check="runCheckStatusAction(values, parcelsStore.checkPassport, 'check')"
+            @clear="runCheckStatusAction(values, parcelsStore.clearPassportCheck, 'clear')"
           />
         </div>
       </div>

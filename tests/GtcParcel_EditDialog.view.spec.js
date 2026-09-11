@@ -22,6 +22,8 @@ const parcelsMock = {
   update: vi.fn().mockResolvedValue(),
   generate: vi.fn().mockResolvedValue(),
   lookupFeacnCode: vi.fn().mockResolvedValue(),
+  validate: vi.fn().mockResolvedValue(),
+  approve: vi.fn().mockResolvedValue(),
   checkPassport: vi.fn().mockResolvedValue(),
   clearPassportCheck: vi.fn().mockResolvedValue()
 }
@@ -69,8 +71,33 @@ vi.mock('@/stores/registers.store.js', () => ({ useRegistersStore: () => registe
 const authMock = { selectedParcelId: null, isSrLogistPlus: true }
 vi.mock('@/stores/auth.store.js', () => ({ useAuthStore: () => authMock }))
 
+const alertRef = ref(null)
+const alertErrorMock = vi.fn((error) => {
+  alertRef.value = {
+    id: 1,
+    severity: 'error',
+    message: error?.message || String(error)
+  }
+})
+const alertStoreMock = {
+  get alert() {
+    return alertRef.value
+  },
+  get activePageHosts() {
+    return 0
+  },
+  error: alertErrorMock,
+  clear: vi.fn(() => {
+    alertRef.value = null
+  }),
+  dismiss: vi.fn(),
+  pause: vi.fn(),
+  resume: vi.fn(),
+  registerPageHost: vi.fn(),
+  unregisterPageHost: vi.fn()
+}
 vi.mock('@/stores/alert.store.js', () => ({
-  useAlertStore: () => ({ alert: ref(null), error: vi.fn(), clear: vi.fn() })
+  useAlertStore: () => alertStoreMock
 }))
 
 vi.mock('@/components/ProductLinkWithActions.vue', () => ({
@@ -91,6 +118,7 @@ describe('GtcParcel_EditDialog passport verification', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     confirmMock = vi.fn()
+    alertRef.value = null
     authMock.selectedParcelId = null
     authMock.isSrLogistPlus = true
     parcelsMock.item.value = {
@@ -169,6 +197,19 @@ describe('GtcParcel_EditDialog passport verification', () => {
     await resolveAll()
     expect(parcelsMock.clearPassportCheck).toHaveBeenCalledWith(5)
 
+    parcelsMock.update.mockClear()
+    parcelsMock.checkPassport.mockClear()
+    alertErrorMock.mockClear()
+    registersMock.getById.mockRejectedValueOnce(new Error('register refresh failed'))
+    passportField.vm.$emit('check')
+    await resolveAll()
+    expect(alertErrorMock).toHaveBeenCalledOnce()
+    expect(parcelsMock.update).not.toHaveBeenCalled()
+    expect(parcelsMock.checkPassport).not.toHaveBeenCalled()
+    expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain(
+      'register refresh failed'
+    )
+
     parcelsMock.item.value = { ...parcelsMock.item.value, passportCheckStatus: 10 }
     await nextTick()
     expect(passportField.props('inputDisabled')).toBe(true)
@@ -182,6 +223,17 @@ describe('GtcParcel_EditDialog passport verification', () => {
   })
 
   it('allows navigation and downloads but blocks mutations for read-only parcels', async () => {
+    const statusSectionStub = {
+      emits: ['validate-sw', 'approve', 'approve-excise', 'approve-notification'],
+      template: `
+        <div>
+          <button data-testid="validate" @click="$emit('validate-sw', { id: 5, statusId: 1 })"></button>
+          <button data-testid="approve" @click="$emit('approve', { id: 5, statusId: 1 })"></button>
+          <button data-testid="approve-excise" @click="$emit('approve-excise', { id: 5, statusId: 1 })"></button>
+          <button data-testid="approve-notification" @click="$emit('approve-notification')"></button>
+        </div>
+      `
+    }
     const actionBarStub = {
       props: ['mutationDisabled'],
       emits: ['next-parcel', 'back', 'save', 'lookup', 'download'],
@@ -210,7 +262,7 @@ describe('GtcParcel_EditDialog passport verification', () => {
                   '<div><slot :errors="{}" :values="{ id: 5, statusId: 1 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
               },
               ParcelHeaderActionsBar: actionBarStub,
-              ParcelStatusSection: true,
+              ParcelStatusSection: statusSectionStub,
               FeacnCodeEditor: true,
               ParcelNumberExt: true,
               ParcelWeightAutoField: true,
@@ -229,13 +281,47 @@ describe('GtcParcel_EditDialog passport verification', () => {
     }
 
     let wrapper = await mountDialog()
-    for (const testId of ['next', 'back', 'download', 'lookup']) {
+    let releaseSave
+    parcelsMock.update.mockImplementationOnce(() => new Promise((resolve) => {
+      releaseSave = resolve
+    }))
+    await wrapper.get('[data-testid="save"]').trigger('click')
+    await nextTick()
+    await Promise.resolve()
+    await wrapper.get('[data-testid="save"]').trigger('click')
+    expect(parcelsMock.update).toHaveBeenCalledTimes(1)
+    releaseSave()
+    await resolveAll()
+    parcelsMock.update.mockClear()
+
+    for (const testId of ['next', 'back', 'download', 'lookup', 'save']) {
+      await wrapper.get(`[data-testid="${testId}"]`).trigger('click')
+      await resolveAll()
+    }
+    for (const testId of ['validate', 'approve', 'approve-excise', 'approve-notification']) {
       await wrapper.get(`[data-testid="${testId}"]`).trigger('click')
       await resolveAll()
     }
     expect(parcelsMock.update).toHaveBeenCalled()
     expect(parcelsMock.lookupFeacnCode).toHaveBeenCalledWith(5)
     expect(parcelsMock.generate).toHaveBeenCalled()
+
+    routerMocks.push.mockClear()
+    alertRef.value = null
+    alertErrorMock.mockClear()
+    parcelsMock.update.mockClear()
+    parcelsMock.update.mockRejectedValueOnce(new Error('save failed'))
+    await wrapper.get('[data-testid="save"]').trigger('click')
+    await resolveAll()
+
+    expect(alertErrorMock).toHaveBeenCalledOnce()
+    expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain('save failed')
+    expect(routerMocks.push).not.toHaveBeenCalled()
+
+    await wrapper.get('[data-testid="save"]').trigger('click')
+    await resolveAll()
+    expect(parcelsMock.update).toHaveBeenCalledTimes(2)
+    expect(routerMocks.push).toHaveBeenCalled()
     wrapper.unmount()
 
     vi.clearAllMocks()
@@ -262,8 +348,14 @@ describe('GtcParcel_EditDialog passport verification', () => {
       await wrapper.get(`[data-testid="${testId}"]`).trigger('click')
       await resolveAll()
     }
+    for (const testId of ['validate', 'approve', 'approve-excise', 'approve-notification']) {
+      await wrapper.get(`[data-testid="${testId}"]`).trigger('click')
+      await resolveAll()
+    }
 
     expect(parcelsMock.update).not.toHaveBeenCalled()
+    expect(parcelsMock.validate).not.toHaveBeenCalled()
+    expect(parcelsMock.approve).not.toHaveBeenCalled()
     expect(parcelsMock.lookupFeacnCode).not.toHaveBeenCalled()
     expect(parcelsMock.generate).toHaveBeenCalled()
     expect(routerMocks.push).toHaveBeenCalled()

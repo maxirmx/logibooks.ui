@@ -29,6 +29,10 @@ const approveParcelWithNotification = vi.fn().mockResolvedValue()
 const generateXml = vi.fn().mockResolvedValue()
 const deleteProductImage = vi.fn().mockResolvedValue()
 const runCheckStatusAction = vi.fn().mockResolvedValue()
+const refreshParcelAfterMutation = vi.fn(async (parcelsStore, parcelId) => {
+  await parcelsStore.getById(parcelId)
+  return true
+})
 const openImageOverlay = vi.fn().mockResolvedValue()
 const closeImageOverlay = vi.fn()
 const imageOverlayOpen = ref(false)
@@ -120,7 +124,8 @@ vi.mock('@/helpers/parcel.actions.helpers.js', () => ({
   approveParcelWithNotification,
   generateXml,
   deleteProductImage,
-  runCheckStatusAction
+  runCheckStatusAction,
+  refreshParcelAfterMutation
 }))
 
 vi.mock('@/helpers/parcel.image.overlay.js', () => ({
@@ -265,6 +270,7 @@ const stubs = {
       '<textarea v-if="as === \'textarea\'" :name="name" :id="id" :class="classes"></textarea><input v-else :name="name" :id="id" :class="classes" />'
   },
   ParcelHeaderActionsBar: {
+    name: 'ParcelHeaderActionsBar',
     props: [
       'downloadDisabled',
       'lookupDisabled',
@@ -286,6 +292,7 @@ const stubs = {
     `
   },
   ParcelStatusSection: {
+    name: 'ParcelStatusSection',
     props: ['item', 'values', 'disabled', 'clearCheckStatusDisabled'],
     emits: [
       'validate-sw',
@@ -337,6 +344,7 @@ const stubs = {
       '<button type="button" data-testid="parcel-number-ext" :disabled="disabled" @click="$emit(\'click\', item)"><span>{{ item[fieldName] }}</span><span data-testid="fellows" @click.stop="$emit(\'fellows\')">fellows</span></button>'
   },
   ArticleWithH: {
+    name: 'ArticleWithH',
     props: {
       item: { type: Object, required: true },
       disabled: { type: Boolean, default: false },
@@ -502,7 +510,11 @@ describe('WbrNParcel_EditDialog.vue', () => {
       expect.any(Object),
       expect.any(Object),
       expect.any(Function),
-      expect.any(Object)
+      expect.any(Object),
+      expect.objectContaining({
+        updateParcel: expect.any(Function),
+        beforeAction: expect.any(Function)
+      })
     )
     await wrapper.get('[data-tooltip="Очистить"]').trigger('click')
     await resolveAll()
@@ -513,8 +525,23 @@ describe('WbrNParcel_EditDialog.vue', () => {
       expect.any(Object),
       expect.any(Object),
       expect.any(Function),
-      expect.any(Object)
+      expect.any(Object),
+      expect.objectContaining({
+        updateParcel: expect.any(Function),
+        beforeAction: expect.any(Function)
+      })
     )
+
+    registerItem.value = { ...registerItem.value, passportCheckWasFinished: true }
+    confirmMock.mockResolvedValue(false)
+    const clearCall = runCheckStatusAction.mock.calls.find(
+      (call) => call[1] === parcelClearPassportCheck
+    )
+    await expect(clearCall[7].beforeAction()).resolves.toBe(false)
+    expect(registerGetById).toHaveBeenCalledWith(12)
+    expect(confirmMock).toHaveBeenCalledWith(expect.objectContaining({
+      content: expect.stringContaining('Вы очищаете статус проверки паспорта')
+    }))
     wrapper.unmount()
 
     resetState()
@@ -662,11 +689,70 @@ describe('WbrNParcel_EditDialog.vue', () => {
     await wrapper.get('[data-testid="save"]').trigger('click')
     await resolveAll()
 
+    const statusSection = wrapper.findComponent({ name: 'ParcelStatusSection' })
+    for (const event of [
+      'validate-sw',
+      'validate-sw-ex',
+      'validate-fc',
+      'approve',
+      'approve-excise',
+      'clear-check-status',
+      'check-for-duplicate'
+    ]) {
+      statusSection.vm.$emit(event, formValues)
+      await resolveAll()
+    }
+    wrapper.findComponent({ name: 'ArticleWithH' }).vm.$emit('approve-notification')
+    await resolveAll()
+
     expect(parcelUpdate).not.toHaveBeenCalled()
+    expect(validateParcelData).not.toHaveBeenCalled()
+    expect(approveParcel).not.toHaveBeenCalled()
+    expect(approveParcelWithExcise).not.toHaveBeenCalled()
+    expect(approveParcelWithNotification).not.toHaveBeenCalled()
+    expect(runCheckStatusAction).not.toHaveBeenCalled()
     expect(routerPush).toHaveBeenCalledWith({
       path: '/registers/12/parcels',
       query: { selectedParcelId: '3', mode: OP_MODE_PAPERWORK }
     })
+  })
+
+  it('locks repeated Save events while an update is in progress', async () => {
+    const wrapper = await mountDialog()
+    let releaseSave
+    parcelUpdate.mockImplementationOnce(() => new Promise((resolve) => {
+      releaseSave = resolve
+    }))
+    const actionBar = wrapper.findComponent({ name: 'ParcelHeaderActionsBar' })
+
+    actionBar.vm.$emit('save')
+    await nextTick()
+    await Promise.resolve()
+    actionBar.vm.$emit('save')
+    await nextTick()
+
+    expect(parcelUpdate).toHaveBeenCalledTimes(1)
+    releaseSave()
+    await resolveAll()
+  })
+
+  it('keeps the editor open when an excluded single-parcel status is cancelled', async () => {
+    formValues.statusId = 6
+    confirmMock.mockResolvedValue(false)
+    const wrapper = await mountDialog()
+    parcelUpdate.mockClear()
+    routerPush.mockClear()
+
+    await wrapper.get('[data-testid="save"]').trigger('click')
+    await resolveAll()
+
+    expect(confirmMock).toHaveBeenCalledWith(expect.objectContaining({
+      confirmationText: 'Изменить',
+      cancellationText: 'Не изменять',
+      content: expect.stringContaining('статус посылки на «Не выгружать»')
+    }))
+    expect(parcelUpdate).not.toHaveBeenCalled()
+    expect(routerPush).not.toHaveBeenCalled()
   })
 
   it('preserves navigation context across next and previous parcel targets', async () => {
@@ -727,21 +813,24 @@ describe('WbrNParcel_EditDialog.vue', () => {
       parcelItem,
       expect.any(Object),
       true,
-      0
+      0,
+      expect.any(Function)
     )
     expect(validateParcelData).toHaveBeenCalledWith(
       expect.objectContaining({ id: 3 }),
       parcelItem,
       expect.any(Object),
       true,
-      1
+      1,
+      expect.any(Function)
     )
     expect(validateParcelData).toHaveBeenCalledWith(
       expect.objectContaining({ id: 3 }),
       parcelItem,
       expect.any(Object),
       false,
-      undefined
+      undefined,
+      expect.any(Function)
     )
 
     await wrapper.get('[data-testid="approve"]').trigger('click')
@@ -749,7 +838,9 @@ describe('WbrNParcel_EditDialog.vue', () => {
     expect(approveParcel).toHaveBeenCalledWith(
       expect.objectContaining({ id: 3 }),
       parcelItem,
-      expect.any(Object)
+      expect.any(Object),
+      undefined,
+      expect.any(Function)
     )
 
     await wrapper.get('[data-testid="approve-excise"]').trigger('click')
@@ -757,7 +848,8 @@ describe('WbrNParcel_EditDialog.vue', () => {
     expect(approveParcelWithExcise).toHaveBeenCalledWith(
       expect.objectContaining({ id: 3 }),
       parcelItem,
-      expect.any(Object)
+      expect.any(Object),
+      expect.any(Function)
     )
     expect(setFieldValue).toHaveBeenCalledWith('tnVed', '6403999300')
 
@@ -766,7 +858,8 @@ describe('WbrNParcel_EditDialog.vue', () => {
     expect(approveParcelWithNotification).toHaveBeenCalledWith(
       expect.objectContaining({ id: 3 }),
       parcelItem,
-      expect.any(Object)
+      expect.any(Object),
+      expect.any(Function)
     )
 
     await wrapper.get('[data-testid="clear-check-status"]').trigger('click')
@@ -780,7 +873,8 @@ describe('WbrNParcel_EditDialog.vue', () => {
       expect.any(Object),
       expect.any(Object),
       expect.any(Function),
-      expect.any(Object)
+      expect.any(Object),
+      expect.objectContaining({ updateParcel: expect.any(Function), beforeAction: null })
     )
     expect(runCheckStatusAction).toHaveBeenCalledWith(
       expect.objectContaining({ id: 3 }),
@@ -789,7 +883,8 @@ describe('WbrNParcel_EditDialog.vue', () => {
       expect.any(Object),
       expect.any(Object),
       expect.any(Function),
-      expect.any(Object)
+      expect.any(Object),
+      expect.objectContaining({ updateParcel: expect.any(Function), beforeAction: null })
     )
 
     await wrapper.get('[data-testid="lookup"]').trigger('click')

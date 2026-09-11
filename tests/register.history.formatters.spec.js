@@ -64,6 +64,8 @@ describe('register history formatters', () => {
     expect(formatRegisterHistoryValue('ExportedTo1C', 'True', context)).toBe(
       'Выгрузка в 1С выполнена'
     )
+    expect(formatRegisterHistoryValue('PassportCheckWasFinished', 'True', context)).toBe('Выполнена')
+    expect(formatRegisterHistoryValue('PassportCheckWasFinished', false, context)).toBe('Не выполнена')
     expect(formatRegisterHistoryValue('InvoiceDate', '2026-07-31', context)).toBe('31.07.2026')
     expect(formatRegisterHistoryValue('DecDate', '2026-08-01', context)).toBe('01.08.2026')
     expect(formatRegisterHistoryValue('ReleaseDate', '2026-08-02', context)).toBe('02.08.2026')

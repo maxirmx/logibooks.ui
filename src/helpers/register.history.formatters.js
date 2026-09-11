@@ -95,6 +95,10 @@ export function formatRegisterHistoryValue(
       return value === true || value === 1 || ['true', '1'].includes(String(value).toLowerCase())
         ? 'Выгрузка в 1С выполнена'
         : 'Выгрузка в 1С не выполнена'
+    case 'PassportCheckWasFinished':
+      return value === true || value === 1 || ['true', '1'].includes(String(value).toLowerCase())
+        ? 'Выполнена'
+        : 'Не выполнена'
     case 'WarehouseId':
       return resolveReference(value, getWarehouseName, 'Неизвестный склад')
     case 'DTime':

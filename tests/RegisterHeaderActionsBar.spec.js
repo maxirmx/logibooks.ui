@@ -3,6 +3,7 @@ import { vi } from 'vitest'
 import RegisterHeaderActionsBar from '@/components/RegisterHeaderActionsBar.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import ActionButton2L from '@/components/ActionButton2L.vue'
+import { WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
 import { InvoiceParcelSelection } from '@/models/invoice.parcel.selection.js'
 import {
   CUSTOMS_PROCEDURE_EXPORT,
@@ -224,6 +225,69 @@ describe('RegisterHeaderActionsBar', () => {
     await do1Option.action(baseProps.item)
 
     expect(pushMock).not.toHaveBeenCalled()
+  })
+
+  it('starts the Tajikistan manifest download only for eligible registers', async () => {
+    const eligibleItem = {
+      ...baseProps.item,
+      registerType: WBRN_REGISTER_ID,
+      customsProcedureCode: CUSTOMS_PROCEDURE_EXPORT,
+      theOtherCountryCode: 762
+    }
+    const wrapper = mount(RegisterHeaderActionsBar, {
+      props: { ...baseProps, item: eligibleItem },
+      global: { stubs: vuetifyStubs }
+    })
+    const option = findActionMenuByTooltip(wrapper, 'Сформировать документы')
+      .props('options')
+      .find((candidate) => candidate.label === 'манифест для Таджикистана (все)')
+
+    expect(option).toBeTruthy()
+    await option.action()
+    expect(wrapper.emitted('download-tajikistan-manifest')).toHaveLength(1)
+    expect(pushMock).not.toHaveBeenCalled()
+
+    for (const item of [
+      { ...eligibleItem, registerType: WBRN_REGISTER_ID + 1 },
+      { ...eligibleItem, customsProcedureCode: CUSTOMS_PROCEDURE_IMPORT },
+      { ...eligibleItem, theOtherCountryCode: 643 }
+    ]) {
+      const ineligibleWrapper = mount(RegisterHeaderActionsBar, {
+        props: { ...baseProps, item },
+        global: { stubs: vuetifyStubs }
+      })
+      expect(
+        findActionMenuByTooltip(ineligibleWrapper, 'Сформировать документы')
+          .props('options')
+          .some((candidate) => candidate.label === 'манифест для Таджикистана (все)')
+      ).toBe(false)
+    }
+  })
+
+  it.each([
+    { disabled: true, loading: false },
+    { disabled: false, loading: true }
+  ])('does not download the Tajikistan manifest when actions are unavailable', async (state) => {
+    const wrapper = mount(RegisterHeaderActionsBar, {
+      props: {
+        ...baseProps,
+        ...state,
+        item: {
+          ...baseProps.item,
+          registerType: WBRN_REGISTER_ID,
+          customsProcedureCode: CUSTOMS_PROCEDURE_EXPORT,
+          theOtherCountryCode: 762
+        }
+      },
+      global: { stubs: vuetifyStubs }
+    })
+    const option = findActionMenuByTooltip(wrapper, 'Сформировать документы')
+      .props('options')
+      .find((candidate) => candidate.label === 'манифест для Таджикистана (все)')
+
+    await option.action()
+
+    expect(wrapper.emitted('download-tajikistan-manifest')).toBeUndefined()
   })
 
   it('shows CMR only for Auto registers and routes to CMR settings', async () => {

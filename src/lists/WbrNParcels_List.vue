@@ -268,6 +268,7 @@ const {
   downloadRegister: downloadRegisterFile,
   downloadAdditionalRestrictions: downloadAdditionalRestrictionsFile,
   downloadPackingList: downloadPackingListFile,
+  downloadTajikistanManifest: downloadTajikistanManifestFile,
   downloadTechdoc: downloadTechdocFile,
   freezeCheckStatus: freezeCheckStatusHeader,
   freezeTnVedOrder: freezeTnVedOrderHeader,
@@ -608,6 +609,7 @@ function getGenericTemplateHeaders() {
         @export-notifications="exportRegisterXmlNotifications"
         @download="downloadRegisterFile"
         @download-packing-list="downloadPackingListFile"
+        @download-tajikistan-manifest="downloadTajikistanManifestFile"
         @download-additional-restrictions="downloadAdditionalRestrictionsFile"
         @download-techdoc="downloadTechdocFile"
         @calculate-customs-charges="calculateCustomsChargesHeader"

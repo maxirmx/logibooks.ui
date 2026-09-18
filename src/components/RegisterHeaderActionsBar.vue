@@ -8,10 +8,14 @@ import ActionButton2L from '@/components/ActionButton2L.vue'
 import { InvoiceParcelSelection } from '@/models/invoice.parcel.selection.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import {
+  CUSTOMS_PROCEDURE_EXPORT,
   isCustomsChargesCalculationProcedure,
   isImportCustomsProcedure
 } from '@/helpers/customs.procedure.helpers.js'
+import { WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
 import { canChangeParcelWeights } from '@/helpers/weight.correction.helpers.js'
+
+const TAJIKISTAN_ISO_NUMERIC = 762
 const authStore = useAuthStore()
 
 const props = defineProps({
@@ -38,6 +42,7 @@ const emit = defineEmits([
   'export-notifications',
   'download',
   'download-packing-list',
+  'download-tajikistan-manifest',
   'download-additional-restrictions',
   'download-techdoc',
   'bulk-change-parcel-status',
@@ -86,6 +91,12 @@ const weightUpdateTooltip = computed(() =>
     ? 'Обновить веса из файла реестра'
     : 'Обновление весов недоступно: задан фактический вес к оформлению'
 )
+const canDownloadTajikistanManifest = computed(
+  () =>
+    Number(props.item?.registerType) === WBRN_REGISTER_ID &&
+    Number(props.item?.customsProcedureCode) === CUSTOMS_PROCEDURE_EXPORT &&
+    Number(props.item?.theOtherCountryCode) === TAJIKISTAN_ISO_NUMERIC
+)
 
 const documentOptions = computed(() => {
   const options = [
@@ -114,6 +125,15 @@ const documentOptions = computed(() => {
       action: () => openInvoiceSettings(InvoiceParcelSelection.Ordinal)
     }
   ]
+
+  if (canDownloadTajikistanManifest.value) {
+    options.push({
+      label: 'манифест для Таджикистана (все)',
+      icon: 'fa-solid fa-file-invoice',
+      color: 'not-checked',
+      action: () => run('download-tajikistan-manifest')
+    })
+  }
 
   if (isImportCustomsProcedure(props.item?.customsProcedureCode)) {
     options.push({

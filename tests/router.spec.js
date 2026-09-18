@@ -725,6 +725,14 @@ describe('router guards', () => {
     })
   })
 
+  it('does not define a redundant Tajikistan manifest settings route', () => {
+    expect(
+      router
+        .getRoutes()
+        .some((value) => value.path === '/register/:id/tajikistan-manifest-settings')
+    ).toBe(false)
+  })
+
   describe('root path redirects', () => {
     it('redirects unauthenticated user to login', async () => {
       authStore.user = null

@@ -296,6 +296,10 @@ export function createRegisterActionHandlers(registersStore, alertStore, { mode 
     await registersStore.downloadPackingList(item.id, item.invoiceNumber)
   }
 
+  async function downloadTajikistanManifest(item) {
+    await registersStore.downloadTajikistanManifestFile(item.id, item.invoiceNumber)
+  }
+
   async function downloadTechdoc(item) {
     await registersStore.downloadTechdoc(item.id, item.invoiceNumber)
   }
@@ -360,6 +364,7 @@ export function createRegisterActionHandlers(registersStore, alertStore, { mode 
     downloadRegister,
     downloadAdditionalRestrictions,
     downloadPackingList,
+    downloadTajikistanManifest,
     downloadTechdoc,
     freezeCheckStatus,
     checkPassports,
@@ -394,6 +399,7 @@ export function useRegisterHeaderActions({
     downloadRegister,
     downloadAdditionalRestrictions,
     downloadPackingList,
+    downloadTajikistanManifest,
     downloadTechdoc,
     freezeCheckStatus,
     checkPassports,
@@ -556,6 +562,10 @@ export function useRegisterHeaderActions({
 
   const runDownloadPackingList = async () => {
     await runActionWithDialog(downloadPackingList, 'download-packing-list')
+  }
+
+  const runDownloadTajikistanManifest = async () => {
+    await runActionWithDialog(downloadTajikistanManifest, 'download-tajikistan-manifest')
   }
 
   const runDownloadTechdoc = async () => {
@@ -725,6 +735,7 @@ export function useRegisterHeaderActions({
     downloadRegister: runDownloadRegister,
     downloadAdditionalRestrictions: runDownloadAdditionalRestrictions,
     downloadPackingList: runDownloadPackingList,
+    downloadTajikistanManifest: runDownloadTajikistanManifest,
     downloadTechdoc: runDownloadTechdoc,
     freezeCheckStatus: runFreezeCheckStatus,
     checkPassports: runCheckPassports,

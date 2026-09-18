@@ -115,11 +115,10 @@ describe('Invoice_Settings.vue', () => {
     expect(wrapper.find('h1').text()).toContain('Настройки инвойса')
   })
 
-  it('renders selection dropdown and optional columns checkboxes', async () => {
+  it('hides parcel selection and renders optional columns checkboxes', async () => {
     const wrapper = mountDialog()
     await resolveAll()
-    const select = wrapper.find('#parcelSelection')
-    expect(select.exists()).toBe(true)
+    expect(wrapper.find('#parcelSelection').exists()).toBe(false)
     const labels = wrapper.findAll('.custom-checkbox .custom-checkbox-label').map((l) => l.text())
     expect(labels).toContain('Номер мешка')
     expect(labels).toContain('ФИО')
@@ -151,11 +150,19 @@ describe('Invoice_Settings.vue', () => {
     expect(state.parcelSelection).toBe(InvoiceParcelSelection.Ordinal)
   })
 
+  it('defaults an invalid route selection to all parcels', async () => {
+    const wrapper = mountDialog({ id: 88, selection: 'invalid-selection' })
+    await resolveAll()
+
+    expect(wrapper.findComponent(InvoiceSettings).vm.$.setupState.parcelSelection).toBe(
+      InvoiceParcelSelection.All
+    )
+  })
+
   it('submits and calls downloadInvoiceFile with selected options', async () => {
-    const wrapper = mountDialog()
+    const wrapper = mountDialog({ id: 77, selection: InvoiceParcelSelection.Ordinal })
     await resolveAll()
     const comp = wrapper.findComponent(InvoiceSettings).vm.$.setupState
-    comp.parcelSelection = InvoiceParcelSelection.Ordinal
     // toggle two columns
     comp.toggleColumn(InvoiceOptionalColumns.BagNumber)
     comp.toggleColumn(InvoiceOptionalColumns.Url)
@@ -363,4 +370,5 @@ describe('Invoice_Settings.vue', () => {
 
     expect(comp.alertStore.alert.value.message).toBe('Не удалось сформировать форму ДО1')
   })
+
 })

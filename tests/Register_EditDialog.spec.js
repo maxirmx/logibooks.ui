@@ -32,6 +32,7 @@ const baseRegisterItem = {
   companyId: 2,
   registerType: 2,
   dealNumber: 'D1',
+  customerOrderNumber: 'ORDER-001',
   customsProcedureCode: CUSTOMS_PROCEDURE_IMPORT,
   incotermsCode: 2,
   transportationTypeCode: 1,
@@ -440,6 +441,17 @@ describe('Register_EditDialog', () => {
     expect(registersStore.ensureOpsLoaded).toHaveBeenCalled()
     expect(airportsStore.getAll).toHaveBeenCalled()
     expect(warehousesStore.ensureLoaded).toHaveBeenCalled()
+    expect(wrapper.get('label[for="customerOrderNumber"]').text()).toBe('Номер заказа клиента:')
+    expect(wrapper.find('#customerOrderNumber').exists()).toBe(true)
+    const dealRowLabels = Array.from(
+      wrapper.get('#dealNumber').element.closest('.form-row').querySelectorAll('label')
+    ).map((element) => element.textContent)
+    expect(dealRowLabels).toEqual([
+      'Номер сделки:',
+      'Номер заказа клиента:',
+      'Статус:',
+      'Условия поставки:'
+    ])
     expect(wrapper.find('#invoiceNumber').exists()).toBe(true)
     expect(wrapper.find('#customsProcedureCode').exists()).toBe(true)
     expect(wrapper.find('#incotermsCode').exists()).toBe(true)
@@ -449,7 +461,8 @@ describe('Register_EditDialog', () => {
       'CPT — Перевозка оплачена до'
     ])
     const incotermsRow = wrapper.find('#incotermsCode').element.closest('.form-row')
-    expect(incotermsRow.contains(wrapper.find('#lookupByArticle').element)).toBe(true)
+    expect(incotermsRow.contains(wrapper.find('#dealNumber').element)).toBe(true)
+    expect(wrapper.find('#lookupByArticle').exists()).toBe(true)
     const departureSelect = wrapper.find('select#departureAirportId')
     expect(departureSelect.exists()).toBe(true)
     expect(departureSelect.element.disabled).toBe(true)
@@ -582,6 +595,7 @@ describe('Register_EditDialog', () => {
     expect(statusControl.text()).toBe('2')
     expect(statusControl.attributes('disabled')).toBeDefined()
     expect(statusControl.element.closest('.form-row')?.querySelector('#dealNumber')).not.toBeNull()
+    expect(wrapper.get('#customerOrderNumber').element.disabled).toBe(true)
   })
 
   it('enables airport selectors when aviation transport is selected', async () => {
@@ -1763,6 +1777,12 @@ describe('Register_EditDialog', () => {
     const clearedPayload = dialog.vm.prepareRegisterPayload({ decDate: '', releaseDate: null })
     expect(clearedPayload.decDate).toBeNull()
     expect(clearedPayload.releaseDate).toBeNull()
+    expect(
+      dialog.vm.prepareRegisterPayload({ customerOrderNumber: ' ORDER-EDIT ' }).customerOrderNumber
+    ).toBe('ORDER-EDIT')
+    expect(dialog.vm.prepareRegisterPayload({ customerOrderNumber: '   ' }).customerOrderNumber).toBe(
+      ''
+    )
   })
 
   it('places weight section before load report section', async () => {
@@ -2171,7 +2191,13 @@ describe('Register_EditDialog', () => {
 
   it('passes checkForDuplicates=true to upload when provided', async () => {
     registersStore.uploadFile.value = new File(['data'], 'test.xlsx')
-    mockItem.value = { ...baseRegisterItem, fileName: 'test.xlsx', companyId: 3, registerType: 3 }
+    mockItem.value = {
+      ...baseRegisterItem,
+      fileName: 'test.xlsx',
+      customerOrderNumber: null,
+      companyId: 3,
+      registerType: 3
+    }
     const Parent = {
       template: '<Suspense><RegisterEditDialog :create="true" /></Suspense>',
       components: { RegisterEditDialog }
@@ -2202,6 +2228,10 @@ describe('Register_EditDialog', () => {
       null,
       2
     )
+    expect(update).toHaveBeenCalledWith(
+      42,
+      expect.objectContaining({ customerOrderNumber: null })
+    )
   })
 
   it('handles create mode with upload result object', async () => {
@@ -2209,7 +2239,12 @@ describe('Register_EditDialog', () => {
     registersStore.uploadFile.value = new File(['data'], 'test.xlsx')
     mockItem.value = { ...baseRegisterItem, fileName: 'test.xlsx', registerType: 2, companyId: 2 }
     registerItems.value = []
-    const formValues = { dealNumber: 'D42', invoiceNumber: 'INV42', incotermsCode: 1 }
+    const formValues = {
+      dealNumber: 'D42',
+      customerOrderNumber: ' ORDER-42 ',
+      invoiceNumber: 'INV42',
+      incotermsCode: 1
+    }
 
     const Parent = {
       template: '<Suspense><RegisterEditDialog :create="true" /></Suspense>',
@@ -2247,6 +2282,7 @@ describe('Register_EditDialog', () => {
       42,
       expect.objectContaining({
         dealNumber: 'D42',
+        customerOrderNumber: 'ORDER-42',
         invoiceNumber: 'INV42',
         incotermsCode: 1,
         transportationTypeCode: 1,

@@ -594,6 +594,7 @@ function isValidIsoCalendarDate(value) {
 
 const schema = Yup.object().shape({
   dealNumber: Yup.string().nullable(),
+  customerOrderNumber: Yup.string().trim().nullable(),
   statusId: Yup.number().nullable(),
   invoiceDate: Yup.date().nullable(),
   warehouseArrivalDate: Yup.date().nullable(),
@@ -901,6 +902,10 @@ function prepareRegisterPayload(formValues) {
   ensureDefaultCustomsProcedure()
   const payload = { ...formValues }
   delete payload.checkForDuplicates
+  const customerOrderNumber = String(
+    formValues.customerOrderNumber ?? item.value?.customerOrderNumber ?? ''
+  ).trim()
+  payload.customerOrderNumber = props.create && customerOrderNumber === '' ? null : customerOrderNumber
 
   const selectedTransportationTypeId = parseNumber(
     getFieldOrItemValue(formValues.transportationTypeCode, item.value?.transportationTypeCode),
@@ -1251,6 +1256,16 @@ const loadReportFields = computed(() => {
             />
           </div>
           <div class="form-group">
+            <label for="customerOrderNumber" class="label">Номер заказа клиента:</label>
+            <Field
+              name="customerOrderNumber"
+              id="customerOrderNumber"
+              type="text"
+              class="form-control input"
+              :disabled="readOnly || isInitializing || registerLoadFailed"
+            />
+          </div>
+          <div class="form-group">
             <label for="statusId" class="label">Статус:</label>
             <Field name="statusId" v-slot="{ field, handleChange }">
               <div class="form-control input register-status-input">
@@ -1268,6 +1283,26 @@ const loadReportFields = computed(() => {
               </div>
             </Field>
           </div>
+            <div class="form-group">
+              <label for="incotermsCode" class="label">Условия поставки:</label>
+              <Field
+                as="select"
+                name="incotermsCode"
+                id="incotermsCode"
+                class="form-control input"
+                :class="{ 'is-invalid': errors.incotermsCode }"
+                :disabled="readOnly || isInitializing || registerLoadFailed"
+              >
+                <option
+                  v-for="term in ops.incoterms"
+                  :key="term.value"
+                  :value="term.value"
+                >
+                  {{ term.charCode }} — {{ term.name }}
+                </option>
+              </Field>
+              <FieldError name="incotermsCode" :errors="errors" />
+            </div>
         </div>
 
         <fieldset
@@ -1491,25 +1526,6 @@ const loadReportFields = computed(() => {
                   >Использовать для подбора кода ТН ВЭД и анализа стоп-слов</span
                 >
               </label>
-            </div>
-            <div class="form-group">
-              <label for="incotermsCode" class="label">Условия поставки:</label>
-              <Field
-                as="select"
-                name="incotermsCode"
-                id="incotermsCode"
-                class="form-control input"
-                :class="{ 'is-invalid': errors.incotermsCode }"
-              >
-                <option
-                  v-for="term in ops.incoterms"
-                  :key="term.value"
-                  :value="term.value"
-                >
-                  {{ term.charCode }} — {{ term.name }}
-                </option>
-              </Field>
-              <FieldError name="incotermsCode" :errors="errors" />
             </div>
           </div>
 

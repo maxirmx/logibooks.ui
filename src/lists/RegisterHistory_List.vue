@@ -108,6 +108,7 @@ const fieldLabels = {
   FileName: 'Имя файла',
   DTime: 'Дата загрузки',
   DealNumber: 'Номер сделки',
+  CustomerOrderNumber: 'Номер заказа клиента',
   CompanyId: 'Компания',
   RegisterType: 'Тип реестра',
   StatusId: 'Статус',

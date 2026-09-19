@@ -28,7 +28,7 @@ const registersStore = useRegistersStore()
 const { item, loading } = storeToRefs(registersStore)
 
 function resolveParcelSelection(value) {
-  // Validate and default to All if not WithExcise or WithoutExcise
+  // Accept supported route selections and default missing or invalid values to All.
   return [
     InvoiceParcelSelection.WithExcise,
     InvoiceParcelSelection.WithNotifications,
@@ -46,13 +46,6 @@ const isSubmitting = ref(false)
 
 const alertStore = useAlertStore()
 const { actionDialogState, showActionDialog, hideActionDialog } = useActionDialog()
-
-const parcelSelectionOptions = [
-  { id: 1, label: 'Все', value: InvoiceParcelSelection.All },
-  { id: 2, label: 'С акцизом', value: InvoiceParcelSelection.WithExcise },
-  { id: 3, label: 'С нотификациями', value: InvoiceParcelSelection.WithNotifications },
-  { id: 4, label: 'Без акциза и нотификаций', value: InvoiceParcelSelection.Ordinal }
-]
 
 const allOptionalColumnOptions = [
   { id: 1, label: 'Номер мешка', value: InvoiceOptionalColumns.BagNumber },
@@ -154,7 +147,8 @@ async function onSubmit() {
   if (!currentRegister.value || isSubmitting.value) return
   isSubmitting.value = true
   try {
-    showActionDialog(isDo1.value ? 'download-do1' : 'download-invoice')
+    const operation = isDo1.value ? 'download-do1' : 'download-invoice'
+    showActionDialog(operation)
     const applyWeightCorrection = showInvoiceWeightCorrection.value
       ? applyInvoiceWeightCorrection.value
       : true
@@ -178,7 +172,9 @@ async function onSubmit() {
   } catch (err) {
     const msg =
       normalizeError(err) ||
-      (isDo1.value ? 'Не удалось сформировать форму ДО1' : 'Не удалось сформировать инвойс')
+      (isDo1.value
+        ? 'Не удалось сформировать форму ДО1'
+        : 'Не удалось сформировать инвойс')
     alertStore.error(msg)
   } finally {
     hideActionDialog()
@@ -240,22 +236,6 @@ onMounted(() => {
       <!-- action dialog shown during invoice preparation -->
 
       <div class="form-section">
-        <div v-if="!isDo1" class="form-row-1">
-          <div class="form-group">
-            <label class="label" for="parcelSelection">Выбор посылок:</label>
-            <select
-              id="parcelSelection"
-              class="form-control input"
-              v-model="parcelSelection"
-              :disabled="isFormDisabled"
-            >
-              <option v-for="o in parcelSelectionOptions" :key="o.id" :value="o.value">
-                {{ o.label }}
-              </option>
-            </select>
-          </div>
-        </div>
-
         <div class="form-row-1 optional-columns-row">
           <div class="form-group optional-columns-group">
             <label class="label">Дополнительные колонки:</label>

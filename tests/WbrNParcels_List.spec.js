@@ -105,6 +105,7 @@ const headerActions = {
   downloadRegister: vi.fn(),
   downloadAdditionalRestrictions: vi.fn(),
   downloadPackingList: vi.fn(),
+  downloadTajikistanManifest: vi.fn(),
   downloadTechdoc: vi.fn(),
   freezeCheckStatus: vi.fn().mockResolvedValue(true),
   freezeTnVedOrder: vi.fn().mockResolvedValue(),
@@ -405,6 +406,7 @@ const globalStubs = {
       'export-notifications',
       'download',
       'download-packing-list',
+      'download-tajikistan-manifest',
       'download-additional-restrictions',
       'download-techdoc',
       'calculate-customs-charges',
@@ -427,6 +429,7 @@ const globalStubs = {
         <button data-testid="export-notifications" @click="$emit('export-notifications')"></button>
         <button data-testid="download" @click="$emit('download')"></button>
         <button data-testid="download-packing-list" @click="$emit('download-packing-list')"></button>
+        <button data-testid="download-tajikistan-manifest" @click="$emit('download-tajikistan-manifest')"></button>
         <button data-testid="download-additional-restrictions" @click="$emit('download-additional-restrictions')"></button>
         <button data-testid="download-techdoc" @click="$emit('download-techdoc')"></button>
         <button data-testid="calculate-customs-charges" @click="$emit('calculate-customs-charges')"></button>
@@ -733,6 +736,7 @@ describe('WbrNParcels_List.vue', () => {
     await wrapper.get('[data-testid="export-notifications"]').trigger('click')
     await wrapper.get('[data-testid="download"]').trigger('click')
     await wrapper.get('[data-testid="download-packing-list"]').trigger('click')
+    await wrapper.get('[data-testid="download-tajikistan-manifest"]').trigger('click')
     await wrapper.get('[data-testid="download-additional-restrictions"]').trigger('click')
     await wrapper.get('[data-testid="download-techdoc"]').trigger('click')
     await wrapper.get('[data-testid="calculate-customs-charges"]').trigger('click')
@@ -749,6 +753,7 @@ describe('WbrNParcels_List.vue', () => {
     expect(headerActions.exportAllXmlNotifications).toHaveBeenCalled()
     expect(headerActions.downloadRegister).toHaveBeenCalled()
     expect(headerActions.downloadPackingList).toHaveBeenCalled()
+    expect(headerActions.downloadTajikistanManifest).toHaveBeenCalled()
     expect(headerActions.downloadAdditionalRestrictions).toHaveBeenCalled()
     expect(headerActions.downloadTechdoc).toHaveBeenCalled()
     expect(headerActions.calculateCustomsCharges).toHaveBeenCalled()

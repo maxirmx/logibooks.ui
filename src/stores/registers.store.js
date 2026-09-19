@@ -761,6 +761,39 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
+  async function downloadTajikistanManifestFile(
+    id,
+    invoiceNumber,
+    applyWeightCorrection = true
+  ) {
+    loading.value = true
+    error.value = null
+    try {
+      const trimmedInvoiceNumber =
+        typeof invoiceNumber === 'string' ? invoiceNumber.trim() : invoiceNumber
+      const hasInvoiceNumber =
+        trimmedInvoiceNumber !== null &&
+        trimmedInvoiceNumber !== undefined &&
+        String(trimmedInvoiceNumber).length > 0
+      const fileBase = hasInvoiceNumber ? trimmedInvoiceNumber : id
+      const filename = `Манифест_${fileBase}.xlsx`
+      return await fetchWrapper.downloadFile(
+        buildInvoiceRequestUrl(
+          id,
+          'download-tajikistan-manifest',
+          InvoiceOptionalColumns.None,
+          applyWeightCorrection
+        ),
+        filename
+      )
+    } catch (err) {
+      error.value = err
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function downloadDo1File(
     id,
     invoiceNumber,
@@ -1073,6 +1106,7 @@ export const useRegistersStore = defineStore('registers', () => {
     generateNotifications,
     generateOrdinary,
     downloadInvoiceFile,
+    downloadTajikistanManifestFile,
     downloadDo1File,
     downloadCmrFile,
     download,

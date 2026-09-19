@@ -1985,6 +1985,53 @@ describe('registers store', () => {
     })
   })
 
+  describe('downloadTajikistanManifestFile method', () => {
+    it('uses the single all-without-issues endpoint and filename', async () => {
+      const store = useRegistersStore()
+      fetchWrapper.downloadFile.mockResolvedValue(true)
+
+      const result = await store.downloadTajikistanManifestFile(15, 'INV-15')
+
+      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
+        `${apiUrl}/registers/15/download-tajikistan-manifest`,
+        'Манифест_INV-15.xlsx'
+      )
+      expect(result).toBe(true)
+      expect(store.loading).toBe(false)
+      expect(store.error).toBeNull()
+    })
+
+    it('uses the id fallback, trims invoice number and passes correction opt-out', async () => {
+      const store = useRegistersStore()
+      fetchWrapper.downloadFile.mockResolvedValue(true)
+
+      await store.downloadTajikistanManifestFile(
+        16,
+        '   ',
+        false
+      )
+
+      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
+        `${apiUrl}/registers/16/download-tajikistan-manifest?applyWeightCorrection=false`,
+        'Манифест_16.xlsx'
+      )
+    })
+
+    it('stores and rethrows errors from the download', async () => {
+      const store = useRegistersStore()
+      const error = new Error('missing StickerCode')
+      fetchWrapper.downloadFile.mockRejectedValue(error)
+
+      await expect(
+        store.downloadTajikistanManifestFile(17, 'INV-17')
+      ).rejects.toBe(error)
+
+      expect(store.error).toBe(error)
+      expect(store.loading).toBe(false)
+    })
+
+  })
+
   describe('downloadDo1File method', () => {
     it('uses the ДО1 endpoint and register id fallback filename', async () => {
       const store = useRegistersStore()

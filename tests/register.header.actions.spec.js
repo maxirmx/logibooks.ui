@@ -67,6 +67,7 @@ describe('useRegisterHeaderActions', () => {
       download: vi.fn().mockResolvedValue(),
       downloadAdditionalRestrictions: vi.fn().mockResolvedValue(),
       downloadPackingList: vi.fn().mockResolvedValue(),
+      downloadTajikistanManifestFile: vi.fn().mockResolvedValue(),
       freezeCheckStatus: vi.fn().mockResolvedValue(),
       freezeTnVedOrder: vi.fn().mockResolvedValue(),
       checkPassports: vi.fn().mockResolvedValue(),
@@ -339,6 +340,52 @@ describe('useRegisterHeaderActions', () => {
 
     expect(actions.actionDialog.show).toBe(false)
     expect(alertStore.error).toHaveBeenCalledWith('Additional restrictions download failed')
+  })
+
+  it('downloads the Tajikistan manifest directly with progress feedback', async () => {
+    const deferred = createDeferred()
+    registersStore.downloadTajikistanManifestFile.mockReturnValueOnce(deferred.promise)
+    const actions = useRegisterHeaderActions({
+      registersStore,
+      alertStore,
+      runningAction,
+      tableLoading,
+      registerLoading,
+      loadParcels,
+      isComponentMounted
+    })
+
+    const promise = actions.downloadTajikistanManifest()
+
+    expect(actions.actionDialog.show).toBe(true)
+    expect(actions.actionDialog.title).toBe('Подготовка манифеста для Таджикистана')
+    expect(registersStore.downloadTajikistanManifestFile).toHaveBeenCalledWith(1, 'INV-1')
+
+    deferred.resolve()
+    await promise
+
+    expect(actions.actionDialog.show).toBe(false)
+  })
+
+  it('presents a Tajikistan manifest download failure exactly once', async () => {
+    registersStore.downloadTajikistanManifestFile.mockRejectedValueOnce(
+      new Error('Отсутствует Сумма в рублях')
+    )
+    const actions = useRegisterHeaderActions({
+      registersStore,
+      alertStore,
+      runningAction,
+      tableLoading,
+      registerLoading,
+      loadParcels,
+      isComponentMounted
+    })
+
+    await actions.downloadTajikistanManifest()
+
+    expect(alertStore.error).toHaveBeenCalledTimes(1)
+    expect(alertStore.error).toHaveBeenCalledWith('Отсутствует Сумма в рублях')
+    expect(actions.actionDialog.show).toBe(false)
   })
 
   it('locks duplicate additional restrictions downloads while one is running', async () => {

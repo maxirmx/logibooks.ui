@@ -82,6 +82,21 @@ describe('RegisterHeaderActionsBar', () => {
     authRefs.isShiftLeadPlus.value = true
   })
 
+  it('shows two export choices only when the company format is applicable', async () => {
+    const wrapper = mount(RegisterHeaderActionsBar, {
+      props: { ...baseProps, companyFormatName: 'ООО РВБ' },
+      global: { stubs: vuetifyStubs }
+    })
+    const menu = findActionMenuByTooltip(wrapper, 'Экспортировать реестр')
+    expect(menu).toBeTruthy()
+    expect(menu.props('options').map(option => option.label)).toEqual([
+      'Общий формат', 'Формат ООО РВБ'
+    ])
+    await menu.props('options')[0].action()
+    await menu.props('options')[1].action()
+    expect(wrapper.emitted('download')).toEqual([['generic'], ['company']])
+  })
+
   it('keeps restriction actions visible but disabled when counterpart country is missing', async () => {
     const wrapper = mount(RegisterHeaderActionsBar, {
       props: { ...baseProps, item: { ...baseProps.item, theOtherCountryCode: null } },

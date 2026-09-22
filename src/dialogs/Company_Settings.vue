@@ -17,6 +17,8 @@ import { useCompaniesStore } from '@/stores/companies.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useCountriesStore } from '@/stores/countries.store.js'
 import ActionButton from '@/components/ActionButton.vue'
+import CompanyRegisterOutputFormatsTable from '@/components/CompanyRegisterOutputFormatsTable.vue'
+import { useAuthStore } from '@/stores/auth.store.js'
 
 const props = defineProps({
   mode: {
@@ -32,6 +34,8 @@ const props = defineProps({
 
 const companiesStore = useCompaniesStore()
 const countriesStore = useCountriesStore()
+const authStore = useAuthStore()
+const { isSrLogistPlus } = storeToRefs(authStore)
 const { countries } = storeToRefs(countriesStore)
 
 // Check if we're in create mode
@@ -57,6 +61,27 @@ const signatureStampBase64 = ref(null)
 const signatureStampMime = ref(null)
 const fileInputRef = ref(null)
 const alertStore = useAlertStore()
+const submitButtonRef = ref(null)
+const submitting = ref(false)
+
+function submitCompanyForm() {
+  try {
+    submitButtonRef.value.click()
+  } catch (error) {
+    alertStore.error(error, { fallback: 'Не удалось сохранить компанию' })
+  }
+}
+
+async function cancel() {
+  try {
+    await router.push('/companies')
+  } catch (error) {
+    alertStore.error(error, {
+      fallback: 'Не удалось вернуться к списку компаний',
+      action: { label: 'Повторить', handler: cancel }
+    })
+  }
+}
 
 await runWithRetryAlert(() => countriesStore.ensureLoaded(), {
   fallback: 'Не удалось загрузить страны'
@@ -188,6 +213,8 @@ function removeStamp() {
 
 // Form submission
 function onSubmit(values, { setErrors } = {}) {
+  if (submitting.value) return Promise.resolve(false)
+  submitting.value = true
   const normalizedValues = normalizeValues(values) || {}
   const payload = {
     ...normalizedValues,
@@ -213,6 +240,7 @@ function onSubmit(values, { setErrors } = {}) {
           })
         }
       })
+      .finally(() => { submitting.value = false })
   } else {
     return companiesStore
       .update(props.companyId, payload)
@@ -226,13 +254,36 @@ function onSubmit(values, { setErrors } = {}) {
           fallback: 'Ошибка при сохранении информации о компании'
         })
       })
+      .finally(() => { submitting.value = false })
   }
 }
 </script>
 
 <template>
-  <div class="settings form-2">
-    <h1 class="primary-heading">{{ getTitle() }}</h1>
+  <div class="settings form-3">
+    <div class="header-with-actions">
+      <h1 class="primary-heading">{{ getTitle() }}</h1>
+      <div class="header-actions">
+        <ActionButton
+          :item="null"
+          icon="fa-solid fa-check-double"
+          icon-size="2x"
+          :tooltip-text="getButtonText()"
+          :disabled="submitting"
+          data-testid="company-save-action"
+          @click="submitCompanyForm"
+        />
+        <ActionButton
+          :item="null"
+          icon="fa-solid fa-xmark"
+          icon-size="2x"
+          tooltip-text="Отменить"
+          :disabled="submitting"
+          data-testid="company-cancel-action"
+          @click="cancel"
+        />
+      </div>
+    </div>
     <hr class="hr" />
 
     <PageAlertRegion />
@@ -241,8 +292,9 @@ function onSubmit(values, { setErrors } = {}) {
       @submit="onSubmit"
       :initial-values="company"
       :validation-schema="schema"
-      v-slot="{ errors, isSubmitting }"
+      v-slot="{ errors }"
     >
+      <button ref="submitButtonRef" type="submit" class="sr-only" tabindex="-1" aria-hidden="true">{{ getButtonText() }}</button>
       <div class="form-group">
         <label for="inn" class="label">ИНН:</label>
         <Field
@@ -400,13 +452,6 @@ function onSubmit(values, { setErrors } = {}) {
           @change="onStampSelected"
         />
         <div class="signature-stamp">
-          <div v-if="signatureStamp" class="signature-preview">
-            <img
-              :src="signatureStamp"
-              alt="Подпись или печать"
-              data-testid="signature-stamp-preview"
-            />
-          </div>
           <div class="signature-actions">
             <ActionButton
               :item="company"
@@ -426,27 +471,21 @@ function onSubmit(values, { setErrors } = {}) {
               data-testid="remove-signature-stamp"
             />
           </div>
+          <div v-if="signatureStamp" class="signature-preview">
+            <img
+              :src="signatureStamp"
+              alt="Подпись или печать"
+              data-testid="signature-stamp-preview"
+            />
+          </div>
         </div>
       </div>
 
-      <div class="form-group mt-8">
-        <button class="button primary" type="submit" :disabled="isSubmitting">
-          <span v-show="isSubmitting" class="spinner-border spinner-border-sm mr-1"></span>
-          <font-awesome-icon size="1x" icon="fa-solid fa-check-double" class="mr-1" />
-          {{ getButtonText() }}
-        </button>
-        <button
-          class="button secondary"
-          type="button"
-          data-testid="cancel-button"
-          @click="$router.push('/companies')"
-        >
-          <font-awesome-icon size="1x" icon="fa-solid fa-xmark" class="mr-1" />
-          Отменить
-        </button>
-      </div>
-      <!-- Global alert display (uses alert store) -->
     </Form>
+    <CompanyRegisterOutputFormatsTable
+      v-if="!isCreate && isSrLogistPlus"
+      :company-id="props.companyId"
+    />
   </div>
 </template>
 

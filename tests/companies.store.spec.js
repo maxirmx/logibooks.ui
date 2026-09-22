@@ -198,6 +198,42 @@ describe('companies store', () => {
     })
   })
 
+  describe('register output formats', () => {
+    it('reads catalogs and independent company layouts', async () => {
+      const store = useCompaniesStore()
+      const catalog = { registerType: 1, inputColumns: [] }
+      const layout = { registerType: 1, entries: [{ kind: 'empty' }] }
+      fetchWrapper.get.mockResolvedValueOnce(catalog).mockResolvedValueOnce(layout)
+      expect(await store.getRegisterOutputColumns(1)).toBe(catalog)
+      expect(await store.getRegisterOutputFormat(42, 1)).toBe(layout)
+      expect(fetchWrapper.get).toHaveBeenNthCalledWith(1, `${apiUrl}/register-output-columns?registerType=1`)
+      expect(fetchWrapper.get).toHaveBeenNthCalledWith(2, `${apiUrl}/companies/42/register-output-format?registerType=1`)
+    })
+
+    it('saves and removes only the selected type', async () => {
+      const store = useCompaniesStore()
+      fetchWrapper.put.mockResolvedValueOnce({})
+      fetchWrapper.delete.mockResolvedValueOnce({})
+      const layout = { schemaVersion: 1, registerType: 8, entries: [{ kind: 'flexibleBlock' }] }
+      expect(await store.saveRegisterOutputFormat(42, 8, layout)).toBe(true)
+      expect(await store.deleteRegisterOutputFormat(42, 8)).toBe(true)
+      expect(fetchWrapper.put).toHaveBeenCalledWith(`${apiUrl}/companies/42/register-output-format?registerType=8`, layout)
+      expect(fetchWrapper.delete).toHaveBeenCalledWith(`${apiUrl}/companies/42/register-output-format?registerType=8`)
+    })
+
+    it.each(['getRegisterOutputColumns', 'getRegisterOutputFormat', 'saveRegisterOutputFormat', 'deleteRegisterOutputFormat'])(
+      'propagates %s errors without showing an alert', async (method) => {
+        const store = useCompaniesStore()
+        const failure = new Error('offline')
+        const transport = method === 'saveRegisterOutputFormat' ? 'put'
+          : method === 'deleteRegisterOutputFormat' ? 'delete' : 'get'
+        fetchWrapper[transport].mockRejectedValueOnce(failure)
+        await expect(store[method](42, 1, {})).rejects.toBe(failure)
+        expect(store.error).toBe(failure)
+      }
+    )
+  })
+
   it('sets loading state during operations', async () => {
     let resolvePromise
     const promise = new Promise((resolve) => {

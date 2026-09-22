@@ -27,6 +27,7 @@ const props = defineProps({
   noHistoricData: { type: Boolean, default: false },
   showPassportCheck: { type: Boolean, default: false },
   showWeightUpdate: { type: Boolean, default: false },
+  companyFormatName: { type: String, default: '' },
 })
 
 const emit = defineEmits([
@@ -184,7 +185,7 @@ const documentOptions = computed(() => {
   return options
 })
 
-function run(evt) {
+function run(evt, format) {
   const isRestrictionValidation = ['validate-sw', 'validate-sw-ex', 'validate-fc'].includes(evt)
   if (
     props.disabled ||
@@ -193,7 +194,8 @@ function run(evt) {
     (isRestrictionValidation && restrictionCountryMissing.value) ||
     (evt === 'update-weights-from-file' && !weightChangesAllowed.value)
   ) return
-  emit(evt)
+  if (evt === 'download') emit(evt, format)
+  else emit(evt)
 }
 
 function openInvoiceSettings(selection = InvoiceParcelSelection.All) {
@@ -330,7 +332,20 @@ function openCmrSettings() {
           }
         ]"
       />
+      <ActionButton2L
+        v-if="companyFormatName"
+        :item="item"
+        icon="fa-solid fa-file-export"
+        tooltip-text="Экспортировать реестр"
+        :iconSize="iconSize"
+        :disabled="disabled"
+        :options="[
+          { label: 'Общий формат', action: () => run('download', 'generic') },
+          { label: `Формат ${companyFormatName}`, action: () => run('download', 'company') }
+        ]"
+      />
       <ActionButton
+        v-else
         :item="item"
         icon="fa-solid fa-file-export"
         tooltip-text="Экспортировать реестр"

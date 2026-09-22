@@ -186,6 +186,66 @@ This file is a part of Logibooks ui application
   background-color: rgba(var(--v-theme-surface), 1);
 }
 
+/* Native tables use the same card, compact rows, and striping as Vuetify lists. */
+.app-table-card {
+  background-color: rgb(var(--v-theme-surface, 255, 255, 255));
+  color: rgba(var(--v-theme-on-surface, 0, 0, 0), var(--v-high-emphasis-opacity, 0.87));
+  border-radius: 4px;
+  box-shadow: 0 2px 1px -1px rgba(0, 0, 0, 0.2),
+    0 1px 1px 0 rgba(0, 0, 0, 0.14),
+    0 1px 3px 0 rgba(0, 0, 0, 0.12);
+}
+
+.app-table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.app-table {
+  width: 100%;
+  margin: 0;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.app-table th,
+.app-table td {
+  padding: 0 16px;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.app-table thead th {
+  height: 40px;
+  border-bottom: thin solid rgba(var(--v-border-color, 0, 0, 0), var(--v-border-opacity, 0.12));
+}
+
+.app-table tbody td,
+.app-table tbody th {
+  height: 36px;
+  border-bottom: thin solid rgba(var(--v-border-color, 0, 0, 0), var(--v-border-opacity, 0.12));
+}
+
+.app-table tbody th {
+  font-weight: 500;
+}
+
+.app-table.interlaced-table tbody tr:nth-child(even) {
+  background-color: rgba(var(--v-theme-on-surface, 0, 0, 0), 0.1);
+}
+
+.app-table.interlaced-table tbody tr:nth-child(odd) {
+  background-color: rgb(var(--v-theme-surface, 255, 255, 255));
+}
+
+.app-table-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  white-space: nowrap;
+}
+
 /* Highlight rows that have issues */
 .parcel-has-issues {
   color: var(--parcel-has-issues-color) !important;
@@ -685,9 +745,10 @@ a,
 }
 }
 
-/* Table header styling for both registers and users tables - Vuetify 3.x */
+/* Shared blue table headers for Vuetify and plain HTML tables. */
 .v-data-table thead th,
-.v-data-table-server thead th {
+.v-data-table-server thead th,
+.app-table thead th {
   background-color: var(--gtc-color-1) !important;
   color: white !important;
   font-weight: bold !important;
@@ -696,7 +757,8 @@ a,
 }
 
 .v-data-table thead th span,
-.v-data-table-server thead th span {
+.v-data-table-server thead th span,
+.app-table thead th span {
   color: white !important;
   font-weight: bold !important;
 }
@@ -721,7 +783,8 @@ a,
 @media (hover: hover) {
   /* Vuetify 3 data table row hover effects */
   .v-data-table tbody tr:hover,
-  .v-data-table-server tbody tr:hover {
+  .v-data-table-server tbody tr:hover,
+  .app-table tbody tr:hover {
     background-color: rgba(25, 118, 210, 0.2) !important;
     transition: background-color 0.2s ease-in-out;
   }
@@ -736,7 +799,8 @@ a,
   /* Ensure hover effect works on table cells as well */
   .v-data-table tbody tr:hover td,
   .v-data-table-server tbody tr:hover td,
-  .v-table tbody tr:hover td {
+  .v-table tbody tr:hover td,
+  .app-table tbody tr:hover td {
     background-color: transparent !important;
   }
 }

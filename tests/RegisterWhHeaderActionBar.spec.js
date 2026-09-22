@@ -4,9 +4,12 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import RegisterWhHeaderActionBar from '@/components/RegisterWhHeaderActionBar.vue'
+import { OZON_COMPANY_ID } from '@/helpers/company.constants.js'
 
 const confirmMock = vi.hoisted(() => vi.fn())
 const download = vi.fn().mockResolvedValue(true)
+const getDownloadFormats = vi.fn()
+const alertError = vi.fn()
 let isWhManagerPlus = true
 let isSrLogistPlus = true
 
@@ -16,8 +19,13 @@ vi.mock('vuetify-use-dialog', () => ({
 
 vi.mock('@/stores/registers.store.js', () => ({
   useRegistersStore: () => ({
-    download
+    download,
+    getDownloadFormats
   })
+}))
+
+vi.mock('@/stores/alert.store.js', () => ({
+  useAlertStore: () => ({ error: alertError })
 }))
 
 vi.mock('@/stores/auth.store.js', () => ({
@@ -73,6 +81,7 @@ describe('RegisterWhHeaderActionBar.vue', () => {
     confirmMock.mockReset()
     isWhManagerPlus = true
     isSrLogistPlus = true
+    getDownloadFormats.mockResolvedValue({ company: { available: true, name: 'Receiver' } })
   })
 
   it('builds export options with "Все посылки" and normalized zone names', () => {
@@ -87,6 +96,37 @@ describe('RegisterWhHeaderActionBar.vue', () => {
     const actionButton2L = wrapper.findComponent(ActionButton2LStub)
     const labels = actionButton2L.props('options').map((option) => option.label)
     expect(labels).toEqual(['Все посылки', 'Зона 1', 'Без зоны (не найдены)'])
+  })
+
+  it('offers company output for an Ozon warehouse zone and preserves its zone choice', async () => {
+    const wrapper = mountHeaderActionBar({
+      register: { id: 77, registerType: OZON_COMPANY_ID, fileName: 'register_77.xlsx' },
+      zones: [{ value: 3, name: 'Zone 3' }]
+    })
+    await vi.waitFor(() => expect(wrapper.findComponent(ActionButton2LStub).props('options')).toHaveLength(4))
+    const options = wrapper.findComponent(ActionButton2LStub).props('options')
+    expect(options.map(option => option.label)).toEqual([
+      'Все посылки — Общий формат', 'Все посылки — Формат Receiver',
+      'Zone 3 — Общий формат', 'Zone 3 — Формат Receiver'
+    ])
+    expect(await options[3].action()).toBe(true)
+    expect(alertError).not.toHaveBeenCalled()
+    expect(getDownloadFormats).toHaveBeenCalledWith(77)
+    expect(download).toHaveBeenCalledWith(77, 'register_77.xlsx', 3, 'Zone 3', false, 'company')
+  })
+
+  it('reports a supported warehouse download failure once and retries its same choices', async () => {
+    download.mockRejectedValueOnce(new Error('download failed'))
+    const wrapper = mountHeaderActionBar({
+      register: { id: 77, registerType: OZON_COMPANY_ID, fileName: 'register_77.xlsx' },
+      zones: [{ value: 3, name: 'Zone 3' }]
+    })
+    await vi.waitFor(() => expect(wrapper.findComponent(ActionButton2LStub).props('options')).toHaveLength(4))
+    expect(await wrapper.findComponent(ActionButton2LStub).props('options')[3].action()).toBe(false)
+    expect(alertError).toHaveBeenCalledTimes(1)
+    expect(await alertError.mock.calls[0][1].action.handler()).toBe(true)
+    expect(getDownloadFormats).toHaveBeenCalledTimes(1)
+    expect(download).toHaveBeenNthCalledWith(2, 77, 'register_77.xlsx', 3, 'Zone 3', false, 'company')
   })
 
   it('shows export action when user is warehouse manager plus', () => {

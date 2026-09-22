@@ -747,6 +747,15 @@ describe('fetchWrapper', () => {
       expect(anchor2.download).toBe('single-quote.xlsx')
     })
 
+    it('keeps the custom zone filename when explicitly preferred over the response header', async () => {
+      mockDownloadResponse('attachment; filename="register_company.xlsx"')
+      await fetchWrapper.downloadFile(`${baseUrl}/download/file`, 'register_company_Zone_2.xlsx', {
+        preferDefaultFilename: true
+      })
+      const anchor = global.document.createElement.mock.results[0].value
+      expect(anchor.download).toBe('register_company_Zone_2.xlsx')
+    })
+
     it('should prefer decoded filename star over fallback filename parameter', async () => {
       mockDownloadResponse(
         'attachment; filename="5324721 __ 2 _______ _____ __________.xlsx"; filename*=UTF-8\'\'5324721%20%D0%BE%D0%B7%D0%BE%D0%BD.xlsx'

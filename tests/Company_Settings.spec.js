@@ -5,7 +5,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { Suspense } from 'vue'
+import { Suspense, ref } from 'vue'
 import CompanySettings from '@/dialogs/Company_Settings.vue'
 import { defaultGlobalStubs, createMockStore } from './helpers/test-utils.js'
 import { resolveAll } from './helpers/test-utils.js'
@@ -50,6 +50,7 @@ const mockAlertStore = createMockStore({
   error: vi.fn(),
   alert: null
 })
+let isSrLogistPlus = false
 
 const originalFileReader = global.FileReader
 let fileReaderResult = 'data:image/png;base64,NEW_STAMP'
@@ -75,6 +76,10 @@ vi.mock('@/stores/alert.store.js', () => ({
   useAlertStore: () => mockAlertStore
 }))
 
+vi.mock('@/stores/auth.store.js', () => ({
+  useAuthStore: () => ({ isSrLogistPlus })
+}))
+
 vi.mock('@/router', () => ({
   default: {
     push: vi.fn()
@@ -86,6 +91,9 @@ vi.mock('pinia', async () => {
   return {
     ...actual,
     storeToRefs: (store) => {
+      if (store.isSrLogistPlus !== undefined) {
+        return { isSrLogistPlus: ref(store.isSrLogistPlus) }
+      }
       if (store.countries !== undefined) {
         // Return the actual countries array from the store, not the mock constant
         return { countries: { value: store.countries } }
@@ -175,6 +183,7 @@ beforeEach(async () => {
   const router = await import('@/router')
   mockRouter = router.default
   vi.clearAllMocks()
+  isSrLogistPlus = false
   fileReaderResult = 'data:image/png;base64,NEW_STAMP'
   mockFileReaderInstance.readAsDataURL.mockClear()
   global.FileReader = vi.fn(function MockFileReader() {
@@ -211,7 +220,8 @@ describe('Company_Settings.vue', () => {
       await resolveAll()
 
       expect(wrapper.find('h1').text()).toBe('Регистрация компании')
-      expect(wrapper.find('button[type="submit"]').text()).toContain('Создать')
+      expect(wrapper.find('[data-testid="company-save-action"]').exists()).toBe(true)
+      expect(wrapper.get('button[type="submit"]').classes()).toContain('sr-only')
       expect(mockCompaniesStore.getById).not.toHaveBeenCalled()
     })
 
@@ -226,7 +236,8 @@ describe('Company_Settings.vue', () => {
       await resolveAll()
 
       expect(wrapper.find('h1').text()).toBe('Изменить информацию о компании')
-      expect(wrapper.find('button[type="submit"]').text()).toContain('Сохранить')
+      expect(wrapper.find('[data-testid="company-save-action"]').exists()).toBe(true)
+      expect(wrapper.get('button[type="submit"]').classes()).toContain('sr-only')
     })
 
     it('renders country options', async () => {
@@ -243,6 +254,24 @@ describe('Company_Settings.vue', () => {
       expect(countrySelect.exists()).toBe(true)
       // Check if the country options are rendered in the template
       expect(wrapper.html()).toContain('Российская Федерация')
+    })
+
+    it('offers the receiver format status table only to a senior logist editing a company', async () => {
+      isSrLogistPlus = true
+      const wrapper = mount(AsyncWrapper, {
+        props: { mode: 'edit', companyId: 42 },
+        global: {
+          stubs: {
+            ...defaultGlobalStubs,
+            CompanyRegisterOutputFormatsTable: {
+              props: ['companyId'],
+              template: '<div data-testid="output-table">{{ companyId }}</div>'
+            }
+          }
+        }
+      })
+      await resolveAll()
+      expect(wrapper.get('[data-testid="output-table"]').text()).toBe('42')
     })
 
     it('shows loading fallback initially', async () => {
@@ -504,6 +533,7 @@ describe('Company_Settings.vue', () => {
       const preview = wrapper.find('[data-testid="signature-stamp-preview"]')
       expect(preview.exists()).toBe(true)
       expect(preview.attributes('src')).toBe(mockCompany.titleSignatureStamp)
+      expect(wrapper.get('.signature-stamp').element.firstElementChild.classList.contains('signature-actions')).toBe(true)
     })
 
     it('uses action buttons without inline label text', async () => {
@@ -590,7 +620,7 @@ describe('Company_Settings.vue', () => {
   })
 
   describe('Navigation', () => {
-    it('navigates to companies list on cancel button click', async () => {
+    it('navigates to companies list on header cancel action', async () => {
       const wrapper = mount(AsyncWrapper, {
         props: { mode: 'create' },
         global: {
@@ -603,12 +633,54 @@ describe('Company_Settings.vue', () => {
 
       await resolveAll()
 
-      const cancelButton = wrapper.find('[data-testid="cancel-button"]')
+      const cancelButton = wrapper.find('[data-testid="company-cancel-action"]')
       expect(cancelButton.exists()).toBe(true)
-      expect(cancelButton.text()).toBe('Отменить')
 
       await cancelButton.trigger('click')
       expect(mockRouter.push).toHaveBeenCalledWith('/companies')
+    })
+
+    it('keeps the company form open when header cancel navigation fails and retries', async () => {
+      const wrapper = mount(AsyncWrapper, {
+        props: { mode: 'edit', companyId: 1 },
+        global: { stubs: defaultGlobalStubs }
+      })
+      await resolveAll()
+      mockRouter.push.mockRejectedValueOnce(new Error('offline'))
+      await wrapper.get('[data-testid="company-cancel-action"]').trigger('click')
+      await resolveAll()
+      expect(wrapper.find('form').exists()).toBe(true)
+      expect(mockAlertStore.error).toHaveBeenCalledTimes(1)
+      expect(mockAlertStore.error.mock.calls[0][1].action.label).toBe('Повторить')
+      await mockAlertStore.error.mock.calls[0][1].action.handler()
+      expect(mockRouter.push).toHaveBeenCalledTimes(2)
+    })
+
+    it('submits the same validated form from the header save action', async () => {
+      const wrapper = mount(AsyncWrapper, {
+        props: { mode: 'edit', companyId: 1 },
+        global: { stubs: defaultGlobalStubs },
+        attachTo: document.body
+      })
+      await resolveAll()
+      await wrapper.get('[data-testid="company-save-action"]').trigger('click')
+      await resolveAll()
+      expect(mockCompaniesStore.update).toHaveBeenCalledWith(1, expect.any(Object))
+      wrapper.unmount()
+    })
+
+    it('submits the create form from the header action', async () => {
+      const wrapper = mount(AsyncWrapper, {
+        props: { mode: 'create' },
+        global: { stubs: defaultGlobalStubs },
+        attachTo: document.body
+      })
+      await resolveAll()
+      await wrapper.get('[data-testid="company-save-action"]').trigger('click')
+      await resolveAll()
+      expect(mockCompaniesStore.create).toHaveBeenCalledWith(expect.any(Object))
+      expect(mockRouter.push).toHaveBeenCalledWith('/companies')
+      wrapper.unmount()
     })
   })
 

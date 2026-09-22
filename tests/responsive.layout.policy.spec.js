@@ -21,6 +21,11 @@ describe('responsive layout policy', () => {
     expect(scrollableTableCss).not.toContain('overflow: visible')
   })
 
+  it('applies the shared blue header style to plain and Vuetify tables', () => {
+    const mainCss = readSource('src/assets/main.css')
+    expect(mainCss).toMatch(/\.v-data-table thead th,\s*\.v-data-table-server thead th,\s*\.app-table thead th\s*\{[^}]*background-color:\s*var\(--gtc-color-1\)/s)
+  })
+
   it('does not duplicate the shared wide-table contract in route components', () => {
     const migratedFiles = [
       'src/lists/StopWords_List.vue',

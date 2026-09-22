@@ -256,6 +256,7 @@ const {
   validationState,
   progressPercent,
   actionDialog: actionDialogState,
+  companyFormatName,
   generalActionsDisabled,
   validateRegisterSw: validateRegisterSwHeader,
   validateRegisterSwEx: validateRegisterSwHeaderEx,
@@ -595,6 +596,7 @@ function getGenericTemplateHeaders() {
       />
       <RegisterHeaderActionsBar
         :item="registersStore.item"
+        :company-format-name="companyFormatName"
         :disabled="generalActionsDisabled"
         :mutation-disabled="registersStore.item?.readOnly === true"
         :loading="runningAction || loading || isInitializing"

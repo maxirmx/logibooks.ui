@@ -5,6 +5,8 @@
 import { computed, watch, ref, unref, reactive } from 'vue'
 import { useAppConfirm } from '@/composables/useAppConfirm.js'
 import { useActionDialog } from '@/composables/useActionDialog.js'
+import { useRegisterDownloadFlow } from '@/composables/useRegisterDownloadFlow.js'
+import { COMPANY_REGISTER_OUTPUT_TYPES } from '@/helpers/company.constants.js'
 import { FeacnMatchMode } from '@/models/feacn.match.mode.js'
 import { SwValidationMatchMode } from '@/models/sw.validation.match.mode.js'
 import {
@@ -414,6 +416,7 @@ export function useRegisterHeaderActions({
   const runningActionRef = runningAction ?? ref(false)
 
   const { actionDialogState, showActionDialog, hideActionDialog } = useActionDialog()
+  const downloadFlow = useRegisterDownloadFlow(registersStore, alertStore)
   const confirm = useAppConfirm()
   const weightCorrectionChoicePending = ref(false)
   const passportConfirmationPending = ref(false)
@@ -425,6 +428,10 @@ export function useRegisterHeaderActions({
     }
     return register
   })
+
+  watch(() => currentRegister.value?.id, () => {
+    void downloadFlow.loadFormats(currentRegister.value)
+  }, { immediate: true })
 
   const registerReady = computed(() => !!currentRegister.value && !registerLoadingRef.value)
 
@@ -450,8 +457,8 @@ export function useRegisterHeaderActions({
     }
 
     try {
-      await action(register)
-      return true
+      const result = await action(register)
+      return result !== false
     } catch (err) {
       alertStore.error(err?.message || String(err))
       return false
@@ -552,8 +559,27 @@ export function useRegisterHeaderActions({
     await runXmlActionWithDialog(exportAllXmlNotifications, 'export-all-xml-notifications')
   }
 
-  const runDownloadRegister = async () => {
-    await runDownloadActionWithDialog(downloadRegister, 'download-register')
+  const runDownloadRegister = async (format = 'generic') => {
+    const registerType = Number(currentRegister.value?.registerType || currentRegister.value?.companyId)
+    if (!COMPANY_REGISTER_OUTPUT_TYPES.includes(registerType)) {
+      return await runDownloadActionWithDialog(downloadRegister, 'download-register')
+    }
+    if (generalActionsDisabled.value) return false
+    try {
+      const applyWeightCorrection = getWeightCorrection(currentRegister.value).canCorrect
+        ? await chooseWeightCorrectionForCurrentRegister()
+        : false
+      return await runWithLock((register) => downloadFlow.download({
+        register,
+        format,
+        applyWeightCorrection,
+        onDownloadStart: () => showActionDialog('download-register'),
+        onDownloadEnd: hideActionDialog
+      }), { lock: true, checkDisabled: false })
+    } catch (error) {
+      alertStore.error(error, { fallback: 'Не удалось выбрать параметры выгрузки' })
+      return false
+    }
   }
 
   const runDownloadAdditionalRestrictions = async () => {
@@ -723,6 +749,7 @@ export function useRegisterHeaderActions({
     validationState,
     progressPercent,
     actionDialog: actionDialogState,
+    companyFormatName: downloadFlow.companyFormatName,
     generalActionsDisabled,
     validateRegisterSw: runValidateRegisterSw,
     validateRegisterSwEx: runValidateRegisterSwEx,

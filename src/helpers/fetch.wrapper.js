@@ -346,7 +346,7 @@ function parseContentDispositionFilename(disposition) {
  * Downloads a file from the server and initiates browser download
  * @param {string} fileUrl - The URL to download from
  * @param {string} defaultFilename - Fallback filename if none provided in headers
- * @param {{ method?: string, body?: object, pollAccepted?: boolean, pollIntervalMs?: number, onProgress?: function }} options - Optional authenticated request and polling options
+ * @param {{ method?: string, body?: object, pollAccepted?: boolean, pollIntervalMs?: number, onProgress?: function, preferDefaultFilename?: boolean }} options - Optional authenticated request and polling options
  * @returns {Promise<boolean>} - True if download initiated successfully
  */
 async function downloadFile(fileUrl, defaultFilename, options = {}) {
@@ -399,7 +399,7 @@ async function downloadFile(fileUrl, defaultFilename, options = {}) {
   let filename = defaultFilename
   const disposition = response.headers.get('Content-Disposition')
   const dispositionFilename = parseContentDispositionFilename(disposition)
-  if (dispositionFilename) {
+  if (dispositionFilename && options.preferDefaultFilename !== true) {
     filename = dispositionFilename
   }
   

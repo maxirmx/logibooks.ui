@@ -997,11 +997,13 @@ export const useRegistersStore = defineStore('registers', () => {
     filename,
     forZone = null,
     zoneLabel = null,
-    applyWeightCorrection = false
+    applyWeightCorrection = false,
+    format = 'generic'
   ) {
     const baseFilename = filename || `register_${id}.xlsx`
     const suffix = normalizeDownloadSuffix(forZone, zoneLabel)
-    const targetFilename = withZoneSuffix(baseFilename, suffix)
+    const formatFilename = format === 'company' ? withZoneSuffix(baseFilename, '_company') : baseFilename
+    const targetFilename = withZoneSuffix(formatFilename, suffix)
     const params = new URLSearchParams()
 
     if (forZone !== null && forZone !== undefined && forZone !== 0) {
@@ -1012,18 +1014,35 @@ export const useRegistersStore = defineStore('registers', () => {
       params.set('applyWeightCorrection', 'true')
     }
 
+    if (format === 'company') {
+      params.set('format', 'company')
+    }
+
     const query = params.toString() ? `?${params.toString()}` : ''
 
     loading.value = true
     error.value = null
     try {
       // Use downloadFile helper to trigger browser download
-      return await fetchWrapper.downloadFile(`${baseUrl}/${id}/download${query}`, targetFilename)
+      const url = `${baseUrl}/${id}/download${query}`
+      return format === 'company'
+        ? await fetchWrapper.downloadFile(url, targetFilename, { preferDefaultFilename: true })
+        : await fetchWrapper.downloadFile(url, targetFilename)
     } catch (err) {
       error.value = err
       throw err
     } finally {
       loading.value = false
+    }
+  }
+
+  async function getDownloadFormats(id) {
+    error.value = null
+    try {
+      return await fetchWrapper.get(`${baseUrl}/${id}/download-formats`)
+    } catch (err) {
+      error.value = err
+      throw err
     }
   }
 
@@ -1110,6 +1129,7 @@ export const useRegistersStore = defineStore('registers', () => {
     downloadDo1File,
     downloadCmrFile,
     download,
+    getDownloadFormats,
     downloadPackingList,
     downloadTechdoc,
     downloadAdditionalRestrictions,

@@ -14,6 +14,7 @@ import {
   normalizeParcelNavigationMode
 } from '@/helpers/parcel.navigation.helpers.js'
 import { scanjobMonitorArea } from '@/helpers/scanjob.monitor.helpers.js'
+import { COMPANY_REGISTER_OUTPUT_TYPES } from '@/helpers/company.constants.js'
 
 const publicPages = ['/recover', '/register']
 const loginPages = ['/login']
@@ -129,6 +130,19 @@ const router = createRouter({
       props: (route) => ({
         id: Number(route.params.id)
       }),
+      meta: { reqAdminOrSrLogist: true }
+    },
+    {
+      path: '/company/edit/:id/register-output/:registerType',
+      name: 'Формат выгрузки реестра компании',
+      component: () => import('@/views/CompanyRegisterOutputFormat_EditView.vue'),
+      props: (route) => ({
+        id: Number(route.params.id),
+        registerType: Number(route.params.registerType)
+      }),
+      beforeEnter: (to) => COMPANY_REGISTER_OUTPUT_TYPES.includes(Number(to.params.registerType))
+        ? true
+        : `/company/edit/${to.params.id}`,
       meta: { reqAdminOrSrLogist: true }
     },
     {

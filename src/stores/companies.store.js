@@ -96,6 +96,48 @@ export const useCompaniesStore = defineStore('companies', () => {
     }
   }
 
+  async function getRegisterOutputColumns(registerType) {
+    error.value = null
+    try {
+      return await fetchWrapper.get(`${apiUrl}/register-output-columns?registerType=${registerType}`)
+    } catch (err) {
+      error.value = err
+      throw err
+    }
+  }
+
+  async function getRegisterOutputFormat(id, registerType) {
+    error.value = null
+    try {
+      return await fetchWrapper.get(`${baseUrl}/${id}/register-output-format?registerType=${registerType}`)
+    } catch (err) {
+      error.value = err
+      throw err
+    }
+  }
+
+  async function saveRegisterOutputFormat(id, registerType, format) {
+    error.value = null
+    try {
+      await fetchWrapper.put(`${baseUrl}/${id}/register-output-format?registerType=${registerType}`, format)
+      return true
+    } catch (err) {
+      error.value = err
+      throw err
+    }
+  }
+
+  async function deleteRegisterOutputFormat(id, registerType) {
+    error.value = null
+    try {
+      await fetchWrapper.delete(`${baseUrl}/${id}/register-output-format?registerType=${registerType}`)
+      return true
+    } catch (err) {
+      error.value = err
+      throw err
+    }
+  }
+
   return {
     companies,
     company,
@@ -105,6 +147,10 @@ export const useCompaniesStore = defineStore('companies', () => {
     getById,
     create,
     update,
-    remove
+    remove,
+    getRegisterOutputColumns,
+    getRegisterOutputFormat,
+    saveRegisterOutputFormat,
+    deleteRegisterOutputFormat
   }
 })

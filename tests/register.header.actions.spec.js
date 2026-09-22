@@ -11,6 +11,7 @@ import {
   useRegisterHeaderActions
 } from '@/helpers/register.actions.js'
 import { OP_MODE_PAPERWORK } from '@/helpers/op.mode.js'
+import { WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
 
 const confirmMock = vi.hoisted(() => vi.fn())
 
@@ -65,6 +66,7 @@ describe('useRegisterHeaderActions', () => {
       generateOrdinary: vi.fn().mockResolvedValue(),
       generateExcise: vi.fn().mockResolvedValue(),
       download: vi.fn().mockResolvedValue(),
+      getDownloadFormats: vi.fn().mockResolvedValue({ company: { available: true, name: 'Receiver' } }),
       downloadAdditionalRestrictions: vi.fn().mockResolvedValue(),
       downloadPackingList: vi.fn().mockResolvedValue(),
       downloadTajikistanManifestFile: vi.fn().mockResolvedValue(),
@@ -83,6 +85,44 @@ describe('useRegisterHeaderActions', () => {
     registerLoading = ref(false)
     loadParcels = vi.fn().mockResolvedValue()
     isComponentMounted = ref(true)
+  })
+
+  it('offers company output for a WbrN paperwork download and keeps the action locked', async () => {
+    registersStore.item.registerType = WBRN_REGISTER_ID
+    const deferred = createDeferred()
+    registersStore.download.mockReturnValueOnce(deferred.promise)
+    const actions = useRegisterHeaderActions({
+      registersStore, alertStore, runningAction, tableLoading, registerLoading,
+      loadParcels, isComponentMounted
+    })
+    await Promise.resolve()
+    expect(actions.companyFormatName.value).toBe('Receiver')
+    const first = actions.downloadRegister('company')
+    await Promise.resolve()
+    expect(runningAction.value).toBe(true)
+    expect(await actions.downloadRegister('generic')).toBe(false)
+    deferred.resolve(true)
+    expect(await first).toBe(true)
+    expect(registersStore.getDownloadFormats).toHaveBeenCalledTimes(1)
+    expect(registersStore.download).toHaveBeenCalledWith(1, 'register.xlsx', null, undefined, false, 'company')
+    expect(actions.actionDialog.show).toBe(false)
+    expect(alertStore.error).not.toHaveBeenCalled()
+  })
+
+  it('reports a supported paperwork download error once and retries the same format', async () => {
+    registersStore.item.registerType = WBRN_REGISTER_ID
+    registersStore.download.mockRejectedValueOnce(new Error('download failed'))
+    const actions = useRegisterHeaderActions({
+      registersStore, alertStore, runningAction, tableLoading, registerLoading,
+      loadParcels, isComponentMounted
+    })
+    await Promise.resolve()
+    const first = actions.downloadRegister('company')
+    expect(await first).toBe(false)
+    expect(alertStore.error).toHaveBeenCalledTimes(1)
+    expect(await alertStore.error.mock.calls[0][1].action.handler()).toBe(true)
+    expect(registersStore.getDownloadFormats).toHaveBeenCalledTimes(1)
+    expect(registersStore.download).toHaveBeenNthCalledWith(2, 1, 'register.xlsx', null, undefined, false, 'company')
   })
 
   it('initiates extended FEACN lookup with withFCMatch=true', async () => {

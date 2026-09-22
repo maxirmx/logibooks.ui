@@ -1592,6 +1592,27 @@ describe('registers store', () => {
   })
 
   describe('download method', () => {
+    it('requests a company layout with a distinct filename and retains zone and weight choices', async () => {
+      const store = useRegistersStore()
+      fetchWrapper.downloadFile.mockResolvedValue(true)
+      await store.download(10, 'register_10.xlsx', 15, 'Зона 1', true, 'company')
+      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
+        `${apiUrl}/registers/10/download?forZone=15&applyWeightCorrection=true&format=company`,
+        'register_10_company_Зона_1.xlsx',
+        { preferDefaultFilename: true }
+      )
+    })
+
+    it('fetches availability and propagates a discovery error', async () => {
+      const store = useRegistersStore()
+      fetchWrapper.get.mockResolvedValueOnce({ company: { available: true } })
+      expect(await store.getDownloadFormats(10)).toEqual({ company: { available: true } })
+      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/registers/10/download-formats`)
+      const failure = new Error('offline')
+      fetchWrapper.get.mockRejectedValueOnce(failure)
+      await expect(store.getDownloadFormats(10)).rejects.toBe(failure)
+      expect(store.error).toBe(failure)
+    })
     it('calls downloadFile with correct parameters', async () => {
       const store = useRegistersStore()
       fetchWrapper.downloadFile.mockResolvedValue(true)

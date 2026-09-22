@@ -41,6 +41,12 @@ These instructions apply to the entire repository. Follow them for every new fea
 - Color must not be the only indication of meaning: error and warning dialogs also use a tone indicator, while destructive confirmations use explicit action text.
 - `ParcelStatusBulkChangeDialog.vue` is an explicit legacy exception and must not be restyled without a separate user request.
 
+## Table styling
+
+- Reuse the shared table styles in `src/assets/main.css`, including the blue header rule, rather than duplicating table appearance in scoped component CSS.
+- Wrap tables in `table-card`. Vuetify data tables use `interlaced-table`; plain HTML tables use `app-table-card`, `app-table-scroll`, `app-table`, and `interlaced-table` for the same card, compact rows, and alternating backgrounds.
+- Use `app-table-actions` for actions in plain table cells. Keep only table-specific column widths and responsive layout rules in the component.
+
 ## Parcel navigation context
 
 - Every route that opens parcel editing must carry an explicit operation `mode`: `modePaperwork` for customs/paperwork workflows or `modeWarehouse` for warehouse workflows.

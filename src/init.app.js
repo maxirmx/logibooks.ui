@@ -9,6 +9,7 @@ import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
 // ------------ fontawesome --------------
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { faSquarePlus as faSquarePlusRegular } from '@fortawesome/free-regular-svg-icons'
 
 import {
   faEye,
@@ -17,6 +18,9 @@ import {
   faPenToSquare,
   faPlay,
   faPlus,
+  faSquarePlus,
+  faPersonCirclePlus,
+  faPlugCirclePlus,
   faMinus,
   faTrashCan,
   faUser,
@@ -27,9 +31,6 @@ import {
   faUpload,
   faCheck,
   faXmark,
-  faToggleOn,
-  faToggleOff,
-  faCheckCircle,
   faCircleCheck,
   faCircleQuestion,
   faCircleExclamation,
@@ -93,12 +94,16 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 
 library.add(
+  faSquarePlusRegular,
   faEye,
   faEyeSlash,
   faPen,
   faPenToSquare,
   faPlay,
   faPlus,
+  faSquarePlus,
+  faPersonCirclePlus,
+  faPlugCirclePlus,
   faMinus,
   faTrashCan,
   faUser,
@@ -109,9 +114,6 @@ library.add(
   faUpload,
   faCheck,
   faXmark,
-  faToggleOn,
-  faToggleOff,
-  faCheckCircle,
   faCircleCheck,
   faCircleQuestion,
   faCircleExclamation,

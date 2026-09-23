@@ -91,5 +91,11 @@ async function save() {
 
 <style scoped>
 .register-output-heading { display: flex; flex-direction: column; }
-.register-output-heading__company { font-size: 0.6em; font-weight: 500; line-height: 1.3; }
+.register-output-heading__company {
+  font-size: 0.6em;
+  font-weight: 500;
+  line-height: 1.3;
+  /* Let the second heading line occupy the usual space before the divider. */
+  margin-bottom: -1.3em;
+}
 </style>

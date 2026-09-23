@@ -1,6 +1,6 @@
 /* @vitest-environment jsdom */
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, nextTick } from 'vue'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { useRegisterDownloadFlow } from '@/composables/useRegisterDownloadFlow.js'
@@ -22,9 +22,59 @@ function mountFlow(store = alertStore) {
 }
 
 describe('shared register download flow', () => {
+  afterEach(() => vi.restoreAllMocks())
   beforeEach(() => {
     registersStore = { getDownloadFormats: vi.fn(), download: vi.fn().mockResolvedValue(true) }
     alertStore = { error: vi.fn() }
+  })
+
+  it.each(['resolve', 'reject'])('preserves the next page on late download %s and still cleans up', async outcome => {
+    let resolve, reject
+    registersStore.download.mockReturnValueOnce(new Promise((res, rej) => { resolve = res; reject = rej }))
+    const diagnostic = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const alerts = useAlertStore()
+    const visible = ref(true)
+    let flow
+    const child = defineComponent({ setup() {
+      flow = useRegisterDownloadFlow(registersStore, alerts)
+      return () => null
+    } })
+    const wrapper = mount(defineComponent({ setup: () => () => h('div', [
+      h(PageAlertRegion), visible.value ? h(child) : null
+    ]) }), { global: { plugins: [pinia] } })
+    const onDownloadStart = vi.fn(), onDownloadEnd = vi.fn()
+    const pending = flow.download({ register: register(WBRN_REGISTER_ID), onDownloadStart, onDownloadEnd })
+    visible.value = false
+    await nextTick()
+    alerts.info('Next page')
+    if (outcome === 'resolve') resolve(true)
+    else reject(new Error('late download'))
+    expect(await pending).toBe(false)
+    await flush()
+    expect(wrapper.text()).toContain('Next page')
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+    expect(onDownloadStart).toHaveBeenCalledTimes(1)
+    expect(onDownloadEnd).toHaveBeenCalledTimes(1)
+    expect(flow.pending.value).toBe(false)
+    expect(diagnostic).toHaveBeenCalledTimes(outcome === 'reject' ? 1 : 0)
+    expect(await flow.download({ register: register(WBRN_REGISTER_ID), onDownloadStart })).toBe(false)
+    expect(registersStore.download).toHaveBeenCalledTimes(1)
+    expect(onDownloadStart).toHaveBeenCalledTimes(1)
+    wrapper.unmount()
+  })
+
+  it.each(['download', 'getDownloadFormats'])('does not retry %s after unmount', async method => {
+    registersStore[method].mockRejectedValueOnce(new Error('failed'))
+    const { flow, wrapper } = mountFlow()
+    if (method === 'download') await flow.download({ register: register(WBRN_REGISTER_ID) })
+    else await flow.loadFormats(register(WBRN_REGISTER_ID))
+    expect(alertStore.error).toHaveBeenCalledTimes(1)
+    const retry = alertStore.error.mock.calls[0][1].action.handler
+    wrapper.unmount()
+    expect(await retry()).toBe(false)
+    expect(registersStore[method]).toHaveBeenCalledTimes(1)
   })
 
   it.each([WBRN_REGISTER_ID, OZON_COMPANY_ID, GTC_COMPANY_ID])(

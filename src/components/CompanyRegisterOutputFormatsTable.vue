@@ -3,7 +3,8 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application 
 
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
+import { reportError } from '@/helpers/error.helpers.js'
 import router from '@/router'
 import ActionButton from '@/components/ActionButton.vue'
 import { OFFERED_COMPANY_REGISTER_OUTPUT_TYPES } from '@/helpers/company.constants.js'
@@ -16,6 +17,8 @@ const props = defineProps({ companyId: { type: Number, required: true } })
 const companiesStore = useCompaniesStore()
 const alertStore = useAlertStore()
 const confirm = useAppConfirm()
+let disposed = false
+onUnmounted(() => { disposed = true })
 const formats = reactive({})
 const loading = ref(false)
 const loaded = ref(false)
@@ -32,6 +35,7 @@ const rows = computed(() => OFFERED_COMPANY_REGISTER_OUTPUT_TYPES.map((registerT
 })))
 
 async function load() {
+  if (disposed) return false
   loading.value = true
   try {
     const [results] = await Promise.all([
@@ -41,10 +45,16 @@ async function load() {
       }))),
       companiesStore.getAll()
     ])
+    if (disposed) return false
     for (const { registerType, format } of results) formats[registerType] = format
     loaded.value = true
     return true
   } catch (error) {
+    if (disposed) {
+      // The user has left this page; retain diagnostics without publishing a stale alert.
+      reportError(error, { context: 'register output summary load after disposal' })
+      return false
+    }
     alertStore.error(error, {
       fallback: 'Не удалось загрузить форматы выгрузки',
       action: { label: 'Повторить', handler: load }
@@ -69,14 +79,20 @@ async function edit(registerType) {
 }
 
 async function removeConfirmed(registerType) {
-  if (deletingType.value != null) return false
+  if (disposed || deletingType.value != null) return false
   deletingType.value = registerType
   try {
     await companiesStore.deleteRegisterOutputFormat(props.companyId, registerType)
+    if (disposed) return false
     formats[registerType] = null
     alertStore.success('Формат выгрузки удалён')
     return true
   } catch (error) {
+    if (disposed) {
+      // Do not replace the next page's alert with a completed delete failure.
+      reportError(error, { context: 'register output summary delete after disposal' })
+      return false
+    }
     alertStore.error(error, {
       fallback: 'Не удалось удалить формат выгрузки',
       action: { label: 'Повторить', handler: () => removeConfirmed(registerType) }
@@ -88,7 +104,7 @@ async function removeConfirmed(registerType) {
 }
 
 async function remove(registerType) {
-  if (deletingType.value != null || !formats[registerType]) return false
+  if (disposed || deletingType.value != null || !formats[registerType]) return false
   try {
     const confirmed = await confirm({
       title: 'Удалить формат выгрузки?',
@@ -96,9 +112,14 @@ async function remove(registerType) {
       confirmationText: 'Удалить',
       cancellationText: 'Отменить'
     })
-    if (!confirmed) return false
+    if (disposed || !confirmed) return false
     return removeConfirmed(registerType)
   } catch (error) {
+    if (disposed) {
+      // Confirmation teardown must not publish an alert on another page.
+      reportError(error, { context: 'register output summary confirmation after disposal' })
+      return false
+    }
     alertStore.error(error, {
       fallback: 'Не удалось подтвердить удаление формата',
       action: { label: 'Повторить', handler: () => remove(registerType) }

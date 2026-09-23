@@ -1,5 +1,6 @@
 import { getCurrentInstance, onUnmounted, ref } from 'vue'
 import { COMPANY_REGISTER_OUTPUT_TYPES } from '@/helpers/company.constants.js'
+import { reportError } from '@/helpers/error.helpers.js'
 
 function supportsCompanyFormat(register) {
   return COMPANY_REGISTER_OUTPUT_TYPES.includes(Number(register?.registerType || register?.companyId))
@@ -12,6 +13,7 @@ export function useRegisterDownloadFlow(registersStore, alertStore) {
   let disposed = false
 
   async function loadFormats(register) {
+    if (disposed) return false
     const request = ++formatRequest
     companyFormatName.value = ''
     if (!register?.id || !supportsCompanyFormat(register)) return
@@ -33,7 +35,7 @@ export function useRegisterDownloadFlow(registersStore, alertStore) {
   }
 
   async function runCaptured(request) {
-    if (pending.value) return false
+    if (disposed || pending.value) return false
     pending.value = true
     try {
       request.onDownloadStart?.()
@@ -59,8 +61,13 @@ export function useRegisterDownloadFlow(registersStore, alertStore) {
       } finally {
         request.onDownloadEnd?.()
       }
-      return true
+      return !disposed
     } catch (error) {
+      if (disposed) {
+        // The in-flight download still runs its cleanup, but no longer owns page alerts.
+        reportError(error, { context: 'register download after disposal' })
+        return false
+      }
       alertStore.error(error, {
         fallback: 'Не удалось выгрузить реестр',
         action: { label: 'Повторить', handler: () => runCaptured(request) }

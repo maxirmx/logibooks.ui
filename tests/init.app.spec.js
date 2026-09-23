@@ -79,6 +79,11 @@ describe('init.app', () => {
     expect(libraryAdd).toHaveBeenCalledTimes(1)
     const registeredIconNames = libraryAdd.mock.calls[0].map((icon) => icon?.iconName)
     expect(registeredIconNames).toEqual(expect.arrayContaining(['passport', 'user', 'robot']))
+    const registeredIcons = libraryAdd.mock.calls[0].map(icon => `${icon.prefix}:${icon.iconName}`)
+    expect(registeredIcons).toEqual(expect.arrayContaining([
+      'fas:square-plus', 'far:square-plus', 'fas:person-circle-plus', 'fas:plug-circle-plus'
+    ]))
+    expect(new Set(registeredIcons).size).toBe(registeredIcons.length)
   })
 
   it('installs generic reporters for Vue and unhandled promise errors', async () => {

@@ -214,7 +214,7 @@ describe('companies store', () => {
       const store = useCompaniesStore()
       fetchWrapper.put.mockResolvedValueOnce({})
       fetchWrapper.delete.mockResolvedValueOnce({})
-      const layout = { schemaVersion: 1, registerType: 8, entries: [{ kind: 'flexibleBlock' }] }
+      const layout = { schemaVersion: 1, registerType: 8, entries: [{ kind: 'optional', title: 'Extra' }] }
       expect(await store.saveRegisterOutputFormat(42, 8, layout)).toBe(true)
       expect(await store.deleteRegisterOutputFormat(42, 8)).toBe(true)
       expect(fetchWrapper.put).toHaveBeenCalledWith(`${apiUrl}/companies/42/register-output-format?registerType=8`, layout)

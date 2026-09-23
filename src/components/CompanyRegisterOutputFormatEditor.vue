@@ -3,7 +3,8 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application 
 
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+import { reportError } from '@/helpers/error.helpers.js'
 import ActionButton from '@/components/ActionButton.vue'
 import {
   COMPANY_REGISTER_OUTPUT_TYPES,
@@ -22,10 +23,14 @@ const props = defineProps({
 const companiesStore = useCompaniesStore()
 const alertStore = useAlertStore()
 const confirm = useAppConfirm()
+let disposed = false
+onUnmounted(() => { disposed = true })
 const selectedType = ref(props.initialRegisterType)
 const inputChoice = ref('')
 const generatedChoice = ref('')
 const activeAddMode = ref(null)
+const titleEdits = reactive(new Map())
+const vFocus = { mounted: (element) => element.focus() }
 const loading = ref(false)
 const saving = ref(false)
 const namesLoaded = ref(false)
@@ -34,6 +39,7 @@ const states = reactive(Object.fromEntries(COMPANY_REGISTER_OUTPUT_TYPES.map((re
 ])))
 const current = computed(() => states[selectedType.value])
 const canSave = computed(() => Boolean(current.value?.loaded &&
+  !current.value.entries.some(entry => titleEdits.has(entry)) &&
   current.value.entries.some((entry) => entry.kind !== 'empty')))
 const sortedInputColumns = computed(() => [...(current.value?.catalog?.inputColumns || [])]
   .sort((left, right) => Number(left.columnId) - Number(right.columnId)))
@@ -69,14 +75,16 @@ watch(() => props.initialRegisterType, (registerType) => {
 })
 
 function copyEntries(entries = []) {
-  return entries.map(({ kind, columnId, generatedKey }) => ({
+  return entries.map(({ kind, columnId, generatedKey, title }) => ({
     kind,
     ...(columnId != null ? { columnId } : {}),
-    ...(generatedKey != null ? { generatedKey } : {})
+    ...(generatedKey != null ? { generatedKey } : {}),
+    ...(title != null ? { title } : {})
   }))
 }
 
 async function loadAll() {
+  if (disposed) return false
   loading.value = true
   try {
     const types = props.standalone
@@ -92,6 +100,7 @@ async function loadAll() {
         return { registerType, catalog, format }
       }))
     ])
+    if (disposed) return false
     namesLoaded.value = true
     for (const { registerType, catalog, format } of results) {
       const state = states[registerType]
@@ -103,6 +112,11 @@ async function loadAll() {
     }
     return true
   } catch (error) {
+    if (disposed) {
+      // This editor no longer owns the visible page; record the late failure without an alert.
+      reportError(error, { context: 'register output editor load after disposal' })
+      return false
+    }
     alertStore.error(error, {
       fallback: 'Не удалось загрузить форматы выгрузки',
       action: { label: 'Повторить', handler: loadAll }
@@ -174,13 +188,36 @@ function addAllInputs() {
   generatedChoice.value = ''
 }
 
-function addFlexible() {
+function addOptional() {
+  current.value.entries.push({ kind: 'optional', title: '' })
   activeAddMode.value = null
-  if (current.value.entries.some((entry) => entry.kind === 'flexibleBlock')) {
-    alertStore.error('Блок дополнительных столбцов уже добавлен')
+  startTitleEdit(current.value.entries.length - 1, true)
+}
+
+function startTitleEdit(index, isNew = false) {
+  const entry = current.value.entries[index]
+  titleEdits.set(entry, { title: entry.title, isNew })
+}
+
+function acceptTitleEdit(index) {
+  const entry = current.value.entries[index]
+  const title = titleEdits.get(entry).title
+  const normalized = title.trim().toUpperCase()
+  if (!normalized || current.value.entries.some(other => other !== entry &&
+      other.kind === 'optional' && other.title.trim().toUpperCase() === normalized)) {
+    alertStore.error(`Столбец ${index + 1}: Укажите непустое, неповторяющееся название исходного дополнительного столбца.`)
     return
   }
-  addEntry({ kind: 'flexibleBlock' })
+  entry.title = title
+  current.value.dirty = true
+  titleEdits.delete(entry)
+}
+
+function cancelTitleEdit(index) {
+  const entry = current.value.entries[index]
+  const isNew = titleEdits.get(entry).isNew
+  titleEdits.delete(entry)
+  if (isNew) current.value.entries.splice(index, 1)
 }
 
 function move(index, direction) {
@@ -192,45 +229,68 @@ function move(index, direction) {
 }
 
 function remove(index) {
+  titleEdits.delete(current.value.entries[index])
   current.value.entries.splice(index, 1)
   current.value.dirty = true
 }
 
+function inputColumnLabel(column) {
+  return [column.name, ...column.aliases].join(' / ')
+}
+
 function entryLabel(entry) {
   if (entry.kind === 'input') {
-    return current.value.catalog?.inputColumns?.find((column) => column.columnId === entry.columnId)?.name
-      || `Столбец ${entry.columnId}`
+    const column = current.value.catalog?.inputColumns?.find((column) => column.columnId === entry.columnId)
+    return column ? inputColumnLabel(column) : `Столбец ${entry.columnId}`
   }
   if (entry.kind === 'generated') {
     return current.value.catalog?.generatedColumns?.find((column) => column.generatedKey === entry.generatedKey)?.name
       || entry.generatedKey
   }
-  if (entry.kind === 'flexibleBlock') return 'Блок дополнительных столбцов из файла'
+  if (entry.kind === 'optional') return entry.title
   return ''
 }
 
 function entryTypeLabel(entry) {
+  if (entry.kind === 'optional') return 'исходный дополнительный'
   if (entry.kind === 'generated') return 'вычисляемый'
   if (entry.kind === 'empty') return 'пустой'
   return 'исходный'
 }
 
 async function save(registerType = selectedType.value) {
-  if (saving.value || loading.value) return false
+  if (disposed || saving.value || loading.value) return false
   const state = states[registerType]
+  if (state.entries.some(entry => titleEdits.has(entry))) return false
   if (!state.entries.some((entry) => entry.kind !== 'empty')) {
-    alertStore.error('Добавьте исходный, вычисляемый столбец или гибкий блок')
+    alertStore.error('Добавьте исходный, исходный дополнительный или вычисляемый столбец')
     return false
+  }
+  const titles = new Set()
+  for (const [index, entry] of state.entries.entries()) {
+    if (entry.kind !== 'optional') continue
+    const title = entry.title.trim().toUpperCase()
+    if (!title || titles.has(title)) {
+      alertStore.error(`Столбец ${index + 1}: Укажите непустое, неповторяющееся название исходного дополнительного столбца.`)
+      return false
+    }
+    titles.add(title)
   }
   const format = { schemaVersion: 1, registerType, entries: copyEntries(state.entries) }
   saving.value = true
   try {
     await companiesStore.saveRegisterOutputFormat(props.companyId, registerType, format)
+    if (disposed) return false
     state.configured = true
     state.dirty = false
     alertStore.success('Формат выгрузки сохранён')
     return true
   } catch (error) {
+    if (disposed) {
+      // A completed request belongs to the closed editor, not the next page.
+      reportError(error, { context: 'register output save after disposal' })
+      return false
+    }
     const details = error?.data?.details
     if (Array.isArray(details) && details.length > 0) {
       alertStore.error(details.map((detail) => `Столбец ${detail.entryIndex + 1}: ${detail.message}`).join('; '))
@@ -247,10 +307,11 @@ async function save(registerType = selectedType.value) {
 }
 
 async function removeConfirmed(registerType) {
-  if (saving.value) return false
+  if (disposed || saving.value) return false
   saving.value = true
   try {
     await companiesStore.deleteRegisterOutputFormat(props.companyId, registerType)
+    if (disposed) return false
     const state = states[registerType]
     state.entries = []
     state.configured = false
@@ -258,6 +319,11 @@ async function removeConfirmed(registerType) {
     alertStore.success('Формат выгрузки удалён')
     return true
   } catch (error) {
+    if (disposed) {
+      // Keep late delete failures diagnostic-only after leaving the editor.
+      reportError(error, { context: 'register output delete after disposal' })
+      return false
+    }
     alertStore.error(error, {
       fallback: 'Не удалось удалить формат выгрузки',
       action: { label: 'Повторить', handler: () => removeConfirmed(registerType) }
@@ -268,17 +334,29 @@ async function removeConfirmed(registerType) {
   }
 }
 
-async function removeSaved() {
-  if (!current.value.configured || saving.value) return false
-  const registerType = selectedType.value
-  const confirmed = await confirm({
-    title: 'Удалить формат выгрузки?',
-    content: 'Для этого типа реестра останется обычный формат.',
-    confirmationText: 'Удалить',
-    cancellationText: 'Отменить'
-  })
-  if (!confirmed) return false
-  return removeConfirmed(registerType)
+async function removeSaved(registerType = selectedType.value) {
+  if (disposed || !states[registerType].configured || saving.value) return false
+  try {
+    const confirmed = await confirm({
+      title: 'Удалить формат выгрузки?',
+      content: 'Для этого типа реестра останется обычный формат.',
+      confirmationText: 'Удалить',
+      cancellationText: 'Отменить'
+    })
+    if (disposed || !confirmed) return false
+    return removeConfirmed(registerType)
+  } catch (error) {
+    if (disposed) {
+      // A confirmation belonging to a closed editor must not notify the next page.
+      reportError(error, { context: 'register output confirmation after disposal' })
+      return false
+    }
+    alertStore.error(error, {
+      fallback: 'Не удалось подтвердить удаление формата',
+      action: { label: 'Повторить', handler: () => removeSaved(registerType) }
+    })
+    return false
+  }
 }
 
 defineExpose({ save, saving, loading, canSave })
@@ -341,11 +419,11 @@ defineExpose({ save, saving, loading, canSave })
                 @click="remove(item.index)"
               />
             </div>
-            <div v-else class="actions-container">
+            <div v-else class="header-actions" role="group" aria-label="Добавить столбцы">
               <ActionButton
                 :item="null"
-                icon="fa-solid fa-plus"
-                icon-size="1x"
+                icon="fa-solid fa-square-plus"
+                icon-size="2x"
                 tooltip-text="Добавить исходный столбец"
                 aria-label="Добавить исходный столбец"
                 :aria-pressed="activeAddMode === 'input'"
@@ -355,8 +433,26 @@ defineExpose({ save, saving, loading, canSave })
               />
               <ActionButton
                 :item="null"
-                icon="fa-solid fa-calculator"
-                icon-size="1x"
+                icon="fa-solid fa-person-circle-plus"
+                icon-size="2x"
+                tooltip-text="Добавить исходный дополнительный столбец"
+                aria-label="Добавить исходный дополнительный столбец"
+                :disabled="saving"
+                @click="addOptional"
+              />
+              <ActionButton
+                :item="null"
+                icon="fa-regular fa-square-plus"
+                icon-size="2x"
+                tooltip-text="Добавить пустой столбец"
+                aria-label="Добавить пустой столбец"
+                :disabled="saving"
+                @click="addEntry({ kind: 'empty' })"
+              />
+              <ActionButton
+                :item="null"
+                icon="fa-solid fa-plug-circle-plus"
+                icon-size="2x"
                 tooltip-text="Добавить вычисляемый столбец"
                 aria-label="Добавить вычисляемый столбец"
                 :aria-pressed="activeAddMode === 'generated'"
@@ -365,28 +461,10 @@ defineExpose({ save, saving, loading, canSave })
                 @click="toggleAddMode('generated')"
               />
               <ActionButton
-                :item="null"
-                icon="fa-solid fa-layer-group"
-                icon-size="1x"
-                tooltip-text="Добавить гибкий блок"
-                aria-label="Добавить гибкий блок"
-                :disabled="saving"
-                @click="addFlexible"
-              />
-              <ActionButton
-                :item="null"
-                icon="fa-solid fa-file-circle-plus"
-                icon-size="1x"
-                tooltip-text="Добавить пустой столбец"
-                aria-label="Добавить пустой столбец"
-                :disabled="saving"
-                @click="addEntry({ kind: 'empty' })"
-              />
-              <ActionButton
                 v-if="!current.configured"
                 :item="null"
                 icon="fa-solid fa-list-check"
-                icon-size="1x"
+                icon-size="2x"
                 tooltip-text="Добавить все исходные столбцы"
                 aria-label="Добавить все исходные столбцы"
                 :disabled="saving || remainingInputColumns.length === 0"
@@ -395,7 +473,33 @@ defineExpose({ save, saving, loading, canSave })
             </div>
           </template>
           <template v-slot:[`item.title`]="{ item }">
-            <template v-if="!item.isAdd">{{ item.title }}</template>
+            <div v-if="!item.isAdd && current.entries[item.index].kind === 'optional'" class="status-selector-inline">
+              <template v-if="titleEdits.has(current.entries[item.index])">
+                <input
+                  v-model="titleEdits.get(current.entries[item.index]).title"
+                  v-focus
+                  type="text"
+                  class="form-control input"
+                  :aria-label="`Название исходного дополнительного столбца ${item.position}`"
+                  :disabled="saving"
+                  @keydown.enter.prevent="acceptTitleEdit(item.index)"
+                  @keydown.esc.prevent="cancelTitleEdit(item.index)"
+                />
+                <ActionButton :item="item.index" icon="fa-solid fa-check" icon-size="1x"
+                  tooltip-text="Применить название" :aria-label="`Применить название столбца ${item.position}`"
+                  :disabled="saving" @click="acceptTitleEdit(item.index)" />
+                <ActionButton :item="item.index" icon="fa-solid fa-xmark" icon-size="1x"
+                  tooltip-text="Отменить" :aria-label="`Отменить название столбца ${item.position}`"
+                  :disabled="saving" @click="cancelTitleEdit(item.index)" />
+              </template>
+              <template v-else>
+                <ActionButton :item="item.index" icon="fa-solid fa-pen" icon-size="1x"
+                  tooltip-text="Изменить название" :aria-label="`Изменить название столбца ${item.position}`"
+                  :disabled="saving" @click="startTitleEdit(item.index)" />
+                <span>{{ item.title }}</span>
+              </template>
+            </div>
+            <template v-else-if="!item.isAdd">{{ item.title }}</template>
             <template v-else>
               <select
                 v-if="activeAddMode === 'input'"
@@ -406,7 +510,7 @@ defineExpose({ save, saving, loading, canSave })
                 @change="addInput"
               >
                 <option value="">Исходный столбец…</option>
-                <option v-for="column in sortedInputColumns" :key="column.columnId" :value="String(column.columnId)">{{ column.name }}</option>
+                <option v-for="column in sortedInputColumns" :key="column.columnId" :value="String(column.columnId)">{{ inputColumnLabel(column) }}</option>
               </select>
               <select
                 v-if="activeAddMode === 'generated'"
@@ -425,7 +529,7 @@ defineExpose({ save, saving, loading, canSave })
       </v-card>
       <div v-if="!standalone" class="register-output-editor__actions">
         <button type="button" class="button primary" :disabled="saving || !canSave" @click="save()">Сохранить формат</button>
-        <button v-if="current.configured" type="button" class="button secondary" :disabled="saving" @click="removeSaved">Удалить формат</button>
+        <button v-if="current.configured" type="button" class="button secondary" :disabled="saving" @click="removeSaved()">Удалить формат</button>
       </div>
     </template>
   </section>

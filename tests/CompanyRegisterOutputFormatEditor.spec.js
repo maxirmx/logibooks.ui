@@ -29,7 +29,7 @@ vi.mock('@/composables/useAppConfirm.js', () => ({ useAppConfirm: () => confirm 
 const flush = async () => { await Promise.resolve(); await Promise.resolve(); await nextTick() }
 const vuetify = createVuetify({ components, directives })
 const catalog = {
-  inputColumns: [{ columnId: 101, name: 'Исходное поле' }],
+  inputColumns: [{ columnId: 101, name: 'Исходное поле', aliases: [] }],
   generatedColumns: [{ generatedKey: 'restrictionReason', name: 'Причина запрета', importOnly: false }]
 }
 
@@ -55,8 +55,15 @@ async function chooseGenerated(wrapper, generatedKey) {
   await wrapper.get('select[aria-label="Вычисляемый столбец"]').setValue(generatedKey)
 }
 
-async function mountEditor(waitForLoad = true) {
+async function addOptional(wrapper, title = 'Extra') {
+  await wrapper.get('button[aria-label="Добавить исходный дополнительный столбец"]').trigger('click')
+  await wrapper.findAll('input[aria-label^="Название исходного дополнительного"]').at(-1).setValue(title)
+  await wrapper.findAll('input[aria-label^="Название исходного дополнительного"]').at(-1).trigger('keydown', { key: 'Enter' })
+}
+
+async function mountEditor(waitForLoad = true, attachTo) {
   const wrapper = mount(CompanyRegisterOutputFormatEditor, {
+    attachTo,
     props: { companyId: 42 }, global: { plugins: [vuetify], stubs: { ActionButton: ActionButtonStub } }
   })
   if (waitForLoad) {
@@ -83,6 +90,182 @@ describe('company register output format editor', () => {
     companiesStore.saveRegisterOutputFormat.mockResolvedValue(true)
     companiesStore.deleteRegisterOutputFormat.mockResolvedValue(true)
     confirm.mockResolvedValue(true)
+  })
+
+  it('focuses editable additional titles and preserves them through reorder, save and reload', async () => {
+    const wrapper = await mountEditor(true, document.body)
+    await addOptional(wrapper, '  Reference  ')
+    expect(wrapper.find('input').exists()).toBe(false)
+    await chooseInput(wrapper, 101)
+    await addOptional(wrapper, 'Comment')
+    expect(wrapper.find('input').exists()).toBe(false)
+    await wrapper.get('button[aria-label="Поднять столбец 3"]').trigger('click')
+    await wrapper.get('button[aria-label="Изменить название столбца 1"]').trigger('click')
+    expect(document.activeElement).toBe(wrapper.get('input').element)
+    await wrapper.get('input').setValue('Customer reference')
+    expect(wrapper.vm.canSave).toBe(false)
+    expect(await wrapper.vm.save()).toBe(false)
+    expect(companiesStore.saveRegisterOutputFormat).not.toHaveBeenCalled()
+    await wrapper.get('button[aria-label="Применить название столбца 1"]').trigger('click')
+    expect(entryRows(wrapper).map(row => row.findAll('td')[3].text()))
+      .toEqual(['исходный дополнительный', 'исходный дополнительный', 'исходный'])
+    await wrapper.vm.save()
+    const saved = companiesStore.saveRegisterOutputFormat.mock.calls[0][2]
+    expect(saved.entries).toEqual([
+      { kind: 'optional', title: 'Customer reference' },
+      { kind: 'optional', title: 'Comment' },
+      { kind: 'input', columnId: 101 }
+    ])
+    wrapper.unmount()
+    companiesStore.getRegisterOutputFormat.mockResolvedValue(saved)
+    const reloaded = await mountEditor()
+    expect(reloaded.find('input').exists()).toBe(false)
+    expect(entryRows(reloaded).map(row => row.findAll('td')[2].text())).toEqual(['Customer reference', 'Comment', 'Исходное поле'])
+    await reloaded.get('button[aria-label="Убрать столбец 1"]').trigger('click')
+    expect(entryRows(reloaded)[0].text()).toContain('Comment')
+    reloaded.unmount()
+  })
+
+  it('shows blank and normalized duplicate additional-title errors once in the alert area', async () => {
+    alertStore.error.mockImplementation((message) => {
+      alertStore.alert = { id: 1, severity: 'error', message, title: '', action: null }
+    })
+    const wrapper = mount({
+      components: { PageAlertRegion, CompanyRegisterOutputFormatEditor },
+      template: '<div><PageAlertRegion /><CompanyRegisterOutputFormatEditor :company-id="42" /></div>'
+    }, { global: { plugins: [vuetify], stubs: { ActionButton: ActionButtonStub } } })
+    await vi.waitFor(() => expect(wrapper.find('.register-output-editor__add-row').exists()).toBe(true))
+    await addOptional(wrapper, '   ')
+    const editor = wrapper.findComponent(CompanyRegisterOutputFormatEditor)
+    expect(await editor.vm.save()).toBe(false)
+    await flush()
+    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+    expect(wrapper.text()).toContain('Столбец 1: Укажите непустое, неповторяющееся название')
+    expect(companiesStore.saveRegisterOutputFormat).not.toHaveBeenCalled()
+    await wrapper.get('input').setValue('Reference')
+    await wrapper.get('input').trigger('keydown', { key: 'Enter' })
+    await addOptional(wrapper, '  rEFERENCE  ')
+    expect(await editor.vm.save()).toBe(false)
+    await flush()
+    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+    expect(wrapper.text()).toContain('Столбец 2: Укажите непустое, неповторяющееся название')
+    expect(wrapper.get('input').element.value).toBe('  rEFERENCE  ')
+    expect(companiesStore.saveRegisterOutputFormat).not.toHaveBeenCalled()
+    await wrapper.get('input').setValue('Other')
+    await wrapper.get('input').trigger('keydown', { key: 'Enter' })
+    expect(await editor.vm.save()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('cancels drafts without changing accepted names and removes cancelled new rows', async () => {
+    companiesStore.getRegisterOutputFormat.mockResolvedValue({ entries: [{ kind: 'optional', title: 'Original' }] })
+    const wrapper = await mountEditor()
+    expect(wrapper.find('input').exists()).toBe(false)
+    await wrapper.get('button[aria-label="Изменить название столбца 1"]').trigger('click')
+    await wrapper.get('input').setValue('Discard me')
+    await wrapper.get('button[aria-label="Отменить название столбца 1"]').trigger('click')
+    expect(wrapper.find('input').exists()).toBe(false)
+    expect(entryRows(wrapper)[0].text()).toContain('Original')
+    await wrapper.get('button[aria-label="Добавить исходный дополнительный столбец"]').trigger('click')
+    await wrapper.get('input').setValue('New draft')
+    await wrapper.get('input').trigger('keydown', { key: 'Escape' })
+    expect(entryRows(wrapper)).toHaveLength(1)
+    expect(wrapper.vm.canSave).toBe(true)
+    await wrapper.vm.save()
+    expect(companiesStore.saveRegisterOutputFormat.mock.calls[0][2].entries)
+      .toEqual([{ kind: 'optional', title: 'Original' }])
+    wrapper.unmount()
+  })
+
+  it('validates loaded additional titles before saving and allows correcting them', async () => {
+    companiesStore.getRegisterOutputFormat.mockResolvedValue({ entries: [
+      { kind: 'optional', title: 'Reference' }, { kind: 'optional', title: ' reference ' }
+    ] })
+    const wrapper = await mountEditor()
+    expect(await wrapper.vm.save()).toBe(false)
+    expect(companiesStore.saveRegisterOutputFormat).not.toHaveBeenCalled()
+    expect(alertStore.error).toHaveBeenCalledWith('Столбец 2: Укажите непустое, неповторяющееся название исходного дополнительного столбца.')
+    await wrapper.get('button[aria-label="Изменить название столбца 2"]').trigger('click')
+    await wrapper.get('input').setValue('Other')
+    await wrapper.get('button[aria-label="Применить название столбца 2"]').trigger('click')
+    expect(await wrapper.vm.save()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('keeps a title draft attached to its row when reordered and discards it when deleted', async () => {
+    const wrapper = await mountEditor()
+    await addOptional(wrapper, 'First')
+    await addOptional(wrapper, 'Second')
+    await wrapper.get('button[aria-label="Изменить название столбца 1"]').trigger('click')
+    await wrapper.get('input').setValue('Edited')
+    await wrapper.get('button[aria-label="Опустить столбец 1"]').trigger('click')
+    expect(wrapper.get('input').element.value).toBe('Edited')
+    await wrapper.get('button[aria-label="Применить название столбца 2"]').trigger('click')
+    expect(entryRows(wrapper)[1].text()).toContain('Edited')
+    await wrapper.get('button[aria-label="Изменить название столбца 2"]').trigger('click')
+    await wrapper.get('button[aria-label="Убрать столбец 2"]').trigger('click')
+    expect(wrapper.vm.canSave).toBe(true)
+    expect(wrapper.find('input').exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('shows aliases in selectors and configured rows while saving only column IDs', async () => {
+    companiesStore.getRegisterOutputColumns.mockResolvedValue({
+      ...catalog,
+      inputColumns: [
+        { columnId: 202, name: 'Second', aliases: ['Second alias'] },
+        { columnId: 101, name: 'Canonical', aliases: ['First alias', 'Another alias'] }
+      ]
+    })
+    const wrapper = await mountEditor()
+    await wrapper.get('button[aria-label="Добавить исходный столбец"]').trigger('click')
+    const options = wrapper.get('select[aria-label="Исходный столбец"]').findAll('option').slice(1)
+    expect(options.map(option => option.attributes('value'))).toEqual(['101', '202'])
+    expect(options.map(option => option.text())).toEqual([
+      'Canonical / First alias / Another alias', 'Second / Second alias'
+    ])
+    await wrapper.get('select[aria-label="Исходный столбец"]').setValue('101')
+    expect(entryRows(wrapper)[0].text()).toContain('Canonical / First alias / Another alias')
+    await chooseInput(wrapper, 101)
+    expect(entryRows(wrapper)).toHaveLength(1)
+    expect(alertStore.error).toHaveBeenCalledWith('Этот столбец уже добавлен')
+    expect(await wrapper.vm.save()).toBe(true)
+    expect(companiesStore.saveRegisterOutputFormat).toHaveBeenCalledWith(42, COMPANY_REGISTER_OUTPUT_TYPES[0], {
+      schemaVersion: 1, registerType: COMPANY_REGISTER_OUTPUT_TYPES[0],
+      entries: [{ kind: 'input', columnId: 101 }]
+    })
+    wrapper.unmount()
+  })
+
+  it('add all adds each aliased column once in column ID order', async () => {
+    companiesStore.getRegisterOutputColumns.mockResolvedValue({
+      ...catalog, inputColumns: [
+        { columnId: 202, name: 'Second', aliases: ['Alias B'] },
+        { columnId: 101, name: 'First', aliases: ['Alias A', 'Alias C'] }
+      ]
+    })
+    const wrapper = await mountEditor()
+    await wrapper.get('button[aria-label="Добавить все исходные столбцы"]').trigger('click')
+    expect(entryRows(wrapper)).toHaveLength(2)
+    expect(entryRows(wrapper)[0].text()).toContain('First / Alias A / Alias C')
+    expect(entryRows(wrapper)[1].text()).toContain('Second / Alias B')
+    await wrapper.vm.save()
+    expect(companiesStore.saveRegisterOutputFormat.mock.calls[0][2].entries).toEqual([
+      { kind: 'input', columnId: 101 }, { kind: 'input', columnId: 202 }
+    ])
+    wrapper.unmount()
+  })
+
+  it('uses the canonical name when the column has no aliases', async () => {
+    companiesStore.getRegisterOutputColumns.mockResolvedValue({
+      ...catalog, inputColumns: [{ columnId: 101, name: 'Canonical', aliases: [] }]
+    })
+    companiesStore.getRegisterOutputFormat.mockResolvedValue({ entries: [{ kind: 'input', columnId: 101 }] })
+    const wrapper = await mountEditor()
+    expect(entryRows(wrapper)[0].findAll('td')[2].text()).toBe('Canonical')
+    await wrapper.get('button[aria-label="Добавить исходный столбец"]').trigger('click')
+    expect(wrapper.get('select[aria-label="Исходный столбец"] option[value="101"]').text()).toBe('Canonical')
+    wrapper.unmount()
   })
 
   it('offers WbrN and Ozon while keeping GTC available to the routed editor', async () => {
@@ -116,7 +299,7 @@ describe('company register output format editor', () => {
     const ozonType = COMPANY_REGISTER_OUTPUT_TYPES[1]
     companiesStore.getRegisterOutputFormat.mockImplementation(async (id, type) =>
       type === ozonType
-        ? { schemaVersion: 1, registerType: type, entries: [{ kind: 'flexibleBlock' }] }
+        ? { schemaVersion: 1, registerType: type, entries: [{ kind: 'optional', title: 'Extra' }] }
         : null)
     const wrapper = mount(CompanyRegisterOutputFormatEditor, {
       props: { companyId: 42, initialRegisterType: ozonType, standalone: true },
@@ -167,8 +350,10 @@ describe('company register output format editor', () => {
   it('preserves unsaved edits across types and saves only the selected layout in order', async () => {
     const wrapper = await mountEditor()
     await chooseInput(wrapper, 101)
-    const flex = wrapper.get('button[aria-label="Добавить гибкий блок"]')
+    const flex = wrapper.get('button[aria-label="Добавить исходный дополнительный столбец"]')
     await flex.trigger('click')
+    await wrapper.findAll('input[aria-label^="Название исходного дополнительного"] ').at(-1).setValue('Extra')
+    await wrapper.findAll('input[aria-label^="Название исходного дополнительного"]').at(-1).trigger('keydown', { key: 'Enter' })
     const empty = wrapper.get('button[aria-label="Добавить пустой столбец"]')
     await empty.trigger('click')
     await wrapper.get('select#register-output-type').setValue(String(COMPANY_REGISTER_OUTPUT_TYPES[1]))
@@ -181,7 +366,7 @@ describe('company register output format editor', () => {
     expect(companiesStore.saveRegisterOutputFormat).toHaveBeenCalledWith(42, COMPANY_REGISTER_OUTPUT_TYPES[0], {
       schemaVersion: 1,
       registerType: COMPANY_REGISTER_OUTPUT_TYPES[0],
-      entries: [{ kind: 'input', columnId: 101 }, { kind: 'empty' }, { kind: 'flexibleBlock' }]
+      entries: [{ kind: 'input', columnId: 101 }, { kind: 'empty' }, { kind: 'optional', title: 'Extra' }]
     })
     expect(alertStore.success).toHaveBeenCalledTimes(1)
     wrapper.unmount()
@@ -194,14 +379,14 @@ describe('company register output format editor', () => {
     expect(wrapper.get('.table-card .v-data-table.interlaced-table').exists()).toBe(true)
     await chooseInput(wrapper, 101)
     await chooseGenerated(wrapper, 'restrictionReason')
-    await wrapper.get('button[aria-label="Добавить гибкий блок"]').trigger('click')
+    await wrapper.get('button[aria-label="Добавить исходный дополнительный столбец"]').trigger('click')
     await wrapper.get('button[aria-label="Добавить пустой столбец"]').trigger('click')
     await flush()
     expect(entryRows(wrapper).map((row) => row.findAll('td').map((cell) => cell.text())))
       .toEqual([
         ['', '1', 'Исходное поле', 'исходный'],
         ['', '2', 'Причина запрета', 'вычисляемый'],
-        ['', '3', 'Блок дополнительных столбцов из файла', 'исходный'],
+        ['', '3', '', 'исходный дополнительный'],
         ['', '4', '', 'пустой']
       ])
     expect(entryRows(wrapper)[0].findAll('td')[0].findAll('button')).toHaveLength(3)
@@ -210,7 +395,7 @@ describe('company register output format editor', () => {
     expect(wrapper.get('button[aria-label="Опустить столбец 4"]').attributes('disabled')).toBeDefined()
     await wrapper.get('button[aria-label="Опустить столбец 1"]').trigger('click')
     expect(entryRows(wrapper).map((row) => row.findAll('td')[2].text()))
-      .toEqual(['Причина запрета', 'Исходное поле', 'Блок дополнительных столбцов из файла', ''])
+      .toEqual(['Причина запрета', 'Исходное поле', '', ''])
     wrapper.unmount()
   })
 
@@ -225,7 +410,7 @@ describe('company register output format editor', () => {
     await wrapper.get('button[aria-label="Добавить вычисляемый столбец"]').trigger('click')
     expect(wrapper.find('select[aria-label="Вычисляемый столбец"]').exists()).toBe(false)
     await wrapper.get('button[aria-label="Добавить исходный столбец"]').trigger('click')
-    await wrapper.get('button[aria-label="Добавить гибкий блок"]').trigger('click')
+    await wrapper.get('button[aria-label="Добавить исходный дополнительный столбец"]').trigger('click')
     expect(wrapper.find('select[aria-label="Исходный столбец"]').exists()).toBe(false)
     await chooseInput(wrapper, 101)
     expect(wrapper.find('select[aria-label="Исходный столбец"]').exists()).toBe(false)
@@ -235,9 +420,9 @@ describe('company register output format editor', () => {
   it('sorts RLColumn choices and adds all source columns by ID without losing other draft entries', async () => {
     companiesStore.getRegisterOutputColumns.mockResolvedValue({
       inputColumns: [
-        { columnId: 101, name: 'Сто один' },
-        { columnId: 3, name: 'Три' },
-        { columnId: 52, name: 'Пятьдесят два' }
+        { columnId: 101, name: 'Сто один', aliases: [] },
+        { columnId: 3, name: 'Три', aliases: [] },
+        { columnId: 52, name: 'Пятьдесят два', aliases: [] }
       ],
       generatedColumns: []
     })
@@ -268,16 +453,21 @@ describe('company register output format editor', () => {
     await wrapper.get('button[aria-label="Добавить пустой столбец"]').trigger('click')
     expect(wrapper.findAll('button').find((button) => button.text() === 'Сохранить формат').attributes('disabled')).toBeDefined()
     await wrapper.vm.save()
-    expect(alertStore.error).toHaveBeenCalledWith('Добавьте исходный, вычисляемый столбец или гибкий блок')
+    expect(alertStore.error).toHaveBeenCalledWith('Добавьте исходный, исходный дополнительный или вычисляемый столбец')
     expect(companiesStore.saveRegisterOutputFormat).not.toHaveBeenCalled()
     await chooseInput(wrapper, 101)
     await chooseInput(wrapper, 101)
     await flush()
     expect(alertStore.error).toHaveBeenCalledWith('Этот столбец уже добавлен')
-    const flex = wrapper.get('button[aria-label="Добавить гибкий блок"]')
+    const flex = wrapper.get('button[aria-label="Добавить исходный дополнительный столбец"]')
     await flex.trigger('click')
+    await wrapper.findAll('input[aria-label^="Название исходного дополнительного"] ').at(-1).setValue('Extra')
+    await wrapper.findAll('input[aria-label^="Название исходного дополнительного"]').at(-1).trigger('keydown', { key: 'Enter' })
     await flex.trigger('click')
-    expect(alertStore.error).toHaveBeenCalledWith('Блок дополнительных столбцов уже добавлен')
+    await wrapper.findAll('input[aria-label^="Название исходного дополнительного"] ').at(-1).setValue('Extra')
+    await wrapper.findAll('input[aria-label^="Название исходного дополнительного"]').at(-1).trigger('keydown', { key: 'Enter' })
+    await wrapper.vm.save()
+    expect(alertStore.error).toHaveBeenCalledWith('Столбец 4: Укажите непустое, неповторяющееся название исходного дополнительного столбца.')
     wrapper.unmount()
   })
 
@@ -317,19 +507,19 @@ describe('company register output format editor', () => {
 
   it('keeps failed edits and publishes entry validation through the page alert store', async () => {
     const wrapper = await mountEditor()
-    await wrapper.get('button[aria-label="Добавить гибкий блок"]').trigger('click')
-    const failure = Object.assign(new Error('invalid'), { data: { details: [{ entryIndex: 0, message: 'Неверный блок' }] } })
+    await addOptional(wrapper)
+    const failure = Object.assign(new Error('invalid'), { data: { details: [{ entryIndex: 0, message: 'Неверное название' }] } })
     companiesStore.saveRegisterOutputFormat.mockRejectedValueOnce(failure)
     await wrapper.findAll('button').find((button) => button.text() === 'Сохранить формат').trigger('click')
     await flush()
     expect(entryRows(wrapper)).toHaveLength(1)
-    expect(alertStore.error).toHaveBeenCalledExactlyOnceWith('Столбец 1: Неверный блок')
+    expect(alertStore.error).toHaveBeenCalledExactlyOnceWith('Столбец 1: Неверное название')
     wrapper.unmount()
   })
 
   it('retries a transport failure for the original type after switching', async () => {
     const wrapper = await mountEditor()
-    await wrapper.get('button[aria-label="Добавить гибкий блок"]').trigger('click')
+    await addOptional(wrapper)
     companiesStore.saveRegisterOutputFormat.mockRejectedValueOnce(new Error('offline'))
     await wrapper.findAll('button').find((button) => button.text() === 'Сохранить формат').trigger('click')
     await flush()
@@ -344,7 +534,7 @@ describe('company register output format editor', () => {
   it('removes only the selected saved format after confirmation', async () => {
     companiesStore.getRegisterOutputFormat.mockImplementation(async (id, type) =>
       type === COMPANY_REGISTER_OUTPUT_TYPES[1]
-        ? { schemaVersion: 1, registerType: type, entries: [{ kind: 'flexibleBlock' }] }
+        ? { schemaVersion: 1, registerType: type, entries: [{ kind: 'optional', title: 'Extra' }] }
         : null)
     const wrapper = await mountEditor()
     await wrapper.get('select#register-output-type').setValue(String(COMPANY_REGISTER_OUTPUT_TYPES[1]))
@@ -359,7 +549,7 @@ describe('company register output format editor', () => {
   it('keeps a saved format on delete failure and retries that type without asking again', async () => {
     companiesStore.getRegisterOutputFormat.mockImplementation(async (id, type) =>
       type === COMPANY_REGISTER_OUTPUT_TYPES[1]
-        ? { schemaVersion: 1, registerType: type, entries: [{ kind: 'flexibleBlock' }] }
+        ? { schemaVersion: 1, registerType: type, entries: [{ kind: 'optional', title: 'Extra' }] }
         : null)
     companiesStore.deleteRegisterOutputFormat.mockRejectedValueOnce(new Error('offline'))
     const wrapper = await mountEditor()

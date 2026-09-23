@@ -212,6 +212,19 @@ function removeStamp() {
 }
 
 // Form submission
+async function returnAfterSave() {
+  try {
+    await router.push('/companies')
+    return true
+  } catch (error) {
+    alertStore.error(error, {
+      fallback: 'Компания сохранена, но не удалось вернуться к списку компаний',
+      action: { label: 'Повторить переход', handler: returnAfterSave }
+    })
+    return false
+  }
+}
+
 function onSubmit(values, { setErrors } = {}) {
   if (submitting.value) return Promise.resolve(false)
   submitting.value = true
@@ -226,9 +239,7 @@ function onSubmit(values, { setErrors } = {}) {
   if (isCreate.value) {
     return companiesStore
       .create(payload)
-      .then(() => {
-        router.push('/companies')
-      })
+      .then(returnAfterSave)
       .catch((error) => {
         if (error.message?.includes('409')) {
           alertStore.error('Компания с таким ИНН уже существует')
@@ -244,9 +255,7 @@ function onSubmit(values, { setErrors } = {}) {
   } else {
     return companiesStore
       .update(props.companyId, payload)
-      .then(() => {
-        router.push('/companies')
-      })
+      .then(returnAfterSave)
       .catch((error) => {
         reportFormError(error, {
           setErrors,

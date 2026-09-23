@@ -5,7 +5,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { Suspense, ref } from 'vue'
+import { Suspense, ref, reactive } from 'vue'
 import CompanySettings from '@/dialogs/Company_Settings.vue'
 import { defaultGlobalStubs, createMockStore } from './helpers/test-utils.js'
 import { resolveAll } from './helpers/test-utils.js'
@@ -45,11 +45,11 @@ const mockCountriesStore = createMockStore({
   ensureLoaded: vi.fn()
 })
 
-const mockAlertStore = createMockStore({
+const mockAlertStore = reactive(createMockStore({
   success: vi.fn(),
   error: vi.fn(),
   alert: null
-})
+}))
 let isSrLogistPlus = false
 
 const originalFileReader = global.FileReader
@@ -195,6 +195,7 @@ beforeEach(async () => {
   mockCountriesStore.loading = false
   mockCountriesStore.error = null
   mockAlertStore.loading = false
+  mockAlertStore.alert = null
   // Reset countries state for each test
   mockCountriesStore.countries = mockCountries
 })
@@ -654,6 +655,38 @@ describe('Company_Settings.vue', () => {
       expect(mockAlertStore.error.mock.calls[0][1].action.label).toBe('Повторить')
       await mockAlertStore.error.mock.calls[0][1].action.handler()
       expect(mockRouter.push).toHaveBeenCalledTimes(2)
+    })
+
+    it.each(['create', 'edit'])('awaits %s navigation and retries it without saving twice', async mode => {
+      let failNavigation
+      mockRouter.push.mockReturnValueOnce(new Promise((_resolve, reject) => { failNavigation = reject }))
+      mockAlertStore.error.mockImplementationOnce((error, options) => {
+        mockAlertStore.alert = { id: 1, severity: 'error', message: error.message, action: options.action }
+      })
+      mockAlertStore.dismiss = vi.fn(() => { mockAlertStore.alert = null })
+      const wrapper = mount(AsyncWrapper, {
+        props: { mode, companyId: 1 },
+        global: { stubs: defaultGlobalStubs }
+      })
+      await resolveAll()
+      await wrapper.get('form').trigger('submit')
+      await resolveAll()
+      expect(wrapper.get('[data-testid="company-save-action"]').attributes('disabled')).toBeDefined()
+      const saveMethod = mode === 'create' ? mockCompaniesStore.create : mockCompaniesStore.update
+      expect(saveMethod).toHaveBeenCalledTimes(1)
+      failNavigation(new Error('navigation failed'))
+      await resolveAll()
+      expect(wrapper.find('form').exists()).toBe(true)
+      expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+      expect(wrapper.get('[role="alert"]').text()).toContain('navigation failed')
+      expect(mockAlertStore.error).toHaveBeenCalledTimes(1)
+      expect(mockAlertStore.error.mock.calls[0][1].fallback).toContain('Компания сохранена')
+      await wrapper.get('.page-alert-region__action').trigger('click')
+      await resolveAll()
+      expect(mockRouter.push).toHaveBeenCalledTimes(2)
+      expect(saveMethod).toHaveBeenCalledTimes(1)
+      expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+      wrapper.unmount()
     })
 
     it('submits the same validated form from the header save action', async () => {

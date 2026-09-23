@@ -52,7 +52,7 @@ describe('company register output format status table', () => {
     store.getAll.mockReset().mockResolvedValue()
     store.getRegisterOutputFormat.mockReset().mockImplementation(async (id, type) =>
       type === COMPANY_REGISTER_OUTPUT_TYPES[0]
-        ? { schemaVersion: 1, registerType: type, entries: [{ kind: 'flexibleBlock' }] }
+        ? { schemaVersion: 1, registerType: type, entries: [{ kind: 'optional', title: 'Extra' }] }
         : null)
     store.deleteRegisterOutputFormat.mockReset().mockResolvedValue(true)
   })

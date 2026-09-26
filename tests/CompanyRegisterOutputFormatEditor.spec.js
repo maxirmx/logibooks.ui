@@ -92,6 +92,50 @@ describe('company register output format editor', () => {
     confirm.mockResolvedValue(true)
   })
 
+  it('uses catalog metadata for unfamiliar generated columns through save and reload', async () => {
+    companiesStore.getRegisterOutputColumns.mockResolvedValue({
+      ...catalog,
+      generatedColumns: [
+        ...catalog.generatedColumns,
+        { generatedKey: 'futureAmount', name: 'Будущая сумма', importOnly: false,
+          allowedCustomsProcedureCodes: [71], applicabilityLabel: 'для будущей процедуры' },
+        { generatedKey: 'passportCheck', name: 'Проверка паспорта', importOnly: true,
+          allowedCustomsProcedureCodes: [40], applicabilityLabel: 'только IM40' },
+        { generatedKey: 'customsFee', name: 'Таможенные сборы, руб.', importOnly: false,
+          allowedCustomsProcedureCodes: [40, 60], applicabilityLabel: 'только IM40/IM60' },
+        { generatedKey: 'customsDuty', name: 'Таможенные пошлины, руб.', importOnly: false,
+          allowedCustomsProcedureCodes: [40, 60], applicabilityLabel: 'только IM40/IM60' }
+      ]
+    })
+    const wrapper = await mountEditor()
+    await wrapper.get('button[aria-label="Добавить вычисляемый столбец"]').trigger('click')
+    const options = wrapper.get('select[aria-label="Вычисляемый столбец"]').findAll('option').map(option => option.text())
+    expect(options).toContain('Будущая сумма (для будущей процедуры)')
+    expect(options).toContain('Проверка паспорта (только IM40)')
+    expect(options).toContain('Таможенные сборы, руб. (только IM40/IM60)')
+    expect(options).toContain('Таможенные пошлины, руб. (только IM40/IM60)')
+    expect(options).toContain('Причина запрета')
+    await wrapper.get('select[aria-label="Вычисляемый столбец"]').setValue('futureAmount')
+    await chooseGenerated(wrapper, 'customsFee')
+    await chooseGenerated(wrapper, 'customsDuty')
+    await wrapper.get('button[aria-label="Поднять столбец 3"]').trigger('click')
+    await wrapper.vm.save()
+    const saved = companiesStore.saveRegisterOutputFormat.mock.calls[0][2]
+    expect(saved.entries).toEqual([
+      { kind: 'generated', generatedKey: 'futureAmount' },
+      { kind: 'generated', generatedKey: 'customsDuty' },
+      { kind: 'generated', generatedKey: 'customsFee' }
+    ])
+    wrapper.unmount()
+    companiesStore.getRegisterOutputFormat.mockResolvedValue(saved)
+    const reloaded = await mountEditor()
+    expect(entryRows(reloaded).map(row => row.findAll('td')[2].text())).toEqual([
+      'Будущая сумма', 'Таможенные пошлины, руб.', 'Таможенные сборы, руб.'
+    ])
+    await reloaded.get('button[aria-label="Убрать столбец 1"]').trigger('click')
+    expect(entryRows(reloaded)).toHaveLength(2)
+    reloaded.unmount()
+  })
   it('focuses editable additional titles and preserves them through reorder, save and reload', async () => {
     const wrapper = await mountEditor(true, document.body)
     await addOptional(wrapper, '  Reference  ')

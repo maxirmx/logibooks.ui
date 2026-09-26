@@ -521,7 +521,7 @@ defineExpose({ save, saving, loading, canSave })
                 @change="addGenerated"
               >
                 <option value="">Вычисляемый столбец…</option>
-                <option v-for="column in current.catalog?.generatedColumns || []" :key="column.generatedKey" :value="column.generatedKey">{{ column.name }}{{ column.importOnly ? ' (только IM40)' : '' }}</option>
+                <option v-for="column in current.catalog?.generatedColumns || []" :key="column.generatedKey" :value="column.generatedKey">{{ column.name }}{{ column.applicabilityLabel ? ` (${column.applicabilityLabel})` : '' }}</option>
               </select>
             </template>
           </template>

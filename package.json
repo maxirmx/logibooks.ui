@@ -1,6 +1,6 @@
 {
   "name": "logibooks-ui",
-  "version": "1.35.0",
+  "version": "1.35.1",
   "packageManager": "npm@11.19.1",
   "engines": {
     "npm": ">=11.0.0"

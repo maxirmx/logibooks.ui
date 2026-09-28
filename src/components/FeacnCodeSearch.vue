@@ -16,15 +16,21 @@ const emit = defineEmits(['select', 'refocus'])
 const store = useFeacnCodesStore()
 const searchKey = ref('')
 const searchResults = ref([])
+const unavailableResultIds = ref(new Set())
 const dropdownVisible = ref(false)
 const searching = ref(false)
 const searchError = ref(null)
+const resultNodeRequests = new Map()
+let resultsGeneration = 0
 
 const treeRef = ref(null)
 const searchInputRef = ref(null)
 
 async function performSearch() {
   const key = searchKey.value.trim()
+  resultsGeneration += 1
+  unavailableResultIds.value = new Set()
+  resultNodeRequests.clear()
   if (!key) {
     dropdownVisible.value = false
     searchResults.value = []
@@ -57,17 +63,40 @@ async function performSearch() {
   }
 }
 
+function getResultNode(id) {
+  if (!resultNodeRequests.has(id)) {
+    resultNodeRequests.set(id, store.getById(id))
+  }
+  return resultNodeRequests.get(id)
+}
+
+async function checkResultNode(item) {
+  if (!item?.id || unavailableResultIds.value.has(item.id)) return
+  const generation = resultsGeneration
+  try {
+    const node = await getResultNode(item.id)
+    if (generation === resultsGeneration && !node) {
+      unavailableResultIds.value.add(item.id)
+    }
+  } catch (err) {
+    if (generation === resultsGeneration) searchError.value = err
+  }
+}
+
 async function selectSearchResult(item) {
-  dropdownVisible.value = false
-  if (!item || !item.id) {
+  if (!item?.id || unavailableResultIds.value.has(item.id)) {
     return
   }
 
+  const generation = resultsGeneration
   try {
-    const node = await store.getById(item.id)
+    const node = await getResultNode(item.id)
+    if (generation !== resultsGeneration) return
     if (!node) {
+      unavailableResultIds.value.add(item.id)
       return
     }
+    dropdownVisible.value = false
 
     const path = []
     let current = node
@@ -163,7 +192,11 @@ onMounted(async () => {
           v-for="result in searchResults"
           :key="result.id"
           @click="selectSearchResult(result)"
+          @mouseenter="checkResultNode(result)"
           class="search-result-item"
+          :class="{ unavailable: !result.id || unavailableResultIds.has(result.id) }"
+          :aria-disabled="!result.id || unavailableResultIds.has(result.id)"
+          :title="!result.id || unavailableResultIds.has(result.id) ? 'Код отсутствует в дереве' : undefined"
         >
           <span class="result-code">{{ result.code }}</span>
           <span class="result-name">{{ result.name }}</span>
@@ -251,6 +284,15 @@ onMounted(async () => {
 }
 .search-result-item:hover {
   background-color: #f0f0f0;
+}
+
+.search-result-item.unavailable {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.search-result-item.unavailable:hover {
+  background-color: transparent;
 }
 .result-code {
   font-family: 'Courier New', monospace;

@@ -43,7 +43,7 @@ const alertStore = useAlertStore()
 const formValues = useFormValues()
 
 const searchActive = ref(false)
-const searchWrapperRef = ref(null)
+const searchRowRef = ref(null)
 const tnVedClassValue = ref('')
 const feacnTooltips = useFeacnTooltips()
 
@@ -90,8 +90,8 @@ function handleEscape(event) {
 }
 
 function handleClickOutside(event) {
-  const wrapper = searchWrapperRef.value
-  if (wrapper && !wrapper.contains(event.target)) {
+  const row = searchRowRef.value
+  if (row && !row.contains(event.target)) {
     searchActive.value = false
   }
 }
@@ -161,8 +161,8 @@ function handleRefocus() {
 <template>
   <!-- Feacn Code Section -->
   <div class="form-section">
-    <div class="form-row">
-        <div ref="searchWrapperRef" class="form-group feacn-search-wrapper">
+    <div ref="searchRowRef" class="form-row feacn-search-row">
+        <div class="form-group feacn-search-wrapper">
           <label for="tnVed" class="label" 
                  :title="getFieldTooltip('tnVed', props.columnTitles, props.columnTooltips)" 
                  @dblclick="toggleSearch">{{ props.columnTitles.tnVed }}:
@@ -199,13 +199,6 @@ function handleRefocus() {
               :iconSize="'1x'"
             />
           </div>
-          <FeacnCodeSearch
-            v-if="searchActive"
-            class="feacn-overlay"
-            @select="handleCodeSelect"
-            @refocus="handleRefocus"
-            @overlay-state-changed="(val) => { searchActive = val }"
-          />
         </div>
         <FeacnCodeSelectorW
           :item="localItem"
@@ -215,25 +208,28 @@ function handleRefocus() {
           @overlay-state-changed="(val) => { if (val) { searchActive = false } }"
           @refocus="handleRefocus"
         />
+        <FeacnCodeSearch
+          v-if="searchActive"
+          class="feacn-overlay"
+          @select="handleCodeSelect"
+          @refocus="handleRefocus"
+        />
     </div>
   </div>
 </template>
 
 <style scoped>
-.feacn-search-wrapper {
+.feacn-search-row {
   position: relative;
-  /* Add this to ensure the container can contain the overlay */
   z-index: 1;
 }
 
 .feacn-overlay {
   position: absolute;
   top: calc(100% + 0.5rem);
-  left: auto;
+  left: 0;
   right: 0;
   z-index: 100;
-  width: min(90vw, 1600px);
-  max-width: calc(100vw - 1rem);
   min-width: 0;
 }
 

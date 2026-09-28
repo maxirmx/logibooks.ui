@@ -52,13 +52,13 @@ describe('ParcelNumberExt', () => {
   }
 
   describe('Export category marker', () => {
-    it('shows an accessible framed Cyrillic marker alongside existing indicators', async () => {
+    it('shows an accessible framed marker alongside existing indicators', async () => {
       const wrapper = createWrapper({
         item: { ...defaultItem, matchesExportFeeCategory: true, markedByFellowItem: true },
         disabled: true
       })
       const marker = wrapper.get('.export-fee-category-marker')
-      expect(marker.text()).toBe('\u0421')
+      expect(marker.text()).toBe('C')
       expect(marker.attributes('role')).toBe('img')
       expect(marker.attributes('aria-label')).toBe('Код ТН ВЭД входит в справочник экспортных сборов')
       expect(marker.attributes('title')).toBe(marker.attributes('aria-label'))

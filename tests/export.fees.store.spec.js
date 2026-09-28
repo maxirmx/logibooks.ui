@@ -87,12 +87,12 @@ describe('export fees store', () => {
     expect(fetchWrapper.get).not.toHaveBeenCalled()
   })
 
-  it('does not load while already loading', async () => {
+  it('loads when no shared request exists', async () => {
     const store = useExportFeesStore()
     store.loading = true
 
     await store.ensureLoaded()
 
-    expect(fetchWrapper.get).not.toHaveBeenCalled()
+    expect(fetchWrapper.get).toHaveBeenCalledOnce()
   })
 })

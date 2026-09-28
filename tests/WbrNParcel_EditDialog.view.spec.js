@@ -338,7 +338,7 @@ const stubs = {
       '<button type="button" data-testid="action-button" :data-tooltip="tooltipText" :disabled="disabled" @click="$emit(\'click\', item)"><slot /></button>'
   },
   ParcelNumberExt: {
-    props: ['item', 'fieldName', 'disabled'],
+    props: ['item', 'fieldName', 'disabled', 'liveCategory', 'tnVed', 'customsProcedureCode'],
     emits: ['fellows', 'click'],
     template:
       '<button type="button" data-testid="parcel-number-ext" :disabled="disabled" @click="$emit(\'click\', item)"><span>{{ item[fieldName] }}</span><span data-testid="fellows" @click.stop="$emit(\'fellows\')">fellows</span></button>'
@@ -445,6 +445,23 @@ describe('WbrNParcel_EditDialog.vue', () => {
 
   beforeEach(resetState)
 
+
+  it('passes unsaved code changes to the live category marker', async () => {
+    formValues = ref({ ...baseParcel, tnVed: '8471300000' }).value
+    registerItem.value.customsProcedureCode = CUSTOMS_PROCEDURE_EXPORT
+    const wrapper = await mountDialog()
+    const number = wrapper.getComponent('[data-testid="parcel-number-ext"]')
+    expect(number.props('liveCategory')).toBe('')
+    expect(number.props('customsProcedureCode')).toBe(CUSTOMS_PROCEDURE_EXPORT)
+    expect(number.props('tnVed')).toBe('8471300000')
+    formValues.tnVed = ''
+    await nextTick()
+    expect(number.props('tnVed')).toBe('')
+    formValues.tnVed = 'invalid'
+    await nextTick()
+    expect(number.props('tnVed')).toBe('invalid')
+    wrapper.unmount()
+  })
   it('loads WbrN parcel data and renders article plus recipient replacement fields', async () => {
     const wrapper = await mountDialog()
 

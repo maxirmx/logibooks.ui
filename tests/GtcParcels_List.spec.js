@@ -270,7 +270,7 @@ describe('GtcParcels_List.vue', () => {
         matchesExportFeeCategory: true
       })
 
-      expect(parcelNumberCell.get('.export-fee-category-marker').text()).toBe('С')
+      expect(parcelNumberCell.get('.export-fee-category-marker').text()).toBe('C')
 
       const fellowButtons = parcelNumberCell.findAllComponents(ActionButton)
 

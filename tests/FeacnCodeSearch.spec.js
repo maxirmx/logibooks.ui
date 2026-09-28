@@ -129,6 +129,49 @@ describe('FeacnCodeSearch.vue', () => {
 
     expect(mockGetById).toHaveBeenCalledWith(2)
     expect(mockGetById).toHaveBeenCalledWith(1)
+    expect(wrapper.find('.search-results').exists()).toBe(false)
+    expect(wrapper.findAll('.node-label').some((node) => node.text() === 'Leaf')).toBe(true)
+    expect(wrapper.emitted('select')).toBeUndefined()
+  })
+
+  it('navigates to a complete TN VED search result without selecting it', async () => {
+    mockLookup.mockResolvedValueOnce([{ id: 3, code: leaf.code, name: 'Leaf' }])
+    const wrapper = createWrapper()
+    await waitForUpdates(wrapper)
+
+    await wrapper.find('.search-input').setValue(leaf.code)
+    await wrapper.findComponent({ name: 'ActionButton' }).find('button').trigger('click')
+    await waitForUpdates(wrapper)
+    await wrapper.find('.search-result-item').trigger('mouseenter')
+    await waitForUpdates(wrapper)
+    expect(wrapper.find('.search-result-item').classes()).not.toContain('unavailable')
+    await wrapper.find('.search-result-item').trigger('click')
+    await waitForUpdates(wrapper)
+
+    expect(mockGetById).toHaveBeenCalledWith(3)
+    expect(mockGetById.mock.calls.filter(([id]) => id === 3)).toHaveLength(1)
+    expect(mockGetById).toHaveBeenCalledWith(2)
+    expect(mockGetById).toHaveBeenCalledWith(1)
+    expect(wrapper.emitted('select')).toBeUndefined()
+    expect(wrapper.find('.search-results').exists()).toBe(false)
+    expect(wrapper.findAll('.node-label').some((node) => node.text() === 'Leaf')).toBe(true)
+  })
+
+  it('navigates by result ID even when its displayed code differs from the tree node', async () => {
+    mockLookup.mockResolvedValueOnce([{ id: 3, code: '84A350', name: 'Result' }])
+    const wrapper = createWrapper()
+    await waitForUpdates(wrapper)
+
+    await wrapper.find('.search-input').setValue('result')
+    await wrapper.findComponent({ name: 'ActionButton' }).find('button').trigger('click')
+    await waitForUpdates(wrapper)
+    await wrapper.find('.search-result-item').trigger('click')
+    await waitForUpdates(wrapper)
+
+    expect(mockGetById).toHaveBeenCalledWith(3)
+    expect(wrapper.emitted('select')).toBeUndefined()
+    expect(wrapper.find('.search-results').exists()).toBe(false)
+    expect(wrapper.findAll('.node-label').some((node) => node.text() === 'Leaf')).toBe(true)
   })
 
   it('closes dropdown on Escape key', async () => {
@@ -196,14 +239,9 @@ describe('FeacnCodeSearch.vue', () => {
     expect(wrapper.find('.search-error').exists()).toBe(true)
   })
 
-  it('shows error message when getById fails while opening path', async () => {
+  it('shows a lookup error and lets navigation to a tree node be retried', async () => {
     mockLookup.mockResolvedValueOnce([{ id: 3, code: '0101010101', name: 'Leaf' }])
-    mockGetById.mockImplementation((id) => {
-      if (id === 3) return Promise.reject(new Error('fail'))
-      if (id === 2) return Promise.resolve(child)
-      if (id === 1) return Promise.resolve(root)
-      return Promise.resolve(null)
-    })
+    mockGetById.mockRejectedValueOnce(new Error('fail'))
     const wrapper = createWrapper()
     await waitForUpdates(wrapper)
 
@@ -219,6 +257,17 @@ describe('FeacnCodeSearch.vue', () => {
 
     expect(mockGetById).toHaveBeenCalledWith(3)
     expect(wrapper.find('.search-error').exists()).toBe(true)
+    expect(wrapper.emitted('select')).toBeUndefined()
+
+    mockLookup.mockResolvedValueOnce([{ id: 3, code: leaf.code, name: 'Leaf' }])
+    await searchButton.find('button').trigger('click')
+    await waitForUpdates(wrapper)
+    await wrapper.find('.search-result-item').trigger('click')
+    await waitForUpdates(wrapper)
+
+    expect(wrapper.find('.search-error').exists()).toBe(false)
+    expect(wrapper.emitted('select')).toBeUndefined()
+    expect(wrapper.findAll('.node-label').some((node) => node.text() === 'Leaf')).toBe(true)
   })
 
   it('does not perform lookup when search key is empty or whitespace', async () => {
@@ -251,7 +300,86 @@ describe('FeacnCodeSearch.vue', () => {
     await waitForUpdates(wrapper)
 
     expect(mockGetById).not.toHaveBeenCalled()
-    expect(wrapper.find('.search-results').exists()).toBe(false)
+    expect(wrapper.find('.search-results').exists()).toBe(true)
+    expect(wrapper.find('.search-result-item').classes()).toContain('unavailable')
+    expect(wrapper.find('.search-result-item').attributes('aria-disabled')).toBe('true')
+  })
+
+  it('does nothing when a search result has no matching tree node', async () => {
+    mockLookup.mockResolvedValueOnce([{ id: 99, code: '847350', name: 'Missing' }])
+    const wrapper = createWrapper()
+    await waitForUpdates(wrapper)
+
+    await wrapper.find('.search-input').setValue('missing')
+    await wrapper.findComponent({ name: 'ActionButton' }).find('button').trigger('click')
+    await waitForUpdates(wrapper)
+    await wrapper.find('.search-result-item').trigger('mouseenter')
+    await waitForUpdates(wrapper)
+
+    expect(mockGetById).toHaveBeenCalledWith(99)
+    expect(wrapper.find('.search-results').exists()).toBe(true)
+    expect(wrapper.findAll('.node-label').some((node) => node.text() === 'Child')).toBe(false)
+    expect(wrapper.emitted('select')).toBeUndefined()
+    expect(wrapper.find('.search-error').exists()).toBe(false)
+    expect(wrapper.find('.search-result-item').classes()).toContain('unavailable')
+    expect(wrapper.find('.search-result-item').attributes('aria-disabled')).toBe('true')
+
+    await wrapper.find('.search-result-item').trigger('click')
+    await waitForUpdates(wrapper)
+    expect(mockGetById).toHaveBeenCalledTimes(1)
+
+    mockLookup.mockResolvedValueOnce([{ id: 99, code: '847350', name: 'Missing' }])
+    await wrapper.findComponent({ name: 'ActionButton' }).find('button').trigger('click')
+    await waitForUpdates(wrapper)
+    expect(wrapper.find('.search-result-item').classes()).not.toContain('unavailable')
+
+    await wrapper.find('.search-result-item').trigger('click')
+    await waitForUpdates(wrapper)
+    expect(mockGetById).toHaveBeenCalledTimes(2)
+    expect(wrapper.find('.search-result-item').classes()).toContain('unavailable')
+  })
+
+  it('shows a lookup error if checking a result on hover fails', async () => {
+    mockLookup.mockResolvedValueOnce([{ id: 3, code: leaf.code, name: 'Leaf' }])
+    mockGetById.mockRejectedValueOnce(new Error('lookup failed'))
+    const wrapper = createWrapper()
+    await waitForUpdates(wrapper)
+
+    await wrapper.find('.search-input').setValue('leaf')
+    await wrapper.findComponent({ name: 'ActionButton' }).find('button').trigger('click')
+    await waitForUpdates(wrapper)
+    await wrapper.find('.search-result-item').trigger('mouseenter')
+    await waitForUpdates(wrapper)
+
+    expect(wrapper.find('.search-error').exists()).toBe(true)
+    expect(wrapper.find('.search-result-item').classes()).not.toContain('unavailable')
+    expect(wrapper.emitted('select')).toBeUndefined()
+  })
+
+  it('ignores an old node lookup after a new search starts', async () => {
+    let resolveNode
+    mockGetById.mockReturnValueOnce(new Promise((resolve) => { resolveNode = resolve }))
+    mockLookup
+      .mockResolvedValueOnce([{ id: 3, code: leaf.code, name: 'Leaf' }])
+      .mockResolvedValueOnce([{ id: 3, code: leaf.code, name: 'Leaf' }])
+    const wrapper = createWrapper()
+    await waitForUpdates(wrapper)
+
+    await wrapper.find('.search-input').setValue('leaf')
+    const searchButton = wrapper.findComponent({ name: 'ActionButton' })
+    await searchButton.find('button').trigger('click')
+    await waitForUpdates(wrapper)
+    await wrapper.find('.search-result-item').trigger('mouseenter')
+    await wrapper.find('.search-result-item').trigger('click')
+
+    await searchButton.find('button').trigger('click')
+    await waitForUpdates(wrapper)
+    resolveNode(null)
+    await waitForUpdates(wrapper)
+
+    expect(wrapper.find('.search-results').exists()).toBe(true)
+    expect(wrapper.find('.search-result-item').classes()).not.toContain('unavailable')
+    expect(wrapper.emitted('select')).toBeUndefined()
   })
 
   it('gracefully aborts opening path when a parent node is missing', async () => {

@@ -41,13 +41,14 @@ describe('responsive layout policy', () => {
     }
   })
 
-  it('lets FEACN overlays fit the viewport and keeps wide trees internally scrollable', () => {
+  it('fits FEACN overlays within their content row and keeps wide trees internally scrollable', () => {
     const editor = readSource('src/components/FeacnCodeEditor.vue')
     const selector = readSource('src/components/FeacnCodeSelectorW.vue')
     const search = readSource('src/components/FeacnCodeSearch.vue')
 
-    expect(editor).toMatch(/\.feacn-overlay\s*\{[^}]*right:\s*0[^}]*width:\s*min\(90vw, 1600px\)[^}]*min-width:\s*0/s)
-    expect(editor).not.toContain('min-width: 600px')
+    expect(editor).toMatch(/\.feacn-search-row\s*\{[^}]*position:\s*relative/s)
+    expect(editor).toMatch(/\.feacn-overlay\s*\{[^}]*left:\s*0[^}]*right:\s*0[^}]*min-width:\s*0/s)
+    expect(editor).not.toContain('width: min(90vw, 1600px)')
     expect(selector).toMatch(/\.keyword-search-overlay\s*\{[^}]*right:\s*0[^}]*width:\s*min\(420px, 90vw\)[^}]*min-width:\s*0/s)
     expect(selector).not.toContain('min-width: 420px')
     expect(search).toMatch(/\.tree-container\s*\{[^}]*overflow-x:\s*auto/s)

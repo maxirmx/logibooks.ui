@@ -141,6 +141,8 @@ describe('FeacnCodeEditor', () => {
       await wrapper.vm.$nextTick()
       // Search overlay should appear
       expect(wrapper.find('.feacn-overlay').exists()).toBe(true)
+      expect(wrapper.find('.feacn-search-row > .feacn-overlay').exists()).toBe(true)
+      expect(wrapper.find('.feacn-search-wrapper > .feacn-overlay').exists()).toBe(false)
     })
 
     it('activates search on field dblclick', async () => {
@@ -149,6 +151,19 @@ describe('FeacnCodeEditor', () => {
       await wrapper.vm.$nextTick()
       // Search overlay should appear
       expect(wrapper.find('.feacn-overlay').exists()).toBe(true)
+    })
+
+    it('keeps the full-row dropdown open for clicks inside it and closes it outside', async () => {
+      await wrapper.find('label').trigger('dblclick')
+      const overlay = wrapper.get('.feacn-search-row > .feacn-overlay')
+
+      wrapper.vm.handleClickOutside({ target: overlay.element })
+      await wrapper.vm.$nextTick()
+      expect(wrapper.find('.feacn-overlay').exists()).toBe(true)
+
+      wrapper.vm.handleClickOutside({ target: document.createElement('div') })
+      await wrapper.vm.$nextTick()
+      expect(wrapper.find('.feacn-overlay').exists()).toBe(false)
     })
   })
 })

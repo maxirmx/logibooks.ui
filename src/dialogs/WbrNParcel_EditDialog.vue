@@ -698,6 +698,9 @@ async function onLookup(values) {
           <div class="form-group">
             <label for="shk" class="label">{{ wbrnRegisterColumnTitles.shk }}:</label>
             <ParcelNumberExt
+              live-category
+              :tn-ved="values.tnVed"
+              :customs-procedure-code="registerItem?.customsProcedureCode"
               :item="item"
               field-name="shk"
               :disabled="isSubmitting || runningAction || loading || markedByPartnerActionsDisabled"

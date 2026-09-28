@@ -15,7 +15,13 @@ export const useExportFeesStore = defineStore('exportFees', () => {
   const error = ref(null)
   const isInitialized = ref(false)
 
-  async function getAll() {
+  let pendingLoad = null
+  function getAll() {
+    pendingLoad ??= loadFees().finally(() => { pendingLoad = null })
+    return pendingLoad
+  }
+
+  async function loadFees() {
     loading.value = true
     error.value = null
     try {
@@ -44,7 +50,7 @@ export const useExportFeesStore = defineStore('exportFees', () => {
   }
 
   async function ensureLoaded() {
-    if (!isInitialized.value && !loading.value) {
+    if (!isInitialized.value) {
       await getAll()
     }
   }

@@ -692,6 +692,9 @@ async function onLookup(values) {
               >{{ gtcRegisterColumnTitles.postingNumber }}:</label
             >
             <ParcelNumberExt
+              live-category
+              :tn-ved="values.tnVed"
+              :customs-procedure-code="registerItem?.customsProcedureCode"
               :item="item"
               field-name="postingNumber"
               :disabled="isSubmitting || runningAction || loading || markedByPartnerActionsDisabled"

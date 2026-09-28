@@ -142,6 +142,36 @@ describe('GtcParcel_EditDialog passport verification', () => {
     parcelViewsBack.mockResolvedValue(null)
   })
 
+
+  it('passes the current unsaved code and procedure to the live marker', async () => {
+    const draft = ref({ tnVed: '8471300000' })
+    registersMock.item.value.customsProcedureCode = 31
+    const wrapper = mount({
+      components: { GtcParcel_EditDialog },
+      template: '<Suspense><GtcParcel_EditDialog :registerId="1" :id="3" /></Suspense>'
+    }, { global: { stubs: {
+      Form: {
+        setup: () => ({ draft }),
+        template: '<div><slot :errors="{}" :values="draft" :isSubmitting="false" :setFieldValue="() => {}" /></div>'
+      },
+      Field: true, ParcelHeaderActionsBar: true, ParcelStatusSection: true,
+      FeacnCodeEditor: true, ParcelNumberExt: true, ActionButton: true,
+      ParcelWeightAutoField: true, DTagSection: true, 'font-awesome-icon': true, VTooltip: true
+    } } })
+    await resolveAll()
+    await nextTick()
+    const number = wrapper.findComponent({ name: 'ParcelNumberExt' })
+    expect(number.props('liveCategory')).toBe(true)
+    expect(number.props('customsProcedureCode')).toBe(31)
+    expect(number.props('tnVed')).toBe('8471300000')
+    draft.value.tnVed = ''
+    await nextTick()
+    expect(number.props('tnVed')).toBe('')
+    draft.value.tnVed = 'invalid'
+    await nextTick()
+    expect(number.props('tnVed')).toBe('invalid')
+    wrapper.unmount()
+  })
   it('renders passport verification actions for import SrLogistPlus parcels and runs check actions', async () => {
     const TestWrapper = {
       components: { GtcParcel_EditDialog },

@@ -2079,3 +2079,17 @@ a,
 .read-only-notice {
   margin: 0.75rem 0;
 }
+
+.export-fee-category-marker {
+  color: #0d47a1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: 1.2em;
+  height: 1.2em;
+  border: 2px solid currentColor;
+  border-radius: 2px;
+  font-weight:700;
+  line-height: 1;
+}

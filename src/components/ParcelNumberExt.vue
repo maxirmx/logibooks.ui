@@ -32,6 +32,13 @@ function handleFellowsClick(item) {
       :disabled="disabled"
       @click="handleClick" 
     />
+    <span
+      v-if="item?.matchesExportFeeCategory"
+      class="export-fee-category-marker"
+      role="img"
+      title="Код ТН ВЭД входит в справочник экспортных сборов"
+      aria-label="Код ТН ВЭД входит в справочник экспортных сборов"
+    >С</span>
     <ActionButton 
       v-if="item?.fellowItems?.length > 0 && !item?.blockedByFellowItem && !item?.excsiseByFellowItem"
       :item="item" 
@@ -75,5 +82,17 @@ function handleFellowsClick(item) {
   display: flex;
   align-items: center;
   gap: 0.25rem;
+}
+.export-fee-category-marker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: 1.2em;
+  height: 1.2em;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+  font-weight: 600;
+  line-height: 1;
 }
 </style>

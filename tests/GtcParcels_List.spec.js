@@ -244,7 +244,8 @@ describe('GtcParcels_List.vue', () => {
         fellowItems: [2, 3, 4],
         blockedByFellowItem: true,
         excsiseByFellowItem: true,
-        markedByFellowItem: true
+        markedByFellowItem: true,
+        matchesExportFeeCategory: true
       })
     ]
 
@@ -265,8 +266,11 @@ describe('GtcParcels_List.vue', () => {
         fellowItems: [2, 3, 4],
         blockedByFellowItem: true,
         excsiseByFellowItem: true,
-        markedByFellowItem: true
+        markedByFellowItem: true,
+        matchesExportFeeCategory: true
       })
+
+      expect(parcelNumberCell.get('.export-fee-category-marker').text()).toBe('С')
 
       const fellowButtons = parcelNumberCell.findAllComponents(ActionButton)
 

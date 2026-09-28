@@ -4,6 +4,11 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
+import { mount, flushPromises } from '@vue/test-utils'
+import { ref, nextTick } from 'vue'
+import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
+import { useAlertStore } from '@/stores/alert.store.js'
 import { useParcelsStore } from '@/stores/parcels.store.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
@@ -616,6 +621,91 @@ describe('parcels store', () => {
   })
 
   describe('update method', () => {
+    it.each([true, false])('refreshes the marker before returning to cached list rows (%s)', async (flag) => {
+      const store = useParcelsStore()
+      store.item = { id: 5, tnVed: 'old', postingNumber: 'P5', matchesExportFeeCategory: !flag }
+      store.items = [{ ...store.item }, { id: 6, matchesExportFeeCategory: true }]
+      fetchWrapper.put.mockResolvedValue(undefined)
+      fetchWrapper.get.mockResolvedValue({ id: 5, matchesExportFeeCategory: flag })
+      const showList = ref(false)
+      const wrapper = mount({
+        components: { ParcelNumberExt },
+        setup: () => ({ store, showList }),
+        template: '<ParcelNumberExt :item="showList ? store.items[0] : store.item" />'
+      }, { global: { stubs: { ClickableCell: true, ActionButton: true } } })
+      expect(wrapper.find('.export-fee-category-marker').exists()).toBe(!flag)
+      await store.update(5, { tnVed: 'new', matchesExportFeeCategory: !flag })
+      showList.value = true
+      await nextTick()
+      expect(wrapper.find('.export-fee-category-marker').exists()).toBe(flag)
+      expect(store.item.matchesExportFeeCategory).toBe(flag)
+      expect(store.items[0].matchesExportFeeCategory).toBe(flag)
+      expect(store.items[1].matchesExportFeeCategory).toBe(true)
+      expect(fetchWrapper.get).toHaveBeenCalledWith(apiUrl + '/parcels/a/5')
+      wrapper.unmount()
+    })
+
+    it.each(['detail', 'list'])('refreshes when only the %s cache contains the parcel', async (cache) => {
+      const store = useParcelsStore()
+      store.item = { id: 7 }
+      store.items = [{ id: 6 }]
+      const parcel = { id: 5, tnVed: 'old', matchesExportFeeCategory: true }
+      if (cache === 'detail') store.item = parcel
+      else store.items.push(parcel)
+      fetchWrapper.put.mockResolvedValue(undefined)
+      // Older server versions may omit the additive field.
+      fetchWrapper.get.mockResolvedValue({ id: 5 })
+      await store.update(5, { tnVed: 'new' })
+      expect((cache === 'detail' ? store.item : store.items[1]).matchesExportFeeCategory).toBe(false)
+      expect(store.items[0]).toEqual({ id: 6 })
+    })
+
+    it('does not refresh category for saves without a TN VED field', async () => {
+      const store = useParcelsStore()
+      store.item = { id: 5, matchesExportFeeCategory: true }
+      fetchWrapper.put.mockResolvedValue(undefined)
+      await store.update(5, { statusId: 2 })
+      expect(fetchWrapper.get).not.toHaveBeenCalled()
+      expect(store.item.matchesExportFeeCategory).toBe(true)
+    })
+
+    it('shows one refresh error, keeps the form open, and allows retry', async () => {
+      const store = useParcelsStore()
+      const alertStore = useAlertStore()
+      store.item = { id: 5, postingNumber: 'P5', tnVed: 'old', matchesExportFeeCategory: true }
+      store.items = [{ ...store.item }]
+      fetchWrapper.put.mockResolvedValue(undefined)
+      fetchWrapper.get.mockRejectedValueOnce(new Error('category refresh failed'))
+        .mockResolvedValueOnce({ id: 5, matchesExportFeeCategory: false })
+      const showList = ref(false)
+      const save = async () => {
+        try {
+          await store.update(5, { tnVed: 'new' })
+          showList.value = true
+        } catch (error) {
+          alertStore.error(error)
+        }
+      }
+      const wrapper = mount({
+        components: { ParcelNumberExt, PageAlertRegion },
+        setup: () => ({ store, save, showList }),
+        template: '<div><PageAlertRegion /><button @click="save">Save</button><span data-testid="location">{{ showList ? "list" : "form" }}</span><ParcelNumberExt :item="showList ? store.items[0] : store.item" /></div>'
+      }, { global: { stubs: { ClickableCell: true, ActionButton: true } } })
+      await wrapper.get('button').trigger('click')
+      await flushPromises()
+      expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+      expect(wrapper.get('[role="alert"]').text()).toContain('category refresh failed')
+      expect(wrapper.get('[data-testid="location"]').text()).toBe('form')
+      expect(wrapper.find('.export-fee-category-marker').exists()).toBe(false)
+      expect(store.items[0].matchesExportFeeCategory).toBeUndefined()
+      await save()
+      await nextTick()
+      expect(wrapper.get('[data-testid="location"]').text()).toBe('list')
+      expect(fetchWrapper.put).toHaveBeenCalledTimes(2)
+      expect(store.items[0].matchesExportFeeCategory).toBe(false)
+      wrapper.unmount()
+    })
+
     it('updates order and calls API with correct parameters', async () => {
       fetchWrapper.put.mockResolvedValue({ success: true })
 

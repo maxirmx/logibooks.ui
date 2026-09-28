@@ -314,19 +314,31 @@ export const useParcelsStore = defineStore('parcels', () => {
   }
 
   async function update(id, data) {
-    const response = await runParcelMutation(id, () => fetchWrapper.put(`${baseUrl}/${id}`, data))
     const numericId = Number(id)
+    const refreshCategory = Object.hasOwn(data, 'tnVed') &&
+      [item.value, ...items.value].some((parcel) =>
+        Number(parcel?.id) === numericId && Object.hasOwn(parcel, 'matchesExportFeeCategory')
+      )
+    const response = await runParcelMutation(id, () => fetchWrapper.put(`${baseUrl}/${id}`, data))
+    let updatedData = data
 
-    // Update the item in the store if it's currently loaded
-    if (item.value && Number(item.value.id) === numericId) {
-      // Merge the updated data with the existing item
-      item.value = { ...item.value, ...data }
+    if (refreshCategory) {
+      // A successful PUT invalidates this server-derived flag. Hide the old marker
+      // while refreshing, and propagate refresh failures to the action's error UI.
+      for (const parcel of [item.value, ...items.value]) {
+        if (Number(parcel?.id) === numericId) parcel.matchesExportFeeCategory = undefined
+      }
+      const refreshed = await fetchWrapper.get(`${baseUrl}/a/${id}`)
+      updatedData = { ...data, matchesExportFeeCategory: refreshed?.matchesExportFeeCategory === true }
     }
 
-    // Update the item in the items array if it exists
+    if (item.value && Number(item.value.id) === numericId) {
+      item.value = { ...item.value, ...updatedData }
+    }
+
     const itemIndex = items.value.findIndex((parcel) => Number(parcel.id) === numericId)
     if (itemIndex !== -1) {
-      items.value[itemIndex] = { ...items.value[itemIndex], ...data }
+      items.value[itemIndex] = { ...items.value[itemIndex], ...updatedData }
     }
 
     return response

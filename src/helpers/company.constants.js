@@ -12,7 +12,7 @@ export const GTC_COMPANY_ID = 8
 export const THE_LAST_VISIBLE_COMPANY = 1024 * 1024;
 
 /**
- * Synthetic register type identifier for "Wildberries format 2" registers.
+ * Synthetic register type identifier for Wildberries new-format registers.
  *
  * IMPORTANT:
  * - This is NOT a real companyId and must not be persisted or sent to the
@@ -20,7 +20,6 @@ export const THE_LAST_VISIBLE_COMPANY = 1024 * 1024;
  * - When creating register records, the backend must map this synthetic
  *   register type to the real Wildberries company (WBR_COMPANY_ID = 2).
  */
-export const WBR2_REGISTER_ID = THE_LAST_VISIBLE_COMPANY + WBR_COMPANY_ID;      // Wildberries format 2 [TJ, GE]
 export const WBRN_REGISTER_ID = 2 * THE_LAST_VISIBLE_COMPANY + WBR_COMPANY_ID;  // Wildberries new format
 
 export const COMPANY_REGISTER_OUTPUT_TYPES = Object.freeze([

@@ -6,7 +6,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { useRegisterDownloadFlow } from '@/composables/useRegisterDownloadFlow.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
-import { GTC_COMPANY_ID, OZON_COMPANY_ID, WBR2_REGISTER_ID, WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
+import { GTC_COMPANY_ID, OZON_COMPANY_ID, WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
 
 const flush = async () => { await Promise.resolve(); await Promise.resolve(); await nextTick() }
 const register = (registerType, id = 10) => ({ id, registerType, fileName: 'r.xlsx' })
@@ -114,7 +114,7 @@ describe('shared register download flow', () => {
     wrapper.unmount()
   })
 
-  it.each([2, WBR2_REGISTER_ID])('keeps unsupported type %i on the original path', async (registerType) => {
+  it.each([2])('keeps unsupported type %i on the original path', async (registerType) => {
     const { flow, wrapper } = mountFlow()
     await flow.loadFormats(register(registerType, 8))
     expect(registersStore.getDownloadFormats).not.toHaveBeenCalled()

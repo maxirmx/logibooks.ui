@@ -4,7 +4,6 @@
 
 import {
   WBR_COMPANY_ID,
-  WBR2_REGISTER_ID,
   WBRN_REGISTER_ID
 } from '@/helpers/company.constants.js'
 
@@ -33,7 +32,6 @@ export function getRegisterTypeDisplayName(
   const id = Number(registerType)
   const wbrName = getCompanyDisplayName(companies, WBR_COMPANY_ID, fallback)
 
-  if (id === WBR2_REGISTER_ID) return `${wbrName} формат 2`
   if (id === WBRN_REGISTER_ID) return `${wbrName}`
 
   return getCompanyDisplayName(companies, id, fallback)

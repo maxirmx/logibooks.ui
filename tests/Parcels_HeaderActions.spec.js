@@ -8,7 +8,7 @@ import { mount } from '@vue/test-utils'
 import { ref, reactive } from 'vue'
 import OzonParcelsList from '@/lists/OzonParcels_List.vue'
 import WbrParcelsList from '@/lists/WbrParcels_List.vue'
-import Wbr2ParcelsList from '@/lists/Wbr2Parcels_List.vue'
+import WbrNParcelsList from '@/lists/WbrNParcels_List.vue'
 import GtcParcelsList from '@/lists/GtcParcels_List.vue'
 import { FCCheckStatus, SWCheckStatus } from '@/helpers/check.status.code.js'
 import { CUSTOMS_PROCEDURE_IMPORT } from '@/helpers/customs.procedure.helpers.js'
@@ -372,7 +372,7 @@ vi.mock('@/l2/ParcelStatusBulkChangeDialog.vue', () => ({
 describe.each([
   ['OzonParcels_List', OzonParcelsList, { hasPreviousDTagComment: true }],
   ['WbrParcels_List', WbrParcelsList, { hasPreviousDTagComment: true }],
-  ['Wbr2Parcels_List', Wbr2ParcelsList, { hasPreviousDTagComment: true }],
+  ['WbrNParcels_List', WbrNParcelsList, { hasPreviousDTagComment: true }],
   ['GtcParcels_List', GtcParcelsList, { hasPreviousDTagComment: false }]
 ])('%s header actions', (name, Component, capabilities) => {
   beforeEach(() => {

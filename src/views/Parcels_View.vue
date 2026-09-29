@@ -8,12 +8,10 @@ import OzonParcelsList from '@/lists/OzonParcels_List.vue'
 import OzonParcelsWhList from '@/lists/OzonParcels_WhList.vue'
 import WbrParcelsList from '@/lists/WbrParcels_List.vue'
 import WbrParcelsWhList from '@/lists/WbrParcels_WhList.vue'
-import Wbr2ParcelsList from '@/lists/Wbr2Parcels_List.vue'
-import Wbr2ParcelsWhList from '@/lists/Wbr2Parcels_WhList.vue'
 import WbrNParcelsList from '@/lists/WbrNParcels_List.vue'
 import WbrNParcelsWhList from '@/lists/WbrNParcels_WhList.vue'
 import GtcParcelsList from '@/lists/GtcParcels_List.vue'
-import { OZON_COMPANY_ID, WBR_COMPANY_ID, GTC_COMPANY_ID, WBR2_REGISTER_ID, WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
+import { OZON_COMPANY_ID, WBR_COMPANY_ID, GTC_COMPANY_ID, WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
 import { OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 import { isImportCustomsProcedure } from '@/helpers/customs.procedure.helpers.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
@@ -119,9 +117,6 @@ const listComponent = computed(() => {
     return props.mode === OP_MODE_WAREHOUSE ? WbrParcelsWhList : WbrParcelsList
   }
   if (registerType === GTC_COMPANY_ID) return GtcParcelsList
-  if (registerType === WBR2_REGISTER_ID) {
-    return props.mode === OP_MODE_WAREHOUSE ? Wbr2ParcelsWhList : Wbr2ParcelsList
-  }
   if (registerType === WBRN_REGISTER_ID) {
     return props.mode === OP_MODE_WAREHOUSE ? WbrNParcelsWhList : WbrNParcelsList
   }

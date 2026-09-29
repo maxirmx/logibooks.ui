@@ -7,7 +7,6 @@ import { mount } from '@vue/test-utils'
 import GtcFormField from '@/components/GtcFormField.vue'
 import OzonFormField from '@/components/OzonFormField.vue'
 import WbrFormField from '@/components/WbrFormField.vue'
-import Wbr2FormField from '@/components/Wbr2FormField.vue'
 import WbrNFormField from '@/components/WbrNFormField.vue'
 
 const FieldStub = {
@@ -21,7 +20,6 @@ describe.each([
   ['GTC', GtcFormField],
   ['Ozon', OzonFormField],
   ['WBR', WbrFormField],
-  ['WBR2', Wbr2FormField],
   ['WBRN', WbrNFormField]
 ])('%s currency form field', (_name, component) => {
   it('renders read-only without disabling the submitted field', () => {

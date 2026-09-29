@@ -11,7 +11,6 @@ import ResponsiveFilterBar from '@/components/ResponsiveFilterBar.vue'
 import {
   OZON_COMPANY_ID,
   WBR_COMPANY_ID,
-  WBR2_REGISTER_ID,
   WBRN_REGISTER_ID
 } from '@/helpers/company.constants.js'
 import { OP_MODE_PAPERWORK } from '@/helpers/op.mode.js'
@@ -969,19 +968,6 @@ describe('Registers_List.vue', () => {
         expect(registersStore.item.fileName).toBe('test.xlsx')
         expect(registersStore.item.registerType).toBe(OZON_COMPANY_ID)
         expect(registersStore.item.companyId).toBe(OZON_COMPANY_ID)
-        expect(registersStore.uploadFile).toBe(file)
-        expect(router.push).toHaveBeenCalledWith('/register/load')
-      })
-
-      it('handles file selection with single file input for WBR', async () => {
-        const file = new File(['data'], 'test.xlsx')
-        wrapper.vm.selectedRegisterType = WBR2_REGISTER_ID
-
-        await wrapper.vm.fileSelected(file)
-
-        expect(registersStore.item.fileName).toBe('test.xlsx')
-        expect(registersStore.item.registerType).toBe(WBR2_REGISTER_ID)
-        expect(registersStore.item.companyId).toBe(WBR_COMPANY_ID)
         expect(registersStore.uploadFile).toBe(file)
         expect(router.push).toHaveBeenCalledWith('/register/load')
       })

@@ -59,7 +59,6 @@ describe('responsive layout policy', () => {
       'src/dialogs/Register_EditDialog.vue',
       'src/dialogs/GtcParcel_EditDialog.vue',
       'src/dialogs/OzonParcel_EditDialog.vue',
-      'src/dialogs/Wbr2Parcel_EditDialog.vue',
       'src/dialogs/WbrParcel_EditDialog.vue',
       'src/dialogs/WbrNParcel_EditDialog.vue'
     ]

@@ -16,7 +16,6 @@ import { OP_MODE_PAPERWORK } from '@/helpers/op.mode.js'
 
 let WbrNParcelsList
 let WbrParcelsList
-let Wbr2ParcelsList
 
 const loadParcels = vi.fn().mockResolvedValue()
 const navigateToEditParcel = vi.fn()
@@ -578,7 +577,6 @@ describe('WbrNParcels_List.vue', () => {
   beforeAll(async () => {
     WbrNParcelsList = (await import('@/lists/WbrNParcels_List.vue')).default
     WbrParcelsList = (await import('@/lists/WbrParcels_List.vue')).default
-    Wbr2ParcelsList = (await import('@/lists/Wbr2Parcels_List.vue')).default
   }, 60_000)
 
   beforeEach(resetState)
@@ -822,7 +820,7 @@ describe('WbrNParcels_List.vue', () => {
 
   it.each([
     ['Wbr', () => WbrParcelsList],
-    ['Wbr2', () => Wbr2ParcelsList]
+    ['WbrN', () => WbrNParcelsList]
   ])('enforces %s list mutation locks and refreshes conflicts', async (_name, getComponent) => {
     const wrapper = mount(getComponent(), {
       props: { registerId: 7 },

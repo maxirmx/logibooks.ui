@@ -8,7 +8,6 @@ import { watch, ref, onMounted, onUnmounted, reactive, computed, unref } from 'v
 import {
   OZON_COMPANY_ID,
   WBR_COMPANY_ID,
-  WBR2_REGISTER_ID,
   WBRN_REGISTER_ID
 } from '@/helpers/company.constants.js'
 import { getRegisterTypeDisplayName } from '@/helpers/register.display.helpers.js'
@@ -241,7 +240,7 @@ async function fileSelected(files) {
     return
   }
 
-  const customerId = [WBR2_REGISTER_ID, WBRN_REGISTER_ID].includes(selectedRegisterType.value)
+  const customerId = selectedRegisterType.value === WBRN_REGISTER_ID
     ? WBR_COMPANY_ID
     : selectedRegisterType.value
   registersStore.item = {

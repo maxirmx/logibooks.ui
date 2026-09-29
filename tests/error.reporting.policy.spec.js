@@ -59,7 +59,7 @@ describe('error reporting source policy', () => {
         (source.match(/<PageAlertRegion\s*\/>/g) ?? []).length !== 1
     )
 
-    expect(migratedFiles).toHaveLength(57)
+    expect(migratedFiles).toHaveLength(55)
     expect(violations).toEqual([])
   })
 })

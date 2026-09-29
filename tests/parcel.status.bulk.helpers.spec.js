@@ -9,7 +9,6 @@ import {
   GTC_COMPANY_ID,
   OZON_COMPANY_ID,
   WBR_COMPANY_ID,
-  WBR2_REGISTER_ID,
   WBRN_REGISTER_ID
 } from '@/helpers/company.constants.js'
 
@@ -51,7 +50,6 @@ describe('parcel status bulk helpers', () => {
 
   it('builds parcel-number labels from register type', () => {
     expect(getParcelStatusBulkNumberLabel({ registerType: WBR_COMPANY_ID })).toBe('ШК')
-    expect(getParcelStatusBulkNumberLabel({ registerType: WBR2_REGISTER_ID })).toBe('ШК')
     expect(getParcelStatusBulkNumberLabel({ registerType: WBRN_REGISTER_ID })).toBe('ШК')
     expect(getParcelStatusBulkNumberLabel({ registerType: OZON_COMPANY_ID })).toBe('№ отправления')
     expect(getParcelStatusBulkNumberLabel({ registerType: GTC_COMPANY_ID })).toBe('№ посылки')

@@ -10,7 +10,7 @@ import {
   GTC_COMPANY_ID,
   OZON_COMPANY_ID,
   WBR_COMPANY_ID,
-  WBR2_REGISTER_ID
+  WBRN_REGISTER_ID
 } from '@/helpers/company.constants.js'
 
 const mocks = vi.hoisted(() => ({
@@ -189,7 +189,7 @@ describe('ParcelStatusBulkChangeDialog', () => {
 
     expect(label()).toBe('ШК')
 
-    await wrapper.setProps({ register: { id: 7, registerType: WBR2_REGISTER_ID } })
+    await wrapper.setProps({ register: { id: 7, registerType: WBRN_REGISTER_ID } })
     expect(label()).toBe('ШК')
 
     await wrapper.setProps({ register: { id: 7, registerType: OZON_COMPANY_ID } })

@@ -13,7 +13,6 @@ import router from '@/router'
 import { resolveAll } from './helpers/test-utils'
 import {
   WBR_COMPANY_ID,
-  WBR2_REGISTER_ID,
   WBRN_REGISTER_ID,
   GTC_COMPANY_ID,
   OZON_COMPANY_ID
@@ -693,36 +692,6 @@ describe('Register_EditDialog', () => {
     expect(mockItem.value.transportationTypeCode).toBe(0)
   })
 
-  it('renders warehouse selector for WBR2 register type', async () => {
-    mockItem.value = {
-      ...baseRegisterItem,
-      registerType: WBR2_REGISTER_ID
-    }
-
-    const Parent = {
-      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
-      components: { RegisterEditDialog }
-    }
-    const wrapper = mount(Parent, {
-      global: {
-        stubs: {
-          ...defaultGlobalStubs,
-          Form: FormStub,
-          Field: FieldStub,
-          ErrorDialog: ErrorDialogStub
-        }
-      }
-    })
-    await resolveAll()
-
-    expect(warehousesStore.ensureLoaded).toHaveBeenCalled()
-    const warehouseSelect = wrapper.find('select#warehouseId')
-    expect(warehouseSelect.exists()).toBe(true)
-    const optionTexts = warehouseSelect.findAll('option').map((option) => option.text())
-    expect(optionTexts).toContain('Не задано')
-    expect(optionTexts).toContain('Main Warehouse')
-  })
-
   it('renders warehouse selector for WBRN register type', async () => {
     mockItem.value = {
       ...baseRegisterItem,
@@ -1033,46 +1002,6 @@ describe('Register_EditDialog', () => {
         transportationTypeCode: 0,
         departureAirportId: 1,
         arrivalAirportId: 2
-      })
-    )
-  })
-
-  it('submits warehouseId for WBR2 register type', async () => {
-    mockItem.value = {
-      ...baseRegisterItem,
-      registerType: WBR2_REGISTER_ID,
-      warehouseId: 11
-    }
-
-    const Parent = {
-      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
-      components: { RegisterEditDialog }
-    }
-    const wrapper = mount(Parent, {
-      global: {
-        stubs: {
-          ...defaultGlobalStubs,
-          Form: FormStub,
-          Field: FieldStub,
-          ErrorDialog: ErrorDialogStub
-        }
-      }
-    })
-    await resolveAll()
-
-    const dialog = wrapper.findComponent(RegisterEditDialog)
-    await dialog.vm.onSubmit(
-      {
-        warehouseId: '11'
-      },
-      { setErrors: vi.fn() }
-    )
-    await resolveAll()
-
-    expect(update).toHaveBeenCalledWith(
-      1,
-      expect.objectContaining({
-        warehouseId: 11
       })
     )
   })
@@ -2545,7 +2474,6 @@ describe('Register_EditDialog', () => {
   it.each([
     ['Ozon', OZON_COMPANY_ID, OZON_COMPANY_ID, CUSTOMS_PROCEDURE_IMPORT],
     ['WBR', WBR_COMPANY_ID, WBR_COMPANY_ID, CUSTOMS_PROCEDURE_IMPORT],
-    ['WBR2', WBR2_REGISTER_ID, WBR_COMPANY_ID, CUSTOMS_PROCEDURE_IMPORT],
     ['WbrN', WBRN_REGISTER_ID, WBR_COMPANY_ID, CUSTOMS_PROCEDURE_IMPORT],
     ['GTC', GTC_COMPANY_ID, GTC_COMPANY_ID, CUSTOMS_PROCEDURE_GTC_IMPORT]
   ])(
@@ -3262,8 +3190,7 @@ describe('Register_EditDialog', () => {
           allowedRegisterTypes: [
             OZON_COMPANY_ID,
             WBR_COMPANY_ID,
-            WBR2_REGISTER_ID,
-            WBRN_REGISTER_ID
+                      WBRN_REGISTER_ID
           ]
         },
         {
@@ -3293,8 +3220,7 @@ describe('Register_EditDialog', () => {
           allowedRegisterTypes: [
             OZON_COMPANY_ID,
             WBR_COMPANY_ID,
-            WBR2_REGISTER_ID,
-            WBRN_REGISTER_ID
+                      WBRN_REGISTER_ID
           ]
         }
       ]

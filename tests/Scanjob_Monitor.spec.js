@@ -103,14 +103,14 @@ const isShiftLead = vi.hoisted(() => ({
   __v_isRef: true,
   value: false
 }))
-const WBR2_REGISTER_TYPE = 1024 * 1024 + 2
+const WBRN_REGISTER_TYPE = 2 * 1024 * 1024 + 2
 const registerMonitorScope = { area: 0, boxId: null, bucketIndex: null }
 const box7MonitorScope = { area: 1, boxId: 7, bucketIndex: null }
 const unassignedBucket1MonitorScope = { area: 2, boxId: null, bucketIndex: 1 }
 
 const registerSnapshot = {
   scanJobId: 42,
-  registerType: WBR2_REGISTER_TYPE,
+  registerType: WBRN_REGISTER_TYPE,
   area: 0,
   totalBoxes: 2,
   boxesWithStickerScanned: 1,
@@ -155,7 +155,7 @@ const registerSnapshot = {
 
 const boxSnapshot = {
   scanJobId: 42,
-  registerType: WBR2_REGISTER_TYPE,
+  registerType: WBRN_REGISTER_TYPE,
   area: 1,
   totalBoxes: 2,
   boxesWithStickerScanned: 1,
@@ -1155,7 +1155,7 @@ describe('Scanjob_Monitor.vue', () => {
     expect(wrapper.find('.primary-heading').text()).toBe(
       'Сканирование | Сделка DEAL-101 (Авианакладная INV-101) | Коробка BOX-7'
     )
-    expect(wrapper.findComponent({ name: 'Scanjob_Wbr2_Parcels_Monitor_Table' }).exists()).toBe(
+    expect(wrapper.findComponent({ name: 'Scanjob_WbrN_Parcels_Monitor_Table' }).exists()).toBe(
       true
     )
 
@@ -1200,7 +1200,7 @@ describe('Scanjob_Monitor.vue', () => {
     await wrapper.setProps({ monitorScope: box7MonitorScope })
     await flushPromises()
 
-    const table = wrapper.getComponent({ name: 'Scanjob_Wbr2_Parcels_Monitor_Table' })
+    const table = wrapper.getComponent({ name: 'Scanjob_WbrN_Parcels_Monitor_Table' })
     expect(table.props('register')).toEqual({
       realWeightKg: 5,
       totalWeightKgToRelease: 10

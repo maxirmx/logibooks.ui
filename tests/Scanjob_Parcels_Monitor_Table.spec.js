@@ -8,7 +8,6 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import ScanjobOzonParcelsMonitorTable from '@/dialogs/Scanjob_Ozon_Parcels_Monitor_Table.vue'
 import ScanjobWbrParcelsMonitorTable from '@/dialogs/Scanjob_Wbr_Parcels_Monitor_Table.vue'
-import ScanjobWbr2ParcelsMonitorTable from '@/dialogs/Scanjob_Wbr2_Parcels_Monitor_Table.vue'
 import ScanjobWbrNParcelsMonitorTable from '@/dialogs/Scanjob_WbrN_Parcels_Monitor_Table.vue'
 import ScanjobParcelsMonitorTable from '@/dialogs/Scanjob_Parcels_Monitor_Table.vue'
 import { vuetifyStubs } from './helpers/test-utils.js'
@@ -186,59 +185,6 @@ describe('Scanjob parcel monitor typed tables', () => {
     expect(wrapper.text()).toContain('BAR-21')
   })
 
-  it('renders WBR2 scan and WH columns without box number', () => {
-    const wrapper = mount(ScanjobWbr2ParcelsMonitorTable, {
-      props: {
-        parcels: [
-          {
-            stickerScanned: true,
-            shk: 'SHK-31',
-            stickerCode: 'CODE-31',
-            wbSticker: 'WB-31',
-            sellerSticker: 'SELLER-31',
-            productName: 'Very long WBR2 product name',
-            weightKg: 5.67,
-            quantity: 8,
-            zoneName: 'Yellow',
-            statusTitle: 'Done',
-            checkStatusProjection: {
-              kind: 20,
-              title: 'Запрет',
-              restrictionReason: 'Причина запрета'
-            }
-          }
-        ]
-      },
-      global
-    })
-
-    const headers = wrapper.findComponent(ScanjobParcelsMonitorTable).props('headers')
-    expect(headers.map((header) => header.key)).toEqual([
-      'actions',
-      'stickerScanned',
-      'checkStatusProjection',
-      'zone',
-      'statusId',
-      'scannedInfo',
-      'shk',
-      'stickerCode',
-      'wbSticker',
-      'sellerSticker',
-      'productName',
-      'weightKg',
-      'quantity'
-    ])
-    expect(headers.map((header) => header.key)).not.toContain('boxNumber')
-    expect(wrapper.text()).toContain('SHK-31')
-    expect(wrapper.text()).toContain('WB-31')
-    expect(wrapper.text()).toContain('SELLER-31')
-    expect(wrapper.text()).toContain('Запрет')
-    expect(wrapper.text()).toContain('Причина запрета')
-
-    const statusCell = wrapper.get('.status-cell.has-issues')
-    expect(statusCell.text()).toBe('Запрет')
-  })
-
   it('renders WBRN scan and WH columns without box number', () => {
     const wrapper = mount(ScanjobWbrNParcelsMonitorTable, {
       props: {
@@ -288,7 +234,7 @@ describe('Scanjob parcel monitor typed tables', () => {
   })
 
   it('renders corrected monitor parcel weights from register correction data', () => {
-    const wrapper = mount(ScanjobWbr2ParcelsMonitorTable, {
+    const wrapper = mount(ScanjobWbrNParcelsMonitorTable, {
       props: {
         register: {
           realWeightKg: 5,
@@ -327,7 +273,7 @@ describe('Scanjob parcel monitor typed tables', () => {
   })
 
   it('renders product name as a non-wrapping tooltip cell and keeps click editing', async () => {
-    const wrapper = mount(ScanjobWbr2ParcelsMonitorTable, {
+    const wrapper = mount(ScanjobWbrNParcelsMonitorTable, {
       props: {
         parcels: [
           {
@@ -357,7 +303,7 @@ describe('Scanjob parcel monitor typed tables', () => {
   it('does not make parcel cells clickable without parcel edit route permission', async () => {
     hasLogistRole.value = false
 
-    const wrapper = mount(ScanjobWbr2ParcelsMonitorTable, {
+    const wrapper = mount(ScanjobWbrNParcelsMonitorTable, {
       props: {
         parcels: [
           {
@@ -382,7 +328,7 @@ describe('Scanjob parcel monitor typed tables', () => {
   it('emits set-defect for warehouse manager when parcel status allows it', async () => {
     isWhManager.value = true
 
-    const wrapper = mount(ScanjobWbr2ParcelsMonitorTable, {
+    const wrapper = mount(ScanjobWbrNParcelsMonitorTable, {
       props: {
         parcels: [
           {
@@ -413,7 +359,7 @@ describe('Scanjob parcel monitor typed tables', () => {
   it('emits clear-defect for shift lead only when parcel is defect', async () => {
     isShiftLead.value = true
 
-    const wrapper = mount(ScanjobWbr2ParcelsMonitorTable, {
+    const wrapper = mount(ScanjobWbrNParcelsMonitorTable, {
       props: {
         parcels: [
           {

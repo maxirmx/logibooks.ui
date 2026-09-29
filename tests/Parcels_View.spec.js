@@ -12,7 +12,6 @@ import {
   OZON_COMPANY_ID,
   WBR_COMPANY_ID,
   GTC_COMPANY_ID,
-  WBR2_REGISTER_ID,
   WBRN_REGISTER_ID
 } from '@/helpers/company.constants.js'
 import { OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
@@ -55,22 +54,6 @@ vi.mock('@/lists/OzonParcels_WhList.vue', () => ({
     name: 'OzonParcels_WhList',
     props: ['registerId', 'mode', 'boxId', 'boxCode'],
     template: '<div data-test="ozon-wh-list">OZON WH: {{ registerId }}</div>'
-  }
-}))
-
-vi.mock('@/lists/Wbr2Parcels_List.vue', () => ({
-  default: {
-    name: 'Wbr2Parcels_List',
-    props: ['register-id'],
-    template: '<div data-test="wbr2-list">WBR2: {{ registerId }}</div>'
-  }
-}))
-
-vi.mock('@/lists/Wbr2Parcels_WhList.vue', () => ({
-  default: {
-    name: 'Wbr2Parcels_WhList',
-    props: ['register-id'],
-    template: '<div data-test="wbr2-wh-list">WBR2 WH: {{ registerId }}</div>'
   }
 }))
 
@@ -278,7 +261,6 @@ describe('Parcels_View', () => {
 
     expect(wrapper.find('[data-test="wbr-list"]').exists()).toBe(true)
     expect(wrapper.find('[data-test="ozon-list"]').exists()).toBe(false)
-    expect(wrapper.find('[data-test="wbr2-list"]').exists()).toBe(false)
   })
 
   it('renders WbrParcels_WhList when register has WBR registerType in warehouse mode', async () => {
@@ -297,7 +279,6 @@ describe('Parcels_View', () => {
     expect(wrapper.find('[data-test="wbr-wh-list"]').exists()).toBe(true)
     expect(wrapper.find('[data-test="wbr-list"]').exists()).toBe(false)
     expect(wrapper.find('[data-test="ozon-list"]').exists()).toBe(false)
-    expect(wrapper.find('[data-test="wbr2-list"]').exists()).toBe(false)
   })
 
   it('passes exact box scope to the selected warehouse list and clears only that scope', async () => {
@@ -396,7 +377,6 @@ describe('Parcels_View', () => {
 
     expect(wrapper.find('[data-test="ozon-list"]').exists()).toBe(true)
     expect(wrapper.find('[data-test="wbr-list"]').exists()).toBe(false)
-    expect(wrapper.find('[data-test="wbr2-list"]').exists()).toBe(false)
   })
 
   it('renders OzonParcels_WhList when register has OZON registerType in warehouse mode', async () => {
@@ -415,45 +395,6 @@ describe('Parcels_View', () => {
     expect(wrapper.find('[data-test="ozon-wh-list"]').exists()).toBe(true)
     expect(wrapper.find('[data-test="ozon-list"]').exists()).toBe(false)
     expect(wrapper.find('[data-test="wbr-list"]').exists()).toBe(false)
-    expect(wrapper.find('[data-test="wbr2-list"]').exists()).toBe(false)
-  })
-
-  it('renders Wbr2Parcels_List when register has WBR2 registerType', async () => {
-    mockGet.mockResolvedValue({ registerType: WBR2_REGISTER_ID })
-
-    const wrapper = mount(ParcelsView, {
-      props: {
-        id: 3
-      }
-    })
-
-    // Wait for async data to load
-    await nextTick()
-    await nextTick()
-
-    expect(wrapper.find('[data-test="wbr2-list"]').exists()).toBe(true)
-    expect(wrapper.find('[data-test="wbr-list"]').exists()).toBe(false)
-    expect(wrapper.find('[data-test="ozon-list"]').exists()).toBe(false)
-    expect(wrapper.find('[data-test="wbr2-wh-list"]').exists()).toBe(false)
-  })
-
-  it('renders Wbr2Parcels_WhList when register has WBR2 registerType in warehouse mode', async () => {
-    mockGet.mockResolvedValue({ registerType: WBR2_REGISTER_ID })
-
-    const wrapper = mount(ParcelsView, {
-      props: {
-        id: 4,
-        mode: OP_MODE_WAREHOUSE
-      }
-    })
-
-    await nextTick()
-    await nextTick()
-
-    expect(wrapper.find('[data-test="wbr2-wh-list"]').exists()).toBe(true)
-    expect(wrapper.find('[data-test="wbr2-list"]').exists()).toBe(false)
-    expect(wrapper.find('[data-test="wbr-list"]').exists()).toBe(false)
-    expect(wrapper.find('[data-test="ozon-list"]').exists()).toBe(false)
   })
 
   it('renders WbrNParcels_List when register has WBRN registerType', async () => {
@@ -470,7 +411,6 @@ describe('Parcels_View', () => {
 
     expect(wrapper.find('[data-test="wbrn-list"]').exists()).toBe(true)
     expect(wrapper.find('[data-test="wbr-list"]').exists()).toBe(false)
-    expect(wrapper.find('[data-test="wbr2-list"]').exists()).toBe(false)
   })
 
   it('renders WbrNParcels_WhList when register has WBRN registerType in warehouse mode', async () => {
@@ -488,7 +428,6 @@ describe('Parcels_View', () => {
 
     expect(wrapper.find('[data-test="wbrn-wh-list"]').exists()).toBe(true)
     expect(wrapper.find('[data-test="wbrn-list"]').exists()).toBe(false)
-    expect(wrapper.find('[data-test="wbr2-wh-list"]').exists()).toBe(false)
   })
 
   it('renders GtcParcels_List when register has GTC registerType', async () => {
@@ -506,7 +445,6 @@ describe('Parcels_View', () => {
     expect(wrapper.find('[data-test="gtc-list"]').exists()).toBe(true)
     expect(wrapper.find('[data-test="wbr-list"]').exists()).toBe(false)
     expect(wrapper.find('[data-test="ozon-list"]').exists()).toBe(false)
-    expect(wrapper.find('[data-test="wbr2-list"]').exists()).toBe(false)
   })
 
   it('renders nothing when registerType is unknown', async () => {
@@ -524,7 +462,6 @@ describe('Parcels_View', () => {
 
     expect(wrapper.find('[data-test="wbr-list"]').exists()).toBe(false)
     expect(wrapper.find('[data-test="ozon-list"]').exists()).toBe(false)
-    expect(wrapper.find('[data-test="wbr2-list"]').exists()).toBe(false)
   })
 
   it('passes the register id prop to the selected component', async () => {

@@ -306,7 +306,7 @@ watch(
 </script>
 
 <template>
-  <div class="settings table-3">
+  <div class="settings table-3 list-with-filters">
     <div class="header-with-actions">
       <h1 class="primary-heading">История изменений: {{ registerHeading }}</h1>
       <div class="header-actions-bar">
@@ -338,7 +338,7 @@ watch(
       История реестра доступна только администраторам и старшим смены.
     </div>
 
-    <ResponsiveFilterBar v-else class="history-filter-row" aria-label="Фильтры истории реестра">
+    <ResponsiveFilterBar v-else class="history-filter-row list-filters" aria-label="Фильтры истории реестра">
       <v-select
         :model-value="selectedUserId"
         :items="userFilterItems"
@@ -412,10 +412,6 @@ watch(
 </template>
 
 <style scoped>
-.history-filter-row {
-  margin-bottom: 12px;
-}
-
 .history-filter-row :deep(.v-field__input) {
   min-width: 0;
 }

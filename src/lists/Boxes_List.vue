@@ -132,7 +132,7 @@ defineExpose({
 </script>
 
 <template>
-  <div class="settings table-2" data-testid="boxes-list">
+  <div class="settings table-2 list-with-filters" data-testid="boxes-list">
     <div class="header-with-actions">
       <h1 class="primary-heading">Коробки: {{ registerHeading }}</h1>
       <div class="header-actions-bar">
@@ -167,6 +167,7 @@ defineExpose({
     <PageAlertRegion />
 
     <v-text-field
+      class="list-filters"
       v-model="authStore.boxes_search"
       :append-inner-icon="mdiMagnify"
       label="Поиск по номеру коробки"

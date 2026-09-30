@@ -5,9 +5,13 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
-import { nextTick } from 'vue'
-import { createPinia, setActivePinia } from 'pinia'
+import { inject } from 'vue'
+
+import { createPinia, getActivePinia, setActivePinia } from 'pinia'
 import ParcelsView from '@/views/Parcels_View.vue'
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
+import { useParcelsStore } from '@/stores/parcels.store.js'
+import { reportError } from '@/helpers/error.helpers.js'
 import {
   OZON_COMPANY_ID,
   WBR_COMPANY_ID,
@@ -20,6 +24,12 @@ const pushMock = vi.hoisted(() => vi.fn())
 const replaceMock = vi.hoisted(() => vi.fn())
 const backMock = vi.hoisted(() => vi.fn())
 const mockGet = vi.hoisted(() => vi.fn())
+const getSavedFilters = vi.hoisted(() => vi.fn())
+vi.mock('@/helpers/error.helpers.js', async importOriginal => ({
+  ...await importOriginal(),
+  reportError: vi.fn()
+}))
+vi.mock('@/stores/parcel.filters.store.js', () => ({ useParcelFiltersStore: () => ({ getAll: getSavedFilters }) }))
 const subscriptionOptions = vi.hoisted(() => [])
 const currentRouteMock = vi.hoisted(() => ({
   value: {
@@ -33,11 +43,18 @@ vi.mock('@/composables/useParcelCheckStatusSubscription.js', () => ({
   useParcelCheckStatusSubscription: (options) => subscriptionOptions.push(options)
 }))
 
-vi.mock('@/lists/WbrParcels_List.vue', () => ({
+vi.mock('@/lists/WbrParcels_List.vue', async () => ({
   default: {
     name: 'WbrParcels_List',
     props: ['register-id'],
-    template: '<div data-test="wbr-list">WBR: {{ registerId }}</div>'
+    components: { PageAlertRegion: (await import('@/components/PageAlertRegion.vue')).default },
+    setup() {
+      return { filter: inject('savedParcelFilter') }
+    },
+    template: `<div data-test="wbr-list">WBR: {{ registerId }}<hr class="hr"><PageAlertRegion />
+      <select data-test="saved-filter" :value="filter.id.value" @change="filter.select($event.target.value)">
+        <option v-for="option in filter.options.value" :key="option.value" :value="option.value">{{ option.title }}</option>
+      </select></div>`
   }
 }))
 
@@ -112,7 +129,9 @@ vi.mock('@/helpers/fetch.wrapper.js', () => ({
 describe('Parcels_View', () => {
   beforeEach(async () => {
     setActivePinia(createPinia())
+    localStorage.clear()
     vi.clearAllMocks()
+    getSavedFilters.mockReset().mockResolvedValue([])
     subscriptionOptions.length = 0
     currentRouteMock.value = {
       path: '/registers/1/parcels',
@@ -121,6 +140,130 @@ describe('Parcels_View', () => {
     }
     const { fetchWrapper } = await import('@/helpers/fetch.wrapper.js')
     fetchWrapper.get.mockImplementation(mockGet)
+  })
+
+  it('offers owned filters and retains the chosen filter across registers and modes', async () => {
+    const { useAuthStore } = await import('@/stores/auth.store.js')
+    const auth = useAuthStore()
+    auth.user = { id: 1 }
+    getSavedFilters.mockResolvedValue([{ id: 23, name: 'Exclude issues' }])
+    mockGet.mockResolvedValue({ registerType: WBR_COMPANY_ID })
+    const wrapper = mount(ParcelsView, { props: { id: 1 } })
+    await flushPromises()
+    expect(wrapper.get('[data-test="saved-filter"]').text()).toContain('Exclude issues')
+    await wrapper.get('[data-test="saved-filter"]').setValue('23')
+    expect(auth.parcels_filter_id).toBe(23)
+    await wrapper.setProps({ id: 2, mode: OP_MODE_WAREHOUSE })
+    await flushPromises()
+    expect(auth.parcels_filter_id).toBe(23)
+    expect(getSavedFilters).toHaveBeenCalledTimes(2)
+    expect(mockGet.mock.calls[1][0]).toContain('/registers/2')
+    wrapper.unmount()
+  })
+
+  it('clears an unavailable remembered filter before mounting the list and displays one warning', async () => {
+    const { useAuthStore } = await import('@/stores/auth.store.js')
+    const auth = useAuthStore()
+    auth.user = { id: 1 }
+    auth.setParcelFilterId(23)
+    mockGet.mockResolvedValue({ registerType: WBR_COMPANY_ID })
+    const wrapper = mount(ParcelsView, { props: { id: 1 } })
+    await flushPromises()
+    expect(auth.parcels_filter_id).toBeNull()
+    expect(wrapper.findAll('[role="status"]')).toHaveLength(1)
+    expect(wrapper.get('[role="status"]').text()).toContain('Фильтр сброшен')
+    expect(wrapper.find('[data-test="wbr-list"]').exists()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('preserves the filter after an options failure and retries the same initialization', async () => {
+    const { useAuthStore } = await import('@/stores/auth.store.js')
+    const auth = useAuthStore()
+    auth.user = { id: 1 }
+    auth.setParcelFilterId(23)
+    getSavedFilters.mockRejectedValueOnce(new Error('Filters unavailable'))
+      .mockResolvedValueOnce([{ id: 23, name: 'Exclude issues' }])
+    mockGet.mockResolvedValue({ registerType: WBR_COMPANY_ID })
+    const wrapper = mount(ParcelsView, { props: { id: 1 } })
+    await flushPromises()
+    expect(auth.parcels_filter_id).toBe(23)
+    expect(wrapper.find('[data-test="wbr-list"]').exists()).toBe(false)
+    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+    expect(wrapper.get('[role="alert"]').text()).toContain('Filters unavailable')
+    await wrapper.get('.page-alert-region__action').trigger('click')
+    await flushPromises()
+    expect(getSavedFilters).toHaveBeenCalledTimes(2)
+    expect(wrapper.find('[data-test="wbr-list"]').exists()).toBe(true)
+    expect(auth.parcels_filter_id).toBe(23)
+    wrapper.unmount()
+  })
+
+  it('ignores old account results and clears the previous account selection', async () => {
+    const { useAuthStore } = await import('@/stores/auth.store.js')
+    const auth = useAuthStore()
+    auth.user = { id: 1 }
+    auth.setParcelFilterId(23)
+    let resolveOld
+    getSavedFilters.mockImplementationOnce(() => new Promise(resolve => { resolveOld = resolve }))
+      .mockResolvedValueOnce([{ id: 24, name: 'New user filter' }])
+    mockGet.mockResolvedValue({ registerType: WBR_COMPANY_ID })
+    const wrapper = mount(ParcelsView, { props: { id: 1 } })
+    auth.user = { id: 2 }
+    await flushPromises()
+    resolveOld([{ id: 23, name: 'Old user filter' }])
+    await flushPromises()
+    expect(auth.parcels_filter_id).toBeNull()
+    expect(wrapper.get('[data-test="saved-filter"]').text()).toContain('New user filter')
+    expect(wrapper.get('[data-test="saved-filter"]').text()).not.toContain('Old user filter')
+    wrapper.unmount()
+  })
+
+  it('ignores stale live-refresh results after the saved filter changes', async () => {
+    const { useAuthStore } = await import('@/stores/auth.store.js')
+    const auth = useAuthStore()
+    auth.user = { id: 1 }
+    auth.setParcelFilterId(23)
+    mockGet.mockResolvedValue({ registerType: WBR_COMPANY_ID })
+
+    const staleResponse = {
+      items: [{ id: 101 }],
+      pagination: { totalCount: 1, hasNextPage: false, hasPreviousPage: false }
+    }
+    let resolveRefresh
+    const updateItems = vi.spyOn(useParcelsStore(), 'updateItems')
+    const getAll = vi.spyOn(useParcelsStore(), 'getAll').mockImplementationOnce(() => new Promise((resolve) => {
+      resolveRefresh = resolve
+    }))
+
+    const wrapper = mount(ParcelsView, { props: { id: 1 } })
+    await flushPromises()
+    expect(subscriptionOptions).toHaveLength(1)
+
+    void subscriptionOptions[0].refresh()
+    await flushPromises()
+    auth.setParcelFilterId(31)
+    resolveRefresh(staleResponse)
+    await flushPromises()
+
+    expect(getAll).toHaveBeenCalledOnce()
+    expect(auth.parcels_filter_id).toBe(31)
+    expect(updateItems).not.toHaveBeenCalledWith(staleResponse)
+    expect(wrapper.find('[data-test="wbr-list"]').exists()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it.each([false, true])('ignores initialization completed after unmount (rejected=%s)', async rejected => {
+    const { useAlertStore } = await import('@/stores/alert.store.js')
+    let finish
+    getSavedFilters.mockImplementationOnce(() => new Promise((resolve, reject) => {
+      finish = rejected ? reject : resolve
+    }))
+    mockGet.mockResolvedValue({ registerType: WBR_COMPANY_ID })
+    const wrapper = mount(ParcelsView, { props: { id: 1 } })
+    wrapper.unmount()
+    finish(rejected ? new Error('late load') : [])
+    await flushPromises()
+    expect(useAlertStore().alert).toBeNull()
   })
 
   it('enables passport subscriptions only for SrLogist Plus import paperwork', async () => {
@@ -132,8 +275,8 @@ describe('Parcels_View', () => {
     })
 
     mount(ParcelsView, { props: { id: 15, mode: OP_MODE_PAPERWORK } })
-    await nextTick()
-    await nextTick()
+    await flushPromises()
+    await flushPromises()
 
     expect(subscriptionOptions).toHaveLength(1)
     expect(subscriptionOptions[0].enabled.value).toBe(true)
@@ -151,8 +294,8 @@ describe('Parcels_View', () => {
       mockGet.mockResolvedValue({ registerType: WBR_COMPANY_ID, customsProcedureCode })
 
       mount(ParcelsView, { props: { id: 16, mode } })
-      await nextTick()
-      await nextTick()
+      await flushPromises()
+      await flushPromises()
 
       expect(subscriptionOptions[0].enabled.value).toBe(false)
     }
@@ -182,6 +325,175 @@ describe('Parcels_View', () => {
       vi.clearAllTimers()
       vi.useRealTimers()
     }
+  })
+
+  it.each([false, true])('recomputes saved-filter results after a passport eligibility change (excluded=%s)', async excluded => {
+    vi.useFakeTimers()
+    const { useAuthStore } = await import('@/stores/auth.store.js')
+    const { useParcelsStore } = await import('@/stores/parcels.store.js')
+    const auth = useAuthStore()
+    auth.user = { id: 1, roles: ['sr-logist'] }
+    auth.setParcelFilterId(23)
+    auth.parcels_passport_check_status = null
+    getSavedFilters.mockResolvedValue([{ id: 23, name: 'Hide invalid passports' }])
+    const parcels = useParcelsStore()
+    parcels.updateItems({ items: excluded ? [{ id: 101 }] : [], pagination: { totalCount: excluded ? 1 : 0 } })
+    const response = { items: excluded ? [] : [{ id: 101 }], pagination: { totalCount: excluded ? 0 : 1 } }
+    mockGet.mockResolvedValueOnce({ registerType: WBR_COMPANY_ID, customsProcedureCode: 40 })
+      .mockResolvedValueOnce(response)
+    const wrapper = mount(ParcelsView, { props: { id: 17 } })
+    try {
+      await flushPromises()
+      subscriptionOptions[0].onUpdates({}, [{ checkCode: 'passport', parcelId: 101, status: excluded ? 40 : 0 }])
+      await vi.runOnlyPendingTimersAsync()
+      expect(new URL(mockGet.mock.calls[1][0]).searchParams.get('parcelFilterId')).toBe('23')
+      expect(parcels.items.map(item => item.id)).toEqual(excluded ? [] : [101])
+      expect(parcels.totalCount).toBe(excluded ? 0 : 1)
+    } finally {
+      wrapper.unmount()
+      vi.clearAllTimers()
+      vi.useRealTimers()
+    }
+  })
+
+  it('displays a failed live filtered refresh once and retries it', async () => {
+    vi.useFakeTimers()
+    const { useAuthStore } = await import('@/stores/auth.store.js')
+    const { useParcelsStore } = await import('@/stores/parcels.store.js')
+    useAuthStore().parcels_passport_check_status = 30
+    mockGet.mockResolvedValue({ registerType: WBR_COMPANY_ID })
+    const getParcels = vi.spyOn(useParcelsStore(), 'getAll').mockRejectedValueOnce(new Error('Refresh failed'))
+      .mockResolvedValueOnce({ items: [], pagination: { totalCount: 0 } })
+    const wrapper = mount(ParcelsView, { props: { id: 17 } })
+    try {
+      await flushPromises()
+      subscriptionOptions[0].onUpdates({}, [{ checkCode: 'passport' }])
+      await vi.runOnlyPendingTimersAsync()
+      await flushPromises()
+      expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+      expect(wrapper.get('[role="alert"]').text()).toContain('Refresh failed')
+      await wrapper.get('.page-alert-region__action').trigger('click')
+      await flushPromises()
+      expect(getParcels).toHaveBeenCalledTimes(2)
+      expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+    } finally {
+      wrapper.unmount()
+      vi.clearAllTimers()
+      vi.useRealTimers()
+    }
+  })
+
+  it.each(['register', 'mode', 'account', 'unmount'].flatMap(context =>
+    [false, true].map(rejected => [context, rejected])
+  ))('ignores a live refresh after %s changes (rejected=%s)', async (context, rejected) => {
+    vi.useFakeTimers()
+    const { useAuthStore } = await import('@/stores/auth.store.js')
+    const { useParcelsStore } = await import('@/stores/parcels.store.js')
+    const { useAlertStore } = await import('@/stores/alert.store.js')
+    const auth = useAuthStore()
+    auth.user = { id: 1, roles: ['sr-logist'] }
+    auth.parcels_passport_check_status = 30
+    mockGet.mockResolvedValue({ registerType: WBR_COMPANY_ID, customsProcedureCode: 40 })
+    const parcels = useParcelsStore()
+    let finish
+    const getParcels = vi.spyOn(parcels, 'getAll').mockImplementationOnce(() => new Promise((resolve, reject) => {
+      finish = rejected ? reject : resolve
+    }))
+    const wrapper = mount(ParcelsView, { props: { id: 17 } })
+    let destination
+    try {
+      await flushPromises()
+      subscriptionOptions[0].onUpdates({}, [{ checkCode: 'passport' }])
+      vi.runOnlyPendingTimers()
+      await flushPromises()
+      expect(getParcels).toHaveBeenCalledTimes(1)
+
+      if (context === 'register') await wrapper.setProps({ id: 18 })
+      else if (context === 'mode') await wrapper.setProps({ mode: OP_MODE_WAREHOUSE })
+      else if (context === 'account') auth.user = { id: 2, roles: ['sr-logist'] }
+      else wrapper.unmount()
+      await flushPromises()
+
+      parcels.updateItems({ items: [{ id: 202 }], pagination: { totalCount: 7 } })
+      useAlertStore().error('Current page alert')
+      destination = mount(PageAlertRegion, { global: { plugins: [getActivePinia()] } })
+      const failure = new Error('Old refresh failed')
+      finish(rejected ? failure : {
+        items: [{ id: 101 }], pagination: { totalCount: 1 }, parcelFilterRemoved: true
+      })
+      await flushPromises()
+
+      expect(parcels.items.map(item => item.id)).toEqual([202])
+      expect(parcels.totalCount).toBe(7)
+      expect(destination.get('[role="alert"]').text()).toContain('Current page alert')
+      expect(destination.text()).not.toContain('Old refresh failed')
+      expect(destination.text()).not.toContain('Фильтр сброшен')
+      if (rejected) expect(reportError).toHaveBeenCalledExactlyOnceWith(failure, {
+        context: 'parcel list refresh after disposal or replacement'
+      })
+      else expect(reportError).not.toHaveBeenCalled()
+    } finally {
+      if (context !== 'unmount') wrapper.unmount()
+      destination?.unmount()
+      vi.clearAllTimers()
+      vi.useRealTimers()
+    }
+  })
+
+  it('cancels a queued live refresh when the register changes', async () => {
+    vi.useFakeTimers()
+    const { useAuthStore } = await import('@/stores/auth.store.js')
+    const { useParcelsStore } = await import('@/stores/parcels.store.js')
+    useAuthStore().parcels_passport_check_status = 30
+    mockGet.mockResolvedValue({ registerType: WBR_COMPANY_ID })
+    const getParcels = vi.spyOn(useParcelsStore(), 'getAll')
+    const wrapper = mount(ParcelsView, { props: { id: 17 } })
+    try {
+      await flushPromises()
+      subscriptionOptions[0].onUpdates({}, [{ checkCode: 'passport' }])
+      await wrapper.setProps({ id: 18 })
+      await flushPromises()
+      await vi.runOnlyPendingTimersAsync()
+      expect(getParcels).not.toHaveBeenCalled()
+    } finally {
+      wrapper.unmount()
+      vi.clearAllTimers()
+      vi.useRealTimers()
+    }
+  })
+
+  it.each(['current', 'register', 'unmount'])('handles a resync failure in the %s context', async context => {
+    const { useParcelsStore } = await import('@/stores/parcels.store.js')
+    const { useRegistersStore } = await import('@/stores/registers.store.js')
+    const { useAlertStore } = await import('@/stores/alert.store.js')
+    vi.spyOn(useParcelsStore(), 'getAll').mockResolvedValue({ items: [], pagination: { totalCount: 0 } })
+    let rejectRegister
+    vi.spyOn(useRegistersStore(), 'getById').mockImplementationOnce(() => new Promise((_resolve, reject) => {
+      rejectRegister = reject
+    }))
+    mockGet.mockResolvedValue({ registerType: WBR_COMPANY_ID })
+    const wrapper = mount(ParcelsView, { props: { id: 17 } })
+    await flushPromises()
+    const refresh = subscriptionOptions[0].refresh()
+    const failure = new Error('Register resync failed')
+    const result = context === 'current'
+      ? expect(refresh).rejects.toBe(failure)
+      : expect(refresh).resolves.toBeUndefined()
+    if (context === 'register') await wrapper.setProps({ id: 18 })
+    else if (context === 'unmount') wrapper.unmount()
+    await flushPromises()
+    useAlertStore().error('Current page alert')
+    const destination = mount(PageAlertRegion, { global: { plugins: [getActivePinia()] } })
+    rejectRegister(failure)
+    await result
+    await flushPromises()
+    expect(destination.get('[role="alert"]').text()).toContain('Current page alert')
+    if (context === 'current') expect(reportError).not.toHaveBeenCalled()
+    else expect(reportError).toHaveBeenCalledExactlyOnceWith(failure, {
+      context: 'parcel passport refresh after disposal or replacement'
+    })
+    if (context !== 'unmount') wrapper.unmount()
+    destination.unmount()
   })
 
   it('refreshes register passport state together with visible parcels on resync', async () => {
@@ -236,14 +548,15 @@ describe('Parcels_View', () => {
 
   it.each([
     ['a string rejection', 'register load failed', 'register load failed'],
-    ['an unknown rejection shape', {}, 'Не удалось загрузить реестр']
+    ['an unknown rejection shape', {}, 'Не удалось загрузить список посылок']
   ])('renders a safe register load error for %s', async (_case, rejection, expectedMessage) => {
     mockGet.mockRejectedValueOnce(rejection)
 
     const wrapper = mount(ParcelsView, { props: { id: 20 } })
     await flushPromises()
 
-    expect(wrapper.text()).toContain(`Ошибка загрузки: ${expectedMessage}`)
+    expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain(expectedMessage)
+    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
   })
 
   it('renders WbrParcels_List when register has WBR registerType', async () => {
@@ -256,8 +569,8 @@ describe('Parcels_View', () => {
     })
 
     // Wait for async data to load
-    await nextTick()
-    await nextTick()
+    await flushPromises()
+    await flushPromises()
 
     expect(wrapper.find('[data-test="wbr-list"]').exists()).toBe(true)
     expect(wrapper.find('[data-test="ozon-list"]').exists()).toBe(false)
@@ -273,8 +586,8 @@ describe('Parcels_View', () => {
       }
     })
 
-    await nextTick()
-    await nextTick()
+    await flushPromises()
+    await flushPromises()
 
     expect(wrapper.find('[data-test="wbr-wh-list"]').exists()).toBe(true)
     expect(wrapper.find('[data-test="wbr-list"]').exists()).toBe(false)
@@ -372,8 +685,8 @@ describe('Parcels_View', () => {
     })
 
     // Wait for async data to load
-    await nextTick()
-    await nextTick()
+    await flushPromises()
+    await flushPromises()
 
     expect(wrapper.find('[data-test="ozon-list"]').exists()).toBe(true)
     expect(wrapper.find('[data-test="wbr-list"]').exists()).toBe(false)
@@ -389,8 +702,8 @@ describe('Parcels_View', () => {
       }
     })
 
-    await nextTick()
-    await nextTick()
+    await flushPromises()
+    await flushPromises()
 
     expect(wrapper.find('[data-test="ozon-wh-list"]').exists()).toBe(true)
     expect(wrapper.find('[data-test="ozon-list"]').exists()).toBe(false)
@@ -406,8 +719,8 @@ describe('Parcels_View', () => {
       }
     })
 
-    await nextTick()
-    await nextTick()
+    await flushPromises()
+    await flushPromises()
 
     expect(wrapper.find('[data-test="wbrn-list"]').exists()).toBe(true)
     expect(wrapper.find('[data-test="wbr-list"]').exists()).toBe(false)
@@ -423,8 +736,8 @@ describe('Parcels_View', () => {
       }
     })
 
-    await nextTick()
-    await nextTick()
+    await flushPromises()
+    await flushPromises()
 
     expect(wrapper.find('[data-test="wbrn-wh-list"]').exists()).toBe(true)
     expect(wrapper.find('[data-test="wbrn-list"]').exists()).toBe(false)
@@ -439,8 +752,8 @@ describe('Parcels_View', () => {
       }
     })
 
-    await nextTick()
-    await nextTick()
+    await flushPromises()
+    await flushPromises()
 
     expect(wrapper.find('[data-test="gtc-list"]').exists()).toBe(true)
     expect(wrapper.find('[data-test="wbr-list"]').exists()).toBe(false)
@@ -457,8 +770,8 @@ describe('Parcels_View', () => {
     })
 
     // Wait for async data to load
-    await nextTick()
-    await nextTick()
+    await flushPromises()
+    await flushPromises()
 
     expect(wrapper.find('[data-test="wbr-list"]').exists()).toBe(false)
     expect(wrapper.find('[data-test="ozon-list"]').exists()).toBe(false)
@@ -474,8 +787,8 @@ describe('Parcels_View', () => {
     })
 
     // Wait for async data to load
-    await nextTick()
-    await nextTick()
+    await flushPromises()
+    await flushPromises()
 
     // Check that the WBR list component is rendered and receives the register-id prop
     const wbrList = wrapper.find('[data-test="wbr-list"]')
@@ -497,8 +810,8 @@ describe('Parcels_View', () => {
       }
     })
 
-    await nextTick()
-    await nextTick()
+    await flushPromises()
+    await flushPromises()
 
     wrapper.findComponent({ name: 'WbrParcels_List' }).vm.$emit('close')
 
@@ -519,8 +832,8 @@ describe('Parcels_View', () => {
       }
     })
 
-    await nextTick()
-    await nextTick()
+    await flushPromises()
+    await flushPromises()
 
     wrapper.findComponent({ name: 'OzonParcels_WhList' }).vm.$emit('close')
 

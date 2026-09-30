@@ -194,7 +194,7 @@ defineExpose({
 </script>
 
 <template>
-  <div class="settings table-3" data-testid="feacn-prefixes-list">
+  <div class="settings table-3 list-with-filters" data-testid="feacn-prefixes-list">
     <div class="header-with-actions">
       <h1 class="primary-heading">Префиксы ТН ВЭД для формирования запретов</h1>
       <div class="header-actions-bar" v-if="authStore.isSrLogistPlus">
@@ -218,7 +218,7 @@ defineExpose({
 
     <PageAlertRegion />
 
-    <ResponsiveFilterBar class="prefix-filter-row" aria-label="Фильтры локальных префиксов">
+    <ResponsiveFilterBar class="prefix-filter-row list-filters" aria-label="Фильтры локальных префиксов">
       <v-select
         v-model="authStore.feacnlocalprefixes_procedure"
         :items="prohibitionScopeFilterItems"

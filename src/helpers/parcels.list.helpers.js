@@ -12,6 +12,7 @@ import { preloadFeacnInfo, getCachedFeacnInfo } from '@/helpers/feacn.info.helpe
 import { formatDate } from '@/helpers/date.formatters.js'
 import { formatPrice } from '@/helpers/number.formatters.js'
 import { buildParcelEditLocation } from '@/helpers/parcel.navigation.helpers.js'
+import { REMOVED_PARCEL_FILTER_MESSAGE } from '@/helpers/parcel.filters.js'
 
 import { useAlertStore } from '@/stores/alert.store.js'
 
@@ -409,6 +410,7 @@ export async function loadParcels(
         ...safeOptions,
         updateStore: false
       })
+      if (response?.parcelFilterRemoved && isComponentMounted.value) alertStore.warning(REMOVED_PARCEL_FILTER_MESSAGE)
 
       if (response && response.items && response.items.length > 0) {
         const tnvedCodes = response.items

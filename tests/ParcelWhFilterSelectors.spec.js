@@ -78,8 +78,9 @@ describe('ParcelWhFilterSelectors.vue', () => {
 
     expect(filterBar.exists()).toBe(true)
     expect(filterBar.attributes('aria-label')).toBe('Фильтры складских посылок')
-    expect(controls).toHaveLength(7)
+    expect(controls).toHaveLength(8)
     expect(controls.map((control) => control.textContent.trim())).toEqual([
+      'Пользовательский фильтрНет',
       'ПроверкаВсеНе провереноЗапретБракПроверено',
       'ЗонаВсеНе заданаЗеленая зона',
       'СтатусВсеНа складе',
@@ -90,11 +91,12 @@ describe('ParcelWhFilterSelectors.vue', () => {
     ])
     expect(controls[0].classList).toContain('responsive-filter-bar__item--compact')
     expect(controls[1].classList).toContain('responsive-filter-bar__item--compact')
-    expect(controls[2].classList).toContain('responsive-filter-bar__item--regular')
-    expect(controls[3].classList).toContain('responsive-filter-bar__item--grow')
-    expect(controls[4].classList).toContain('responsive-filter-bar__item--compact')
-    expect(controls[5].classList).toContain('responsive-filter-bar__item--grow')
-    expect(controls[6].classList).toContain('responsive-filter-bar__item--grow')
+    expect(controls[2].classList).toContain('responsive-filter-bar__item--compact')
+    expect(controls[3].classList).toContain('responsive-filter-bar__item--compact')
+    expect(controls[4].classList).toContain('responsive-filter-bar__item--small')
+    expect(controls[5].classList).toContain('responsive-filter-bar__item--compact')
+    expect(controls[6].classList).toContain('responsive-filter-bar__item--compact')
+    expect(controls[7].classList).toContain('responsive-filter-bar__item--grow')
     controls.forEach((control) => expect(control.hasAttribute('style')).toBe(false))
   })
 

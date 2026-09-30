@@ -359,6 +359,15 @@ This file is a part of Logibooks ui application
   margin-bottom: 20px;
 }
 
+.list-with-filters > .hr {
+  margin-bottom: calc(20px + 0.5rem);
+}
+
+.list-filters {
+  --responsive-filter-row-gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
 .input {
   width: 60%;
   display: inline-block;

@@ -48,9 +48,15 @@ async function load() {
 onMounted(() => { void load() })
 
 async function openFilter(path) {
+  if (!active) return
   try {
     await router.push(path)
   } catch (error) {
+    if (!active) {
+      // Abandoned navigation must not replace the destination page's message.
+      reportError(error, { context: 'parcel filter navigation after disposal' })
+      return
+    }
     alertStore.error(error, { fallback: 'Не удалось открыть пользовательский фильтр' })
   }
 }

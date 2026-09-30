@@ -8,12 +8,15 @@ import * as directives from 'vuetify/directives'
 import UserParcelFilters from '@/components/UserParcelFilters.vue'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
+import { useAlertStore } from '@/stores/alert.store.js'
+import { reportError } from '@/helpers/error.helpers.js'
 
 const push = vi.hoisted(() => vi.fn())
 const confirm = vi.hoisted(() => vi.fn())
 vi.mock('vue-router', async () => ({ ...await vi.importActual('vue-router'), useRouter: () => ({ push }) }))
 vi.mock('@/composables/useAppConfirm.js', () => ({ useAppConfirm: () => confirm }))
 vi.mock('@/helpers/fetch.wrapper.js', () => ({ fetchWrapper: { get: vi.fn(), delete: vi.fn() } }))
+vi.mock('@/helpers/error.helpers.js', async importOriginal => ({ ...await importOriginal(), reportError: vi.fn() }))
 
 const filter = {
   id: 1, name: 'Исключить проблемы', excludedParcelStatusIds: [2],
@@ -31,6 +34,7 @@ function mountFilters() {
   })
 }
 beforeEach(() => {
+  reportError.mockReset()
   push.mockReset().mockResolvedValue()
   confirm.mockReset().mockResolvedValue(true)
   fetchWrapper.get.mockReset().mockResolvedValue([filter])
@@ -38,6 +42,28 @@ beforeEach(() => {
 })
 
 describe('UserParcelFilters', () => {
+  it('preserves the destination alert and reports abandoned navigation failures', async () => {
+    let rejectNavigation
+    push.mockImplementationOnce(() => new Promise((resolve, reject) => { rejectNavigation = reject }))
+    const wrapper = mountFilters()
+    await flushPromises()
+    const openFilter = wrapper.findComponent(UserParcelFilters).vm.openFilter
+    const pinia = wrapper.vm.$pinia
+    await wrapper.get('[data-testid="parcel-filter-create"]').trigger('click')
+    wrapper.unmount()
+    const alerts = useAlertStore(pinia)
+    alerts.error('Destination alert')
+    const destination = mount(PageAlertRegion, { global: { plugins: [pinia] } })
+    const failure = new Error('Abandoned navigation')
+    rejectNavigation(failure)
+    await flushPromises()
+    expect(destination.get('[role="alert"]').text()).toContain('Destination alert')
+    expect(destination.text()).not.toContain('Abandoned navigation')
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(failure, { context: 'parcel filter navigation after disposal' })
+    await openFilter('/parcel-filters/create')
+    expect(push).toHaveBeenCalledOnce()
+    destination.unmount()
+  })
   it('loads saved filters and uses the shared full-width table pattern', async () => {
     const wrapper = mountFilters()
     await flushPromises()

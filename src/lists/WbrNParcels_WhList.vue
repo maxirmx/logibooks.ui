@@ -262,6 +262,7 @@ const boxScopeWatcherStop = watch(
 
 const watcherStop = watch(
   [
+    () => authStore.parcels_filter_id,
     parcels_wh_page,
     parcels_wh_per_page,
     parcels_wh_sort_by,
@@ -369,7 +370,7 @@ function handleParcelExtIdChanged(change) {
 </script>
 
 <template>
-  <div class="settings table-3">
+  <div class="settings table-3 list-with-filters">
     <div class="header-with-actions">
       <RegisterHeadingWithStats
         :register-id="props.registerId"
@@ -393,7 +394,7 @@ function handleParcelExtIdChanged(change) {
     </div>
 
     <ParcelWhFilterSelectors
-      class="mb-2"
+      class="list-filters"
       v-model:parcels-wh-status="parcels_wh_status"
       v-model:parcels-wh-check-status-projection="parcels_wh_check_status_projection"
       v-model:parcels-wh-zone="parcels_wh_zone"

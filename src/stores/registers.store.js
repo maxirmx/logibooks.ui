@@ -8,7 +8,7 @@ import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { reportError } from '@/helpers/error.helpers.js'
-import { buildParcelsFilterParams } from '@/stores/parcels.store.js'
+import { buildParcelsFilterParams, buildParcelsWhFilterParams } from '@/stores/parcels.store.js'
 import { FeacnMatchMode } from '@/models/feacn.match.mode.js'
 import { SwValidationMatchMode } from '@/models/sw.validation.match.mode.js'
 import { InvoiceOptionalColumns } from '@/models/invoice.optional.columns.js'
@@ -1046,7 +1046,7 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
-  async function nextParcels(parcelId, { boxId = null } = {}) {
+  async function nextParcels(parcelId, { boxId = null, mode = OP_MODE_PAPERWORK } = {}) {
     const authStore = useAuthStore()
 
     loading.value = true
@@ -1057,7 +1057,9 @@ export const useRegistersStore = defineStore('registers', () => {
         Number.isInteger(normalizedBoxId) && normalizedBoxId > 0
           ? { boxId: normalizedBoxId.toString() }
           : {}
-      const params = buildParcelsFilterParams(authStore, additionalParams)
+      const warehouse = mode === OP_MODE_WAREHOUSE
+      if (warehouse) additionalParams.includeAll = 'true'
+      const params = (warehouse ? buildParcelsWhFilterParams : buildParcelsFilterParams)(authStore, additionalParams)
 
       const result = await fetchWrapper.get(
         `${baseUrl}/nextparcels/${parcelId}?${params.toString()}`

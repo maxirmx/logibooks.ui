@@ -13,6 +13,7 @@ import { useParcelsStore } from '@/stores/parcels.store.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 import { ParcelApprovalMode } from '@/models/parcel.approval.mode.js'
+import { loadParcels } from '@/helpers/parcels.list.helpers.js'
 
 vi.mock('@/helpers/fetch.wrapper.js', () => ({
   fetchWrapper: {
@@ -31,6 +32,12 @@ vi.mock('@/helpers/config.js', () => ({
 
 // Mock auth store
 const mockAuthStore = {
+  parcels_filter_id: null,
+  setParcelFilterId(id) {
+    this.parcels_filter_id = id
+    this.parcels_page = 1
+    this.parcels_wh_page = 1
+  },
   parcels_page: 1,
   parcels_per_page: 100,
   parcels_sort_by: [{ key: 'id', order: 'asc' }],
@@ -62,6 +69,7 @@ describe('parcels store', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    mockAuthStore.parcels_filter_id = null
     // Reset mock auth store to defaults
     mockAuthStore.parcels_page = 1
     mockAuthStore.parcels_per_page = 100
@@ -96,6 +104,66 @@ describe('parcels store', () => {
     expect(fetchWrapper.get).toHaveBeenCalledWith(
       `${apiUrl}/parcels?registerId=1&page=1&pageSize=100&sortBy=id&sortOrder=asc`
     )
+  })
+
+  it.each([false, true])('passes the selected filter alongside inclusive list controls (warehouse=%s)', async warehouse => {
+    mockAuthStore.parcels_filter_id = 23
+    mockAuthStore.parcels_status = 2
+    mockAuthStore.parcels_wh_status = 3
+    fetchWrapper.get.mockResolvedValue({ items: [], pagination: {} })
+    await useParcelsStore().getAll(1, { showMarkedByPartner: warehouse })
+    const url = new URL(fetchWrapper.get.mock.calls[0][0])
+    expect(url.searchParams.get('parcelFilterId')).toBe('23')
+    expect(url.searchParams.get('statusId')).toBe(warehouse ? '3' : '2')
+  })
+
+  it('clears a deleted filter and reloads once with one visible warning', async () => {
+    mockAuthStore.parcels_filter_id = 23
+    mockAuthStore.parcels_page = 4
+    const missing = Object.assign(new Error('Missing filter'), { status: 404 })
+    fetchWrapper.get.mockReset().mockRejectedValueOnce(missing).mockRejectedValueOnce(missing)
+      .mockResolvedValueOnce({ items: [{ id: 1 }], pagination: { totalCount: 1 } })
+    const wrapper = mount(PageAlertRegion)
+    const alerts = useAlertStore()
+    const warning = vi.spyOn(alerts, 'warning')
+    await loadParcels(1, useParcelsStore(), ref(true), alerts)
+    expect(mockAuthStore.parcels_filter_id).toBeNull()
+    expect(mockAuthStore.parcels_page).toBe(1)
+    expect(fetchWrapper.get).toHaveBeenCalledTimes(3)
+    expect(new URL(fetchWrapper.get.mock.calls[2][0]).searchParams.has('parcelFilterId')).toBe(false)
+    expect(useParcelsStore().items.map(item => item.id)).toEqual([1])
+    expect(warning).toHaveBeenCalledOnce()
+    expect(wrapper.findAll('[role="status"]')).toHaveLength(1)
+    expect(wrapper.text()).toContain('Фильтр сброшен')
+    wrapper.unmount()
+  })
+
+  it.each([true, false])('preserves an existing filter when list or validation fails (validationExists=%s)', async exists => {
+    mockAuthStore.parcels_filter_id = 23
+    fetchWrapper.get.mockReset().mockRejectedValueOnce(Object.assign(new Error('Register unavailable'), { status: 404 }))
+    if (exists) fetchWrapper.get.mockResolvedValueOnce({ id: 23 })
+    else fetchWrapper.get.mockRejectedValueOnce(new Error('Validation unavailable'))
+    const wrapper = mount(PageAlertRegion)
+    const alerts = useAlertStore()
+    const error = vi.spyOn(alerts, 'error')
+    await loadParcels(1, useParcelsStore(), ref(true), alerts)
+    expect(mockAuthStore.parcels_filter_id).toBe(23)
+    expect(error).toHaveBeenCalledOnce()
+    expect(wrapper.text()).toContain(exists ? 'Register unavailable' : 'Validation unavailable')
+    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+    wrapper.unmount()
+  })
+
+  it('does not clear a newer selection when an older request rejects', async () => {
+    mockAuthStore.parcels_filter_id = 23
+    let reject
+    fetchWrapper.get.mockReset().mockImplementationOnce(() => new Promise((resolve, rejectRequest) => { reject = rejectRequest }))
+    const pending = useParcelsStore().getAll(1)
+    mockAuthStore.parcels_filter_id = 31
+    reject(Object.assign(new Error('Old selection missing'), { status: 404 }))
+    await expect(pending).rejects.toThrow('Old selection missing')
+    expect(mockAuthStore.parcels_filter_id).toBe(31)
+    expect(fetchWrapper.get).toHaveBeenCalledOnce()
   })
 
   it('fetches data from extended endpoint when requested', async () => {

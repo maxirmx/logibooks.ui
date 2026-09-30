@@ -168,7 +168,7 @@ defineExpose({ editOrderScopes, filterOrders, orderHeaders })
 </script>
 
 <template>
-  <div class="settings table-3" data-testid="feacn-orders-list">
+  <div class="settings table-3 list-with-filters" data-testid="feacn-orders-list">
     <div class="header-with-actions">
       <h1 class="primary-heading">Ограничения по кодам ТН ВЭД</h1>
       <div class="header-actions-bar">
@@ -191,7 +191,7 @@ defineExpose({ editOrderScopes, filterOrders, orderHeaders })
 
     <PageAlertRegion />
 
-    <div>
+    <div class="list-filters">
       <v-text-field
         v-model="authStore.feacnorders_search"
         :append-inner-icon="mdiMagnify"
@@ -263,7 +263,7 @@ defineExpose({ editOrderScopes, filterOrders, orderHeaders })
 
     <div class="mt-8"></div>
 
-    <div>
+    <div class="list-filters">
       <v-text-field
         v-model="authStore.feacnprefixes_search"
         :append-inner-icon="mdiMagnify"

@@ -155,7 +155,7 @@ defineExpose({
 </script>
 
 <template>
-  <div class="settings table-3" data-testid="key-words-list">
+  <div class="settings table-3 list-with-filters" data-testid="key-words-list">
     <div class="header-with-actions">
       <h1 class="primary-heading">Ключевые слова и фразы для подбора ТН ВЭД</h1>
       <div class="header-actions-bar" v-if="authStore.isSrLogistPlus">
@@ -195,7 +195,7 @@ defineExpose({
 
     <PageAlertRegion />
 
-    <div>
+    <div class="list-filters">
       <v-text-field
         v-model="authStore.keywords_search"
         :append-inner-icon="mdiMagnify"

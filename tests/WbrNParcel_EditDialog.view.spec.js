@@ -781,7 +781,7 @@ describe('WbrNParcel_EditDialog.vue', () => {
     })
     const wrapper = await mountDialog({ mode: OP_MODE_WAREHOUSE, returnUrl, boxId })
 
-    expect(nextParcels).toHaveBeenCalledWith(3, { boxId })
+    expect(nextParcels).toHaveBeenCalledWith(3, { boxId, mode: OP_MODE_WAREHOUSE })
 
     await wrapper.get('[data-testid="next-parcel"]').trigger('click')
     await resolveAll()

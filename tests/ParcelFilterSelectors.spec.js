@@ -48,7 +48,7 @@ describe('ParcelFilterSelectors', () => {
     const selectNodes = wrapper.findAll('.v-select-stub')
     const textFieldNodes = wrapper.findAll('.v-text-field-stub')
 
-    expect(selectNodes).toHaveLength(4)
+    expect(selectNodes).toHaveLength(5)
     expect(textFieldNodes).toHaveLength(3)
 
     selectNodes.forEach((node) => {
@@ -67,8 +67,9 @@ describe('ParcelFilterSelectors', () => {
 
     expect(filterBar.exists()).toBe(true)
     expect(filterBar.attributes('aria-label')).toBe('Фильтры посылок')
-    expect(controls).toHaveLength(7)
+    expect(controls).toHaveLength(8)
     expect(controls.map((control) => control.getAttribute('data-label'))).toEqual([
+      'Пользовательский фильтр',
       'Статус',
       'Статус проверки по стоп-словам',
       'Статус проверки по ТН ВЭД',
@@ -77,11 +78,11 @@ describe('ParcelFilterSelectors', () => {
       'Номер посылки',
       'Товар'
     ])
-    expect(controls[0].classList).toContain('responsive-filter-bar__item--regular')
-    expect(controls[3].classList).toContain('responsive-filter-bar__item--compact')
+    expect(controls[0].classList).toContain('responsive-filter-bar__item--compact')
     expect(controls[4].classList).toContain('responsive-filter-bar__item--compact')
-    expect(controls[5].classList).toContain('responsive-filter-bar__item--grow')
-    expect(controls[6].classList).toContain('responsive-filter-bar__item--grow')
+    expect(controls[5].classList).toContain('responsive-filter-bar__item--small')
+    expect(controls[6].classList).toContain('responsive-filter-bar__item--small')
+    expect(controls[7].classList).toContain('responsive-filter-bar__item--grow')
     controls.forEach((control) => expect(control.hasAttribute('style')).toBe(false))
   })
 
@@ -157,7 +158,7 @@ describe('ParcelFilterSelectors', () => {
   it('shows passport check status selector only when enabled', () => {
     const hiddenWrapper = mountComponent()
     expect(hiddenWrapper.find('[data-label="Статус проверки паспорта"]').exists()).toBe(false)
-    expect(hiddenWrapper.findAll('.v-select-stub')).toHaveLength(4)
+    expect(hiddenWrapper.findAll('.v-select-stub')).toHaveLength(5)
 
     const visibleWrapper = mountComponent({
       showPassportCheckStatus: true,
@@ -167,10 +168,10 @@ describe('ParcelFilterSelectors', () => {
       ]
     })
     expect(visibleWrapper.find('[data-label="Статус проверки паспорта"]').exists()).toBe(true)
-    expect(visibleWrapper.findAll('.v-select-stub')).toHaveLength(5)
+    expect(visibleWrapper.findAll('.v-select-stub')).toHaveLength(6)
     expect(
       visibleWrapper.find('[data-label="Статус проверки паспорта"]').classes()
-    ).toContain('responsive-filter-bar__item--regular')
+    ).toContain('responsive-filter-bar__item--compact')
   })
 
   it('clears passport check status when the selector is hidden after initialization', async () => {

@@ -408,6 +408,7 @@ const { triggerLoad, stop: stopFilterSync } = useDebouncedFilterSync({
 
 const watcherStop = watch(
   [
+    () => authStore.parcels_filter_id,
     parcels_page,
     parcels_per_page,
     parcels_sort_by,
@@ -693,7 +694,7 @@ function getGenericTemplateHeaders() {
 </script>
 
 <template>
-  <div class="settings table-3">
+  <div class="settings table-3 list-with-filters">
     <div class="header-with-actions">
       <RegisterHeadingWithStats
         :register-id="props.registerId"
@@ -747,7 +748,7 @@ function getGenericTemplateHeaders() {
     </div>
 
     <ParcelFilterSelectors
-      class="mb-2"
+      class="list-filters"
       v-model:parcels-status="parcels_status"
       v-model:parcels-check-status-sw="parcels_check_status_sw"
       v-model:parcels-check-status-fc="parcels_check_status_fc"

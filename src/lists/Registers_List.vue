@@ -364,7 +364,7 @@ defineExpose({
 </script>
 
 <template>
-  <div class="settings table-3">
+  <div class="settings table-3 list-with-filters">
     <div class="header-with-actions">
       <h1 class="primary-heading">{{ registerNouns.plural }}</h1>
       <div class="header-actions-bar">
@@ -399,7 +399,7 @@ defineExpose({
 
     <PageAlertRegion />
 
-    <ResponsiveFilterBar class="registers-filter-row" aria-label="Фильтры реестров">
+    <ResponsiveFilterBar class="registers-filter-row list-filters" aria-label="Фильтры реестров">
       <v-select
         v-model="localProcedure"
         :items="procedureFilterItems"

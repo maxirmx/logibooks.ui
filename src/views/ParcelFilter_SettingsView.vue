@@ -101,7 +101,7 @@ async function load() {
 onMounted(() => { void load() })
 
 watch(
-  () => [props.mode, props.id],
+  () => [props.mode, props.id, authStore.user?.id],
   () => {
     saved.value = false
     saving.value = false
@@ -145,10 +145,17 @@ function validateName() {
 }
 
 async function returnToProfile() {
+  if (!active) return false
+  const version = loadVersion
   try {
     await router.push(profileUrl.value)
     return true
   } catch (error) {
+    if (!active || version !== loadVersion) {
+      // An abandoned navigation cannot provide a useful retry on the current page.
+      reportError(error, { context: 'parcel filter profile navigation after editor change' })
+      return false
+    }
     alertStore.error(error, {
       fallback: 'Не удалось вернуться к настройкам пользователя',
       action: { label: 'Повторить', handler: returnToProfile }

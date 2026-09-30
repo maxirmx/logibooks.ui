@@ -110,7 +110,7 @@ defineExpose({
 </script>
 
 <template>
-  <div class="settings table-2" data-testid="feacn-insert-items-list">
+  <div class="settings table-2 list-with-filters" data-testid="feacn-insert-items-list">
     <div class="header-with-actions">
       <h1 class="primary-heading">Правила для формирования описания продукта</h1>
       <div class="header-actions-bar" v-if="authStore.isSrLogistPlus">
@@ -134,7 +134,7 @@ defineExpose({
 
     <PageAlertRegion />
 
-    <div>
+    <div class="list-filters">
       <v-text-field
         v-model="authStore.feacninsertitems_search"
         :append-inner-icon="mdiMagnify"

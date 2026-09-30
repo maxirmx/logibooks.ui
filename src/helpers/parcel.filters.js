@@ -2,6 +2,8 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
+export const REMOVED_PARCEL_FILTER_MESSAGE = 'Выбранный пользовательский фильтр недоступен. Фильтр сброшен.'
+
 export function createEmptyParcelFilter() {
   return {
     name: '',

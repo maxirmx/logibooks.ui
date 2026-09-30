@@ -168,7 +168,7 @@ defineExpose({
 </script>
 
 <template>
-  <div class="settings table-3" data-testid="stop-words-list">
+  <div class="settings table-3 list-with-filters" data-testid="stop-words-list">
     <div class="header-with-actions">
       <h1 class="primary-heading">Стоп-слова и фразы</h1>
       <div class="header-actions-bar" v-if="authStore.isSrLogistPlus">
@@ -192,7 +192,7 @@ defineExpose({
 
     <PageAlertRegion />
 
-    <ResponsiveFilterBar class="stopwords-filter-row" aria-label="Фильтры стоп-слов">
+    <ResponsiveFilterBar class="stopwords-filter-row list-filters" aria-label="Фильтры стоп-слов">
       <v-select
         v-model="authStore.stopwords_procedure"
         :items="prohibitionScopeFilterItems"

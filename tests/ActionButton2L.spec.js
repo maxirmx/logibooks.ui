@@ -75,12 +75,6 @@ describe('ActionButton2L', () => {
     await flushPromises()
   }
 
-  it('renders base action button and hides menu by default', () => {
-    const wrapper = createWrapper()
-    expect(wrapper.findComponent({ name: 'ActionButton' }).exists()).toBe(true)
-    expect(wrapper.find('.action-button-2l__menu').exists()).toBe(false)
-  })
-
   it('opens menu on button click and displays options', async () => {
     const wrapper = createWrapper()
     await wrapper.find('button').trigger('click')

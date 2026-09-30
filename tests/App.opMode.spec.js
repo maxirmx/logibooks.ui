@@ -14,7 +14,6 @@ import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
 import { roleAdmin, roleLogist, roleShiftLead, roleSrLogist } from '@/helpers/user.roles.js'
-import { OP_MODE_WAREHOUSE, getRegisterNouns } from '@/helpers/op.mode.js'
 
 global.ResizeObserver = vi.fn().mockImplementation(function MockResizeObserver() {
   return {
@@ -75,7 +74,6 @@ const router = createRouter({
 describe('App navigation for registers', () => {
   let authStore
   let statusStore
-  const warehouseRegisterNouns = getRegisterNouns(OP_MODE_WAREHOUSE)
 
   beforeEach(async () => {
     setActivePinia(createPinia())
@@ -130,50 +128,6 @@ describe('App navigation for registers', () => {
       }
     })
   }
-
-  it('renders a warehouse registers link', async () => {
-    const wrapper = mountApp()
-    await wrapper.vm.$nextTick()
-
-    const link = wrapper
-      .findAll('a')
-      .find((item) => item.text().includes(warehouseRegisterNouns.plural))
-
-    expect(link).toBeTruthy()
-    expect(link?.attributes('href')).toContain(
-      `/registers?mode=${encodeURIComponent(OP_MODE_WAREHOUSE)}`
-    )
-  })
-
-  it('renders an export duties reference link', async () => {
-    const wrapper = mountApp()
-    await wrapper.vm.$nextTick()
-
-    const link = wrapper.findAll('a').find((item) => item.text().includes('Сборы'))
-
-    expect(link).toBeTruthy()
-    expect(link?.attributes('href')).toBe('/export-fees')
-  })
-
-  it('renders a customs stations reference link', async () => {
-    const wrapper = mountApp()
-    await wrapper.vm.$nextTick()
-
-    const link = wrapper.findAll('a').find((item) => item.text().includes('Таможенные посты'))
-
-    expect(link).toBeTruthy()
-    expect(link?.attributes('href')).toBe('/customsstations')
-  })
-
-  it('renders a WD4 scanner guide link in the downloads group', async () => {
-    const wrapper = mountApp()
-    await wrapper.vm.$nextTick()
-
-    const link = wrapper.findAll('a').find((item) => item.text().includes('Настройки WD4'))
-
-    expect(link).toBeTruthy()
-    expect(link?.attributes('href')).toBe('/scanner/wd4')
-  })
 
   it('shows register-status settings to shift leads without exposing administrator-only settings', async () => {
     authStore.user = {

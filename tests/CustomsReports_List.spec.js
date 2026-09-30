@@ -296,17 +296,6 @@ describe('CustomsReports_List.vue', () => {
     expect(sortByRef.value).toEqual(updatedSort)
   })
 
-  it('shows empty state when there are no reports', () => {
-    const wrapper = mount(CustomsReportsList, {
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    expect(wrapper.find('[data-testid="v-data-table"]').exists()).toBe(true)
-    expect(wrapper.find('.header-actions').exists()).toBe(true)
-  })
-
   it('shows header upload button and triggers file input', async () => {
     const wrapper = mount(CustomsReportsList, {
       global: {

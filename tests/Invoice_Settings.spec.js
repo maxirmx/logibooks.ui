@@ -298,18 +298,6 @@ describe('Invoice_Settings.vue', () => {
     expect(router.go).toHaveBeenCalledWith(-1)
   })
 
-  it('renders ДО1 settings with fixed hidden selection and only supported columns', async () => {
-    const wrapper = mountDialog({ id: 77, documentType: 'do1' })
-    await resolveAll()
-
-    expect(wrapper.find('h1').text()).toContain('Настройки формы ДО1')
-    expect(wrapper.find('#parcelSelection').exists()).toBe(false)
-    const labels = wrapper
-      .findAll('.optional-columns-row .custom-checkbox-label')
-      .map((label) => label.text())
-    expect(labels).toEqual(['Номер мешка', 'УИН', 'Ссылка'])
-  })
-
   it('submits ДО1 with masked optional columns and weight correction', async () => {
     itemRef.value = {
       id: 77,

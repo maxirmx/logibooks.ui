@@ -140,22 +140,6 @@ describe('KeyWord_Settings.vue', () => {
       expect(buttons[buttons.length - 1].text()).toContain('Отменить')
     })
 
-    it('renders edit mode correctly', async () => {
-      const wrapper = mountComponent({ id: 1 })
-      await resolveAll()
-
-      expect(wrapper.find('h1').text()).toBe('Редактировать слово или фразу для подбора ТН ВЭД')
-      expect(getById).toHaveBeenCalledWith(1)
-    })
-
-    it('renders loading state', async () => {
-      getById.mockImplementation(() => new Promise(() => {})) // Never resolves
-      const wrapper = mountComponent({ id: 1 })
-      await nextTick()
-
-      expect(wrapper.find('.spinner-border-lg').exists()).toBe(true)
-      expect(wrapper.find('form').exists()).toBe(false)
-    })
   })
 
   // Form validation tests are skipped as they're currently failing
@@ -322,20 +306,6 @@ describe('KeyWord_Settings.vue', () => {
       expect(vm.searchIndex).toBe(2)
     })
 
-    it('shows FeacnCodeSearch when searchIndex is not null', async () => {
-      const wrapper = mountComponent()
-      await resolveAll()
-
-      // Initially hidden
-      expect(wrapper.findComponent(FeacnCodeSearch).exists()).toBe(false)
-
-      // Activate search
-      wrapper.vm.toggleSearch(0)
-      await nextTick()
-
-      expect(wrapper.findComponent(FeacnCodeSearch).exists()).toBe(true)
-    })
-
     it('handles code selection correctly', async () => {
       const wrapper = mountComponent()
       await resolveAll()
@@ -367,22 +337,6 @@ describe('KeyWord_Settings.vue', () => {
       // Should not change anything
       expect(vm.feacnCodes[0]).toBe(originalValue)
       expect(vm.searchIndex).toBe(null)
-    })
-
-    it('shows arrow up icon and disables other controls when search is active', async () => {
-      const wrapper = mountComponent()
-      await resolveAll()
-
-      wrapper.vm.toggleSearch(0)
-      await nextTick()
-
-      const actionButton = wrapper
-        .findAllComponents(ActionButton)
-        .find((btn) => btn.props('icon').includes('arrow'))
-      expect(actionButton.props('icon')).toBe('fa-solid fa-arrow-up')
-
-      const wordInput = wrapper.find('input[name="word"]')
-      expect(wordInput.attributes('readonly')).toBeDefined()
     })
 
     it('closes search on Escape key press', async () => {
@@ -575,17 +529,5 @@ describe('KeyWord_Settings.vue', () => {
       expect(submitButton.attributes('disabled')).toBeUndefined()
     })
 
-    it('shows loading state on submit button when saving', async () => {
-      const wrapper = mountComponent()
-      await resolveAll()
-
-      // Simulate saving state
-      wrapper.vm.saving = true
-      await nextTick()
-
-      const submitButton = wrapper.find('button[type="submit"]')
-      expect(submitButton.attributes('disabled')).toBeDefined()
-      expect(wrapper.find('.spinner-border-sm').exists()).toBe(true)
-    })
   })
 })

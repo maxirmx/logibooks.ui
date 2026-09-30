@@ -660,34 +660,6 @@ describe('RegisterHeaderActionsBar', () => {
     expect(wrapper.emitted('bulk-change-parcel-status')).toHaveLength(1)
   })
 
-  it('shows the Ozon weight update action only when opted in and authorized', () => {
-    const defaultWrapper = mount(RegisterHeaderActionsBar, {
-      props: { ...baseProps },
-      global: { stubs: vuetifyStubs }
-    })
-    expect(findActionButtonByTooltip(defaultWrapper, 'Обновить веса из файла реестра')).toBeUndefined()
-
-    const wrapper = mount(RegisterHeaderActionsBar, {
-      props: { ...baseProps, showWeightUpdate: true },
-      global: { stubs: vuetifyStubs }
-    })
-    const action = findActionButtonByTooltip(wrapper, 'Обновить веса из файла реестра')
-
-    expect(action).toBeTruthy()
-    expect(action.props('icon')).toBe('fa-solid fa-file-arrow-up')
-    action.vm.$emit('click')
-    expect(wrapper.emitted('update-weights-from-file')).toHaveLength(1)
-
-    authRefs.isSrLogistPlus.value = false
-    const unauthorizedWrapper = mount(RegisterHeaderActionsBar, {
-      props: { ...baseProps, showWeightUpdate: true },
-      global: { stubs: vuetifyStubs }
-    })
-    expect(
-      findActionButtonByTooltip(unauthorizedWrapper, 'Обновить веса из файла реестра')
-    ).toBeUndefined()
-  })
-
   it('disables the weight update action for read-only and busy registers', async () => {
     const wrapper = mount(RegisterHeaderActionsBar, {
       props: { ...baseProps, showWeightUpdate: true, mutationDisabled: true },

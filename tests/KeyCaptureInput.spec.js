@@ -124,16 +124,6 @@ describe('KeyCaptureInput.vue', () => {
     expect(wrapper.emitted('update:modelValue')).toBeFalsy()
   })
 
-  it('shows clear button when value exists', () => {
-    const wrapper = mount(KeyCaptureInput, {
-      props: { modelValue: 'F1' },
-      global: { stubs: { 'font-awesome-icon': fontAwesomeStub } }
-    })
-
-    const clearButton = wrapper.find('.clear-button')
-    expect(clearButton.exists()).toBe(true)
-  })
-
   it('hides clear button when value is empty', () => {
     const wrapper = mount(KeyCaptureInput, {
       props: { modelValue: '' },

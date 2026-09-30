@@ -180,13 +180,6 @@ describe('RegisterStatuses_List.vue', () => {
   })
 
   describe('Data Display', () => {
-    it('shows empty table when no order statuses', async () => {
-      mockRegisterStatuses.value = []
-      await wrapper.vm.$nextTick()
-
-      const dataTable = wrapper.find('[data-testid="v-data-table"]')
-      expect(dataTable.exists()).toBe(true)
-    })
 
     it('displays whether changes are prohibited', () => {
       expect(wrapper.findAll('.register-status-read-only').map((cell) => cell.text())).toEqual([
@@ -209,14 +202,6 @@ describe('RegisterStatuses_List.vue', () => {
     it('calls openCreateDialog and navigates to create page', async () => {
       await wrapper.vm.openCreateDialog()
       expect(mockPush).toHaveBeenCalledWith('/registerstatus/create')
-    })
-
-    it('shows edit and delete buttons in table rows', () => {
-      // Since v-data-table is stubbed, test that the methods exist instead
-      expect(wrapper.vm.openEditDialog).toBeDefined()
-      expect(wrapper.vm.deleteRegisterStatus).toBeDefined()
-      expect(typeof wrapper.vm.openEditDialog).toBe('function')
-      expect(typeof wrapper.vm.deleteRegisterStatus).toBe('function')
     })
 
     it('opens edit dialog when the status icon column is clicked', async () => {

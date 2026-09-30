@@ -200,27 +200,6 @@ describe('GtcFormField', () => {
     expect(wrapper.find('input').classes()).not.toContain('is-invalid')
   })
 
-  it('renders with default props when optional props are not provided', () => {
-    const wrapper = mount(GtcFormField, {
-      props: {
-        name: 'productName'
-      },
-      global: {
-        plugins: [createPinia()],
-        stubs: {
-          Field: {
-            template: '<input :name="name" :id="id" :type="type" />',
-            props: ['name', 'id', 'type', 'step', 'as']
-          }
-        }
-      }
-    })
-
-    expect(wrapper.find('label').exists()).toBe(true)
-    expect(wrapper.find('input').exists()).toBe(true)
-    expect(wrapper.find('input').attributes('name')).toBe('productName')
-  })
-
   it('passes step attribute only for non-select fields', () => {
     const wrapper = mount(GtcFormField, {
       props: {

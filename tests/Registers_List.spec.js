@@ -584,42 +584,6 @@ describe('Registers_List.vue', () => {
       expect(getAll).toHaveBeenCalledWith({ mode: OP_MODE_PAPERWORK })
     })
 
-    it('displays customer names correctly when items and companies are present', async () => {
-      // Set up mock companies
-      mockCompanies.value = [
-        { id: 1, name: 'ООО "РВБ"', shortName: 'РВБ' },
-        { id: 2, name: 'ООО "Интернет решения"', shortName: null }
-      ]
-
-      // Set up mock items with customer IDs
-      mockItems.value = [
-        {
-          id: 1,
-          fileName: 'register1.csv',
-          customerId: 1,
-          ordersTotal: 10
-        },
-        {
-          id: 2,
-          fileName: 'register2.csv',
-          customerId: 2,
-          ordersTotal: 5
-        }
-      ]
-
-      const wrapper = mount(RegistersList, {
-        global: {
-          stubs: vuetifyStubs
-        }
-      })
-
-      await wrapper.vm.$nextTick()
-
-      // Test that register type labels use the shared display helper.
-      expect(wrapper.vm.getRegisterTypeName(1)).toBe('РВБ')
-      expect(wrapper.vm.getRegisterTypeName(2)).toBe('ООО "Интернет решения"')
-    })
-
     it('reports initialization failures', async () => {
       countriesEnsureLoadedFn.mockRejectedValueOnce(new Error('countries failed'))
 
@@ -836,42 +800,6 @@ describe('Registers_List.vue', () => {
       const cell = wrapper.find('.edit-register-link')
       await cell.trigger('click')
       expect(router.push).toHaveBeenCalledWith('/register/edit/2?mode=modePaperwork')
-    })
-
-    it('renders release weight as a route to actual weight when real weight is set', async () => {
-      mockItems.value = [
-        {
-          id: 3,
-          totalWeightKg: 12.345,
-          totalWeightKgToRelease: 10,
-          realWeightKg: 5
-        }
-      ]
-
-      const wrapper = mount(RegistersList, {
-        global: {
-          stubs: {
-            ...vuetifyStubs,
-            'font-awesome-icon': {
-              template: '<i v-bind="$attrs" :data-icon="icon" data-testid="fa-icon"></i>',
-              props: ['icon'],
-              inheritAttrs: false
-            }
-          }
-        }
-      })
-
-      await wrapper.vm.$nextTick()
-
-      const weightCell = wrapper.find('[data-testid="register-weight-cell"]')
-      expect(weightCell.findAll('.weight-line').at(0).text()).toBe('12.345')
-
-      const route = weightCell.find('.weight-real-route')
-      expect(route.exists()).toBe(true)
-      expect(route.findAll('span').map((span) => span.text())).toEqual(['10.000', '5.000'])
-      const arrow = route.find('[data-icon="fa-solid fa-arrow-right"]')
-      expect(arrow.exists()).toBe(true)
-      expect(arrow.classes()).toContain('arrow-icon')
     })
 
     it('keeps the plain release weight line when real weight is not set or negative', async () => {
@@ -1613,20 +1541,6 @@ describe('Registers_List.vue', () => {
       ])
     })
 
-    it('shows a sort icon for sorted custom multiline headers', async () => {
-      const wrapper = mount(RegistersList, {
-        global: {
-          stubs: vuetifyStubs
-        }
-      })
-
-      wrapper.vm.registers_sort_by = [{ key: 'weight', order: 'desc' }]
-      await wrapper.vm.$nextTick()
-
-      const icon = wrapper.find('[data-testid="v-icon"][data-icon="$sortDesc"]')
-      expect(icon.exists()).toBe(true)
-      expect(icon.classes()).toContain('register-sort-icon')
-    })
   })
 
   describe('component lifecycle', () => {

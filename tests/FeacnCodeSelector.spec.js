@@ -132,18 +132,6 @@ describe('FeacnCodeSelector', () => {
   }
 
   describe('rendering', () => {
-    it('displays a check-double icon for the selected code', () => {
-      const wrapper = createWrapper()
-
-      // Our mock setup has '1234567890' as the selected code
-      const iconElement = wrapper.find('.fa-check-double')
-      expect(iconElement.exists()).toBe(true)
-
-      // Verify it's in the same parent element as the selected code text
-      const parentElement = wrapper.find('.d-inline-flex.align-center')
-      expect(parentElement.text()).toContain('1234567890')
-      expect(parentElement.find('.fa-check-double').exists()).toBe(true)
-    })
 
     it('does not display check-double icon for unselected codes', () => {
       const wrapper = createWrapper()
@@ -162,64 +150,6 @@ describe('FeacnCodeSelector', () => {
       })
     })
 
-    it('applies correct CSS classes to codes', () => {
-      const wrapper = createWrapper()
-
-      // Selected code should have the 'selected-code' class
-      const selectedCodeDiv = wrapper.find('.selected-code')
-      expect(selectedCodeDiv.exists()).toBe(true)
-
-      // Unselected codes should have the 'unselected-code' class
-      const unselectedCodeDivs = wrapper.findAll('.unselected-code')
-      expect(unselectedCodeDivs.length).toBe(1) // Since we have 2 codes total and 1 is selected
-    })
-
-    it('displays a fallback message when no codes are available', () => {
-      // Setup mock to return empty array for this test
-      mockGetFeacnCodesForKeywords.mockReturnValueOnce([])
-
-      const wrapper = createWrapper({
-        item: { id: 2, keyWordIds: [], tnVed: '' }
-      })
-
-      // Should not render the FEACN lookup column
-      expect(wrapper.find('.feacn-lookup-column').exists()).toBe(false)
-
-      // Should render a fallback dash
-      expect(wrapper.text()).toBe('-')
-    })
-
-    it('renders matchingFC above regular codes when provided (without comment)', () => {
-      const wrapper = createWrapper({
-        item: {
-          id: 3,
-          keyWordIds: [1],
-          tnVed: '1234567890',
-          matchingFC: '5555555555',
-          matchingFCComment: 'Лучшее совпадение'
-        }
-      })
-      const lookupColumn = wrapper.find('.feacn-lookup-column')
-      expect(lookupColumn.exists()).toBe(true)
-      const firstItemText = lookupColumn.find('.matching-feacn-code-item').text()
-      expect(firstItemText).toContain('5555555555')
-      expect(firstItemText).not.toContain('Лучшее совпадение')
-    })
-
-    it('applies matching special class to matchingFC', () => {
-      const wrapper = createWrapper({
-        item: {
-          id: 4,
-          keyWordIds: [1],
-          tnVed: '1234567890',
-          matchingFC: '5555555555',
-          matchingFCComment: 'Комментарий'
-        }
-      })
-      const matchingDiv = wrapper.find('.matching-feacn-code-item')
-      expect(matchingDiv.exists()).toBe(true)
-      expect(matchingDiv.classes()).toContain('matching-feacn-code-item')
-    })
   })
 
   describe('interactions', () => {

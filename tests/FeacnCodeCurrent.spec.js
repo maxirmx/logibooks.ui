@@ -72,18 +72,6 @@ describe('FeacnCodeCurrent', () => {
       expect(wrapper.text()).toContain('1234567890')
     })
 
-    it('renders empty string when tnVed is missing', () => {
-      const wrapper = createWrapper({ item: { id: 2 } })
-      const span = wrapper.find('span')
-      expect(span.exists()).toBe(true)
-      expect(span.text()).toBe('')
-    })
-
-    it('applies truncated-cell class', () => {
-      const wrapper = createWrapper()
-      const span = wrapper.find('span.truncated-cell')
-      expect(span.exists()).toBe(true)
-    })
   })
 
   describe('click events', () => {

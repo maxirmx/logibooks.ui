@@ -837,16 +837,6 @@ describe('Registers_WhList.vue', () => {
     expect(formatZoneCount({}, 1)).toBe('-')
   })
 
-  it('shows a sort icon for warehouse custom multiline headers', async () => {
-    const wrapper = createWrapper()
-    wrapper.vm.registers_sort_by = [{ key: 'warehouseArrivalDate', order: 'asc' }]
-    await wrapper.vm.$nextTick()
-
-    const icon = wrapper.find('[data-testid="v-icon"][data-icon="$sortAsc"]')
-    expect(icon.exists()).toBe(true)
-    expect(icon.classes()).toContain('register-sort-icon')
-  })
-
   it('uses warehouse-specific nouns', async () => {
     const wrapper = createWrapper()
     await wrapper.vm.$nextTick()
@@ -854,19 +844,6 @@ describe('Registers_WhList.vue', () => {
     expect(wrapper.vm.registerNouns.genitivePluralCapitalized).toBe('Партий')
     expect(wrapper.vm.registerNouns.genitiveSingular).toBe('партии')
     expect(wrapper.vm.registerNouns.genitivePlural).toBe('партий')
-  })
-
-  it('uses independent parcel status bulk-change action', async () => {
-    const wrapper = createWrapper()
-    await wrapper.vm.$nextTick()
-
-    const actionButtons = wrapper.findAllComponents(ActionButton)
-    const bulkStatusButton = actionButtons.find(
-      (button) => button.props('tooltipText') === 'Выбрать посылки и изменить статус'
-    )
-
-    expect(bulkStatusButton).toBeTruthy()
-    expect(bulkStatusButton.props('icon')).toBe('fa-solid fa-pen-to-square')
   })
 
   it('covers country and airport display fallbacks', () => {

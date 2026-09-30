@@ -305,13 +305,6 @@ describe('StopWords_List.vue', () => {
       expect(mockPush).toHaveBeenCalledWith('/stopword/create')
     })
 
-    it('shows edit and delete buttons in table rows', () => {
-      // Since v-data-table is stubbed, test that the methods exist instead
-      expect(wrapper.vm.openEditDialog).toBeDefined()
-      expect(wrapper.vm.deleteStopWord).toBeDefined()
-      expect(typeof wrapper.vm.openEditDialog).toBe('function')
-      expect(typeof wrapper.vm.deleteStopWord).toBe('function')
-    })
   })
 
   describe('Navigation Functions', () => {

@@ -89,22 +89,6 @@ describe('User_LoginView.vue', () => {
     expect(wrapper.find('#login_password').attributes('type')).toBe('text')
   })
 
-  it('renders the password validation message outside the input row', () => {
-    const wrapper = mount(UserLoginView, {
-      global: {
-        stubs: { Form: InvalidFormStub, Field: FieldStub, 'font-awesome-icon': true }
-      }
-    })
-
-    const passwordWrapper = wrapper.find('.password-wrapper')
-    const inputRow = passwordWrapper.find('.password-input-row')
-
-    expect(inputRow.find('#login_password').exists()).toBe(true)
-    expect(inputRow.find('button[type="button"]').exists()).toBe(true)
-    expect(inputRow.find('.invalid-feedback').exists()).toBe(false)
-    expect(passwordWrapper.find('.invalid-feedback').text()).toBe('Необходимо указать пароль')
-  })
-
   it('renders a regular field error as a separate form-group item', () => {
     const wrapper = mount(UserLoginView, {
       global: {

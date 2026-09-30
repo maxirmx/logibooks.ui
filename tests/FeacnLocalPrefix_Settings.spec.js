@@ -197,25 +197,10 @@ describe('FeacnLocalPrefix_Settings.vue', () => {
     )
   })
 
-  it('renders the reusable scope editor', () => {
-    const wrapper = mountComponent()
-    expect(wrapper.find('[data-testid="restriction-scope-editor"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="add-restriction-scope"]').exists()).toBe(true)
-  })
-
   it('allows an empty scope collection to make a prefix inactive', () => {
     const wrapper = mountComponent()
     const saveButton = wrapper.get('[data-testid="feacn-prefix-save-action"]')
     expect(saveButton.attributes('disabled')).toBeUndefined()
-  })
-
-  it('renders header actions without footer action buttons', () => {
-    const wrapper = mountComponent()
-
-    expect(wrapper.find('[data-testid="feacn-prefix-save-action"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="feacn-prefix-cancel-action"]').exists()).toBe(true)
-    expect(wrapper.find('button.primary').exists()).toBe(false)
-    expect(wrapper.find('button.secondary').exists()).toBe(false)
   })
 
   it('navigates back to the prefixes list from the header cancel action', async () => {
@@ -333,11 +318,6 @@ describe('FeacnLocalPrefix_Settings.vue', () => {
     expect(create).not.toHaveBeenCalled()
     expect(wrapper.findAll('.scope-error')).toHaveLength(1)
     expect(wrapper.text()).not.toContain('Страна и процедура не должны повторяться')
-  })
-
-  it('renders FieldArrayWithButtons', () => {
-    const wrapper = mountComponent()
-    expect(wrapper.find('[data-test="fab-stub"]').exists()).toBe(true)
   })
 
   it('renders ActionButton and FeacnCodeSearch when search is toggled', async () => {

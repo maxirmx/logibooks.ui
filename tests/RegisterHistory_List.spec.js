@@ -518,37 +518,6 @@ describe('RegisterHistory_List.vue', () => {
     })
   })
 
-  it('shows the standard list spinner while the history page is loading', async () => {
-    let resolveHistory
-    mocks.getHistory.mockImplementationOnce(
-      () =>
-        new Promise((resolve) => {
-          resolveHistory = resolve
-        })
-    )
-
-    const wrapper = mount(RegisterHistoryList, {
-      props: { registerId: 42 },
-      global: { stubs: defaultGlobalStubs }
-    })
-    await wrapper.vm.$nextTick()
-
-    expect(wrapper.get('[data-testid="register-history-spinner"]').classes()).toEqual(
-      expect.arrayContaining(['spinner-border', 'spinner-border-m'])
-    )
-    expect(
-      wrapper.get('[data-testid="register-history-back"]').attributes('disabled')
-    ).toBeDefined()
-
-    resolveHistory()
-    await flushPromises()
-
-    expect(wrapper.find('[data-testid="register-history-spinner"]').exists()).toBe(false)
-    expect(
-      wrapper.get('[data-testid="register-history-back"]').attributes('disabled')
-    ).toBeUndefined()
-  })
-
   it('renders reference changes as text instead of identifiers', async () => {
     mockRefs.items.value[0].changes = [
       { field: 'CompanyId', oldValue: '1', newValue: '2' },

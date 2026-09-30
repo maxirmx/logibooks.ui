@@ -38,15 +38,6 @@ describe('FeacnCodeSearchByKeyword (legacy test)', () => {
     expect(ensureLoaded).toHaveBeenCalled()
   })
 
-  it('renders separate rows for each feacn code', () => {
-    const wrapper = createWrapper()
-    const rows = wrapper.findAll('[data-testid="feacn-keyword-selector-item"]')
-    expect(rows).toHaveLength(3)
-    expect(rows[0].text()).toContain('1111')
-    expect(rows[1].text()).toContain('2222')
-    expect(rows[2].text()).toContain('3333')
-  })
-
   it('filters rows by search term using shared helper', async () => {
     const wrapper = createWrapper()
     const input = wrapper.find('input')

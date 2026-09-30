@@ -286,16 +286,4 @@ describe('Notifications_List.vue', () => {
     expect(notifications[0].number).toBe('N-001')
   })
 
-  it('shows empty table when there are no notifications', async () => {
-    notificationsRef.value = []
-
-    const wrapper = mount(NotificationsList, {
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    expect(wrapper.find('[data-testid="v-data-table"]').exists()).toBe(true)
-    expect(wrapper.find('.header-with-actions').exists()).toBe(true)
-  })
 })

@@ -121,6 +121,12 @@ vi.mock('@/stores/warehouses.store.js', () => ({
     })
 }))
 
+vi.mock('@/stores/parcel.filters.store.js', () => ({
+  useParcelFiltersStore: () => ({ filters: [], getAll: vi.fn(() => Promise.resolve([])), remove: vi.fn() })
+}))
+
+vi.mock('@/composables/useAppConfirm.js', () => ({ useAppConfirm: () => vi.fn(() => Promise.resolve(false)) }))
+
 vi.mock('@/router', () => ({
   default: { push: routerPush }
 }))
@@ -152,7 +158,7 @@ beforeEach(() => {
 })
 
 describe('User_Settings.vue real component', () => {
-  it('shows parcel filter fixtures only on the signed-in user profile', async () => {
+  it('shows personal parcel filters only on the signed-in user profile', async () => {
     const ownProfile = mount(Parent, {
       props: { register: false, id: 2 },
       global: {

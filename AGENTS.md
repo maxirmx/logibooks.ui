@@ -46,6 +46,7 @@ These instructions apply to the entire repository. Follow them for every new fea
 - Reuse the shared table styles in `src/assets/main.css`, including the blue header rule, rather than duplicating table appearance in scoped component CSS.
 - Wrap tables in `table-card`. Vuetify data tables use `interlaced-table`; plain HTML tables use `app-table-card`, `app-table-scroll`, `app-table`, and `interlaced-table` for the same card, compact rows, and alternating backgrounds.
 - Use `app-table-actions` for actions in plain table cells. Keep only table-specific column widths and responsive layout rules in the component.
+- In user-profile filter tables, keep the table inside the profile form. Place a label-styled heading and the create `ActionButton` in one header row, then span the table across the form width below it, as in `RestrictionScopeEditor`. Put the create action inside `header-actions-bar` and `header-actions header-actions-group`, with space above the table. Put row action buttons in the first table column, before filter data.
 
 ## Parcel navigation context
 

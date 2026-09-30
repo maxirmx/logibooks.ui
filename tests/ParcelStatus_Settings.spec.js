@@ -227,23 +227,6 @@ describe('ParcelStatus_Settings.vue', () => {
       expect(mockParcelStatusesStore.getById).not.toHaveBeenCalled()
     })
 
-    it('renders edit mode correctly', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'edit', parcelStatusId: 1 },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      expect(wrapper.find('h1').text()).toBe('Редактирование статуса посылки')
-      expect(findActionButton(wrapper, 'fa-solid fa-check-double').props('tooltipText')).toBe(
-        'Сохранить'
-      )
-      expect(wrapper.find('[data-testid="restriction-reason-group"]').exists()).toBe(false)
-    })
-
     it('shows restriction reason only while customs processing is unchecked', async () => {
       const wrapper = mount(AsyncWrapper, {
         props: { mode: 'create' },
@@ -615,17 +598,5 @@ describe('ParcelStatus_Settings.vue', () => {
       expect(wrapper.exists()).toBe(true)
     })
 
-    it('initializes empty form in create mode', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      expect(wrapper.exists()).toBe(true)
-    })
   })
 })

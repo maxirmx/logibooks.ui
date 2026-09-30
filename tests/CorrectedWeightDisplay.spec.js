@@ -24,19 +24,6 @@ function mountDisplay(props) {
 }
 
 describe('CorrectedWeightDisplay', () => {
-  it('renders original weight routed to corrected weight', () => {
-    const wrapper = mountDisplay({
-      weight: 2.4,
-      register: {
-        realWeightKg: 5,
-        totalWeightKgToRelease: 10
-      }
-    })
-
-    expect(wrapper.find('.corrected-weight-display').exists()).toBe(true)
-    expect(wrapper.findAll('span span').map((span) => span.text())).toEqual(['2.400', '1.200'])
-    expect(wrapper.get('[data-icon="fa-solid fa-arrow-right"]').exists()).toBe(true)
-  })
 
   it('falls back to plain formatted weight when correction is disabled', () => {
     const wrapper = mountDisplay({

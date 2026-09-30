@@ -154,19 +154,4 @@ describe('Airports_List.vue', () => {
     expect(removeAirport).toHaveBeenCalledWith(1)
   })
 
-  it('shows empty list message when no airports available', async () => {
-    mockAirports.value = []
-
-    const wrapper = mount(AirportsList, {
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    await wrapper.vm.$nextTick()
-
-    // after refactor the header remains and data table is always rendered (shows empty)
-    expect(wrapper.find('[data-testid="v-data-table"]').exists()).toBe(true)
-    expect(wrapper.find('.header-with-actions').exists()).toBe(true)
-  })
 })

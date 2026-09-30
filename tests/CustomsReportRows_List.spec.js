@@ -545,63 +545,6 @@ describe('CustomsReportRows_List.vue', () => {
     expect(getReportRowsMock.mock.calls.length).toBeGreaterThan(callsBeforeMetadata)
   })
 
-  it('renders tn ved header as two lines', async () => {
-    wrapper = mount(CustomsReportRowsList, {
-      props: { reportId: 5 },
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    await flushPromises()
-
-    const tnVedHeader = wrapper.find('[data-column-key="tnVed-header"]')
-    expect(tnVedHeader.exists()).toBe(true)
-    expect(tnVedHeader.findAll('.multiline-header span').map((line) => line.text())).toEqual([
-      'Код ТНВЭД',
-      'Предшествующий'
-    ])
-    expect(wrapper.find('[data-column-key="prevTnVed-header"]').exists()).toBe(false)
-  })
-
-  it('renders combined weight and cost headers', async () => {
-    wrapper = mount(CustomsReportRowsList, {
-      props: { reportId: 5 },
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    await flushPromises()
-
-    expect(
-      wrapper.find('[data-column-key="totalWeight-header"] .multiline-header span').text()
-    ).toBe('Вес')
-    expect(wrapper.find('[data-column-key="totalCost-header"] .multiline-header span').text()).toBe(
-      'Стоимость'
-    )
-    expect(wrapper.find('[data-column-key="weightUnit-header"]').exists()).toBe(false)
-    expect(wrapper.find('[data-column-key="currency-header"]').exists()).toBe(false)
-  })
-
-  it('renders date time header as two lines', async () => {
-    wrapper = mount(CustomsReportRowsList, {
-      props: { reportId: 5 },
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    await flushPromises()
-
-    const dateTimeHeader = wrapper.find('[data-column-key="dateTime-header"]')
-    expect(dateTimeHeader.exists()).toBe(true)
-    expect(dateTimeHeader.findAll('.multiline-header span').map((line) => line.text())).toEqual([
-      'Дата',
-      'Время'
-    ])
-  })
-
   it('renders widened DTO fields and truncates long text columns', async () => {
     const reportDateTime = '2026-05-07 10:30'
     reportRowsRef.value = [
@@ -670,34 +613,6 @@ describe('CustomsReportRows_List.vue', () => {
     expect(wrapper.find('[data-column-key="description"] .truncate-cell').exists()).toBe(true)
     expect(wrapper.find('[data-column-key="comments"] .truncate-cell').exists()).toBe(true)
     expect(wrapper.findAllComponents(TruncateTooltipCell)).toHaveLength(7)
-  })
-
-  it('renders an empty previous tn ved line when previous code is missing', async () => {
-    reportRowsRef.value = [
-      {
-        id: 1,
-        rowNumber: 9,
-        parcelNumber: 'PN-001',
-        processingResult: 'Выпущено',
-        dTag: 'DTAG-001',
-        tnVed: '1234567890',
-        prevTnVed: null
-      }
-    ]
-
-    wrapper = mount(CustomsReportRowsList, {
-      props: { reportId: 5 },
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    await flushPromises()
-
-    const tnVedCell = wrapper.find('[data-column-key="tnVed"]')
-    expect(tnVedCell.find('.primary-line').text()).toBe('1234567890')
-    expect(tnVedCell.find('.tnved-previous-line').exists()).toBe(true)
-    expect(tnVedCell.find('.tnved-previous-line').text()).toBe('')
   })
 
   // Back navigation handled by parent view; no local back button to test

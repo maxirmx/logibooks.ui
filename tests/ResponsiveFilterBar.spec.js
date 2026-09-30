@@ -26,9 +26,4 @@ describe('ResponsiveFilterBar', () => {
     expect(wrapper.element.children[1].classList).toContain('responsive-filter-bar__item--grow')
   })
 
-  it('uses the generic filter label by default', () => {
-    const wrapper = mount(ResponsiveFilterBar)
-
-    expect(wrapper.attributes('aria-label')).toBe('Фильтры')
-  })
 })

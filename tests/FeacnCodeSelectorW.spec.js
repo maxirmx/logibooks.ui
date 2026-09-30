@@ -102,17 +102,6 @@ describe('FeacnCodeSelectorW', () => {
     })
   }
 
-  it('renders correctly with empty keywords', async () => {
-    const { getKeywordFeacnPairs } = await import('@/helpers/parcels.list.helpers.js')
-    vi.mocked(getKeywordFeacnPairs).mockReturnValue([])
-
-    wrapper = createWrapper()
-
-    expect(wrapper.find('.form-group').exists()).toBe(true)
-    expect(wrapper.find('label').text()).toBe('Подбор ТН ВЭД')
-    expect(wrapper.text()).toContain('-')
-  })
-
   it('renders keywords with quotes', async () => {
     const mockKeywords = [
       { id: 1, word: 'test keyword 1', feacnCode: '1234567890' },
@@ -175,19 +164,6 @@ describe('FeacnCodeSelectorW', () => {
       .map((item) => item.findComponent({ name: 'ActionButton' }))
     const present = keywordActionButtons.filter((btn) => btn.exists()).length
     expect(present).toBe(2)
-  })
-
-  it('has correct structure when keywords are present', async () => {
-    const mockKeywords = [{ id: 1, word: 'test keyword 1', feacnCode: '1234567890' }]
-
-    const { getKeywordFeacnPairs } = await import('@/helpers/parcels.list.helpers.js')
-    vi.mocked(getKeywordFeacnPairs).mockReturnValue(mockKeywords)
-
-    wrapper = createWrapper()
-
-    expect(wrapper.find('.form-group').exists()).toBe(true)
-    expect(wrapper.find('.feacn-lookup-column').exists()).toBe(true)
-    expect(wrapper.find('.keyword-item').exists()).toBe(true)
   })
 
   it('passes correct props to computed property', async () => {

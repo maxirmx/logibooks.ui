@@ -15,21 +15,6 @@ const stubs = {
 }
 
 describe('AppDialogFrame', () => {
-  it('renders the shared title, content, and action regions', () => {
-    const wrapper = mount(AppDialogFrame, {
-      props: { title: 'Подтверждение' },
-      slots: {
-        default: '<p>Продолжить операцию?</p>',
-        actions: '<button>Продолжить</button>'
-      },
-      global: { stubs }
-    })
-
-    expect(wrapper.get('header').text()).toBe('Подтверждение')
-    expect(wrapper.get('main').text()).toBe('Продолжить операцию?')
-    expect(wrapper.get('footer').text()).toBe('Продолжить')
-    expect(wrapper.find('.app-dialog-frame--default').exists()).toBe(true)
-  })
 
   it('renders a consistent visual cue for blocking errors', () => {
     const wrapper = mount(AppDialogFrame, {

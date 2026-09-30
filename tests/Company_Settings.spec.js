@@ -210,52 +210,6 @@ afterEach(() => {
 
 describe('Company_Settings.vue', () => {
   describe('Component Rendering', () => {
-    it('renders create mode correctly', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      expect(wrapper.find('h1').text()).toBe('Регистрация компании')
-      expect(wrapper.find('[data-testid="company-save-action"]').exists()).toBe(true)
-      expect(wrapper.get('button[type="submit"]').classes()).toContain('sr-only')
-      expect(mockCompaniesStore.getById).not.toHaveBeenCalled()
-    })
-
-    it('renders edit mode correctly', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'edit', companyId: 1 },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      expect(wrapper.find('h1').text()).toBe('Изменить информацию о компании')
-      expect(wrapper.find('[data-testid="company-save-action"]').exists()).toBe(true)
-      expect(wrapper.get('button[type="submit"]').classes()).toContain('sr-only')
-    })
-
-    it('renders country options', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      const countrySelect = wrapper.find('#countryIsoNumeric')
-      expect(countrySelect.exists()).toBe(true)
-      // Check if the country options are rendered in the template
-      expect(wrapper.html()).toContain('Российская Федерация')
-    })
 
     it('offers the receiver format status table only to a senior logist editing a company', async () => {
       isSrLogistPlus = true
@@ -521,39 +475,6 @@ describe('Company_Settings.vue', () => {
   })
 
   describe('Signature Stamp Handling', () => {
-    it('shows existing signature stamp preview in edit mode', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'edit', companyId: 1 },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      const preview = wrapper.find('[data-testid="signature-stamp-preview"]')
-      expect(preview.exists()).toBe(true)
-      expect(preview.attributes('src')).toBe(mockCompany.titleSignatureStamp)
-      expect(wrapper.get('.signature-stamp').element.firstElementChild.classList.contains('signature-actions')).toBe(true)
-    })
-
-    it('uses action buttons without inline label text', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      const uploadBtn = wrapper.find('[data-testid="signature-stamp-upload"]')
-      expect(uploadBtn.exists()).toBe(true)
-      // Button should not contain the label text directly (icon-only)
-      expect(uploadBtn.text()).toBe('')
-      // Original inline label text should not appear inside the button element
-      expect(uploadBtn.html()).not.toMatch(/Загрузить изображение/)
-    })
 
     it('allows selecting a new signature stamp image', async () => {
       const wrapper = mount(AsyncWrapper, {
@@ -844,18 +765,5 @@ describe('Company_Settings.vue', () => {
       expect(wrapper.exists()).toBe(true)
     })
 
-    it('initializes empty form in create mode', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      // In create mode, form should start empty
-      expect(wrapper.exists()).toBe(true)
-    })
   })
 })

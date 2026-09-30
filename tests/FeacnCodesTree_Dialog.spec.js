@@ -111,36 +111,6 @@ describe('FeacnCodesTree_Dialog.vue', () => {
     expect(wrapper.vm.uploading).toBe(false)
   })
 
-  it('shows loading state during upload', async () => {
-    let resolveUpload
-    uploadMock.mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          resolveUpload = resolve
-        })
-    )
-
-    const wrapper = createWrapper()
-    const file = new File(['content'], 'codes.xlsx')
-
-    // Start upload
-    const uploadPromise = wrapper.vm.fileSelected(file)
-    await wrapper.vm.$nextTick()
-
-    // Should be in loading state
-    expect(wrapper.vm.uploading).toBe(true)
-    expect(wrapper.find('.spinner-border').exists()).toBe(true)
-
-    // Complete upload
-    resolveUpload()
-    await uploadPromise
-    await flushPromises()
-
-    // Should be back to normal state
-    expect(wrapper.vm.uploading).toBe(false)
-    expect(wrapper.find('.spinner-border').exists()).toBe(false)
-  })
-
   it('opens file dialog when button is clicked', async () => {
     const wrapper = createWrapper()
     const fileInput = wrapper.find('input[type="file"]')

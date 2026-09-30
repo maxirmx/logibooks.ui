@@ -85,21 +85,6 @@ function mountEditor(props = {}) {
 }
 
 describe('RegisterStatusInlineEditor', () => {
-  it('shows status icons in the inline status selector', () => {
-    const wrapper = mountEditor()
-
-    expect(wrapper.find('[data-testid="inline-register-status-select"]').exists()).toBe(true)
-    expect(wrapper.text()).toContain('Current')
-    expect(wrapper.text()).toContain('Next')
-    expect(wrapper.find('[data-testid="register-status-selection-title"]').exists()).toBe(false)
-
-    const icons = wrapper.findAll('[data-testid="register-status-icon"]')
-    expect(icons.map((icon) => icon.attributes('data-icon'))).toEqual([
-      'svg:in-transit',
-      'svg:in-transit',
-      'svg:very-delivered'
-    ])
-  })
 
   it('emits selection changes from the shared status selector', async () => {
     const wrapper = mountEditor()

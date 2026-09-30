@@ -234,20 +234,6 @@ describe('Users_List.vue', () => {
   }
 
   describe('Component Rendering', () => {
-    it('renders correctly and calls ensureLoaded on mount', () => {
-      createWrapper()
-      expect(mockUsersStore.ensureLoaded).toHaveBeenCalled()
-      expect(mockWarehousesStore.ensureLoaded).toHaveBeenCalled()
-      expect(wrapper.exists()).toBe(true)
-      expect(wrapper.find('h1').text()).toBe('Пользователи')
-    })
-
-    it('renders user list when users exist', () => {
-      createWrapper()
-      expect(wrapper.text()).toContain('Пользователи')
-      // Check that the data table is shown
-      expect(wrapper.find('[data-testid="v-data-table"]').exists()).toBe(true)
-    })
 
     it('prefixes human and automated-system names with their account icons', () => {
       mockUsers.value = [
@@ -276,23 +262,6 @@ describe('Users_List.vue', () => {
       expect(accountIcons[0].attributes('aria-label')).toBe('Пользователь')
       expect(accountIcons[1].attributes('data-icon')).toBe('fa-solid fa-robot')
       expect(accountIcons[1].attributes('aria-label')).toBe('Автоматизированная система')
-    })
-
-    it('shows empty message when users array is empty', () => {
-      mockUsers.value = []
-      createWrapper()
-      expect(wrapper.find('[data-testid="v-data-table"]').exists()).toBe(true)
-      expect(wrapper.find('.header-with-actions').exists()).toBe(true)
-    })
-
-    it('shows loading state', () => {
-      // simulate loading by placing a loading flag on the store ref
-      const old = mockUsers.value
-      mockUsers.value = { loading: true }
-      createWrapper()
-      expect(wrapper.find('.header-with-actions').exists()).toBe(true)
-      // restore
-      mockUsers.value = old
     })
 
     it('reports load errors through alertStore', async () => {

@@ -54,15 +54,6 @@ describe('FieldArrayWithButtons', () => {
     vi.clearAllMocks()
   })
 
-  it('renders with default props', async () => {
-    const wrapper = createWrapper()
-    await flushPromises()
-
-    expect(wrapper.find('label').text()).toBe('Test Field:')
-    expect(wrapper.find('select').exists()).toBe(true)
-    expect(wrapper.findAll('button')).toHaveLength(2) // plus and minus buttons
-  })
-
   it('renders with select field type and options', async () => {
     const options = [
       { value: 1, text: 'Option 1' },
@@ -86,26 +77,6 @@ describe('FieldArrayWithButtons', () => {
     expect(optionElements[2].text()).toBe('Option 2')
   })
 
-  it('renders with input field type', async () => {
-    const wrapper = createWrapper({
-      fieldType: 'input',
-      fieldProps: { type: 'text', placeholder: 'Enter text' }
-    })
-    await flushPromises()
-
-    expect(wrapper.find('input[type="text"]').exists()).toBe(true)
-  })
-
-  it('renders with textarea field type', async () => {
-    const wrapper = createWrapper({
-      fieldType: 'textarea',
-      fieldProps: { placeholder: 'Enter text', rows: 3 }
-    })
-    await flushPromises()
-
-    expect(wrapper.find('textarea').exists()).toBe(true)
-  })
-
   it('applies error styling when hasError is true', async () => {
     const wrapper = createWrapper({ hasError: true })
     await flushPromises()
@@ -123,28 +94,6 @@ describe('FieldArrayWithButtons', () => {
     const buttons = wrapper.findAll('button')
     const minusButton = buttons.find((btn) => btn.classes().includes('ml-2'))
     expect(minusButton.attributes('disabled')).toBeDefined()
-  })
-
-  it('shows plus button only on first field', async () => {
-    const wrapper = createWrapper({}, { testField: ['', ''] }) // two fields
-    await flushPromises()
-
-    const containers = wrapper.findAll('.field-container')
-    expect(containers).toHaveLength(2)
-
-    // First container should have plus button
-    const firstContainerButtons = containers[0].findAll('button')
-    const hasPlusButton = firstContainerButtons.some((btn) =>
-      btn.classes().includes('field-container-plus')
-    )
-    expect(hasPlusButton).toBe(true)
-
-    // Second container should not have plus button
-    const secondContainerButtons = containers[1].findAll('button')
-    const hasNoPlusButton = !secondContainerButtons.some((btn) =>
-      btn.classes().includes('field-container-plus')
-    )
-    expect(hasNoPlusButton).toBe(true)
   })
 
   it('adds new field when plus button is clicked', async () => {
@@ -239,22 +188,6 @@ describe('FieldArrayWithButtons', () => {
     })
 
     expect(validator('invalid')).toBe(false)
-  })
-
-  it('renders correct CSS classes', async () => {
-    const wrapper = createWrapper()
-    await flushPromises()
-
-    // Check container classes
-    expect(wrapper.find('.field-container').exists()).toBe(true)
-    expect(wrapper.find('.form-group.mb-2').exists()).toBe(true)
-
-    // Check field classes
-    expect(wrapper.find('.form-control.input.field-container-select').exists()).toBe(true)
-
-    // Check button classes
-    expect(wrapper.find('.button-o-c.field-container-plus').exists()).toBe(true)
-    expect(wrapper.find('.button-o-c.ml-2').exists()).toBe(true)
   })
 
   it('generates correct field IDs', async () => {

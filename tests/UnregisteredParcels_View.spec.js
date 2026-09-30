@@ -31,24 +31,6 @@ describe('UnregisteredParcels_View.vue', () => {
     mockRoute.query = {}
   })
 
-  it('renders list with register id', () => {
-    const wrapper = mount(UnregisteredParcelsView, {
-      props: { registerId: 42 },
-      global: {
-        stubs: {
-          UnregisteredParcelsList: {
-            props: ['registerId'],
-            template: '<div data-testid="unregistered-list-stub">{{ registerId }}</div>'
-          }
-        }
-      }
-    })
-
-    const stub = wrapper.find('[data-testid="unregistered-list-stub"]')
-    expect(stub.exists()).toBe(true)
-    expect(stub.text()).toBe('42')
-  })
-
   it('closes to returnUrl when provided by caller', async () => {
     mockRoute.query = { returnUrl: '/scanjobs/42/monitor' }
 

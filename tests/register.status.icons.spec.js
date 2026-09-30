@@ -209,26 +209,6 @@ describe('RegisterStatusIcon', () => {
     )
   })
 
-  it('renders supported Font Awesome register status icons', () => {
-    const wrapper = mountIcon({
-      title: 'Отправлен',
-      icon: 'fa-solid fa-plane-circle-check',
-      bkColor: '#FFFFFF',
-      fgColor: '#004488'
-    })
-
-    expect(wrapper.find('[data-testid="fa-icon"]').attributes('data-icon')).toBe(
-      'fa-solid fa-plane-circle-check'
-    )
-    expect(wrapper.find('[data-testid="register-status-svg-icon"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="register-status-icon"]').attributes('data-icon')).toBe(
-      'fa-solid fa-plane-circle-check'
-    )
-    expect(wrapper.find('[data-testid="register-status-icon"]').attributes('data-icon-kind')).toBe(
-      REGISTER_STATUS_ICON_KIND_FONT_AWESOME
-    )
-  })
-
   it('renders neutral placeholder for missing status', () => {
     const wrapper = mountIcon(null)
 

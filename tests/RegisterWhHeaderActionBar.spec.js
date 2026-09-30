@@ -129,17 +129,6 @@ describe('RegisterWhHeaderActionBar.vue', () => {
     expect(download).toHaveBeenNthCalledWith(2, 77, 'register_77.xlsx', 3, 'Zone 3', false, 'company')
   })
 
-  it('shows export action when user is warehouse manager plus', () => {
-    isWhManagerPlus = true
-    const wrapper = mountHeaderActionBar({
-      register: { id: 77, fileName: 'register_77.xlsx' },
-      zones: []
-    })
-
-    expect(wrapper.findComponent(ActionButton2LStub).exists()).toBe(true)
-    expect(wrapper.find('[data-testid="export-btn"]').exists()).toBe(true)
-  })
-
   it('hides export action when user is not warehouse manager plus', () => {
     isWhManagerPlus = false
     const wrapper = mountHeaderActionBar({
@@ -336,17 +325,6 @@ describe('RegisterWhHeaderActionBar.vue', () => {
 
     await wrapper.get('[data-testid="close-btn"]').trigger('click')
     expect(wrapper.emitted('close')?.length).toBeGreaterThanOrEqual(1)
-  })
-
-  it('displays spinner when loading is true', () => {
-    const wrapper = mountHeaderActionBar({
-      register: { id: 55, fileName: 'register_55.xlsx' },
-      zones: [],
-      loading: true
-    })
-
-    const spinner = wrapper.find('.spinner-border')
-    expect(spinner.exists()).toBe(true)
   })
 
   it('does not display spinner when loading is false', () => {

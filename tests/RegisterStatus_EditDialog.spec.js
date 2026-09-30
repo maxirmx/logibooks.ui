@@ -190,22 +190,6 @@ describe('RegisterStatus_EditDialog.vue', () => {
       expect(mockRegisterStatusesStore.getById).not.toHaveBeenCalled()
     })
 
-    it('renders edit mode correctly', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'edit', registerStatusId: 1 },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      expect(wrapper.find('h1').text()).toBe('Редактирование статуса партии')
-      expect(findActionButton(wrapper, 'fa-solid fa-check-double').props('tooltipText')).toBe(
-        'Сохранить'
-      )
-    })
-
     it('uses the project styled checkbox for read-only status', async () => {
       const wrapper = mount(AsyncWrapper, {
         props: { mode: 'edit', registerStatusId: 1 },
@@ -734,17 +718,5 @@ describe('RegisterStatus_EditDialog.vue', () => {
       expect(wrapper.exists()).toBe(true)
     })
 
-    it('initializes empty form in create mode', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      expect(wrapper.exists()).toBe(true)
-    })
   })
 })

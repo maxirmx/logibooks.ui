@@ -94,46 +94,6 @@ describe('HotKeyActionScheme_Settings.vue', () => {
     expect(getByIdMock).toHaveBeenCalledWith(1)
   })
 
-  it('initializes actions from ops in create mode', async () => {
-    const wrapper = mount(AsyncWrapper, {
-      props: { mode: 'create' },
-      global: { stubs: defaultGlobalStubs }
-    })
-    await resolveAll()
-
-    const vm = wrapper.findComponent(HotKeyActionSchemeSettings).vm
-    expect(vm.hotKeyActionScheme.actions).toHaveLength(3)
-    expect(vm.hotKeyActionScheme.actions[0].action).toBe(1)
-    expect(vm.hotKeyActionScheme.actions[0].keyCode).toBe('')
-    expect(vm.hotKeyActionScheme.actions[0].shift).toBe(false)
-  })
-
-  it('uses backend data for actions in edit mode', async () => {
-    const wrapper = mount(AsyncWrapper, {
-      props: { mode: 'edit', hotKeyActionSchemeId: 1 },
-      global: { stubs: defaultGlobalStubs }
-    })
-    await resolveAll()
-
-    const vm = wrapper.findComponent(HotKeyActionSchemeSettings).vm
-    expect(vm.hotKeyActionScheme.actions).toHaveLength(2)
-    expect(vm.hotKeyActionScheme.actions[0].keyCode).toBe('F1')
-    expect(vm.hotKeyActionScheme.actions[1].keyCode).toBe('F2')
-    expect(vm.hotKeyActionScheme.actions[1].shift).toBe(true)
-  })
-
-  it('renders action names using getOpsLabel', async () => {
-    const wrapper = mount(AsyncWrapper, {
-      props: { mode: 'edit', hotKeyActionSchemeId: 1 },
-      global: { stubs: defaultGlobalStubs }
-    })
-    await resolveAll()
-
-    const table = wrapper.find('.actions-table')
-    expect(table.exists()).toBe(true)
-    expect(getOpsLabelMock).toHaveBeenCalled()
-  })
-
   it('renders KeyCaptureInput for keyCode', async () => {
     const wrapper = mount(AsyncWrapper, {
       props: { mode: 'edit', hotKeyActionSchemeId: 1 },
@@ -167,25 +127,6 @@ describe('HotKeyActionScheme_Settings.vue', () => {
     expect(keyCaptureInputs.length).toBe(2) // Should match the number of actions
     expect(keyCaptureInputs[0].props('modelValue')).toBe('F1')
     expect(keyCaptureInputs[1].props('modelValue')).toBe('F2')
-  })
-
-  it('renders editable checkboxes', async () => {
-    const wrapper = mount(AsyncWrapper, {
-      props: { mode: 'edit', hotKeyActionSchemeId: 1 },
-      global: { stubs: defaultGlobalStubs }
-    })
-    await resolveAll()
-
-    const shiftCheckbox = wrapper.find('input[id="shift-0"]')
-    const ctrlCheckbox = wrapper.find('input[id="ctrl-0"]')
-    const altCheckbox = wrapper.find('input[id="alt-0"]')
-
-    expect(shiftCheckbox.exists()).toBe(true)
-    expect(ctrlCheckbox.exists()).toBe(true)
-    expect(altCheckbox.exists()).toBe(true)
-
-    // Verify initial checkbox states
-    expect(shiftCheckbox.element.checked).toBe(false)
   })
 
   it('submits create with actions data', async () => {

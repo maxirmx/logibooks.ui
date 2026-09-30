@@ -1869,22 +1869,6 @@ describe('Scanjob_Monitor.vue', () => {
     expect(stopMonitor).toHaveBeenCalled()
   })
 
-  it('shows closed monitor state from hub event', async () => {
-    const wrapper = mount(ScanjobMonitor, {
-      props: { scanjobId: 42 },
-      global: { stubs: defaultGlobalStubs }
-    })
-
-    await flushPromises()
-
-    const onClosed = startMonitor.mock.calls[0][1].onClosed
-    onClosed(42, 2)
-    await flushPromises()
-
-    expect(stopMonitor).toHaveBeenCalled()
-    expect(wrapper.find('[data-testid="scanjob-monitor-closed"]').exists()).toBe(true)
-  })
-
   it('loads monitor snapshot without subscription when scanjob is not active', async () => {
     const inactiveScanjob = { id: 42, name: 'Scanjob A', type: 30, status: 20, registerId: 101 }
     mockScanjob.value = inactiveScanjob

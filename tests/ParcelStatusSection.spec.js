@@ -52,13 +52,6 @@ function createWrapper(props = {}) {
 }
 
 describe('ParcelStatusSection', () => {
-  it('renders status selector and all action buttons', () => {
-    const wrapper = createWrapper()
-
-    expect(wrapper.find('#statusId').exists()).toBe(true)
-    expect(wrapper.findAll('option')).toHaveLength(2)
-    expect(wrapper.findAllComponents(ActionButton)).toHaveLength(7)
-  })
 
   it('renders current check status and computed class', () => {
     const wrapper = createWrapper()

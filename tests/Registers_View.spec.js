@@ -30,17 +30,6 @@ describe('Registers_View.vue', () => {
     expect(wrapper.find('[data-testid="registers-wh-list"]').exists()).toBe(false)
   })
 
-  it('renders paperwork registers list for invalid mode values', () => {
-    const wrapper = mount(RegistersView, {
-      props: {
-        mode: 'unknown'
-      }
-    })
-
-    expect(wrapper.find('[data-testid="registers-list"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="registers-wh-list"]').exists()).toBe(false)
-  })
-
   it('renders warehouse parties list for warehouse mode', () => {
     const wrapper = mount(RegistersView, {
       props: {

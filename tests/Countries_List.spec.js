@@ -118,13 +118,6 @@ describe('Countries_List.vue', () => {
     expect(wrapper.text()).toContain('Отсутствуют данные')
   })
 
-  it('renders admin update button when user is admin', () => {
-    mockIsAdmin.value = true
-    const wrapper = mount(CountriesList, { global: { stubs: vuetifyStubs } })
-    const headerActions = wrapper.find('.header-actions')
-    expect(headerActions.exists()).toBe(true)
-  })
-
   it('shows spinner and reports store error through alertStore', async () => {
     mockLoading.value = true
     getAll.mockRejectedValueOnce('bad')

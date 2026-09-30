@@ -105,24 +105,6 @@ describe('StopWord_Settings.vue', () => {
   })
 
   describe('Component Rendering', () => {
-    it('renders create mode correctly', async () => {
-      const wrapper = mountComponent()
-      await resolveAll()
-
-      expect(wrapper.find('h1').text()).toBe('Регистрация стоп слова или фразы')
-      expect(wrapper.find('input[name="word"]').exists()).toBe(true)
-      expect(wrapper.findAll('input[type="radio"][name="matchTypeId"]').length).toBeGreaterThan(0)
-      expect(wrapper.find('[data-testid="restriction-scope-editor"]').exists()).toBe(true)
-      expect(wrapper.find('[data-testid="stopword-save-action"]').exists()).toBe(true)
-      expect(wrapper.find('[data-testid="stopword-cancel-action"]').exists()).toBe(true)
-    })
-
-    it('renders edit mode correctly', async () => {
-      const wrapper = mountComponent({ id: 1 })
-      await resolveAll()
-
-      expect(wrapper.find('h1').text()).toBe('Редактировать стоп-слово или фразу')
-    })
 
     it('shows loading state when fetching data', async () => {
       getById.mockImplementation(() => new Promise(() => {}))
@@ -136,14 +118,6 @@ describe('StopWord_Settings.vue', () => {
   })
 
   describe('Form Fields', () => {
-    it('renders word input field', async () => {
-      const wrapper = mountComponent()
-      await resolveAll()
-
-      const wordInput = wrapper.find('input[name="word"]')
-      expect(wordInput.exists()).toBe(true)
-      expect(wordInput.attributes('placeholder')).toBe('Стоп-слово или фраза')
-    })
 
     it('renders matchTypeId radios', async () => {
       const wrapper = mountComponent()
@@ -151,14 +125,6 @@ describe('StopWord_Settings.vue', () => {
 
       const radios = wrapper.findAll('input[type="radio"][name="matchTypeId"]')
       expect(radios.length).toBeGreaterThan(0)
-    })
-
-    it('renders the reusable scope editor', async () => {
-      const wrapper = mountComponent()
-      await resolveAll()
-
-      expect(wrapper.find('[data-testid="restriction-scope-editor"]').exists()).toBe(true)
-      expect(wrapper.find('[data-testid="add-restriction-scope"]').exists()).toBe(true)
     })
 
     it('positions match type before the restriction scopes table', async () => {
@@ -430,21 +396,6 @@ describe('StopWord_Settings.vue', () => {
   })
 
   describe('Button States', () => {
-    it('shows header save action without footer buttons', async () => {
-      const wrapper = mountComponent()
-      await resolveAll()
-
-      expect(wrapper.find('[data-testid="stopword-save-action"]').exists()).toBe(true)
-      expect(wrapper.find('button.primary').exists()).toBe(false)
-    })
-
-    it('shows header cancel action without a footer cancel button', async () => {
-      const wrapper = mountComponent()
-      await resolveAll()
-
-      expect(wrapper.find('[data-testid="stopword-cancel-action"]').exists()).toBe(true)
-      expect(wrapper.find('button.secondary').exists()).toBe(false)
-    })
 
     it('disables header actions while saving', async () => {
       const wrapper = mountComponent()

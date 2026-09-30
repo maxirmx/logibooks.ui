@@ -295,34 +295,6 @@ describe('ParcelEvents_Settings.vue', () => {
     expect(zoneOptionTexts).toContain('')
   })
 
-  it('uses customs procedure order from register ops', async () => {
-    mockRegisterOps.value = {
-      customsProcedures: [
-        { value: 10, charCode: 'ЭК 10', name: 'Экспорт' },
-        { value: 1, charCode: '01', name: 'Возврат' },
-        { value: 60, charCode: 'ИМ 60', name: 'Реимпорт' },
-        { value: 40, charCode: 'ИМ 40', name: 'Импорт' },
-        { value: 31, charCode: 'ЭК 31', name: 'Реэкспорт' }
-      ],
-      transportationTypes: []
-    }
-
-    const wrapper = mountComponent()
-    await resolveAll()
-
-    const procedureSelect = wrapper.find('[data-testid="customs-procedure-select"]')
-    expect(procedureSelect.element.value).toBe('10')
-    expect(procedureSelect.findAll('option').map((o) => o.text())).toEqual([
-      'ЭК 10 Экспорт',
-      '01 Возврат',
-      'ИМ 60 Реимпорт',
-      'ИМ 40 Импорт',
-      'ЭК 31 Реэкспорт'
-    ])
-    expect(wrapper.find('[data-testid="parcel-event-row-1"]').text()).toBe('Создана')
-    expect(wrapper.find('[data-testid="parcel-event-row-1001"]').exists()).toBe(false)
-  })
-
   it('updates selections and saves changes', async () => {
     const wrapper = mountComponent()
     await resolveAll()

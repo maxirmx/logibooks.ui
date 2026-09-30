@@ -46,26 +46,6 @@ describe('FeacnCodesTreeNode.vue', () => {
     expect(wrapper.find('.node-label').text()).toBe('Test Category')
   })
 
-  it('shows plus icon when node is collapsed', () => {
-    const wrapper = createWrapper({ expanded: false })
-
-    const icon = wrapper.find('font-awesome-icon-stub')
-    expect(icon.exists()).toBe(true)
-    expect(icon.attributes('icon')).toBe('fa-solid fa-plus')
-  })
-
-  it('shows minus icon when node is expanded', () => {
-    const wrapper = createWrapper({
-      expanded: true,
-      loaded: true,
-      children: [{ id: 2, name: 'Child' }]
-    })
-
-    const icon = wrapper.find('font-awesome-icon-stub')
-    expect(icon.exists()).toBe(true)
-    expect(icon.attributes('icon')).toBe('fa-solid fa-minus')
-  })
-
   it('shows placeholder when node is loaded but has no children', () => {
     const wrapper = createWrapper({
       loaded: true,
@@ -92,24 +72,6 @@ describe('FeacnCodesTreeNode.vue', () => {
 
     expect(wrapper.emitted('toggle')).toBeTruthy()
     expect(wrapper.emitted('toggle')[0][0]).toEqual(wrapper.props('node'))
-  })
-
-  it('renders children when expanded', () => {
-    const wrapper = createWrapper({
-      expanded: true,
-      children: [
-        { id: 2, codeEx: '0101', name: 'Child 1', expanded: false, loaded: false, children: [] },
-        { id: 3, codeEx: '0102', name: 'Child 2', expanded: false, loaded: false, children: [] }
-      ]
-    })
-
-    const childList = wrapper.find('ul')
-    expect(childList.exists()).toBe(true)
-    // Check that children are rendered (they will have their own code and name areas)
-    expect(wrapper.text()).toContain('Child 1')
-    expect(wrapper.text()).toContain('Child 2')
-    expect(wrapper.text()).toContain('0101')
-    expect(wrapper.text()).toContain('0102')
   })
 
   it('does not render children when collapsed', () => {

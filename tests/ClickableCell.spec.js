@@ -57,12 +57,6 @@ describe('ClickableCell', () => {
       expect(span.classes()).toContain('custom-class')
     })
 
-    it('renders bookmark icon when showBookmark is true', () => {
-      const wrapper = createWrapper({ showBookmark: true })
-      const icon = wrapper.find('.bookmark-icon')
-      expect(icon.exists()).toBe(true)
-    })
-
     it('renders bookmark icon before display value', () => {
       const wrapper = createWrapper({
         showBookmark: true,

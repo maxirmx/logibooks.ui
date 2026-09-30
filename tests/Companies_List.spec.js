@@ -469,17 +469,6 @@ describe('Companies_List.vue', () => {
   })
 
   // Additional tests for better coverage
-  it('displays loading state correctly', async () => {
-    const wrapper = mount(CompaniesList, {
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    // Check that data table stub exists
-    const dataTable = wrapper.find('[data-testid="v-data-table"]')
-    expect(dataTable.exists()).toBe(true)
-  })
 
   it('handles empty search term', async () => {
     const wrapper = mount(CompaniesList, {

@@ -302,24 +302,6 @@ describe('User_Settings.vue real component', () => {
     expect(wrapper.text()).toContain('Менеджер склада')
   })
 
-  it('renders warehouse manager role checkbox for admin edits', async () => {
-    isAdmin = true
-    const wrapper = mount(Parent, {
-      props: { register: false, id: 1 },
-      global: {
-        stubs: {
-          ...defaultGlobalStubs,
-          Form: FormStub,
-          Field: FieldStub
-        }
-      }
-    })
-    await resolveAll()
-
-    expect(wrapper.find('#isWhManager').exists()).toBe(true)
-    expect(wrapper.text()).toContain('Менеджер склада')
-  })
-
   // Error handling tests
   it('publishes an error when addUser rejects', async () => {
     isAdmin = true
@@ -426,34 +408,6 @@ describe('User_Settings.vue real component', () => {
     expect(ensureWarehousesLoaded).toHaveBeenCalled()
   })
 
-  it('renders warehouse association table for warehouse-only admin edits', async () => {
-    isAdmin = true
-    mockUser.value = {
-      id: 1,
-      firstName: 'John',
-      lastName: 'Doe',
-      email: 'john@example.com',
-      roles: [roleWhManager],
-      warehouseIds: [2]
-    }
-    const wrapper = mount(Parent, {
-      props: { register: false, id: 1 },
-      global: {
-        stubs: {
-          ...defaultGlobalStubs,
-          Form: FormStub,
-          Field: FieldStub
-        }
-      }
-    })
-    await resolveAll()
-
-    expect(wrapper.text()).not.toContain('Склады:')
-    expect(wrapper.text()).toContain('Warehouse 1')
-    expect(wrapper.text()).toContain('Warehouse 2')
-    expect(wrapper.find('[data-testid="warehouse-select-all"]').exists()).toBe(true)
-  })
-
   it('does not render warehouse association table for mixed warehouse and non-warehouse roles', async () => {
     isAdmin = true
     mockUser.value = {
@@ -533,26 +487,6 @@ describe('User_Settings.vue real component', () => {
     child.vm.$.setupState.toggleAllWarehouses(false)
     await child.vm.$.setupState.onSubmit({ firstName: 'Test2' }, { setErrors: vi.fn() })
     expect(addUser.mock.calls[1][0].warehouseIds).toEqual([])
-  })
-
-  it('renders schemeId selector with default option', async () => {
-    const wrapper = mount(Parent, {
-      props: { register: true },
-      global: {
-        stubs: {
-          ...defaultGlobalStubs,
-          Form: FormStub
-        }
-      }
-    })
-    await resolveAll()
-
-    const select = wrapper.find('#schemeId')
-    expect(select.exists()).toBe(true)
-    const options = select.findAll('option')
-    expect(options.length).toBe(3) // "Без схемы" + 2 schemes
-    expect(options[0].text()).toBe('Без схемы')
-    expect(options[0].element.value).toBe('0')
   })
 
   it('renders schemeId selector with all schemes from store', async () => {

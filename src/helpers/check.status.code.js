@@ -28,6 +28,7 @@ export const SWCheckStatus = Object.freeze({
   NotChecked: 0x0000,
   
   NoIssues: 0x0010,
+  NoIssuesInherited: 0x0010 | SwInheritanceFlag,
   Approved: 0x0020,
   ApprovedInherited: 0x0020 | SwInheritanceFlag,
   ApprovedWithExcise: WStatusValues.ApprovedWithExcise,
@@ -67,6 +68,7 @@ export const FCCheckStatus = Object.freeze({
  * Russian names map for SWCheckStatus (excluding MarkedByPartner)
  */
 const NotCheckedString = 'Не проверено'
+const NoIssuesSwString = 'Ок стоп слова'
 const ApprovedString = 'Согласовано'
 const ApprovedWithExciseString = 'Согл. с акцизом'
 const ApprovedWithNotificationString = 'Согл. с нотификацией'
@@ -80,7 +82,8 @@ const FlagString = '🔖 '
 
 export const SWCheckStatusNames = Object.freeze({
   [SWCheckStatus.NotChecked]: NotCheckedString,
-  [SWCheckStatus.NoIssues]: 'Ок стоп слова',
+  [SWCheckStatus.NoIssues]: NoIssuesSwString,
+  [SWCheckStatus.NoIssuesInherited]: FlagString + NoIssuesSwString,
   [SWCheckStatus.Approved]: ApprovedString,
   [SWCheckStatus.ApprovedInherited]: FlagString + ApprovedString,
   [SWCheckStatus.ApprovedWithExcise]: ApprovedWithExciseString,
@@ -321,6 +324,7 @@ export class CheckStatusCode {
       SWCheckStatusNames, 
       {        
         [SWCheckStatus.NotChecked]: '',
+        [SWCheckStatus.NoIssuesInherited]: NoIssuesSwString,
         [SWCheckStatus.ApprovedInherited]: ApprovedString,
         [SWCheckStatus.IssueStopWordInherited]: IssueStopWordString
       })

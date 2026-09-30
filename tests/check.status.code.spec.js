@@ -335,6 +335,14 @@ describe('CheckStatusCode', () => {
       expect(both.toString()).toBe('Не проверено')
     })
 
+    it('should render inherited NoIssues consistently in labels and composed statuses', () => {
+      expect(SWCheckStatus.NoIssuesInherited).toBe(0x0090)
+      expect(SWCheckStatusNames[SWCheckStatus.NoIssuesInherited]).toBe('🔖 Ок стоп слова')
+      const code = CheckStatusCode.fromParts(FCCheckStatus.NotChecked, SWCheckStatus.NoIssuesInherited)
+      expect(code.toString(true)).toBe('🔖 Ок стоп слова')
+      expect(code.toString(false)).toBe('Ок стоп слова')
+    })
+
     it('should handle unknown status values', () => {
       const unknown = CheckStatusCode.fromParts(0x9999, 0x8888)
       expect(unknown.toString()).toBe('Статус 0x99998888')

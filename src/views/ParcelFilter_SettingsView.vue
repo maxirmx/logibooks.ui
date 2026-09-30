@@ -7,17 +7,16 @@ import { onMounted, onUnmounted, ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
+import { useParcelFiltersStore } from '@/stores/parcel.filters.store.js'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
+import { CheckStatusCode, WStatusValues, SWCheckStatusNames, FCCheckStatusNames, createCheckStatusFilterOptions } from '@/helpers/check.status.code.js'
+import { createPassportCheckStatusOptions } from '@/helpers/passport.check.status.helpers.js'
+import { reportError } from '@/helpers/error.helpers.js'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import FieldError from '@/components/FieldError.vue'
 import ActionButton from '@/components/ActionButton.vue'
-import {
-  createEmptyPrototypeParcelFilter,
-  getPrototypeParcelFilter,
-  prototypeParcelFilterOptions,
-  validatePrototypeParcelFilterName
-} from '@/helpers/parcel.filters.prototype.js'
+import { createEmptyParcelFilter, validateParcelFilterName } from '@/helpers/parcel.filters.js'
 
 const props = defineProps({
   mode: { type: String, required: true, validator: (value) => ['create', 'edit'].includes(value) },
@@ -27,80 +26,118 @@ const props = defineProps({
 const router = useRouter()
 const authStore = useAuthStore()
 const alertStore = useAlertStore()
+const filterStore = useParcelFiltersStore()
 const parcelStatusesStore = useParcelStatusesStore()
 const registersStore = useRegistersStore()
-const statusOptionsReady = ref(false)
-const parcelStatusOptions = computed(() =>
-  parcelStatusesStore.parcelStatuses.map((status) => ({ value: status.id, title: status.title }))
+const loaded = ref(false)
+const saving = ref(false)
+const saved = ref(false)
+const missingFilter = ref(false)
+const parcelStatusOptions = computed(() => parcelStatusesStore.parcelStatuses.map(status => ({ value: status.id, title: status.title })))
+const passportCheckStatusOptions = computed(() =>
+  createPassportCheckStatusOptions(registersStore.ops?.passportCheckStatuses).filter(option => Number.isInteger(option.value))
 )
-const passportStatusOptions = computed(() =>
-  (registersStore.ops?.passportCheckStatuses ?? []).map((status) => ({
-    value: status.value,
-    title: status.name
-  }))
-)
-const checkStatusGroups = computed(() => [
-  { key: 'common', label: 'Общие статусы проверки', options: prototypeParcelFilterOptions.common },
-  { key: 'sw', label: 'Проверка стоп-слов', options: prototypeParcelFilterOptions.sw },
-  { key: 'fc', label: 'Проверка ТН ВЭД', options: prototypeParcelFilterOptions.fc },
-  { key: 'passport', label: 'Проверка паспорта', options: passportStatusOptions.value }
-])
-const fixture = computed(() =>
-  props.mode === 'edit' ? getPrototypeParcelFilter(props.id) : null
-)
-const missingFilter = computed(() => props.mode === 'edit' && !fixture.value)
-const draft = ref(fixture.value ?? createEmptyPrototypeParcelFilter())
+const commonValues = new Set(Object.values(WStatusValues))
+const commonCheckStatusOptions = Object.values(WStatusValues)
+  .filter(value => value !== WStatusValues.Duplicate && value !== WStatusValues.MarkedByPartner)
+  .sort((left, right) => left - right)
+  .map(value => ({ value, title: new CheckStatusCode({ fc: value, sw: value }).toString() }))
+function isComponentStatusOption(option) {
+  return option.value !== null && !commonValues.has(option.value)
+}
+const checkStatusGroups = [
+  { key: 'common', label: 'Общие статусы проверки', options: [
+    ...commonCheckStatusOptions.slice(0, 2),
+    { value: WStatusValues.MarkedByPartner, title: CheckStatusCode.MarkedByPartner.toString(), enforced: true },
+    ...commonCheckStatusOptions.slice(2)
+  ] },
+  { key: 'sw', label: 'Проверка стоп-слов', options: createCheckStatusFilterOptions(SWCheckStatusNames).filter(isComponentStatusOption) },
+  { key: 'fc', label: 'Проверка ТН ВЭД', options: createCheckStatusFilterOptions(FCCheckStatusNames).filter(isComponentStatusOption) }
+]
+const draft = ref(createEmptyParcelFilter())
 const errors = ref({})
-const nameError = computed(() => validatePrototypeParcelFilterName(draft.value.name, draft.value.id))
-const saveDisabled = computed(() => !statusOptionsReady.value || missingFilter.value || Boolean(nameError.value))
+const nameError = computed(() => validateParcelFilterName(draft.value.name, filterStore.filters, props.mode === 'edit' ? props.id : null))
+const saveDisabled = computed(() => !loaded.value || missingFilter.value || saving.value || saved.value || Boolean(nameError.value))
 const profileUrl = computed(() => `/user/edit/${authStore.user?.id}`)
 const heading = computed(() =>
   props.mode === 'create' ? 'Создание пользовательского фильтра' : 'Настройка пользовательского фильтра'
 )
 
 let active = true
+let loadVersion = 0
 onUnmounted(() => { active = false })
 
-async function loadStatusOptions() {
-  statusOptionsReady.value = false
+async function load() {
+  const version = ++loadVersion
+  loaded.value = false
+  missingFilter.value = false
   try {
-    await Promise.all([parcelStatusesStore.ensureLoaded(), registersStore.ensureOpsLoaded()])
-    if (active && !missingFilter.value) statusOptionsReady.value = true
+    const [,, filter] = await Promise.all([
+      parcelStatusesStore.ensureLoaded(),
+      filterStore.getAll(),
+      props.mode === 'edit' ? filterStore.getById(props.id) : Promise.resolve(null),
+      registersStore.ensureOpsLoaded()
+    ])
+    if (!active || version !== loadVersion) return false
+    draft.value = filter ?? createEmptyParcelFilter()
+    errors.value = {}
+    loaded.value = true
     return true
   } catch (error) {
-    // An abandoned page or route no longer owns this load failure or its retry action.
-    if (!active || missingFilter.value) return false
+    if (!active || version !== loadVersion) {
+      // A departed page cannot display a useful retry action.
+      reportError(error, { context: 'parcel filter settings load after disposal' })
+      return false
+    }
+    missingFilter.value = props.mode === 'edit' && error.status === 404
     alertStore.error(error, {
-      fallback: 'Не удалось загрузить статусы',
-      action: { label: 'Повторить', handler: loadStatusOptions }
+      fallback: 'Не удалось загрузить пользовательский фильтр',
+      action: missingFilter.value ? undefined : { label: 'Повторить', handler: load }
     })
     return false
   }
 }
 
-onMounted(() => {
-  if (missingFilter.value) alertStore.error('Фильтр не найден в данных прототипа')
-  else void loadStatusOptions()
-})
+onMounted(() => { void load() })
 
 watch(
   () => [props.mode, props.id],
   () => {
-    draft.value = fixture.value ?? createEmptyPrototypeParcelFilter()
-    errors.value = {}
-    if (missingFilter.value) alertStore.error('Фильтр не найден в данных прототипа')
-    else if (!statusOptionsReady.value) {
-      void loadStatusOptions()
-    }
+    saved.value = false
+    saving.value = false
+    void load()
   }
 )
 
-function reviewForm() {
-  if (!statusOptionsReady.value || missingFilter.value) return
-  errors.value = nameError.value ? { name: nameError.value } : {}
-  if (nameError.value) return
-
-  alertStore.info('Прототип: форма проверена, но фильтр не сохранён.')
+async function save() {
+  if (saveDisabled.value) return false
+  const version = loadVersion
+  errors.value = {}
+  saving.value = true
+  try {
+    const payload = {
+      name: draft.value.name.trim(),
+      excludedParcelStatusIds: draft.value.excludedParcelStatusIds,
+      excludedCheckStatuses: draft.value.excludedCheckStatuses,
+      excludedPassportCheckStatuses: draft.value.excludedPassportCheckStatuses
+    }
+    if (props.mode === 'create') await filterStore.create(payload)
+    else await filterStore.update(props.id, payload)
+    if (!active || version !== loadVersion) return false
+    saved.value = true
+  } catch (error) {
+    if (!active || version !== loadVersion) {
+      // A departed or repurposed editor cannot display a useful submission error.
+      reportError(error, { context: 'parcel filter save after editor change' })
+      return false
+    }
+    if (error.status === 409) errors.value = { name: error.message }
+    else alertStore.error(error, { fallback: 'Не удалось сохранить пользовательский фильтр' })
+    return false
+  } finally {
+    if (version === loadVersion) saving.value = false
+  }
+  return returnToProfile()
 }
 
 function validateName() {
@@ -110,8 +147,13 @@ function validateName() {
 async function returnToProfile() {
   try {
     await router.push(profileUrl.value)
+    return true
   } catch (error) {
-    alertStore.error(error, { fallback: 'Не удалось вернуться к настройкам пользователя' })
+    alertStore.error(error, {
+      fallback: 'Не удалось вернуться к настройкам пользователя',
+      action: { label: 'Повторить', handler: returnToProfile }
+    })
+    return false
   }
 }
 </script>
@@ -127,10 +169,10 @@ async function returnToProfile() {
             :item="{}"
             icon="fa-solid fa-check-double"
             icon-size="2x"
-            tooltip-text="Сохранить (прототип: без сохранения)"
+            tooltip-text="Сохранить"
             :disabled="saveDisabled"
             data-testid="parcel-filter-save"
-            @click="reviewForm"
+            @click="save"
           />
           <ActionButton
             :item="{}"
@@ -146,8 +188,8 @@ async function returnToProfile() {
     <hr class="hr" />
     <PageAlertRegion />
 
-    <template v-if="!missingFilter">
-      <form @submit.prevent="reviewForm">
+    <template v-if="!missingFilter && loaded">
+      <form @submit.prevent="save">
         <div class="form-group">
           <label class="label" for="parcel-filter-name">Название фильтра:</label>
           <input
@@ -167,7 +209,7 @@ async function returnToProfile() {
         </div>
 
         <p>Посылка скрывается, если совпадает хотя бы один выбранный статус.</p>
-        <div v-if="statusOptionsReady" class="parcel-filter-settings__fields">
+        <div class="parcel-filter-settings__fields">
           <div class="parcel-filter-settings__left-column">
             <fieldset
               v-for="group in checkStatusGroups"
@@ -184,6 +226,14 @@ async function returnToProfile() {
               >
                 <input v-if="option.enforced" class="custom-checkbox-input" type="checkbox" :value="option.value" checked disabled />
                 <input v-else v-model="draft.excludedCheckStatuses[group.key]" class="custom-checkbox-input" type="checkbox" :value="option.value" />
+                <span class="custom-checkbox-box" aria-hidden="true"></span>
+                <span class="custom-checkbox-label">{{ option.title }}</span>
+              </label>
+            </fieldset>
+            <fieldset class="parcel-filter-settings__group" data-testid="parcel-filter-passport">
+              <legend class="label parcel-filter-settings__legend">Проверка паспорта</legend>
+              <label v-for="option in passportCheckStatusOptions" :key="option.value" class="parcel-filter-settings__option custom-checkbox">
+                <input v-model="draft.excludedPassportCheckStatuses" class="custom-checkbox-input" type="checkbox" :value="option.value" />
                 <span class="custom-checkbox-box" aria-hidden="true"></span>
                 <span class="custom-checkbox-label">{{ option.title }}</span>
               </label>

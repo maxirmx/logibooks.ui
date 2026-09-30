@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application 
 
-import { computed, ref, onMounted, onUnmounted } from 'vue'
+import { computed, ref, onMounted, onUnmounted, provide, watch } from 'vue'
 import OzonParcelsList from '@/lists/OzonParcels_List.vue'
 import OzonParcelsWhList from '@/lists/OzonParcels_WhList.vue'
 import WbrParcelsList from '@/lists/WbrParcels_List.vue'
@@ -23,7 +23,10 @@ import { useRegistersStore } from '@/stores/registers.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useParcelCheckStatusSubscription } from '@/composables/useParcelCheckStatusSubscription.js'
 import { normalizeInternalReturnUrl } from '@/helpers/parcel.navigation.helpers.js'
-import { getErrorMessage } from '@/helpers/error.helpers.js'
+import { reportError } from '@/helpers/error.helpers.js'
+import { useParcelFiltersStore } from '@/stores/parcel.filters.store.js'
+import { REMOVED_PARCEL_FILTER_MESSAGE } from '@/helpers/parcel.filters.js'
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
 
 const props = defineProps({
   id: { type: Number, required: true },
@@ -37,6 +40,15 @@ const authStore = useAuthStore()
 const parcelsStore = useParcelsStore()
 const registersStore = useRegistersStore()
 const alertStore = useAlertStore()
+const filterStore = useParcelFiltersStore()
+const savedFilters = ref([])
+provide('savedParcelFilter', {
+  id: computed(() => authStore.parcels_filter_id),
+  options: computed(() => [{ title: 'Нет', value: null }, ...savedFilters.value.map(filter => ({ title: filter.name, value: filter.id }))]),
+  select: value => authStore.setParcelFilterId(value)
+})
+let active = true
+let loadVersion = 0
 
 const register = ref(null)
 const loading = ref(true)
@@ -54,6 +66,9 @@ let filteredRefreshPending = false
 let lastFilteredRefreshAt = 0
 
 async function refreshVisibleParcels() {
+  const version = loadVersion
+const requestedFilterId = authStore.parcels_filter_id
+try {
   const response = await parcelsStore.getAll(props.id, {
     updateStore: false,
     ...(props.mode === OP_MODE_WAREHOUSE
@@ -61,14 +76,41 @@ async function refreshVisibleParcels() {
       : {}),
     ...(props.boxId ? { boxId: props.boxId } : {})
   })
+  if (!active || version !== loadVersion || requestedFilterId !== authStore.parcels_filter_id) return false
   parcelsStore.updateItems(response)
+  if (response?.parcelFilterRemoved) alertStore.warning(REMOVED_PARCEL_FILTER_MESSAGE)
+  return true
+} catch (error) {
+  if (!active || version !== loadVersion || requestedFilterId !== authStore.parcels_filter_id) {
+    // Superseded live refreshes must not change the current rows or page alert.
+    reportError(error, { context: 'parcel list refresh after disposal or replacement' })
+    return false
+  }
+  throw error
+}
 }
 
 async function refreshPassportCheckStateAndVisibleParcels() {
-  await Promise.all([
-    refreshVisibleParcels(),
-    registersStore.getById(props.id)
-  ])
+  const version = loadVersion
+  try {
+    await Promise.all([
+      refreshVisibleParcels(),
+      registersStore.getById(props.id)
+    ])
+  } catch (error) {
+    if (!active || version !== loadVersion) {
+      // The subscription's error handler belongs to the previous page context.
+      reportError(error, { context: 'parcel passport refresh after disposal or replacement' })
+      return
+    }
+    throw error
+  }
+}
+
+function cancelPendingFilteredRefresh() {
+  if (filteredRefreshTimer) clearTimeout(filteredRefreshTimer)
+  filteredRefreshTimer = null
+  filteredRefreshPending = false
 }
 
 function scheduleFilteredRefresh() {
@@ -83,10 +125,15 @@ function scheduleFilteredRefresh() {
     filteredRefreshPending = false
     filteredRefreshRunning = true
     lastFilteredRefreshAt = Date.now()
+    const version = loadVersion
     try {
       await refreshVisibleParcels()
-    } catch {
-      // Live refresh is best-effort; the existing REST UI remains usable.
+    } catch (error) {
+      if (active && version === loadVersion) alertStore.error(error, { fallback: 'Не удалось обновить список посылок', action: { label: 'Повторить', handler: refreshVisibleParcels } })
+      else {
+        // A completed refresh must not publish a message in a new page context.
+        reportError(error, { context: 'parcel list refresh error after disposal or replacement' })
+      }
     } finally {
       filteredRefreshRunning = false
       if (filteredRefreshPending) scheduleFilteredRefresh()
@@ -100,7 +147,7 @@ useParcelCheckStatusSubscription({
   refresh: refreshPassportCheckStateAndVisibleParcels,
   onUpdates: (_change, accepted) => {
     const passportFilter = authStore.parcels_passport_check_status
-    if (passportFilter !== null && passportFilter !== undefined &&
+    if ((passportFilter != null || authStore.parcels_filter_id != null) &&
         accepted.some(update => update.checkCode === 'passport')) {
       scheduleFilteredRefresh()
     }
@@ -130,21 +177,43 @@ const listProps = computed(() => ({
   boxCode: props.boxCode
 }))
 
-onMounted(async () => {
-  try {
-    loading.value = true
-    register.value = await fetchWrapper.get(`${apiUrl}/registers/${props.id}`)
-  } catch (err) {
-    error.value = err
-  } finally {
-    loading.value = false
+async function load() {
+  const version = ++loadVersion
+const filterSelection = authStore.parcels_filter_id
+cancelPendingFilteredRefresh()
+try {
+  loading.value = true
+  error.value = null
+  savedFilters.value = []
+  const [loadedRegister, filters] = await Promise.all([
+    fetchWrapper.get(`${apiUrl}/registers/${props.id}`),
+    filterStore.getAll()
+  ])
+  if (!active || version !== loadVersion || filterSelection !== authStore.parcels_filter_id) return
+  savedFilters.value = filters
+  if (authStore.parcels_filter_id != null && !filters.some(filter => filter.id === authStore.parcels_filter_id)) {
+    authStore.setParcelFilterId(null)
+    alertStore.warning(REMOVED_PARCEL_FILTER_MESSAGE)
   }
-})
+  register.value = loadedRegister
+} catch (err) {
+  if (!active || version !== loadVersion || filterSelection !== authStore.parcels_filter_id) {
+    // A superseded load must not replace the destination page's alert.
+    reportError(err, { context: 'parcel list initialization after disposal or replacement' })
+    return
+  }
+  error.value = err
+  alertStore.error(err, { fallback: 'Не удалось загрузить список посылок', action: { label: 'Повторить', handler: load } })
+} finally {
+  if (active && version === loadVersion) loading.value = false
+}
+}
+onMounted(() => { void load() })
+watch(() => [props.id, props.mode, authStore.user?.id], () => { void load() })
 
 onUnmounted(() => {
-  if (filteredRefreshTimer) clearTimeout(filteredRefreshTimer)
-  filteredRefreshTimer = null
-  filteredRefreshPending = false
+  active = false
+  cancelPendingFilteredRefresh()
 })
 
 async function clearBoxScope() {
@@ -180,8 +249,10 @@ async function closeList() {
 
 <template>
   <div v-if="loading">Загрузка...</div>
-  <div v-else-if="error">
-    Ошибка загрузки: {{ getErrorMessage(error, 'Не удалось загрузить реестр') }}
+  <div v-else-if="error" class="settings form-4">
+    <h1>Посылки реестра</h1>
+    <hr class="hr" />
+    <PageAlertRegion />
   </div>
   <Suspense v-else>
     <component

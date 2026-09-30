@@ -198,7 +198,7 @@ function initNextParcelsPromise(id) {
   nextParcelsResult.value = { withoutIssues: null, withIssues: null }
 
   nextParcelsPromise = registersStore
-    .nextParcels(id, ...(props.boxId ? [{ boxId: props.boxId }] : []))
+    .nextParcels(id, { mode: props.mode, ...(props.boxId ? { boxId: props.boxId } : {}) })
     .then((result) => {
       nextParcelsResult.value = result
       return result

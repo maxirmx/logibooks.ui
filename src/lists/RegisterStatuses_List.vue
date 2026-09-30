@@ -104,7 +104,7 @@ defineExpose({
 </script>
 
 <template>
-  <div class="settings table-2" data-testid="register-statuses-list">
+  <div class="settings table-2 list-with-filters" data-testid="register-statuses-list">
     <div class="header-with-actions">
       <h1 class="primary-heading">Статусы партий</h1>
       <div class="header-actions-bar" v-if="authStore.isShiftLeadPlus">
@@ -128,7 +128,7 @@ defineExpose({
 
     <PageAlertRegion />
 
-    <div>
+    <div class="list-filters">
       <v-text-field
         v-model="authStore.registerstatuses_search"
         :append-inner-icon="mdiMagnify"

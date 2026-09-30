@@ -150,7 +150,7 @@ const headers = [
 </script>
 
 <template>
-  <div class="settings table-3">
+  <div class="settings table-3 list-with-filters">
     <div class="header-with-actions">
       <h1 class="primary-heading">Пользователи</h1>
       <div style="display: flex; align-items: center">
@@ -174,7 +174,7 @@ const headers = [
 
     <PageAlertRegion />
 
-    <div>
+    <div class="list-filters">
       <v-text-field
         v-model="authStore.users_search"
         :append-inner-icon="mdiMagnify"

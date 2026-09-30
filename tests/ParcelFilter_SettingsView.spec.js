@@ -5,11 +5,14 @@ import { createPinia } from 'pinia'
 import ParcelFilterSettingsView from '@/views/ParcelFilter_SettingsView.vue'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
+import { reportError } from '@/helpers/error.helpers.js'
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
 
 const push = vi.hoisted(() => vi.fn())
 vi.mock('vue-router', async () => ({ ...await vi.importActual('vue-router'), useRouter: () => ({ push }) }))
 vi.mock('@/stores/auth.store.js', () => ({ useAuthStore: () => ({ user: { id: 7 } }) }))
 vi.mock('@/helpers/fetch.wrapper.js', () => ({ fetchWrapper: { get: vi.fn(), post: vi.fn(), put: vi.fn(), delete: vi.fn() } }))
+vi.mock('@/helpers/error.helpers.js', async importOriginal => ({ ...await importOriginal(), reportError: vi.fn() }))
 
 const registerOps = {
   customsProcedures: [], transportationTypes: [], incoterms: [{ value: 1, name: 'EXW' }],
@@ -31,6 +34,7 @@ function mountView(props) {
   return { wrapper, alertStore: useAlertStore(pinia) }
 }
 beforeEach(() => {
+  reportError.mockReset()
   push.mockReset().mockResolvedValue()
   fetchWrapper.get.mockReset().mockImplementation(url => {
     if (url.endsWith('/parcelstatuses')) return Promise.resolve([{ id: 2, title: 'Реальный статус' }])
@@ -43,6 +47,36 @@ beforeEach(() => {
 })
 
 describe('ParcelFilter_SettingsView', () => {
+  it.each(['unmount', 'reuse'])('preserves the current alert when navigation rejects after %s', async change => {
+    let rejectNavigation
+    push.mockImplementationOnce(() => new Promise((resolve, reject) => { rejectNavigation = reject }))
+    const { wrapper, alertStore } = mountView({ mode: 'create' })
+    await flushPromises()
+    const navigate = wrapper.vm.returnToProfile
+    const pinia = wrapper.vm.$pinia
+    await wrapper.get('[data-testid="parcel-filter-back"]').trigger('click')
+    let destination = wrapper
+    if (change === 'reuse') {
+      await wrapper.setProps({ mode: 'edit', id: 999 })
+      await flushPromises()
+    } else {
+      wrapper.unmount()
+      destination = mount(PageAlertRegion, { global: { plugins: [pinia] } })
+    }
+    alertStore.error('Current page alert')
+    await flushPromises()
+    const failure = new Error('Abandoned editor navigation')
+    rejectNavigation(failure)
+    await flushPromises()
+    expect(destination.get('[role="alert"]').text()).toContain('Current page alert')
+    expect(destination.text()).not.toContain('Abandoned editor navigation')
+    expect(reportError).toHaveBeenCalledWith(failure, { context: 'parcel filter profile navigation after editor change' })
+    if (change === 'unmount') {
+      expect(await navigate()).toBe(false)
+      expect(push).toHaveBeenCalledOnce()
+    }
+    destination.unmount()
+  })
   it('groups existing check-status definitions and loads shared status metadata', async () => {
     const { wrapper } = mountView({ mode: 'create' })
     await flushPromises()

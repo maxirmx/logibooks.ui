@@ -107,7 +107,7 @@ defineExpose({
 </script>
 
 <template>
-  <div class="settings table-2">
+  <div class="settings table-2 list-with-filters">
     <div class="header-with-actions">
       <h1 class="primary-heading">Таможенные посты</h1>
       <div class="header-actions-bar" v-if="authStore.isSrLogistPlus">
@@ -131,7 +131,7 @@ defineExpose({
 
     <PageAlertRegion />
 
-    <div>
+    <div class="list-filters">
       <v-text-field
         v-model="authStore.customsstations_search"
         :append-inner-icon="mdiMagnify"

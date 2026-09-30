@@ -7,6 +7,7 @@ import { ref } from 'vue'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 import { useAuthStore } from '@/stores/auth.store.js'
+import { useParcelFiltersStore } from '@/stores/parcel.filters.store.js'
 import { reportError } from '@/helpers/error.helpers.js'
 import { SwValidationMatchMode } from '@/models/sw.validation.match.mode.js'
 import { ParcelApprovalMode } from '@/models/parcel.approval.mode.js'
@@ -17,6 +18,7 @@ const parcelCheckStatusPropertyByCode = new Map([['passport', 'passportCheckStat
 
 export function buildParcelsFilterParams(authStore, additionalParams = {}) {
   const params = new URLSearchParams(additionalParams)
+  appendIfPresent(params, 'parcelFilterId', authStore.parcels_filter_id)
 
   // Add sorting parameters
   params.append('sortBy', authStore.parcels_sort_by?.[0]?.key || 'id')
@@ -78,6 +80,7 @@ function appendIfPresent(params, name, value) {
 
 export function buildParcelsWhFilterParams(authStore, additionalParams = {}) {
   const params = new URLSearchParams(additionalParams)
+  appendIfPresent(params, 'parcelFilterId', authStore.parcels_filter_id)
 
   params.append('sortBy', authStore.parcels_wh_sort_by?.[0]?.key || 'id')
   params.append('sortOrder', authStore.parcels_wh_sort_by?.[0]?.order || 'asc')
@@ -211,6 +214,7 @@ export const useParcelsStore = defineStore('parcels', () => {
   async function getAll(registerId, options = {}) {
     const { updateStore = true, showMarkedByPartner = false, boxId = null } = options
     const authStore = useAuthStore()
+    const requestedFilterId = authStore.parcels_filter_id
     const checkStatusWatermark = liveCheckStatusArrival
     if (updateStore) {
       loading.value = true
@@ -259,6 +263,23 @@ export const useParcelsStore = defineStore('parcels', () => {
       responseCheckStatusWatermarks.set(result, checkStatusWatermark)
       return result
     } catch (err) {
+      if ((err?.status ?? err?.response?.status) === 404 && requestedFilterId != null && authStore.parcels_filter_id === requestedFilterId) {
+        const filterId = requestedFilterId
+        try {
+          await useParcelFiltersStore().getById(filterId)
+        } catch (filterError) {
+          if ((filterError?.status ?? filterError?.response?.status) !== 404) throw filterError
+          if (authStore.parcels_filter_id === filterId) {
+            const previousSelection = authStore.parcels_filter_id
+            authStore.setParcelFilterId(null)
+            if (previousSelection !== null && authStore.parcels_filter_id === null) {
+              const result = await getAll(registerId, options)
+              result.parcelFilterRemoved = true
+              return result
+            }
+          }
+        }
+      }
       error.value = err
       throw err
     } finally {

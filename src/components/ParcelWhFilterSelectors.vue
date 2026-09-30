@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import ParcelBoxScopeChip from '@/components/ParcelBoxScopeChip.vue'
 import ResponsiveFilterBar from '@/components/ResponsiveFilterBar.vue'
+import ParcelSavedFilterSelector from '@/components/ParcelSavedFilterSelector.vue'
 
 const props = defineProps({
   statusOptions: { type: Array, required: true },
@@ -85,6 +86,7 @@ const localProductNameSearchModel = computed({
     class="parcel-wh-filter-selectors"
     aria-label="Фильтры складских посылок"
   >
+    <ParcelSavedFilterSelector :disabled="disabledState.selectsDisabled" />
     <v-select
       v-model="parcelsWhCheckStatusProjectionModel"
       :items="checkStatusProjectionOptions"
@@ -92,6 +94,7 @@ const localProductNameSearchModel = computed({
       item-value="value"
       label="Проверка"
       density="compact"
+      hide-details="auto"
       class="responsive-filter-bar__item--compact"
       :disabled="disabledState.selectsDisabled"
     />
@@ -102,6 +105,7 @@ const localProductNameSearchModel = computed({
       item-value="value"
       label="Зона"
       density="compact"
+      hide-details="auto"
       class="responsive-filter-bar__item--compact"
       :disabled="disabledState.selectsDisabled"
     />
@@ -112,14 +116,16 @@ const localProductNameSearchModel = computed({
       item-value="value"
       label="Статус"
       density="compact"
-      class="responsive-filter-bar__item--regular"
+      hide-details="auto"
+      class="responsive-filter-bar__item--compact"
       :disabled="disabledState.selectsDisabled"
     />
     <v-text-field
       v-model="localParcelNumberSearchModel"
       :label="numberLabel"
       density="compact"
-      class="responsive-filter-bar__item--regular responsive-filter-bar__item--grow"
+      hide-details="auto"
+      class="responsive-filter-bar__item--small"
       :disabled="disabledState.textFieldsDisabled"
     />
     <ParcelBoxScopeChip
@@ -127,7 +133,7 @@ const localProductNameSearchModel = computed({
       :box-id="boxScopeId"
       :box-code="boxScopeCode"
       :disabled="disabledState.textFieldsDisabled"
-      class="parcel-wh-filter-selectors__box responsive-filter-bar__item--compact"
+      class="responsive-filter-bar__item--compact"
       @clear="$emit('clear-box-scope')"
     />
     <v-text-field
@@ -135,6 +141,7 @@ const localProductNameSearchModel = computed({
       v-model="localBoxNumberSearchModel"
       label="Номер коробки"
       density="compact"
+      hide-details="auto"
       class="responsive-filter-bar__item--compact"
       :disabled="disabledState.textFieldsDisabled"
     />
@@ -142,21 +149,17 @@ const localProductNameSearchModel = computed({
       v-model="localStickerSearchModel"
       label="Любой из стикеров"
       density="compact"
-      class="responsive-filter-bar__item--regular responsive-filter-bar__item--grow"
+      hide-details="auto"
+      class="responsive-filter-bar__item--compact"
       :disabled="disabledState.textFieldsDisabled"
     />
     <v-text-field
       v-model="localProductNameSearchModel"
       label="Товар"
       density="compact"
+      hide-details="auto"
       class="responsive-filter-bar__item--regular responsive-filter-bar__item--grow"
       :disabled="disabledState.textFieldsDisabled"
     />
   </ResponsiveFilterBar>
 </template>
-
-<style scoped>
-.parcel-wh-filter-selectors__box {
-  align-self: center;
-}
-</style>

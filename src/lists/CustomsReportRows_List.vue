@@ -215,7 +215,7 @@ const pageOptions = computed(() => {
 </script>
 
 <template>
-  <div class="settings table-3">
+  <div class="settings table-3 list-with-filters">
     <div class="header-with-actions">
       <h1 class="primary-heading">{{ headingText }}</h1>
       <div class="header-actions-bar">
@@ -228,7 +228,7 @@ const pageOptions = computed(() => {
 
     <PageAlertRegion />
 
-    <div class="mb-4">
+    <div class="list-filters">
       <v-text-field
         v-model="localSearch"
         :append-inner-icon="mdiMagnify"

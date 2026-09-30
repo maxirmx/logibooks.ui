@@ -20,18 +20,20 @@ defineProps({
 <style scoped>
 /*
  * Sizing modifiers:
- * - compact: short categorical controls (13.75rem preferred width);
+ * - small: narrow text controls (10rem width);
+ * - compact: short categorical controls (11.75rem preferred width);
  * - regular: searches or controls with longer labels (20rem preferred width);
  * - grow: lets a high-value text/search control absorb extra row space.
  *
- * Each basis is only a preference. `min(100%, basis)` lets the control fill a
- * phone row without imposing document-level horizontal overflow.
+ * Compact and regular controls can expand to fill the row. Small controls
+ * keep their width. `min(100%, basis)` prevents horizontal overflow.
  */
 .responsive-filter-bar {
   display: flex;
   flex-wrap: wrap;
   align-items: stretch;
   gap: var(--responsive-filter-gap, 0.75rem);
+  row-gap: var(--responsive-filter-row-gap, var(--responsive-filter-gap, 0.75rem));
   width: 100%;
   max-width: 100%;
   min-width: 0;
@@ -44,8 +46,13 @@ defineProps({
   min-width: min(100%, var(--responsive-filter-basis, 18rem));
 }
 
+.responsive-filter-bar > :slotted(.responsive-filter-bar__item--small) {
+  --responsive-filter-basis: 10rem;
+  flex-grow: 0;
+}
+
 .responsive-filter-bar > :slotted(.responsive-filter-bar__item--compact) {
-  --responsive-filter-basis: 13.75rem;
+  --responsive-filter-basis: 11.75rem;
 }
 
 .responsive-filter-bar > :slotted(.responsive-filter-bar__item--regular) {

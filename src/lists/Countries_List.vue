@@ -66,7 +66,7 @@ const headers = [
 </script>
 
 <template>
-  <div class="settings table-2">
+  <div class="settings table-2 list-with-filters">
     <div class="header-with-actions">
       <h1 class="primary-heading">Cтраны</h1>
       <div class="header-actions-bar" v-if="isSrLogistPlus">
@@ -90,7 +90,7 @@ const headers = [
 
     <PageAlertRegion />
 
-    <div>
+    <div class="list-filters">
       <v-text-field
         v-model="countries_search"
         :append-inner-icon="mdiMagnify"

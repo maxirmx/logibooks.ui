@@ -3,7 +3,7 @@
 // This file is a part of Logibooks ui application
 
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 import router from '@/router'
@@ -22,6 +22,18 @@ import {
 
 const baseUrl = `${apiUrl}/auth`
 const scanjobMonitorFollowUserStorageKey = 'scanjobmonitor_follow_user_id'
+const parcelFilterStorageKey = 'logibooks.parcelFilter'
+
+function readParcelFilterId(userId) {
+  try {
+    const saved = JSON.parse(localStorage.getItem(parcelFilterStorageKey))
+    return userId != null && saved?.userId === userId && Number.isInteger(saved.filterId) && saved.filterId > 0
+      ? saved.filterId : null
+  } catch (error) {
+    reportError(error, { context: 'restore saved parcel filter' })
+    return null
+  }
+}
 
 function readScanjobMonitorFollowUserId() {
   const raw = localStorage.getItem(scanjobMonitorFollowUserStorageKey)
@@ -32,6 +44,18 @@ function readScanjobMonitorFollowUserId() {
 export const useAuthStore = defineStore('auth', () => {
   // initialize state from local storage to enable user to stay logged in
   const user = ref(JSON.parse(localStorage.getItem('user')))
+  const parcels_filter_id = ref(readParcelFilterId(user.value?.id))
+  function setParcelFilterId(value) {
+    const id = Number(value)
+    parcels_filter_id.value = user.value?.id != null && Number.isInteger(id) && id > 0 ? id : null
+    parcels_page.value = 1
+    parcels_wh_page.value = 1
+    if (parcels_filter_id.value == null) localStorage.removeItem(parcelFilterStorageKey)
+    else localStorage.setItem(parcelFilterStorageKey, JSON.stringify({ userId: user.value.id, filterId: parcels_filter_id.value }))
+  }
+  watch(() => user.value?.id, (id, previousId) => {
+    if (id !== previousId) setParcelFilterId(null)
+  }, { flush: 'sync' })
   const isAdmin = computed(() => user.value?.roles?.includes(roleAdmin))
   const isShiftLead = computed(() => user.value?.roles?.includes(roleShiftLead))
   const isSrLogist = computed(() => user.value?.roles?.includes(roleSrLogist))
@@ -333,6 +357,8 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   return {
+    parcels_filter_id,
+    setParcelFilterId,
     // state
     user,
     users_per_page,

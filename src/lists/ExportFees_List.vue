@@ -84,7 +84,7 @@ const customKeySort = {
 </script>
 
 <template>
-  <div class="settings table-3" data-testid="export-fees-list">
+  <div class="settings table-3 list-with-filters" data-testid="export-fees-list">
     <div class="header-with-actions">
       <h1 class="primary-heading">Сборы</h1>
       <div class="header-actions-bar">
@@ -108,7 +108,7 @@ const customKeySort = {
 
     <PageAlertRegion />
 
-    <div>
+    <div class="list-filters">
       <v-text-field
         v-model="exportfees_search"
         :append-inner-icon="mdiMagnify"

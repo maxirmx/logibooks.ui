@@ -152,6 +152,37 @@ beforeEach(() => {
 })
 
 describe('User_Settings.vue real component', () => {
+  it('shows parcel filter fixtures only on the signed-in user profile', async () => {
+    const ownProfile = mount(Parent, {
+      props: { register: false, id: 2 },
+      global: {
+        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub }
+      }
+    })
+    await resolveAll()
+    expect(ownProfile.find('[data-testid="user-parcel-filters"]').exists()).toBe(true)
+    expect(ownProfile.find('form fieldset [data-testid="user-parcel-filters"] .user-parcel-filters__table-shell.table-card').exists()).toBe(true)
+
+    isAdmin = true
+    const otherProfile = mount(Parent, {
+      props: { register: false, id: 1 },
+      global: {
+        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub }
+      }
+    })
+    await resolveAll()
+    expect(otherProfile.find('[data-testid="user-parcel-filters"]').exists()).toBe(false)
+
+    const registration = mount(Parent, {
+      props: { register: true },
+      global: {
+        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub }
+      }
+    })
+    await resolveAll()
+    expect(registration.find('[data-testid="user-parcel-filters"]').exists()).toBe(false)
+  })
+
   it('blocks an automated account opened through the human-user route', async () => {
     mockUser.value = {
       id: 7,

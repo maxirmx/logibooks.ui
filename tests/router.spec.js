@@ -105,6 +105,16 @@ describe('router guards', () => {
     expect(editRoute?.meta.reqAdmin).toBe(true)
   })
 
+  it('defines authenticated prototype parcel-filter routes with a numeric edit id', () => {
+    const createRoute = router.getRoutes().find((route) => route.path === '/parcel-filters/create')
+    const editRoute = router.getRoutes().find((route) => route.path === '/parcel-filters/edit/:id')
+
+    expect(createRoute?.meta.reqAnyRole).toBe(true)
+    expect(editRoute?.meta.reqAnyRole).toBe(true)
+    expect(createRoute?.props.default).toEqual({ mode: 'create' })
+    expect(editRoute?.props.default({ params: { id: '2' } })).toEqual({ mode: 'edit', id: 2 })
+  })
+
   it('enforces reqAdmin for automated-system management', async () => {
     authStore.user = { id: 2 }
     authStore.isAdmin = false

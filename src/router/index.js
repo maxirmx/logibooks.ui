@@ -632,6 +632,20 @@ const router = createRouter({
       meta: { reqLogistOrSrLogist: true, hideSidebar: true }
     },
     {
+      path: '/parcel-filters/create',
+      name: 'Создание фильтра посылок',
+      component: () => import('@/views/ParcelFilter_SettingsView.vue'),
+      props: { mode: 'create' },
+      meta: { reqAnyRole: true }
+    },
+    {
+      path: '/parcel-filters/edit/:id',
+      name: 'Настройка фильтра посылок',
+      component: () => import('@/views/ParcelFilter_SettingsView.vue'),
+      props: (route) => ({ mode: 'edit', id: Number(route.params.id) }),
+      meta: { reqAnyRole: true }
+    },
+    {
       path: '/user/edit/:id',
       name: 'Настройки',
       component: () => import('@/views/User_EditView.vue'),

@@ -20,6 +20,7 @@ import { useAlertStore } from '@/stores/alert.store.js'
 import { useHotKeyActionSchemesStore } from '@/stores/hotkey.action.schemes.store.js'
 import { useWarehousesStore } from '@/stores/warehouses.store.js'
 import ActionButton from '@/components/ActionButton.vue'
+import UserParcelFilters from '@/components/UserParcelFilters.vue'
 import {
   roleLogist,
   keyAdmin,
@@ -77,6 +78,9 @@ const showPassword = ref(false)
 const showPassword2 = ref(false)
 const selectedWarehouseIds = ref([])
 const initializationFailed = ref(false)
+const showPersonalParcelFilters = computed(
+  () => !props.register && !initializationFailed.value && Number(props.id) === Number(authStore.user?.id)
+)
 
 let user = ref({
   schemeId: 0,
@@ -501,6 +505,8 @@ function onSubmit(values, { setErrors } = {}) {
             </option>
           </Field>
         </div>
+
+        <UserParcelFilters v-if="showPersonalParcelFilters" />
 
         <div v-if="showWarehouseAssociations(values)" class="warehouse-associations">
           <h2 class="label">Доступ к складам:</h2>

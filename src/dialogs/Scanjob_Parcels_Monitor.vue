@@ -31,7 +31,8 @@ const props = defineProps({
   register: { type: Object, default: null },
   loading: { type: Boolean, default: false },
   defectActionLoading: { type: Boolean, default: false },
-  selectedParcelId: { type: [Number, String], default: null }
+  selectedParcelId: { type: [Number, String], default: null },
+  printQueue: { type: Object, default: null }
 })
 
 const emit = defineEmits(['edit-parcel', 'set-defect', 'clear-defect'])
@@ -110,7 +111,7 @@ function clearDefect(item) {
 
 <template>
   <div data-testid="scanjob-monitor-box">
-    <ScanjobMonitorSummary :cards="summaryCards" />
+    <ScanjobMonitorSummary :cards="summaryCards" :print-queue="props.printQueue" />
 
     <div class="monitor-section">
       <v-card class="table-card">

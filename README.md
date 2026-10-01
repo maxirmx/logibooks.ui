@@ -13,3 +13,7 @@ docker run --rm -p 8080:80 logibooks-ui
 ```
 
 The container serves the compiled application through nginx and includes the custom error pages from `config/public`.
+
+## Local label printing
+
+See the [operator and workstation acceptance guide](docs/local-label-printing.md).

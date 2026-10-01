@@ -5,9 +5,12 @@
 
 import { beforeEach, describe, it, expect, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
+import { createMemoryHistory, createRouter } from 'vue-router'
 import ScanjobMonitor from '@/dialogs/Scanjob_Monitor.vue'
 import { defaultGlobalStubs } from './helpers/test-utils'
 import { OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
+
+vi.mock('@/composables/useAppConfirm.js', () => ({ useAppConfirm: () => vi.fn().mockResolvedValue(true) }))
 
 const mockBack = vi.hoisted(() => vi.fn())
 const mockPush = vi.hoisted(() => vi.fn())
@@ -17,10 +20,10 @@ const mockCurrentRoute = vi.hoisted(() => ({
 }))
 const dismissAlert = vi.hoisted(() => vi.fn())
 const alertError = vi.hoisted(() => vi.fn(() => 71))
-const mockAlert = vi.hoisted(() => ({
-  __v_isRef: true,
-  value: null
-}))
+const mockAlert = await vi.hoisted(async () => {
+  const { ref } = await import('vue')
+  return ref(null)
+})
 const mockScanjob = vi.hoisted(() => ({
   __v_isRef: true,
   value: { id: 42, name: 'Scanjob A', type: 30, status: 15, registerId: 101 }
@@ -36,10 +39,10 @@ const mockRegisterItem = vi.hoisted(() => ({
 }))
 const registerGetById = vi.hoisted(() => vi.fn().mockResolvedValue(true))
 const getTransportationDocument = vi.hoisted(() => vi.fn(() => 'Авианакладная'))
-const monitorLoading = vi.hoisted(() => ({
-  __v_isRef: true,
-  value: false
-}))
+const monitorLoading = await vi.hoisted(async () => {
+  const { ref } = await import('vue')
+  return ref(false)
+})
 const monitorError = vi.hoisted(() => ({
   __v_isRef: true,
   value: null
@@ -332,7 +335,7 @@ vi.mock('@/stores/scanjobs.store.js', () => ({
 
 vi.mock('@/stores/alert.store.js', () => ({
   useAlertStore: () => ({
-    alert: mockAlert,
+    get alert() { return mockAlert.value },
     error: alertError,
     dismiss: dismissAlert
   })
@@ -397,7 +400,8 @@ const monitorGlobalStubs = {
   },
   'v-select': {
     name: 'v-select',
-    template: '<div class="v-select-stub" data-testid="v-select" v-bind="$attrs"></div>',
+    template: '<div class="v-select-stub" data-testid="v-select" tabindex="0" v-bind="$attrs"></div>',
+    methods: { focus() { this.$el.focus() } },
     props: [
       'modelValue',
       'items',
@@ -451,8 +455,16 @@ const monitorGlobalStubs = {
   }
 }
 
-function getFollowUserSelect(wrapper) {
-  return wrapper.findComponent({ name: 'v-select' })
+async function getFollowUserSelect(wrapper) {
+  if (!wrapper.find('[data-testid="scanjob-monitor-follow-user-select"]').exists()) {
+    await wrapper.get('[data-testid="scanjob-monitor-follow-user-open"]').trigger('click')
+  }
+  return wrapper.getComponent('[data-testid="scanjob-monitor-follow-user-select"]')
+}
+async function openJump(wrapper) {
+  if (!wrapper.find('[data-testid="scanjob-monitor-jump-input"]').exists()) {
+    await wrapper.get('[data-testid="scanjob-monitor-jump-open"]').trigger('click')
+  }
 }
 
 function getFollowEventHandler() {
@@ -466,6 +478,10 @@ describe('Scanjob_Monitor.vue', () => {
     vi.clearAllMocks()
     mockCurrentRoute.value = { fullPath: '/scanjobs/42/monitor' }
     mockAlert.value = null
+    alertError.mockImplementation((error) => {
+      mockAlert.value = { id: 71, severity: 'error', message: error?.message || String(error) }
+      return 71
+    })
     monitorLoading.value = false
     monitorError.value = null
     monitorClosed.value = null
@@ -501,6 +517,156 @@ describe('Scanjob_Monitor.vue', () => {
     })
   })
 
+  it('renders the requested compact toolbar order with both editors collapsed', async () => {
+    const wrapper = mount(ScanjobMonitor, { props: { scanjobId: 42 }, global: { stubs: monitorGlobalStubs } })
+    await flushPromises()
+    expect(wrapper.get('.header-actions-bar').findAll('button[aria-label]').map((button) => button.attributes('aria-label'))).toEqual([
+      'Настройки печати', 'Повтор последней этикетки', 'Перейти к посылке или коробке',
+      'Стикеры не в реестре', 'Следить за сканером', 'Закрыть'
+    ])
+    expect(wrapper.find('[data-testid="scanjob-monitor-jump-input"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="scanjob-monitor-follow-user-select"]').exists()).toBe(false)
+    expect(wrapper.get('button[data-testid="scanjob-monitor-follow-user-open"] [data-icon]').attributes('data-icon')).toBe('fa-solid fa-magnifying-glass-plus')
+    expect(wrapper.findAllComponents({ name: 'LocalLabelPrinting' })).toHaveLength(1)
+  })
+
+  it('keeps drafts local, permits one editor and discards drafts when switching or canceling', async () => {
+    persistedFollowUserId.value = 18
+    const wrapper = mount(ScanjobMonitor, { props: { scanjobId: 42 }, global: { stubs: monitorGlobalStubs } })
+    await flushPromises()
+    const selection = await getFollowUserSelect(wrapper)
+    selection.vm.$emit('update:modelValue', 17)
+    await flushPromises()
+    expect(startMonitorFollowUser).toHaveBeenCalledTimes(1)
+    expect(setScanjobMonitorFollowUserId).not.toHaveBeenCalled()
+    await openJump(wrapper)
+    expect(wrapper.find('[data-testid="scanjob-monitor-follow-user-select"]').exists()).toBe(false)
+    await wrapper.get('[data-testid="scanjob-monitor-jump-input"]').setValue('draft number')
+    await wrapper.get('[data-testid="scanjob-monitor-follow-user-open"]').trigger('click')
+    expect(wrapper.find('[data-testid="scanjob-monitor-jump-input"]').exists()).toBe(false)
+    expect((await getFollowUserSelect(wrapper)).props('modelValue')).toBe(18)
+    await wrapper.get('[data-testid="scanjob-monitor-follow-user-cancel"]').trigger('click')
+    expect(wrapper.find('[data-testid="scanjob-monitor-follow-user-select"]').exists()).toBe(false)
+    await openJump(wrapper)
+    expect(wrapper.get('[data-testid="scanjob-monitor-jump-input"]').element.value).toBe('')
+    await wrapper.get('[data-testid="scanjob-monitor-jump-cancel"]').trigger('click')
+    expect(wrapper.find('[data-testid="scanjob-monitor-jump-input"]').exists()).toBe(false)
+  })
+
+  it('preserves a failed jump, presents it once and retries the same number successfully', async () => {
+    resolveMonitorTarget.mockRejectedValueOnce(new Error('lookup failed')).mockResolvedValueOnce({ kind: 1, boxId: 7 })
+    const wrapper = mount(ScanjobMonitor, { props: { scanjobId: 42 }, global: { stubs: monitorGlobalStubs } })
+    await flushPromises()
+    await openJump(wrapper)
+    await wrapper.get('[data-testid="scanjob-monitor-jump-input"]').setValue('BOX-7')
+    await wrapper.get('[data-testid="scanjob-monitor-jump-action"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain('lookup failed')
+    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+    expect(alertError).toHaveBeenCalledTimes(1)
+    expect(wrapper.get('[data-testid="scanjob-monitor-jump-input"]').element.value).toBe('BOX-7')
+    expect(mockPush).not.toHaveBeenCalled()
+    await wrapper.get('[data-testid="scanjob-monitor-jump-action"]').trigger('click')
+    await flushPromises()
+    expect(resolveMonitorTarget).toHaveBeenNthCalledWith(2, 42, 'BOX-7')
+    expect(wrapper.find('[data-testid="scanjob-monitor-jump-input"]').exists()).toBe(false)
+    expect(mockPush).toHaveBeenCalledTimes(1)
+  })
+
+  it('preserves jump input on a resolved navigation failure and allows retry', async () => {
+    const navigationRouter = createRouter({ history: createMemoryHistory(), routes: [{ path: '/', component: {} }, { path: '/blocked', component: {} }] })
+    await navigationRouter.push('/')
+    navigationRouter.beforeEach(() => false)
+    const failure = await navigationRouter.push('/blocked')
+    mockPush.mockResolvedValueOnce(failure)
+    resolveMonitorTarget.mockResolvedValue({ kind: 1, boxId: 7 })
+    const wrapper = mount(ScanjobMonitor, { props: { scanjobId: 42 }, global: { stubs: monitorGlobalStubs } })
+    await flushPromises()
+    await openJump(wrapper)
+    await wrapper.get('[data-testid="scanjob-monitor-jump-input"]').setValue('BOX-7')
+    await wrapper.get('[data-testid="scanjob-monitor-jump-action"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.get('[data-testid="scanjob-monitor-jump-input"]').element.value).toBe('BOX-7')
+    expect(wrapper.get('[role="alert"]').text()).toContain(failure.message)
+    expect(alertError).toHaveBeenCalledOnce()
+    await wrapper.get('[data-testid="scanjob-monitor-jump-action"]').trigger('click')
+    await flushPromises()
+    expect(resolveMonitorTarget).toHaveBeenNthCalledWith(2, 42, 'BOX-7')
+    expect(wrapper.find('[data-testid="scanjob-monitor-jump-input"]').exists()).toBe(false)
+  })
+
+  it('moves focus into the scanner editor when its keyboard button is activated', async () => {
+    const wrapper = mount(ScanjobMonitor, { props: { scanjobId: 42 }, attachTo: document.body, global: { stubs: monitorGlobalStubs } })
+    await flushPromises()
+    const button = wrapper.get('[data-testid="scanjob-monitor-follow-user-open"]')
+    button.element.focus()
+    await button.trigger('click')
+    await flushPromises()
+    expect(document.activeElement).toBe(wrapper.get('[data-testid="scanjob-monitor-follow-user-select"]').element)
+    wrapper.unmount()
+  })
+
+  it('keeps a failed scanner selection open and retries the same scanner with one subscription per attempt', async () => {
+    const wrapper = mount(ScanjobMonitor, { props: { scanjobId: 42 }, global: { stubs: monitorGlobalStubs } })
+    await flushPromises()
+    startMonitorFollowUser.mockRejectedValueOnce(new Error('scanner unavailable'))
+    const selection = await getFollowUserSelect(wrapper)
+    selection.vm.$emit('update:modelValue', 17)
+    await wrapper.get('[data-testid="scanjob-monitor-follow-user-apply"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain('scanner unavailable')
+    expect(alertError).toHaveBeenCalledTimes(1)
+    expect((await getFollowUserSelect(wrapper)).props('modelValue')).toBe(17)
+    expect(setScanjobMonitorFollowUserId).not.toHaveBeenCalled()
+    expect(mockPush).not.toHaveBeenCalled()
+    await wrapper.get('[data-testid="scanjob-monitor-follow-user-cancel"]').trigger('click')
+    expect(wrapper.get('button[data-testid="scanjob-monitor-follow-user-open"]').classes()).not.toContain('anti-btn-green')
+    await getFollowUserSelect(wrapper)
+    await wrapper.get('[data-testid="scanjob-monitor-follow-user-apply"]').trigger('click')
+    await flushPromises()
+    expect(startMonitorFollowUser).toHaveBeenCalledTimes(2)
+    expect(startMonitorFollowUser).toHaveBeenLastCalledWith(42, 17, { onFollowEvent: expect.any(Function) })
+    expect(setScanjobMonitorFollowUserId).toHaveBeenCalledExactlyOnceWith(17)
+    expect(wrapper.find('[data-testid="scanjob-monitor-follow-user-select"]').exists()).toBe(false)
+  })
+
+  it('shows scanner stop and persistence failures in the page region and preserves retry input', async () => {
+    const wrapper = mount(ScanjobMonitor, { props: { scanjobId: 42 }, global: { stubs: monitorGlobalStubs } })
+    await flushPromises()
+    const selection = await getFollowUserSelect(wrapper)
+    selection.vm.$emit('update:modelValue', 17)
+    clearMonitorFollowUser.mockRejectedValueOnce(new Error('stop failed'))
+    await wrapper.get('[data-testid="scanjob-monitor-follow-user-apply"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.get('[role="alert"]').text()).toContain('stop failed')
+    expect(startMonitorFollowUser).not.toHaveBeenCalled()
+    setScanjobMonitorFollowUserId.mockImplementationOnce(() => { throw new Error('save failed') })
+    await wrapper.get('[data-testid="scanjob-monitor-follow-user-apply"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.get('[role="alert"]').text()).toContain('save failed')
+    expect((await getFollowUserSelect(wrapper)).props('modelValue')).toBe(17)
+    await wrapper.get('[data-testid="scanjob-monitor-follow-user-apply"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="scanjob-monitor-follow-user-select"]').exists()).toBe(false)
+  })
+
+  it('shows a shared spinner while scanner application is pending and suppresses repeated applies', async () => {
+    let finish
+    const wrapper = mount(ScanjobMonitor, { props: { scanjobId: 42 }, global: { stubs: monitorGlobalStubs } })
+    await flushPromises()
+    startMonitorFollowUser.mockReturnValueOnce(new Promise((resolve) => { finish = resolve }))
+    const selection = await getFollowUserSelect(wrapper)
+    selection.vm.$emit('update:modelValue', 17)
+    await wrapper.get('[data-testid="scanjob-monitor-follow-user-apply"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.get('[data-testid="scanjob-monitor-operation-loading"]').attributes('role')).toBe('status')
+    await wrapper.get('[data-testid="scanjob-monitor-follow-user-apply"]').trigger('click')
+    expect(startMonitorFollowUser).toHaveBeenCalledTimes(1)
+    finish()
+    await flushPromises()
+    expect(wrapper.find('[data-testid="scanjob-monitor-operation-loading"]').exists()).toBe(false)
+  })
+
   it('loads and renders register monitor on mount', async () => {
     const wrapper = mount(ScanjobMonitor, {
       props: { scanjobId: 42 },
@@ -524,7 +690,8 @@ describe('Scanjob_Monitor.vue', () => {
     expect(summaryItems).toEqual([
       { label: 'Коробки всего / сканировано / не сканировано', value: '2 / 1 / 1' },
       { label: 'Посылки всего / сканировано / не сканировано / запретов', value: '5 / 3 / 2 / 2' },
-      { label: 'Стикеры не в реестре', value: '1' }
+      { label: 'Стикеры не в реестре', value: '1' },
+      { label: 'Этикетки в очереди печати', value: '0' }
     ])
 
     const registerSection = wrapper.get('[data-testid="scanjob-monitor-register"]')
@@ -562,7 +729,7 @@ describe('Scanjob_Monitor.vue', () => {
     expect(boxesTable.props('itemsPerPage')).toBe(25)
     expect(boxesTable.props('page')).toBe(2)
     expect(boxesTable.props('sortBy')).toEqual([{ key: 'boxCode', order: 'desc' }])
-    expect(wrapper.get('[data-testid="scanjob-monitor-jump"]').text()).toContain(
+    expect(wrapper.get('[data-testid="scanjob-monitor-jump-open"]').attributes('aria-label')).toBe(
       'Перейти к посылке или коробке'
     )
   })
@@ -584,6 +751,7 @@ describe('Scanjob_Monitor.vue', () => {
     })
 
     await flushPromises()
+    await openJump(wrapper)
     await wrapper.get('[data-testid="scanjob-monitor-jump-input"]').setValue(' BOX-7 ')
     await wrapper.get('[data-testid="scanjob-monitor-jump-action"]').trigger('click')
     await flushPromises()
@@ -613,6 +781,7 @@ describe('Scanjob_Monitor.vue', () => {
 
     await flushPromises()
     wrapper.vm.showJumpError('Посылка или коробка не найдена')
+    await openJump(wrapper)
     await wrapper.get('[data-testid="scanjob-monitor-jump-input"]').setValue('BOX-7')
     await wrapper.get('[data-testid="scanjob-monitor-jump-action"]').trigger('click')
     await flushPromises()
@@ -638,6 +807,7 @@ describe('Scanjob_Monitor.vue', () => {
     })
 
     await flushPromises()
+    await openJump(wrapper)
     await wrapper.get('[data-testid="scanjob-monitor-jump-input"]').setValue('BOX-7')
     await wrapper.get('[data-testid="scanjob-monitor-jump-action"]').trigger('click')
     await flushPromises()
@@ -663,6 +833,7 @@ describe('Scanjob_Monitor.vue', () => {
     })
 
     await flushPromises()
+    await openJump(wrapper)
     await wrapper.get('[data-testid="scanjob-monitor-jump-input"]').setValue('PU-90')
     await wrapper.get('[data-testid="scanjob-monitor-jump-action"]').trigger('click')
     await flushPromises()
@@ -698,6 +869,7 @@ describe('Scanjob_Monitor.vue', () => {
       })
 
       await flushPromises()
+      await openJump(wrapper)
       await wrapper.get('[data-testid="scanjob-monitor-jump-input"]').setValue('P-71')
       await wrapper.get('[data-testid="scanjob-monitor-jump-action"]').trigger('click')
       await flushPromises()
@@ -736,6 +908,7 @@ describe('Scanjob_Monitor.vue', () => {
 
     await flushPromises()
     wrapper.vm.showJumpError('Посылка или коробка не найдена')
+    await openJump(wrapper)
     await wrapper.get('[data-testid="scanjob-monitor-jump-input"]').setValue('P-71')
     await wrapper.get('[data-testid="scanjob-monitor-jump-action"]').trigger('click')
     await flushPromises()
@@ -752,6 +925,7 @@ describe('Scanjob_Monitor.vue', () => {
     })
 
     await flushPromises()
+    await openJump(wrapper)
     await wrapper.get('[data-testid="scanjob-monitor-jump-input"]').setValue('MISSING')
     await wrapper.get('[data-testid="scanjob-monitor-jump-action"]').trigger('click')
     await flushPromises()
@@ -767,16 +941,18 @@ describe('Scanjob_Monitor.vue', () => {
 
     await flushPromises()
     // Input is empty; button is disabled, so trigger via keydown.enter on the input field
+    await openJump(wrapper)
     const form = wrapper.get('[data-testid="scanjob-monitor-jump"]')
     await form.trigger('submit')
     await flushPromises()
 
-    expect(alertError).toHaveBeenCalledWith('Введите номер посылки или коробки')
+    expect(wrapper.get('[role="alert"]').text()).toContain('Введите номер посылки или коробки')
+    expect(wrapper.get('[role="alert"]').element.previousElementSibling.className).toBe('scanjob-monitor-editor-row')
+    expect(alertError).not.toHaveBeenCalled()
     expect(resolveMonitorTarget).not.toHaveBeenCalled()
   })
 
   it('does not call resolveMonitorTarget when isLoading is true', async () => {
-    monitorLoading.value = true
 
     const wrapper = mount(ScanjobMonitor, {
       props: { scanjobId: 42 },
@@ -784,7 +960,10 @@ describe('Scanjob_Monitor.vue', () => {
     })
 
     await flushPromises()
+    await openJump(wrapper)
     await wrapper.get('[data-testid="scanjob-monitor-jump-input"]').setValue('BOX-7')
+    monitorLoading.value = true
+    await wrapper.vm.$nextTick()
     await wrapper.get('[data-testid="scanjob-monitor-jump-action"]').trigger('click')
     await flushPromises()
 
@@ -799,6 +978,7 @@ describe('Scanjob_Monitor.vue', () => {
 
     await flushPromises()
 
+    await openJump(wrapper)
     const jumpAction = wrapper.get('[data-testid="scanjob-monitor-jump-action"]')
     expect(jumpAction.attributes('disabled')).toBeDefined()
   })
@@ -810,8 +990,10 @@ describe('Scanjob_Monitor.vue', () => {
     })
 
     await flushPromises()
+    await openJump(wrapper)
     await wrapper.get('[data-testid="scanjob-monitor-jump-input"]').setValue('BOX-7')
 
+    await openJump(wrapper)
     const jumpAction = wrapper.get('[data-testid="scanjob-monitor-jump-action"]')
     expect(jumpAction.attributes('disabled')).toBeUndefined()
   })
@@ -830,15 +1012,16 @@ describe('Scanjob_Monitor.vue', () => {
     })
 
     await flushPromises()
+    await openJump(wrapper)
     await wrapper.get('[data-testid="scanjob-monitor-jump-input"]').setValue('BOX-7')
     await wrapper.get('[data-testid="scanjob-monitor-jump-action"]').trigger('click')
 
-    expect(wrapper.find('[data-testid="scanjob-monitor-jump-loading"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="scanjob-monitor-operation-loading"]').exists()).toBe(true)
 
     resolveTarget({ kind: 0 })
     await flushPromises()
 
-    expect(wrapper.find('[data-testid="scanjob-monitor-jump-loading"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="scanjob-monitor-operation-loading"]').exists()).toBe(false)
   })
 
   it('alerts when resolved box target has null boxId', async () => {
@@ -855,6 +1038,7 @@ describe('Scanjob_Monitor.vue', () => {
     })
 
     await flushPromises()
+    await openJump(wrapper)
     await wrapper.get('[data-testid="scanjob-monitor-jump-input"]').setValue('BADBOX')
     await wrapper.get('[data-testid="scanjob-monitor-jump-action"]').trigger('click')
     await flushPromises()
@@ -878,6 +1062,7 @@ describe('Scanjob_Monitor.vue', () => {
     })
 
     await flushPromises()
+    await openJump(wrapper)
     await wrapper.get('[data-testid="scanjob-monitor-jump-input"]').setValue('BADPARCEL')
     await wrapper.get('[data-testid="scanjob-monitor-jump-action"]').trigger('click')
     await flushPromises()
@@ -901,6 +1086,7 @@ describe('Scanjob_Monitor.vue', () => {
     })
 
     await flushPromises()
+    await openJump(wrapper)
     await wrapper.get('[data-testid="scanjob-monitor-jump-input"]').setValue('P-55')
     await wrapper.get('[data-testid="scanjob-monitor-jump-action"]').trigger('click')
     await flushPromises()
@@ -917,6 +1103,7 @@ describe('Scanjob_Monitor.vue', () => {
     })
 
     await flushPromises()
+    await openJump(wrapper)
     await wrapper.get('[data-testid="scanjob-monitor-jump-input"]').setValue('BOX-7')
     await wrapper.get('[data-testid="scanjob-monitor-jump-action"]').trigger('click')
     await flushPromises()
@@ -932,6 +1119,7 @@ describe('Scanjob_Monitor.vue', () => {
     })
 
     await flushPromises()
+    await openJump(wrapper)
     await wrapper.get('[data-testid="scanjob-monitor-jump-input"]').setValue('BOX-7')
     await wrapper.get('[data-testid="scanjob-monitor-jump-action"]').trigger('click')
     await flushPromises()
@@ -954,6 +1142,7 @@ describe('Scanjob_Monitor.vue', () => {
     })
 
     await flushPromises()
+    await openJump(wrapper)
     const input = wrapper.get('[data-testid="scanjob-monitor-jump-input"]')
     await input.setValue('BOX-7')
     await input.trigger('keydown.enter')
@@ -979,6 +1168,7 @@ describe('Scanjob_Monitor.vue', () => {
     })
 
     await flushPromises()
+    await openJump(wrapper)
     await wrapper.get('[data-testid="scanjob-monitor-jump-input"]').setValue('P-71')
     await wrapper.get('[data-testid="scanjob-monitor-jump-action"]').trigger('click')
     await flushPromises()
@@ -1011,6 +1201,8 @@ describe('Scanjob_Monitor.vue', () => {
     const pushCallsBefore = mockPush.mock.calls.length
     const replaceCallsBefore = mockReplace.mock.calls.length
 
+    await openJump(wrapper)
+
     await wrapper.get('[data-testid="scanjob-monitor-jump-input"]').setValue('BOX-SAME')
     await wrapper.get('[data-testid="scanjob-monitor-jump-action"]').trigger('click')
     await flushPromises()
@@ -1028,8 +1220,8 @@ describe('Scanjob_Monitor.vue', () => {
     await flushPromises()
 
     expect(loadMonitorFollowUsers).toHaveBeenCalledWith(42)
-    expect(getFollowUserSelect(wrapper).props('modelValue')).toBeNull()
-    expect(getFollowUserSelect(wrapper).props('items')).toEqual([
+    expect((await getFollowUserSelect(wrapper)).props('modelValue')).toBeNull()
+    expect((await getFollowUserSelect(wrapper)).props('items')).toEqual([
       { title: 'Не следить (Esc)', value: null },
       { title: 'Operator A', value: 17 },
       { title: 'Operator B', value: 18 }
@@ -1074,13 +1266,17 @@ describe('Scanjob_Monitor.vue', () => {
 
     await flushPromises()
 
-    getFollowUserSelect(wrapper).vm.$emit('update:modelValue', 17)
+    expect(wrapper.get('button[data-testid="scanjob-monitor-follow-user-open"]').classes()).not.toContain('anti-btn-green')
+    const selection = await getFollowUserSelect(wrapper)
+    selection.vm.$emit('update:modelValue', 17)
+    await wrapper.get('[data-testid="scanjob-monitor-follow-user-apply"]').trigger('click')
     await flushPromises()
 
     expect(setScanjobMonitorFollowUserId).toHaveBeenCalledWith(17)
     expect(startMonitorFollowUser).toHaveBeenCalledWith(42, 17, {
       onFollowEvent: expect.any(Function)
     })
+    expect(wrapper.get('button[data-testid="scanjob-monitor-follow-user-open"]').classes()).toContain('anti-btn-green')
   })
 
   it('clears follow user selection on Escape', async () => {
@@ -1091,14 +1287,18 @@ describe('Scanjob_Monitor.vue', () => {
 
     await flushPromises()
 
-    getFollowUserSelect(wrapper).vm.$emit('update:modelValue', 17)
+    const selection = await getFollowUserSelect(wrapper)
+    selection.vm.$emit('update:modelValue', 17)
+    await wrapper.get('[data-testid="scanjob-monitor-follow-user-apply"]').trigger('click')
     await flushPromises()
 
+    expect(wrapper.get('button[data-testid="scanjob-monitor-follow-user-open"]').classes()).toContain('anti-btn-green')
     const clearCallsBeforeEscape = clearMonitorFollowUser.mock.calls.length
-    await getFollowUserSelect(wrapper).trigger('keydown', { key: 'Escape' })
+    await (await getFollowUserSelect(wrapper)).trigger('keydown', { key: 'Escape' })
     await flushPromises()
 
-    expect(getFollowUserSelect(wrapper).props('modelValue')).toBeNull()
+    expect(wrapper.get('button[data-testid="scanjob-monitor-follow-user-open"]').classes()).not.toContain('anti-btn-green')
+    expect((await getFollowUserSelect(wrapper)).props('modelValue')).toBeNull()
     expect(setScanjobMonitorFollowUserId).toHaveBeenLastCalledWith(null)
     expect(clearMonitorFollowUser.mock.calls.length).toBeGreaterThan(clearCallsBeforeEscape)
   })
@@ -1113,7 +1313,8 @@ describe('Scanjob_Monitor.vue', () => {
 
     await flushPromises()
 
-    expect(getFollowUserSelect(wrapper).props('modelValue')).toBe(18)
+    expect(wrapper.get('button[data-testid="scanjob-monitor-follow-user-open"]').classes()).toContain('anti-btn-green')
+    expect((await getFollowUserSelect(wrapper)).props('modelValue')).toBe(18)
     expect(startMonitorFollowUser).toHaveBeenCalledWith(42, 18, {
       onFollowEvent: expect.any(Function)
     })
@@ -1123,7 +1324,7 @@ describe('Scanjob_Monitor.vue', () => {
     persistedFollowUserId.value = 17
     startMonitorFollowUser.mockRejectedValueOnce({ message: 'follow failed' })
 
-    mount(ScanjobMonitor, {
+    const wrapper = mount(ScanjobMonitor, {
       props: { scanjobId: 42 },
       global: { stubs: monitorGlobalStubs }
     })
@@ -1131,6 +1332,8 @@ describe('Scanjob_Monitor.vue', () => {
     await flushPromises()
 
     expect(alertError).toHaveBeenCalledWith('follow failed')
+    expect(wrapper.get('[role="alert"]').text()).toContain('follow failed')
+    expect(wrapper.get('button[data-testid="scanjob-monitor-follow-user-open"]').classes()).not.toContain('anti-btn-green')
   })
 
   it('switches to box monitor and renders parcels', async () => {
@@ -1167,7 +1370,8 @@ describe('Scanjob_Monitor.vue', () => {
       { label: 'Статус сканирования коробки', value: 'Сканирована' },
       { label: 'Посылки всего / сканировано / не сканировано / запретов', value: '3 / 2 / 1 / 1' },
       { label: 'Габариты', value: '10,5 × 20 × 30,25 см' },
-      { label: 'Вес', value: '4,125 кг' }
+      { label: 'Вес', value: '4,125 кг' },
+      { label: 'Этикетки в очереди печати', value: '0' }
     ])
 
     expect(wrapper.text()).toContain('P-70')
@@ -1396,7 +1600,8 @@ describe('Scanjob_Monitor.vue', () => {
     }))
     expect(summaryItems).toEqual([
       { label: 'Группа посылок', value: 'Без коробки' },
-      { label: 'Посылки всего / сканировано / не сканировано / запретов', value: '2 / 1 / 1 / 1' }
+      { label: 'Посылки всего / сканировано / не сканировано / запретов', value: '2 / 1 / 1 / 1' },
+      { label: 'Этикетки в очереди печати', value: '0' }
     ])
 
     expect(wrapper.text()).toContain('PU-90')
@@ -1454,7 +1659,7 @@ describe('Scanjob_Monitor.vue', () => {
 
     const wrapper = mount(ScanjobMonitor, {
       props: { scanjobId: 42 },
-      global: { stubs: defaultGlobalStubs }
+      global: { stubs: monitorGlobalStubs }
     })
 
     await flushPromises()
@@ -1479,7 +1684,7 @@ describe('Scanjob_Monitor.vue', () => {
         scanjobId: 42,
         monitorScope: box7MonitorScope
       },
-      global: { stubs: defaultGlobalStubs }
+      global: { stubs: monitorGlobalStubs }
     })
 
     await flushPromises()
@@ -1506,7 +1711,7 @@ describe('Scanjob_Monitor.vue', () => {
 
     const wrapper = mount(ScanjobMonitor, {
       props: { scanjobId: 42 },
-      global: { stubs: defaultGlobalStubs }
+      global: { stubs: monitorGlobalStubs }
     })
 
     await wrapper.setProps({ monitorScope: box7MonitorScope })
@@ -1525,7 +1730,7 @@ describe('Scanjob_Monitor.vue', () => {
 
     const wrapper = mount(ScanjobMonitor, {
       props: { scanjobId: 42 },
-      global: { stubs: defaultGlobalStubs }
+      global: { stubs: monitorGlobalStubs }
     })
 
     await flushPromises()
@@ -1550,7 +1755,7 @@ describe('Scanjob_Monitor.vue', () => {
   it('shows status-only panel when scanjob id changes and ignores closed state from the previous scanjob', async () => {
     const wrapper = mount(ScanjobMonitor, {
       props: { scanjobId: 42 },
-      global: { stubs: defaultGlobalStubs }
+      global: { stubs: monitorGlobalStubs }
     })
 
     await flushPromises()
@@ -1573,7 +1778,7 @@ describe('Scanjob_Monitor.vue', () => {
 
     const wrapper = mount(ScanjobMonitor, {
       props: { scanjobId: 42 },
-      global: { stubs: defaultGlobalStubs }
+      global: { stubs: monitorGlobalStubs }
     })
 
     await flushPromises()
@@ -1603,7 +1808,7 @@ describe('Scanjob_Monitor.vue', () => {
 
     const wrapper = mount(ScanjobMonitor, {
       props: { scanjobId: 42 },
-      global: { stubs: defaultGlobalStubs }
+      global: { stubs: monitorGlobalStubs }
     })
 
     await flushPromises()
@@ -1636,7 +1841,7 @@ describe('Scanjob_Monitor.vue', () => {
 
     mount(ScanjobMonitor, {
       props: { scanjobId: 42 },
-      global: { stubs: defaultGlobalStubs }
+      global: { stubs: monitorGlobalStubs }
     })
 
     await flushPromises()
@@ -1670,7 +1875,7 @@ describe('Scanjob_Monitor.vue', () => {
 
     const wrapper = mount(ScanjobMonitor, {
       props: { scanjobId: 42, monitorScope: box7MonitorScope },
-      global: { stubs: defaultGlobalStubs }
+      global: { stubs: monitorGlobalStubs }
     })
 
     await flushPromises()
@@ -1697,7 +1902,7 @@ describe('Scanjob_Monitor.vue', () => {
 
     mount(ScanjobMonitor, {
       props: { scanjobId: 42, monitorScope: box7MonitorScope },
-      global: { stubs: defaultGlobalStubs }
+      global: { stubs: monitorGlobalStubs }
     })
 
     await flushPromises()
@@ -1725,7 +1930,7 @@ describe('Scanjob_Monitor.vue', () => {
 
     mount(ScanjobMonitor, {
       props: { scanjobId: 42, monitorScope: box7MonitorScope },
-      global: { stubs: defaultGlobalStubs }
+      global: { stubs: monitorGlobalStubs }
     })
 
     await flushPromises()
@@ -1750,7 +1955,7 @@ describe('Scanjob_Monitor.vue', () => {
 
     mount(ScanjobMonitor, {
       props: { scanjobId: 42 },
-      global: { stubs: defaultGlobalStubs }
+      global: { stubs: monitorGlobalStubs }
     })
 
     await flushPromises()
@@ -1773,7 +1978,7 @@ describe('Scanjob_Monitor.vue', () => {
   it('does not follow when none is selected', async () => {
     mount(ScanjobMonitor, {
       props: { scanjobId: 42 },
-      global: { stubs: defaultGlobalStubs }
+      global: { stubs: monitorGlobalStubs }
     })
 
     await flushPromises()
@@ -1788,7 +1993,7 @@ describe('Scanjob_Monitor.vue', () => {
 
     mount(ScanjobMonitor, {
       props: { scanjobId: 42 },
-      global: { stubs: defaultGlobalStubs }
+      global: { stubs: monitorGlobalStubs }
     })
 
     await flushPromises()
@@ -1812,7 +2017,7 @@ describe('Scanjob_Monitor.vue', () => {
 
     const wrapper = mount(ScanjobMonitor, {
       props: { scanjobId: 42, monitorScope: box7MonitorScope },
-      global: { stubs: defaultGlobalStubs }
+      global: { stubs: monitorGlobalStubs }
     })
 
     await flushPromises()
@@ -1839,7 +2044,7 @@ describe('Scanjob_Monitor.vue', () => {
 
     const wrapper = mount(ScanjobMonitor, {
       props: { scanjobId: 42, monitorScope: box7MonitorScope },
-      global: { stubs: defaultGlobalStubs }
+      global: { stubs: monitorGlobalStubs }
     })
 
     await flushPromises()
@@ -1860,7 +2065,7 @@ describe('Scanjob_Monitor.vue', () => {
   it('clears and stops monitor on unmount', async () => {
     const wrapper = mount(ScanjobMonitor, {
       props: { scanjobId: 42 },
-      global: { stubs: defaultGlobalStubs }
+      global: { stubs: monitorGlobalStubs }
     })
 
     await flushPromises()
@@ -1876,7 +2081,7 @@ describe('Scanjob_Monitor.vue', () => {
 
     const wrapper = mount(ScanjobMonitor, {
       props: { scanjobId: 42 },
-      global: { stubs: defaultGlobalStubs }
+      global: { stubs: monitorGlobalStubs }
     })
 
     await flushPromises()
@@ -1894,7 +2099,7 @@ describe('Scanjob_Monitor.vue', () => {
 
     const wrapper = mount(ScanjobMonitor, {
       props: { scanjobId: 42 },
-      global: { stubs: defaultGlobalStubs }
+      global: { stubs: monitorGlobalStubs }
     })
 
     await flushPromises()
@@ -1917,7 +2122,7 @@ describe('Scanjob_Monitor.vue', () => {
 
     const wrapper = mount(ScanjobMonitor, {
       props: { scanjobId: 42 },
-      global: { stubs: defaultGlobalStubs }
+      global: { stubs: monitorGlobalStubs }
     })
 
     await flushPromises()
@@ -1947,7 +2152,7 @@ describe('Scanjob_Monitor.vue', () => {
 
       const wrapper = mount(ScanjobMonitor, {
         props: { scanjobId: 42 },
-        global: { stubs: defaultGlobalStubs }
+        global: { stubs: monitorGlobalStubs }
       })
 
       await flushPromises()
@@ -1967,7 +2172,7 @@ describe('Scanjob_Monitor.vue', () => {
 
     const wrapper = mount(ScanjobMonitor, {
       props: { scanjobId: 42 },
-      global: { stubs: defaultGlobalStubs }
+      global: { stubs: monitorGlobalStubs }
     })
 
     await flushPromises()
@@ -1985,7 +2190,7 @@ describe('Scanjob_Monitor.vue', () => {
 
     const wrapper = mount(ScanjobMonitor, {
       props: { scanjobId: 42 },
-      global: { stubs: defaultGlobalStubs }
+      global: { stubs: monitorGlobalStubs }
     })
 
     await flushPromises()
@@ -2003,7 +2208,7 @@ describe('Scanjob_Monitor.vue', () => {
 
     const wrapper = mount(ScanjobMonitor, {
       props: { scanjobId: 42 },
-      global: { stubs: defaultGlobalStubs }
+      global: { stubs: monitorGlobalStubs }
     })
 
     await flushPromises()
@@ -2032,7 +2237,7 @@ describe('Scanjob_Monitor.vue', () => {
 
     const wrapper = mount(ScanjobMonitor, {
       props: { scanjobId: 42 },
-      global: { stubs: defaultGlobalStubs }
+      global: { stubs: monitorGlobalStubs }
     })
 
     await flushPromises()
@@ -2045,7 +2250,7 @@ describe('Scanjob_Monitor.vue', () => {
   it('ignores applySnapshot with stale scope version', async () => {
     const wrapper = mount(ScanjobMonitor, {
       props: { scanjobId: 42 },
-      global: { stubs: defaultGlobalStubs }
+      global: { stubs: monitorGlobalStubs }
     })
 
     await flushPromises()
@@ -2065,7 +2270,7 @@ describe('Scanjob_Monitor.vue', () => {
   it('ignores applySnapshot with wrong scanJobId', async () => {
     const wrapper = mount(ScanjobMonitor, {
       props: { scanjobId: 42 },
-      global: { stubs: defaultGlobalStubs }
+      global: { stubs: monitorGlobalStubs }
     })
 
     await flushPromises()
@@ -2084,7 +2289,7 @@ describe('Scanjob_Monitor.vue', () => {
   it('ignores handleMonitorClosed when scanJobId does not match', async () => {
     const wrapper = mount(ScanjobMonitor, {
       props: { scanjobId: 42 },
-      global: { stubs: defaultGlobalStubs }
+      global: { stubs: monitorGlobalStubs }
     })
 
     await flushPromises()
@@ -2107,7 +2312,7 @@ describe('Scanjob_Monitor.vue', () => {
 
     const wrapper = mount(ScanjobMonitor, {
       props: { scanjobId: 42 },
-      global: { stubs: defaultGlobalStubs }
+      global: { stubs: monitorGlobalStubs }
     })
 
     await flushPromises()
@@ -2141,7 +2346,7 @@ describe('Scanjob_Monitor.vue', () => {
 
     const wrapper = mount(ScanjobMonitor, {
       props: { scanjobId: 42 },
-      global: { stubs: defaultGlobalStubs }
+      global: { stubs: monitorGlobalStubs }
     })
 
     await flushPromises()
@@ -2169,7 +2374,7 @@ describe('Scanjob_Monitor.vue', () => {
 
     const wrapper = mount(ScanjobMonitor, {
       props: { scanjobId: 42 },
-      global: { stubs: defaultGlobalStubs }
+      global: { stubs: monitorGlobalStubs }
     })
 
     await flushPromises()
@@ -2185,7 +2390,7 @@ describe('Scanjob_Monitor.vue', () => {
 
     const wrapper = mount(ScanjobMonitor, {
       props: { scanjobId: 42 },
-      global: { stubs: defaultGlobalStubs }
+      global: { stubs: monitorGlobalStubs }
     })
 
     await flushPromises()
@@ -2220,14 +2425,16 @@ describe('Scanjob_Monitor.vue', () => {
 
   it('clears pending throttled snapshot on handleMonitorClosed', async () => {
     vi.useFakeTimers()
+    persistedFollowUserId.value = 17
 
     const wrapper = mount(ScanjobMonitor, {
       props: { scanjobId: 42 },
-      global: { stubs: defaultGlobalStubs }
+      global: { stubs: monitorGlobalStubs }
     })
 
     await flushPromises()
 
+    expect(wrapper.get('button[data-testid="scanjob-monitor-follow-user-open"]').classes()).toContain('anti-btn-green')
     const { onSnapshot, onClosed } = startMonitor.mock.calls[0][1]
 
     // Build up pending snapshot in throttle timer
@@ -2247,5 +2454,20 @@ describe('Scanjob_Monitor.vue', () => {
     // Monitor closed; pending snapshot should have been discarded
     expect(wrapper.find('[data-testid="scanjob-monitor-closed"]').exists()).toBe(true)
     expect(wrapper.text()).not.toContain('CANCELLABLE')
+    expect(wrapper.get('button[data-testid="scanjob-monitor-follow-user-open"]').classes()).not.toContain('anti-btn-green')
+  })
+
+  it('keeps the follow indicator off if a pending subscription finishes after the monitor closes', async () => {
+    persistedFollowUserId.value = 17
+    let finishSubscription
+    startMonitorFollowUser.mockReturnValueOnce(new Promise((resolve) => { finishSubscription = resolve }))
+    const wrapper = mount(ScanjobMonitor, { props: { scanjobId: 42 }, global: { stubs: monitorGlobalStubs } })
+    await flushPromises()
+    expect(wrapper.get('button[data-testid="scanjob-monitor-follow-user-open"]').classes()).not.toContain('anti-btn-green')
+    startMonitor.mock.calls[0][1].onClosed(42, 20)
+    finishSubscription(true)
+    await flushPromises()
+    expect(wrapper.find('[data-testid="scanjob-monitor-closed"]').exists()).toBe(true)
+    expect(wrapper.get('button[data-testid="scanjob-monitor-follow-user-open"]').classes()).not.toContain('anti-btn-green')
   })
 })

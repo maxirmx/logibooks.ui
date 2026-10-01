@@ -28,7 +28,8 @@ defineOptions({ name: 'Scanjob_Boxes_Monitor' })
 const props = defineProps({
   snapshot: { type: Object, default: null },
   boxes: { type: Array, default: () => [] },
-  loading: { type: Boolean, default: false }
+  loading: { type: Boolean, default: false },
+  printQueue: { type: Object, default: null }
 })
 
 const emit = defineEmits(['open-box'])
@@ -70,7 +71,7 @@ function openBox(item) {
 
 <template>
   <div data-testid="scanjob-monitor-register">
-    <ScanjobMonitorSummary :cards="summaryCards" />
+    <ScanjobMonitorSummary :cards="summaryCards" :print-queue="props.printQueue" />
 
     <div class="monitor-section">
     <v-card class="table-card">

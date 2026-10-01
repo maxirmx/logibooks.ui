@@ -6,6 +6,7 @@
 import { computed, nextTick, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useAuthStore } from '@/stores/auth.store.js'
+import MonitorLabelActions from '@/components/MonitorLabelActions.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import ClickableCell from '@/components/ClickableCell.vue'
 import CorrectedWeightDisplay from '@/components/CorrectedWeightDisplay.vue'
@@ -230,6 +231,7 @@ watch(
   >
     <template #[`item.actions`]="{ item }">
       <div class="actions-container">
+        <MonitorLabelActions :item="item" />
         <ActionButton
           :item="item"
           icon="fa-solid fa-person-circle-xmark"

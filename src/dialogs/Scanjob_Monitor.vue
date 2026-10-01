@@ -4,7 +4,7 @@
 // This file is a part of Logibooks ui application
 
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, provide, ref, watch } from 'vue'
 import { isNavigationFailure, NavigationFailureType } from 'vue-router'
 import router from '@/router'
 import { storeToRefs } from 'pinia'
@@ -14,7 +14,10 @@ import { useRegistersStore } from '@/stores/registers.store.js'
 import { useScanjobsStore } from '@/stores/scanjobs.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useScanjobHeading } from '@/composables/useScanjobHeading.js'
+import LocalLabelPrinting from '@/components/LocalLabelPrinting.vue'
+import { LABEL_PRINTING_KEY } from '@/helpers/label.printing.helpers.js'
 import ActionButton from '@/components/ActionButton.vue'
+import FieldError from '@/components/FieldError.vue'
 import ScanjobBoxesMonitor from '@/dialogs/Scanjob_Boxes_Monitor.vue'
 import ScanjobParcelsMonitor from '@/dialogs/Scanjob_Parcels_Monitor.vue'
 import { buildParcelListHeading } from '@/helpers/register.heading.helpers.js'
@@ -60,6 +63,12 @@ const isComponentMounted = ref(true)
 const scanjobIdRef = computed(() => props.scanjobId)
 const { loadScanjob } = useScanjobHeading(scanjobIdRef, { isComponentMounted })
 
+const printingPanel = ref(null)
+provide(LABEL_PRINTING_KEY, {
+  busy: computed(() => printingPanel.value?.busy ?? true),
+  print: (target) => printingPanel.value?.printParcel(target)
+})
+
 const mode = ref(MODE_REGISTER)
 const selectedArea = ref(scanJobsStore.scanjobMonitorArea.Boxes)
 const selectedBoxId = ref(null)
@@ -73,6 +82,13 @@ const registerLoading = ref(true)
 const followUsers = ref([])
 const followUsersLoading = ref(false)
 const selectedFollowUserId = ref(authStore.scanjobmonitor_follow_user_id ?? null)
+const followSubscriptionActive = ref(false)
+const draftFollowUserId = ref(selectedFollowUserId.value)
+const activeEditor = ref(null)
+const followApplyLoading = ref(false)
+const jumpInput = ref(null)
+const followInput = ref(null)
+const jumpValidation = ref({})
 const defectActionRunning = ref(false)
 const scanjobLoaded = ref(false)
 const loadedScanjobId = ref(null)
@@ -91,6 +107,9 @@ let throttleTimer = null
 const isRegisterMode = computed(() => mode.value === MODE_REGISTER)
 const isBoxMode = computed(() => mode.value === MODE_BOX)
 const isLoading = computed(() => monitorLoading.value || switchingScope.value)
+const toolbarBusy = computed(() => isLoading.value || jumpLoading.value || followUsersLoading.value ||
+  followApplyLoading.value || defectActionRunning.value || printingPanel.value?.operationInProgress)
+const printQueue = computed(() => printingPanel.value?.queueStatus ?? { queued: 0, paused: false })
 const boxes = computed(() => visibleSnapshot.value?.boxes ?? [])
 const selectedBox = computed(() => visibleSnapshot.value?.box ?? null)
 const closedInfo = computed(() => {
@@ -203,8 +222,44 @@ function getFollowUserLabel(user) {
   )
 }
 
-function clearFollowUserSelection() {
-  selectedFollowUserId.value = null
+async function startEditor(editor) {
+  if (isLoading.value || jumpLoading.value || followApplyLoading.value) return
+  jumpNumber.value = ''
+  jumpValidation.value = {}
+  draftFollowUserId.value = selectedFollowUserId.value
+  activeEditor.value = editor
+  await nextTick()
+  const input = editor === 'jump' ? jumpInput.value : followInput.value
+  input?.focus?.()
+}
+
+function cancelEditor() {
+  activeEditor.value = null
+  jumpNumber.value = ''
+  jumpValidation.value = {}
+  draftFollowUserId.value = selectedFollowUserId.value
+}
+
+async function applyFollowUserSelection() {
+  if (isLoading.value || followApplyLoading.value || followUsersLoading.value) return
+  followApplyLoading.value = true
+  selectedFollowUserId.value = toNumberOrNull(draftFollowUserId.value)
+  try {
+    const applied = await startFollowUserSubscription({ subscribe: canSubscribeToMonitor(scanjob.value) })
+    if (applied && isComponentMounted.value) {
+      authStore.setScanjobMonitorFollowUserId(selectedFollowUserId.value)
+      cancelEditor()
+    }
+  } catch (error) {
+    if (isComponentMounted.value) alertStore.error(error)
+  } finally {
+    followApplyLoading.value = false
+  }
+}
+
+async function clearFollowUserSelection() {
+  draftFollowUserId.value = null
+  await applyFollowUserSelection()
 }
 
 function monitorScopeKey(scope = props.monitorScope) {
@@ -553,7 +608,11 @@ async function navigateToResolvedScope(scope, { reloadIfSame = false } = {}) {
     return false
   }
 
-  return updateMonitorRoute(normalizedScope)
+  const result = await updateMonitorRoute(normalizedScope)
+  if (isNavigationFailure(result) && !isNavigationFailure(result, NavigationFailureType.duplicated)) {
+    throw result
+  }
+  return result
 }
 
 async function handleJumpToNumber() {
@@ -563,10 +622,11 @@ async function handleJumpToNumber() {
 
   const number = jumpNumber.value.trim()
   if (!number) {
-    showJumpError(JUMP_EMPTY_MESSAGE)
+    jumpValidation.value = { jumpNumber: JUMP_EMPTY_MESSAGE }
     return
   }
 
+  jumpValidation.value = {}
   jumpLoading.value = true
   try {
     const target = await scanJobsStore.resolveMonitorTarget(props.scanjobId, number)
@@ -586,6 +646,7 @@ async function handleJumpToNumber() {
         bucketIndex: null
       })
       clearJumpError()
+      cancelEditor()
       return
     }
 
@@ -605,6 +666,7 @@ async function handleJumpToNumber() {
       selectedParcelId.value = parcelId
       await navigateToResolvedScope(targetScope, { reloadIfSame: true })
       clearJumpError()
+      cancelEditor()
       return
     }
 
@@ -642,6 +704,7 @@ function normalizeFollowTarget(target) {
 }
 
 async function clearFollowUserSubscription() {
+  followSubscriptionActive.value = false
   await scanJobsStore.clearMonitorFollowUser().catch((error) => {
     reportError(error, { context: 'scan job follow-user cleanup' })
   })
@@ -651,21 +714,23 @@ async function startFollowUserSubscription({
   subscribe = true,
   version = scopeVersion.value
 } = {}) {
-  await clearFollowUserSubscription()
-
-  const userId = toNumberOrNull(selectedFollowUserId.value)
-  if (!subscribe || userId == null || !canSubscribeToMonitor(scanjob.value)) {
-    return
-  }
-
+  followSubscriptionActive.value = false
   try {
+    await scanJobsStore.clearMonitorFollowUser()
+    const userId = toNumberOrNull(selectedFollowUserId.value)
+    if (!subscribe || userId == null || !canSubscribeToMonitor(scanjob.value)) return true
     await scanJobsStore.startMonitorFollowUser(props.scanjobId, userId, {
       onFollowEvent: (followEvent) => handleFollowEvent(followEvent, version)
     })
+    if (isComponentMounted.value && version === scopeVersion.value && !closedInfo.value) {
+      followSubscriptionActive.value = true
+    }
+    return true
   } catch (error) {
     if (isComponentMounted.value && version === scopeVersion.value) {
       alertStore.error(getMonitorErrorMessage(error))
     }
+    return false
   }
 }
 
@@ -887,18 +952,6 @@ watch(
   }
 )
 
-watch(selectedFollowUserId, async (userId) => {
-  authStore.setScanjobMonitorFollowUserId(userId)
-  if (!scanjobLoaded.value || !isComponentMounted.value || switchingScope.value) {
-    return
-  }
-
-  await startFollowUserSubscription({
-    subscribe: canSubscribeToMonitor(scanjob.value),
-    version: scopeVersion.value
-  })
-})
-
 onUnmounted(() => {
   isComponentMounted.value = false
   scopeVersion.value += 1
@@ -924,73 +977,89 @@ defineExpose({
     <div class="header-with-actions">
       <h1 class="primary-heading">{{ monitorHeading }}</h1>
       <div class="header-actions-bar">
-        <div v-if="isLoading" class="header-actions header-actions-group">
+        <div v-if="toolbarBusy" class="header-actions header-actions-group" data-testid="scanjob-monitor-operation-loading" role="status" aria-label="Операция выполняется">
           <span class="spinner-border spinner-border-m"></span>
         </div>
-        <form
-          class="header-actions header-actions-group scanjob-monitor-jump"
-          data-testid="scanjob-monitor-jump"
-          @submit.prevent="handleJumpToNumber"
-        >
-          <v-text-field
-            id="scanjob-monitor-jump-input"
-            v-model="jumpNumber"
-            density="compact"
-            class="scanjob-monitor-jump-input"
-            label="Перейти к посылке или коробке"
-            variant="outlined"
-            hide-details
-            autocomplete="off"
-            data-testid="scanjob-monitor-jump-input"
-            :disabled="isLoading || jumpLoading"
-            @keydown.enter="handleJumpToNumber"
-          />
+        <LocalLabelPrinting ref="printingPanel" :scan-job-id="props.scanjobId" :user-id="selectedFollowUserId"
+          :active="scanjob?.status === SCAN_JOB_STATUS_IN_PROGRESS && !closedInfo" />
+        <div class="header-actions header-actions-group scanjob-monitor-navigation">
+          <form v-if="activeEditor === 'jump'" class="scanjob-monitor-editor" data-testid="scanjob-monitor-jump" @submit.prevent="handleJumpToNumber">
+            <div class="scanjob-monitor-editor-row">
+              <v-text-field ref="jumpInput" id="scanjob-monitor-jump-input" v-model="jumpNumber"
+                density="compact" class="scanjob-monitor-editor-input" label="Перейти к посылке или коробке"
+                variant="outlined" hide-details autocomplete="off" data-testid="scanjob-monitor-jump-input"
+                :disabled="isLoading || jumpLoading" @keydown.enter.prevent="handleJumpToNumber"
+                @keydown.esc.prevent.stop="cancelEditor" />
+              <ActionButton
+                :item="{}"
+                icon="fa-solid fa-check"
+                icon-size="2x"
+                tooltip-text="Перейти"
+                aria-label="Перейти"
+                data-testid="scanjob-monitor-jump-action"
+                :disabled="isJumpDisabled"
+                @click="handleJumpToNumber"
+              />
+              <ActionButton
+                :item="{}"
+                icon="fa-solid fa-xmark"
+                icon-size="2x"
+                tooltip-text="Отменить"
+                aria-label="Отменить переход"
+                data-testid="scanjob-monitor-jump-cancel"
+                :disabled="isLoading || jumpLoading"
+                @click="cancelEditor"
+              />
+            </div>
+            <FieldError name="jumpNumber" :errors="jumpValidation" />
+          </form>
+          <ActionButton v-else :item="{}" icon="fa-solid fa-angles-right" icon-size="2x"
+            tooltip-text="Перейти к посылке или коробке" aria-label="Перейти к посылке или коробке"
+            data-testid="scanjob-monitor-jump-open" :disabled="isLoading || followApplyLoading" @click="startEditor('jump')" />
           <ActionButton
-            :item="{}"
-            icon="fa-solid fa-angles-right"
-            icon-size="2x"
-            tooltip-text="Перейти"
-            aria-label="Перейти"
-            data-testid="scanjob-monitor-jump-action"
-            :disabled="isJumpDisabled"
-            @click="handleJumpToNumber"
-          />
-          <span
-            v-if="jumpLoading"
-            class="spinner-border spinner-border-m"
-            data-testid="scanjob-monitor-jump-loading"
-          ></span>
-        </form>
-        <div class="header-actions header-actions-group scanjob-monitor-follow-user">
-          <v-select
-            v-model="selectedFollowUserId"
-            :items="followUserOptions"
-            item-title="title"
-            item-value="value"
-            density="compact"
-            variant="outlined"
-            label="Следить за сканером"
-            hide-details
-            :loading="followUsersLoading"
-            :disabled="isLoading || followUsersLoading"
-            data-testid="scanjob-monitor-follow-user-select"
-            @keydown.esc.prevent.stop="clearFollowUserSelection"
-          />
-        </div>
-        <div v-if="!isBoxMode" class="header-actions header-actions-group">
-          <ActionButton
+            v-if="!isBoxMode"
             :item="{}"
             icon="fa-solid fa-rectangle-list"
             icon-size="2x"
             tooltip-text="Стикеры не в реестре"
             aria-label="Стикеры не в реестре"
             data-testid="scanjob-monitor-unregistered-action"
-            class="monitor-summary-action"
             :disabled="!registerId"
             @click="openUnregisteredParcels"
           />
         </div>
-
+        <div class="header-actions header-actions-group scanjob-monitor-follow-user">
+          <div v-if="activeEditor === 'follow'" class="scanjob-monitor-editor-row">
+            <v-select ref="followInput" v-model="draftFollowUserId" :items="followUserOptions" item-title="title" item-value="value"
+              density="compact" variant="outlined" class="scanjob-monitor-editor-input" label="Следить за сканером"
+              hide-details :disabled="isLoading || followUsersLoading || followApplyLoading"
+              data-testid="scanjob-monitor-follow-user-select" @keydown.esc.prevent.stop="clearFollowUserSelection" />
+            <ActionButton
+              :item="{}"
+              icon="fa-solid fa-check"
+              icon-size="2x"
+              tooltip-text="Применить выбор сканера"
+              aria-label="Применить выбор сканера"
+              data-testid="scanjob-monitor-follow-user-apply"
+              :disabled="isLoading || followUsersLoading || followApplyLoading"
+              @click="applyFollowUserSelection"
+            />
+            <ActionButton
+              :item="{}"
+              icon="fa-solid fa-xmark"
+              icon-size="2x"
+              tooltip-text="Отменить"
+              aria-label="Отменить выбор сканера"
+              data-testid="scanjob-monitor-follow-user-cancel"
+              :disabled="isLoading || followApplyLoading"
+              @click="cancelEditor"
+            />
+          </div>
+          <ActionButton v-else :item="{}" icon="fa-solid fa-magnifying-glass-plus" icon-size="2x"
+            :variant="followSubscriptionActive ? 'green' : 'default'"
+            tooltip-text="Следить за сканером" aria-label="Следить за сканером" data-testid="scanjob-monitor-follow-user-open"
+            :disabled="isLoading || followUsersLoading || jumpLoading" @click="startEditor('follow')" />
+        </div>
         <div class="header-actions header-actions-group">
           <ActionButton
             :item="{}"
@@ -1008,7 +1077,7 @@ defineExpose({
 
     <hr class="hr" />
 
-    <PageAlertRegion />
+    <PageAlertRegion v-if="!printingPanel?.configurationOpen" />
     <div v-if="readOnly" class="alert alert-warning read-only-notice">
       Изменения и операции сканирования запрещены. Мониторинг и просмотр посылок доступны.
     </div>
@@ -1053,6 +1122,7 @@ defineExpose({
           :snapshot="visibleSnapshot"
           :boxes="boxes"
           :loading="isLoading"
+          :print-queue="printQueue"
           @open-box="navigateToBoxMonitor"
         />
 
@@ -1064,6 +1134,7 @@ defineExpose({
           :loading="isLoading"
           :defect-action-loading="defectActionRunning || readOnly"
           :selected-parcel-id="selectedParcelId"
+          :print-queue="printQueue"
           @edit-parcel="editParcel"
           @set-defect="setParcelDefect"
           @clear-defect="clearParcelDefect"
@@ -1078,49 +1149,13 @@ defineExpose({
   min-height: 320px;
 }
 
-.scanjob-monitor-jump {
-  gap: 8px;
-}
-
-.scanjob-monitor-jump-input {
-  min-width: 300px;
-}
-
-.scanjob-monitor-follow-user {
+.scanjob-monitor-editor-row {
+  display: flex;
   align-items: center;
-  min-width: 260px;
-  min-height: 50px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  box-shadow: none;
+  gap: 4px;
 }
-
-.scanjob-monitor-follow-user :deep(.v-input),
-.scanjob-monitor-follow-user :deep(.v-input__control),
-.scanjob-monitor-follow-user :deep(.v-field) {
-  height: 50px;
-  min-height: 50px;
-}
-
-.scanjob-monitor-follow-user :deep(.v-field) {
-  --v-field-border-radius: 0.5rem;
-  border-radius: 0.5rem;
-}
-
-.scanjob-monitor-follow-user :deep(.v-field__outline) {
-  border-radius: inherit;
-}
-
-.scanjob-monitor-follow-user :deep(.v-field__input) {
-  min-height: 50px;
-  padding-top: 0;
-  padding-bottom: 0;
-  align-items: center;
-}
-
-.monitor-summary-action {
-  margin-left: auto;
-  flex: 0 0 auto;
+.scanjob-monitor-editor-input {
+  width: min(300px, calc(100vw - 160px));
+  min-width: 0;
 }
 </style>

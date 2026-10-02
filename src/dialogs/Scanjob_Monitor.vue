@@ -4,7 +4,7 @@
 // This file is a part of Logibooks ui application
 
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, provide, ref, watch } from 'vue'
 import { isNavigationFailure, NavigationFailureType } from 'vue-router'
 import router from '@/router'
 import { storeToRefs } from 'pinia'
@@ -14,6 +14,8 @@ import { useRegistersStore } from '@/stores/registers.store.js'
 import { useScanjobsStore } from '@/stores/scanjobs.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useScanjobHeading } from '@/composables/useScanjobHeading.js'
+import LocalLabelPrinting from '@/components/LocalLabelPrinting.vue'
+import { LABEL_PRINTING_KEY } from '@/helpers/label.printing.helpers.js'
 import ActionButton from '@/components/ActionButton.vue'
 import ScanjobBoxesMonitor from '@/dialogs/Scanjob_Boxes_Monitor.vue'
 import ScanjobParcelsMonitor from '@/dialogs/Scanjob_Parcels_Monitor.vue'
@@ -59,6 +61,12 @@ const { scanjob, monitorLoading, monitorError, monitorClosed } = storeToRefs(sca
 const isComponentMounted = ref(true)
 const scanjobIdRef = computed(() => props.scanjobId)
 const { loadScanjob } = useScanjobHeading(scanjobIdRef, { isComponentMounted })
+
+const printingPanel = ref(null)
+provide(LABEL_PRINTING_KEY, {
+  busy: computed(() => printingPanel.value?.busy ?? true),
+  print: (target) => printingPanel.value?.printParcel(target)
+})
 
 const mode = ref(MODE_REGISTER)
 const selectedArea = ref(scanJobsStore.scanjobMonitorArea.Boxes)
@@ -1009,6 +1017,7 @@ defineExpose({
     <hr class="hr" />
 
     <PageAlertRegion />
+    <LocalLabelPrinting ref="printingPanel" :scan-job-id="props.scanjobId" :user-id="selectedFollowUserId" :active="scanjob?.status === SCAN_JOB_STATUS_IN_PROGRESS && !closedInfo" />
     <div v-if="readOnly" class="alert alert-warning read-only-notice">
       Изменения и операции сканирования запрещены. Мониторинг и просмотр посылок доступны.
     </div>

@@ -9,6 +9,8 @@ import ScanjobMonitor from '@/dialogs/Scanjob_Monitor.vue'
 import { defaultGlobalStubs } from './helpers/test-utils'
 import { OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 
+vi.mock('@/composables/useAppConfirm.js', () => ({ useAppConfirm: () => vi.fn().mockResolvedValue(true) }))
+
 const mockBack = vi.hoisted(() => vi.fn())
 const mockPush = vi.hoisted(() => vi.fn())
 const mockReplace = vi.hoisted(() => vi.fn())

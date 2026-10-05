@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { printingRequest, printingApi, createPrintChannel } from '@/services/printing.api.js'
 import { flushPromises } from '@vue/test-utils'
+import { roleAdmin, roleWhManager, roleWhOperator } from '@/helpers/user.roles.js'
 const auth = vi.hoisted(() => ({ user: { token: 'token' } }))
 const hub = vi.hoisted(() => ({ on: vi.fn(), onclose: vi.fn(), onreconnecting: vi.fn(), onreconnected: vi.fn(), start: vi.fn(), stop: vi.fn(), invoke: vi.fn() }))
 const builder = vi.hoisted(() => ({ withUrl: vi.fn(), withAutomaticReconnect: vi.fn(), build: vi.fn() }))
@@ -41,6 +42,24 @@ describe('dedicated live printing channel', () => {
     const event = vi.fn(), error = vi.fn(), channel = createPrintChannel(event, error)
     return { channel, event, error }
   }
+  it.each([roleAdmin, roleWhManager, roleWhOperator])(
+    'authenticates as the UI %s while subscribing to a different scanner user', async (role) => {
+      auth.user = { id: 100, roles: [role], token: 'ui-user-token' }
+      const fetch = vi.fn().mockResolvedValue(response('{}'))
+      vi.stubGlobal('fetch', fetch)
+      const { channel, event } = setup()
+      await channel.start(42, 9)
+      expect(builder.withUrl.mock.calls[0][1].accessTokenFactory()).toBe('ui-user-token')
+      expect(hub.invoke).toHaveBeenCalledExactlyOnceWith('ObserveScanJobFollowUser', { scanJobId: 42, userId: 9 })
+      const scan = { scanJobId: 42, userId: 9, scanCodeId: 8 }
+      hub.on.mock.calls[0][1](scan)
+      expect(event).toHaveBeenCalledExactlyOnceWith(scan)
+      await printingApi.label({ scanJobId: 42, scanCodeId: 8, template: 'KGT' })
+      expect(fetch.mock.calls[0][0]).toContain('/scanjobs/42/monitor/scans/8/label?template=KGT')
+      expect(fetch.mock.calls[0][1].headers.Authorization).toBe('Bearer ui-user-token')
+      await channel.stop()
+    }
+  )
   it('consumes only live follow events and resubscribes without snapshots', async () => {
     const { channel, event, error } = setup()
     await channel.start(42, 8)

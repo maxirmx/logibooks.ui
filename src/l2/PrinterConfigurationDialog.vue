@@ -37,7 +37,7 @@ const printerOptions = computed(() => [...props.printers].sort(
 ))
 const printerSelectionDisabled = computed(() => props.busy || props.printing)
 const modeOptions = computed(() => [
-  { title: 'Отключена', value: 'Off' },
+  { title: 'Отключён', value: 'Off' },
   { title: 'Таджикистан', value: 'TJ', props: { disabled: !props.active || !props.userId || !props.selected } },
   { title: 'КГТ', value: 'KGT', props: { disabled: !props.active || !props.userId || !props.selected } }
 ])
@@ -92,9 +92,19 @@ function close() {
       </div>
       <FieldError name="printer" :errors="invalidPrinter ? { printer: 'Выберите доступный принтер' } : {}" />
       <p v-if="!connected" data-testid="printer-status">QZ Tray отключён</p>
-      <v-select :model-value="mode" :items="modeOptions" item-title="title" item-value="value"
-        label="Режим автомаркировки" density="compact" variant="outlined" hide-details
-        :disabled="busy || pendingPrint" data-testid="auto-print-mode" @update:model-value="(value) => emit('mode', value)" />
+      <v-select 
+        :model-value="mode" 
+        :items="modeOptions" 
+        item-title="title" 
+        item-value="value"
+        label="Режим автомаркировки" 
+        density="compact" 
+        variant="outlined" 
+        hide-details
+        :disabled="busy || pendingPrint" 
+        data-testid="auto-print-mode" 
+        @update:model-value="(value) => emit('mode', value)" 
+      />
       <p v-if="paused">Печать приостановлена</p>
       <p v-if="failed" data-testid="failed-print">Повторить скан {{ failed.scanCodeId }} ({{ failed.template }})</p>
       <p v-if="overflow" data-testid="print-overflow">Переполнение начиная со скана {{ overflow.scanCodeId }}. Выключите автомаркировку и проверьте сканы.</p>

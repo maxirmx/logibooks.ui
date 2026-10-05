@@ -30,7 +30,7 @@ const props = defineProps({
     </div>
     <div v-if="props.printQueue" class="monitor-summary-item" data-testid="scanjob-monitor-print-queue">
       <div class="monitor-summary-content">
-        <div class="monitor-summary-label">Этикетки в очереди печати</div>
+        <div class="monitor-summary-label">Очередь печати</div>
         <div class="monitor-summary-value">{{ props.printQueue.queued }}{{ props.printQueue.paused ? ' — приостановлена' : '' }}</div>
       </div>
     </div>

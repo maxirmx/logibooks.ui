@@ -24,7 +24,15 @@ while choosing a printer does not change the captured print operation.
 For automatic relabeling, open **Следить за сканером**, choose an operator and apply
 with the check icon. Closing the editor discards draft changes; Escape immediately
 stops following. Open print settings and select **КГТ** or **Таджикистан** under
-**Режим автомаркировки**. Without a printer, only **Отключена** is available.
+**Режим автомаркировки**. Without a printer, only **Отключён** is available.
+The UI and scanner may use different accounts. Select the account actually logged
+in to the scanner under **Следить за сканером**. The UI account authenticates the
+printing requests; the selected scanner account determines which live scans print.
+Администратор, Менеджер склада, and Оператор склада can use local printing.
+Warehouse-only accounts must have access to the scan job's warehouse; this applies
+independently to the UI account and the scanner account.
+For **КГТ**, also enable КГТ relabeling in the scanner app: the UI printing mode
+selects labels to print and does not enable number assignment on the scanner.
 Only Core's live `printCandidates` are
 accepted for this job/operator and mode. TJ maps to `TJ_EXPORT`. Core decides
 eligibility and assigns KGT numbers. Initial snapshots and reconnect snapshots
@@ -54,6 +62,11 @@ it keeps the pause if either is unavailable.
 The queue holds at most 50 waiting labels. Overflow displays the first unaccepted
 scan and pauses; stop automatic printing and check the affected scans before
 arming again. The UI does not silently replay rows to recover missing work.
+If marking is enabled but scans produce neither a label nor an error, verify the
+selected scanner account and scanner relabeling mode. Check the live
+`ScanJobMonitorFollowEvent`: its `userId` must match the selected scanner account,
+and its `printCandidates` must contain the selected template (`KGT` or `TJ_EXPORT`).
+An empty candidate list means Core did not provide an eligible label for that scan.
 Core cached relabeling results expire on restart, after 24 hours, or on eviction;
 an `Expired` response requires operator recovery, never guessed label content.
 

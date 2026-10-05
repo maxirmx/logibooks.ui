@@ -402,6 +402,27 @@ function getUserName() {
           <v-list-item>
             <RouterLink to="/scanner/wd4" class="link">Настройки WD4</RouterLink>
           </v-list-item>
+
+          <v-list-item v-if="authStore.isAdmin">
+            <a
+              :href="`${baseUrl}downloads/qz-tray-2.3.0-x86_64.exe`"
+              target="_blank"
+              rel="noopener"
+              class="link"
+              >Инсталлятор QZ Tray</a
+            >
+          </v-list-item>
+
+          <v-list-item v-if="authStore.isAdmin">
+            <a
+              :href="`${baseUrl}downloads/override.crt`"
+              target="_blank"
+              rel="noopener"
+              class="link"
+              >Сертификат QZ Tray</a
+            >
+          </v-list-item>
+
         </v-list-group>
 
         <v-list-item>

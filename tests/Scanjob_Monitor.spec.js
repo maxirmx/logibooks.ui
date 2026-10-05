@@ -691,7 +691,7 @@ describe('Scanjob_Monitor.vue', () => {
       { label: 'Коробки всего / сканировано / не сканировано', value: '2 / 1 / 1' },
       { label: 'Посылки всего / сканировано / не сканировано / запретов', value: '5 / 3 / 2 / 2' },
       { label: 'Стикеры не в реестре', value: '1' },
-      { label: 'Этикетки в очереди печати', value: '0' }
+      { label: 'Очередь печати', value: '0' }
     ])
 
     const registerSection = wrapper.get('[data-testid="scanjob-monitor-register"]')
@@ -1371,7 +1371,7 @@ describe('Scanjob_Monitor.vue', () => {
       { label: 'Посылки всего / сканировано / не сканировано / запретов', value: '3 / 2 / 1 / 1' },
       { label: 'Габариты', value: '10,5 × 20 × 30,25 см' },
       { label: 'Вес', value: '4,125 кг' },
-      { label: 'Этикетки в очереди печати', value: '0' }
+      { label: 'Очередь печати', value: '0' }
     ])
 
     expect(wrapper.text()).toContain('P-70')
@@ -1601,7 +1601,7 @@ describe('Scanjob_Monitor.vue', () => {
     expect(summaryItems).toEqual([
       { label: 'Группа посылок', value: 'Без коробки' },
       { label: 'Посылки всего / сканировано / не сканировано / запретов', value: '2 / 1 / 1 / 1' },
-      { label: 'Этикетки в очереди печати', value: '0' }
+      { label: 'Очередь печати', value: '0' }
     ])
 
     expect(wrapper.text()).toContain('PU-90')

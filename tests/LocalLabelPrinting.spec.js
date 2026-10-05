@@ -10,6 +10,7 @@ import ScanjobMonitorSummary from '@/components/ScanjobMonitorSummary.vue'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { LABEL_PRINTING_KEY } from '@/helpers/label.printing.helpers.js'
 import { automaticPrintHistory } from '@/services/label.printing.coordinator.js'
+import { roleAdmin, roleWhManager, roleWhOperator } from '@/helpers/user.roles.js'
 const env = vi.hoisted(() => ({}))
 vi.mock('@/stores/auth.store.js', () => ({ useAuthStore: () => env.auth }))
 vi.mock('@/composables/useAppConfirm.js', () => ({ useAppConfirm: () => env.confirm }))
@@ -53,6 +54,54 @@ async function openSettings() {
 }
 async function arm() { await openSettings(); await panel().get('[data-testid="auto-print-mode"] select').setValue('KGT'); await flushPromises() }
 describe('local printing UI', () => {
+  it.each([roleAdmin, roleWhManager, roleWhOperator].flatMap((role) =>
+    ['KGT', 'TJ'].map((mode) => ({ role, mode }))
+  ))('prints $mode scans from a different scanner account for $role', async ({ role, mode }) => {
+    env.auth.user = { id: 100, roles: [role], token: 'ui-user-token' }
+    await openSettings()
+    const selector = panel().get('[data-testid="auto-print-mode"] select')
+    expect(selector.get(`option[value="${mode}"]`).element.disabled).toBe(false)
+    await selector.setValue(mode)
+    await flushPromises()
+    expect(env.channel.start).toHaveBeenCalledExactlyOnceWith(42, 9)
+    const template = mode === 'KGT' ? 'KGT' : 'TJ_EXPORT'
+    const event = { ...scan(), printCandidates: [{ ...scan().printCandidates[0], template }] }
+    env.event({ ...event, userId: 100 })
+    await flushPromises()
+    expect(env.label).not.toHaveBeenCalled()
+    env.event(event)
+    await flushPromises()
+    expect(env.label).toHaveBeenCalledExactlyOnceWith(event.printCandidates[0])
+    expect(env.qz.submit).toHaveBeenCalledOnce()
+    expect(panel().get('[data-testid="print-settings-action"]').classes()).toContain('anti-btn-green')
+    expect(wrapper.get('[data-testid="page-alert-region"] [role="status"]').text()).toContain('Этикетка отправлена в очередь принтера')
+    expect(errorSpy).not.toHaveBeenCalled()
+  })
+
+  it.each([roleAdmin, roleWhManager, roleWhOperator])(
+    'presents a different operator label failure once and retries it for %s', async (role) => {
+      env.auth.user = { id: 100, roles: [role], token: 'ui-user-token' }
+      await arm()
+      env.label.mockRejectedValueOnce(new Error('label unavailable'))
+      env.event(scan())
+      await flushPromises()
+      expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+      expect(wrapper.get('[role="alert"]').text()).toContain('label unavailable')
+      expect(errorSpy).toHaveBeenCalledOnce()
+      expect(env.qz.submit).not.toHaveBeenCalled()
+      expect(wrapper.vm.job).toBe(42)
+      expect(wrapper.vm.user).toBe(9)
+      expect(panel().vm.queueStatus.paused).toBe(true)
+      await panel().get('[data-testid="retry-print"]').trigger('click')
+      await flushPromises()
+      expect(env.label).toHaveBeenNthCalledWith(2, scan().printCandidates[0])
+      expect(env.qz.submit).toHaveBeenCalledOnce()
+      expect(wrapper.get('[data-testid="page-alert-region"] [role="status"]').text()).toContain('Этикетка отправлена в очередь принтера')
+      expect(panel().vm.queueStatus.paused).toBe(false)
+      expect(errorSpy).toHaveBeenCalledOnce()
+    }
+  )
+
   it('keeps one visible alert region and retains errors when closing configuration', async () => {
     env.qz.connect.mockRejectedValueOnce(new Error('printer list failed'))
     await openSettings()
@@ -72,7 +121,7 @@ describe('local printing UI', () => {
     await openSettings()
     expect(env.qz.connect).toHaveBeenCalledOnce()
     expect(panel().get('[data-testid="printer-selection-inline"] select').findAll('option').map((item) => item.text())).toEqual(['', 'TSC TE200', 'Office A', 'Office Z'])
-    expect(panel().get('[data-testid="auto-print-mode"] select').findAll('option').map((item) => item.text())).toEqual(['', 'Отключена', 'Таджикистан', 'КГТ'])
+    expect(panel().get('[data-testid="auto-print-mode"] select').findAll('option').map((item) => item.text())).toEqual(['', 'Отключён', 'Таджикистан', 'КГТ'])
     await panel().get('[data-testid="printer-selection-inline"] select').setValue('Office A')
     expect(env.qz.select).toHaveBeenCalledWith('Office A')
     expect(wrapper.findAll('[role="dialog"]')).toHaveLength(1)

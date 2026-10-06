@@ -54,6 +54,53 @@ async function openSettings() {
 }
 async function arm() { await openSettings(); await panel().get('[data-testid="auto-print-mode"] select').setValue('KGT'); await flushPromises() }
 describe('local printing UI', () => {
+  it.each(['candidate', 'endpoint'])('shows core validation details once from a %s and preserves failed scan details through retry', async (source) => {
+    env.auth.user = { id: 100, roles: [roleWhOperator], token: 'ui-user-token' }
+    await openSettings()
+    await panel().get('[data-testid="auto-print-mode"] select').setValue('TJ')
+    await flushPromises()
+    const message = 'Не удалось напечатать стикер. Не указаны данные: дата общей накладной.'
+    const event = scan()
+    event.printCandidates[0].template = 'TJ_EXPORT'
+    if (source === 'candidate') {
+      Object.assign(event.printCandidates[0], { errorCode: 'InvalidData', errorMessage: message, revision: null })
+    } else {
+      env.label.mockRejectedValueOnce({ data: { code: 'InvalidData', msg: message } })
+    }
+    env.event(event)
+    await flushPromises()
+    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+    expect(wrapper.get('[role="alert"]').text()).toContain(message)
+    expect(errorSpy).toHaveBeenCalledOnce()
+    expect(env.qz.submit).not.toHaveBeenCalled()
+    expect(wrapper.vm.job).toBe(42)
+    expect(wrapper.vm.user).toBe(9)
+    expect(panel().vm.queueStatus.paused).toBe(true)
+    if (source === 'endpoint') env.label.mockRejectedValueOnce({ data: { code: 'InvalidData', msg: message } })
+    await panel().get('[data-testid="retry-print"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+    expect(wrapper.get('[role="alert"]').text()).toContain(message)
+    expect(errorSpy).toHaveBeenCalledTimes(2)
+    expect(env.qz.submit).not.toHaveBeenCalled()
+    if (source === 'endpoint') {
+      expect(env.label).toHaveBeenCalledTimes(2)
+      expect(env.label).toHaveBeenLastCalledWith(expect.objectContaining({ scanJobId: 42, scanCodeId: 8, template: 'TJ_EXPORT' }))
+    } else {
+      expect(env.label).not.toHaveBeenCalled()
+    }
+    await panel().get('[data-testid="auto-print-mode"] select').setValue('Off')
+    await flushPromises()
+    await panel().get('[data-testid="auto-print-mode"] select').setValue('TJ')
+    await flushPromises()
+    const nextScan = scan(9)
+    nextScan.printCandidates[0].template = 'TJ_EXPORT'
+    env.event(nextScan)
+    await flushPromises()
+    expect(env.label).toHaveBeenLastCalledWith(expect.objectContaining({ scanJobId: 42, scanCodeId: 9, template: 'TJ_EXPORT' }))
+    expect(env.qz.submit).toHaveBeenCalledOnce()
+    expect(errorSpy).toHaveBeenCalledTimes(2)
+  })
   it.each([roleAdmin, roleWhManager, roleWhOperator].flatMap((role) =>
     ['KGT', 'TJ'].map((mode) => ({ role, mode }))
   ))('prints $mode scans from a different scanner account for $role', async ({ role, mode }) => {

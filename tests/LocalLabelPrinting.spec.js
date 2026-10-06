@@ -54,12 +54,15 @@ async function openSettings() {
 }
 async function arm() { await openSettings(); await panel().get('[data-testid="auto-print-mode"] select').setValue('KGT'); await flushPromises() }
 describe('local printing UI', () => {
-  it.each(['candidate', 'endpoint'])('shows core validation details once from a %s and preserves failed scan details through retry', async (source) => {
+  it.each(['candidate', 'endpoint'].flatMap((source) => [
+    'Не удалось напечатать стикер. Не указаны данные: дата общей накладной.',
+    'Не удалось напечатать стикер. Не указаны данные: сумма в рублях.',
+    'Не удалось напечатать стикер. Некорректные значения: сумма в рублях. Укажите числа больше нуля.'
+  ].map((message) => [source, message])))('shows core validation details once from a %s (%s) and preserves failed scan details through retry', async (source, message) => {
     env.auth.user = { id: 100, roles: [roleWhOperator], token: 'ui-user-token' }
     await openSettings()
     await panel().get('[data-testid="auto-print-mode"] select').setValue('TJ')
     await flushPromises()
-    const message = 'Не удалось напечатать стикер. Не указаны данные: дата общей накладной.'
     const event = scan()
     event.printCandidates[0].template = 'TJ_EXPORT'
     if (source === 'candidate') {

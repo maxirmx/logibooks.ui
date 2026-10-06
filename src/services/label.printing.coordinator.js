@@ -86,7 +86,11 @@ export function createLabelPrintingCoordinator({ qz, api, channel, ownership, on
       // Assign the worker before a synchronous candidate error can finish it.
       await Promise.resolve()
       try {
-        if (target.errorCode) throw printingError(target.errorCode)
+        if (target.errorCode) {
+          const error = printingError(target.errorCode)
+          if (target.errorMessage) error.data = { code: target.errorCode, msg: target.errorMessage }
+          throw error
+        }
         await send(target, version)
       } catch (error) {
         if (version === epoch) {

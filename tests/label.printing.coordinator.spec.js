@@ -159,6 +159,16 @@ describe('serial label printing coordinator', () => {
     expect(errors).toHaveBeenCalledTimes(1)
     expect(coordinator.state.failed.scanCodeId).toBe(1)
   })
+  it('propagates detailed candidate validation once without fetching or submitting a label', async () => {
+    await coordinator.arm('TJ')
+    const msg = 'Не удалось напечатать стикер. Не указаны данные: дата общей накладной.'
+    coordinator.consume(event({ ...candidate(8, 'TJ_EXPORT'), revision: null, errorCode: 'InvalidData', errorMessage: msg }))
+    await flushPromises()
+    expect(errors).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ code: 'InvalidData', data: { code: 'InvalidData', msg } }))
+    expect(coordinator.state).toMatchObject({ paused: true, failed: { scanCodeId: 8, template: 'TJ_EXPORT' } })
+    expect(api.label).not.toHaveBeenCalled()
+    expect(qz.submit).not.toHaveBeenCalled()
+  })
   it('surfaces server rendering failures and revision mismatch without sending', async () => {
     await coordinator.arm('KGT')
     coordinator.consume(event({ ...candidate(), errorCode: 'Overflow', revision: null }))

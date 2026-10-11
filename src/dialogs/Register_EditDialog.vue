@@ -397,7 +397,8 @@ const isAviaTransportation = computed(() => {
 })
 
 // Watch for form field changes to update UI reactively
-function handleTransportationTypeChange(e, setFieldValue, handleChange) {
+function handleTransportationTypeChange(e, setFieldValue, handleChange, values) {
+  const wasAvia = isAviaTransportation.value
   const newValue = e.target.value
   currentTransportationTypeId.value = newValue ? parseInt(newValue, 10) : null
   item.value.transportationTypeCode = currentTransportationTypeId.value
@@ -409,6 +410,14 @@ function handleTransportationTypeChange(e, setFieldValue, handleChange) {
   const type = getTransportationTypeByValue(currentTransportationTypeId.value)
 
   if (!type?.isAvia) {
+    if (wasAvia) {
+      item.value.departureAirportId = parseNumber(
+        values?.departureAirportId ?? item.value.departureAirportId, 0
+      )
+      item.value.arrivalAirportId = parseNumber(
+        values?.arrivalAirportId ?? item.value.arrivalAirportId, 0
+      )
+    }
     // Clear form fields only (not item.value) when switching to non-aviation transport
     if (setFieldValue && typeof setFieldValue === 'function') {
       setFieldValue('departureAirportId', 0)
@@ -590,6 +599,17 @@ function isValidIsoCalendarDate(value) {
   return day >= 1 && day <= daysInMonth[month - 1]
 }
 
+function aviaAirportSchema(message) {
+  return Yup.number()
+    .transform(parseNumberOrZero)
+    .min(0)
+    .nullable()
+    .test('avia-airport-required', message, function (value) {
+      const typeId = this.parent.transportationTypeCode ?? item.value?.transportationTypeCode
+      return !isAviaTransportationValue(typeId) || (value ?? 0) > 0
+    })
+}
+
 const schema = Yup.object().shape({
   dealNumber: Yup.string().nullable(),
   customerOrderNumber: Yup.string().trim().nullable(),
@@ -619,8 +639,8 @@ const schema = Yup.object().shape({
     .transform((value) => (value === '' ? null : value))
     .typeError('Необходимо выбрать страну')
     .required('Необходимо выбрать страну'),
-  departureAirportId: Yup.number().transform(parseNumberOrZero).min(0).nullable(),
-  arrivalAirportId: Yup.number().transform(parseNumberOrZero).min(0).nullable(),
+  departureAirportId: aviaAirportSchema('Необходимо выбрать аэропорт отправления'),
+  arrivalAirportId: aviaAirportSchema('Необходимо выбрать аэропорт назначения'),
   warehouseId: Yup.number()
     .transform(parseNumberOrZero)
     .min(0)
@@ -695,6 +715,14 @@ const proceduresLoaded = computed(() => filteredCustomsProcedures.value.length >
 
 const typesLoaded = computed(
   () => Array.isArray(ops.value?.transportationTypes) && ops.value.transportationTypes.length > 0
+)
+
+const canSubmit = computed(
+  () =>
+    !isInitializing.value &&
+    !registerLoadFailed.value &&
+    typesLoaded.value &&
+    (!readOnly.value || unref(authStore.isAdmin))
 )
 
 const registerStatusesLoaded = computed(
@@ -975,7 +1003,7 @@ function prepareRegisterPayload(formValues) {
 
 async function onSubmit(values, { setErrors } = {}) {
   if (!isComponentMounted.value) return
-  if (readOnly.value && !unref(authStore.isAdmin)) return
+  if (!canSubmit.value) return
 
   // Guard against multiple submissions
   if (isSubmitting.value) return
@@ -1199,7 +1227,7 @@ const loadReportFields = computed(() => {
       @submit="onSubmit"
       :initial-values="item"
       :validation-schema="schema"
-      v-slot="{ errors, setFieldValue, handleSubmit }"
+      v-slot="{ errors, values, setFieldValue, handleSubmit }"
     >
       <div class="header-with-actions">
         <h1 class="primary-heading responsive-edit-heading">
@@ -1212,12 +1240,7 @@ const loadReportFields = computed(() => {
             icon="fa-solid fa-check-double"
             :iconSize="'2x'"
             tooltip-text="Сохранить"
-            :disabled="
-              isSubmitting ||
-              isInitializing ||
-              registerLoadFailed ||
-              (readOnly && !authStore.isAdmin)
-            "
+            :disabled="isSubmitting || !canSubmit"
             @click="handleSubmit(onSubmit)"
           />
           <ActionButton
@@ -1414,12 +1437,16 @@ const loadReportFields = computed(() => {
               name="departureAirportId"
               :airports="airportOptions"
               :disabled="!isAviaTransportation"
+              :required="isAviaTransportation"
+              :errors="errors"
             />
             <AirportSelectField
               label="Аэропорт назначения:"
               name="arrivalAirportId"
               :airports="airportOptions"
               :disabled="!isAviaTransportation"
+              :required="isAviaTransportation"
+              :errors="errors"
             />
           </div>
 
@@ -1432,7 +1459,7 @@ const loadReportFields = computed(() => {
                   class="form-control input"
                   :disabled="!typesLoaded"
                   :value="getTransportationTypeFieldValue(field?.value)"
-                  @change="(e) => handleTransportationTypeChange(e, setFieldValue, handleChange)"
+                  @change="(e) => handleTransportationTypeChange(e, setFieldValue, handleChange, values)"
                 >
                   <option value="">Выберите тип</option>
                   <option v-for="t in ops.transportationTypes" :key="t.value" :value="t.value">
@@ -1732,7 +1759,7 @@ const loadReportFields = computed(() => {
 
       <!-- actions moved to header -->
       <div class="form-actions" style="display: none">
-        <button class="button primary" type="submit" :disabled="isSubmitting">
+        <button class="button primary" type="submit" :disabled="isSubmitting || !canSubmit">
           <span v-show="isSubmitting" class="spinner-border spinner-border-sm mr-1"></span>
           <font-awesome-icon size="1x" icon="fa-solid fa-check-double" class="mr-1" />
           {{ getButton() }}

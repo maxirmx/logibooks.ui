@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref, nextTick } from 'vue'
 import { createPinia, setActivePinia } from 'pinia'
@@ -19,6 +19,7 @@ import {
 } from '@/helpers/company.constants.js'
 import { formatDate } from '@/helpers/date.formatters.js'
 import { CUSTOMS_PROCEDURE_RETURN } from '@/helpers/customs.procedure.helpers.js'
+import { useAlertStore } from '@/stores/alert.store.js'
 
 // No need to mock vuetify-use-dialog anymore since we use custom ErrorDialog
 const CUSTOMS_PROCEDURE_EXPORT = 10
@@ -417,6 +418,254 @@ describe('Register_EditDialog', () => {
         { value: 2, charCode: 'CPT', name: 'Перевозка оплачена до' }
       ]
     }
+  })
+
+  describe('AVIA airport validation with real form controls', () => {
+    let wrapper
+
+    async function mountForm({ create = false, values = {}, waitForReady = true } = {}) {
+      mockItem.value = {
+        ...baseRegisterItem,
+        transportationTypeCode: 0,
+        theOtherCountryCode: 840,
+        ...values
+      }
+      registersStore.uploadFile.value = new File(['data'], 'register.xlsx')
+      wrapper = mount(
+        {
+          components: { RegisterEditDialog },
+          template: '<Suspense><RegisterEditDialog :id="1" :create="create" /></Suspense>',
+          setup: () => ({ create })
+        },
+        {
+          attachTo: document.body,
+          global: {
+            stubs: {
+              ...defaultGlobalStubs,
+              ErrorDialog: ErrorDialogStub,
+              RegisterCurrencySelectionDialog: CurrencySelectionDialogStub
+            }
+          }
+        }
+      )
+      await resolveAll()
+      if (waitForReady) {
+        await vi.waitFor(() => expect(wrapper.get('.header-actions button').element.disabled).toBe(false))
+      }
+      return wrapper.findComponent(RegisterEditDialog)
+    }
+
+    afterEach(() => {
+      wrapper?.unmount()
+    })
+
+    it.each([
+      ['departureAirportId', 'Необходимо выбрать аэропорт отправления'],
+      ['arrivalAirportId', 'Необходимо выбрать аэропорт назначения']
+    ])('rejects every unselected value for %s', async (field, message) => {
+      const dialog = await mountForm()
+      for (const value of [0, '0', '', null, undefined, 'invalid']) {
+        await expect(
+          dialog.vm.schema.validate({
+            transportationTypeCode: '0',
+            theOtherCountryCode: 840,
+            departureAirportId: '1',
+            arrivalAirportId: '2',
+            [field]: value
+          })
+        ).rejects.toMatchObject({ path: field, message })
+      }
+    })
+
+    it('uses transport metadata and the existing item when the form has no transport value', async () => {
+      const dialog = await mountForm({ values: { transportationTypeCode: '7' } })
+      mockOps.value.transportationTypes = [{ value: '7', isAvia: true }]
+      await expect(
+        dialog.vm.schema.validate({ theOtherCountryCode: 840 })
+      ).rejects.toThrow('Необходимо выбрать аэропорт')
+      await expect(
+        dialog.vm.schema.validate({
+          theOtherCountryCode: 840,
+          departureAirportId: '1',
+          arrivalAirportId: '2'
+        })
+      ).resolves.toMatchObject({ departureAirportId: 1, arrivalAirportId: 2 })
+    })
+
+    it.each([
+      [false, 0, 0],
+      [false, 0, 2],
+      [false, 1, 0],
+      [true, 0, 0],
+      [true, 0, 2],
+      [true, 1, 0]
+    ])('blocks create=%s with airports %s/%s until corrected', async (create, departure, arrival) => {
+      await mountForm({ create, values: { departureAirportId: departure, arrivalAirportId: arrival } })
+      const expectedErrors = Number(!departure) + Number(!arrival)
+
+      // Exercise the header action, which must run the same validation as form submission.
+      await wrapper.get('.header-actions button').trigger('click')
+      await vi.waitFor(() => expect(wrapper.findAll('.invalid-feedback')).toHaveLength(expectedErrors))
+
+      for (const [field, selected, message] of [
+        ['departureAirportId', departure, 'Необходимо выбрать аэропорт отправления'],
+        ['arrivalAirportId', arrival, 'Необходимо выбрать аэропорт назначения']
+      ]) {
+        const select = wrapper.get(`#${field}`)
+        expect(select.attributes('aria-required')).toBe('true')
+        expect(select.attributes('aria-invalid')).toBe(String(!selected))
+        if (!selected) {
+          const error = wrapper.get(`#${field}-error`)
+          expect(error.text()).toBe(message)
+          expect(error.attributes('role')).toBe('alert')
+          expect(select.attributes('aria-describedby')).toBe(error.attributes('id'))
+          expect(select.classes()).toContain('is-invalid')
+          // A direct sibling error uses the shared full-width validation row.
+          expect(error.element.previousElementSibling).toBe(select.element)
+        }
+      }
+      expect(document.activeElement.getAttribute('aria-invalid')).toBe('true')
+      expect(['departureAirportId', 'arrivalAirportId']).toContain(document.activeElement.id)
+      expect(update).not.toHaveBeenCalled()
+      expect(upload).not.toHaveBeenCalled()
+      expect(router.push).not.toHaveBeenCalled()
+      expect(wrapper.get('#dealNumber').element.value).toBe('D1')
+      expect(wrapper.find('[data-testid="page-alert-region"]').exists()).toBe(false)
+
+      await wrapper.get('#departureAirportId').setValue('1')
+      await wrapper.get('#arrivalAirportId').setValue('2')
+      await wrapper.get('form').trigger('submit')
+      await vi.waitFor(() => expect(router.push).toHaveBeenCalledOnce())
+      expect(update).toHaveBeenCalledExactlyOnceWith(
+        create ? 42 : 1,
+        expect.objectContaining({ transportationTypeCode: 0, departureAirportId: 1, arrivalAirportId: 2 })
+      )
+      expect(upload).toHaveBeenCalledTimes(create ? 1 : 0)
+      expect(wrapper.findAll('.invalid-feedback')).toHaveLength(0)
+    })
+
+    it('clears AVIA errors and submits zero airports after switching to Auto', async () => {
+      await mountForm()
+      await wrapper.get('form').trigger('submit')
+      await vi.waitFor(() => expect(wrapper.findAll('.invalid-feedback')).toHaveLength(2))
+      await wrapper.get('#transportationTypeCode').setValue('1')
+      await vi.waitFor(() => expect(wrapper.findAll('.invalid-feedback')).toHaveLength(0))
+      expect(wrapper.get('#departureAirportId').element.disabled).toBe(true)
+      expect(wrapper.get('#arrivalAirportId').attributes('aria-required')).toBe('false')
+      await wrapper.get('form').trigger('submit')
+      await vi.waitFor(() => expect(update).toHaveBeenCalledOnce())
+      expect(update).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({ transportationTypeCode: 1, departureAirportId: 0, arrivalAirportId: 0 })
+      )
+    })
+
+    it('restores newly selected airports after switching away from and back to AVIA', async () => {
+      await mountForm()
+      mockOps.value.transportationTypes.push({ value: 2, name: 'Поезд', isAvia: false })
+      await wrapper.get('#departureAirportId').setValue('2')
+      await wrapper.get('#arrivalAirportId').setValue('1')
+      await wrapper.get('#transportationTypeCode').setValue('1')
+      await wrapper.get('#transportationTypeCode').setValue('2')
+      await wrapper.get('#transportationTypeCode').setValue('0')
+      expect(wrapper.get('#departureAirportId').element.value).toBe('2')
+      expect(wrapper.get('#arrivalAirportId').element.value).toBe('1')
+      await wrapper.get('.header-actions button').trigger('click')
+      await vi.waitFor(() => expect(update).toHaveBeenCalledOnce())
+      expect(update).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({ departureAirportId: 2, arrivalAirportId: 1 })
+      )
+    })
+
+    it('blocks submissions until delayed transport metadata is available', async () => {
+      const pendingOps = createDeferred()
+      mockOps.value.transportationTypes = []
+      registersStore.ensureOpsLoaded.mockReturnValueOnce(pendingOps.promise)
+      const dialog = await mountForm({ waitForReady: false })
+      expect(wrapper.get('.header-actions button').element.disabled).toBe(true)
+      expect(wrapper.get('button[type="submit"]').element.disabled).toBe(true)
+      await dialog.vm.onSubmit({ transportationTypeCode: 0 })
+      expect(update).not.toHaveBeenCalled()
+
+      mockOps.value.transportationTypes = [{ value: 0, isAvia: true }]
+      pendingOps.resolve()
+      await vi.waitFor(() => expect(wrapper.get('.header-actions button').element.disabled).toBe(false))
+      await wrapper.get('form').trigger('submit')
+      await vi.waitFor(() => expect(wrapper.findAll('.invalid-feedback')).toHaveLength(2))
+      expect(mockItem.value.transportationTypeCode).toBe(0)
+      expect(update).not.toHaveBeenCalled()
+      expect(router.push).not.toHaveBeenCalled()
+    })
+
+    it('shows a metadata rejection once and retries loading before validating airports', async () => {
+      mockOps.value.transportationTypes = []
+      registersStore.ensureOpsLoaded
+        .mockRejectedValueOnce(new Error('Не удалось загрузить типы транспорта'))
+        .mockImplementationOnce(async () => {
+          mockOps.value.transportationTypes = [{ value: 0, isAvia: true }]
+        })
+      const alertStore = useAlertStore()
+      const publishError = vi.spyOn(alertStore, 'error')
+      await mountForm({ waitForReady: false })
+      await vi.waitFor(() => expect(wrapper.get('.page-alert-region').text()).toContain('Не удалось загрузить типы транспорта'))
+      expect(publishError).toHaveBeenCalledOnce()
+      expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+      expect(wrapper.get('hr.hr').element.nextElementSibling).toBe(wrapper.get('.page-alert-region').element)
+      expect(wrapper.get('.header-actions button').element.disabled).toBe(true)
+      await wrapper.get('form').trigger('submit')
+      await resolveAll()
+      expect(update).not.toHaveBeenCalled()
+      expect(router.push).not.toHaveBeenCalled()
+
+      await wrapper.get('.page-alert-region__action').trigger('click')
+      await vi.waitFor(() => expect(wrapper.get('.header-actions button').element.disabled).toBe(false))
+      expect(registersStore.ensureOpsLoaded).toHaveBeenCalledTimes(2)
+      expect(airportsStore.getAll).toHaveBeenCalledOnce()
+      await wrapper.get('form').trigger('submit')
+      await vi.waitFor(() => expect(wrapper.findAll('.invalid-feedback')).toHaveLength(2))
+      expect(publishError).toHaveBeenCalledOnce()
+      expect(update).not.toHaveBeenCalled()
+    })
+
+    it('keeps airport selections after a save rejection and retries the same update', async () => {
+      update.mockRejectedValueOnce(new Error('Не удалось сохранить реестр'))
+      const alertStore = useAlertStore()
+      const publishError = vi.spyOn(alertStore, 'error')
+      await mountForm({ values: { departureAirportId: 1, arrivalAirportId: 2 } })
+      await wrapper.get('.header-actions button').trigger('click')
+      await vi.waitFor(() => expect(wrapper.get('.page-alert-region').text()).toContain('Не удалось сохранить реестр'))
+      expect(publishError).toHaveBeenCalledOnce()
+      expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+      expect(router.push).not.toHaveBeenCalled()
+      expect(wrapper.get('#departureAirportId').element.value).toBe('1')
+      expect(wrapper.get('#arrivalAirportId').element.value).toBe('2')
+      expect(wrapper.get('#dealNumber').element.value).toBe('D1')
+
+      await wrapper.get('.header-actions button').trigger('click')
+      await vi.waitFor(() => expect(router.push).toHaveBeenCalledOnce())
+      expect(update).toHaveBeenCalledTimes(2)
+      expect(update.mock.calls[1]).toEqual(update.mock.calls[0])
+      expect(upload).not.toHaveBeenCalled()
+      expect(publishError).toHaveBeenCalledOnce()
+    })
+
+    it('maps server airport validation errors beneath the fields without a duplicate notification', async () => {
+      update.mockRejectedValueOnce({
+        errors: { DepartureAirportId: ['Аэропорт отправления недоступен'] }
+      })
+      const publishError = vi.spyOn(useAlertStore(), 'error')
+      await mountForm({ values: { departureAirportId: 1, arrivalAirportId: 2 } })
+      await wrapper.get('form').trigger('submit')
+      await vi.waitFor(() => expect(wrapper.get('#departureAirportId-error').text()).toBe('Аэропорт отправления недоступен'))
+      expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+      expect(publishError).not.toHaveBeenCalled()
+      expect(router.push).not.toHaveBeenCalled()
+      await wrapper.get('#departureAirportId').setValue('2')
+      await wrapper.get('form').trigger('submit')
+      await vi.waitFor(() => expect(router.push).toHaveBeenCalledOnce())
+      expect(update).toHaveBeenLastCalledWith(1, expect.objectContaining({ departureAirportId: 2 }))
+    })
   })
 
   it('loads data and renders fields', async () => {
@@ -1111,6 +1360,8 @@ describe('Register_EditDialog', () => {
       dialog.vm.schema.validate({
         transportationTypeCode: 0,
         invoiceNumber: '123-12345678',
+        departureAirportId: 1,
+        arrivalAirportId: 2,
         theOtherCountryCode: 840
       })
     ).resolves.toBeDefined()
@@ -1119,6 +1370,8 @@ describe('Register_EditDialog', () => {
       dialog.vm.schema.validate({
         transportationTypeCode: 0,
         invoiceNumber: '12-ABC',
+        departureAirportId: 1,
+        arrivalAirportId: 2,
         theOtherCountryCode: 840
       })
     ).rejects.toThrow(

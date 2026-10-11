@@ -28,7 +28,7 @@ const airportOptions = computed(() => {
 
 <template>
   <div class="form-group">
-    <label class="label" :for="name">{{ label }}<span v-if="required"> *</span></label>
+    <label class="label" :for="name">{{ label }}</label>
     <Field
       :name="name"
       :id="name"

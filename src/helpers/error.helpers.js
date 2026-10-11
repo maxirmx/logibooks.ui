@@ -96,8 +96,10 @@ export function reportFormError(
         .filter(Boolean)
         .join(' ')
     : ''
+  // ErrMessage.msg summarizes field failures. Only an explicit general error
+  // accompanies mapped field errors; the summary remains the fallback for other callers.
   const explicitGeneral =
-    generalFromErrors || nonEmptyString(payload?.msg) || nonEmptyString(payload?.message)
+    generalFromErrors || (!hasFieldErrors && nonEmptyString(payload?.msg)) || nonEmptyString(payload?.message)
 
   if (!hasFieldErrors || explicitGeneral || typeof setErrors !== 'function') {
     alertStore?.error(explicitGeneral || error, { fallback })

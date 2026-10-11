@@ -20,7 +20,7 @@ import ActionButton from '@/components/ActionButton.vue'
 import FieldError from '@/components/FieldError.vue'
 import ScanjobBoxesMonitor from '@/dialogs/Scanjob_Boxes_Monitor.vue'
 import ScanjobParcelsMonitor from '@/dialogs/Scanjob_Parcels_Monitor.vue'
-import { buildParcelListHeading } from '@/helpers/register.heading.helpers.js'
+import { formatRegisterInvoice } from '@/helpers/register.heading.helpers.js'
 import { navigateToEditParcel } from '@/helpers/parcels.list.helpers.js'
 import { getCurrentInternalRoute } from '@/helpers/parcel.navigation.helpers.js'
 import { OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
@@ -61,7 +61,7 @@ const alertStore = useAlertStore()
 const { scanjob, monitorLoading, monitorError, monitorClosed } = storeToRefs(scanJobsStore)
 const isComponentMounted = ref(true)
 const scanjobIdRef = computed(() => props.scanjobId)
-const { loadScanjob } = useScanjobHeading(scanjobIdRef, { isComponentMounted })
+const { scanjobHeading, loadScanjob } = useScanjobHeading(scanjobIdRef, { isComponentMounted })
 
 const printingPanel = ref(null)
 provide(LABEL_PRINTING_KEY, {
@@ -140,19 +140,11 @@ const activeRegisterItem = computed(() => {
   return storeRegister
 })
 const basicHeading = computed(() => {
-  if (!registerId.value) return 'Реестр не указан'
-  if (registerLoading.value || !activeRegisterItem.value) return 'Загрузка...'
-  const operationName = {
-    10: 'Входящее',
-    15: 'Сортировка',
-    20: 'Исходящее',
-    30: 'Поиск'
-  }[scanjob.value?.operation] || 'Сканирование'
-  return buildParcelListHeading(
-    activeRegisterItem.value,
-    (id) => registersStore.getTransportationDocument(id),
-    `${operationName} для сделки`
+  if (registerLoading.value || !activeRegisterItem.value) return scanjobHeading.value
+  const invoiceInfo = formatRegisterInvoice(activeRegisterItem.value, (id) =>
+    registersStore.getTransportationDocument(id)
   )
+  return `${scanjobHeading.value} (${invoiceInfo || 'ТСД отсутствует'})`
 })
 const scopeHeading = computed(() => {
   if (isBoxMode.value) {

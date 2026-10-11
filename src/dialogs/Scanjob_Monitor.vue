@@ -142,8 +142,16 @@ const activeRegisterItem = computed(() => {
 const basicHeading = computed(() => {
   if (!registerId.value) return 'Реестр не указан'
   if (registerLoading.value || !activeRegisterItem.value) return 'Загрузка...'
-  return buildParcelListHeading(activeRegisterItem.value, (id) =>
-    registersStore.getTransportationDocument(id)
+  const operationName = {
+    10: 'Входящее',
+    15: 'Сортировка',
+    20: 'Исходящее',
+    30: 'Поиск'
+  }[scanjob.value?.operation] || 'Сканирование'
+  return buildParcelListHeading(
+    activeRegisterItem.value,
+    (id) => registersStore.getTransportationDocument(id),
+    `${operationName} для сделки`
   )
 })
 const scopeHeading = computed(() => {
@@ -161,7 +169,7 @@ const scopeHeading = computed(() => {
   return 'Коробки'
 })
 const monitorHeading = computed(
-  () => `Сканирование | ${basicHeading.value} | ${scopeHeading.value}`
+  () => `${basicHeading.value} | ${scopeHeading.value}`
 )
 const monitorWeightRegister = computed(() => {
   const snapshot = visibleSnapshot.value

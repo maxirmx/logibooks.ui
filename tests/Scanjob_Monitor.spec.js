@@ -26,10 +26,10 @@ const mockAlert = await vi.hoisted(async () => {
 })
 const mockScanjob = vi.hoisted(() => ({
   __v_isRef: true,
-  value: { id: 42, name: 'Scanjob A', type: 30, status: 15, registerId: 101 }
+  value: { id: 42, name: 'Scanjob A', type: 30, operation: 30, status: 15, registerId: 101 }
 }))
 const getById = vi.hoisted(() =>
-  vi.fn().mockResolvedValue({ id: 42, name: 'Scanjob A', type: 30, status: 15, registerId: 101 })
+  vi.fn().mockResolvedValue({ id: 42, name: 'Scanjob A', type: 30, operation: 30, status: 15, registerId: 101 })
 )
 const mockRegisterItem = vi.hoisted(() => ({
   id: 101,
@@ -496,8 +496,8 @@ describe('Scanjob_Monitor.vue', () => {
     isAdmin.value = false
     isWhManager.value = false
     isShiftLead.value = false
-    mockScanjob.value = { id: 42, name: 'Scanjob A', type: 30, status: 15, registerId: 101 }
-    getById.mockResolvedValue({ id: 42, name: 'Scanjob A', type: 30, status: 15, registerId: 101 })
+    mockScanjob.value = { id: 42, name: 'Scanjob A', type: 30, operation: 30, status: 15, registerId: 101 }
+    getById.mockResolvedValue({ id: 42, name: 'Scanjob A', type: 30, operation: 30, status: 15, registerId: 101 })
     registerGetById.mockResolvedValue(true)
     getTransportationDocument.mockReturnValue('Авианакладная')
     loadMonitorSnapshot.mockResolvedValue(registerSnapshot)
@@ -667,6 +667,31 @@ describe('Scanjob_Monitor.vue', () => {
     expect(wrapper.find('[data-testid="scanjob-monitor-operation-loading"]').exists()).toBe(false)
   })
 
+  it.each([
+    [10, 'Входящее'],
+    [15, 'Сортировка'],
+    [20, 'Исходящее'],
+    [30, 'Поиск'],
+    ['30', 'Поиск'],
+    [null, 'Сканирование'],
+    [undefined, 'Сканирование'],
+    [99, 'Сканирование']
+  ])('starts the monitor heading with operation %j as %s', async (operation, operationName) => {
+    mockScanjob.value = { ...mockScanjob.value, operation, name: 'Custom scan job name' }
+    getById.mockResolvedValue(mockScanjob.value)
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: monitorGlobalStubs }
+    })
+    await flushPromises()
+
+    expect(wrapper.get('.primary-heading').text()).toBe(
+      `${operationName} для сделки DEAL-101 (Авианакладная INV-101) | Коробки`
+    )
+    wrapper.unmount()
+    await flushPromises()
+  })
+
   it('loads and renders register monitor on mount', async () => {
     const wrapper = mount(ScanjobMonitor, {
       props: { scanjobId: 42 },
@@ -680,7 +705,7 @@ describe('Scanjob_Monitor.vue', () => {
     expect(registerGetById).toHaveBeenCalledWith(101)
     expect(startMonitor).toHaveBeenCalledWith(42, expect.objectContaining({ area: 0, boxId: null }))
     expect(wrapper.find('.primary-heading').text()).toBe(
-      'Сканирование | Сделка DEAL-101 (Авианакладная INV-101) | Коробки'
+      'Поиск для сделки DEAL-101 (Авианакладная INV-101) | Коробки'
     )
 
     const summaryItems = wrapper.findAll('.monitor-summary-item').map((item) => ({
@@ -1356,7 +1381,7 @@ describe('Scanjob_Monitor.vue', () => {
     )
     expect(wrapper.find('[data-testid="scanjob-monitor-box"]').exists()).toBe(true)
     expect(wrapper.find('.primary-heading').text()).toBe(
-      'Сканирование | Сделка DEAL-101 (Авианакладная INV-101) | Коробка BOX-7'
+      'Поиск для сделки DEAL-101 (Авианакладная INV-101) | Коробка BOX-7'
     )
     expect(wrapper.findComponent({ name: 'Scanjob_WbrN_Parcels_Monitor_Table' }).exists()).toBe(
       true
@@ -1591,7 +1616,7 @@ describe('Scanjob_Monitor.vue', () => {
     )
     expect(wrapper.find('[data-testid="scanjob-monitor-box"]').exists()).toBe(true)
     expect(wrapper.find('.primary-heading').text()).toBe(
-      'Сканирование | Сделка DEAL-101 (Авианакладная INV-101) | Без коробки 2'
+      'Поиск для сделки DEAL-101 (Авианакладная INV-101) | Без коробки 2'
     )
 
     const summaryItems = wrapper.findAll('.monitor-summary-item').map((item) => ({
@@ -1719,7 +1744,7 @@ describe('Scanjob_Monitor.vue', () => {
 
     expect(loadMonitorSnapshot).not.toHaveBeenCalled()
 
-    resolveScanjob({ id: 42, name: 'Scanjob A', type: 30, status: 15, registerId: 101 })
+    resolveScanjob({ id: 42, name: 'Scanjob A', type: 30, operation: 30, status: 15, registerId: 101 })
     await flushPromises()
 
     expect(loadMonitorSnapshot).toHaveBeenCalledWith(42, { area: 1, boxId: 7 })

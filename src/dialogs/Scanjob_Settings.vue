@@ -84,6 +84,18 @@ const loading = ref(false)
 const saving = ref(false)
 const runningAction = ref(false)
 const currentScanjob = ref(null)
+const nameManuallyEdited = ref(false)
+
+function formatDefaultScanjobName(operationValue) {
+  const operationNames = {
+    10: 'Входящее',
+    15: 'Сортировка',
+    20: 'Исходящее',
+    30: 'Поиск'
+  }
+  const operationName = operationNames[operationValue]
+  return props.dealNumber && operationName ? `${operationName} для сделки ${props.dealNumber}` : ''
+}
 
 function resolveLookupOperationValue() {
   const operations = ops.value?.operations
@@ -214,6 +226,12 @@ const readOnly = computed(
   () => currentScanjob.value?.readOnly === true || currentRegister.value?.readOnly === true
 )
 
+watch(operation, (value) => {
+  if (isCreate.value && !nameManuallyEdited.value) {
+    name.value = formatDefaultScanjobName(value)
+  }
+})
+
 watch(isLookupOperation, (lookup) => {
   if (!lookup) {
     lookupStatusId.value = null
@@ -259,19 +277,21 @@ async function initialize() {
     if (isCreate.value) {
       await resolveRegister(props.registerId)
 
+      const initialOperation = isLookupOnlyRegisterType.value
+        ? lookupOperationValue.value
+        : ops.value?.operations?.[0]?.value ?? null
       const defaults = {
         id: 0,
-        name: props.dealNumber ? `Сканирование сделки ${props.dealNumber}` : '',
+        name: formatDefaultScanjobName(initialOperation),
         type: ops.value?.types?.[0]?.value ?? null,
-        operation: isLookupOnlyRegisterType.value
-          ? lookupOperationValue.value
-          : ops.value?.operations?.[0]?.value ?? null,
+        operation: initialOperation,
         mode: ops.value?.modes?.[0]?.value ?? null,
         status: ops.value?.statuses?.[0]?.value ?? null,
         warehouseId: props.warehouseId ?? null,
         registerId: props.registerId ?? null,
         lookupStatusId: null
       }
+      nameManuallyEdited.value = false
       resetForm({ values: defaults })
       await nextTick()
       currentScanjob.value = null
@@ -677,6 +697,7 @@ defineExpose({ onSubmit, cancel })
             :class="{ 'is-invalid': errors.name }"
             placeholder="Название"
             v-model="name"
+            @input="nameManuallyEdited = true"
           />
           <FieldError name="name" :errors="errors" />
         </div>

@@ -4,7 +4,7 @@
 // This file is a part of Logibooks ui application
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { enableAutoUnmount, mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import { createVuetify } from 'vuetify'
 import { createPinia, setActivePinia } from 'pinia'
@@ -14,13 +14,18 @@ import { resolveAll, vuetifyStubs } from './helpers/test-utils'
 import { GTC_COMPANY_ID } from '@/helpers/company.constants.js'
 
 const vuetify = createVuetify()
+enableAutoUnmount(afterEach)
+
+const scanjobOperations = [
+  { value: 10, name: 'Входящее сканирование' },
+  { value: 15, name: 'Сортировка' },
+  { value: 20, name: 'Исходящее сканирование' },
+  { value: 30, name: 'Поиск' }
+]
 
 const mockOps = ref({
   types: [{ value: 1, name: 'Type 1' }],
-  operations: [
-    { value: 9, name: 'Operation 1' },
-    { value: 2, name: 'Lookup' }
-  ],
+  operations: scanjobOperations,
   modes: [{ value: 3, name: 'Mode 1' }],
   statuses: [
     { value: 4, name: 'Draft' },
@@ -34,7 +39,7 @@ const mockScanjob = {
   id: 11,
   name: 'Test scanjob',
   type: 1,
-  operation: 2,
+  operation: 30,
   lookupStatusId: 101,
   mode: 3,
   status: 4,
@@ -143,13 +148,19 @@ vi.mock('@/stores/parcel.statuses.store.js', () => ({
   })
 }))
 
-vi.mock('@/stores/alert.store.js', () => ({
-  useAlertStore: () => ({
-    error: alertError,
-    alert: null,
-    clear: vi.fn()
-  })
-}))
+vi.mock('@/stores/alert.store.js', async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    useAlertStore: () => {
+      const store = actual.useAlertStore()
+      if (store.error !== alertError) {
+        alertError.mockImplementation(store.error)
+        store.error = alertError
+      }
+      return store
+    }
+  }
+})
 
 vi.mock('@/stores/auth.store.js', () => ({
   useAuthStore: () => ({
@@ -210,6 +221,7 @@ describe('Scanjob_Settings.vue', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    mockOps.value.operations = [...scanjobOperations]
     ensureOpsLoaded.mockResolvedValue(mockOps.value)
     ensureLoaded.mockResolvedValue()
     ensureRegisterOpsLoaded.mockResolvedValue()
@@ -278,6 +290,142 @@ describe('Scanjob_Settings.vue', () => {
     expect(wrapper.find('[data-testid="scanjob-cancel-action"]').exists()).toBe(true)
   })
 
+  it.each([
+    [10, 'Входящее для сделки ABC-1'],
+    [15, 'Сортировка для сделки ABC-1'],
+    [20, 'Исходящее для сделки ABC-1'],
+    [30, 'Поиск для сделки ABC-1']
+  ])('generates and submits the default name for operation %i', async (operationValue, expectedName) => {
+    const wrapper = mountComponent({
+      mode: 'create',
+      registerId: 22,
+      warehouseId: 11,
+      dealNumber: 'ABC-1'
+    })
+    await resolveAll()
+    expect(wrapper.get('#name').element.value).toBe('Входящее для сделки ABC-1')
+
+    await wrapper.get('#operation').setValue(String(operationValue))
+    await resolveAll()
+    expect(wrapper.get('#name').element.value).toBe(expectedName)
+
+    if (operationValue === 30) {
+      await wrapper.get('#lookupStatusId').setValue('101')
+    }
+    await wrapper.vm.$.setupState.onSubmit()
+    await resolveAll()
+
+    expect(create).toHaveBeenCalledOnce()
+    expect(create).toHaveBeenCalledWith(expect.objectContaining({
+      name: expectedName,
+      operation: operationValue
+    }))
+    expect(routerPush).toHaveBeenCalledWith('/scanjobs')
+  })
+
+  it('keeps updating an untouched default across repeated operation changes', async () => {
+    const wrapper = mountComponent({ mode: 'create', registerId: 22, dealNumber: 'ABC-1' })
+    await resolveAll()
+
+    for (const [value, expectedName] of [
+      [15, 'Сортировка для сделки ABC-1'],
+      [30, 'Поиск для сделки ABC-1'],
+      [20, 'Исходящее для сделки ABC-1'],
+      [10, 'Входящее для сделки ABC-1']
+    ]) {
+      await wrapper.get('#operation').setValue(String(value))
+      await resolveAll()
+      expect(wrapper.get('#name').element.value).toBe(expectedName)
+    }
+  })
+
+  it.each(['Моё задание', '', 'Входящее для сделки ABC-1'])(
+    'preserves a manually entered name %j when the operation changes',
+    async (enteredName) => {
+      const wrapper = mountComponent({ mode: 'create', registerId: 22, dealNumber: 'ABC-1' })
+      await resolveAll()
+      await wrapper.get('#name').setValue(enteredName)
+
+      for (const value of [15, 20, 30, 10]) {
+        await wrapper.get('#operation').setValue(String(value))
+        await resolveAll()
+        expect(wrapper.get('#name').element.value).toBe(enteredName)
+      }
+    }
+  )
+
+  it('preserves a stored name when editing and changing the operation', async () => {
+    const storedName = 'Сканирование сделки ABC-1'
+    getById.mockResolvedValue({ ...mockScanjob, name: storedName, operation: 10 })
+    const wrapper = mountComponent({ mode: 'edit', scanjobId: 11, dealNumber: 'ABC-1' })
+    await resolveAll()
+    expect(wrapper.get('#name').element.value).toBe(storedName)
+
+    await wrapper.get('#operation').setValue('15')
+    await resolveAll()
+    expect(wrapper.get('#name').element.value).toBe(storedName)
+    await wrapper.vm.$.setupState.onSubmit()
+    await resolveAll()
+    expect(update).toHaveBeenCalledWith(11, expect.objectContaining({
+      name: storedName,
+      operation: 15
+    }))
+  })
+
+  it('leaves the name empty and required when there is no deal number', async () => {
+    const wrapper = mountComponent({ mode: 'create', registerId: 22, warehouseId: 11 })
+    await resolveAll()
+    expect(wrapper.get('#name').element.value).toBe('')
+
+    await wrapper.get('#operation').setValue('15')
+    await resolveAll()
+    expect(wrapper.get('#name').element.value).toBe('')
+    await wrapper.vm.$.setupState.onSubmit()
+    await resolveAll()
+    expect(wrapper.text()).toContain('Название обязательно')
+    expect(create).not.toHaveBeenCalled()
+    expect(routerPush).not.toHaveBeenCalled()
+  })
+
+  it.each([[], [{ value: 99, name: 'Future operation' }]])(
+    'leaves the name empty when the initial operation is unavailable or unknown: %j',
+    async (operations) => {
+      mockOps.value.operations = operations
+      const wrapper = mountComponent({ mode: 'create', registerId: 22, dealNumber: 'ABC-1' })
+      await resolveAll()
+      expect(wrapper.get('#name').element.value).toBe('')
+    }
+  )
+
+  it('shows initialization failure once and generates defaults after a visible retry', async () => {
+    const error = new Error('Не удалось загрузить операции')
+    ensureOpsLoaded.mockRejectedValueOnce(error)
+    const wrapper = mountComponent({
+      mode: 'create',
+      registerId: 22,
+      warehouseId: 11,
+      dealNumber: 'ABC-1'
+    })
+    await resolveAll()
+
+    expect(alertError).toHaveBeenCalledOnce()
+    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+    expect(wrapper.get('[role="alert"]').text()).toContain(error.message)
+    expect(create).not.toHaveBeenCalled()
+    expect(routerPush).not.toHaveBeenCalled()
+
+    await wrapper.get('.page-alert-region__action').trigger('click')
+    await resolveAll()
+    expect(ensureOpsLoaded).toHaveBeenCalledTimes(2)
+    expect(getRegisterById).toHaveBeenCalledOnce()
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+    expect(wrapper.get('#name').element.value).toBe('Входящее для сделки ABC-1')
+    await wrapper.get('#operation').setValue('15')
+    await resolveAll()
+    expect(wrapper.get('#name').element.value).toBe('Сортировка для сделки ABC-1')
+    expect(alertError).toHaveBeenCalledOnce()
+  })
+
   it('creates scanjob on header save action', async () => {
     const wrapper = mountComponent({
       mode: 'create',
@@ -289,7 +437,7 @@ describe('Scanjob_Settings.vue', () => {
 
     await wrapper.find('#name').setValue('Сканирование сделки ABC-1')
     await wrapper.find('#type').setValue('1')
-    await wrapper.find('#operation').setValue('2')
+    await wrapper.find('#operation').setValue('30')
     await wrapper.find('#mode').setValue('3')
     await wrapper.find('#lookupStatusId').setValue('101')
     await wrapper.find('input[name="registerId"]').setValue(22)
@@ -320,7 +468,7 @@ describe('Scanjob_Settings.vue', () => {
 
     await wrapper.find('#name').setValue('Test scanjob')
     await wrapper.find('#type').setValue('1')
-    await wrapper.find('#operation').setValue('2')
+    await wrapper.find('#operation').setValue('30')
     await wrapper.find('#mode').setValue('3')
     await wrapper.find('#lookupStatusId').setValue('101')
     await wrapper.find('input[name="registerId"]').setValue(22)
@@ -418,7 +566,7 @@ describe('Scanjob_Settings.vue', () => {
 
     await wrapper.find('#name').setValue('Test scanjob')
     await wrapper.find('#type').setValue('1')
-    await wrapper.find('#operation').setValue('2')
+    await wrapper.find('#operation').setValue('30')
     await wrapper.find('#mode').setValue('3')
     await wrapper.find('#lookupStatusId').setValue('101')
     await wrapper.find('input[name="registerId"]').setValue(22)
@@ -523,7 +671,7 @@ describe('Scanjob_Settings.vue', () => {
     await resolveAll()
 
     // Set to lookup operation (last in array)
-    await wrapper.find('#operation').setValue('2')
+    await wrapper.find('#operation').setValue('30')
     await resolveAll()
 
     const lookupStatusSelect = wrapper.find('[data-testid="lookup-status-select"]')
@@ -536,7 +684,7 @@ describe('Scanjob_Settings.vue', () => {
     expect(create).not.toHaveBeenCalled()
     expect(wrapper.text()).toContain('Статус для поиска обязателен')
 
-    await wrapper.find('#operation').setValue('9')
+    await wrapper.find('#operation').setValue('10')
     await resolveAll()
     expect(
       wrapper.find('[data-testid="lookup-status-select"]').attributes('disabled')
@@ -559,8 +707,9 @@ describe('Scanjob_Settings.vue', () => {
 
     const options = wrapper.findAll('#operation option')
     expect(options).toHaveLength(1)
-    expect(options[0].text()).toBe('Lookup')
-    expect(wrapper.find('#operation').element.value).toBe('2')
+    expect(options[0].text()).toBe('Поиск')
+    expect(wrapper.find('#operation').element.value).toBe('30')
+    expect(wrapper.get('#name').element.value).toBe('Поиск для сделки ABC-1')
   })
 
   it('reports refresh errors when status update fails', async () => {

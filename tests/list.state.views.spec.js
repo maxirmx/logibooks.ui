@@ -278,7 +278,7 @@ describe('reloads with real Pinia state and list loading', () => {
       components: { OzonParcelEditor },
       template: '<Suspense><OzonParcelEditor :register-id="4307" :id="2" /></Suspense>'
     }, {}, {
-      Form: { template: '<div><slot :errors="{}" :values="{ id: 2, statusId: 1, productName: \'draft\' }" :isSubmitting="false" :setFieldValue="() => {}" /></div>' },
+      Form: { methods: { resetForm() {} }, template: '<div><slot :errors="{}" :values="{ id: 2, statusId: 1, productName: \'draft\' }" :isSubmitting="false" :setFieldValue="() => {}" /></div>' },
       Field: { template: '<input />' },
       ParcelHeaderActionsBar: { template: '<div><button data-testid="save" @click="$emit(\'save\')">Save</button><button data-testid="cancel" @click="$emit(\'cancel\')">Cancel</button></div>' },
       ParcelStatusSection: true, FeacnCodeEditor: true, ParcelNumberExt: true,

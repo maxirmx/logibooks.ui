@@ -88,6 +88,7 @@ describe('WbrParcel_EditDialog delete flow', () => {
         stubs: {
           Field: { template: '<input />' },
           Form: {
+            methods: { resetForm() {} },
             template:
               '<div><slot :errors="{}" :values="{ id: 3 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
           },
@@ -130,6 +131,7 @@ describe('WbrParcel_EditDialog delete flow', () => {
         stubs: {
           Field: { template: '<input />' },
           Form: {
+            methods: { resetForm() {} },
             template:
               '<div><slot :errors="{}" :values="{ id: 3 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
           },

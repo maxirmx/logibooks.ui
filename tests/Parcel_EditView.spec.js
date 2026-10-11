@@ -18,6 +18,11 @@ import {
   WBRN_REGISTER_ID
 } from '@/helpers/company.constants.js'
 import { OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
+import { useAlertStore } from '@/stores/alert.store.js'
+import * as errorHelpers from '@/helpers/error.helpers.js'
+
+const router = vi.hoisted(() => ({ push: vi.fn() }))
+vi.mock('@/router', () => ({ default: router }))
 
 const subscriptionOptions = vi.hoisted(() => [])
 vi.mock('@/composables/useParcelCheckStatusSubscription.js', () => ({
@@ -38,6 +43,7 @@ vi.mock('@/helpers/config.js', () => ({
 }))
 
 const commonStubs = {
+  ActionButton: { emits: ['click'], template: '<button @click="$emit(\'click\')">Закрыть</button>' },
   OzonParcelEditDialog: true,
   WbrParcelEditDialog: true,
   WbrNParcelEditDialog: true,
@@ -185,7 +191,8 @@ describe('Parcel_EditView.vue', () => {
       props: {
         registerId: 1,
         id: 100
-      }
+      },
+      global: { stubs: commonStubs }
     })
 
     expect(wrapper.text()).toContain('Загрузка...')
@@ -199,13 +206,74 @@ describe('Parcel_EditView.vue', () => {
       props: {
         registerId: 1,
         id: 100
-      }
+      },
+      global: { stubs: commonStubs }
     })
 
     await flushPromises()
     await nextTick()
 
-    expect(wrapper.text()).toContain('Ошибка загрузки:')
     expect(wrapper.text()).toContain(errorMessage)
+  })
+
+  it('retries a failed register load and keeps Close available throughout', async () => {
+    mockGet.mockRejectedValueOnce(new Error('Register unavailable')).mockResolvedValue({ id: 12, registerType: WBR_COMPANY_ID })
+    const wrapper = mount(ParcelEditView, { props: { id: 3, registerId: 12 }, global: { stubs: commonStubs } })
+    await flushPromises()
+    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+    expect(wrapper.get('hr').element.nextElementSibling.classList.contains('page-alert-region')).toBe(true)
+    expect(wrapper.get('button').text()).toBe('Закрыть')
+    await wrapper.get('.page-alert-region__action').trigger('click')
+    await flushPromises()
+    expect(wrapper.findComponent(WbrParcelEditDialog).exists()).toBe(true)
+    expect(mockGet).toHaveBeenCalledTimes(2)
+  })
+
+  it.each(['resolve', 'reject'])('ignores stale register responses on a register change (%s)', async (outcome) => {
+    const report = vi.spyOn(errorHelpers, 'reportError').mockImplementation(() => {})
+    let resolveOld, rejectOld
+    mockGet.mockImplementationOnce(() => new Promise((resolve, reject) => { resolveOld = resolve; rejectOld = reject }))
+      .mockResolvedValue({ id: 13, registerType: GTC_COMPANY_ID })
+    const wrapper = mount(ParcelEditView, { props: { id: 3, registerId: 12 }, global: { stubs: commonStubs } })
+    await wrapper.setProps({ id: 4, registerId: 13 })
+    await flushPromises()
+    if (outcome === 'resolve') resolveOld({ id: 12, registerType: WBR_COMPANY_ID })
+    else rejectOld(new Error('Stale register failure'))
+    await flushPromises()
+    expect(wrapper.findComponent(GtcParcelEditDialog).exists()).toBe(true)
+    expect(wrapper.findComponent(WbrParcelEditDialog).exists()).toBe(false)
+    expect(useAlertStore().alert).toBeNull()
+    expect(mockGet).toHaveBeenCalledWith('http://test-api/registers/13')
+    report.mockRestore()
+  })
+
+  it('reports disposed register failures without replacing the destination alert', async () => {
+    const report = vi.spyOn(errorHelpers, 'reportError').mockImplementation(() => {})
+    let rejectLoad
+    mockGet.mockImplementationOnce(() => new Promise((_resolve, reject) => { rejectLoad = reject }))
+    const wrapper = mount(ParcelEditView, { props: { id: 3, registerId: 12 }, global: { stubs: commonStubs } })
+    wrapper.unmount()
+    useAlertStore().info('Destination')
+    rejectLoad(new Error('Disposed register failure'))
+    await flushPromises()
+    expect(useAlertStore().alert.message).toBe('Destination')
+    expect(report).toHaveBeenCalledTimes(1)
+    report.mockRestore()
+  })
+
+  it('closes a failed register page with navigation context and reports navigation failures', async () => {
+    mockGet.mockRejectedValue(new Error('Register unavailable'))
+    router.push.mockRejectedValueOnce(new Error('Close failed')).mockResolvedValue()
+    const wrapper = mount(ParcelEditView, {
+      props: { id: 3, registerId: 12, mode: OP_MODE_WAREHOUSE, returnUrl: '/scanjobs/42/monitor', boxId: 17 },
+      global: { stubs: commonStubs }
+    })
+    await flushPromises()
+    await wrapper.get('button').trigger('click')
+    await flushPromises()
+    expect(wrapper.get('[role="alert"]').text()).toContain('Close failed')
+    await wrapper.get('button').trigger('click')
+    await flushPromises()
+    expect(router.push).toHaveBeenCalledWith('/scanjobs/42/monitor')
   })
 })

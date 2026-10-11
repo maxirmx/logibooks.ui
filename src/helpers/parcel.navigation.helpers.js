@@ -3,6 +3,14 @@
 // This file is a part of Logibooks ui application
 
 import { OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
+import { isNavigationFailure } from 'vue-router'
+
+export async function navigateParcel(router, location, { replace = false } = {}) {
+  const result = await router[replace ? 'replace' : 'push'](location)
+  if (isNavigationFailure(result)) {
+    throw new Error('Не удалось перейти со страницы посылки', { cause: result })
+  }
+}
 
 const parcelNavigationModes = new Set([OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE])
 

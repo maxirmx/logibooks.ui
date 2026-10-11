@@ -1557,6 +1557,23 @@ describe('registers store', () => {
       expect(store.item).toEqual({ error })
     })
 
+    it.each(['resolve', 'reject'])('does not replace another register when an older request finishes with %s', async (outcome) => {
+      const store = useRegistersStore()
+      fetchWrapper.get.mockResolvedValueOnce({ customsProcedures: [], transportationTypes: [], incoterms: validIncoterms })
+      await store.ensureOpsLoaded()
+      let resolveOlder, rejectOlder
+      fetchWrapper.get
+        .mockImplementationOnce(() => new Promise((resolve, reject) => { resolveOlder = resolve; rejectOlder = reject }))
+        .mockResolvedValueOnce({ id: 6 })
+      const old = store.getById(5)
+      const observed = outcome === 'reject' ? expect(old).rejects.toThrow('Old register failed') : expect(old).resolves.toMatchObject({ id: 5 })
+      await store.getById(6)
+      if (outcome === 'resolve') resolveOlder({ id: 5 })
+      else rejectOlder(new Error('Old register failed'))
+      await observed
+      expect(store.item.id).toBe(6)
+    })
+
     it('updates register and store', async () => {
       fetchWrapper.put.mockResolvedValue({})
       const store = useRegistersStore()

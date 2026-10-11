@@ -5,7 +5,7 @@
 
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { focusFirstInvalidField } from '@/helpers/form.validation.helpers.js'
-import { reportFormError } from '@/helpers/error.helpers.js'
+import { reportFormError, reportError } from '@/helpers/error.helpers.js'
 import router from '@/router'
 import { Form, Field } from 'vee-validate'
 import * as Yup from 'yup'
@@ -21,6 +21,7 @@ import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { storeToRefs } from 'pinia'
 import { computed, ref, watch, onMounted, onUnmounted } from 'vue'
+import { useParcelEditorState } from '@/composables/useParcelEditorState.js'
 import { useAppConfirm } from '@/composables/useAppConfirm.js'
 import {
   wbrnRegisterColumnTitles,
@@ -65,6 +66,7 @@ import { DEC_REPORT_UPLOADED_EVENT } from '@/helpers/dec.report.events.js'
 import { SwValidationMatchMode } from '@/models/sw.validation.match.mode.js'
 import { useParcelImageOverlay } from '@/helpers/parcel.image.overlay.js'
 import {
+  navigateParcel,
   buildParcelEditLocation,
   resolveParcelReturnLocation
 } from '@/helpers/parcel.navigation.helpers.js'
@@ -78,7 +80,7 @@ const props = defineProps({
   boxId: { type: Number, default: null }
 })
 
-// track current parcel id so we can swap inline without changing route
+// This editor instance belongs to one route identity.
 const currentParcelId = ref(props.id)
 const isComponentMounted = ref(true)
 
@@ -92,35 +94,27 @@ const feacnOrdersStore = useFeacnOrdersStore()
 const feacnPrefixesStore = useFeacnPrefixesStore()
 const parcelViewsStore = useParcelViewsStore()
 const alertStore = useAlertStore()
-const initializationFailed = ref(false)
-
-async function initialize() {
-  initializationFailed.value = false
-  try {
+const formRef = ref(null)
+const { phase: initializationPhase, ready: editorReady } = useParcelEditorState({
+  parcelId: currentParcelId,
+  formRef,
+  loadDependencies: async () => {
     await statusStore.ensureLoaded()
     await stopWordsStore.ensureLoaded()
     await keyWordsStore.ensureLoaded()
     await feacnOrdersStore.ensureLoaded()
     await feacnPrefixesStore.ensureLoaded()
     await registersStore.getById(props.registerId)
-    await parcelsStore.getById(currentParcelId.value)
-    await parcelViewsStore.add(currentParcelId.value)
-  } catch (error) {
-    initializationFailed.value = true
-    alertStore.error(error, {
-      fallback: 'Не удалось загрузить информацию о посылке',
-      action: { label: 'Повторить', handler: initialize }
-    })
+  },
+  onReady: () => {
+    authStore.selectedParcelId = currentParcelId.value
+    initNextParcelsPromise(currentParcelId.value)
   }
-}
+})
 
-await initialize()
 const confirm = useAppConfirm()
 const { imageOverlayOpen, imageUrl, imageLoading, openImageOverlay, closeImageOverlay } =
   useParcelImageOverlay(parcelsStore, alertStore)
-
-// Set the selected parcel ID in auth store
-authStore.selectedParcelId = currentParcelId.value
 
 const { item } = storeToRefs(parcelsStore)
 const { item: registerItem } = storeToRefs(registersStore)
@@ -129,6 +123,7 @@ const { orders: feacnOrders } = storeToRefs(feacnOrdersStore)
 const { prefixes: feacnPrefixes } = storeToRefs(feacnPrefixesStore)
 
 async function updateParcelWithLifecycleGuard(id, values) {
+  if (!editorReady.value) return false
   if (readOnly.value) return false
 
   const confirmed = await confirmCustomsExclusionStatusChange({
@@ -198,12 +193,13 @@ function initNextParcelsPromise(id) {
   nextParcelsPromise = registersStore
     .nextParcels(id, { mode: props.mode, ...(props.boxId ? { boxId: props.boxId } : {}) })
     .then((result) => {
-      nextParcelsResult.value = result
+      if (isComponentMounted.value) nextParcelsResult.value = result
       return result
     })
     .catch((error) => {
       if (!isComponentMounted.value) {
         // The request can finish after route navigation; the destination page must not show it.
+        reportError(error, { context: 'parcel neighbors after editor disposal' })
         return null
       }
 
@@ -219,16 +215,20 @@ function ensureNextParcelsPromise() {
   return nextParcelsPromise
 }
 
-function goToParcelsList() {
-  router.push(
-    resolveParcelReturnLocation({
-      returnUrl: props.returnUrl,
-      boxId: props.boxId,
-      registerId: props.registerId,
-      parcelId: currentParcelId.value,
-      mode: props.mode
-    })
-  )
+async function goToParcelsList() {
+  try {
+    await navigateParcel(router,
+      resolveParcelReturnLocation({
+        returnUrl: props.returnUrl,
+        boxId: props.boxId,
+        registerId: props.registerId,
+        parcelId: currentParcelId.value,
+        mode: props.mode
+      })
+    )
+  } catch (error) {
+    alertStore.error(error, { fallback: 'Не удалось закрыть карточку посылки' })
+  }
 }
 
 // Track overlay state for disabling form elements
@@ -239,7 +239,6 @@ const isDescriptionVisible = ref(false)
 // Pre-fetch next parcels after component is mounted
 onMounted(async () => {
   window.addEventListener(DEC_REPORT_UPLOADED_EVENT, refreshParcelAfterReportUpload)
-  initNextParcelsPromise(currentParcelId.value)
 })
 
 onUnmounted(() => {
@@ -275,6 +274,7 @@ const schema = Yup.object().shape({
 })
 
 async function deleteProductImage(values) {
+  if (!editorReady.value) return
   await deleteProductImageHelper(
     values,
     isComponentMounted,
@@ -286,10 +286,12 @@ async function deleteProductImage(values) {
 }
 
 async function viewProductImage() {
+  if (!editorReady.value) return
   await openImageOverlay(item.value?.id)
 }
 
 async function validateParcel(values, sw, matchMode) {
+  if (!editorReady.value) return
   if (readOnly.value || !isComponentMounted.value || runningAction.value) return
   runningAction.value = true
   try {
@@ -305,6 +307,7 @@ async function validateParcel(values, sw, matchMode) {
 }
 
 async function runCheckStatusAction(values, actionFn, passportAction = null) {
+  if (!editorReady.value) return
   if (readOnly.value) return false
 
   return runCheckStatusActionHelper(
@@ -324,6 +327,7 @@ async function runCheckStatusAction(values, actionFn, passportAction = null) {
 
 // Approve the parcel
 async function approveParcel(values) {
+  if (!editorReady.value) return
   if (readOnly.value || !isComponentMounted.value || runningAction.value) return
   runningAction.value = true
   try {
@@ -340,6 +344,7 @@ async function approveParcel(values) {
 
 // Approve the parcel with excise
 async function approveParcelWithExcise(values, setFieldValue) {
+  if (!editorReady.value) return
   if (readOnly.value || !isComponentMounted.value || runningAction.value) return
   runningAction.value = true
   try {
@@ -358,6 +363,7 @@ async function approveParcelWithExcise(values, setFieldValue) {
 }
 
 async function approveParcelWithNotification(values) {
+  if (!editorReady.value) return
   if (readOnly.value || !isComponentMounted.value || runningAction.value) return
   runningAction.value = true
   try {
@@ -372,13 +378,19 @@ async function approveParcelWithNotification(values) {
 }
 
 async function refreshParcelAfterReportUpload() {
+  if (!editorReady.value) return
   if (!isComponentMounted.value || runningAction.value) return
   runningAction.value = true
 
   try {
     await parcelsStore.getById(currentParcelId.value)
   } catch (error) {
-    alertStore.error(error?.message || String(error))
+    if (isComponentMounted.value) {
+      alertStore.error(error)
+    } else {
+      // The report refresh belongs to the disposed editor, not the destination page.
+      reportError(error, { context: 'parcel report refresh after editor disposal' })
+    }
   } finally {
     if (isComponentMounted.value) runningAction.value = false
   }
@@ -386,6 +398,7 @@ async function refreshParcelAfterReportUpload() {
 
 // Handle saving and moving to the next parcel
 async function onSubmit(values, submitContext = false) {
+  if (!editorReady.value) return
   const useTheNext = submitContext === true
   const setErrors =
     submitContext && typeof submitContext === 'object' ? submitContext.setErrors : undefined
@@ -401,30 +414,18 @@ async function onSubmit(values, submitContext = false) {
     const nextParcel = useTheNext ? nextParcels?.withoutIssues : nextParcels?.withIssues
 
     if (nextParcel) {
-      // Inline swap: set item, update current id and authStore,
-      // re-init neighbor promises.
-      item.value = nextParcel
-      currentParcelId.value = nextParcel.id
-      authStore.selectedParcelId = nextParcel.id
-
-      // re-init neighbor promises for the newly active parcel
-      initNextParcelsPromise(currentParcelId.value)
-
-      // update URL without remount
-      router.replace(
+      await navigateParcel(router,
         buildParcelEditLocation({
           registerId: props.registerId,
           parcelId: nextParcel.id,
           mode: props.mode,
           returnUrl: props.returnUrl,
           boxId: props.boxId
-        })
+        }),
+        { replace: true }
       )
-
-      // fetch full parcel data
-      // await parcelsStore.getById(nextParcel.id)
     } else {
-      goToParcelsList()
+      await goToParcelsList()
     }
   } catch (error) {
     reportFormError(error, {
@@ -438,8 +439,9 @@ async function onSubmit(values, submitContext = false) {
 }
 
 async function onSave(values) {
+  if (!editorReady.value) return
   if (readOnly.value) {
-    goToParcelsList()
+    await goToParcelsList()
     return Promise.resolve()
   }
   if (!isComponentMounted.value || runningAction.value || currentParcelId.value != values.id) return
@@ -447,7 +449,7 @@ async function onSave(values) {
   runningAction.value = true
   try {
     if ((await updateParcelWithLifecycleGuard(currentParcelId.value, values)) === false) return
-    goToParcelsList()
+    await goToParcelsList()
   } catch (error) {
     alertStore.error(error?.message || String(error))
   } finally {
@@ -457,6 +459,7 @@ async function onSave(values) {
 
 // Save current parcel and navigate to the previous one if available
 async function onBack(values) {
+  if (!editorReady.value) return
   if (!isComponentMounted.value || runningAction.value || currentParcelId.value != values.id) return
   runningAction.value = true
   try {
@@ -468,27 +471,18 @@ async function onBack(values) {
     const prevParcel = await parcelViewsStore.back()
 
     if (prevParcel) {
-      // Inline swap to previous parcel: preview -> set item, update id and auth
-      item.value = prevParcel
-      currentParcelId.value = prevParcel.id
-      authStore.selectedParcelId = prevParcel.id
-
-      // re-init next parcels promise for the newly active parcel
-      initNextParcelsPromise(currentParcelId.value)
-
-      // fetch full parcel data in background
-      // update URL without remount
-      router.replace(
+      await navigateParcel(router,
         buildParcelEditLocation({
-          registerId: props.registerId,
+          registerId: Number(prevParcel.registerId ?? props.registerId),
           parcelId: prevParcel.id,
           mode: props.mode,
           returnUrl: props.returnUrl,
           boxId: props.boxId
-        })
+        }),
+        { replace: true }
       )
     } else {
-      goToParcelsList()
+      await goToParcelsList()
     }
   } catch (error) {
     alertStore.error(error?.message || String(error))
@@ -499,6 +493,7 @@ async function onBack(values) {
 
 // Generate XML for this parcel
 async function generateXml(values) {
+  if (!editorReady.value) return
   if (!isComponentMounted.value || runningAction.value || currentParcelId.value != values.id) return
   runningAction.value = true
   try {
@@ -521,12 +516,14 @@ async function generateXml(values) {
 
 // Handle fellows click - redirect to parcels list with filter
 function handleFellows() {
+  if (!editorReady.value) return
   if (!isComponentMounted.value) return
   handleFellowsClick(item.value.registerId, item.value.shk)
 }
 
 // Lookup FEACN codes triggered from header actions
-async function onLookup(values) {
+async function onLookup(values, setFieldValue) {
+  if (!editorReady.value) return
   if (
     readOnly.value ||
     !isComponentMounted.value ||
@@ -549,9 +546,12 @@ async function onLookup(values) {
     alertStore.error(error?.message || String(error))
   } finally {
     if (isComponentMounted.value && mutationStarted) {
-      await refreshParcelAfterMutation(parcelsStore, currentParcelId.value, alertStore, {
+      const refreshed = await refreshParcelAfterMutation(parcelsStore, currentParcelId.value, alertStore, {
         errorAlreadyReported: !actionSucceeded
       })
+      if (actionSucceeded && refreshed && isComponentMounted.value && item.value?.tnVed != null) {
+        setFieldValue('tnVed', item.value.tnVed)
+      }
     }
     if (isComponentMounted.value) {
       runningAction.value = false
@@ -563,24 +563,23 @@ async function onLookup(values) {
 <template>
   <div class="settings form-4 form-compact">
     <Form
-      v-if="!initializationFailed"
+      ref="formRef"
       @invalid-submit="focusFirstInvalidField"
       @submit="onSubmit"
-      :initial-values="item"
-      :validation-schema="schema"
+      :validation-schema="editorReady ? schema : undefined"
       v-slot="{ errors, values, isSubmitting, setFieldValue }"
       :class="{ 'form-disabled': overlayActive || imageOverlayOpen, 'read-only-form': readOnly }"
     >
       <div class="header-with-actions">
         <h1 class="primary-heading responsive-edit-heading">
-          {{ item?.id ? `№ ${item.id} -- ` : '' }} посылка
-          {{ item?.shk ? item.shk : '[без номера]' }}
+          {{ `№ ${currentParcelId} -- ` }} посылка
+          {{ editorReady && item?.shk ? item.shk : '[без номера]' }}
         </h1>
         <!-- Action buttons moved inside Form scope -->
         <ParcelHeaderActionsBar
           :disabled="isSubmitting || runningAction || loading"
-          :actions-disabled="markedByPartnerActionsDisabled"
-          :mutation-disabled="readOnly"
+          :actions-disabled="!editorReady || markedByPartnerActionsDisabled"
+          :mutation-disabled="!editorReady || readOnly"
           :download-disabled="
             isSubmitting ||
             runningAction ||
@@ -595,7 +594,7 @@ async function onLookup(values) {
           @next-issue="onSubmit(values, false)"
           @back="onBack(values)"
           @save="onSave(values)"
-          @lookup="onLookup(values)"
+          @lookup="onLookup(values, setFieldValue)"
           @cancel="goToParcelsList()"
           @download="generateXml(values)"
         />
@@ -604,190 +603,193 @@ async function onLookup(values) {
       <hr class="hr" />
 
       <PageAlertRegion />
-      <div v-if="readOnly" class="alert alert-warning read-only-notice">
-        Изменения запрещены. Посылка доступна только для просмотра.
-      </div>
-
-      <!-- Order Identification & Status Section -->
-      <ParcelStatusSection
-        :item="item"
-        :values="values"
-        :parcel-statuses="statusStore.parcelStatuses"
-        :get-check-status-class="getCheckStatusClass"
-        :check-status-info="getCheckStatusInfo(item, feacnOrders, stopWords, feacnPrefixes)"
-        :has-check-status-issues="CheckStatusCode.hasIssues(item?.checkStatus)"
-        :approval-disabled="CheckStatusCode.isEUR1000(item?.checkStatus)"
-        :restriction-validation-disabled="registerItem?.theOtherCountryCode == null"
-        :disabled="
-          readOnly ||
-          isSubmitting ||
-          runningAction ||
-          loading ||
-          CheckStatusCode.isDuplicate(item?.checkStatus) ||
-          markedByPartnerActionsDisabled
-        "
-        :clear-check-status-disabled="
-          readOnly || isSubmitting || runningAction || loading || markedByPartnerActionsDisabled
-        "
-        @validate-sw="(vals) => validateParcel(vals, true, SwValidationMatchMode.NoSwMatch)"
-        @validate-sw-ex="(vals) => validateParcel(vals, true, SwValidationMatchMode.SwMatch)"
-        @validate-fc="(vals) => validateParcel(vals, false)"
-        @approve="approveParcel"
-        @approve-excise="(vals) => approveParcelWithExcise(vals, setFieldValue)"
-        @clear-check-status="(vals) => runCheckStatusAction(vals, parcelsStore.clearCheckStatus)"
-        @check-for-duplicate="(vals) => runCheckStatusAction(vals, parcelsStore.checkForDuplicate)"
-      />
-      <!-- Feacn Code Section -->
-      <FeacnCodeEditor
-        :item="item"
-        :values="values"
-        :errors="errors"
-        :isSubmitting="isSubmitting"
-        :columnTitles="wbrnRegisterColumnTitles"
-        :columnTooltips="wbrnRegisterColumnTooltips"
-        :setFieldValue="setFieldValue"
-        :runningAction="runningAction"
-        :disabled="
-          readOnly ||
-          CheckStatusCode.isDuplicate(item?.checkStatus) ||
-          markedByPartnerActionsDisabled
-        "
-        @update:item="(updatedItem) => (item.value = updatedItem)"
-        @overlay-state-changed="overlayActive = $event"
-        @set-running-action="runningAction = $event"
-      />
-
-      <!-- Product Name and description Section -->
-      <div class="form-section">
-        <div class="form-row-1 product-name-row">
-          <ActionButton
-            :item="item"
-            :icon="isDescriptionVisible ? 'fa-solid fa-arrow-up' : 'fa-solid fa-arrow-down'"
-            :tooltip-text="isDescriptionVisible ? 'Скрыть описание' : 'Показать описание'"
-            :disabled="markedByPartnerActionsDisabled"
-            @click="isDescriptionVisible = !isDescriptionVisible"
-            :iconSize="'1x'"
-          />
-          <label for="productName" class="label-1 product-name-label">
-            {{ wbrnRegisterColumnTitles.productName }}:
-          </label>
-          <Field
-            name="productName"
-            id="productName"
-            :class="['form-control', 'input-1', { 'is-invalid': errors && errors.productName }]"
-          />
+      <div v-if="initializationPhase === 'loading'" role="status">Загрузка...</div>
+      <template v-if="editorReady">
+        <div v-if="readOnly" class="alert alert-warning read-only-notice">
+          Изменения запрещены. Посылка доступна только для просмотра.
         </div>
-        <div class="form-row-0" v-show="isDescriptionVisible">
-          <div class="form-group-0">
-            <label for="description" class="label-0">Описание:</label>
-            <Field
-              as="textarea"
-              name="description"
-              id="description"
-              rows="5"
-              class="form-control input-0"
-              :class="{ 'is-invalid': errors && errors.description }"
-            />
-          </div>
-        </div>
-      </div>
 
-      <!-- Product Identification & Details Section -->
-      <div class="form-section">
-        <div class="form-row">
-          <div class="form-group">
-            <label for="shk" class="label">{{ wbrnRegisterColumnTitles.shk }}:</label>
-            <ParcelNumberExt
-              live-category
-              :tn-ved="values.tnVed"
-              :customs-procedure-code="registerItem?.customsProcedureCode"
+        <!-- Order Identification & Status Section -->
+        <ParcelStatusSection
+          :item="item"
+          :values="values"
+          :parcel-statuses="statusStore.parcelStatuses"
+          :get-check-status-class="getCheckStatusClass"
+          :check-status-info="getCheckStatusInfo(item, feacnOrders, stopWords, feacnPrefixes)"
+          :has-check-status-issues="CheckStatusCode.hasIssues(item?.checkStatus)"
+          :approval-disabled="CheckStatusCode.isEUR1000(item?.checkStatus)"
+          :restriction-validation-disabled="registerItem?.theOtherCountryCode == null"
+          :disabled="
+            readOnly ||
+            isSubmitting ||
+            runningAction ||
+            loading ||
+            CheckStatusCode.isDuplicate(item?.checkStatus) ||
+            markedByPartnerActionsDisabled
+          "
+          :clear-check-status-disabled="
+            readOnly || isSubmitting || runningAction || loading || markedByPartnerActionsDisabled
+          "
+          @validate-sw="(vals) => validateParcel(vals, true, SwValidationMatchMode.NoSwMatch)"
+          @validate-sw-ex="(vals) => validateParcel(vals, true, SwValidationMatchMode.SwMatch)"
+          @validate-fc="(vals) => validateParcel(vals, false)"
+          @approve="approveParcel"
+          @approve-excise="(vals) => approveParcelWithExcise(vals, setFieldValue)"
+          @clear-check-status="(vals) => runCheckStatusAction(vals, parcelsStore.clearCheckStatus)"
+          @check-for-duplicate="(vals) => runCheckStatusAction(vals, parcelsStore.checkForDuplicate)"
+        />
+        <!-- Feacn Code Section -->
+        <FeacnCodeEditor
+          :item="item"
+          :values="values"
+          :errors="errors"
+          :isSubmitting="isSubmitting"
+          :columnTitles="wbrnRegisterColumnTitles"
+          :columnTooltips="wbrnRegisterColumnTooltips"
+          :setFieldValue="setFieldValue"
+          :runningAction="runningAction"
+          :disabled="
+            readOnly ||
+            CheckStatusCode.isDuplicate(item?.checkStatus) ||
+            markedByPartnerActionsDisabled
+          "
+          @update:item="(updatedItem) => (item = updatedItem)"
+          @overlay-state-changed="overlayActive = $event"
+          @set-running-action="runningAction = $event"
+        />
+
+        <!-- Product Name and description Section -->
+        <div class="form-section">
+          <div class="form-row-1 product-name-row">
+            <ActionButton
               :item="item"
-              field-name="shk"
-              :disabled="isSubmitting || runningAction || loading || markedByPartnerActionsDisabled"
-              class="readonly-parcel-number"
-              @click="
-                () => {
-                  /* No action needed for readonly display */
-                }
-              "
-              @fellows="handleFellows"
+              :icon="isDescriptionVisible ? 'fa-solid fa-arrow-up' : 'fa-solid fa-arrow-down'"
+              :tooltip-text="isDescriptionVisible ? 'Скрыть описание' : 'Показать описание'"
+              :disabled="markedByPartnerActionsDisabled"
+              @click="isDescriptionVisible = !isDescriptionVisible"
+              :iconSize="'1x'"
+            />
+            <label for="productName" class="label-1 product-name-label">
+              {{ wbrnRegisterColumnTitles.productName }}:
+            </label>
+            <Field
+              name="productName"
+              id="productName"
+              :class="['form-control', 'input-1', { 'is-invalid': errors && errors.productName }]"
             />
           </div>
-          <ProductLinkWithActions
-            :label="wbrnRegisterColumnTitles.productLink"
-            :item="item"
-            :disabled="isSubmitting || runningAction || loading || markedByPartnerActionsDisabled"
-            :mutation-disabled="readOnly"
-            @view-image="viewProductImage"
-            @delete-image="() => deleteProductImage(values)"
-          />
-          <ArticleWithH
-            :item="item"
-            :errors="errors"
-            :disabled="
-              readOnly || isSubmitting || runningAction || loading || markedByPartnerActionsDisabled
-            "
-            :approval-disabled="CheckStatusCode.isEUR1000(item?.checkStatus)"
-            :column-titles="wbrnRegisterColumnTitles"
-            :fullWidth="false"
-            @approve-notification="approveParcelWithNotification(values)"
-          />
-          <WbrNFormField name="productCountryName" :errors="errors" :fullWidth="false" />
-          <ParcelWeightAutoField
-            :field-component="WbrNFormField"
-            :item="item"
-            :register="registerItem"
-            :label="wbrnRegisterColumnTitles.weightKg"
-            :errors="errors"
-            :fullWidth="false"
-          />
-          <WbrNFormField
-            name="quantity"
-            type="number"
-            step="1.0"
-            :errors="errors"
-            :fullWidth="false"
-          />
-          <WbrNFormField
-            name="unitPrice"
-            type="number"
-            step="1.0"
-            :errors="errors"
-            :fullWidth="false"
-          />
-          <WbrNFormField name="currency" :errors="errors" :fullWidth="false" readonly />
+          <div class="form-row-0" v-show="isDescriptionVisible">
+            <div class="form-group-0">
+              <label for="description" class="label-0">Описание:</label>
+              <Field
+                as="textarea"
+                name="description"
+                id="description"
+                rows="5"
+                class="form-control input-0"
+                :class="{ 'is-invalid': errors && errors.description }"
+              />
+            </div>
+          </div>
         </div>
-        <div class="form-row">
-          <WbrNFormField
-            name="lastName"
-            :errors="errors"
-            :fullWidth="false"
-            :disabled="passportCheckInProgress"
-          />
-          <WbrNFormField
-            name="firstName"
-            :errors="errors"
-            :fullWidth="false"
-            :disabled="passportCheckInProgress"
-          />
-          <WbrNFormField name="patronymic" :errors="errors" :fullWidth="false" />
-          <PassportNumberWithActions
-            :label="wbrnRegisterColumnTitles.passportNumber"
-            :errors="errors"
-            :show-actions="showPassportVerification"
-            :status-value="item?.passportCheckStatus"
-            :statuses="passportCheckStatuses"
-            :status="effectivePassportCheckStatus(values)"
-            :disabled="isSubmitting || runningAction || loading || markedByPartnerActionsDisabled"
-            :input-disabled="passportCheckInProgress"
-            :check-disabled="passportCheckInProgress"
-            @check="runCheckStatusAction(values, parcelsStore.checkPassport, 'check')"
-            @clear="runCheckStatusAction(values, parcelsStore.clearPassportCheck, 'clear')"
-          />
+
+        <!-- Product Identification & Details Section -->
+        <div class="form-section">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="shk" class="label">{{ wbrnRegisterColumnTitles.shk }}:</label>
+              <ParcelNumberExt
+                live-category
+                :tn-ved="values.tnVed"
+                :customs-procedure-code="registerItem?.customsProcedureCode"
+                :item="item"
+                field-name="shk"
+                :disabled="isSubmitting || runningAction || loading || markedByPartnerActionsDisabled"
+                class="readonly-parcel-number"
+                @click="
+                  () => {
+                    /* No action needed for readonly display */
+                  }
+                "
+                @fellows="handleFellows"
+              />
+            </div>
+            <ProductLinkWithActions
+              :label="wbrnRegisterColumnTitles.productLink"
+              :item="item"
+              :disabled="isSubmitting || runningAction || loading || markedByPartnerActionsDisabled"
+              :mutation-disabled="readOnly"
+              @view-image="viewProductImage"
+              @delete-image="() => deleteProductImage(values)"
+            />
+            <ArticleWithH
+              :item="item"
+              :errors="errors"
+              :disabled="
+                readOnly || isSubmitting || runningAction || loading || markedByPartnerActionsDisabled
+              "
+              :approval-disabled="CheckStatusCode.isEUR1000(item?.checkStatus)"
+              :column-titles="wbrnRegisterColumnTitles"
+              :fullWidth="false"
+              @approve-notification="approveParcelWithNotification(values)"
+            />
+            <WbrNFormField name="productCountryName" :errors="errors" :fullWidth="false" />
+            <ParcelWeightAutoField
+              :field-component="WbrNFormField"
+              :item="item"
+              :register="registerItem"
+              :label="wbrnRegisterColumnTitles.weightKg"
+              :errors="errors"
+              :fullWidth="false"
+            />
+            <WbrNFormField
+              name="quantity"
+              type="number"
+              step="1.0"
+              :errors="errors"
+              :fullWidth="false"
+            />
+            <WbrNFormField
+              name="unitPrice"
+              type="number"
+              step="1.0"
+              :errors="errors"
+              :fullWidth="false"
+            />
+            <WbrNFormField name="currency" :errors="errors" :fullWidth="false" readonly />
+          </div>
+          <div class="form-row">
+            <WbrNFormField
+              name="lastName"
+              :errors="errors"
+              :fullWidth="false"
+              :disabled="passportCheckInProgress"
+            />
+            <WbrNFormField
+              name="firstName"
+              :errors="errors"
+              :fullWidth="false"
+              :disabled="passportCheckInProgress"
+            />
+            <WbrNFormField name="patronymic" :errors="errors" :fullWidth="false" />
+            <PassportNumberWithActions
+              :label="wbrnRegisterColumnTitles.passportNumber"
+              :errors="errors"
+              :show-actions="showPassportVerification"
+              :status-value="item?.passportCheckStatus"
+              :statuses="passportCheckStatuses"
+              :status="effectivePassportCheckStatus(values)"
+              :disabled="isSubmitting || runningAction || loading || markedByPartnerActionsDisabled"
+              :input-disabled="passportCheckInProgress"
+              :check-disabled="passportCheckInProgress"
+              @check="runCheckStatusAction(values, parcelsStore.checkPassport, 'check')"
+              @clear="runCheckStatusAction(values, parcelsStore.clearPassportCheck, 'clear')"
+            />
+          </div>
         </div>
-      </div>
-      <!-- DTag -->
-      <DTagSection :item="item" />
+        <!-- DTag -->
+        <DTagSection :item="item" />
+      </template>
     </Form>
   </div>
   <ParcelImageOverlay

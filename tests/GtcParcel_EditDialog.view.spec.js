@@ -117,6 +117,10 @@ import GtcParcel_EditDialog from '@/dialogs/GtcParcel_EditDialog.vue'
 describe('GtcParcel_EditDialog passport verification', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    parcelsMock.getById.mockImplementation(async (id) => {
+      parcelsMock.item.value = { ...parcelsMock.item.value, id }
+      return parcelsMock.item.value
+    })
     confirmMock = vi.fn()
     alertRef.value = null
     authMock.selectedParcelId = null
@@ -151,6 +155,7 @@ describe('GtcParcel_EditDialog passport verification', () => {
       template: '<Suspense><GtcParcel_EditDialog :registerId="1" :id="3" /></Suspense>'
     }, { global: { stubs: {
       Form: {
+        methods: { resetForm() {} },
         setup: () => ({ draft }),
         template: '<div><slot :errors="{}" :values="draft" :isSubmitting="false" :setFieldValue="() => {}" /></div>'
       },
@@ -191,6 +196,7 @@ describe('GtcParcel_EditDialog passport verification', () => {
             template: '<input :name="name" :id="id" :class="classes" />'
           },
           Form: {
+            methods: { resetForm() {} },
             template:
               '<div><slot :errors="{}" :values="{ id: 5, statusId: 1 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
           },
@@ -288,6 +294,7 @@ describe('GtcParcel_EditDialog passport verification', () => {
             stubs: {
               Field: { template: '<input />' },
               Form: {
+                methods: { resetForm() {} },
                 template:
                   '<div><slot :errors="{}" :values="{ id: 5, statusId: 1 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
               },

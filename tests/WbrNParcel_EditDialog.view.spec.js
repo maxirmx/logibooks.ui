@@ -256,6 +256,7 @@ const stubs = {
       return { values: formValues }
     },
     methods: {
+      resetForm() {},
       setFieldValue
     }
   },
@@ -787,17 +788,19 @@ describe('WbrNParcel_EditDialog.vue', () => {
     await resolveAll()
 
     expect(parcelUpdate).toHaveBeenCalledWith(3, expect.objectContaining({ id: 3 }))
-    expect(parcelItem.value.id).toBe(4)
-    expect(authStore.selectedParcelId).toBe(4)
+    expect(parcelItem.value.id).toBe(3)
+    expect(authStore.selectedParcelId).toBe(3)
     expect(routerReplace).toHaveBeenCalledWith({
       name: 'Редактирование посылки',
       params: { id: 4, registerId: 12 },
       query: { mode: OP_MODE_WAREHOUSE, returnUrl, boxId: String(boxId) }
     })
 
-    Object.assign(formValues, { ...baseParcel, id: 4 })
+    Object.assign(formValues, { ...baseParcel, id: 3 })
+    wrapper.unmount()
     nextParcels.mockResolvedValueOnce({ withoutIssues: null, withIssues: null })
-    await wrapper.get('[data-testid="next-issue"]').trigger('click')
+    const exhaustedWrapper = await mountDialog({ mode: OP_MODE_WAREHOUSE, returnUrl, boxId })
+    await exhaustedWrapper.get('[data-testid="next-issue"]').trigger('click')
     await resolveAll()
     expect(routerPush).toHaveBeenCalledWith(returnUrl)
 
@@ -806,8 +809,8 @@ describe('WbrNParcel_EditDialog.vue', () => {
     const backWrapper = await mountDialog({ mode: OP_MODE_WAREHOUSE, returnUrl, boxId })
     await backWrapper.get('[data-testid="back"]').trigger('click')
     await resolveAll()
-    expect(parcelItem.value.id).toBe(2)
-    expect(authStore.selectedParcelId).toBe(2)
+    expect(parcelItem.value.id).toBe(3)
+    expect(authStore.selectedParcelId).toBe(3)
     expect(routerReplace).toHaveBeenCalledWith({
       name: 'Редактирование посылки',
       params: { id: 2, registerId: 12 },
@@ -957,7 +960,7 @@ describe('WbrNParcel_EditDialog.vue', () => {
     const wrapper = await mountDialog()
 
     await wrapper.get('[data-testid="update-item"]').trigger('click')
-    expect(parcelItem.value.value).toEqual({ id: 99, shk: 'SHK-UPDATED' })
+    expect(parcelItem.value).toEqual({ id: 99, shk: 'SHK-UPDATED' })
 
     await wrapper.get('[data-testid="overlay-on"]').trigger('click')
     await nextTick()
@@ -1045,7 +1048,7 @@ describe('WbrNParcel_EditDialog.vue', () => {
     parcelGetById.mockRejectedValueOnce(new Error('refresh failed'))
     window.dispatchEvent(new Event(DEC_REPORT_UPLOADED_EVENT))
     await resolveAll()
-    expect(alertError).toHaveBeenCalledWith('refresh failed')
+    expect(alertError).toHaveBeenCalledWith(expect.objectContaining({ message: 'refresh failed' }))
 
     parcelUpdate.mockRejectedValueOnce(new Error('submit failed'))
     await wrapper.get('[data-testid="next-parcel"]').trigger('click')

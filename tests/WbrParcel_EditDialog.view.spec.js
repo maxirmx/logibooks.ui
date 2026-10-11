@@ -120,6 +120,10 @@ import WbrParcel_EditDialog from '@/dialogs/WbrParcel_EditDialog.vue'
 describe('WbrParcel_EditDialog image overlay', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    parcelsMock.getById.mockImplementation(async (id) => {
+      parcelsMock.item.value = { ...parcelsMock.item.value, id }
+      return parcelsMock.item.value
+    })
     confirmMock = vi.fn()
     authMock.isAdmin.value = false
     authMock.isSrLogistPlus = true
@@ -156,6 +160,7 @@ describe('WbrParcel_EditDialog image overlay', () => {
       template: '<Suspense><WbrParcel_EditDialog :registerId="1" :id="3" /></Suspense>'
     }, { global: { stubs: {
       Form: {
+        methods: { resetForm() {} },
         setup: () => ({ draft }),
         template: '<div><slot :errors="{}" :values="draft" :isSubmitting="false" :setFieldValue="() => {}" /></div>'
       },
@@ -188,6 +193,7 @@ describe('WbrParcel_EditDialog image overlay', () => {
         stubs: {
           Field: { template: '<input />' },
           Form: {
+            methods: { resetForm() {} },
             template:
               '<div><slot :errors="{}" :values="{ id: 3 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
           },
@@ -265,6 +271,7 @@ describe('WbrParcel_EditDialog image overlay', () => {
         stubs: {
           Field: { template: '<input />' },
           Form: {
+            methods: { resetForm() {} },
             template:
               '<div><slot :errors="{}" :values="{ id: 3, statusId: 10 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
           },
@@ -322,6 +329,7 @@ describe('WbrParcel_EditDialog image overlay', () => {
             stubs: {
               Field: { template: '<input />' },
               Form: {
+                methods: { resetForm() {} },
                 template:
                   '<div><slot :errors="{}" :values="{ id: 3, statusId: 1 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
               },
@@ -419,6 +427,7 @@ describe('WbrParcel_EditDialog image overlay', () => {
             stubs: {
               Field: { template: '<input />' },
               Form: {
+                methods: { resetForm() {} },
                 template:
                   '<div><slot :errors="{}" :values="{ id: 3 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
               },

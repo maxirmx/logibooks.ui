@@ -1,3 +1,6 @@
+import { useListStateStore } from '@/stores/list.state.store.js'
+import { LIST_STATE_STORAGE_KEY } from '@/helpers/list.state.helpers.js'
+import { setActivePinia, createPinia } from 'pinia'
 /* @vitest-environment jsdom */
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
@@ -266,6 +269,7 @@ afterEach(() => {
 
 describe('ReturnRegister_EditDialog.vue', () => {
   beforeEach(() => {
+    setActivePinia(createPinia())
     registerOps.current.customsProcedures = [
       { value: 1, charCode: '01', name: 'Возврат' },
       { value: 10, charCode: 'ЭК 10', name: 'Экспорт' },
@@ -304,6 +308,27 @@ describe('ReturnRegister_EditDialog.vue', () => {
     createReturnRegister.mockResolvedValue({ id: 99 })
     routerPush.mockReset()
     alertError.mockReset()
+  })
+
+  it('restores source table controls after selecting the same criteria without retaining form selections', async () => {
+    sessionStorage.clear()
+    const context = [1, defaultCriteria(), '2:3']
+    sessionStorage.setItem(LIST_STATE_STORAGE_KEY, JSON.stringify({ version: 1, userId: 1, lists: {
+      [JSON.stringify(['returnRegisterSources', context])]: { sourcePage: 3, sourcePerPage: 50, sourceSortBy: [{ key: 'warehouseArrivalDate', order: 'asc' }], sourceSearch: 'saved search' }
+    } }))
+    useListStateStore().setUser(1)
+    getReturnRegisterPairs.mockResolvedValue([{ senderCompanyId: 2, receiverCompanyId: 3 }])
+    const wrapper = mountDialog()
+    await flushPromises()
+    expect(wrapper.find('[data-testid="warehouse-select"]').element.value).toBe('')
+    await selectWarehouse(wrapper, 1)
+    await selectPair(wrapper)
+    expect(getRegisters).toHaveBeenNthCalledWith(1, defaultSourceQuery({ page: 3, pageSize: 50, sortBy: 'warehouseArrivalDate', sortOrder: 'asc', search: 'saved search' }))
+    expect(wrapper.find('input').element.value).toBe('saved search')
+    expect(okButton(wrapper).attributes('disabled')).toBeDefined()
+    await selectWarehouse(wrapper, 2)
+    await selectPair(wrapper)
+    expect(getRegisters).toHaveBeenLastCalledWith(defaultSourceQuery({ warehouseId: 2 }))
   })
 
   it('loads warehouses on mount and keeps OK disabled initially', async () => {
@@ -538,9 +563,9 @@ describe('ReturnRegister_EditDialog.vue', () => {
         receiverCompanyName: 'Receiver'
       }
     ])
-    getRegisters.mockResolvedValueOnce({
+    getRegisters.mockResolvedValue({
       items: [{ id: 7, dealNumber: 'D-7', parcelsTotal: 5 }],
-      pagination: { totalCount: 1 }
+      pagination: { totalCount: 1000 }
     })
 
     const wrapper = mountDialog()

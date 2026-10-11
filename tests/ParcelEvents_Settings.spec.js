@@ -1,3 +1,6 @@
+import { useListStateStore } from '@/stores/list.state.store.js'
+import { LIST_STATE_STORAGE_KEY } from '@/helpers/list.state.helpers.js'
+import { setActivePinia, createPinia } from 'pinia'
 /* @vitest-environment jsdom */
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
@@ -218,6 +221,7 @@ const mountComponent = () =>
 
 describe('ParcelEvents_Settings.vue', () => {
   beforeEach(() => {
+    setActivePinia(createPinia())
     vi.clearAllMocks()
     mockEvents.value = createMockEvents()
     mockStatuses.value = [
@@ -241,6 +245,20 @@ describe('ParcelEvents_Settings.vue', () => {
       mockEvents.value = [...mockEvents.value]
     })
     updateMany.mockResolvedValue()
+  })
+
+  it('restores the procedure filter before loading without resetting a valid saved page', async () => {
+    sessionStorage.clear()
+    sessionStorage.setItem(LIST_STATE_STORAGE_KEY, JSON.stringify({ version: 1, userId: 1, lists: {
+      [JSON.stringify(['parcelEvents', ''])]: { selectedCustomsProcedureCode: 10 }
+    } }))
+    useListStateStore().setUser(1)
+    mockAuthStore.parcelevents_page.value = 3
+    const wrapper = mountComponent()
+    await resolveAll()
+    expect(wrapper.find('[data-testid="customs-procedure-select"]').element.value).toBe('10')
+    expect(mockAuthStore.parcelevents_page.value).toBe(3)
+    wrapper.unmount()
   })
 
   it('renders event rows with selectors', async () => {

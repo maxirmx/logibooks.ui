@@ -3,6 +3,8 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application 
 
+import { useListState } from '@/composables/useListState.js'
+import { listField } from '@/helpers/list.state.helpers.js'
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { reportError } from '@/helpers/error.helpers.js'
 import ActionButton from '@/components/ActionButton.vue'
@@ -26,6 +28,7 @@ const confirm = useAppConfirm()
 let disposed = false
 onUnmounted(() => { disposed = true })
 const selectedType = ref(props.initialRegisterType)
+const { tableSortBy } = useListState('companyOutputColumns', { tableSortBy: listField([]) }, () => [props.companyId, selectedType.value])
 const inputChoice = ref('')
 const generatedChoice = ref('')
 const activeAddMode = ref(null)
@@ -379,6 +382,7 @@ defineExpose({ save, saving, loading, canSave })
     <template v-else-if="current.loaded">
       <v-card class="table-card">
         <v-data-table
+          v-model:sort-by="tableSortBy"
           :headers="headers"
           :items="rows"
           item-value="id"

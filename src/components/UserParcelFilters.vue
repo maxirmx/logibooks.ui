@@ -3,6 +3,8 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
+import { useListState } from '@/composables/useListState.js'
+import { listField } from '@/helpers/list.state.helpers.js'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAlertStore } from '@/stores/alert.store.js'
@@ -21,6 +23,7 @@ const headers = [
   { title: 'Название', key: 'name', sortable: true },
   { title: 'Исключено статусов', key: 'exclusions', sortable: false }
 ]
+const { tableSortBy } = useListState('userParcelFilters', { tableSortBy: listField([]) })
 const deletingId = ref(null)
 const loaded = ref(false)
 let active = true
@@ -124,6 +127,7 @@ async function removeFilter(filter) {
     </div>
     <div class="user-parcel-filters__table-shell table-card">
       <v-data-table
+        v-model:sort-by="tableSortBy"
         :headers="headers"
         :items="loaded ? filters : []"
         item-value="id"

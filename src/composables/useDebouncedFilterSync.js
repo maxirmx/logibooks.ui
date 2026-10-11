@@ -60,6 +60,14 @@ export function useDebouncedFilterSync({ filters, loadFn, isComponentMounted, de
     })
   }
 
+  // Account changes and restoration can update the store while this list stays mounted.
+  // Copy each change synchronously so a later local edit cannot replay stale siblings.
+  filters.forEach(({ local, store }) => {
+    if (store && store !== local) {
+      watcherStops.push(watch(store, value => { local.value = value }, { flush: 'sync' }))
+    }
+  })
+
   async function executeLoad() {
     if (!isMounted() || isLoading.value) {
       if (isLoading.value) {

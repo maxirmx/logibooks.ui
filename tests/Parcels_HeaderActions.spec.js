@@ -1,3 +1,4 @@
+import { setActivePinia, createPinia } from 'pinia'
 /* @vitest-environment jsdom */
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
@@ -376,6 +377,7 @@ describe.each([
   ['GtcParcels_List', GtcParcelsList, { hasPreviousDTagComment: false }]
 ])('%s header actions', (name, Component, capabilities) => {
   beforeEach(() => {
+    setActivePinia(createPinia())
     vi.clearAllMocks()
     setupStores()
     loadParcelsMock.mockClear()

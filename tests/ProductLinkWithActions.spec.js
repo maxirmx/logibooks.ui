@@ -5,7 +5,8 @@ import ProductLinkWithActions from '@/components/ProductLinkWithActions.vue'
 
 // Create mocks that can be modified per test
 let mockAuthStore = {
-  user: { token: 'test-token' }
+  user: { token: 'test-token' },
+      persistListState: vi.fn().mockReturnValue(true)
 }
 
 let mockAlertStore = {
@@ -42,7 +43,8 @@ describe('ProductLinkWithActions', () => {
   beforeEach(() => {
     // Reset mocks before each test
     mockAuthStore = {
-      user: { token: 'test-token' }
+      user: { token: 'test-token' },
+      persistListState: vi.fn().mockReturnValue(true)
     }
     mockAlertStore = {
       error: vi.fn(),
@@ -313,80 +315,25 @@ describe('ProductLinkWithActions', () => {
     expect(wrapper.emitted()['select-image']).toHaveLength(1)
   })
 
-  it('persists parcels snapshot to sessionStorage when selecting image', async () => {
-    // Extend auth store with parcels keys used for snapshot
-    mockAuthStore.parcels_sort_by = [{ key: 'id', order: 'asc' }]
-    mockAuthStore.parcels_status = null
-    mockAuthStore.parcels_check_status_sw = null
-    mockAuthStore.parcels_check_status_fc = null
-    mockAuthStore.parcels_hide_legacy_restrictions = true
-    mockAuthStore.parcels_tnved = ''
-    mockAuthStore.parcels_number = ''
-    mockAuthStore.parcels_product_name = 'Headphones'
-    mockAuthStore.parcels_page = 1
-    mockAuthStore.parcels_per_page = 100
-
-    // Ensure previous snapshot cleared
-    window.sessionStorage.removeItem('logibooks.parcelsSnapshot')
+  it('flushes shared list state before activating the extension', async () => {
     const wrapper = mount(ProductLinkWithActions, {
-      props: {
-        label: 'Product Link',
-        item: { id: 30, productLink: 'example.com', hasImage: true },
-        disabled: false
-      },
+      props: { label: 'Product Link', item: { id: 30, productLink: 'example.com', hasImage: true } },
       global: { stubs: globalStubs }
     })
-
-    // Set extensionPresent directly (message event may not be delivered in test env)
-    // Call handler directly to reliably exercise snapshot logic
-    await wrapper.vm.handleSelectClick()
-
-    const raw = window.sessionStorage.getItem('logibooks.parcelsSnapshot')
-    expect(raw).not.toBeNull()
-    const snap = JSON.parse(raw)
-    expect(snap.parcels_sort_by).toEqual(mockAuthStore.parcels_sort_by)
-    expect(snap.parcels_status).toEqual(mockAuthStore.parcels_status)
-    expect(snap.parcels_check_status_sw).toEqual(mockAuthStore.parcels_check_status_sw)
-    expect(snap.parcels_check_status_fc).toEqual(mockAuthStore.parcels_check_status_fc)
-    expect(snap.parcels_hide_legacy_restrictions).toEqual(
-      mockAuthStore.parcels_hide_legacy_restrictions
-    )
-    expect(snap.parcels_tnved).toEqual(mockAuthStore.parcels_tnved)
-    expect(snap.parcels_number).toEqual(mockAuthStore.parcels_number)
-    expect(snap.parcels_product_name).toEqual(mockAuthStore.parcels_product_name)
-    expect(snap.parcels_page).toEqual(mockAuthStore.parcels_page)
-    expect(snap.parcels_per_page).toEqual(mockAuthStore.parcels_per_page)
+    wrapper.vm.handleSelectClick()
+    expect(mockAuthStore.persistListState).toHaveBeenCalledOnce()
+    expect(wrapper.emitted()['select-image']).toHaveLength(1)
   })
 
-  it('reports error to alertStore when snapshot persist fails', async () => {
-    mockAuthStore.parcels_sort_by = [{ key: 'id', order: 'asc' }]
-    mockAuthStore.parcels_page = 1
-    mockAuthStore.parcels_per_page = 100
-
-    // Make sessionStorage.setItem throw
-    // Temporarily remove sessionStorage to make setItem fail
-    const originalSession = window.sessionStorage
-    // @ts-ignore
-    window.sessionStorage = undefined
-
+  it('continues after a handled persistence failure without a duplicate alert', () => {
+    mockAuthStore.persistListState.mockReturnValue(false)
     const wrapper = mount(ProductLinkWithActions, {
-      props: {
-        label: 'Product Link',
-        item: { id: 31, productLink: 'example.com', hasImage: true },
-        disabled: false
-      },
+      props: { label: 'Product Link', item: { id: 31, productLink: 'example.com', hasImage: true } },
       global: { stubs: globalStubs }
     })
-
-    // Set extensionPresent directly (message event may not be delivered in test env)
-    // Call handler directly to reliably exercise snapshot logic and error handling
-    await wrapper.vm.handleSelectClick()
-
-    expect(mockAlertStore.error).toHaveBeenCalledWith('Не удалось сохранить фильтры и сортировку')
-
-    // Restore
-    // @ts-ignore
-    window.sessionStorage = originalSession
+    wrapper.vm.handleSelectClick()
+    expect(wrapper.emitted()['select-image']).toHaveLength(1)
+    expect(mockAlertStore.error).not.toHaveBeenCalled()
   })
 
   it('handles view button when image is unavailable', async () => {

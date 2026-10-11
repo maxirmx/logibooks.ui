@@ -1,3 +1,4 @@
+import { setActivePinia, createPinia } from 'pinia'
 /* @vitest-environment jsdom */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
@@ -76,6 +77,7 @@ async function mountEditor(waitForLoad = true, attachTo) {
 
 describe('company register output format editor', () => {
   beforeEach(() => {
+    setActivePinia(createPinia())
     vi.clearAllMocks()
     alertStore.alert = null
     alertStore.error.mockReset()

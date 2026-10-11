@@ -3,8 +3,10 @@
 // All rights reserved.
 // This file is a part of Logibooks UI application
 
+import { useParcelBoxScope } from '@/composables/useParcelBoxScope.js'
+import { useListPageBounds } from '@/composables/useListPageBounds.js'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
-import { watch, ref, computed, onMounted, onUnmounted } from 'vue'
+import { watch, ref, computed, onMounted, onUnmounted, unref } from 'vue'
 import { useParcelsStore } from '@/stores/parcels.store.js'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
@@ -69,15 +71,17 @@ const {
 } = storeToRefs(authStore)
 const { ops } = storeToRefs(warehousesStore)
 
-if (props.boxId) {
-  parcels_wh_page.value = 1
-  parcels_wh_box_number.value = ''
-}
-
 const localParcelNumberSearch = ref(parcels_wh_number.value || '')
 const localBoxNumberSearch = ref(props.boxId ? '' : parcels_wh_box_number.value || '')
 const localStickerSearch = ref(parcels_wh_sticker.value || '')
 const localProductNameSearch = ref(parcels_wh_product_name.value || '')
+
+const onListControlsChange = useParcelBoxScope({
+  mode: 'warehouse', boxId: () => props.boxId ?? null,
+  page: parcels_wh_page,
+  boxNumber: parcels_wh_box_number, localBoxNumber: localBoxNumberSearch,
+  onChange: () => triggerLoad()
+})
 
 const registerLoading = ref(true)
 const isInitializing = ref(true)
@@ -107,9 +111,7 @@ const pageOptions = computed(() => {
     .map((n) => ({ value: n, title: String(n) }))
 })
 
-watch(maxPage, (v) => {
-  if (parcels_wh_page.value > v) parcels_wh_page.value = v
-})
+const parcelsLoaded = useListPageBounds(parcels_wh_page, maxPage, () => !loading.value && !isInitializing.value && !unref(parcelsStore.error))
 
 const headers = computed(() => [
   { title: '', key: 'actions', align: 'center', sortable: false, width: '72px' },
@@ -172,7 +174,8 @@ async function fetchRegister() {
 }
 
 async function loadParcelsWrapper() {
-  await loadParcels(props.registerId, parcelsStore, isComponentMounted, alertStore, {
+  parcelsLoaded.value = false
+  parcelsLoaded.value = await loadParcels(props.registerId, parcelsStore, isComponentMounted, alertStore, {
     showMarkedByPartner: true,
     ...(props.boxId ? { boxId: props.boxId } : {})
   })
@@ -233,18 +236,6 @@ const { isParcelEditCellDisabled, parcelEditCellClass, openParcelEdit } = usePar
   })
 })
 
-const boxScopeWatcherStop = watch(
-  () => props.boxId,
-  (boxId) => {
-    if (boxId) {
-      localBoxNumberSearch.value = ''
-      parcels_wh_box_number.value = ''
-    }
-    if (parcels_wh_page.value !== 1) parcels_wh_page.value = 1
-    else triggerLoad()
-  }
-)
-
 const watcherStop = watch(
   [
     () => authStore.parcels_filter_id,
@@ -255,7 +246,7 @@ const watcherStop = watch(
     parcels_wh_check_status_projection,
     parcels_wh_zone
   ],
-  () => triggerLoad(),
+  onListControlsChange,
   { immediate: false }
 )
 
@@ -294,7 +285,6 @@ onUnmounted(() => {
   if (watcherStop) {
     watcherStop()
   }
-  boxScopeWatcherStop()
 })
 
 function closeList() {

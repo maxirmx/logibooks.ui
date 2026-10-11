@@ -3,6 +3,8 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
+import { useListState } from '@/composables/useListState.js'
+import { scalarField } from '@/helpers/list.state.helpers.js'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { computed, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
@@ -37,7 +39,9 @@ const initializing = ref(true)
 const initialLoadFailed = ref(false)
 
 const registerEventProcedureSet = new Set(Object.values(CUSTOMS_PROCEDURE))
-const selectedCustomsProcedureCode = ref(null)
+const { selectedCustomsProcedureCode } = useListState('registerEvents', {
+  selectedCustomsProcedureCode: scalarField(null)
+})
 
 const hasEvents = computed(() => events.value?.length > 0)
 const procedureOptions = computed(() => {
@@ -99,6 +103,7 @@ function ensureSelectedCustomsProcedure() {
   }
 
   selectedCustomsProcedureCode.value = procedureOptions.value[0]?.value ?? null
+  registerevents_page.value = 1
 }
 
 function onCustomsProcedureChange(value) {
@@ -125,7 +130,6 @@ async function loadData() {
     await registersStore.ensureOpsLoaded()
     ensureProcedureOptionsLoaded()
     ensureSelectedCustomsProcedure()
-    registerevents_page.value = 1
     await eventsStore.registerGetAll()
     statusSelections.value = events.value.reduce((result, item) => {
       result[item.id] = item.registerStatusId ?? item.statusId ?? item.parcelStatusId ?? null

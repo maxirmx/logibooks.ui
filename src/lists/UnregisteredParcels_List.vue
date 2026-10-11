@@ -3,6 +3,8 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
+import { useListState } from '@/composables/useListState.js'
+import { listField, pageField, pageSizeField } from '@/helpers/list.state.helpers.js'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { computed, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
@@ -19,6 +21,9 @@ const props = defineProps({
   registerId: { type: Number, required: true }
 })
 const emit = defineEmits(['close'])
+const { page, itemsPerPage, sortBy } = useListState('unregisteredParcels', {
+  page: pageField(), itemsPerPage: pageSizeField(10), sortBy: listField([])
+}, () => props.registerId)
 
 const parcelStatusStore = useParcelStatusesStore()
 const unregisteredParcelsStore = useUnregisteredParcelsStore()
@@ -159,6 +164,9 @@ function closeList() {
 
     <v-card class="table-card">
       <v-data-table
+        v-model:page="page"
+        v-model:items-per-page="itemsPerPage"
+        v-model:sort-by="sortBy"
         :headers="headers"
         :items="items"
         :loading="loading"

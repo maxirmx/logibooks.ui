@@ -3,6 +3,9 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
+import { useListState } from '@/composables/useListState.js'
+import { useListPageBounds } from '@/composables/useListPageBounds.js'
+import { listField, pageField, pageSizeField, scalarField } from '@/helpers/list.state.helpers.js'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import ResponsiveFilterBar from '@/components/ResponsiveFilterBar.vue'
 import { computed, ref, unref, watch } from 'vue'
@@ -47,12 +50,17 @@ const airportsStore = useAirportsStore()
 const warehousesStore = useWarehousesStore()
 const { items, totalCount, userOptions, reasonOptions, loading } = storeToRefs(historyStore)
 
-const page = ref(1)
-const itemsPerPage = ref(50)
-const sortBy = ref([{ key: 'changedAt', order: 'desc' }])
-const selectedUserId = ref(null)
-const selectedReason = ref(null)
+const { page, itemsPerPage, sortBy, selectedUserId, selectedReason } = useListState('registerHistory', {
+  page: pageField(),
+  itemsPerPage: pageSizeField(50),
+  sortBy: listField([{ key: 'changedAt', order: 'desc' }]),
+  selectedUserId: scalarField(null),
+  selectedReason: scalarField(null)
+}, () => props.registerId)
 const pageLoading = ref(false)
+const historyDataLoaded = useListPageBounds(page,
+  () => Math.max(1, Math.ceil(totalCount.value / itemsPerPage.value)),
+  () => !pageLoading.value && !loading.value)
 const canView = computed(() => Boolean(authStore.isShiftLeadPlus))
 const registerHeading = computed(() =>
   buildParcelListHeading(
@@ -186,6 +194,7 @@ async function loadHistory() {
   }
 
   pageLoading.value = true
+  historyDataLoaded.value = false
   try {
     await Promise.all([
       ensureReferenceData(),
@@ -199,6 +208,7 @@ async function loadHistory() {
         reason: selectedReason.value
       })
     ])
+    if (requestId === latestLoadRequestId) historyDataLoaded.value = true
   } catch (error) {
     if (requestId === latestLoadRequestId) {
       alertStore.error(error, {
@@ -279,10 +289,7 @@ watch(
   () => props.registerId,
   () => {
     latestLoadRequestId += 1
-    page.value = 1
-    sortBy.value = [{ key: 'changedAt', order: 'desc' }]
-    selectedUserId.value = null
-    selectedReason.value = null
+    historyDataLoaded.value = false
     pageLoading.value = false
     historyStore.reset()
   },
@@ -369,7 +376,7 @@ watch(
       />
     </ResponsiveFilterBar>
 
-    <v-card v-if="canView" class="table-card register-history-table-card">
+    <v-card v-if="canView && historyDataLoaded" class="table-card register-history-table-card">
       <v-data-table-server
         v-model:items-per-page="itemsPerPage"
         v-model:page="page"

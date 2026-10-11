@@ -1,3 +1,4 @@
+import { setActivePinia, createPinia } from 'pinia'
 /* @vitest-environment jsdom */
 // Copyright (C) 2026
 
@@ -194,6 +195,7 @@ const globalStubs = {
 
 describe('OzonParcels_WhList.vue', () => {
   beforeEach(() => {
+    setActivePinia(createPinia())
     vi.clearAllMocks()
     mockItems.value = [
       {

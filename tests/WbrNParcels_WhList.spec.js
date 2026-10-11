@@ -1,3 +1,4 @@
+import { setActivePinia, createPinia } from 'pinia'
 /* @vitest-environment jsdom */
 // Copyright (C) 2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
@@ -347,7 +348,7 @@ function resetState() {
   ensureRegisterOpsLoaded.mockResolvedValue()
   ensureStatusesLoaded.mockResolvedValue()
   ensureWarehouseOpsLoaded.mockResolvedValue()
-  loadParcels.mockResolvedValue()
+  loadParcels.mockResolvedValue(true)
   setDefect.mockResolvedValue(true)
   clearDefect.mockResolvedValue(true)
   clearExtId.mockResolvedValue(true)
@@ -366,7 +367,7 @@ describe('WbrNParcels_WhList.vue', () => {
     WbrNParcelsWhList = (await import('@/lists/WbrNParcels_WhList.vue')).default
   }, 30000)
 
-  beforeEach(resetState)
+  beforeEach(() => { setActivePinia(createPinia()); resetState() })
 
   it('defines WbrN warehouse columns with article and without hidden fields', () => {
     const wrapper = mount(WbrNParcelsWhList, {
@@ -485,6 +486,8 @@ describe('WbrNParcels_WhList.vue', () => {
     await wrapper.get('.alert .close').trigger('click')
     expect(alertDismiss).toHaveBeenCalledWith(29)
 
+    // Filter synchronization is stubbed here, so explicitly complete the initial load.
+    await wrapper.vm.loadParcelsWrapper()
     mockTotalCount.value = 1
     await resolveAll()
     expect(parcelsWhPage.value).toBe(1)

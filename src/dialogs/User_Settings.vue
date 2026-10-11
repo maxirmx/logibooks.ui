@@ -5,6 +5,8 @@
 
 import FieldError from '@/components/FieldError.vue'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
+import { useListState } from '@/composables/useListState.js'
+import { listField } from '@/helpers/list.state.helpers.js'
 import { focusFirstInvalidField } from '@/helpers/form.validation.helpers.js'
 import { reportFormError } from '@/helpers/error.helpers.js'
 import { computed, ref } from 'vue'
@@ -53,6 +55,7 @@ const warehousesStore = useWarehousesStore()
 const { hotKeyActionSchemes } = storeToRefs(hotKeyActionSchemesStore)
 const { warehouses, loading: warehousesLoading } = storeToRefs(warehousesStore)
 
+const { tableSortBy } = useListState('userWarehouseAssociations', { tableSortBy: listField([]) }, () => props.id ?? 'create')
 const pwdErr =
   'Пароль должен быть не короче 8 символов и содержать хотя бы одну цифру и один специальный символ (!@#$%^&*()\\-_=+{};:,<.>)'
 const pwdReg = /^.*(?=.{8,})((?=.*[!@#$%^&*()\-_=+{};:,<.>]){1})((?=.*\d){1}).*$/
@@ -512,6 +515,7 @@ function onSubmit(values, { setErrors } = {}) {
           <h2 class="label">Доступ к складам:</h2>
           <div class="warehouse-associations-table">
             <v-data-table
+              v-model:sort-by="tableSortBy"
               :headers="warehouseHeaders"
               :items="displayedWarehouses"
               :loading="warehousesLoading"

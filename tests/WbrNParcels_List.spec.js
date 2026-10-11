@@ -1,3 +1,4 @@
+import { setActivePinia, createPinia } from 'pinia'
 /* @vitest-environment jsdom */
 // Copyright (C) 2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
@@ -569,7 +570,7 @@ function resetState() {
   headerActions.freezeCheckStatus.mockResolvedValue(true)
   headerActions.freezeTnVedOrder.mockResolvedValue()
   headerActions.checkPassports.mockResolvedValue()
-  loadParcels.mockResolvedValue()
+  loadParcels.mockResolvedValue(true)
   bulkAssignTnved.mockResolvedValue()
 }
 
@@ -579,7 +580,7 @@ describe('WbrNParcels_List.vue', () => {
     WbrParcelsList = (await import('@/lists/WbrParcels_List.vue')).default
   }, 60_000)
 
-  beforeEach(resetState)
+  beforeEach(() => { setActivePinia(createPinia()); resetState() })
 
   it('includes Duplicate2 in both check-status filter selectors', () => {
     const wrapper = mount(WbrNParcelsList, {

@@ -1,3 +1,6 @@
+import { useListStateStore } from '@/stores/list.state.store.js'
+import { LIST_STATE_STORAGE_KEY } from '@/helpers/list.state.helpers.js'
+import { setActivePinia, createPinia } from 'pinia'
 /* @vitest-environment jsdom */
 // Copyright (C) 2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
@@ -164,6 +167,7 @@ vi.mock('@/stores/alert.store.js', () => ({
 
 describe('RegisterHistory_List.vue', () => {
   beforeEach(() => {
+    setActivePinia(createPinia())
     vi.clearAllMocks()
     mocks.canView = true
     mocks.registerItem = {
@@ -243,6 +247,28 @@ describe('RegisterHistory_List.vue', () => {
         action: options.action ?? null
       }
     })
+  })
+
+  it('restores filters and pagination before its first request and isolates registers', async () => {
+    mockRefs.totalCount.value = 1000
+    sessionStorage.clear()
+    sessionStorage.setItem(LIST_STATE_STORAGE_KEY, JSON.stringify({ version: 1, userId: 1, lists: {
+      [JSON.stringify(['registerHistory', 42])]: { page: 3, itemsPerPage: 50, sortBy: [{ key: 'user', order: 'asc' }], selectedUserId: 7, selectedReason: 'Сохранение изменений' }
+    } }))
+    useListStateStore().setUser(1)
+    const wrapper = mount(RegisterHistoryList, { props: { registerId: 42 }, global: { stubs: defaultGlobalStubs } })
+    await flushPromises()
+    expect(mocks.getHistory).toHaveBeenNthCalledWith(1, 42, { page: 3, pageSize: 50, sortBy: 'user', sortOrder: 'asc', userId: 7, reason: 'Сохранение изменений' })
+    const selects = wrapper.findAllComponents({ name: 'v-select' })
+    expect(selects[0].props('modelValue')).toBe(7)
+    expect(selects[1].props('modelValue')).toBe('Сохранение изменений')
+    await wrapper.setProps({ registerId: 43 })
+    await flushPromises()
+    expect(mocks.getHistory).toHaveBeenLastCalledWith(43, expect.objectContaining({ page: 1, userId: null, reason: null }))
+    await wrapper.setProps({ registerId: 42 })
+    await flushPromises()
+    expect(mocks.getHistory).toHaveBeenLastCalledWith(42, expect.objectContaining({ page: 3, userId: 7 }))
+    wrapper.unmount()
   })
 
   it('loads and renders structured history for an authorized user', async () => {

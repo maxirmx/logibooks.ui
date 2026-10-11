@@ -1,3 +1,4 @@
+import { setActivePinia, createPinia } from 'pinia'
 /* @vitest-environment jsdom */
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
@@ -138,6 +139,7 @@ const Parent = {
 }
 
 beforeEach(() => {
+    setActivePinia(createPinia())
   vi.clearAllMocks()
   isAdmin = false
   mockUser.value = {

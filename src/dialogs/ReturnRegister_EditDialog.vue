@@ -3,6 +3,9 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
+import { useListState } from '@/composables/useListState.js'
+import { useListPageBounds } from '@/composables/useListPageBounds.js'
+import { listField, pageField, pageSizeField } from '@/helpers/list.state.helpers.js'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
@@ -50,10 +53,6 @@ const selectedRegisterIds = ref([])
 const pairs = ref([])
 const sourceRegisters = ref([])
 const sourceTotalCount = ref(0)
-const sourceSearch = ref('')
-const sourcePage = ref(1)
-const sourcePerPage = ref(25)
-const sourceSortBy = ref([{ key: 'id', order: 'desc' }])
 const isInitializing = ref(true)
 const pairsLoading = ref(false)
 const registersLoading = ref(false)
@@ -104,6 +103,16 @@ const returnRegisterCriteria = computed(() => ({
   parcelSelectionMode: selectedParcelSelectionModeNumber.value,
   parcelStatusId: requiresParcelStatus.value ? selectedParcelStatusNumber.value : null
 }))
+const { sourceSearch, sourcePage, sourcePerPage, sourceSortBy, restored: sourceRestored } = useListState('returnRegisterSources', {
+  sourceSearch: listField(''), sourcePage: pageField(), sourcePerPage: pageSizeField(25),
+  sourceSortBy: listField([{ key: 'id', order: 'desc' }])
+}, () => selectedPair.value && hasValidParcelCriteria.value && hasValidCustomsProcedure.value
+  ? [selectedWarehouseNumber.value, returnRegisterCriteria.value, selectedPairKey.value]
+  : null)
+const sourceDataLoaded = useListPageBounds(sourcePage,
+  () => Math.max(1, Math.ceil(sourceTotalCount.value / sourcePerPage.value)),
+  () => !registersLoading.value)
+
 const canSubmit = computed(
   () =>
     selectedWarehouseNumber.value > 0 &&
@@ -192,9 +201,9 @@ watch(selectedPairKey, async () => {
 })
 
 watch(
-  [sourcePage, sourcePerPage, sourceSortBy],
-  () => {
-    if (!selectedPair.value) return
+  [sourcePage, sourcePerPage, sourceSortBy, sourceRestored],
+  (values, previous) => {
+    if (values[3] !== previous[3] || !selectedPair.value) return
 
     clearSourceSearchTimer()
     loadSourceRegisters()
@@ -202,8 +211,8 @@ watch(
   { immediate: false }
 )
 
-watch(sourceSearch, () => {
-  if (!selectedPair.value) return
+watch([sourceSearch, sourceRestored], ([, restored], [, previousRestored]) => {
+  if (restored !== previousRestored || !selectedPair.value) return
 
   clearSourceSearchTimer()
   sourceSearchTimer = window.setTimeout(() => {
@@ -226,7 +235,7 @@ function clearSourceSearchTimer() {
 
 function clearSourceRegisters() {
   clearSourceSearchTimer()
-  sourcePage.value = 1
+  sourceDataLoaded.value = false
   sourceRegisters.value = []
   sourceTotalCount.value = 0
   selectedRegisterIds.value = []
@@ -300,6 +309,7 @@ async function loadSourceRegisters() {
       sourceTotalCount.value = Array.isArray(result)
         ? result.length
         : result?.pagination?.totalCount || 0
+      sourceDataLoaded.value = true
     }
   } catch (error) {
     /* v8 ignore next -- stale async response guard */
@@ -508,6 +518,7 @@ function cancel() {
       />
 
       <WarehouseRegistersTable
+        v-if="sourceDataLoaded"
         v-model:items-per-page="sourcePerPage"
         v-model:page="sourcePage"
         v-model:sort-by="sourceSortBy"

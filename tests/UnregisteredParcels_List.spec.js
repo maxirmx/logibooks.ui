@@ -1,3 +1,6 @@
+import { useListStateStore } from '@/stores/list.state.store.js'
+import { LIST_STATE_STORAGE_KEY } from '@/helpers/list.state.helpers.js'
+import { setActivePinia, createPinia } from 'pinia'
 /* @vitest-environment jsdom */
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
@@ -68,6 +71,7 @@ vi.mock('@/stores/registers.store.js', () => ({
 
 describe('UnregisteredParcels_List.vue', () => {
   beforeEach(() => {
+    setActivePinia(createPinia())
     vi.clearAllMocks()
     mockItems.value = []
     mockLoading.value = false
@@ -82,6 +86,21 @@ describe('UnregisteredParcels_List.vue', () => {
     getTransportationDocument.mockImplementation((id) =>
       Number(id) === 1 ? 'CMR' : `Документ ${id}`
     )
+  })
+
+  it('restores table controls for the matching register', async () => {
+    sessionStorage.clear()
+    sessionStorage.setItem(LIST_STATE_STORAGE_KEY, JSON.stringify({ version: 1, userId: 1, lists: {
+      [JSON.stringify(['unregisteredParcels', 5])]: { page: 2, itemsPerPage: 50, sortBy: [{ key: 'scanCode', order: 'desc' }] }
+    } }))
+    useListStateStore().setUser(1)
+    const wrapper = mount(UnregisteredParcelsList, { props: { registerId: 5 }, global: { stubs: vuetifyStubs } })
+    await resolveAll()
+    const table = wrapper.findComponent('[data-testid="v-data-table"]')
+    expect(table.props('page')).toBe(2)
+    expect(table.props('itemsPerPage')).toBe(50)
+    expect(table.props('sortBy')).toEqual([{ key: 'scanCode', order: 'desc' }])
+    wrapper.unmount()
   })
 
   it('loads rows on mount with register id', async () => {

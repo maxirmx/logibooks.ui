@@ -3,14 +3,15 @@
 // This file is a part of Logibooks ui application
 
 import { defineStore } from 'pinia'
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onScopeDispose } from 'vue'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 import router from '@/router'
 import { useStatusStore } from '@/stores/status.store.js'
-import { useAlertStore } from '@/stores/alert.store.js'
 import { reportError } from '@/helpers/error.helpers.js'
-import { REGISTER_STATUS_FILTER_IN_PROGRESS } from '@/helpers/register.status.filter.helpers.js'
+import { AUTH_LIST_SCHEMA } from '@/helpers/auth.list.state.js'
+import { createListRefs } from '@/helpers/list.state.helpers.js'
+import { useListStateStore } from '@/stores/list.state.store.js'
 import {
   roleShiftLead,
   roleSrLogist,
@@ -79,141 +80,9 @@ export const useAuthStore = defineStore('auth', () => {
       isWhOperator.value
   )
 
-  const users_per_page = ref(100)
-  const users_search = ref('')
-  const users_sort_by = ref(['id'])
-  const users_page = ref(1)
-  const companies_per_page = ref(100)
-  const companies_search = ref('')
-  const companies_sort_by = ref(['id'])
-  const companies_page = ref(1)
-  const customsstations_per_page = ref(100)
-  const customsstations_search = ref('')
-  const customsstations_sort_by = ref(['id'])
-  const customsstations_page = ref(1)
-  const warehouses_per_page = ref(100)
-  const warehouses_search = ref('')
-  const warehouses_sort_by = ref(['id'])
-  const warehouses_page = ref(1)
-  const scanjobs_per_page = ref(100)
-  const scanjobs_search = ref('')
-  const scanjobs_sort_by = ref([{ key: 'id', order: 'desc' }])
-  const scanjobs_page = ref(1)
-  const scanjobmonitor_boxes_per_page = ref(100)
-  const scanjobmonitor_boxes_sort_by = ref([{ key: 'boxCode', order: 'asc' }])
-  const scanjobmonitor_boxes_page = ref(1)
-  const scanjobmonitor_parcels_per_page = ref(100)
-  const scanjobmonitor_parcels_sort_by = ref([{ key: 'parcelNumber', order: 'asc' }])
-  const scanjobmonitor_parcels_page = ref(1)
+  const listRefs = createListRefs(AUTH_LIST_SCHEMA)
+  const { parcels_page, parcels_wh_page } = listRefs
   const scanjobmonitor_follow_user_id = ref(readScanjobMonitorFollowUserId())
-  const notifications_per_page = ref(100)
-  const notifications_search = ref('')
-  const notifications_sort_by = ref(['id'])
-  const notifications_page = ref(1)
-  const airports_per_page = ref(10)
-  const airports_search = ref('')
-  const airports_sort_by = ref(['id'])
-  const airports_page = ref(1)
-  const hotkeyactionschemes_per_page = ref(10)
-  const hotkeyactionschemes_search = ref('')
-  const hotkeyactionschemes_sort_by = ref(['id'])
-  const hotkeyactionschemes_page = ref(1)
-  const registers_per_page = ref(50)
-  const registers_search = ref('')
-  const registers_procedure = ref('all')
-  const registers_status = ref(REGISTER_STATUS_FILTER_IN_PROGRESS)
-  const registers_sort_by = ref([{ key: 'id', order: 'desc' }])
-  const registers_page = ref(1)
-  const registers_wh_per_page = ref(50)
-  const registers_wh_search = ref('')
-  const registers_wh_procedure = ref('all')
-  const registers_wh_status = ref(REGISTER_STATUS_FILTER_IN_PROGRESS)
-  const registers_wh_sort_by = ref([{ key: 'id', order: 'desc' }])
-  const registers_wh_page = ref(1)
-  const boxes_per_page = ref(100)
-  const boxes_search = ref('')
-  const boxes_sort_by = ref([{ key: 'code', order: 'asc' }])
-  const boxes_page = ref(1)
-  const registerevents_per_page = ref(50)
-  const registerevents_page = ref(1)
-  const parcels_per_page = ref(100)
-  const parcels_sort_by = ref([{ key: 'id', order: 'asc' }])
-  const parcels_page = ref(1)
-  const parcels_status = ref(null)
-  const parcels_check_status_sw = ref(null)
-  const parcels_check_status_fc = ref(null)
-  const parcels_passport_check_status = ref(null)
-  const parcels_hide_legacy_restrictions = ref(false)
-  const parcels_tnved = ref('')
-  const parcels_number = ref('')
-  const parcels_product_name = ref('')
-  const parcels_wh_per_page = ref(100)
-  const parcels_wh_sort_by = ref([{ key: 'id', order: 'asc' }])
-  const parcels_wh_page = ref(1)
-  const parcels_wh_status = ref(null)
-  const parcels_wh_check_status_projection = ref(null)
-  const parcels_wh_zone = ref(null)
-  const parcels_wh_number = ref('')
-  const parcels_wh_box_number = ref('')
-  const parcels_wh_sticker = ref('')
-  const parcels_wh_product_name = ref('')
-  const parcels_bn_per_page = ref(100)
-  const parcels_bn_sort_by = ref([{ key: 'id', order: 'asc' }])
-  const parcels_bn_page = ref(1)
-  const parcelstatuses_per_page = ref(100)
-  const parcelstatuses_search = ref('')
-  const parcelstatuses_sort_by = ref(['id'])
-  const parcelstatuses_page = ref(1)
-  const registerstatuses_per_page = ref(100)
-  const registerstatuses_search = ref('')
-  const registerstatuses_sort_by = ref(['id'])
-  const registerstatuses_page = ref(1)
-  const countries_per_page = ref(100)
-  const countries_search = ref('')
-  const countries_sort_by = ref([])
-  const countries_page = ref(1)
-  const exportfees_per_page = ref(100)
-  const exportfees_search = ref('')
-  const exportfees_sort_by = ref([])
-  const exportfees_page = ref(1)
-  const stopwords_per_page = ref(100)
-  const stopwords_search = ref('')
-  const stopwords_procedure = ref('all')
-  const stopwords_country = ref('all')
-  const stopwords_sort_by = ref(['id'])
-  const stopwords_page = ref(1)
-  const keywords_per_page = ref(100)
-  const keywords_search = ref('')
-  const keywords_sort_by = ref(['id'])
-  const keywords_page = ref(1)
-  const feacnorders_per_page = ref(100)
-  const feacnorders_search = ref('')
-  const feacnorders_sort_by = ref([])
-  const feacnorders_page = ref(1)
-  const feacnprefixes_per_page = ref(100)
-  const feacnprefixes_search = ref('')
-  const feacnprefixes_sort_by = ref([])
-  const feacnprefixes_page = ref(1)
-  const feacnlocalprefixes_per_page = ref(100)
-  const feacnlocalprefixes_search = ref('')
-  const feacnlocalprefixes_procedure = ref('all')
-  const feacnlocalprefixes_country = ref('all')
-  const feacnlocalprefixes_sort_by = ref([])
-  const feacnlocalprefixes_page = ref(1)
-  const feacninsertitems_per_page = ref(100)
-  const feacninsertitems_search = ref('')
-  const feacninsertitems_sort_by = ref([])
-  const feacninsertitems_page = ref(1)
-  const uploadcustomsreports_per_page = ref(100)
-  const uploadcustomsreports_search = ref('')
-  const uploadcustomsreports_sort_by = ref([])
-  const uploadcustomsreports_page = ref(1)
-  const customsreportrows_per_page = ref(100)
-  const customsreportrows_search = ref('')
-  const customsreportrows_sort_by = ref([])
-  const customsreportrows_page = ref(1)
-  const parcelevents_per_page = ref(50)
-  const parcelevents_page = ref(1)
   const selectedOrderId = ref(null)
   const selectedParcelId = ref(null)
   const returnUrl = ref(null)
@@ -322,180 +191,21 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.setItem(scanjobMonitorFollowUserStorageKey, String(normalized))
   }
 
-  // Restore temporary parcels snapshot from sessionStorage if available.
-  // This helps keep filters/sorting when a browser extension or external
-  // actor causes a navigation or reload during image selection.
-  try {
-    const raw = sessionStorage.getItem('logibooks.parcelsSnapshot')
-    if (raw) {
-      const snap = JSON.parse(raw)
-      if (snap) {
-        if (snap.parcels_sort_by != null) parcels_sort_by.value = snap.parcels_sort_by
-        if (snap.parcels_status != null) parcels_status.value = snap.parcels_status
-        if (snap.parcels_check_status_sw != null)
-          parcels_check_status_sw.value = snap.parcels_check_status_sw
-        if (snap.parcels_check_status_fc != null)
-          parcels_check_status_fc.value = snap.parcels_check_status_fc
-        if (snap.parcels_passport_check_status != null)
-          parcels_passport_check_status.value = snap.parcels_passport_check_status
-        if (snap.parcels_hide_legacy_restrictions != null)
-          parcels_hide_legacy_restrictions.value = snap.parcels_hide_legacy_restrictions
-        if (snap.parcels_tnved != null) parcels_tnved.value = snap.parcels_tnved
-        if (snap.parcels_number != null) parcels_number.value = snap.parcels_number
-        if (snap.parcels_product_name != null)
-          parcels_product_name.value = snap.parcels_product_name
-        if (snap.parcels_page != null) parcels_page.value = snap.parcels_page
-        if (snap.parcels_per_page != null) parcels_per_page.value = snap.parcels_per_page
-
-        // Clean up snapshot after restore so it doesn't interfere later.
-        sessionStorage.removeItem('logibooks.parcelsSnapshot')
-      }
-    }
-  } catch {
-    const alertStore = useAlertStore()
-    alertStore.error('Не удалось восстановить фильтры и сортировку')
-  }
+  const listStateStore = useListStateStore()
+  listStateStore.setUser(user.value?.id)
+  const { stop } = listStateStore.bind('auth', listRefs, AUTH_LIST_SCHEMA)
+  onScopeDispose(stop)
+  watch(() => user.value?.id, id => listStateStore.setUser(id), { flush: 'sync' })
+  const persistListState = () => listStateStore.persist()
 
   return {
+    ...listRefs,
+    persistListState,
     parcels_filter_id,
     setParcelFilterId,
     // state
     user,
-    users_per_page,
-    users_search,
-    users_sort_by,
-    users_page,
-    companies_per_page,
-    companies_search,
-    companies_sort_by,
-    companies_page,
-    customsstations_per_page,
-    customsstations_search,
-    customsstations_sort_by,
-    customsstations_page,
-    warehouses_per_page,
-    warehouses_search,
-    warehouses_sort_by,
-    warehouses_page,
-    scanjobs_per_page,
-    scanjobs_search,
-    scanjobs_sort_by,
-    scanjobs_page,
-    scanjobmonitor_boxes_per_page,
-    scanjobmonitor_boxes_sort_by,
-    scanjobmonitor_boxes_page,
-    scanjobmonitor_parcels_per_page,
-    scanjobmonitor_parcels_sort_by,
-    scanjobmonitor_parcels_page,
     scanjobmonitor_follow_user_id,
-    notifications_per_page,
-    notifications_search,
-    notifications_sort_by,
-    notifications_page,
-    airports_per_page,
-    airports_search,
-    airports_sort_by,
-    airports_page,
-    hotkeyactionschemes_per_page,
-    hotkeyactionschemes_search,
-    hotkeyactionschemes_sort_by,
-    hotkeyactionschemes_page,
-    registers_per_page,
-    registers_search,
-    registers_procedure,
-    registers_status,
-    registers_sort_by,
-    registers_page,
-    registers_wh_per_page,
-    registers_wh_search,
-    registers_wh_procedure,
-    registers_wh_status,
-    registers_wh_sort_by,
-    registers_wh_page,
-    boxes_per_page,
-    boxes_search,
-    boxes_sort_by,
-    boxes_page,
-    parcels_per_page,
-    parcels_sort_by,
-    parcels_page,
-    parcels_status,
-    parcels_check_status_sw,
-    parcels_check_status_fc,
-    parcels_passport_check_status,
-    parcels_hide_legacy_restrictions,
-    parcels_tnved,
-    parcels_number,
-    parcels_product_name,
-    parcels_wh_per_page,
-    parcels_wh_sort_by,
-    parcels_wh_page,
-    parcels_wh_status,
-    parcels_wh_check_status_projection,
-    parcels_wh_zone,
-    parcels_wh_number,
-    parcels_wh_box_number,
-    parcels_wh_sticker,
-    parcels_wh_product_name,
-    parcels_bn_per_page,
-    parcels_bn_sort_by,
-    parcels_bn_page,
-    parcelstatuses_per_page,
-    parcelstatuses_search,
-    parcelstatuses_sort_by,
-    parcelstatuses_page,
-    registerstatuses_per_page,
-    registerstatuses_search,
-    registerstatuses_sort_by,
-    registerstatuses_page,
-    countries_per_page,
-    countries_search,
-    countries_sort_by,
-    countries_page,
-    exportfees_per_page,
-    exportfees_search,
-    exportfees_sort_by,
-    exportfees_page,
-    stopwords_per_page,
-    stopwords_search,
-    stopwords_procedure,
-    stopwords_country,
-    stopwords_sort_by,
-    stopwords_page,
-    keywords_per_page,
-    keywords_search,
-    keywords_sort_by,
-    keywords_page,
-    feacnorders_per_page,
-    feacnorders_search,
-    feacnorders_sort_by,
-    feacnorders_page,
-    feacnprefixes_per_page,
-    feacnprefixes_search,
-    feacnprefixes_sort_by,
-    feacnprefixes_page,
-    feacnlocalprefixes_per_page,
-    feacnlocalprefixes_search,
-    feacnlocalprefixes_procedure,
-    feacnlocalprefixes_country,
-    feacnlocalprefixes_sort_by,
-    feacnlocalprefixes_page,
-    feacninsertitems_per_page,
-    feacninsertitems_search,
-    feacninsertitems_sort_by,
-    feacninsertitems_page,
-    uploadcustomsreports_per_page,
-    uploadcustomsreports_search,
-    uploadcustomsreports_sort_by,
-    uploadcustomsreports_page,
-    customsreportrows_per_page,
-    customsreportrows_search,
-    customsreportrows_sort_by,
-    customsreportrows_page,
-    parcelevents_per_page,
-    parcelevents_page,
-    registerevents_per_page,
-    registerevents_page,
     selectedOrderId,
     selectedParcelId,
     returnUrl,

@@ -3,8 +3,10 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
+import { useParcelBoxScope } from '@/composables/useParcelBoxScope.js'
+import { useListPageBounds } from '@/composables/useListPageBounds.js'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
-import { watch, ref, computed, onMounted, onUnmounted, provide, nextTick } from 'vue'
+import { watch, ref, computed, onMounted, onUnmounted, provide, nextTick, unref } from 'vue'
 import { useParcelsStore } from '@/stores/parcels.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
@@ -108,6 +110,12 @@ const {
 const localTnvedSearch = ref(parcels_tnved.value || '')
 const localParcelNumberSearch = ref(parcels_number.value || '')
 const localProductNameSearch = ref(parcels_product_name.value || '')
+
+const onListControlsChange = useParcelBoxScope({
+  mode: 'paperwork', boxId: () => props.boxId ?? null,
+  page: parcels_page,
+  onChange: () => triggerLoad()
+})
 
 function parseSelectedParcelIdFromQuery(value) {
   const rawValue = Array.isArray(value) ? value[0] : value
@@ -317,15 +325,13 @@ const pageOptions = computed(() => {
 })
 
 // When max page decreases (e.g. due to filters), clamp current page
-watch(maxPage, (v) => {
-  if (parcels_page.value > v) parcels_page.value = v
-})
 
 const registerFileName = ref('')
 const registerDealNumber = ref('')
 const registerLoading = ref(true)
 const runningAction = ref(false)
 const isInitializing = ref(true)
+const parcelsLoaded = useListPageBounds(parcels_page, maxPage, () => !loading.value && !isInitializing.value && !unref(parcelsStore.error))
 const isComponentMounted = ref(true)
 const registerHeading = computed(() => {
   if (registerLoading.value) return 'Загрузка...'
@@ -353,7 +359,8 @@ async function fetchRegister() {
 }
 
 async function loadParcelsWrapper() {
-  await loadParcels(props.registerId, parcelsStore, isComponentMounted, alertStore)
+  parcelsLoaded.value = false
+  parcelsLoaded.value = await loadParcels(props.registerId, parcelsStore, isComponentMounted, alertStore)
 }
 
 // Provide the loadParcels function for child components
@@ -418,7 +425,7 @@ const watcherStop = watch(
     parcels_passport_check_status,
     parcels_hide_legacy_restrictions
   ],
-  () => triggerLoad(),
+  onListControlsChange,
   { immediate: false }
 )
 

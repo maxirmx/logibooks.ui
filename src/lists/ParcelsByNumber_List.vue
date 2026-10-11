@@ -236,7 +236,7 @@ defineExpose({
 
 .header-actions-row {
   display: flex;
-  flex: 1 1 20rem;
+  flex: 0 1 auto;
   flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
@@ -246,16 +246,15 @@ defineExpose({
 }
 
 .parcels-number-search-actions {
-  flex: 1 1 20rem;
-  width: 100%;
+  flex: 0 1 auto;
   max-width: 100%;
   min-width: 0;
 }
 
 .parcels-number-input {
-  flex: 1 1 13.75rem;
-  width: auto;
-  max-width: 100%;
-  min-width: min(100%, 13.75rem);
+  flex: 0 1 250px;
+  width: 250px;
+  max-width: 250px;
+  min-width: 0;
 }
 </style>

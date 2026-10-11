@@ -78,15 +78,20 @@ describe('responsive layout policy', () => {
     expect(mainCss).not.toMatch(/\.header-actions-group\s*\+\s*\.header-actions-group/)
   })
 
-  it('documents filter modifiers and allows search and pagination controls to shrink', () => {
-    const filterBar = readSource('src/components/ResponsiveFilterBar.vue')
+  it('keeps parcel-number search compact while allowing narrow-screen shrinking', () => {
     const parcelsByNumber = readSource('src/lists/ParcelsByNumber_List.vue')
+
+    expect(parcelsByNumber).toMatch(/\.header-actions-row\s*\{[^}]*flex:\s*0 1 auto[^}]*flex-wrap:\s*wrap[^}]*justify-content:\s*flex-end[^}]*max-width:\s*100%[^}]*min-width:\s*0/s)
+    expect(parcelsByNumber).toMatch(/\.parcels-number-search-actions\s*\{\s*flex:\s*0 1 auto;\s*max-width:\s*100%;\s*min-width:\s*0;\s*\}/s)
+    expect(parcelsByNumber).toMatch(/\.parcels-number-input\s*\{[^}]*flex:\s*0 1 250px[^}]*width:\s*250px[^}]*max-width:\s*250px[^}]*min-width:\s*0/s)
+  })
+
+  it('documents filter modifiers and allows filter and pagination controls to shrink', () => {
+    const filterBar = readSource('src/components/ResponsiveFilterBar.vue')
     const pagination = readSource('src/components/PaginationFooter.vue')
 
     expect(filterBar).toContain('Sizing modifiers:')
     expect(filterBar).toContain('min-width: min(100%, var(--responsive-filter-basis, 18rem))')
-    expect(parcelsByNumber).toContain('parcels-number-search-actions')
-    expect(parcelsByNumber).toContain('min-width: min(100%, 13.75rem)')
     expect(pagination).toContain('min-width: min(100%, 12.5rem)')
   })
 })

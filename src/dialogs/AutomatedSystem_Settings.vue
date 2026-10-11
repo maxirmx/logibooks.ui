@@ -255,33 +255,39 @@ async function onSubmit(values, { setErrors } = {}) {
           </div>
         </div>
 
-        <div class="form-group">
+        <div class="form-group role-group">
           <span class="label">Роль:</span>
           <div class="role-selection">
-            <Field
-              id="roleAdapter1C"
-              name="roles"
-              type="checkbox"
-              class="checkbox checkbox-styled"
-              :value="roleAdapter1C"
-            />
-            <label for="roleAdapter1C">Адаптер 1С</label>
-            <Field
-              id="roleAdapterAlta"
-              name="roles"
-              type="checkbox"
-              class="checkbox checkbox-styled"
-              :value="roleAdapterAlta"
-            />
-            <label for="roleAdapterAlta">Адаптер Альта</label>
-            <Field
-              id="roleAdapterRegister"
-              name="roles"
-              type="checkbox"
-              class="checkbox checkbox-styled"
-              :value="roleAdapterRegister"
-            />
-            <label for="roleAdapterRegister">Адаптер реестров</label>
+            <div class="role-option">
+              <Field
+                id="roleAdapter1C"
+                name="roles"
+                type="checkbox"
+                class="checkbox checkbox-styled"
+                :value="roleAdapter1C"
+              />
+              <label for="roleAdapter1C">Адаптер 1С</label>
+            </div>
+            <div class="role-option">
+              <Field
+                id="roleAdapterAlta"
+                name="roles"
+                type="checkbox"
+                class="checkbox checkbox-styled"
+                :value="roleAdapterAlta"
+              />
+              <label for="roleAdapterAlta">Адаптер Альта</label>
+            </div>
+            <div class="role-option">
+              <Field
+                id="roleAdapterRegister"
+                name="roles"
+                type="checkbox"
+                class="checkbox checkbox-styled"
+                :value="roleAdapterRegister"
+              />
+              <label for="roleAdapterRegister">Адаптер реестров</label>
+            </div>
           </div>
           <FieldError name="roles" :errors="errors" />
         </div>
@@ -299,8 +305,30 @@ async function onSubmit(values, { setErrors } = {}) {
 }
 
 .role-selection {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--checkbox-label-width)), 1fr));
+  flex: 1;
+  min-width: 0;
+  gap: 8px 16px;
+}
+
+.role-option {
+  min-width: 0;
+}
+
+@media (max-width: 700px) {
+  .role-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .role-group > .label {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .role-group > .invalid-feedback {
+    padding-left: 0;
+  }
 }
 </style>

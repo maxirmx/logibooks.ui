@@ -650,8 +650,31 @@ describe('Register_EditDialog', () => {
       expect(publishError).toHaveBeenCalledOnce()
     })
 
+    it('submits an administrator airport repair and unlock in one request', async () => {
+      mockIsAdmin.value = true
+      await mountForm({ values: { readOnly: true, statusId: 3 } })
+      expect(wrapper.text()).toContain('одним сохранением')
+      expect(wrapper.get('#departureAirportId').element.disabled).toBe(false)
+      expect(wrapper.get('#arrivalAirportId').element.disabled).toBe(false)
+
+      wrapper.findComponent({ name: 'RegisterStatusSelect' }).vm.$emit('update:modelValue', 2)
+      await wrapper.get('#departureAirportId').setValue('1')
+      await wrapper.get('#arrivalAirportId').setValue('2')
+      await wrapper.get('form').trigger('submit')
+
+      await vi.waitFor(() => expect(update).toHaveBeenCalledOnce())
+      expect(update).toHaveBeenCalledWith(1, expect.objectContaining({
+        statusId: 2,
+        departureAirportId: 1,
+        arrivalAirportId: 2,
+        transportationTypeCode: 0
+      }))
+      await vi.waitFor(() => expect(router.push).toHaveBeenCalledOnce())
+    })
+
     it('maps server airport validation errors beneath the fields without a duplicate notification', async () => {
       update.mockRejectedValueOnce({
+        msg: 'Не указаны обязательные аэропорты для авиатранспорта',
         errors: { DepartureAirportId: ['Аэропорт отправления недоступен'] }
       })
       const publishError = vi.spyOn(useAlertStore(), 'error')

@@ -441,6 +441,10 @@ function handleResponse(response) {
         const error = (data && data.msg) || response.statusText
         return Promise.reject(error)
       }
+      if (response.status === 422 && data?.msg && data.details && typeof data.details === 'object' && !Array.isArray(data.details)) {
+        // Import workflows consume an explicit unsuccessful result and own its presentation.
+        return { ...data.details, success: false, errMsg: data.msg }
+      }
       return data
     } catch {
       return Promise.reject(text)

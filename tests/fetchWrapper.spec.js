@@ -236,6 +236,39 @@ describe('fetchWrapper', () => {
       )
     })
 
+    it('preserves import recovery details from the shared ErrMessage envelope', async () => {
+      const details = {
+        success: false,
+        requiresCurrencySelection: true,
+        availableCurrencies: ['RUB', 'UZS'],
+        missingHeaders: [],
+        missingColumns: ['Вес']
+      }
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 422,
+        statusText: 'Unprocessable Entity',
+        text: async () => JSON.stringify({ msg: 'Выберите валюту', errors: {}, details })
+      })
+
+      await expect(fetchWrapper.postFile(`${baseUrl}/upload`, new FormData())).resolves.toEqual({
+        ...details,
+        errMsg: 'Выберите валюту'
+      })
+    })
+
+    it.each([null, 'diagnostic', ['diagnostic']])('retains non-workflow details %j', async (details) => {
+      const payload = { msg: 'Ошибка', details }
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 422,
+        statusText: 'Unprocessable Entity',
+        text: async () => JSON.stringify(payload)
+      })
+
+      await expect(fetchWrapper.postFile(`${baseUrl}/upload`, new FormData())).resolves.toEqual(payload)
+    })
+
     it('returns handleResponse result for successful requests', async () => {
       const response = {
         ok: true,

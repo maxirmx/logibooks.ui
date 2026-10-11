@@ -99,7 +99,7 @@ describe('form error normalization', () => {
     const setErrors = vi.fn()
     const alertStore = { error: vi.fn() }
     const error = Object.assign(new Error('Ошибка проверки данных'), {
-      data: { errors: { Name: ['Введите название'], 'Articles[0].Article': 'Введите артикул' } }
+      data: { msg: 'Некорректные данные запроса', errors: { Name: ['Введите название'], 'Articles[0].Article': 'Введите артикул' } }
     })
 
     expect(reportFormError(error, { setErrors, alertStore })).toBe(true)
@@ -113,7 +113,12 @@ describe('form error normalization', () => {
   it('keeps a general server error in the page notification region', () => {
     const setErrors = vi.fn()
     const alertStore = { error: vi.fn() }
-    const error = { data: { msg: 'Исправьте форму', errors: { Number: ['Обязательное поле'] } } }
+    const error = {
+      data: {
+        msg: 'Некорректные данные запроса',
+        errors: { Number: ['Обязательное поле'], '': ['Исправьте форму'] }
+      }
+    }
 
     reportFormError(error, { setErrors, alertStore, fallback: 'Ошибка сохранения' })
 

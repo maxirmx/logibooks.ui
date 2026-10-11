@@ -1261,6 +1261,8 @@ const loadReportFields = computed(() => {
         <div v-if="readOnly" class="alert alert-warning register-read-only-notice">
           Изменения запрещены. Реестр доступен только для просмотра. Возможно изменение статуса
           пользователем с правами администратора.
+          Если для авиатранспорта не указаны аэропорты, администратор должен заполнить их и выбрать
+          доступный для изменения статус одним сохранением.
         </div>
         <h2 v-if="!props.create" class="section-title" data-testid="register-deal-section-title">
           Сделка

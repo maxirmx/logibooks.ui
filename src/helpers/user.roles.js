@@ -11,6 +11,7 @@ export const roleShiftLead = 'shift-lead'
 export const roleAdmin = 'administrator'
 export const roleAdapter1C = 'adapter-1c'
 export const roleAdapterAlta = 'adapter-alta'
+export const roleAdapterRegister = 'adapter-register'
 
 export const keyWhManager = 'WH_MANAGER'
 export const keyWhOperator = 'WH_OPERATOR'
@@ -20,6 +21,7 @@ export const keyShiftLead = 'SHIFT_LEAD'
 export const keyAdmin = 'ADMIN'
 export const keyAdapter1C = 'ADAPTER_1C'
 export const keyAdapterAlta = 'ADAPTER_ALTA'
+export const keyAdapterRegister = 'ADAPTER_REGISTER'
 export const keyNone = 'NONE'
 
 export const userRoles = [
@@ -31,7 +33,7 @@ export const userRoles = [
   roleWhManager
 ]
 
-export const automatedSystemRoles = [roleAdapter1C, roleAdapterAlta]
+export const automatedSystemRoles = [roleAdapter1C, roleAdapterAlta, roleAdapterRegister]
 
 export const userRoleKeys = {
   roleAdmin: keyAdmin,
@@ -42,6 +44,7 @@ export const userRoleKeys = {
   roleWhManager: keyWhManager,
   roleAdapter1C: keyAdapter1C,
   roleAdapterAlta: keyAdapterAlta,
+  roleAdapterRegister: keyAdapterRegister,
   roleNone: keyNone
 }
 
@@ -53,7 +56,8 @@ const roleLabels = [
   { role: roleWhManager, label: 'Менеджер склада' },
   { role: roleWhOperator, label: 'Оператор склада' },
   { role: roleAdapter1C, label: 'Адаптер 1С' },
-  { role: roleAdapterAlta, label: 'Адаптер Альта' }
+  { role: roleAdapterAlta, label: 'Адаптер Альта' },
+  { role: roleAdapterRegister, label: 'Адаптер реестров' }
 ]
 
 const roleFields = [

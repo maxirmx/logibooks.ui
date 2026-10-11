@@ -16,7 +16,8 @@ import {
   automatedSystemRoles,
   isAutomatedSystem,
   roleAdapter1C,
-  roleAdapterAlta
+  roleAdapterAlta,
+  roleAdapterRegister
 } from '@/helpers/user.roles.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useUsersStore } from '@/stores/users.store.js'
@@ -273,6 +274,14 @@ async function onSubmit(values, { setErrors } = {}) {
               :value="roleAdapterAlta"
             />
             <label for="roleAdapterAlta">Адаптер Альта</label>
+            <Field
+              id="roleAdapterRegister"
+              name="roles"
+              type="checkbox"
+              class="checkbox checkbox-styled"
+              :value="roleAdapterRegister"
+            />
+            <label for="roleAdapterRegister">Адаптер реестров</label>
           </div>
           <FieldError name="roles" :errors="errors" />
         </div>

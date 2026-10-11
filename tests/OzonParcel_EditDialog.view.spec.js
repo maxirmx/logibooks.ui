@@ -123,6 +123,10 @@ import OzonParcel_EditDialog from '@/dialogs/OzonParcel_EditDialog.vue'
 describe('OzonParcel_EditDialog image overlay', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    parcelsMock.getById.mockImplementation(async (id) => {
+      parcelsMock.item.value = { ...parcelsMock.item.value, id }
+      return parcelsMock.item.value
+    })
     confirmMock = vi.fn()
     alertRef.value = null
     parcelStatusesMock.length = 0
@@ -161,6 +165,7 @@ describe('OzonParcel_EditDialog image overlay', () => {
       template: '<Suspense><OzonParcel_EditDialog :registerId="1" :id="3" /></Suspense>'
     }, { global: { stubs: {
       Form: {
+        methods: { resetForm() {} },
         setup: () => ({ draft }),
         template: '<div><slot :errors="{}" :values="draft" :isSubmitting="false" :setFieldValue="() => {}" /></div>'
       },
@@ -193,6 +198,7 @@ describe('OzonParcel_EditDialog image overlay', () => {
         stubs: {
           Field: { template: '<input />' },
           Form: {
+            methods: { resetForm() {} },
             template:
               '<div><slot :errors="{}" :values="{ id: 2 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
           },
@@ -244,6 +250,7 @@ describe('OzonParcel_EditDialog image overlay', () => {
         stubs: {
           Field: { template: '<input />' },
           Form: {
+            methods: { resetForm() {} },
             template:
               '<div><slot :errors="{}" :values="{ id: 2, statusId: 10 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
           },
@@ -295,6 +302,7 @@ describe('OzonParcel_EditDialog image overlay', () => {
         stubs: {
           Field: { template: '<input />' },
           Form: {
+            methods: { resetForm() {} },
             name: 'Form',
             props: { keepValues: Boolean },
             template:
@@ -372,6 +380,7 @@ describe('OzonParcel_EditDialog image overlay', () => {
         stubs: {
           Field: { template: '<input />' },
           Form: {
+            methods: { resetForm() {} },
             template:
               '<div><slot :errors="{}" :values="{ id: 2, statusId: 1 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
           },
@@ -409,6 +418,7 @@ describe('OzonParcel_EditDialog image overlay', () => {
         stubs: {
           Field: { template: '<input />' },
           Form: {
+            methods: { resetForm() {} },
             template:
               '<div><slot :errors="{}" :values="{ id: 2, statusId: 1 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
           },
@@ -456,6 +466,7 @@ describe('OzonParcel_EditDialog image overlay', () => {
         stubs: {
           Field: { template: '<input />' },
           Form: {
+            methods: { resetForm() {} },
             template:
               '<div><slot :errors="{}" :values="{ id: 2, statusId: 1 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
           },
@@ -481,8 +492,8 @@ describe('OzonParcel_EditDialog image overlay', () => {
     await resolveAll()
 
     expect(parcelViewsMock.back).toHaveBeenCalled()
-    expect(registersMock.getById).toHaveBeenCalledWith(9)
-    expect(registersMock.getById).toHaveBeenCalledTimes(2)
+    expect(registersMock.getById).not.toHaveBeenCalledWith(9)
+    expect(registersMock.getById).toHaveBeenCalledTimes(1)
     expect(routerMocks.replace).toHaveBeenCalledWith({
       name: 'Редактирование посылки',
       params: { id: 7, registerId: 9 },
@@ -528,6 +539,7 @@ describe('OzonParcel_EditDialog image overlay', () => {
             stubs: {
               Field: { template: '<input />' },
               Form: {
+                methods: { resetForm() {} },
                 template:
                   '<div><slot :errors="{}" :values="{ id: 2, statusId: 1 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
               },

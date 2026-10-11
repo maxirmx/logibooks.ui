@@ -92,6 +92,7 @@ describe('OzonParcel_EditDialog delete flow', () => {
           Field: { template: '<input />' },
           // Provide Form that yields slot props including values.id matching prop id
           Form: {
+            methods: { resetForm() {} },
             template:
               '<div><slot :errors="{}" :values="{ id: 2 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
           },
@@ -135,6 +136,7 @@ describe('OzonParcel_EditDialog delete flow', () => {
         stubs: {
           Field: { template: '<input />' },
           Form: {
+            methods: { resetForm() {} },
             template:
               '<div><slot :errors="{}" :values="{ id: 2 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
           },

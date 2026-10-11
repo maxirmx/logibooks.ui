@@ -385,8 +385,56 @@ describe('parcels store', () => {
     const error = new Error('Failed to fetch order')
     fetchWrapper.get.mockRejectedValue(error)
     const store = useParcelsStore()
+    store.item = { id: 5, productName: 'Loaded parcel' }
     await expect(store.getById(5)).rejects.toBe(error)
-    expect(store.item).toEqual({ error })
+    expect(store.item).toEqual({ id: 5, productName: 'Loaded parcel' })
+    expect(store.itemError).toBe(error)
+    expect(store.itemLoading).toBe(false)
+  })
+
+  it.each(['older-first', 'newer-first'])('only commits the latest item request (%s)', async (order) => {
+    let resolveOlder, resolveNewer
+    fetchWrapper.get
+      .mockImplementationOnce(() => new Promise((resolve) => { resolveOlder = resolve }))
+      .mockImplementationOnce(() => new Promise((resolve) => { resolveNewer = resolve }))
+    const store = useParcelsStore()
+    store.item = { id: 1 }
+    const older = store.getById(2)
+    const newer = store.getById(3)
+    expect(store.item).toEqual({ id: 1 })
+    expect(store.itemLoading).toBe(true)
+    if (order === 'older-first') {
+      resolveOlder({ id: 2 })
+      expect(await older).toEqual({ id: 2 })
+      expect(store.item).toEqual({ id: 1 })
+      expect(store.itemLoading).toBe(true)
+      resolveNewer({ id: 3 })
+    } else {
+      resolveNewer({ id: 3 })
+      await newer
+      resolveOlder({ id: 2 })
+    }
+    await expect(older).resolves.toEqual({ id: 2 })
+    await expect(newer).resolves.toEqual({ id: 3 })
+    expect(store.item).toEqual({ id: 3 })
+    expect(store.itemLoading).toBe(false)
+    expect(store.itemError).toBeNull()
+  })
+
+  it('propagates stale request failures without changing the current item or error', async () => {
+    let rejectOlder
+    fetchWrapper.get
+      .mockImplementationOnce(() => new Promise((_resolve, reject) => { rejectOlder = reject }))
+      .mockResolvedValueOnce({ id: 3 })
+    const store = useParcelsStore()
+    const error = new Error('stale request failed')
+    const older = expect(store.getById(2)).rejects.toBe(error)
+    await store.getById(3)
+    rejectOlder(error)
+    await older
+    expect(store.item).toEqual({ id: 3 })
+    expect(store.itemError).toBeNull()
+    expect(store.itemLoading).toBe(false)
   })
 
   it('handles getAll error', async () => {

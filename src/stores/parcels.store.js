@@ -114,6 +114,9 @@ export const useParcelsStore = defineStore('parcels', () => {
   const items = ref([])
   const items_bn = ref([])
   const item = ref({})
+  const itemLoading = ref(false)
+  const itemError = ref(null)
+  let itemRequestSequence = 0
   const loading = ref(false)
   const error = ref(null)
   const totalCount = ref(0)
@@ -321,16 +324,20 @@ export const useParcelsStore = defineStore('parcels', () => {
   }
 
   async function getById(id) {
+    const requestSequence = ++itemRequestSequence
     const checkStatusWatermark = liveCheckStatusArrival
-    item.value = { loading: true }
+    itemLoading.value = true
+    itemError.value = null
     try {
       const result = await fetchWrapper.get(`${baseUrl}/a/${id}`)
       const merged = mergeLiveParcelCheckStatuses(result, checkStatusWatermark)
-      item.value = merged
+      if (requestSequence === itemRequestSequence) item.value = merged
       return merged
     } catch (err) {
-      item.value = { error: err }
+      if (requestSequence === itemRequestSequence) itemError.value = err
       throw err
+    } finally {
+      if (requestSequence === itemRequestSequence) itemLoading.value = false
     }
   }
 
@@ -574,6 +581,8 @@ export const useParcelsStore = defineStore('parcels', () => {
     items,
     items_bn,
     item,
+    itemLoading,
+    itemError,
     loading,
     error,
     totalCount,

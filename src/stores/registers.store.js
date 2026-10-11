@@ -25,6 +25,7 @@ const baseUrl = `${apiUrl}/registers`
 export const useRegistersStore = defineStore('registers', () => {
   const items = ref([])
   const item = ref({})
+  let itemRequestSequence = 0
   const uploadFile = ref(null)
   const loading = ref(false)
   const error = ref(null)
@@ -389,15 +390,18 @@ export const useRegistersStore = defineStore('registers', () => {
   }
 
   async function getById(id) {
+    const requestSequence = ++itemRequestSequence
     const passportCheckStateWatermark = livePassportCheckStateArrival
     item.value = { loading: true }
     try {
       await ensureOpsLoaded()
       const response = await fetchWrapper.get(`${baseUrl}/${id}`)
-      item.value = mergeLivePassportCheckState(response, passportCheckStateWatermark)
-      setDestinationField(item.value)
+      const register = mergeLivePassportCheckState(response, passportCheckStateWatermark)
+      setDestinationField(register)
+      if (requestSequence === itemRequestSequence) item.value = register
+      return register
     } catch (err) {
-      item.value = { error: err }
+      if (requestSequence === itemRequestSequence) item.value = { error: err }
       throw err
     }
   }

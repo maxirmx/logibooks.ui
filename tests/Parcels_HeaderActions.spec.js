@@ -525,7 +525,7 @@ describe.each([
     expect(loadParcelsMock.mock.calls.length).toBe(callsBeforeWithSort + 1)
   })
 
-  it('enables the combined restriction and duplicate filter after check status freeze', async () => {
+  it('enables the restriction filter after check status freeze', async () => {
     const wrapper = mount(Component, {
       props: { registerId: 14 },
       global: { stubs: vuetifyStubs }
@@ -545,7 +545,7 @@ describe.each([
     expect(loadParcelsMock).toHaveBeenCalledTimes(1)
   })
 
-  it('refreshes explicitly when the combined filter is already enabled', async () => {
+  it('refreshes explicitly when the restriction filter is already enabled', async () => {
     stores.auth.parcels_hide_legacy_restrictions.value = true
     const wrapper = mount(Component, {
       props: { registerId: 14 },

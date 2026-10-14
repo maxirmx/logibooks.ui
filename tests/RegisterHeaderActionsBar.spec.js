@@ -736,7 +736,7 @@ describe('RegisterHeaderActionsBar', () => {
       'Проверить по кодам ТН ВЭД',
       'Рассчитать сборы и пошлины',
       'Выбрать посылки и изменить статус',
-      'Применить запреты и скрыть дубликаты',
+      'Применить запреты',
       'Зафиксировать сортировку по кодам ТН ВЭД'
     ]) {
       expect(findActionButtonByTooltip(wrapper, tooltip).props('disabled')).toBe(true)
@@ -766,7 +766,7 @@ describe('RegisterHeaderActionsBar', () => {
 
     const actionButtons = wrapper.findAllComponents(ActionButton)
     const freezeCheckStatusButton = actionButtons.find(
-      (button) => button.props('tooltipText') === 'Применить запреты и скрыть дубликаты'
+      (button) => button.props('tooltipText') === 'Применить запреты'
     )
     const freezeButton = actionButtons.find(
       (button) => button.props('tooltipText') === 'Зафиксировать сортировку по кодам ТН ВЭД'

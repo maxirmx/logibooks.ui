@@ -82,6 +82,12 @@ describe('ParcelFilterSelectors', () => {
     expect(wrapper.emitted('update:localProductNameSearch')?.[0]).toEqual(['Product X'])
   })
 
+  it('labels the applied restrictions filter without duplicate hiding', () => {
+    const wrapper = mountComponent()
+
+    expect(wrapper.get('[data-label="Применённые запреты"]').exists()).toBe(true)
+  })
+
   it('normalizes legacy restrictions select values to booleans', async () => {
     const wrapper = mountComponent()
 

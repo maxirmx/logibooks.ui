@@ -398,7 +398,7 @@ function openCmrSettings() {
         v-if="isShiftLeadPlus"
         :item="item"
         icon="fa-solid fa-xmarks-lines"
-        tooltip-text="Применить запреты и скрыть дубликаты"
+        tooltip-text="Применить запреты"
         :iconSize="iconSize"
         :disabled="disabled || mutationDisabled"
         @click="run('freeze-check-status')"

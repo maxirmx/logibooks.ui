@@ -384,6 +384,55 @@ describe('useRegisterHeaderActions', () => {
     expect(actionDialog.title).toBe('')
   })
 
+  it('shows restriction-only progress while applying restrictions and reports success', async () => {
+    const deferred = createDeferred()
+    registersStore.freezeCheckStatus.mockReturnValueOnce(deferred.promise)
+    const actions = useRegisterHeaderActions({
+      registersStore,
+      alertStore,
+      runningAction,
+      tableLoading,
+      registerLoading,
+      loadParcels,
+      isComponentMounted
+    })
+
+    const promise = actions.freezeCheckStatus()
+
+    expect(actions.actionDialog.show).toBe(true)
+    expect(actions.actionDialog.title).toBe('Применение запретов')
+    expect(registersStore.freezeCheckStatus).toHaveBeenCalledWith(1)
+
+    deferred.resolve()
+    await expect(promise).resolves.toBe(true)
+
+    expect(actions.actionDialog.show).toBe(false)
+    expect(actions.actionDialog.title).toBe('')
+    expect(alertStore.error).not.toHaveBeenCalled()
+  })
+
+  it('reports a register refresh rejection once and leaves the restriction filter unchanged', async () => {
+    const hideLegacyRestrictions = ref(false)
+    const refreshError = new Error('Register refresh failed')
+    const fetchRegister = vi.fn().mockRejectedValue(refreshError)
+    const loadParcelsAfterFreeze = vi.fn()
+
+    await expect(refreshAfterCheckStatusFreeze({
+      succeeded: true,
+      hideLegacyRestrictions,
+      fetchRegister,
+      loadParcels: loadParcelsAfterFreeze,
+      alertStore
+    })).resolves.toBe(false)
+
+    expect(alertStore.error).toHaveBeenCalledTimes(1)
+    expect(alertStore.error).toHaveBeenCalledWith(refreshError, {
+      fallback: 'Запреты применены, но не удалось обновить данные'
+    })
+    expect(hideLegacyRestrictions.value).toBe(false)
+    expect(loadParcelsAfterFreeze).not.toHaveBeenCalled()
+  })
+
   it('returns false and reports a freeze check status failure exactly once', async () => {
     registersStore.freezeCheckStatus.mockRejectedValueOnce(new Error('Freeze failed'))
     const actions = useRegisterHeaderActions({

@@ -80,6 +80,10 @@
 </template>
 
 <script setup>
+// Copyright (C) 2026 Maxim [maxirmx] Samsonov (http://www.sw.consulting)
+// All rights reserved.
+// This file is a part of Logibooks ui application
+
 import { computed } from 'vue'
 import { mdiChevronTripleUp } from '@mdi/js'
 

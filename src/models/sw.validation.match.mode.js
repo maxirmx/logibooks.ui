@@ -1,3 +1,7 @@
+// Copyright (C) 2026 Maxim [maxirmx] Samsonov (http://www.sw.consulting)
+// All rights reserved.
+// This file is a part of Logibooks ui application
+
 // Sw Validation match mode enum equivalent for JavaScript
 // Mirrors C# enum:
 // public enum SwValidationMatchMode

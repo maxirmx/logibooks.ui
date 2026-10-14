@@ -1,3 +1,7 @@
+// Copyright (C) 2026 Maxim [maxirmx] Samsonov (http://www.sw.consulting)
+// All rights reserved.
+// This file is a part of Logibooks ui application
+
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { printingRequest, printingApi, createPrintChannel } from '@/services/printing.api.js'
 import { flushPromises } from '@vue/test-utils'

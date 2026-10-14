@@ -1,4 +1,8 @@
 <script setup>
+// Copyright (C) 2026 Maxim [maxirmx] Samsonov (http://www.sw.consulting)
+// All rights reserved.
+// This file is a part of Logibooks ui application
+
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useKeyWordsStore } from '@/stores/key.words.store.js'
 import { keywordMatchesSearch } from '@/helpers/keywords.filter.js'

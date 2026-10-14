@@ -1,3 +1,7 @@
+// Copyright (C) 2026 Maxim [maxirmx] Samsonov (http://www.sw.consulting)
+// All rights reserved.
+// This file is a part of Logibooks ui application
+
 import { mount } from '@vue/test-utils'
 import { vi } from 'vitest'
 import RegisterHeaderActionsBar from '@/components/RegisterHeaderActionsBar.vue'

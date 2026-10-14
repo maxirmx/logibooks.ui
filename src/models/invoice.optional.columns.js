@@ -1,3 +1,7 @@
+// Copyright (C) 2026 Maxim [maxirmx] Samsonov (http://www.sw.consulting)
+// All rights reserved.
+// This file is a part of Logibooks ui application
+
 // Invoice optional columns flags enumeration for JavaScript
 // Mirrors backend C# enum InvoiceOptionalColumns
 // [Flags]

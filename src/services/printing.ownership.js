@@ -1,3 +1,7 @@
+// Copyright (C) 2026 Maxim [maxirmx] Samsonov (http://www.sw.consulting)
+// All rights reserved.
+// This file is a part of Logibooks ui application
+
 import { printingError } from './qz.printing.js'
 
 // Web Locks provide atomic, crash-safe ownership across tabs in the same browser.

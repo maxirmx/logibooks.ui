@@ -1,4 +1,8 @@
 <script setup>
+// Copyright (C) 2026 Maxim [maxirmx] Samsonov (http://www.sw.consulting)
+// All rights reserved.
+// This file is a part of Logibooks ui application
+
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import ActionButton from './ActionButton.vue'
 import { actionButtonProps } from './actionButtonShared'

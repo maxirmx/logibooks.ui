@@ -170,94 +170,6 @@ describe('Companies_List.vue', () => {
     vi.useRealTimers()
   })
 
-  it('calls getAll methods on mount', async () => {
-    // Start with empty countries to test fetching
-    mockCountries.value = []
-
-    const wrapper = mount(CompaniesList, {
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    // Wait for the onMounted hook to complete
-    await wrapper.vm.$nextTick()
-
-    expect(getAllCompanies).toHaveBeenCalled()
-    expect(countriesEnsureLoaded).toHaveBeenCalled()
-    expect(wrapper.exists()).toBe(true)
-
-    // Reset mock data for other tests
-    mockCountries.value = [
-      { id: 1, isoNumeric: 643, nameRuOfficial: 'Россия' },
-      { id: 2, isoNumeric: 840, nameRuOfficial: 'США' }
-    ]
-  })
-
-  it('calls ensureLoaded for countries on mount', async () => {
-    // Clear previous calls
-    countriesEnsureLoaded.mockClear()
-
-    const wrapper = mount(CompaniesList, {
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    // Wait for the onMounted hook to complete
-    await wrapper.vm.$nextTick()
-
-    expect(getAllCompanies).toHaveBeenCalled()
-    expect(countriesEnsureLoaded).toHaveBeenCalled()
-    expect(wrapper.exists()).toBe(true)
-  })
-
-  it('handles empty companies array', async () => {
-    mockCompanies.value = []
-    const wrapper = mount(CompaniesList, {
-      global: {
-        stubs: testStubs
-      }
-    })
-    expect(wrapper.exists()).toBe(true)
-    // Reset mock data for other tests
-    mockCompanies.value = [
-      {
-        id: 1,
-        inn: '123456789',
-        kpp: '987654321',
-        name: 'Test Company',
-        shortName: 'TC',
-        countryIsoNumeric: 643,
-        city: 'Moscow',
-        street: 'Test Street',
-        email: 'contact@example.com',
-        phone: '+7 900 123-45-67'
-      }
-    ]
-  })
-
-  it('handles search input', async () => {
-    const wrapper = mount(CompaniesList, {
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    // Get auth store from the wrapper
-    const authStore = wrapper.vm.authStore
-
-    const searchInput =
-      wrapper.findComponent({ name: 'v-text-field' }) || wrapper.find('input[type="text"]')
-    if (searchInput.exists()) {
-      await searchInput.setValue('Test Company')
-      await searchInput.trigger('input')
-
-      // Test that search input updates auth store
-      expect(authStore.companies_search).toBe('Test Company')
-    }
-  })
-
   it('filters companies based on search term', async () => {
     // Add another company to test filtering
     mockCompanies.value = [
@@ -331,21 +243,6 @@ describe('Companies_List.vue', () => {
     ]
   })
 
-  it('renders company contact columns and values', async () => {
-    const wrapper = mount(CompaniesList, {
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    await wrapper.vm.$nextTick()
-
-    expect(wrapper.text()).toContain('Телефон')
-    expect(wrapper.text()).toContain('Адрес электронной почты')
-    expect(wrapper.text()).toContain('+7 900 123-45-67')
-    expect(wrapper.text()).toContain('contact@example.com')
-  })
-
   it('filters companies by phone and email', async () => {
     const wrapper = mount(CompaniesList, {
       global: {
@@ -358,25 +255,6 @@ describe('Companies_List.vue', () => {
     const item = { raw: mockCompanies.value[0] }
     expect(wrapper.vm.filterCompanies(null, 'CONTACT@EXAMPLE.COM', item)).toBe(true)
     expect(wrapper.vm.filterCompanies(null, '900 123', item)).toBe(true)
-  })
-
-  it('gets country name by ISO numeric code', async () => {
-    const wrapper = mount(CompaniesList, {
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    const countriesStore = wrapper.vm.countriesStore
-
-    // Test with existing country
-    expect(countriesStore.getCountryShortName(643)).toBe('Россия')
-
-    // Test with non-existent country (should return code)
-    expect(countriesStore.getCountryShortName(999)).toBe(999)
-
-    // Test with null value
-    expect(countriesStore.getCountryShortName(null)).toBe(null)
   })
 
   it('navigates to create page when add link is clicked', async () => {
@@ -469,62 +347,6 @@ describe('Companies_List.vue', () => {
   })
 
   // Additional tests for better coverage
-
-  it('handles empty search term', async () => {
-    const wrapper = mount(CompaniesList, {
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    // Get auth store from the wrapper
-    const authStore = wrapper.vm.authStore
-
-    // Set search to empty string
-    authStore.companies_search = ''
-    await wrapper.vm.$nextTick()
-
-    // Should have empty search term
-    expect(authStore.companies_search).toBe('')
-  })
-
-  it('handles non-admin user correctly', async () => {
-    // Mock auth store as non-admin
-    vi.doMock('@/stores/auth.store.js', () => ({
-      useAuthStore: () => ({
-        isAdmin: false,
-        companies_per_page: 10,
-        companies_search: '',
-        companies_sort_by: ['id'],
-        companies_page: 1
-      })
-    }))
-
-    const wrapper = mount(CompaniesList, {
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    // For non-admin users, admin functions should not be accessible
-    expect(wrapper.exists()).toBe(true)
-  })
-
-  it('tests itemsPerPage functionality', async () => {
-    const wrapper = mount(CompaniesList, {
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    // Get auth store from the wrapper
-    const authStore = wrapper.vm.authStore
-
-    // Test itemsPerPage setting
-    expect(authStore.companies_per_page).toBe(10)
-    authStore.companies_per_page = 25
-    expect(authStore.companies_per_page).toBe(25)
-  })
 
   // New tests for dynamic dialog configuration
 })

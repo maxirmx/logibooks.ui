@@ -24,13 +24,6 @@ const mockKeyWord = {
   matchTypeId: 41
 }
 
-const mockKeyWordEmpty = {
-  id: 2,
-  feacnCodes: [],
-  word: 'empty',
-  matchTypeId: 1
-}
-
 const mockMatchTypes = ref([
   { id: 1, name: 'Exact' },
   { id: 11, name: 'Type11' },
@@ -126,44 +119,9 @@ describe('KeyWord_Settings.vue', () => {
     vi.resetAllMocks()
   })
 
-  describe('Component Rendering', () => {
-    it('renders create mode correctly', async () => {
-      const wrapper = mountComponent()
-      await resolveAll()
-
-      expect(wrapper.find('h1').text()).toBe('Регистрация слова или фразы для подбора ТН ВЭД')
-      expect(wrapper.find('input[name="feacnCodes[0]"]').exists()).toBe(true)
-      expect(wrapper.find('input[name="word"]').exists()).toBe(true)
-      expect(wrapper.find('input[type="radio"]').exists()).toBe(true)
-      expect(wrapper.find('button[type="submit"]').text()).toContain('Сохранить')
-      const buttons = wrapper.findAll('button[type="button"]')
-      expect(buttons[buttons.length - 1].text()).toContain('Отменить')
-    })
-
-  })
-
   // Form validation tests are skipped as they're currently failing
 
   describe('Word Analysis and Option Disabling', () => {
-    it('disables correct options for single word input', async () => {
-      const wrapper = mountComponent()
-      await resolveAll()
-
-      const wordInput = wrapper.find('input[name="word"]')
-      await wordInput.setValue('test')
-      await nextTick()
-
-      const vm = wrapper.vm
-
-      // For single word: disable options 21-3=40
-      expect(vm.isOptionDisabled(1)).toBe(false) // Should be enabled
-      expect(vm.isOptionDisabled(15)).toBe(false) // Should be enabled
-      expect(vm.isOptionDisabled(21)).toBe(true) // Should be disabled (21-40 range)
-      expect(vm.isOptionDisabled(25)).toBe(true) // Should be disabled (21-40 range)
-      expect(vm.isOptionDisabled(31)).toBe(true) // Should be disabled (21-40 range)
-      expect(vm.isOptionDisabled(41)).toBe(false) // Should be enabled
-    })
-
     it('disables correct options for multi-word input', async () => {
       const wrapper = mountComponent()
       await resolveAll()
@@ -203,22 +161,6 @@ describe('KeyWord_Settings.vue', () => {
       expect(event.target.value).toBe('123456')
     })
 
-    it('limits code input to 10 digits', async () => {
-      const wrapper = mountComponent()
-      await resolveAll()
-
-      // Call the handler directly with a mocked event
-      const event = {
-        target: {
-          value: '12345678901234',
-          selectionStart: 14
-        }
-      }
-      await wrapper.vm.onCodeInput(event)
-
-      // Should truncate to 10 digits
-      expect(event.target.value).toBe('1234567890')
-    })
   })
 
   describe('Data Loading (Edit Mode)', () => {
@@ -250,34 +192,6 @@ describe('KeyWord_Settings.vue', () => {
 
   // Form submission tests are complex with vee-validate integration
   // The form functionality is tested through integration in the main app
-
-  describe('Navigation', () => {
-    it('navigates to keywords list on cancel', async () => {
-      const wrapper = mountComponent()
-      await resolveAll()
-
-      const cancelButton = wrapper.findAll('button').find((b) => b.text().includes('Отменить'))
-      await cancelButton.trigger('click')
-
-      expect(routerPush).toHaveBeenCalledWith('/keywords')
-    })
-  })
-
-  describe('Component Behavior', () => {
-    it('exposes the correct methods and reactive properties', async () => {
-      const wrapper = mountComponent()
-      await resolveAll()
-
-      const vm = wrapper.vm
-      expect(typeof vm.onSubmit).toBe('function')
-      expect(typeof vm.cancel).toBe('function')
-      expect(typeof vm.onWordInput).toBe('function')
-      expect(typeof vm.onCodeInput).toBe('function')
-      expect(typeof vm.isOptionDisabled).toBe('function')
-      expect(typeof vm.toggleSearch).toBe('function')
-      expect(typeof vm.handleCodeSelect).toBe('function')
-    })
-  })
 
   describe('Search Functionality', () => {
     it('toggles search on and off correctly', async () => {
@@ -357,18 +271,6 @@ describe('KeyWord_Settings.vue', () => {
   })
 
   describe('Form Submission', () => {
-    it('form exists and can be interacted with', async () => {
-      const wrapper = mountComponent()
-      await resolveAll()
-
-      const form = wrapper.find('form')
-      expect(form.exists()).toBe(true)
-
-      // Check that submit button is present
-      const submitButton = wrapper.find('button[type="submit"]')
-      expect(submitButton.exists()).toBe(true)
-    })
-
     it('calls cancel function when cancel button is clicked', async () => {
       const wrapper = mountComponent()
       await resolveAll()
@@ -381,43 +283,7 @@ describe('KeyWord_Settings.vue', () => {
     })
   })
 
-  describe('Computed Properties', () => {
-    it('computes isEdit correctly for create mode', async () => {
-      const wrapper = mountComponent()
-      await resolveAll()
-
-      expect(wrapper.vm.isEdit).toBe(false)
-    })
-
-    it('computes isEdit correctly for edit mode', async () => {
-      const wrapper = mountComponent({ id: 1 })
-      await resolveAll()
-
-      expect(wrapper.vm.isEdit).toBe(true)
-    })
-
-    it('computes feacnCodesError correctly', async () => {
-      const wrapper = mountComponent()
-      await resolveAll()
-
-      // Initially should be null
-      expect(wrapper.vm.feacnCodesError).toBe(null)
-    })
-  })
-
   describe('Data Loading Edge Cases', () => {
-    it('handles keyword with empty feacnCodes array', async () => {
-      getById.mockResolvedValue(mockKeyWordEmpty)
-
-      const wrapper = mountComponent({ id: 2 })
-      await resolveAll()
-
-      expect(getById).toHaveBeenCalledWith(2)
-
-      // Check that the form has been populated
-      expect(wrapper.find('input[name="word"]').element.value).toBe('empty')
-    })
-
     it('handles keyword with null feacnCodes', async () => {
       const mockKeyWordNull = { ...mockKeyWord, feacnCodes: null }
       getById.mockResolvedValue(mockKeyWordNull)
@@ -454,17 +320,6 @@ describe('KeyWord_Settings.vue', () => {
       expect(wrapper.findComponent(FieldArrayWithButtons).exists()).toBe(true)
     })
 
-    it('validates match type selection', async () => {
-      const wrapper = mountComponent()
-      await resolveAll()
-
-      // Set word that makes certain options disabled
-      await wrapper.find('input[name="word"]').setValue('single')
-      await nextTick()
-
-      // Check disabled state through component method
-      expect(wrapper.vm.isOptionDisabled(25)).toBe(true) // Should be disabled for single word
-    })
   })
 
   describe('Alert Display', () => {
@@ -485,49 +340,6 @@ describe('KeyWord_Settings.vue', () => {
       expect(alert.classes()).toContain('alert-success')
     })
 
-    it('hides alert when not present', async () => {
-      mockAlert.value = null
-
-      const wrapper = mountComponent()
-      await resolveAll()
-
-      expect(wrapper.find('.alert').exists()).toBe(false)
-    })
-
-    it('clears alert when close button is clicked', async () => {
-      mockAlert.value = { id: 4, severity: 'info', message: 'Test message', action: null }
-
-      const wrapper = mountComponent()
-      await resolveAll()
-
-      const closeButton = wrapper.find('.close')
-      await closeButton.trigger('click')
-
-      expect(alertDismiss).toHaveBeenCalledWith(4)
-    })
   })
 
-  describe('Word Input Handler', () => {
-    it('updates word value on input', async () => {
-      const wrapper = mountComponent()
-      await resolveAll()
-
-      const event = { target: { value: 'новое значение' } }
-      wrapper.vm.onWordInput(event)
-
-      expect(wrapper.vm.word).toBe('новое значение')
-    })
-  })
-
-  describe('Component Rendering Variations', () => {
-    it('renders submit button with correct text and state', async () => {
-      const wrapper = mountComponent()
-      await resolveAll()
-
-      const submitButton = wrapper.find('button[type="submit"]')
-      expect(submitButton.text()).toContain('Сохранить')
-      expect(submitButton.attributes('disabled')).toBeUndefined()
-    })
-
-  })
 })

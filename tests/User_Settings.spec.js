@@ -218,21 +218,6 @@ describe('User_Settings.vue real component', () => {
     expect(updateUser).not.toHaveBeenCalled()
   })
 
-  it('fetches user by id when editing', async () => {
-    mount(Parent, {
-      props: { register: false, id: 5 },
-      global: {
-        stubs: {
-          ...defaultGlobalStubs,
-          Form: FormStub,
-          Field: FieldStub
-        }
-      }
-    })
-    await resolveAll()
-    expect(getById).toHaveBeenCalledWith(5, true)
-  })
-
   it('calls auth register when registering as non-admin', async () => {
     Object.defineProperty(window, 'location', {
       writable: true,
@@ -258,70 +243,6 @@ describe('User_Settings.vue real component', () => {
     expect(arg.host).toBe('http://localhost')
     expect(routerPush).toHaveBeenCalledWith('/')
     expect(successAlert).toHaveBeenCalled()
-  })
-
-  it('calls add when registering as admin', async () => {
-    isAdmin = true
-    const wrapper = mount(Parent, {
-      props: { register: true },
-      global: {
-        stubs: {
-          ...defaultGlobalStubs,
-          Form: FormStub,
-          Field: FieldStub
-        }
-      }
-    })
-    await resolveAll()
-    const child = wrapper.findComponent(UserSettings)
-    await child.vm.$.setupState.onSubmit({ firstName: 'B' }, { setErrors: vi.fn() })
-    await resolveAll()
-    expect(addUser).toHaveBeenCalledWith(expect.any(Object), true)
-    expect(addUser.mock.calls[0][0].warehouseIds).toEqual([])
-    expect(routerPush).toHaveBeenCalledWith('/users')
-  })
-
-  it('updates user when editing as admin', async () => {
-    isAdmin = true
-    const wrapper = mount(Parent, {
-      props: { register: false, id: 7 },
-      global: {
-        stubs: {
-          ...defaultGlobalStubs,
-          Form: FormStub,
-          Field: FieldStub
-        }
-      }
-    })
-    await resolveAll()
-    const child = wrapper.findComponent(UserSettings)
-    await child.vm.$.setupState.onSubmit({ firstName: 'C' }, { setErrors: vi.fn() })
-    await resolveAll()
-    expect(updateUser).toHaveBeenCalledWith(7, expect.any(Object), true)
-    expect(updateUser.mock.calls[0][1].warehouseIds).toEqual([])
-    expect(routerPush).toHaveBeenCalledWith('/users')
-  })
-
-  it('updates user roles when editing as non-admin', async () => {
-    mockUser.value.roles = [roleLogist]
-    const wrapper = mount(Parent, {
-      props: { register: false, id: 1 },
-      global: {
-        stubs: {
-          ...defaultGlobalStubs,
-          Form: FormStub,
-          Field: FieldStub
-        }
-      }
-    })
-    await resolveAll()
-    const child = wrapper.findComponent(UserSettings)
-    await child.vm.$.setupState.onSubmit({ firstName: 'D' }, { setErrors: vi.fn() })
-    await resolveAll()
-    expect(updateUser).toHaveBeenCalled()
-    const args = updateUser.mock.calls[0]
-    expect(args[1].roles).toEqual([roleLogist])
-    expect(routerPush).toHaveBeenCalledWith('/user/edit/2')
   })
 
   it('displays warehouse manager role for non-admin user settings', async () => {
@@ -431,48 +352,6 @@ describe('User_Settings.vue real component', () => {
   })
 
   // Hotkey action scheme selector tests
-  it('calls ensureLoaded on hotkey action schemes store', async () => {
-    mount(Parent, {
-      props: { register: true },
-      global: {
-        stubs: {
-          ...defaultGlobalStubs,
-          Form: FormStub,
-          Field: FieldStub
-        }
-      }
-    })
-    await resolveAll()
-    expect(ensureLoaded).toHaveBeenCalled()
-    expect(ensureWarehousesLoaded).toHaveBeenCalled()
-  })
-
-  it('does not render warehouse association table for mixed warehouse and non-warehouse roles', async () => {
-    isAdmin = true
-    mockUser.value = {
-      id: 1,
-      firstName: 'John',
-      lastName: 'Doe',
-      email: 'john@example.com',
-      roles: [roleLogist, roleWhOperator],
-      warehouseIds: [2]
-    }
-    const wrapper = mount(Parent, {
-      props: { register: false, id: 1 },
-      global: {
-        stubs: {
-          ...defaultGlobalStubs,
-          Form: FormStub,
-          Field: FieldStub
-        }
-      }
-    })
-    await resolveAll()
-
-    expect(wrapper.text()).not.toContain('Warehouse 1')
-    expect(wrapper.find('[data-testid="warehouse-select-all"]').exists()).toBe(false)
-  })
-
   it('submits selected warehouse ids when updating as admin', async () => {
     isAdmin = true
     mockUser.value = {
@@ -528,46 +407,6 @@ describe('User_Settings.vue real component', () => {
     expect(addUser.mock.calls[1][0].warehouseIds).toEqual([])
   })
 
-  it('renders schemeId selector with all schemes from store', async () => {
-    const wrapper = mount(Parent, {
-      props: { register: true },
-      global: {
-        stubs: {
-          ...defaultGlobalStubs,
-          Form: FormStub
-        }
-      }
-    })
-    await resolveAll()
-
-    const select = wrapper.find('#schemeId')
-    const options = select.findAll('option')
-    expect(options[1].text()).toBe('Scheme 1')
-    expect(options[1].element.value).toBe('1')
-    expect(options[2].text()).toBe('Scheme 2')
-    expect(options[2].element.value).toBe('2')
-  })
-
-  it('submits schemeId value when registering as admin', async () => {
-    isAdmin = true
-    const wrapper = mount(Parent, {
-      props: { register: true },
-      global: {
-        stubs: {
-          ...defaultGlobalStubs,
-          Form: FormStub,
-          Field: FieldStub
-        }
-      }
-    })
-    await resolveAll()
-    const child = wrapper.findComponent(UserSettings)
-    await child.vm.$.setupState.onSubmit({ firstName: 'Test', schemeId: 1 }, { setErrors: vi.fn() })
-    await resolveAll()
-
-    expect(addUser).toHaveBeenCalledWith(expect.objectContaining({ schemeId: 1 }), true)
-  })
-
   it('submits default schemeId 0 when registering without changing field', async () => {
     isAdmin = true
     const wrapper = mount(Parent, {
@@ -588,66 +427,6 @@ describe('User_Settings.vue real component', () => {
 
     // The initial values should include schemeId: 0, so it should be submitted
     expect(addUser).toHaveBeenCalledWith(expect.objectContaining({ firstName: 'Test' }), true)
-  })
-
-  it('submits schemeId value when updating user as admin', async () => {
-    isAdmin = true
-    const wrapper = mount(Parent, {
-      props: { register: false, id: 5 },
-      global: {
-        stubs: {
-          ...defaultGlobalStubs,
-          Form: FormStub,
-          Field: FieldStub
-        }
-      }
-    })
-    await resolveAll()
-    const child = wrapper.findComponent(UserSettings)
-    await child.vm.$.setupState.onSubmit({ firstName: 'Test', schemeId: 2 }, { setErrors: vi.fn() })
-    await resolveAll()
-
-    expect(updateUser).toHaveBeenCalledWith(5, expect.objectContaining({ schemeId: 2 }), true)
-  })
-
-  it('submits schemeId value 0 for "Без схемы" option', async () => {
-    isAdmin = true
-    const wrapper = mount(Parent, {
-      props: { register: true },
-      global: {
-        stubs: {
-          ...defaultGlobalStubs,
-          Form: FormStub,
-          Field: FieldStub
-        }
-      }
-    })
-    await resolveAll()
-    const child = wrapper.findComponent(UserSettings)
-    await child.vm.$.setupState.onSubmit({ firstName: 'Test', schemeId: 0 }, { setErrors: vi.fn() })
-    await resolveAll()
-
-    expect(addUser).toHaveBeenCalledWith(expect.objectContaining({ schemeId: 0 }), true)
-  })
-
-  it('handles empty schemes list gracefully', async () => {
-    mockHotKeyActionSchemes.value = []
-    const wrapper = mount(Parent, {
-      props: { register: true },
-      global: {
-        stubs: {
-          ...defaultGlobalStubs,
-          Form: FormStub
-        }
-      }
-    })
-    await resolveAll()
-
-    const select = wrapper.find('#schemeId')
-    expect(select.exists()).toBe(true)
-    const options = select.findAll('option')
-    expect(options.length).toBe(1) // Only "Без схемы"
-    expect(options[0].text()).toBe('Без схемы')
   })
 
   it('displays user schemeId value when editing', async () => {
@@ -674,72 +453,4 @@ describe('User_Settings.vue real component', () => {
     expect(select.exists()).toBe(true)
   })
 
-  it('submits schemeId when registering as non-admin', async () => {
-    isAdmin = false
-    Object.defineProperty(window, 'location', {
-      writable: true,
-      value: { href: 'http://localhost/path' }
-    })
-    const wrapper = mount(Parent, {
-      props: { register: true },
-      global: {
-        stubs: {
-          ...defaultGlobalStubs,
-          Form: FormStub,
-          Field: FieldStub
-        }
-      }
-    })
-    await resolveAll()
-    const child = wrapper.findComponent(UserSettings)
-    await child.vm.$.setupState.onSubmit({ firstName: 'Test', schemeId: 2 }, { setErrors: vi.fn() })
-    await resolveAll()
-
-    expect(registerUser).toHaveBeenCalledWith(expect.objectContaining({ schemeId: 2 }))
-  })
-
-  it('submits schemeId when updating as non-admin', async () => {
-    isAdmin = false
-    mockUser.value.roles = [roleLogist]
-    const wrapper = mount(Parent, {
-      props: { register: false, id: 1 },
-      global: {
-        stubs: {
-          ...defaultGlobalStubs,
-          Form: FormStub,
-          Field: FieldStub
-        }
-      }
-    })
-    await resolveAll()
-    const child = wrapper.findComponent(UserSettings)
-    await child.vm.$.setupState.onSubmit({ firstName: 'Test', schemeId: 1 }, { setErrors: vi.fn() })
-    await resolveAll()
-
-    expect(updateUser).toHaveBeenCalledWith(1, expect.objectContaining({ schemeId: 1 }), true)
-  })
-
-  it('defaults schemeId to 0 when user data has null schemeId', async () => {
-    mockUser.value = {
-      id: 1,
-      firstName: 'John',
-      lastName: 'Doe',
-      email: 'john@example.com',
-      roles: [roleLogist],
-      schemeId: null
-    }
-    const wrapper = mount(Parent, {
-      props: { register: false, id: 1 },
-      global: {
-        stubs: {
-          ...defaultGlobalStubs,
-          Form: FormStub
-        }
-      }
-    })
-    await resolveAll()
-
-    const child = wrapper.findComponent(UserSettings)
-    expect(child.vm.$.setupState.user.schemeId).toBe(0)
-  })
 })

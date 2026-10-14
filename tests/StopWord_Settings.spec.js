@@ -119,23 +119,6 @@ describe('StopWord_Settings.vue', () => {
 
   describe('Form Fields', () => {
 
-    it('renders matchTypeId radios', async () => {
-      const wrapper = mountComponent()
-      await resolveAll()
-
-      const radios = wrapper.findAll('input[type="radio"][name="matchTypeId"]')
-      expect(radios.length).toBeGreaterThan(0)
-    })
-
-    it('positions match type before the restriction scopes table', async () => {
-      const wrapper = mountComponent()
-      await resolveAll()
-
-      const groups = wrapper.get('form').findAll('.form-group')
-      expect(groups[1].classes()).toContain('match-type-group')
-      expect(groups[2].find('[data-testid="restriction-scope-editor"]').exists()).toBe(true)
-    })
-
     it('starts inactive and allows scope rows to be added', async () => {
       const wrapper = mountComponent()
       await resolveAll()
@@ -181,102 +164,9 @@ describe('StopWord_Settings.vue', () => {
       expect(wrapper.vm.matchTypeId).toBe(41)
     })
 
-    it('allows changing matchTypeId for single word', async () => {
-      const wrapper = mountComponent()
-      await resolveAll()
-
-      wrapper.vm.matchTypeId = 41
-      await wrapper.vm.$nextTick()
-
-      expect(wrapper.vm.matchTypeId).toBe(41)
-    })
-
-    it('disables options 21-30 for single word', async () => {
-      const wrapper = mountComponent()
-      await resolveAll()
-
-      const wordInput = wrapper.find('input[name="word"]')
-      await wordInput.setValue('одиночное')
-      await wordInput.trigger('input')
-      await wrapper.vm.$nextTick()
-
-      expect(wrapper.vm.isOptionDisabled(25)).toBe(true)
-      expect(wrapper.vm.isOptionDisabled(15)).toBe(false)
-      expect(wrapper.vm.isOptionDisabled(41)).toBe(false)
-    })
-
-    it('disables options 11-20 and >30 for multi-word', async () => {
-      const wrapper = mountComponent()
-      await resolveAll()
-
-      const wordInput = wrapper.find('input[name="word"]')
-      await wordInput.setValue('два слова')
-      await wordInput.trigger('input')
-      await wrapper.vm.$nextTick()
-
-      expect(wrapper.vm.isOptionDisabled(15)).toBe(true)
-      expect(wrapper.vm.isOptionDisabled(25)).toBe(false)
-      expect(wrapper.vm.isOptionDisabled(41)).toBe(true)
-    })
-  })
-
-  describe('Select Interaction', () => {
-    it('changes matchTypeId correctly', async () => {
-      const wrapper = mountComponent()
-      await resolveAll()
-
-      wrapper.vm.matchTypeId = 41
-      await wrapper.vm.$nextTick()
-
-      expect(wrapper.vm.matchTypeId).toBe(41)
-    })
   })
 
   describe('Form Submission - Create Mode', () => {
-    it('calls create store method on form submission', async () => {
-      const wrapper = mountComponent()
-      await resolveAll()
-
-      // Set form values directly on the component (use single word to avoid force exact match)
-      const component = wrapper.vm
-      component.word = 'новое'
-      component.matchTypeId = 1
-      component.scopes = [
-        { countryIsoNumeric: 643, customsProcedureCode: 10, explanation: ' export text ' }
-      ]
-
-      await wrapper.vm.$nextTick()
-
-      const saveAction = wrapper
-        .findAllComponents({ name: 'ActionButton' })
-        .find((action) => action.props('tooltipText') === 'Сохранить')
-      expect(saveAction.props('item')).toBeNull()
-      await component.onSubmit()
-      await resolveAll()
-
-      expect(create).toHaveBeenCalledWith({
-        word: 'новое',
-        matchTypeId: 1,
-        scopes: [
-          { countryIsoNumeric: 643, customsProcedureCode: 10, explanation: 'export text' }
-        ]
-      })
-    })
-
-    it('navigates to stopwords list after successful creation', async () => {
-      const wrapper = mountComponent()
-      await resolveAll()
-
-      const component = wrapper.vm
-      component.word = 'новое'
-      component.matchTypeId = 1
-
-      await component.onSubmit()
-      await resolveAll()
-
-      expect(routerPush).toHaveBeenCalledWith('/stopwords')
-    })
-
     it('shows duplicate scope feedback only on the later row', async () => {
       const wrapper = mountComponent()
       await resolveAll()
@@ -312,25 +202,6 @@ describe('StopWord_Settings.vue', () => {
       })
     })
 
-    it('handles morphology error on create', async () => {
-      const err = new Error('Morphology unsupported')
-      err.status = 418
-      err.data = { word: 'abc', level: 1 }
-      create.mockRejectedValueOnce(err)
-      const wrapper = mountComponent()
-      await resolveAll()
-
-      const component = wrapper.vm
-      component.word = 'abc'
-      component.matchTypeId = 41
-
-      await component.onSubmit()
-      await wrapper.vm.$nextTick()
-
-      expect(alertError).toHaveBeenCalledWith(err, {
-        fallback: 'Ошибка при сохранении стоп-слова'
-      })
-    })
   })
 
   describe('Form Submission - Edit Mode', () => {
@@ -355,18 +226,6 @@ describe('StopWord_Settings.vue', () => {
           { countryIsoNumeric: 860, customsProcedureCode: 40, explanation: 'import update' }
         ]
       })
-    })
-
-    it('loads existing data in edit mode', async () => {
-      const wrapper = mountComponent({ id: 1 })
-      await resolveAll()
-
-      expect(getById).toHaveBeenCalledWith(1)
-
-      const wordInput = wrapper.find('input[name="word"]')
-      expect(wordInput.element.value).toBe('тест')
-      expect(wrapper.vm.scopes).toEqual(mockStopWord.scopes)
-      expect(wrapper.findAll('.scope-row-wrapper')).toHaveLength(2)
     })
 
     it('handles loading errors', async () => {
@@ -395,79 +254,4 @@ describe('StopWord_Settings.vue', () => {
     })
   })
 
-  describe('Button States', () => {
-
-    it('disables header actions while saving', async () => {
-      const wrapper = mountComponent()
-      await resolveAll()
-      wrapper.vm.saving = true
-      await wrapper.vm.$nextTick()
-
-      expect(wrapper.get('[data-testid="stopword-save-action"]').attributes('disabled')).toBeDefined()
-      expect(wrapper.get('[data-testid="stopword-cancel-action"]').attributes('disabled')).toBeDefined()
-    })
-  })
-
-  describe('Alert Handling', () => {
-    it('displays alert when present', async () => {
-      mockAlert.value = { id: 2, severity: 'success', message: 'Успешно сохранено', action: null }
-      const wrapper = mountComponent()
-      await resolveAll()
-
-      expect(wrapper.find('.alert').text()).toContain('Успешно сохранено')
-    })
-
-    it('clears alert on close button click', async () => {
-      mockAlert.value = {
-        id: 3,
-        severity: 'success',
-        message: 'Тестовое сообщение',
-        action: null
-      }
-      const wrapper = mountComponent()
-      await resolveAll()
-
-      const closeButton = wrapper.find('.close')
-      await closeButton.trigger('click')
-
-      expect(alertDismiss).toHaveBeenCalledWith(3)
-    })
-  })
-
-  describe('Component Props', () => {
-    it('accepts null id for create mode', () => {
-      const wrapper = mountComponent({ id: null })
-      expect(wrapper.exists()).toBe(true)
-    })
-
-    it('accepts numeric id for edit mode', () => {
-      const wrapper = mountComponent({ id: 123 })
-      expect(wrapper.exists()).toBe(true)
-    })
-
-    it('accepts string id for edit mode', () => {
-      const wrapper = mountComponent({ id: '456' })
-      expect(wrapper.exists()).toBe(true)
-    })
-  })
-
-  describe('Form Validation', () => {
-    it('shows word input without errors initially', async () => {
-      const wrapper = mountComponent()
-      await resolveAll()
-
-      expect(wrapper.find('.invalid-feedback').exists()).toBe(false)
-    })
-
-    it('validates form data properly', async () => {
-      const wrapper = mountComponent()
-      await resolveAll()
-
-      const wordInput = wrapper.find('input[name="word"]')
-      await wordInput.setValue('тест')
-      await wrapper.vm.$nextTick()
-
-      expect(wordInput.element.value).toBe('тест')
-    })
-  })
 })

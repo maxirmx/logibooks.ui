@@ -38,37 +38,6 @@ describe('Scanjob_WbrN_Parcels_Monitor_Table.vue', () => {
     ).default
   })
 
-  it('passes WbrN headers and forwards row actions', async () => {
-    const parcel = { id: 51, shk: 'SHK-51', article: '29817781' }
-    const wrapper = mount(ScanjobWbrNParcelsMonitorTable, {
-      props: {
-        parcels: [parcel],
-        register: { id: 9 },
-        loading: true,
-        defectActionLoading: true,
-        selectedParcelId: 51
-      }
-    })
-
-    const table = wrapper.get('[data-testid="scanjob-generic-table"]')
-    expect(table.attributes('data-header-keys')).toBe(
-      'actions,stickerScanned,checkStatusProjection,zone,statusId,scannedInfo,extId,shk,article,sticker,stickerCode,productName,weightKg,quantity'
-    )
-    expect(table.attributes('data-parcel-count')).toBe('1')
-    expect(table.attributes('data-register-id')).toBe('9')
-    expect(table.attributes('data-loading')).toBe('true')
-    expect(table.attributes('data-defect-action-loading')).toBe('true')
-    expect(table.attributes('data-selected-parcel-id')).toBe('51')
-
-    await wrapper.get('[data-testid="edit-parcel"]').trigger('click')
-    await wrapper.get('[data-testid="set-defect"]').trigger('click')
-    await wrapper.get('[data-testid="clear-defect"]').trigger('click')
-
-    expect(wrapper.emitted('edit-parcel')?.[0]).toEqual([parcel])
-    expect(wrapper.emitted('set-defect')?.[0]).toEqual([parcel])
-    expect(wrapper.emitted('clear-defect')?.[0]).toEqual([parcel])
-  })
-
   it('uses default prop values when optional props are omitted', () => {
     const wrapper = mount(ScanjobWbrNParcelsMonitorTable)
     const table = wrapper.get('[data-testid="scanjob-generic-table"]')

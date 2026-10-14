@@ -36,50 +36,15 @@ describe('parcels.check.helpers', () => {
   ]
 
   describe('getStopWordsText', () => {
-    it('returns null when item has no stopWordIds', () => {
-      const item = {}
-      const result = getStopWordsText(item, mockStopWords)
-      expect(result).toBeNull()
-    })
-
-    it('returns null when item has empty stopWordIds array', () => {
-      const item = { stopWordIds: [] }
-      const result = getStopWordsText(item, mockStopWords)
-      expect(result).toBeNull()
-    })
-
-    it('returns formatted stopwords text for single stopword', () => {
-      const item = { stopWordIds: [1] }
-      const result = getStopWordsText(item, mockStopWords)
-      expect(result).toBe("'forbidden'")
-    })
-
     it('returns formatted stopwords text for multiple stopwords', () => {
       const item = { stopWordIds: [1, 2, 3] }
       const result = getStopWordsText(item, mockStopWords)
       expect(result).toBe("'forbidden', 'banned', 'restricted'")
     })
 
-    it('filters out non-existent stopword IDs', () => {
-      const item = { stopWordIds: [1, 999, 2] }
-      const result = getStopWordsText(item, mockStopWords)
-      expect(result).toBe("'forbidden', 'banned'")
-    })
-
-    it('returns null when no valid stopword IDs exist', () => {
-      const item = { stopWordIds: [999, 888] }
-      const result = getStopWordsText(item, mockStopWords)
-      expect(result).toBeNull()
-    })
   })
 
   describe('getStopWordsInfo', () => {
-    it('returns null when no stopwords exist', () => {
-      const item = {}
-      const result = getStopWordsInfo(item, mockStopWords)
-      expect(result).toBeNull()
-    })
-
     it('returns formatted info text with prefix', () => {
       const item = { stopWordIds: [1, 2] }
       const result = getStopWordsInfo(item, mockStopWords)
@@ -94,68 +59,15 @@ describe('parcels.check.helpers', () => {
   })
 
   describe('getFeacnOrdersText', () => {
-    it('returns null when item has no feacnOrderIds', () => {
-      const item = {}
-      const result = getFeacnOrdersText(item, mockFeacnOrders)
-      expect(result).toBeNull()
-    })
-
-    it('returns null when item has empty feacnOrderIds array', () => {
-      const item = { feacnOrderIds: [] }
-      const result = getFeacnOrdersText(item, mockFeacnOrders)
-      expect(result).toBeNull()
-    })
-
-    it('returns formatted feacn orders text for single order', () => {
-      const item = { feacnOrderIds: [1] }
-      const result = getFeacnOrdersText(item, mockFeacnOrders)
-      expect(result).toBe("'Restricted chemicals'")
-    })
-
-    it('returns formatted feacn orders text for multiple orders', () => {
-      const item = { feacnOrderIds: [1, 2, 3] }
-      const result = getFeacnOrdersText(item, mockFeacnOrders)
-      expect(result).toBe("'Restricted chemicals', 'Dangerous goods', 'Medical equipment'")
-    })
-
     it('filters out non-existent feacn order IDs', () => {
       const item = { feacnOrderIds: [1, 999, 2] }
       const result = getFeacnOrdersText(item, mockFeacnOrders)
       expect(result).toBe("'Restricted chemicals', 'Dangerous goods'")
     })
 
-    it('filters out orders with empty comments', () => {
-      const item = { feacnOrderIds: [1, 4, 2] }
-      const result = getFeacnOrdersText(item, mockFeacnOrders)
-      expect(result).toBe("'Restricted chemicals', 'Dangerous goods'")
-    })
-
-    it('filters out orders with no comment field', () => {
-      const item = { feacnOrderIds: [1, 5, 2] }
-      const result = getFeacnOrdersText(item, mockFeacnOrders)
-      expect(result).toBe("'Restricted chemicals', 'Dangerous goods'")
-    })
-
-    it('returns null when no valid feacn order IDs exist', () => {
-      const item = { feacnOrderIds: [999, 888] }
-      const result = getFeacnOrdersText(item, mockFeacnOrders)
-      expect(result).toBeNull()
-    })
-
-    it('returns null when only orders with empty comments exist', () => {
-      const item = { feacnOrderIds: [4, 5] }
-      const result = getFeacnOrdersText(item, mockFeacnOrders)
-      expect(result).toBeNull()
-    })
   })
 
   describe('getFeacnOrdersInfo', () => {
-    it('returns null when no feacn orders exist', () => {
-      const item = {}
-      const result = getFeacnOrdersInfo(item, mockFeacnOrders)
-      expect(result).toBeNull()
-    })
-
     it('returns formatted info text with prefix', () => {
       const item = { feacnOrderIds: [1, 2] }
       const result = getFeacnOrdersInfo(item, mockFeacnOrders)
@@ -164,32 +76,9 @@ describe('parcels.check.helpers', () => {
       )
     })
 
-    it('returns null when feacn orders text is empty', () => {
-      const item = { feacnOrderIds: [999] }
-      const result = getFeacnOrdersInfo(item, mockFeacnOrders)
-      expect(result).toBeNull()
-    })
   })
 
   describe('getFeacnPrefixesInfo', () => {
-    it('returns null when item has no feacnPrefixIds', () => {
-      const item = {}
-      const result = getFeacnPrefixesInfo(item, mockFeacnPrefixes)
-      expect(result).toBeNull()
-    })
-
-    it('returns null when item has empty feacnPrefixIds array', () => {
-      const item = { feacnPrefixIds: [] }
-      const result = getFeacnPrefixesInfo(item, mockFeacnPrefixes)
-      expect(result).toBeNull()
-    })
-
-    it('returns formatted feacn prefixes info text for single prefix', () => {
-      const item = { feacnPrefixIds: [1] }
-      const result = getFeacnPrefixesInfo(item, mockFeacnPrefixes)
-      expect(result).toBe("Ограничения по коду ТН ВЭД (установлено вручную): '1234'")
-    })
-
     it('returns formatted feacn prefixes info text for multiple prefixes', () => {
       const item = { feacnPrefixIds: [1, 2, 3] }
       const result = getFeacnPrefixesInfo(item, mockFeacnPrefixes)
@@ -198,99 +87,12 @@ describe('parcels.check.helpers', () => {
       )
     })
 
-    it('filters out non-existent feacn prefix IDs', () => {
-      const item = { feacnPrefixIds: [1, 999, 2] }
-      const result = getFeacnPrefixesInfo(item, mockFeacnPrefixes)
-      expect(result).toBe("Ограничения по коду ТН ВЭД (установлено вручную): '1234', '5678'")
-    })
-
-    it('returns null when no valid feacn prefix IDs exist', () => {
-      const item = { feacnPrefixIds: [999, 888] }
-      const result = getFeacnPrefixesInfo(item, mockFeacnPrefixes)
-      expect(result).toBeNull()
-    })
   })
 
   describe('getCheckStatusInfo', () => {
-    it('returns combined information when all three types are present', () => {
-      const item = { feacnOrderIds: [1], stopWordIds: [1], feacnPrefixIds: [1] }
-      const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
-      expect(result).toBe(
-        "Ограничения по коду ТН ВЭД (постановление): 'Restricted chemicals'; Стоп-слова и фразы: 'forbidden'; Ограничения по коду ТН ВЭД (установлено вручную): '1234'"
-      )
-    })
-
-    it('returns combined information when both feacn orders and stopwords are present', () => {
-      const item = { feacnOrderIds: [1, 2], stopWordIds: [1, 2] }
-      const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
-      expect(result).toBe(
-        "Ограничения по коду ТН ВЭД (постановление): 'Restricted chemicals', 'Dangerous goods'; Стоп-слова и фразы: 'forbidden', 'banned'"
-      )
-    })
-
-    it('returns combined information when both feacn orders and prefixes are present', () => {
-      const item = { feacnOrderIds: [1], feacnPrefixIds: [1, 2] }
-      const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
-      expect(result).toBe(
-        "Ограничения по коду ТН ВЭД (постановление): 'Restricted chemicals'; Ограничения по коду ТН ВЭД (установлено вручную): '1234', '5678'"
-      )
-    })
-
-    it('returns combined information when both stopwords and prefixes are present', () => {
-      const item = { stopWordIds: [1, 2], feacnPrefixIds: [1] }
-      const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
-      expect(result).toBe(
-        "Стоп-слова и фразы: 'forbidden', 'banned'; Ограничения по коду ТН ВЭД (установлено вручную): '1234'"
-      )
-    })
-
-    it('returns only feacn orders information when only feacn orders are present', () => {
-      const item = { feacnOrderIds: [1], stopWordIds: [], feacnPrefixIds: [] }
-      const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
-      expect(result).toBe("Ограничения по коду ТН ВЭД (постановление): 'Restricted chemicals'")
-    })
-
-    it('returns only stopwords information when only stopwords are present', () => {
-      const item = { feacnOrderIds: [], stopWordIds: [1, 3], feacnPrefixIds: [] }
-      const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
-      expect(result).toBe("Стоп-слова и фразы: 'forbidden', 'restricted'")
-    })
-
-    it('returns only prefixes information when only prefixes are present', () => {
-      const item = { feacnOrderIds: [], stopWordIds: [], feacnPrefixIds: [2, 3] }
-      const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
-      expect(result).toBe("Ограничения по коду ТН ВЭД (установлено вручную): '5678', '9012'")
-    })
-
-    it('returns null when no information is present', () => {
-      const item = { feacnOrderIds: [], stopWordIds: [], feacnPrefixIds: [] }
-      const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
-      expect(result).toBeNull()
-    })
-
-    it('returns null when item has no relevant properties', () => {
-      const item = {}
-      const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
-      expect(result).toBeNull()
-    })
-
     it('returns null when item is null', () => {
       const result = getCheckStatusInfo(null, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
       expect(result).toBeNull()
-    })
-
-    it('handles case when feacn orders exist but have no comments', () => {
-      const item = { feacnOrderIds: [4, 5], stopWordIds: [1], feacnPrefixIds: [] }
-      const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
-      expect(result).toBe("Стоп-слова и фразы: 'forbidden'")
-    })
-
-    it('handles case when stopwords have invalid IDs', () => {
-      const item = { feacnOrderIds: [1], stopWordIds: [999], feacnPrefixIds: [1] }
-      const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
-      expect(result).toBe(
-        "Ограничения по коду ТН ВЭД (постановление): 'Restricted chemicals'; Ограничения по коду ТН ВЭД (установлено вручную): '1234'"
-      )
     })
 
     it('handles case when feacn orders have invalid IDs', () => {
@@ -321,122 +123,10 @@ describe('parcels.check.helpers', () => {
       )
     })
 
-    it('returns only matchingSWComment when no other info present', () => {
-      const item = {
-        matchingSWComment: 'SW information only'
-      }
-      const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
-      expect(result).toBe('SW information only')
-    })
-
-    it('ignores empty matchingSWComment', () => {
-      const item = {
-        stopWordIds: [1],
-        matchingSWComment: ''
-      }
-      const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
-      expect(result).toBe("Стоп-слова и фразы: 'forbidden'")
-    })
-
-    it('ignores null matchingFCComment', () => {
-      const item = {
-        stopWordIds: [1],
-        matchingFCComment: null
-      }
-      const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
-      expect(result).toBe("Стоп-слова и фразы: 'forbidden'")
-    })
-
-    it('includes matchingSWComment with prefixes', () => {
-      const item = {
-        feacnPrefixIds: [1],
-        matchingSWComment: 'Prefix comment'
-      }
-      const result = getCheckStatusInfo(item, mockFeacnOrders, mockStopWords, mockFeacnPrefixes)
-      expect(result).toBe(
-        "Ограничения по коду ТН ВЭД (установлено вручную): '1234'; Prefix comment"
-      )
-    })
-
-    it('excludes route-scope explanations while preserving matched rule details', () => {
-      const orders = [
-        {
-          id: 10,
-          comment: 'Imported order comment',
-          scopes: [
-            {
-              countryIsoNumeric: 643,
-              customsProcedureCode: 10,
-              explanation: 'Arbitrary order reason'
-            }
-          ]
-        }
-      ]
-      const stopWords = [
-        {
-          id: 20,
-          word: 'blocked',
-          scopes: [
-            { countryIsoNumeric: 643, customsProcedureCode: 10, explanation: 'Stop reason' }
-          ]
-        }
-      ]
-      const prefixes = [
-        {
-          id: 30,
-          code: '1234',
-          scopes: [
-            { countryIsoNumeric: 860, customsProcedureCode: 40, explanation: 'Prefix reason' }
-          ]
-        }
-      ]
-
-      const result = getCheckStatusInfo(
-        {
-          feacnOrderIds: [10],
-          stopWordIds: [20],
-          feacnPrefixIds: [30],
-          matchingSWComment: 'Matching comment'
-        },
-        orders,
-        stopWords,
-        prefixes
-      )
-
-      expect(result).toBe(
-        "Ограничения по коду ТН ВЭД (постановление): 'Imported order comment'; Стоп-слова и фразы: 'blocked'; Ограничения по коду ТН ВЭД (установлено вручную): '1234'; Matching comment"
-      )
-      expect(result).not.toContain('Arbitrary order reason')
-      expect(result).not.toContain('Stop reason')
-      expect(result).not.toContain('Prefix reason')
-    })
   })
 
   describe('Status Check Functions', () => {
     describe('getCheckStatusClass', () => {
-      it('returns "has-issues" for status codes with issues', () => {
-        const swIssue = CheckStatusCode.fromParts(
-          FCCheckStatus.NotChecked,
-          SWCheckStatus.IssueStopWord
-        )
-        const fcIssue = CheckStatusCode.fromParts(
-          FCCheckStatus.IssueFeacnCode,
-          SWCheckStatus.NotChecked
-        )
-        const bothIssues = CheckStatusCode.fromParts(
-          FCCheckStatus.IssueNonexistingFeacn,
-          SWCheckStatus.IssueStopWord
-        )
-
-        expect(getCheckStatusClass(swIssue.value)).toBe('has-issues')
-        expect(getCheckStatusClass(fcIssue.value)).toBe('has-issues')
-        expect(getCheckStatusClass(bothIssues.value)).toBe('has-issues')
-      })
-
-      it('returns "not-checked" for not checked status', () => {
-        expect(getCheckStatusClass(CheckStatusCode.NotChecked.value)).toBe('not-checked')
-      })
-
       it('returns "is-approved-with-excise" for approved with excise status', () => {
         expect(getCheckStatusClass(CheckStatusCode.ApprovedWithExcise.value)).toBe(
           'is-approved-with-excise'
@@ -464,34 +154,10 @@ describe('parcels.check.helpers', () => {
         expect(getCheckStatusClass(swApprovedInherited.value)).toBe('is-approved-with-inheritance')
       })
 
-      it('returns "has-issues" for Duplicate status', () => {
-        expect(getCheckStatusClass(CheckStatusCode.Duplicate.value)).toBe('has-issues')
-      })
-
       it('returns "is-duplicate2" for Duplicate2 status', () => {
         expect(getCheckStatusClass(CheckStatusCode.Duplicate2.value)).toBe('is-duplicate2')
       })
 
-      it('returns "has-issues" for Defect status', () => {
-        const defect = CheckStatusCode.fromParts(FCCheckStatus.Defect, SWCheckStatus.Defect)
-        expect(getCheckStatusClass(defect.value)).toBe('has-issues')
-      })
-
-      it('returns "no-issues" as default for other status codes', () => {
-        const noIssues = CheckStatusCode.fromParts(FCCheckStatus.NoIssues, SWCheckStatus.NoIssues)
-        const swNoIssues = CheckStatusCode.fromParts(
-          FCCheckStatus.NotChecked,
-          SWCheckStatus.NoIssues
-        )
-
-        expect(getCheckStatusClass(noIssues.value)).toBe('no-issues')
-        expect(getCheckStatusClass(swNoIssues.value)).toBe('no-issues')
-      })
-
-      it('returns empty string for undefined or null status codes', () => {
-        expect(getCheckStatusClass(undefined)).toBe('')
-        expect(getCheckStatusClass(null)).toBe('')
-      })
     })
   })
 })

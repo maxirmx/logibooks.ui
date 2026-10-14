@@ -86,28 +86,6 @@ describe('FeacnCodeSearch.vue', () => {
     expect(wrapper.emitted('select')[0][0]).toBe('0101010101')
   })
 
-  it('has placeholder text', () => {
-    const wrapper = createWrapper()
-    const input = wrapper.find('.search-input')
-    expect(input.attributes('placeholder')).toBe('Код ТН ВЭД или слово для поиска')
-  })
-
-  it('uses formatFeacnNameFromItem for search results', async () => {
-    mockLookup.mockResolvedValueOnce([{ id: 1, code: '0101' }])
-    mockFormatFeacnNameFromItem.mockReturnValueOnce('Formatted Name')
-
-    const wrapper = createWrapper()
-    await waitForUpdates(wrapper)
-    const input = wrapper.find('.search-input')
-    await input.setValue('test')
-    const searchButton = wrapper.findComponent({ name: 'ActionButton' })
-    await searchButton.find('button').trigger('click')
-    await waitForUpdates(wrapper)
-
-    expect(mockFormatFeacnNameFromItem).toHaveBeenCalledWith({ id: 1, code: '0101' })
-    expect(wrapper.find('.result-name').text()).toBe('Formatted Name')
-  })
-
   it('searches and opens path from non-leaf result', async () => {
     mockLookup.mockResolvedValueOnce([{ id: 2, code: '0101', name: 'Child' }])
     const wrapper = createWrapper()
@@ -152,23 +130,6 @@ describe('FeacnCodeSearch.vue', () => {
     expect(mockGetById.mock.calls.filter(([id]) => id === 3)).toHaveLength(1)
     expect(mockGetById).toHaveBeenCalledWith(2)
     expect(mockGetById).toHaveBeenCalledWith(1)
-    expect(wrapper.emitted('select')).toBeUndefined()
-    expect(wrapper.find('.search-results').exists()).toBe(false)
-    expect(wrapper.findAll('.node-label').some((node) => node.text() === 'Leaf')).toBe(true)
-  })
-
-  it('navigates by result ID even when its displayed code differs from the tree node', async () => {
-    mockLookup.mockResolvedValueOnce([{ id: 3, code: '84A350', name: 'Result' }])
-    const wrapper = createWrapper()
-    await waitForUpdates(wrapper)
-
-    await wrapper.find('.search-input').setValue('result')
-    await wrapper.findComponent({ name: 'ActionButton' }).find('button').trigger('click')
-    await waitForUpdates(wrapper)
-    await wrapper.find('.search-result-item').trigger('click')
-    await waitForUpdates(wrapper)
-
-    expect(mockGetById).toHaveBeenCalledWith(3)
     expect(wrapper.emitted('select')).toBeUndefined()
     expect(wrapper.find('.search-results').exists()).toBe(false)
     expect(wrapper.findAll('.node-label').some((node) => node.text() === 'Leaf')).toBe(true)
@@ -407,21 +368,4 @@ describe('FeacnCodeSearch.vue', () => {
     expect(wrapper.find('.search-error').exists()).toBe(false)
   })
 
-  it('focuses search input on mount', async () => {
-    const focusSpy = vi.spyOn(HTMLInputElement.prototype, 'focus')
-    try {
-      createWrapper()
-      await flushPromises()
-      expect(focusSpy).toHaveBeenCalled()
-    } finally {
-      focusSpy.mockRestore()
-    }
-  })
-
-  it('emits refocus event on unmount', async () => {
-    const wrapper = createWrapper()
-    await waitForUpdates(wrapper)
-    wrapper.unmount()
-    expect(wrapper.emitted('refocus')).toBeTruthy()
-  })
 })

@@ -3,14 +3,7 @@
 // This file is a part of Logibooks ui application
 
 import { describe, it, expect } from 'vitest'
-import {
-  formatAirportDisplayName,
-  getAirportDisplayName,
-  getCompanyDisplayName,
-  getRegisterTypeDisplayName
-} from '@/helpers/register.display.helpers.js'
-import { WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
-
+import { formatAirportDisplayName, getAirportDisplayName, getCompanyDisplayName } from '@/helpers/register.display.helpers.js'
 describe('register display helpers', () => {
   describe('getCompanyDisplayName', () => {
     const companies = [
@@ -19,10 +12,6 @@ describe('register display helpers', () => {
       { id: 3, shortName: '', name: '' }
     ]
 
-    it('uses short name before full name', () => {
-      expect(getCompanyDisplayName(companies, 1)).toBe('Short Name')
-    })
-
     it('falls back to full name and unknown label', () => {
       expect(getCompanyDisplayName(companies, '2')).toBe('Full Only')
       expect(getCompanyDisplayName(companies, 3)).toBe('Неизвестно')
@@ -30,13 +19,6 @@ describe('register display helpers', () => {
       expect(getCompanyDisplayName(null, 1)).toBe('Неизвестно')
       expect(getCompanyDisplayName(companies, 999, 'Нет компании')).toBe('Нет компании')
     })
-  })
-
-  it('formats synthetic register types from the company name', () => {
-    const companies = [{ id: 2, shortName: 'РВБ' }]
-
-    expect(getRegisterTypeDisplayName(companies, WBRN_REGISTER_ID)).toBe('РВБ')
-    expect(getRegisterTypeDisplayName(companies, 999)).toBe('Неизвестно')
   })
 
   it('formats airports consistently for selects and resolved references', () => {

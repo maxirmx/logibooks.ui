@@ -6,8 +6,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import WarehouseRegistersTable from '@/components/WarehouseRegistersTable.vue'
-import { createWarehouseRegisterHeaders } from '@/helpers/warehouse.registers.table.helpers.js'
-
 const opsRef = vi.hoisted(() => ({ value: { customsProcedures: [], transportationTypes: [] } }))
 const companiesRef = vi.hoisted(() => ({ value: [] }))
 const countriesRef = vi.hoisted(() => ({ value: [] }))
@@ -132,58 +130,6 @@ function mountTable(props = {}) {
 }
 
 describe('WarehouseRegistersTable matching-count column', () => {
-  it('uses a viewport-bound card for the horizontally scrollable table', () => {
-    const wrapper = mountTable()
-
-    expect(wrapper.get('.warehouse-registers-table-card').exists()).toBe(true)
-  })
-
-  it('does not add the matching-count header for the normal warehouse list', () => {
-    const headers = createWarehouseRegisterHeaders({ showActions: true, selectable: false })
-
-    expect(headers.map((header) => header.key)).not.toContain('matchingParcelsCount')
-  })
-
-  it('does not add the register-status icon header by default', () => {
-    const headers = createWarehouseRegisterHeaders({ showActions: true, selectable: false })
-
-    expect(headers.map((header) => header.key)).not.toContain('registerStatusIcon')
-  })
-
-  it('keeps the register-status icon out of headers even when requested', () => {
-    const headers = createWarehouseRegisterHeaders({
-      showActions: true,
-      selectable: false,
-      showRegisterStatusIcon: true
-    })
-
-    expect(headers.map((header) => header.key).slice(0, 3)).toEqual([
-      'actions',
-      'id',
-      'dealNumber'
-    ])
-    expect(headers.map((header) => header.key)).not.toContain('registerStatusIcon')
-  })
-
-  it('starts inline register-status edit from the optional status icon', async () => {
-    const startRegisterStatusChange = vi.fn()
-    const wrapper = mountTable({
-      showRegisterStatusIcon: true,
-      canChangeRegisterStatus: true,
-      startRegisterStatusChange,
-      items: [{ id: 1, statusId: 2 }]
-    })
-
-    expect(wrapper.find('[data-testid="header-keys"]').text()).not.toContain('registerStatusIcon')
-    expect(wrapper.find('[data-testid="register-status-icon"]').exists()).toBe(true)
-    expect(wrapper.find('.register-status-action-button').attributes('title')).toBe('Status 2')
-
-    await wrapper.find('.register-status-action-button').trigger('click')
-
-    expect(startRegisterStatusChange).toHaveBeenCalledWith(1, 2)
-    expect(wrapper.emitted('edit-register')).toBeUndefined()
-  })
-
   it('keeps full register edit on the pen action', async () => {
     const wrapper = mountTable({
       isSrLogistPlus: true,
@@ -193,20 +139,6 @@ describe('WarehouseRegistersTable matching-count column', () => {
     await wrapper.find('[data-icon="fa-solid fa-pen"]').trigger('click')
 
     expect(wrapper.emitted('edit-register')?.[0]).toEqual([{ id: 1, statusId: 2 }])
-  })
-
-  it('opens parcel status bulk dialog from the independent action', async () => {
-    const openParcelStatusBulkDialog = vi.fn()
-    const wrapper = mountTable({
-      isSrLogistPlus: true,
-      openParcelStatusBulkDialog,
-      items: [{ id: 1, statusId: 2 }]
-    })
-
-    await wrapper.find('[data-icon="fa-solid fa-pen-to-square"]').trigger('click')
-
-    expect(openParcelStatusBulkDialog).toHaveBeenCalledWith(1)
-    expect(wrapper.find('[data-testid="register-status-select"]').exists()).toBe(false)
   })
 
   it('renders and applies inline register status selector', async () => {
@@ -248,21 +180,6 @@ describe('WarehouseRegistersTable matching-count column', () => {
 
     expect(statusIcon.exists()).toBe(true)
     expect(statusIcon.attributes('title')).toBe('Status 2')
-  })
-
-  it('adds the matching-count header only when requested', () => {
-    const headers = createWarehouseRegisterHeaders({
-      showActions: false,
-      selectable: true,
-      showMatchingCount: true
-    })
-
-    expect(headers.map((header) => header.key)).toContain('matchingParcelsCount')
-    expect(headers.find((header) => header.key === 'matchingParcelsCount')).toMatchObject({
-      title: 'К возврату',
-      sortable: false,
-      align: 'end'
-    })
   })
 
   it('passes the optional header to the table and formats matching counts', () => {

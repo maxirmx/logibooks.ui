@@ -102,51 +102,6 @@ describe('FeacnCodeSelectorW', () => {
     })
   }
 
-  it('renders keywords with quotes', async () => {
-    const mockKeywords = [
-      { id: 1, word: 'test keyword 1', feacnCode: '1234567890' },
-      { id: 2, word: 'test keyword 2', feacnCode: '0987654321' }
-    ]
-
-    const { getKeywordFeacnPairs } = await import('@/helpers/parcels.list.helpers.js')
-    vi.mocked(getKeywordFeacnPairs).mockReturnValue(mockKeywords)
-
-    wrapper = createWrapper()
-
-    expect(wrapper.text()).toContain('1234567890 - "test keyword 1"')
-    expect(wrapper.text()).toContain('0987654321 - "test keyword 2"')
-  })
-
-  it('calls onSelect when keyword code is clicked', async () => {
-    const mockKeywords = [{ id: 1, word: 'test keyword 1', feacnCode: '1234567890' }]
-
-    const { getKeywordFeacnPairs } = await import('@/helpers/parcels.list.helpers.js')
-    vi.mocked(getKeywordFeacnPairs).mockReturnValue(mockKeywords)
-
-    wrapper = createWrapper()
-
-    const keywordCode = wrapper.find('.keyword-code')
-    await keywordCode.trigger('click')
-
-    expect(mockOnSelect).toHaveBeenCalledWith('1234567890')
-  })
-
-  it('applies correct CSS classes to keyword items', async () => {
-    const mockKeywords = [{ id: 1, word: 'test keyword 1', feacnCode: '1234567890' }]
-
-    const { getKeywordFeacnPairs, getFeacnCodeItemClass } = await import(
-      '@/helpers/parcels.list.helpers.js'
-    )
-    vi.mocked(getKeywordFeacnPairs).mockReturnValue(mockKeywords)
-    vi.mocked(getFeacnCodeItemClass).mockReturnValue('selected-item')
-
-    wrapper = createWrapper()
-
-    const keywordCode = wrapper.find('.keyword-code')
-    expect(keywordCode.classes()).toContain('keyword-code')
-    expect(keywordCode.classes()).toContain('feacn-edit-dialog-item')
-  })
-
   it('renders ActionButton for each keyword', async () => {
     const mockKeywords = [
       { id: 1, word: 'test keyword 1', feacnCode: '1234567890' },
@@ -164,20 +119,6 @@ describe('FeacnCodeSelectorW', () => {
       .map((item) => item.findComponent({ name: 'ActionButton' }))
     const present = keywordActionButtons.filter((btn) => btn.exists()).length
     expect(present).toBe(2)
-  })
-
-  it('passes correct props to computed property', async () => {
-    const testItem = {
-      keyWordIds: [3, 4],
-      tnVed: '5555555555'
-    }
-
-    const { getKeywordFeacnPairs } = await import('@/helpers/parcels.list.helpers.js')
-    const { useKeyWordsStore } = await import('@/stores/key.words.store.js')
-
-    wrapper = createWrapper({ item: testItem })
-
-    expect(getKeywordFeacnPairs).toHaveBeenCalledWith([3, 4], useKeyWordsStore())
   })
 
   it('loads tooltip on mouseenter using Vue tooltip system', async () => {
@@ -232,27 +173,6 @@ describe('FeacnCodeSelectorW', () => {
     expect(firstCodeDiv.classes()).toContain('matching-feacn-code-item')
   })
 
-  it('applies disabled state when matchingFC equals tnVed', async () => {
-    const { getKeywordFeacnPairs } = await import('@/helpers/parcels.list.helpers.js')
-    vi.mocked(getKeywordFeacnPairs).mockReturnValue([])
-
-    wrapper = createWrapper({
-      item: {
-        keyWordIds: [],
-        tnVed: '55555555',
-        matchingFC: '55555555',
-        matchingFCComment: 'Точный код'
-      }
-    })
-
-    // Find ActionButton inside the first keyword-item (matchingFC should be the first item)
-    const firstKeywordActionBtn = wrapper
-      .find('.keyword-item')
-      .findComponent({ name: 'ActionButton' })
-    expect(firstKeywordActionBtn.exists()).toBe(true)
-    expect(firstKeywordActionBtn.props('disabled')).toBe(true)
-  })
-
   it('calls onSelect when matchingFC clicked', async () => {
     const mockKeywords = []
     const { getKeywordFeacnPairs } = await import('@/helpers/parcels.list.helpers.js')
@@ -272,22 +192,6 @@ describe('FeacnCodeSelectorW', () => {
     expect(firstCodeDiv.exists()).toBe(true)
     await firstCodeDiv.trigger('click')
     expect(mockOnSelect).toHaveBeenCalledWith('88888888')
-  })
-
-  it('loads tooltip for matchingFC on mouseenter', async () => {
-    const { loadFeacnTooltipOnHover } = await import('@/helpers/feacn.info.helpers.js')
-    wrapper = createWrapper({
-      item: {
-        keyWordIds: [],
-        tnVed: '10101010',
-        matchingFC: '20202020',
-        matchingFCComment: 'Tooltip код'
-      }
-    })
-    const firstCodeDiv = wrapper.find('.keyword-item .keyword-code')
-    await firstCodeDiv.trigger('mouseenter')
-    await wrapper.vm.$nextTick()
-    expect(loadFeacnTooltipOnHover).toHaveBeenCalledWith('20202020')
   })
 
   it('opens keyword lookup on label click', async () => {

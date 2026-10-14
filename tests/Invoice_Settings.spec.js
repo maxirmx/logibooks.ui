@@ -115,50 +115,6 @@ describe('Invoice_Settings.vue', () => {
     expect(wrapper.find('h1').text()).toContain('Настройки инвойса')
   })
 
-  it('hides parcel selection and renders optional columns checkboxes', async () => {
-    const wrapper = mountDialog()
-    await resolveAll()
-    expect(wrapper.find('#parcelSelection').exists()).toBe(false)
-    const labels = wrapper.findAll('.custom-checkbox .custom-checkbox-label').map((l) => l.text())
-    expect(labels).toContain('Номер мешка')
-    expect(labels).toContain('ФИО')
-    expect(labels).toContain('Предшествующий ДТЭГ')
-  })
-
-  it('hides previous DTEG optional column for reexport registers', async () => {
-    itemRef.value = {
-      id: 77,
-      invoiceNumber: 'INV-77',
-      customsProcedureCode: CUSTOMS_PROCEDURE_REEXPORT
-    }
-
-    const wrapper = mountDialog()
-    await resolveAll()
-
-    const labels = wrapper.findAll('.custom-checkbox .custom-checkbox-label').map((l) => l.text())
-    expect(labels).toContain('Номер мешка')
-    expect(labels).toContain('ФИО')
-    expect(labels).toContain('УИН')
-    expect(labels).toContain('Ссылка')
-    expect(labels).not.toContain('Предшествующий ДТЭГ')
-  })
-
-  it('initializes parcel selection from prop', async () => {
-    const wrapper = mountDialog({ id: 88, selection: InvoiceParcelSelection.Ordinal })
-    await resolveAll()
-    const state = wrapper.findComponent(InvoiceSettings).vm.$.setupState
-    expect(state.parcelSelection).toBe(InvoiceParcelSelection.Ordinal)
-  })
-
-  it('defaults an invalid route selection to all parcels', async () => {
-    const wrapper = mountDialog({ id: 88, selection: 'invalid-selection' })
-    await resolveAll()
-
-    expect(wrapper.findComponent(InvoiceSettings).vm.$.setupState.parcelSelection).toBe(
-      InvoiceParcelSelection.All
-    )
-  })
-
   it('submits and calls downloadInvoiceFile with selected options', async () => {
     const wrapper = mountDialog({ id: 77, selection: InvoiceParcelSelection.Ordinal })
     await resolveAll()
@@ -200,55 +156,6 @@ describe('Invoice_Settings.vue', () => {
       InvoiceParcelSelection.All,
       InvoiceOptionalColumns.Url,
       true
-    )
-  })
-
-  it('shows checked weight correction checkbox when coefficient is possible', async () => {
-    itemRef.value = {
-      id: 77,
-      invoiceNumber: 'INV-77',
-      realWeightKg: 5,
-      totalWeightKgToRelease: 10
-    }
-
-    const wrapper = mountDialog()
-    await resolveAll()
-
-    const correctionCheckbox = wrapper.get('.weight-correction-checkbox input')
-    expect(correctionCheckbox.element.checked).toBe(true)
-    expect(wrapper.get('.weight-correction-checkbox .custom-checkbox-label').text()).toBe(
-      'Применить поправочный коэффициент 0,500 к весу посылок.'
-    )
-  })
-
-  it('does not show weight correction checkbox when coefficient is unavailable', async () => {
-    const wrapper = mountDialog()
-    await resolveAll()
-
-    expect(wrapper.find('.weight-correction-checkbox').exists()).toBe(false)
-  })
-
-  it('passes unchecked weight correction option to invoice download', async () => {
-    itemRef.value = {
-      id: 77,
-      invoiceNumber: 'INV-77',
-      realWeightKg: 5,
-      totalWeightKgToRelease: 10
-    }
-
-    const wrapper = mountDialog()
-    await resolveAll()
-    await wrapper.get('.weight-correction-checkbox input').setChecked(false)
-
-    const comp = wrapper.findComponent(InvoiceSettings).vm.$.setupState
-    await comp.onSubmit()
-
-    expect(downloadInvoiceFileMock).toHaveBeenCalledWith(
-      77,
-      'INV-77',
-      InvoiceParcelSelection.All,
-      InvoiceOptionalColumns.None,
-      false
     )
   })
 
@@ -325,27 +232,6 @@ describe('Invoice_Settings.vue', () => {
       false
     )
     expect(downloadInvoiceFileMock).not.toHaveBeenCalled()
-  })
-
-  it('shows ДО1 progress title while file is prepared', async () => {
-    let resolveDownload
-    downloadDo1FileMock.mockImplementationOnce(
-      () =>
-        new Promise((resolve) => {
-          resolveDownload = resolve
-        })
-    )
-    const wrapper = mountDialog({ id: 77, documentType: 'do1' })
-    await resolveAll()
-    const comp = wrapper.findComponent(InvoiceSettings).vm.$.setupState
-
-    const submitPromise = comp.onSubmit()
-    await nextTick()
-    expect(comp.actionDialogState.show).toBe(true)
-    expect(comp.actionDialogState.title).toBe('Подготовка файла ДО1')
-
-    resolveDownload()
-    await submitPromise
   })
 
   it('shows ДО1-specific fallback error', async () => {

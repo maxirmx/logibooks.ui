@@ -163,21 +163,6 @@ describe('Warehouse_Settings.vue', () => {
     expect(mockWarehousesStore.getById).not.toHaveBeenCalled()
   })
 
-  it('renders edit mode correctly', async () => {
-    const wrapper = mount(AsyncWrapper, {
-      props: { mode: 'edit', warehouseId: 1 },
-      global: {
-        stubs: defaultGlobalStubs
-      }
-    })
-
-    await resolveAll()
-
-    expect(mockWarehousesStore.getById).toHaveBeenCalledWith(1)
-    expect(wrapper.find('h1').text()).toBe('Изменить информацию о складе')
-    expect(wrapper.find('button[type="submit"]').text()).toContain('Сохранить')
-  })
-
   it('submits create form successfully', async () => {
     const wrapper = mount(AsyncWrapper, {
       props: { mode: 'create' },

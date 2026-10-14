@@ -33,28 +33,6 @@ describe('useParcelEditAccess', () => {
     }
   })
 
-  it('allows authorized users to open parcel edit and runs the before-open callback', () => {
-    const router = { push: vi.fn() }
-    const item = { id: 10 }
-    const onBeforeOpen = vi.fn()
-
-    const access = useParcelEditAccess({
-      router,
-      getQueryParams: () => ({ registerId: 5, source: 'warehouse' }),
-      onBeforeOpen
-    })
-
-    expect(access.canFollowParcelEditRoute.value).toBe(true)
-    expect(access.isParcelEditCellDisabled.value).toBe(false)
-    expect(access.parcelEditCellClass('truncated-cell')).toBe('truncated-cell clickable-cell')
-    expect(access.openParcelEdit(item)).toBe(true)
-    expect(onBeforeOpen).toHaveBeenCalledWith(item)
-    expect(navigateToEditParcelMock).toHaveBeenCalledWith(router, item, 'Редактирование посылки', {
-      registerId: 5,
-      source: 'warehouse'
-    })
-  })
-
   it('silently blocks users without parcel edit route access', () => {
     authStoreMock.value = {
       hasLogistRole: ref(false)

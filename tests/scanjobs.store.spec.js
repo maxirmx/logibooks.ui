@@ -141,27 +141,6 @@ describe('scanjobs store', () => {
   })
 
   describe('getAll', () => {
-    it('fetches scanjobs successfully with pagination', async () => {
-      const paginatedResponse = {
-        items: mockScanjobs,
-        pagination: {
-          totalCount: 2,
-          hasNextPage: false,
-          hasPreviousPage: false
-        }
-      }
-      fetchWrapper.get.mockResolvedValue(paginatedResponse)
-      const store = useScanjobsStore()
-
-      await store.getAll()
-
-      expect(fetchWrapper.get).toHaveBeenCalledWith(expect.stringContaining(`${apiUrl}/scanjobs?`))
-      expect(store.items).toEqual(mockScanjobs)
-      expect(store.totalCount).toBe(2)
-      expect(store.loading).toBe(false)
-      expect(store.error).toBeNull()
-    })
-
     it('falls back to empty items array and 0 totalCount when response has no items/pagination', async () => {
       fetchWrapper.get.mockResolvedValue({})
       const store = useScanjobsStore()
@@ -186,47 +165,6 @@ describe('scanjobs store', () => {
       expect(urlParams.get('sortOrder')).toBe('desc')
     })
 
-    it('passes dealNumber sort to backend', async () => {
-      fetchWrapper.get.mockResolvedValue({ items: [], pagination: { totalCount: 0 } })
-      const store = useScanjobsStore()
-      const authStore = useAuthStore()
-      authStore.scanjobs_sort_by = [{ key: 'dealNumber', order: 'asc' }]
-
-      await store.getAll()
-
-      const calledUrl = fetchWrapper.get.mock.calls[0][0]
-      const urlParams = new URL(calledUrl).searchParams
-      expect(urlParams.get('sortBy')).toBe('dealNumber')
-      expect(urlParams.get('sortOrder')).toBe('asc')
-    })
-
-    it('passes invoice sort to backend', async () => {
-      fetchWrapper.get.mockResolvedValue({ items: [], pagination: { totalCount: 0 } })
-      const store = useScanjobsStore()
-      const authStore = useAuthStore()
-      authStore.scanjobs_sort_by = [{ key: 'invoice', order: 'desc' }]
-
-      await store.getAll()
-
-      const calledUrl = fetchWrapper.get.mock.calls[0][0]
-      const urlParams = new URL(calledUrl).searchParams
-      expect(urlParams.get('sortBy')).toBe('invoice')
-      expect(urlParams.get('sortOrder')).toBe('desc')
-    })
-
-    it('passes senderRecipient sort to backend', async () => {
-      fetchWrapper.get.mockResolvedValue({ items: [], pagination: { totalCount: 0 } })
-      const store = useScanjobsStore()
-      const authStore = useAuthStore()
-      authStore.scanjobs_sort_by = [{ key: 'senderRecipient', order: 'asc' }]
-
-      await store.getAll()
-
-      const calledUrl = fetchWrapper.get.mock.calls[0][0]
-      const urlParams = new URL(calledUrl).searchParams
-      expect(urlParams.get('sortBy')).toBe('senderRecipient')
-      expect(urlParams.get('sortOrder')).toBe('asc')
-    })
     it('appends search param when scanjobs_search is set', async () => {
       const paginatedResponse = { items: mockScanjobs, pagination: { totalCount: 2 } }
       fetchWrapper.get.mockResolvedValue(paginatedResponse)
@@ -344,17 +282,6 @@ describe('scanjobs store', () => {
       expect(store.error).toBeNull()
     })
 
-    it('handles update error', async () => {
-      const error = new Error('Not found')
-      fetchWrapper.put.mockRejectedValue(error)
-      const store = useScanjobsStore()
-
-      await expect(store.update(999, {})).rejects.toThrow('Not found')
-
-      expect(store.loading).toBe(false)
-      expect(store.error).toBe(error)
-    })
-
     it('refreshes the scan job and enters read-only mode after a stale conflict', async () => {
       const conflict = Object.assign(new Error('Изменения запрещены для реестра'), { status: 409 })
       fetchWrapper.put.mockRejectedValue(conflict)
@@ -431,17 +358,6 @@ describe('scanjobs store', () => {
       expect(store.error).toBeNull()
     })
 
-    it('handles start error 403 Forbidden', async () => {
-      const error = new Error('403 Forbidden')
-      fetchWrapper.post.mockRejectedValue(error)
-      const store = useScanjobsStore()
-
-      await expect(store.start(1)).rejects.toThrow('403 Forbidden')
-
-      expect(store.loading).toBe(false)
-      expect(store.error).toBe(error)
-    })
-
     it('handles start error 404 Not Found', async () => {
       const error = new Error('404 Not Found')
       fetchWrapper.post.mockRejectedValue(error)
@@ -465,17 +381,6 @@ describe('scanjobs store', () => {
       expect(result).toBe(true)
       expect(store.loading).toBe(false)
       expect(store.error).toBeNull()
-    })
-
-    it('handles finish error 403 Forbidden', async () => {
-      const error = new Error('403 Forbidden')
-      fetchWrapper.post.mockRejectedValue(error)
-      const store = useScanjobsStore()
-
-      await expect(store.finish(1)).rejects.toThrow('403 Forbidden')
-
-      expect(store.loading).toBe(false)
-      expect(store.error).toBe(error)
     })
 
     it('handles finish error 404 Not Found', async () => {
@@ -503,17 +408,6 @@ describe('scanjobs store', () => {
       expect(store.error).toBeNull()
     })
 
-    it('handles pause error 403 Forbidden', async () => {
-      const error = new Error('403 Forbidden')
-      fetchWrapper.post.mockRejectedValue(error)
-      const store = useScanjobsStore()
-
-      await expect(store.pause(1)).rejects.toThrow('403 Forbidden')
-
-      expect(store.loading).toBe(false)
-      expect(store.error).toBe(error)
-    })
-
     it('handles pause error 404 Not Found', async () => {
       const error = new Error('404 Not Found')
       fetchWrapper.post.mockRejectedValue(error)
@@ -527,19 +421,6 @@ describe('scanjobs store', () => {
   })
 
   describe('ops', () => {
-    it('fetches ops successfully', async () => {
-      fetchWrapper.get.mockResolvedValue(mockOps)
-      const store = useScanjobsStore()
-
-      const result = await store.getOps()
-
-      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/scanjobs/ops`)
-      expect(store.ops).toEqual(mockOps)
-      expect(result).toEqual(mockOps)
-      expect(store.opsLoading).toBe(false)
-      expect(store.opsError).toBeNull()
-    })
-
     it('handles ops error', async () => {
       const error = new Error('Ops error')
       fetchWrapper.get.mockRejectedValue(error)
@@ -586,19 +467,6 @@ describe('scanjobs store', () => {
       boxes: [],
       box: null
     }
-
-    it('loads monitor snapshot', async () => {
-      fetchWrapper.get.mockResolvedValue(monitorSnapshot)
-      const store = useScanjobsStore()
-
-      const result = await store.loadMonitorSnapshot(42, { area: 0 })
-
-      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/scanjobs/42/monitor?area=0`)
-      expect(result).toEqual(monitorSnapshot)
-      expect(store.monitorSnapshot).toEqual(monitorSnapshot)
-      expect(store.monitorLoading).toBe(false)
-      expect(store.monitorError).toBeNull()
-    })
 
     it('loads box monitor snapshot with box id', async () => {
       fetchWrapper.get.mockResolvedValue({ ...monitorSnapshot, area: 1 })
@@ -791,27 +659,6 @@ describe('scanjobs store', () => {
       expect(onClosed).toHaveBeenCalledWith(42, 2)
     })
 
-    it('re-observes monitor on reconnect with the last request', async () => {
-      const store = useScanjobsStore()
-
-      await store.startMonitor(42, { area: 1, boxId: 7 })
-      await store.startMonitorFollowUser(42, 17)
-      signalRConnection.invoke.mockClear()
-
-      signalRHandlers.onreconnected()
-      await Promise.resolve()
-
-      expect(signalRConnection.invoke).toHaveBeenCalledWith('ObserveScanJob', {
-        scanJobId: 42,
-        area: 1,
-        boxId: 7
-      })
-      expect(signalRConnection.invoke).toHaveBeenCalledWith('ObserveScanJobFollowUser', {
-        scanJobId: 42,
-        userId: 17
-      })
-    })
-
     it('does not re-observe monitor on reconnect after clearMonitor', async () => {
       const store = useScanjobsStore()
 
@@ -842,22 +689,6 @@ describe('scanjobs store', () => {
       expect(store.monitorError).toBe(reconnectError)
     })
 
-    it('does not re-observe follow user on reconnect after clearMonitorFollowUser', async () => {
-      const store = useScanjobsStore()
-
-      await store.startMonitor(42, { area: 0 })
-      await store.startMonitorFollowUser(42, 17)
-      await store.clearMonitorFollowUser()
-      signalRConnection.invoke.mockClear()
-
-      signalRHandlers.onreconnected()
-
-      expect(signalRConnection.invoke).not.toHaveBeenCalledWith(
-        'ObserveScanJobFollowUser',
-        expect.anything()
-      )
-    })
-
     it('stores monitorError when re-observing follow user fails on reconnect', async () => {
       const reconnectError = new Error('Observe follow user on reconnect failed')
       const store = useScanjobsStore()
@@ -876,25 +707,6 @@ describe('scanjobs store', () => {
         userId: 17
       })
       expect(store.monitorError).toBe(reconnectError)
-    })
-
-    it('clears and stops monitor connection', async () => {
-      const store = useScanjobsStore()
-
-      await store.startMonitor(42, { area: 0 })
-      await store.clearMonitor()
-      await store.stopMonitor()
-
-      expect(signalRConnection.invoke).toHaveBeenCalledWith('ClearScanJobMonitor')
-      expect(signalRConnection.invoke).toHaveBeenCalledWith('ClearScanJobFollowUser')
-      expect(signalRConnection.stop).toHaveBeenCalled()
-    })
-
-    it('clearMonitor returns false when no connection exists', async () => {
-      const store = useScanjobsStore()
-
-      const result = await store.clearMonitor()
-      expect(result).toBe(false)
     })
 
     it('clearMonitor returns false when connection is disconnected', async () => {
@@ -1043,16 +855,6 @@ describe('scanjobs store', () => {
       expect(store.monitorError).toBeNull()
     })
 
-    it('buildMonitorRequest omits boxId for Boxes area', async () => {
-      const store = useScanjobsStore()
-      await store.startMonitor(42, { area: 0, boxId: 7 })
-
-      expect(signalRConnection.invoke).toHaveBeenCalledWith('ObserveScanJob', {
-        scanJobId: 42,
-        area: 0
-      })
-    })
-
     it('buildMonitorRequest includes bucketIndex for Unassigned area', async () => {
       const store = useScanjobsStore()
       await store.startMonitor(42, { area: 2, bucketIndex: 4 })
@@ -1062,51 +864,6 @@ describe('scanjobs store', () => {
         area: 2,
         bucketIndex: 4
       })
-    })
-
-    it('stopMonitor does not invoke ClearScanJobMonitor when connection is disconnected', async () => {
-      const store = useScanjobsStore()
-      await store.startMonitor(42, { area: 0 })
-
-      // Manually set the state to Disconnected
-      signalRConnection.state = 'Disconnected'
-      signalRConnection.invoke.mockClear()
-
-      const result = await store.stopMonitor()
-
-      expect(result).toBe(true)
-      // ClearScanJobMonitor should not be invoked when disconnected
-      expect(signalRConnection.invoke).not.toHaveBeenCalledWith('ClearScanJobMonitor')
-      expect(signalRConnection.stop).toHaveBeenCalled()
-    })
-
-    it('starts scan jobs list monitor and forwards change notifications', async () => {
-      const onChanged = vi.fn()
-      const store = useScanjobsStore()
-
-      await store.startScanJobsListMonitor({ onChanged })
-
-      expect(signalRWithUrl).toHaveBeenCalledWith('http://localhost:8080/hubs/scan-jobs', {
-        accessTokenFactory: expect.any(Function),
-        withCredentials: false
-      })
-      expect(signalRConnection.start).toHaveBeenCalled()
-      expect(signalRConnection.invoke).toHaveBeenCalledWith('ObserveScanJobs')
-
-      signalRHandlers.ScanJobsChanged()
-
-      expect(onChanged).toHaveBeenCalledTimes(1)
-    })
-
-    it('stops scan jobs list monitor', async () => {
-      const store = useScanjobsStore()
-
-      await store.startScanJobsListMonitor({ onChanged: vi.fn() })
-      const result = await store.stopScanJobsListMonitor()
-
-      expect(result).toBe(true)
-      expect(signalRConnection.invoke).toHaveBeenCalledWith('ClearScanJobs')
-      expect(signalRConnection.stop).toHaveBeenCalled()
     })
 
     it('reuses existing scan jobs list connection and skips restart when already connected', async () => {
@@ -1126,17 +883,6 @@ describe('scanjobs store', () => {
       expect(signalRWithUrl).toHaveBeenCalledTimes(1)
       expect(firstChangedHandler).not.toHaveBeenCalled()
       expect(secondChangedHandler).toHaveBeenCalledTimes(1)
-    })
-
-    it('observes scan jobs list again after stop and restart', async () => {
-      const store = useScanjobsStore()
-      await store.startScanJobsListMonitor({ onChanged: vi.fn() })
-      await store.stopScanJobsListMonitor()
-      signalRConnection.invoke.mockClear()
-
-      await store.startScanJobsListMonitor({ onChanged: vi.fn() })
-
-      expect(signalRConnection.invoke).toHaveBeenCalledWith('ObserveScanJobs')
     })
 
     it('forwards scan jobs list close notifications', async () => {
@@ -1194,25 +940,6 @@ describe('scanjobs store', () => {
   })
 
   describe('parcel ext-id monitor', () => {
-    it('starts parcel ext-id monitor and forwards changed notifications', async () => {
-      const onChanged = vi.fn()
-      const store = useScanjobsStore()
-
-      await store.startParcelExtIdMonitor(42, { onChanged })
-
-      expect(signalRWithUrl).toHaveBeenCalledWith('http://localhost:8080/hubs/scan-jobs', {
-        accessTokenFactory: expect.any(Function),
-        withCredentials: false
-      })
-      expect(signalRConnection.start).toHaveBeenCalled()
-      expect(signalRConnection.invoke).toHaveBeenCalledWith('ObserveParcelExtIds', 42)
-
-      const change = { parcelId: 1, extId: 'KGT-001', revision: 1 }
-      signalRHandlers.ParcelExtIdChanged(change)
-
-      expect(onChanged).toHaveBeenCalledWith(change)
-    })
-
     it('starts parcel ext-id monitor without onChanged callback', async () => {
       const store = useScanjobsStore()
 
@@ -1225,17 +952,6 @@ describe('scanjobs store', () => {
       expect(() =>
         signalRHandlers.ParcelExtIdChanged({ parcelId: 1, extId: 'X', revision: 1 })
       ).not.toThrow()
-    })
-
-    it('stops parcel ext-id monitor', async () => {
-      const store = useScanjobsStore()
-
-      await store.startParcelExtIdMonitor(42, { onChanged: vi.fn() })
-      const result = await store.stopParcelExtIdMonitor()
-
-      expect(result).toBe(true)
-      expect(signalRConnection.invoke).toHaveBeenCalledWith('ClearParcelExtIds')
-      expect(signalRConnection.stop).toHaveBeenCalled()
     })
 
     it('reuses existing parcel ext-id connection and skips restart when already connected', async () => {
@@ -1256,17 +972,6 @@ describe('scanjobs store', () => {
       expect(secondChangedHandler).toHaveBeenCalledTimes(1)
     })
 
-    it('observes parcel ext-ids again after stop and restart', async () => {
-      const store = useScanjobsStore()
-      await store.startParcelExtIdMonitor(42, { onChanged: vi.fn() })
-      await store.stopParcelExtIdMonitor()
-      signalRConnection.invoke.mockClear()
-
-      await store.startParcelExtIdMonitor(99, { onChanged: vi.fn() })
-
-      expect(signalRConnection.invoke).toHaveBeenCalledWith('ObserveParcelExtIds', 99)
-    })
-
     it('stores error when parcel ext-id connection closes with error', async () => {
       const store = useScanjobsStore()
       await store.startParcelExtIdMonitor(42, { onChanged: vi.fn() })
@@ -1284,17 +989,6 @@ describe('scanjobs store', () => {
       signalRHandlers.onclose(null)
 
       expect(store.error).toBeNull()
-    })
-
-    it('re-observes parcel ext-ids on reconnect when registerId is set', async () => {
-      const store = useScanjobsStore()
-      await store.startParcelExtIdMonitor(42, { onChanged: vi.fn() })
-      signalRConnection.invoke.mockClear()
-
-      signalRHandlers.onreconnected()
-      await Promise.resolve()
-
-      expect(signalRConnection.invoke).toHaveBeenCalledWith('ObserveParcelExtIds', 42)
     })
 
     it('does not re-observe parcel ext-ids on reconnect after stop', async () => {

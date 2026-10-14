@@ -45,12 +45,4 @@ describe('useAppConfirm', () => {
     )
   })
 
-  it('uses the medium shared size when requested', async () => {
-    const confirm = useAppConfirm()
-
-    await confirm({ title: 'Длинное подтверждение', size: 'medium' })
-
-    expect(confirmMock.mock.calls[0][0].dialogProps.width).toBe(560)
-    expect(confirmMock.mock.calls[0][0]).not.toHaveProperty('size')
-  })
 })

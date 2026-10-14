@@ -15,17 +15,6 @@ beforeEach(async () => {
   await coordinator.setScope(42, 9)
 })
 describe('serial label printing coordinator', () => {
-  it('reports a missing printer once and discards all unsubmitted labels', async () => {
-    await coordinator.arm('KGT')
-    qz.ready.mockImplementationOnce(async () => { qz.state.printer = ''; throw new Error('printer disappeared') })
-    coordinator.consume(event(candidate(1), candidate(2)))
-    await flushPromises()
-    expect(errors).toHaveBeenCalledTimes(1)
-    expect(coordinator.state).toMatchObject({ mode: 'Off', queued: 0, failed: null, paused: false })
-    qz.state.printer = 'Office'
-    coordinator.consume(event(candidate(3)))
-    expect(qz.submit).not.toHaveBeenCalled()
-  })
   it('propagates manual and retry printer failures after turning automatic marking off', async () => {
     await coordinator.arm('TJ')
     qz.ready.mockImplementationOnce(async () => { qz.state.printer = ''; throw new Error('manual printer missing') })

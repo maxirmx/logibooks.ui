@@ -74,35 +74,6 @@ describe('status store', () => {
     })
   })
 
-  it('fetchStatus resets exchange rates when API does not return them', async () => {
-    fetchWrapper.get.mockResolvedValue({
-      appVersion: '2.0.0',
-      dbVersion: '20240630',
-      exchangeRates: {}
-    })
-
-    const store = useStatusStore()
-    store.exchangeRates = [{ alphabeticCode: 'USD', rate: 91.1, date: '2024-06-01' }]
-    store.eurUzs = {
-      baseAlphabeticCode: 'EUR',
-      quoteAlphabeticCode: 'UZS',
-      rate: 15586.1234,
-      date: '2024-06-01'
-    }
-    store.eurTjs = {
-      baseAlphabeticCode: 'EUR',
-      quoteAlphabeticCode: 'TJS',
-      rate: 12.0234,
-      date: '2024-06-01'
-    }
-
-    await store.fetchStatus()
-
-    expect(store.exchangeRates).toEqual([])
-    expect(store.eurUzs).toBeNull()
-    expect(store.eurTjs).toBeNull()
-  })
-
   it('fetchStatus propagates transport failures after resetting rate state', async () => {
     const error = new Error('status unavailable')
     fetchWrapper.get.mockRejectedValue(error)

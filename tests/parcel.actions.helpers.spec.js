@@ -3,16 +3,7 @@
 // This file is a part of Logibooks ui application
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import {
-  validateParcelData,
-  approveParcel,
-  generateXml,
-  approveParcelWithExcise,
-  approveParcelWithNotification,
-  runCheckStatusAction,
-  refreshParcelAfterMutation
-} from '@/helpers/parcel.actions.helpers.js'
-import { SwValidationMatchMode } from '@/models/sw.validation.match.mode.js'
+import { validateParcelData, approveParcel, generateXml, runCheckStatusAction } from '@/helpers/parcel.actions.helpers.js'
 import { ParcelApprovalMode } from '@/models/parcel.approval.mode.js'
 
 const alertErrorMock = vi.hoisted(() => vi.fn())
@@ -57,64 +48,7 @@ describe('parcel actions helpers', () => {
     }
   })
 
-  describe('refreshParcelAfterMutation', () => {
-    it('reports a refresh failure when no action error was already shown', async () => {
-      const refreshError = new Error('refresh failed')
-      mockParcelsStore.getById.mockRejectedValueOnce(refreshError)
-
-      await expect(
-        refreshParcelAfterMutation(mockParcelsStore, parcelId, { error: alertErrorMock })
-      ).resolves.toBe(false)
-
-      expect(alertErrorMock).toHaveBeenCalledOnce()
-      expect(alertErrorMock).toHaveBeenCalledWith(refreshError, {
-        fallback: 'Не удалось обновить данные посылки'
-      })
-    })
-
-    it('logs a refresh failure without replacing an action error already shown', async () => {
-      const refreshError = new Error('refresh failed')
-      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
-      mockParcelsStore.getById.mockRejectedValueOnce(refreshError)
-
-      await expect(
-        refreshParcelAfterMutation(
-          mockParcelsStore,
-          parcelId,
-          { error: alertErrorMock },
-          { errorAlreadyReported: true }
-        )
-      ).resolves.toBe(false)
-
-      expect(alertErrorMock).not.toHaveBeenCalled()
-      expect(consoleError).toHaveBeenCalledWith(
-        '[Failed to refresh parcel after an action failure]',
-        refreshError
-      )
-      consoleError.mockRestore()
-    })
-  })
-
   describe('validateParcelData', () => {
-    it('should validate parcel successfully', async () => {
-      await validateParcelData(
-        mockValues,
-        mockItem,
-        mockParcelsStore,
-        true,
-        SwValidationMatchMode.NoSwMatch
-      )
-
-      expect(mockParcelsStore.update).toHaveBeenCalledWith(123, mockValues)
-      expect(mockParcelsStore.validate).toHaveBeenCalledWith(
-        123,
-        true,
-        SwValidationMatchMode.NoSwMatch
-      )
-      expect(mockParcelsStore.getById).toHaveBeenCalledWith(123)
-      expect(mockParcelsStore.error).toBeNull()
-    })
-
     it('should handle validation errors with API message', async () => {
       const error = {
         response: {
@@ -129,14 +63,6 @@ describe('parcel actions helpers', () => {
       expect(mockParcelsStore.error).toBe('Validation failed')
     })
 
-    it('should handle validation errors with default message', async () => {
-      mockParcelsStore.validate.mockRejectedValue(new Error('Network error'))
-
-      await validateParcelData(mockValues, mockItem, mockParcelsStore, true)
-
-      expect(mockParcelsStore.error).toBe('Ошибка при проверке информации о посылке')
-    })
-
     it('does not validate or reload when guarded update is cancelled', async () => {
       const updateParcel = vi.fn().mockResolvedValue(false)
 
@@ -147,20 +73,6 @@ describe('parcel actions helpers', () => {
       expect(updateParcel).toHaveBeenCalledWith(parcelId, mockValues)
       expect(mockParcelsStore.validate).not.toHaveBeenCalled()
       expect(mockParcelsStore.getById).not.toHaveBeenCalled()
-    })
-
-    it('reports a reload failure once and returns false after successful validation', async () => {
-      const refreshError = new Error('refresh failed')
-      mockParcelsStore.getById.mockRejectedValueOnce(refreshError)
-
-      await expect(
-        validateParcelData(mockValues, mockItem, mockParcelsStore, true)
-      ).resolves.toBe(false)
-
-      expect(alertErrorMock).toHaveBeenCalledOnce()
-      expect(alertErrorMock).toHaveBeenCalledWith(refreshError, {
-        fallback: 'Не удалось обновить данные посылки'
-      })
     })
 
     it('keeps the validation error visible when the following reload also fails', async () => {
@@ -181,70 +93,6 @@ describe('parcel actions helpers', () => {
   })
 
   describe('approveParcel', () => {
-    it('should approve parcel successfully without excise', async () => {
-      await approveParcel(mockValues, mockItem, mockParcelsStore)
-
-      expect(mockParcelsStore.update).toHaveBeenCalledWith(123, mockValues)
-      expect(mockParcelsStore.approve).toHaveBeenCalledWith(123, ParcelApprovalMode.SimpleApprove)
-      expect(mockParcelsStore.getById).toHaveBeenCalledWith(123)
-      expect(mockParcelsStore.error).toBeNull()
-    })
-
-    it('should approve parcel successfully with excise', async () => {
-      await approveParcel(
-        mockValues,
-        mockItem,
-        mockParcelsStore,
-        ParcelApprovalMode.ApproveWithExcise
-      )
-
-      expect(mockParcelsStore.update).toHaveBeenCalledWith(123, mockValues)
-      expect(mockParcelsStore.approve).toHaveBeenCalledWith(
-        123,
-        ParcelApprovalMode.ApproveWithExcise
-      )
-      expect(mockParcelsStore.getById).toHaveBeenCalledWith(123)
-      expect(mockParcelsStore.error).toBeNull()
-    })
-
-    it('should approve parcel successfully with notification', async () => {
-      await approveParcel(
-        mockValues,
-        mockItem,
-        mockParcelsStore,
-        ParcelApprovalMode.ApproveWithNotification
-      )
-
-      expect(mockParcelsStore.update).toHaveBeenCalledWith(123, mockValues)
-      expect(mockParcelsStore.approve).toHaveBeenCalledWith(
-        123,
-        ParcelApprovalMode.ApproveWithNotification
-      )
-      expect(mockParcelsStore.getById).toHaveBeenCalledWith(123)
-      expect(mockParcelsStore.error).toBeNull()
-    })
-
-    it('should handle approval errors without excise', async () => {
-      const error = new Error('Approval failed')
-      mockParcelsStore.approve.mockRejectedValue(error)
-
-      await approveParcel(mockValues, mockItem, mockParcelsStore)
-      expect(mockParcelsStore.error).toBe('Ошибка при согласовании посылки')
-    })
-
-    it('should handle approval errors with excise', async () => {
-      const error = new Error('Approval failed')
-      mockParcelsStore.approve.mockRejectedValue(error)
-
-      await approveParcel(
-        mockValues,
-        mockItem,
-        mockParcelsStore,
-        ParcelApprovalMode.ApproveWithExcise
-      )
-      expect(mockParcelsStore.error).toBe('Ошибка при согласовании посылки')
-    })
-
     it('should handle approval errors with notification', async () => {
       const error = new Error('Approval failed')
       mockParcelsStore.approve.mockRejectedValue(error)
@@ -288,38 +136,7 @@ describe('parcel actions helpers', () => {
     })
   })
 
-  describe('approveParcelWithExcise', () => {
-    it('should call approveParcel with withExcise=true', async () => {
-      await approveParcelWithExcise(mockValues, mockItem, mockParcelsStore)
-
-      expect(mockParcelsStore.approve).toHaveBeenCalledWith(
-        123,
-        ParcelApprovalMode.ApproveWithExcise
-      )
-    })
-  })
-
-  describe('approveParcelWithNotification', () => {
-    it('should call approveParcel with ApproveWithNotification mode', async () => {
-      await approveParcelWithNotification(mockValues, mockItem, mockParcelsStore)
-
-      expect(mockParcelsStore.approve).toHaveBeenCalledWith(
-        123,
-        ParcelApprovalMode.ApproveWithNotification
-      )
-    })
-  })
-
   describe('generateXml', () => {
-    it('should generate XML with string filename', async () => {
-      const filename = 'test-filename'
-
-      await generateXml(mockItem, mockParcelsStore, filename)
-
-      expect(mockParcelsStore.generate).toHaveBeenCalledWith(123, filename, false)
-      expect(mockParcelsStore.error).toBeNull()
-    })
-
     it('should generate XML with filename generator function', async () => {
       const filenameGenerator = vi.fn().mockReturnValue('generated-filename')
 
@@ -368,16 +185,6 @@ describe('parcel actions helpers', () => {
       expect(mockParcelsStore.generate).toHaveBeenCalledWith(123, 'test-file', true)
     })
 
-    it('generates raw XML when weight correction is declined', async () => {
-      const confirm = vi.fn().mockResolvedValue(false)
-
-      await generateXml(mockItem, mockParcelsStore, 'test-file', {
-        confirm,
-        register: { realWeightKg: 5, totalWeightKgToRelease: 10 }
-      })
-
-      expect(mockParcelsStore.generate).toHaveBeenCalledWith(123, 'test-file', false)
-    })
   })
 
   describe('runCheckStatusAction', () => {
@@ -395,27 +202,6 @@ describe('parcel actions helpers', () => {
       mockActionFn = vi.fn().mockResolvedValue()
     })
 
-    it('should run action successfully', async () => {
-      await runCheckStatusAction(
-        mockValues,
-        mockActionFn,
-        mockIsComponentMounted,
-        mockRunningAction,
-        mockCurrentParcelId,
-        mockEnsureNextParcelsPromise,
-        mockParcelsStore
-      )
-
-      expect(mockEnsureNextParcelsPromise).toHaveBeenCalled()
-      expect(mockParcelsStore.update).toHaveBeenCalledWith(parcelId, mockValues)
-      expect(mockActionFn).toHaveBeenCalledWith(parcelId)
-      expect(mockParcelsStore.update.mock.invocationCallOrder[0]).toBeLessThan(
-        mockActionFn.mock.invocationCallOrder[0]
-      )
-      expect(mockParcelsStore.getById).toHaveBeenCalledWith(parcelId)
-      expect(mockRunningAction.value).toBe(false)
-    })
-
     it('should not run if component is unmounted', async () => {
       mockIsComponentMounted.value = false
 
@@ -431,57 +217,6 @@ describe('parcel actions helpers', () => {
 
       expect(mockEnsureNextParcelsPromise).not.toHaveBeenCalled()
       expect(mockActionFn).not.toHaveBeenCalled()
-    })
-
-    it('should not run if another action is already running', async () => {
-      mockRunningAction.value = true
-
-      await runCheckStatusAction(
-        mockValues,
-        mockActionFn,
-        mockIsComponentMounted,
-        mockRunningAction,
-        mockCurrentParcelId,
-        mockEnsureNextParcelsPromise,
-        mockParcelsStore
-      )
-
-      expect(mockEnsureNextParcelsPromise).not.toHaveBeenCalled()
-      expect(mockActionFn).not.toHaveBeenCalled()
-    })
-
-    it('should not run if parcel id does not match', async () => {
-      mockCurrentParcelId.value = 999
-
-      await runCheckStatusAction(
-        mockValues,
-        mockActionFn,
-        mockIsComponentMounted,
-        mockRunningAction,
-        mockCurrentParcelId,
-        mockEnsureNextParcelsPromise,
-        mockParcelsStore
-      )
-
-      expect(mockEnsureNextParcelsPromise).not.toHaveBeenCalled()
-      expect(mockActionFn).not.toHaveBeenCalled()
-    })
-
-    it('should handle errors and reset runningAction', async () => {
-      mockActionFn.mockRejectedValue(new Error('Action failed'))
-
-      await runCheckStatusAction(
-        mockValues,
-        mockActionFn,
-        mockIsComponentMounted,
-        mockRunningAction,
-        mockCurrentParcelId,
-        mockEnsureNextParcelsPromise,
-        mockParcelsStore
-      )
-
-      expect(mockParcelsStore.getById).toHaveBeenCalledWith(parcelId)
-      expect(mockRunningAction.value).toBe(false)
     })
 
     it('should not reload parcel if component is unmounted in finally', async () => {

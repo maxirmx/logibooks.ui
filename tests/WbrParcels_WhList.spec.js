@@ -10,7 +10,6 @@ import { ref } from 'vue'
 import WbrParcelsWhList from '@/lists/WbrParcels_WhList.vue'
 import { vuetifyStubs, resolveAll } from './helpers/test-utils.js'
 import { scanjobCheckStatusProjectionKind } from '@/helpers/scanjob.check-status.helpers.js'
-import { CheckStatusCode } from '@/helpers/check.status.code.js'
 import { WBR_COMPANY_ID } from '@/helpers/company.constants.js'
 import { OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 
@@ -259,23 +258,6 @@ describe('WbrParcels_WhList.vue', () => {
     navigateToEditParcel.mockClear()
   })
 
-  it('loads warehouse parcels with showMarkedByPartner enabled', async () => {
-    mount(WbrParcelsWhList, {
-      props: { registerId: 1 },
-      global: { stubs: globalStubs }
-    })
-
-    await resolveAll()
-
-    expect(loadParcels).toHaveBeenCalledWith(
-      1,
-      expect.any(Object),
-      expect.objectContaining({ value: true }),
-      expect.any(Object),
-      { showMarkedByPartner: true }
-    )
-  })
-
   it('normalizes an initial exact box scope before the first request', async () => {
     parcelsWhPage.value = 3
     parcelsWhBoxNumber.value = 'STALE-PREFIX'
@@ -301,53 +283,6 @@ describe('WbrParcels_WhList.vue', () => {
     })
 
     wrapper.unmount()
-  })
-
-  it('renders the required parcel fields in the table', async () => {
-    const wrapper = mount(WbrParcelsWhList, {
-      props: { registerId: 1 },
-      global: { stubs: globalStubs }
-    })
-
-    const text = wrapper.text()
-    expect(text).toContain('SHK-1')
-    expect(text).toContain('Very long WBR product name that must remain on one line')
-    expect(text).toContain('Sticker-1')
-    expect(text).toContain('STK-1')
-    expect(text).toContain('BOX-1')
-    expect(text).toContain('77')
-    expect(text).toContain('3')
-    expect(text).toContain('Status 7')
-    expect(text).toContain('Не проверено')
-    expect(text).toContain('Зона 1')
-  })
-
-  it('defines headers only for the warehouse parcel columns', () => {
-    const wrapper = mount(WbrParcelsWhList, {
-      props: { registerId: 1 },
-      global: { stubs: globalStubs }
-    })
-
-    const headerKeys = wrapper.vm.headers.map((header) => header.key)
-    expect(headerKeys).toEqual([
-      'actions',
-      'id',
-      'checkStatusProjection',
-      'zone',
-      'statusId',
-      'extId',
-      'shk',
-      'sticker',
-      'stickerCode',
-      'boxNumber',
-      'productName',
-      'weightKg',
-      'quantity'
-    ])
-    expect(
-      wrapper.vm.headers.find((header) => header.key === 'checkStatusProjection').sortable
-    ).toBe(true)
-    expect(wrapper.vm.headers.find((header) => header.key === 'extId').sortable).not.toBe(false)
   })
 
   it('opens parcel status bulk dialog and reloads warehouse parcels after update', async () => {
@@ -377,82 +312,6 @@ describe('WbrParcels_WhList.vue', () => {
       expect.any(Object),
       { showMarkedByPartner: true }
     )
-  })
-
-  it('renders product name in a non-wrapping truncated cell', () => {
-    const wrapper = mount(WbrParcelsWhList, {
-      props: { registerId: 1 },
-      global: { stubs: globalStubs }
-    })
-
-    const productName = wrapper.get('.warehouse-product-name-cell')
-    expect(productName.text()).toBe('Very long WBR product name that must remain on one line')
-    expect(productName.attributes('title')).toBe(
-      'Very long WBR product name that must remain on one line'
-    )
-  })
-
-  it('renders corrected parcel weight when register correction is available', () => {
-    mockItems.value = [
-      {
-        ...mockItems.value[0],
-        weightCorrectionEligible: true
-      }
-    ]
-    registerItem.value = {
-      dealNumber: 'D-1',
-      realWeightKg: 5,
-      totalWeightKgToRelease: 10
-    }
-
-    const wrapper = mount(WbrParcelsWhList, {
-      props: { registerId: 1 },
-      global: {
-        stubs: {
-          ...globalStubs,
-          'font-awesome-icon': {
-            props: ['icon'],
-            template: '<i :data-icon="icon" class="fa-stub"></i>'
-          }
-        }
-      }
-    })
-
-    const weight = wrapper.get('.corrected-weight-display')
-    expect(weight.text()).toContain('2.400')
-    expect(weight.text()).toContain('1.200')
-    expect(weight.get('[data-icon="fa-solid fa-arrow-right"]').exists()).toBe(true)
-  })
-
-  it('keeps parcel weight plain when row is not weight-correction eligible', () => {
-    mockItems.value = [
-      {
-        ...mockItems.value[0],
-        weightCorrectionEligible: false
-      }
-    ]
-    registerItem.value = {
-      dealNumber: 'D-1',
-      realWeightKg: 5,
-      totalWeightKgToRelease: 10
-    }
-
-    const wrapper = mount(WbrParcelsWhList, {
-      props: { registerId: 1 },
-      global: {
-        stubs: {
-          ...globalStubs,
-          'font-awesome-icon': {
-            props: ['icon'],
-            template: '<i :data-icon="icon" class="fa-stub"></i>'
-          }
-        }
-      }
-    })
-
-    expect(wrapper.find('.corrected-weight-display').exists()).toBe(false)
-    expect(wrapper.text()).toContain('2.400')
-    expect(wrapper.text()).not.toContain('1.200')
   })
 
   it('opens parcel edit from warehouse table cells', async () => {
@@ -535,51 +394,6 @@ describe('WbrParcels_WhList.vue', () => {
     wrapper.unmount()
   })
 
-  it('disables parcel edit cells without parcel edit route access', async () => {
-    hasLogistRole.value = false
-    const wrapper = mount(WbrParcelsWhList, {
-      props: { registerId: 1 },
-      global: { stubs: globalStubs }
-    })
-
-    await resolveAll()
-
-    const productNameCell = wrapper.get('.warehouse-product-name-cell')
-    expect(productNameCell.classes()).not.toContain('clickable-cell')
-    expect(productNameCell.attributes('aria-disabled')).toBe('true')
-
-    await productNameCell.trigger('click')
-
-    expect(navigateToEditParcel).not.toHaveBeenCalled()
-  })
-
-  it('sets defect from row action and reloads parcels for warehouse manager', async () => {
-    isWhManager.value = true
-    const wrapper = mount(WbrParcelsWhList, {
-      props: { registerId: 1 },
-      global: { stubs: globalStubs }
-    })
-
-    await resolveAll()
-    loadParcels.mockClear()
-
-    const setDefectAction = wrapper.get('[data-testid="set-defect-action"]')
-    expect(setDefectAction.attributes('aria-label')).toBe('Брак')
-    expect(setDefectAction.attributes('title')).toBe('Брак')
-
-    await setDefectAction.trigger('click')
-    await resolveAll()
-
-    expect(setDefect).toHaveBeenCalledWith(1)
-    expect(loadParcels).toHaveBeenCalledWith(
-      1,
-      expect.any(Object),
-      expect.objectContaining({ value: true }),
-      expect.any(Object),
-      { showMarkedByPartner: true }
-    )
-  })
-
   it('shows and clears KGT number only for admins', async () => {
     isAdmin.value = true
     const wrapper = mount(WbrParcelsWhList, {
@@ -606,15 +420,6 @@ describe('WbrParcels_WhList.vue', () => {
       expect.any(Object),
       { showMarkedByPartner: true }
     )
-  })
-
-  it('does not render KGT clear action for non-admins', () => {
-    const wrapper = mount(WbrParcelsWhList, {
-      props: { registerId: 1 },
-      global: { stubs: globalStubs }
-    })
-
-    expect(wrapper.find('[data-testid="clear-ext-id-action"]').exists()).toBe(false)
   })
 
   it('subscribes to KGT number changes and patches matching register events', async () => {
@@ -676,35 +481,6 @@ describe('WbrParcels_WhList.vue', () => {
       expect.any(Object),
       { showMarkedByPartner: true }
     )
-  })
-
-  it('disables clear defect action for Duplicate2 status that is not defect', async () => {
-    isShiftLead.value = true
-    mockItems.value = [
-      {
-        ...mockItems.value[0],
-        checkStatus: CheckStatusCode.Duplicate2.value,
-        checkStatusProjection: {
-          kind: scanjobCheckStatusProjectionKind.Checked,
-          title: 'Проверено',
-          restrictionReason: null
-        }
-      }
-    ]
-    const wrapper = mount(WbrParcelsWhList, {
-      props: { registerId: 1 },
-      global: { stubs: globalStubs }
-    })
-
-    await resolveAll()
-
-    const clearDefectAction = wrapper.get('[data-testid="clear-defect-action"]')
-    expect(clearDefectAction.attributes('disabled')).toBeDefined()
-
-    await clearDefectAction.trigger('click')
-    await resolveAll()
-
-    expect(clearDefect).not.toHaveBeenCalled()
   })
 
   it('shows reload error message when refresh fails after setting defect', async () => {

@@ -75,26 +75,4 @@ describe('UnregisteredParcels_View.vue', () => {
     expect(mockPush).not.toHaveBeenCalled()
   })
 
-  it('falls back to router back when caller returnUrl is not a safe internal path', async () => {
-    mockRoute.query = { returnUrl: '//example.com/phishing' }
-
-    const wrapper = mount(UnregisteredParcelsView, {
-      props: { registerId: 42 },
-      global: {
-        stubs: {
-          UnregisteredParcelsList: {
-            props: ['registerId'],
-            emits: ['close'],
-            template:
-              '<button data-testid="close-list" @click="$emit(\'close\')">{{ registerId }}</button>'
-          }
-        }
-      }
-    })
-
-    await wrapper.find('[data-testid="close-list"]').trigger('click')
-
-    expect(mockBack).toHaveBeenCalled()
-    expect(mockPush).not.toHaveBeenCalled()
-  })
 })

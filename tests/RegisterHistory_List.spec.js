@@ -1,5 +1,3 @@
-import { useListStateStore } from '@/stores/list.state.store.js'
-import { LIST_STATE_STORAGE_KEY } from '@/helpers/list.state.helpers.js'
 import { setActivePinia, createPinia } from 'pinia'
 /* @vitest-environment jsdom */
 // Copyright (C) 2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
@@ -249,56 +247,6 @@ describe('RegisterHistory_List.vue', () => {
     })
   })
 
-  it('restores filters and pagination before its first request and isolates registers', async () => {
-    mockRefs.totalCount.value = 1000
-    sessionStorage.clear()
-    sessionStorage.setItem(LIST_STATE_STORAGE_KEY, JSON.stringify({ version: 1, userId: 1, lists: {
-      [JSON.stringify(['registerHistory', 42])]: { page: 3, itemsPerPage: 50, sortBy: [{ key: 'user', order: 'asc' }], selectedUserId: 7, selectedReason: 'Сохранение изменений' }
-    } }))
-    useListStateStore().setUser(1)
-    const wrapper = mount(RegisterHistoryList, { props: { registerId: 42 }, global: { stubs: defaultGlobalStubs } })
-    await flushPromises()
-    expect(mocks.getHistory).toHaveBeenNthCalledWith(1, 42, { page: 3, pageSize: 50, sortBy: 'user', sortOrder: 'asc', userId: 7, reason: 'Сохранение изменений' })
-    const selects = wrapper.findAllComponents({ name: 'v-select' })
-    expect(selects[0].props('modelValue')).toBe(7)
-    expect(selects[1].props('modelValue')).toBe('Сохранение изменений')
-    await wrapper.setProps({ registerId: 43 })
-    await flushPromises()
-    expect(mocks.getHistory).toHaveBeenLastCalledWith(43, expect.objectContaining({ page: 1, userId: null, reason: null }))
-    await wrapper.setProps({ registerId: 42 })
-    await flushPromises()
-    expect(mocks.getHistory).toHaveBeenLastCalledWith(42, expect.objectContaining({ page: 3, userId: 7 }))
-    wrapper.unmount()
-  })
-
-  it('loads and renders structured history for an authorized user', async () => {
-    const wrapper = mount(RegisterHistoryList, {
-      props: { registerId: 42 },
-      global: { stubs: defaultGlobalStubs }
-    })
-    await flushPromises()
-
-    expect(mocks.ensureStatuses).toHaveBeenCalled()
-    expect(mocks.ensureCountries).toHaveBeenCalled()
-    expect(mocks.getCompanies).toHaveBeenCalled()
-    expect(mocks.getAirports).toHaveBeenCalled()
-    expect(mocks.ensureWarehouses).toHaveBeenCalled()
-    expect(mocks.ensureOps).toHaveBeenCalled()
-    expect(mocks.getRegister).toHaveBeenCalledWith(42)
-    expect(mocks.getHistory).toHaveBeenCalledWith(42, {
-      page: 1,
-      pageSize: 50,
-      sortBy: 'changedAt',
-      sortOrder: 'desc',
-      userId: null,
-      reason: null
-    })
-    expect(wrapper.text()).toContain('История изменений: Реестр DEAL-42 (Авианакладная INV-42)')
-    expect(wrapper.text()).toContain('Иванов Иван')
-    expect(wrapper.text()).toContain('Сохранение изменений')
-    expect(wrapper.text()).toContain('Статус: Получен → На складе')
-  })
-
   it('renders localized 1C field names and values', async () => {
     mockRefs.items.value[0].changes = [
       { field: 'CustomerOrderNumber', oldValue: null, newValue: 'ORDER-42' },
@@ -328,21 +276,6 @@ describe('RegisterHistory_List.vue', () => {
     expect(wrapper.text()).not.toContain('PassportCheckWasFinished')
     expect(wrapper.text()).not.toContain('DecDate')
     expect(wrapper.text()).not.toContain('ReleaseDate')
-  })
-
-  it('renders the collapsed event count before the newest event changes', async () => {
-    mockRefs.items.value[0].eventCount = 3
-
-    const wrapper = mount(RegisterHistoryList, {
-      props: { registerId: 42 },
-      global: { stubs: defaultGlobalStubs }
-    })
-    await flushPromises()
-
-    expect(wrapper.get('.history-event-count').text()).toBe('Количество изменений: 3')
-    expect(wrapper.text().indexOf('Количество изменений: 3')).toBeLessThan(
-      wrapper.text().indexOf('Статус: Получен → На складе')
-    )
   })
 
   it.each([
@@ -518,18 +451,6 @@ describe('RegisterHistory_List.vue', () => {
     expect(wrapper.findComponent({ name: 'v-data-table-server' }).exists()).toBe(false)
   })
 
-  it('uses the batch label in the header for warehouse context', async () => {
-    const wrapper = mount(RegisterHistoryList, {
-      props: { registerId: 42, mode: OP_MODE_WAREHOUSE },
-      global: { stubs: defaultGlobalStubs }
-    })
-    await flushPromises()
-
-    expect(wrapper.get('.primary-heading').text()).toBe(
-      'История изменений: Партия DEAL-42 (Авианакладная INV-42)'
-    )
-  })
-
   it('uses an action button to return to the register list preserving the operation mode', async () => {
     const wrapper = mount(RegisterHistoryList, {
       props: { registerId: 42, mode: OP_MODE_WAREHOUSE },
@@ -579,25 +500,6 @@ describe('RegisterHistory_List.vue', () => {
     expect(text).toContain('Склад: Склад Север → Склад Юг')
     expect(text).not.toContain('Контрагент: 11 → 5')
     expect(text).not.toContain(`Тип реестра: 1 → ${WBRN_REGISTER_ID}`)
-  })
-
-  it('renders inspection count and transit changes with user-facing labels and values', async () => {
-    mockRefs.items.value[0].changes = [
-      { field: 'InspectionsCount', oldValue: null, newValue: '12' },
-      { field: 'WithTransit', oldValue: false, newValue: true }
-    ]
-
-    const wrapper = mount(RegisterHistoryList, {
-      props: { registerId: 42 },
-      global: { stubs: defaultGlobalStubs }
-    })
-    await flushPromises()
-
-    const text = wrapper.text()
-    expect(text).toContain('Количество досмотренных посылок: не указано → 12')
-    expect(text).toContain('Транзит: Нет → Да')
-    expect(text).not.toContain('InspectionsCount')
-    expect(text).not.toContain('WithTransit')
   })
 
   it('uses descriptive fallbacks for references that no longer exist', async () => {

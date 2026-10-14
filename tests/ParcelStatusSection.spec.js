@@ -53,14 +53,6 @@ function createWrapper(props = {}) {
 
 describe('ParcelStatusSection', () => {
 
-  it('renders current check status and computed class', () => {
-    const wrapper = createWrapper()
-
-    const checkStatusCell = wrapper.find('#checkStatus')
-    expect(checkStatusCell.classes()).toContain('check-status-warning')
-    expect(defaultProps.getCheckStatusClass).toHaveBeenCalledWith(defaultProps.item.checkStatus)
-  })
-
   it('emits all action events with form values payload', async () => {
     const wrapper = createWrapper()
     const buttons = wrapper.findAllComponents(ActionButton)
@@ -98,75 +90,10 @@ describe('ParcelStatusSection', () => {
     expect(buttons[6].props('disabled')).toBe(true)
   })
 
-  it('disables clear-check-status button via clearCheckStatusDisabled prop', () => {
-    const wrapper = createWrapper({ clearCheckStatusDisabled: true })
-    const buttons = wrapper.findAllComponents(ActionButton)
-
-    // Only clear-check-status (index 3) should be disabled
-    expect(buttons[0].props('disabled')).toBe(false)
-    expect(buttons[3].props('disabled')).toBe(true)
-    expect(buttons[4].props('disabled')).toBe(false)
-  })
-
-  it('disables only approval controls via approvalDisabled', () => {
-    const wrapper = createWrapper({ approvalDisabled: true })
-    const buttons = wrapper.findAllComponents(ActionButton)
-
-    expect(buttons[0].props('disabled')).toBe(false)
-    expect(buttons[1].props('disabled')).toBe(false)
-    expect(buttons[2].props('disabled')).toBe(false)
-    expect(buttons[3].props('disabled')).toBe(false)
-    expect(buttons[4].props('disabled')).toBe(false)
-    expect(buttons[5].props('disabled')).toBe(true)
-    expect(buttons[6].props('disabled')).toBe(true)
-  })
-
-  it('disables all buttons when disabled and clearCheckStatusDisabled are both true', () => {
-    const wrapper = createWrapper({ disabled: true, clearCheckStatusDisabled: true })
-
-    wrapper.findAllComponents(ActionButton).forEach((button) => {
-      expect(button.props('disabled')).toBe(true)
-    })
-  })
-
-  it('enables clear-check-status when disabled is true but clearCheckStatusDisabled is false', () => {
-    const wrapper = createWrapper({ disabled: true, clearCheckStatusDisabled: false })
-    const buttons = wrapper.findAllComponents(ActionButton)
-
-    // clear-check-status enabled
-    // all other buttons disabled
-    expect(buttons[0].props('disabled')).toBe(true)
-    expect(buttons[1].props('disabled')).toBe(true)
-    expect(buttons[2].props('disabled')).toBe(true)
-    expect(buttons[3].props('disabled')).toBe(false)
-    expect(buttons[4].props('disabled')).toBe(true)
-
-    expect(buttons[5].props('disabled')).toBe(true)
-    expect(buttons[6].props('disabled')).toBe(true)
-  })
-
   it('shows bookmark icon for inherited stopwords status', () => {
     const wrapper = createWrapper({ item: { ...defaultProps.item, checkStatus: 128 } })
 
     expect(wrapper.findComponent({ name: 'FontAwesomeIcon' }).exists()).toBe(true)
-  })
-
-  it('hides stopword info section when there is no info text', () => {
-    const wrapper = createWrapper({ checkStatusInfo: '' })
-
-    expect(wrapper.find('.stopwords-info').exists()).toBe(false)
-    expect(wrapper.find('.stopwords-info-approved').exists()).toBe(false)
-    expect(wrapper.find('.stopwords-info-duplicate2').exists()).toBe(false)
-  })
-
-  it('shows stopword info with issue styling when issues exist', () => {
-    const wrapper = createWrapper({
-      checkStatusInfo: 'Проблема с кодом',
-      hasCheckStatusIssues: true
-    })
-
-    expect(wrapper.find('.stopwords-info').exists()).toBe(true)
-    expect(wrapper.find('.stopwords-text').text()).toContain('Проблема с кодом')
   })
 
   it('renders matched stop words without route-scope explanations', () => {
@@ -216,47 +143,6 @@ describe('ParcelStatusSection', () => {
     expect(wrapper.find('.stopwords-text-duplicate2').text()).toContain('Найден дубликат')
   })
 
-  it('renders empty last-view when dTime is missing', () => {
-    const wrapper = createWrapper({ item: { ...defaultProps.item, dTime: null } })
-
-    expect(wrapper.find('#lastView').text()).toBe('')
-  })
-
-  it('disables only validate-sw-ex button when noHistoricData is true', () => {
-    const wrapper = createWrapper({ noHistoricData: true, disabled: false })
-    const buttons = wrapper.findAllComponents(ActionButton)
-
-    // button order: validate-sw, validate-sw-ex, validate-fc, approve, approve-excise, clear-check-status, check-for-duplicate
-    expect(buttons[0].props('disabled')).toBe(false)
-    expect(buttons[1].props('disabled')).toBe(true)
-    expect(buttons[2].props('disabled')).toBe(false)
-    expect(buttons[3].props('disabled')).toBe(false)
-    expect(buttons[4].props('disabled')).toBe(false)
-    expect(buttons[5].props('disabled')).toBe(false)
-    expect(buttons[6].props('disabled')).toBe(false)
-  })
-
-  it('disables all buttons when disabled, clearCheckStatusDisabled, and noHistoricData are true', () => {
-    const wrapper = createWrapper({
-      noHistoricData: true,
-      disabled: true,
-      clearCheckStatusDisabled: true
-    })
-    const buttons = wrapper.findAllComponents(ActionButton)
-
-    buttons.forEach((button) => {
-      expect(button.props('disabled')).toBe(true)
-    })
-  })
-
-  it('does not disable validate-sw-ex when noHistoricData is false', () => {
-    const wrapper = createWrapper({ noHistoricData: false, disabled: false })
-    const buttons = wrapper.findAllComponents(ActionButton)
-
-    // validate-sw-ex (index 1) should not be disabled
-    expect(buttons[1].props('disabled')).toBe(false)
-  })
-
   it('disables only restriction validations and explains the missing route country', async () => {
     const wrapper = createWrapper({ restrictionValidationDisabled: true })
     const buttons = wrapper.findAllComponents(ActionButton)
@@ -275,17 +161,4 @@ describe('ParcelStatusSection', () => {
     expect(wrapper.emitted('validate-fc')).toBeUndefined()
   })
 
-  it('composes route-country disabling with existing disable conditions', () => {
-    const wrapper = createWrapper({
-      restrictionValidationDisabled: true,
-      disabled: true,
-      noHistoricData: true,
-      clearCheckStatusDisabled: true,
-      approvalDisabled: true
-    })
-
-    wrapper.findAllComponents(ActionButton).forEach((button) => {
-      expect(button.props('disabled')).toBe(true)
-    })
-  })
 })

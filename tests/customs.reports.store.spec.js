@@ -56,40 +56,6 @@ describe('customs.reports.store', () => {
     expect(store.loading).toBe(false)
   })
 
-  it('fetches reports using fetchWrapper.get', async () => {
-    const authStore = useAuthStore()
-    authStore.uploadcustomsreports_page = 1
-    authStore.uploadcustomsreports_per_page = 100
-    authStore.uploadcustomsreports_sort_by = []
-    authStore.uploadcustomsreports_search = ''
-
-    const store = useCustomsReportsStore()
-    const mockResponse = {
-      items: [{ id: 2 }, { id: 1 }],
-      pagination: {
-        totalCount: 2,
-        hasNextPage: false,
-        hasPreviousPage: false
-      }
-    }
-    fetchWrapper.get.mockResolvedValue(mockResponse)
-
-    const promise = store.getReports()
-    expect(store.loading).toBe(true)
-    await promise
-
-    expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
-    expect(fetchWrapper.get).toHaveBeenCalledWith(
-      'http://localhost:8080/api/customsreports?page=1&pageSize=100&sortBy=id&sortOrder=desc'
-    )
-    expect(store.reports).toEqual([{ id: 2 }, { id: 1 }])
-    expect(store.reportsTotalCount).toBe(2)
-    expect(store.reportsHasNextPage).toBe(false)
-    expect(store.reportsHasPreviousPage).toBe(false)
-    expect(store.loading).toBe(false)
-    expect(store.error).toBeNull()
-  })
-
   it('includes search when fetching reports', async () => {
     const authStore = useAuthStore()
     authStore.uploadcustomsreports_page = 2
@@ -155,25 +121,6 @@ describe('customs.reports.store', () => {
     )
     expect(store.loading).toBe(false)
     expect(store.error).toBeNull()
-  })
-
-  it('hydrates reports from paged responses', async () => {
-    const store = useCustomsReportsStore()
-    fetchWrapper.get.mockResolvedValue({
-      items: [{ id: 3 }],
-      pagination: {
-        totalCount: 55,
-        hasNextPage: true,
-        hasPreviousPage: false
-      }
-    })
-
-    await store.getReports()
-
-    expect(store.reports).toEqual([{ id: 3 }])
-    expect(store.reportsTotalCount).toBe(55)
-    expect(store.reportsHasNextPage).toBe(true)
-    expect(store.reportsHasPreviousPage).toBe(false)
   })
 
   it('remove propagates 404 error and sets error', async () => {

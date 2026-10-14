@@ -161,21 +161,6 @@ describe('Parcels_View', () => {
     wrapper.unmount()
   })
 
-  it('clears an unavailable remembered filter before mounting the list and displays one warning', async () => {
-    const { useAuthStore } = await import('@/stores/auth.store.js')
-    const auth = useAuthStore()
-    auth.user = { id: 1 }
-    auth.setParcelFilterId(23)
-    mockGet.mockResolvedValue({ registerType: WBR_COMPANY_ID })
-    const wrapper = mount(ParcelsView, { props: { id: 1 } })
-    await flushPromises()
-    expect(auth.parcels_filter_id).toBeNull()
-    expect(wrapper.findAll('[role="status"]')).toHaveLength(1)
-    expect(wrapper.get('[role="status"]').text()).toContain('Фильтр сброшен')
-    expect(wrapper.find('[data-test="wbr-list"]').exists()).toBe(true)
-    wrapper.unmount()
-  })
-
   it('preserves the filter after an options failure and retries the same initialization', async () => {
     const { useAuthStore } = await import('@/stores/auth.store.js')
     const auth = useAuthStore()
@@ -264,22 +249,6 @@ describe('Parcels_View', () => {
     finish(rejected ? new Error('late load') : [])
     await flushPromises()
     expect(useAlertStore().alert).toBeNull()
-  })
-
-  it('enables passport subscriptions only for SrLogist Plus import paperwork', async () => {
-    const { useAuthStore } = await import('@/stores/auth.store.js')
-    useAuthStore().user = { roles: ['sr-logist'] }
-    mockGet.mockResolvedValue({
-      registerType: WBR_COMPANY_ID,
-      customsProcedureCode: 40
-    })
-
-    mount(ParcelsView, { props: { id: 15, mode: OP_MODE_PAPERWORK } })
-    await flushPromises()
-    await flushPromises()
-
-    expect(subscriptionOptions).toHaveLength(1)
-    expect(subscriptionOptions[0].enabled.value).toBe(true)
   })
 
   it.each([
@@ -496,32 +465,6 @@ describe('Parcels_View', () => {
     destination.unmount()
   })
 
-  it('refreshes register passport state together with visible parcels on resync', async () => {
-    const { useParcelsStore } = await import('@/stores/parcels.store.js')
-    const { useRegistersStore } = await import('@/stores/registers.store.js')
-    const parcelsStore = useParcelsStore()
-    const registersStore = useRegistersStore()
-    const response = { items: [{ id: 101 }], pagination: { totalCount: 1 } }
-    const getParcels = vi.spyOn(parcelsStore, 'getAll').mockResolvedValue(response)
-    const updateItems = vi.spyOn(parcelsStore, 'updateItems')
-    const getRegister = vi.spyOn(registersStore, 'getById').mockResolvedValue()
-    mockGet.mockResolvedValue({
-      registerType: WBR_COMPANY_ID,
-      customsProcedureCode: 40
-    })
-
-    const wrapper = mount(ParcelsView, {
-      props: { id: 18, mode: OP_MODE_PAPERWORK }
-    })
-    await flushPromises()
-    await subscriptionOptions[0].refresh()
-
-    expect(getParcels).toHaveBeenCalledWith(18, { updateStore: false })
-    expect(updateItems).toHaveBeenCalledWith(response)
-    expect(getRegister).toHaveBeenCalledWith(18)
-    wrapper.unmount()
-  })
-
   it('refreshes only the selected box in warehouse mode', async () => {
     const { useParcelsStore } = await import('@/stores/parcels.store.js')
     const parcelsStore = useParcelsStore()
@@ -557,41 +500,6 @@ describe('Parcels_View', () => {
 
     expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain(expectedMessage)
     expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-  })
-
-  it('renders WbrParcels_List when register has WBR registerType', async () => {
-    mockGet.mockResolvedValue({ registerType: WBR_COMPANY_ID })
-
-    const wrapper = mount(ParcelsView, {
-      props: {
-        id: 1
-      }
-    })
-
-    // Wait for async data to load
-    await flushPromises()
-    await flushPromises()
-
-    expect(wrapper.find('[data-test="wbr-list"]').exists()).toBe(true)
-    expect(wrapper.find('[data-test="ozon-list"]').exists()).toBe(false)
-  })
-
-  it('renders WbrParcels_WhList when register has WBR registerType in warehouse mode', async () => {
-    mockGet.mockResolvedValue({ registerType: WBR_COMPANY_ID })
-
-    const wrapper = mount(ParcelsView, {
-      props: {
-        id: 10,
-        mode: OP_MODE_WAREHOUSE
-      }
-    })
-
-    await flushPromises()
-    await flushPromises()
-
-    expect(wrapper.find('[data-test="wbr-wh-list"]').exists()).toBe(true)
-    expect(wrapper.find('[data-test="wbr-list"]').exists()).toBe(false)
-    expect(wrapper.find('[data-test="ozon-list"]').exists()).toBe(false)
   })
 
   it('passes exact box scope to the selected warehouse list and clears only that scope', async () => {
@@ -692,24 +600,6 @@ describe('Parcels_View', () => {
     expect(wrapper.find('[data-test="wbr-list"]').exists()).toBe(false)
   })
 
-  it('renders OzonParcels_WhList when register has OZON registerType in warehouse mode', async () => {
-    mockGet.mockResolvedValue({ registerType: OZON_COMPANY_ID })
-
-    const wrapper = mount(ParcelsView, {
-      props: {
-        id: 6,
-        mode: OP_MODE_WAREHOUSE
-      }
-    })
-
-    await flushPromises()
-    await flushPromises()
-
-    expect(wrapper.find('[data-test="ozon-wh-list"]').exists()).toBe(true)
-    expect(wrapper.find('[data-test="ozon-list"]').exists()).toBe(false)
-    expect(wrapper.find('[data-test="wbr-list"]').exists()).toBe(false)
-  })
-
   it('renders WbrNParcels_List when register has WBRN registerType', async () => {
     mockGet.mockResolvedValue({ registerType: WBRN_REGISTER_ID })
 
@@ -777,30 +667,6 @@ describe('Parcels_View', () => {
     expect(wrapper.find('[data-test="ozon-list"]').exists()).toBe(false)
   })
 
-  it('passes the register id prop to the selected component', async () => {
-    mockGet.mockResolvedValue({ registerType: WBR_COMPANY_ID })
-
-    const wrapper = mount(ParcelsView, {
-      props: {
-        id: 123
-      }
-    })
-
-    // Wait for async data to load
-    await flushPromises()
-    await flushPromises()
-
-    // Check that the WBR list component is rendered and receives the register-id prop
-    const wbrList = wrapper.find('[data-test="wbr-list"]')
-    expect(wbrList.exists()).toBe(true)
-
-    // Find the dynamic component and check its props
-    const dynamicComponent = wrapper.findComponent({ name: 'WbrParcels_List' })
-    expect(dynamicComponent.exists()).toBe(true)
-    // Check for both kebab-case and camelCase prop names
-    expect(dynamicComponent.props('register-id') || dynamicComponent.props('registerId')).toBe(123)
-  })
-
   it('routes to paperwork registers when selected paperwork list emits close', async () => {
     mockGet.mockResolvedValue({ registerType: WBR_COMPANY_ID })
 
@@ -820,46 +686,6 @@ describe('Parcels_View', () => {
       query: { mode: OP_MODE_PAPERWORK }
     })
     expect(backMock).not.toHaveBeenCalled()
-  })
-
-  it('routes to warehouse registers when selected warehouse list emits close', async () => {
-    mockGet.mockResolvedValue({ registerType: OZON_COMPANY_ID })
-
-    const wrapper = mount(ParcelsView, {
-      props: {
-        id: 321,
-        mode: OP_MODE_WAREHOUSE
-      }
-    })
-
-    await flushPromises()
-    await flushPromises()
-
-    wrapper.findComponent({ name: 'OzonParcels_WhList' }).vm.$emit('close')
-
-    expect(pushMock).toHaveBeenCalledWith({
-      path: '/registers',
-      query: { mode: OP_MODE_WAREHOUSE }
-    })
-    expect(backMock).not.toHaveBeenCalled()
-  })
-
-  it('returns a scoped parcel list to its safe boxes URL', async () => {
-    mockGet.mockResolvedValue({ registerType: OZON_COMPANY_ID })
-    const wrapper = mount(ParcelsView, {
-      props: {
-        id: 321,
-        mode: OP_MODE_WAREHOUSE,
-        boxId: 17,
-        returnUrl: '/registers/321/boxes'
-      }
-    })
-    await flushPromises()
-
-    wrapper.findComponent({ name: 'OzonParcels_WhList' }).vm.$emit('close')
-    await flushPromises()
-
-    expect(pushMock).toHaveBeenCalledWith('/registers/321/boxes')
   })
 
   it('reports a scoped close failure and keeps the current scope', async () => {

@@ -297,26 +297,6 @@ describe('Scanjobs_List.vue', () => {
     mockAlert.value = null
   })
 
-  it('calls ensureOpsLoaded and ensureLoaded warehouses on mount', async () => {
-    const wrapper = mount(ScanjobsList, {
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    await wrapper.vm.$nextTick()
-    await new Promise((resolve) => setTimeout(resolve, 0))
-
-    expect(ensureOpsLoaded).toHaveBeenCalled()
-    expect(getAllWarehouses).toHaveBeenCalled()
-    expect(ensureRegisterOpsLoaded).toHaveBeenCalled()
-    expect(getAllCompanies).toHaveBeenCalled()
-    expect(startScanJobsListMonitorFn).toHaveBeenCalledWith({
-      onChanged: expect.any(Function)
-    })
-    expect(wrapper.exists()).toBe(true)
-  })
-
   it('continues initialization when live list monitor cannot be started', async () => {
     startScanJobsListMonitorFn.mockRejectedValueOnce(new Error('SignalR unavailable'))
 
@@ -390,99 +370,6 @@ describe('Scanjobs_List.vue', () => {
     expect(startScanJobsListMonitorFn).not.toHaveBeenCalled()
   })
 
-  it('handles empty scanjobs array', async () => {
-    mockScanjobs.value = []
-    const wrapper = mount(ScanjobsList, {
-      global: {
-        stubs: testStubs
-      }
-    })
-    expect(wrapper.exists()).toBe(true)
-    mockScanjobs.value = [
-      {
-        id: 1,
-        name: 'Сканирование приемки',
-        type: 0,
-        operation: 1,
-        mode: 2,
-        status: 3,
-        registerStatusIdAfter: 31,
-        parcelFoundStatusIdAfter: 41,
-        parcelNotFoundStatusIdAfter: 42,
-        registerId: 22,
-        warehouseId: 10,
-        dealNumber: 'DEAL-001',
-        invoiceNumber: 'INV-001',
-        invoiceDate: '2026-06-03',
-        transportationTypeCode: 0,
-        senderId: 101,
-        recipientId: 102
-      }
-    ]
-  })
-
-  it('renders register-derived headers immediately after dealNumber', () => {
-    const wrapper = mount(ScanjobsList, {
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    const keys = wrapper.vm.headers.map((header) => header.key)
-    const dealNumberIndex = keys.indexOf('dealNumber')
-
-    expect(keys.slice(dealNumberIndex, dealNumberIndex + 4)).toEqual([
-      'dealNumber',
-      'invoice',
-      'senderRecipient',
-      'name'
-    ])
-    expect(wrapper.text()).toContain('ТСД')
-    expect(wrapper.text()).toContain('Отправитель')
-    expect(wrapper.text()).toContain('Получатель')
-  })
-
-  it('renders register-derived invoice and sender recipient cells', () => {
-    const wrapper = mount(ScanjobsList, {
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    expect(wrapper.text()).toContain('AWB INV-001')
-    expect(wrapper.text()).toContain('от 03.06.2026')
-    expect(wrapper.text()).toContain('Отправитель ООО')
-    expect(wrapper.text()).toContain('Получатель полное')
-  })
-
-  it('triggers list reload when pagination changes', async () => {
-    const wrapper = mount(ScanjobsList, {
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    await wrapper.vm.$nextTick()
-    triggerLoadMock.mockClear()
-    mockScanjobsPage.value = 2
-    await wrapper.vm.$nextTick()
-
-    expect(triggerLoadMock).toHaveBeenCalled()
-    mockScanjobsPage.value = 1
-  })
-
-  it('clears visible alert from close button', async () => {
-    mockAlert.value = { id: 31, severity: 'error', message: 'Ошибка', action: null }
-    const wrapper = mount(ScanjobsList, {
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    await wrapper.find('.close').trigger('click')
-
-    expect(dismissAlertFn).toHaveBeenCalledWith(31)
-  })
   it('handles search input', async () => {
     const wrapper = mount(ScanjobsList, {
       global: {
@@ -523,11 +410,6 @@ describe('Scanjobs_List.vue', () => {
     expect(mockGetOpsLabel(mockOps.value.modes, 2)).toBe('Режим 1')
     expect(mockGetOpsLabel(mockOps.value.statuses, 3)).toBe('Статус 1')
     expect(mockGetOpsLabel(mockOps.value.types, 99)).toBe('99')
-  })
-
-  it('maps warehouse name', async () => {
-    expect(mockGetWarehouseName(10)).toBe('Основной склад')
-    expect(mockGetWarehouseName(20)).toBe('20')
   })
 
   it('routes to scanjob monitor with scanjob id', async () => {

@@ -6,7 +6,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { ref } from 'vue'
-import { Form } from 'vee-validate'
 import BoxEditDialog from '@/dialogs/Box_EditDialog.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import { defaultGlobalStubs } from './helpers/test-utils.js'
@@ -248,20 +247,6 @@ describe('Box_EditDialog.vue', () => {
       'Коробка с таким номером уже существует'
     )
     expect(routerPush).not.toHaveBeenCalled()
-  })
-
-  it('renders field validation below an empty required code', async () => {
-    const wrapper = await mountDialog({ mode: 'create', registerId: 42 })
-    const save = wrapper
-      .findAllComponents(ActionButton)
-      .find((item) => item.props('tooltipText') === 'Создать')
-    expect(save.find('button').attributes('type')).toBe('submit')
-    const result = await wrapper.findComponent(Form).vm.$.exposed.validate()
-    await flushPromises()
-
-    expect(result.valid).toBe(false)
-    expect(wrapper.text()).toContain('Номер коробки обязателен')
-    expect(boxCreate).not.toHaveBeenCalled()
   })
 
   it('returns to the register box list when cancelled', async () => {

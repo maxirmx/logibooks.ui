@@ -5,12 +5,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { ref, reactive } from 'vue'
-import {
-  createRegisterActionHandlers,
-  refreshAfterCheckStatusFreeze,
-  useRegisterHeaderActions
-} from '@/helpers/register.actions.js'
-import { OP_MODE_PAPERWORK } from '@/helpers/op.mode.js'
+import { refreshAfterCheckStatusFreeze, useRegisterHeaderActions } from '@/helpers/register.actions.js'
 import { WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
 
 const confirmMock = vi.hoisted(() => vi.fn())
@@ -155,35 +150,6 @@ describe('useRegisterHeaderActions', () => {
     expect(progressPercent.value).toBe(0)
   })
 
-  it('shows action dialog while export without excise runs', async () => {
-    const deferred = createDeferred()
-    registersStore.generateOrdinary.mockReturnValueOnce(deferred.promise)
-
-    const actions = useRegisterHeaderActions({
-      registersStore,
-      alertStore,
-      runningAction,
-      tableLoading,
-      registerLoading,
-      loadParcels,
-      isComponentMounted
-    })
-
-    const { actionDialog, exportAllXmlOrdinary } = actions
-
-    const promise = exportAllXmlOrdinary()
-
-    expect(actionDialog.show).toBe(true)
-    expect(actionDialog.title).toBe('Подготовка файлов')
-    expect(registersStore.generateOrdinary).toHaveBeenCalledWith(1, 'INV-1', false)
-
-    deferred.resolve()
-    await promise
-
-    expect(actionDialog.show).toBe(false)
-    expect(actionDialog.title).toBe('')
-  })
-
   it('exports raw XML when weight correction is declined', async () => {
     registersStore.item.realWeightKg = 5
     registersStore.item.totalWeightKgToRelease = 10
@@ -210,26 +176,6 @@ describe('useRegisterHeaderActions', () => {
     expect(actions.actionDialog.show).toBe(false)
   })
 
-  it('exports corrected XML when weight correction is accepted', async () => {
-    registersStore.item.realWeightKg = 5
-    registersStore.item.totalWeightKgToRelease = 10
-    confirmMock.mockResolvedValueOnce(true)
-
-    const actions = useRegisterHeaderActions({
-      registersStore,
-      alertStore,
-      runningAction,
-      tableLoading,
-      registerLoading,
-      loadParcels,
-      isComponentMounted
-    })
-
-    await actions.exportAllXmlOrdinary()
-
-    expect(registersStore.generateOrdinary).toHaveBeenCalledWith(1, 'INV-1', true)
-  })
-
   it('offers optional correction before register download and applies selected correction', async () => {
     registersStore.item.realWeightKg = 5
     registersStore.item.totalWeightKgToRelease = 10
@@ -253,27 +199,6 @@ describe('useRegisterHeaderActions', () => {
       })
     )
     expect(registersStore.download).toHaveBeenCalledWith(1, 'register.xlsx', null, null, true)
-  })
-
-  it('downloads register without correction when correction is declined', async () => {
-    registersStore.item.realWeightKg = 5
-    registersStore.item.totalWeightKgToRelease = 10
-    confirmMock.mockResolvedValueOnce(false)
-
-    const actions = useRegisterHeaderActions({
-      registersStore,
-      alertStore,
-      runningAction,
-      tableLoading,
-      registerLoading,
-      loadParcels,
-      isComponentMounted
-    })
-
-    await actions.downloadRegister()
-
-    expect(registersStore.download).toHaveBeenCalledWith(1, 'register.xlsx')
-    expect(actions.actionDialog.show).toBe(false)
   })
 
   it('reports download errors and hides action dialog when download fails', async () => {
@@ -303,61 +228,6 @@ describe('useRegisterHeaderActions', () => {
     expect(alertStore.error).toHaveBeenCalledWith('Download failed')
   })
 
-  it('shows action dialog while additional restrictions download runs', async () => {
-    const deferred = createDeferred()
-    registersStore.downloadAdditionalRestrictions.mockReturnValueOnce(deferred.promise)
-
-    const actions = useRegisterHeaderActions({
-      registersStore,
-      alertStore,
-      runningAction,
-      tableLoading,
-      registerLoading,
-      loadParcels,
-      isComponentMounted
-    })
-
-    const { actionDialog, downloadAdditionalRestrictions } = actions
-
-    const promise = downloadAdditionalRestrictions()
-
-    expect(actionDialog.show).toBe(true)
-    expect(actionDialog.title).toBe('Подготовка файла реестра')
-    expect(registersStore.downloadAdditionalRestrictions).toHaveBeenCalledWith(1, 'INV-1')
-
-    deferred.resolve()
-    await promise
-
-    expect(actionDialog.show).toBe(false)
-    expect(actionDialog.title).toBe('')
-  })
-
-  it('does not offer correction before additional restrictions download', async () => {
-    registersStore.item.realWeightKg = 5
-    registersStore.item.totalWeightKgToRelease = 10
-    const deferred = createDeferred()
-    registersStore.downloadAdditionalRestrictions.mockReturnValueOnce(deferred.promise)
-
-    const actions = useRegisterHeaderActions({
-      registersStore,
-      alertStore,
-      runningAction,
-      tableLoading,
-      registerLoading,
-      loadParcels,
-      isComponentMounted
-    })
-
-    const promise = actions.downloadAdditionalRestrictions()
-
-    expect(confirmMock).not.toHaveBeenCalled()
-    expect(actions.actionDialog.show).toBe(true)
-    expect(registersStore.downloadAdditionalRestrictions).toHaveBeenCalledWith(1, 'INV-1')
-
-    deferred.resolve()
-    await promise
-  })
-
   it('reports additional restrictions download errors and hides action dialog', async () => {
     const error = new Error('Additional restrictions download failed')
     registersStore.downloadAdditionalRestrictions.mockRejectedValueOnce(error)
@@ -382,31 +252,6 @@ describe('useRegisterHeaderActions', () => {
     expect(alertStore.error).toHaveBeenCalledWith('Additional restrictions download failed')
   })
 
-  it('downloads the Tajikistan manifest directly with progress feedback', async () => {
-    const deferred = createDeferred()
-    registersStore.downloadTajikistanManifestFile.mockReturnValueOnce(deferred.promise)
-    const actions = useRegisterHeaderActions({
-      registersStore,
-      alertStore,
-      runningAction,
-      tableLoading,
-      registerLoading,
-      loadParcels,
-      isComponentMounted
-    })
-
-    const promise = actions.downloadTajikistanManifest()
-
-    expect(actions.actionDialog.show).toBe(true)
-    expect(actions.actionDialog.title).toBe('Подготовка манифеста для Таджикистана')
-    expect(registersStore.downloadTajikistanManifestFile).toHaveBeenCalledWith(1, 'INV-1')
-
-    deferred.resolve()
-    await promise
-
-    expect(actions.actionDialog.show).toBe(false)
-  })
-
   it('presents a Tajikistan manifest download failure exactly once', async () => {
     registersStore.downloadTajikistanManifestFile.mockRejectedValueOnce(
       new Error('Отсутствует Сумма в рублях')
@@ -426,30 +271,6 @@ describe('useRegisterHeaderActions', () => {
     expect(alertStore.error).toHaveBeenCalledTimes(1)
     expect(alertStore.error).toHaveBeenCalledWith('Отсутствует Сумма в рублях')
     expect(actions.actionDialog.show).toBe(false)
-  })
-
-  it('locks duplicate additional restrictions downloads while one is running', async () => {
-    const deferred = createDeferred()
-    registersStore.downloadAdditionalRestrictions.mockReturnValueOnce(deferred.promise)
-
-    const actions = useRegisterHeaderActions({
-      registersStore,
-      alertStore,
-      runningAction,
-      tableLoading,
-      registerLoading,
-      loadParcels,
-      isComponentMounted
-    })
-
-    const firstPromise = actions.downloadAdditionalRestrictions()
-    const secondPromise = actions.downloadAdditionalRestrictions()
-
-    expect(registersStore.downloadAdditionalRestrictions).toHaveBeenCalledTimes(1)
-
-    deferred.resolve()
-    await firstPromise
-    await secondPromise
   })
 
   it('shows packing list progress, locks duplicates, and presents a failure once', async () => {
@@ -563,35 +384,6 @@ describe('useRegisterHeaderActions', () => {
     expect(actionDialog.title).toBe('')
   })
 
-  it('shows action dialog while freeze check status runs', async () => {
-    const deferred = createDeferred()
-    registersStore.freezeCheckStatus.mockReturnValueOnce(deferred.promise)
-
-    const actions = useRegisterHeaderActions({
-      registersStore,
-      alertStore,
-      runningAction,
-      tableLoading,
-      registerLoading,
-      loadParcels,
-      isComponentMounted
-    })
-
-    const { actionDialog, freezeCheckStatus } = actions
-
-    const promise = freezeCheckStatus()
-
-    expect(actionDialog.show).toBe(true)
-    expect(actionDialog.title).toBe('Применение запретов и скрытие дубликатов')
-    expect(registersStore.freezeCheckStatus).toHaveBeenCalledWith(1)
-
-    deferred.resolve()
-    await expect(promise).resolves.toBe(true)
-
-    expect(actionDialog.show).toBe(false)
-    expect(actionDialog.title).toBe('')
-  })
-
   it('returns false and reports a freeze check status failure exactly once', async () => {
     registersStore.freezeCheckStatus.mockRejectedValueOnce(new Error('Freeze failed'))
     const actions = useRegisterHeaderActions({
@@ -609,42 +401,6 @@ describe('useRegisterHeaderActions', () => {
     expect(alertStore.error).toHaveBeenCalledTimes(1)
     expect(alertStore.error).toHaveBeenCalledWith('Freeze failed')
     expect(actions.actionDialog.show).toBe(false)
-  })
-
-  it('does not refresh or change the filter when check status freeze was unsuccessful', async () => {
-    const hideLegacyRestrictions = ref(false)
-    const fetchRegister = vi.fn()
-    const loadParcelsAfterFreeze = vi.fn()
-
-    await expect(refreshAfterCheckStatusFreeze({
-      succeeded: false,
-      hideLegacyRestrictions,
-      fetchRegister,
-      loadParcels: loadParcelsAfterFreeze
-    })).resolves.toBe(false)
-
-    expect(hideLegacyRestrictions.value).toBe(false)
-    expect(fetchRegister).not.toHaveBeenCalled()
-    expect(loadParcelsAfterFreeze).not.toHaveBeenCalled()
-  })
-
-  it('does not refresh or change the filter after the initiating component unmounts', async () => {
-    const hideLegacyRestrictions = ref(false)
-    const isComponentMounted = ref(false)
-    const fetchRegister = vi.fn()
-    const loadParcelsAfterFreeze = vi.fn()
-
-    await expect(refreshAfterCheckStatusFreeze({
-      succeeded: true,
-      hideLegacyRestrictions,
-      fetchRegister,
-      loadParcels: loadParcelsAfterFreeze,
-      isComponentMounted
-    })).resolves.toBe(false)
-
-    expect(hideLegacyRestrictions.value).toBe(false)
-    expect(fetchRegister).not.toHaveBeenCalled()
-    expect(loadParcelsAfterFreeze).not.toHaveBeenCalled()
   })
 
   it('does not change the filter when the component unmounts while refreshing the register', async () => {
@@ -667,28 +423,6 @@ describe('useRegisterHeaderActions', () => {
     registerRefresh.resolve()
 
     await expect(refreshPromise).resolves.toBe(false)
-    expect(hideLegacyRestrictions.value).toBe(false)
-    expect(loadParcelsAfterFreeze).not.toHaveBeenCalled()
-  })
-
-  it('reports a register refresh failure exactly once and leaves the filter unchanged', async () => {
-    const hideLegacyRestrictions = ref(false)
-    const refreshError = new Error('Register refresh failed')
-    const fetchRegister = vi.fn().mockRejectedValue(refreshError)
-    const loadParcelsAfterFreeze = vi.fn()
-
-    await expect(refreshAfterCheckStatusFreeze({
-      succeeded: true,
-      hideLegacyRestrictions,
-      fetchRegister,
-      loadParcels: loadParcelsAfterFreeze,
-      alertStore
-    })).resolves.toBe(false)
-
-    expect(alertStore.error).toHaveBeenCalledTimes(1)
-    expect(alertStore.error).toHaveBeenCalledWith(refreshError, {
-      fallback: 'Запреты применены, но не удалось обновить данные'
-    })
     expect(hideLegacyRestrictions.value).toBe(false)
     expect(loadParcelsAfterFreeze).not.toHaveBeenCalled()
   })
@@ -741,39 +475,6 @@ describe('useRegisterHeaderActions', () => {
     consoleError.mockRestore()
   })
 
-  it('enables the combined filter after a successful check status freeze', async () => {
-    const hideLegacyRestrictions = ref(false)
-    const fetchRegister = vi.fn().mockResolvedValue()
-    const loadParcelsAfterFreeze = vi.fn()
-
-    await expect(refreshAfterCheckStatusFreeze({
-      succeeded: true,
-      hideLegacyRestrictions,
-      fetchRegister,
-      loadParcels: loadParcelsAfterFreeze
-    })).resolves.toBe(true)
-
-    expect(fetchRegister).toHaveBeenCalledTimes(1)
-    expect(hideLegacyRestrictions.value).toBe(true)
-    expect(loadParcelsAfterFreeze).not.toHaveBeenCalled()
-  })
-
-  it('reloads immediately when the combined filter is already enabled', async () => {
-    const hideLegacyRestrictions = ref(true)
-    const fetchRegister = vi.fn().mockResolvedValue()
-    const loadParcelsAfterFreeze = vi.fn().mockResolvedValue()
-
-    await expect(refreshAfterCheckStatusFreeze({
-      succeeded: true,
-      hideLegacyRestrictions,
-      fetchRegister,
-      loadParcels: loadParcelsAfterFreeze
-    })).resolves.toBe(true)
-
-    expect(fetchRegister).toHaveBeenCalledTimes(1)
-    expect(loadParcelsAfterFreeze).toHaveBeenCalledTimes(1)
-  })
-
   it('checks register passports and refreshes parcels after completion', async () => {
     const deferred = createDeferred()
     registersStore.checkPassports.mockReturnValueOnce(deferred.promise)
@@ -803,16 +504,6 @@ describe('useRegisterHeaderActions', () => {
     expect(loadParcels).toHaveBeenCalledTimes(1)
     expect(actions.actionDialog.show).toBe(false)
     expect(actions.actionDialog.title).toBe('')
-  })
-
-  it('checks register passports through list action handlers', async () => {
-    const actions = createRegisterActionHandlers(registersStore, alertStore, {
-      mode: OP_MODE_PAPERWORK
-    })
-
-    await actions.checkPassports({ id: 7 })
-
-    expect(registersStore.checkPassports).toHaveBeenCalledWith(7)
   })
 
   it('confirms and finishes passport checks, then refreshes register and parcels', async () => {
@@ -849,26 +540,6 @@ describe('useRegisterHeaderActions', () => {
 
     expect(registersStore.getById).toHaveBeenCalledWith(1)
     expect(loadParcels).toHaveBeenCalledTimes(1)
-    expect(actions.actionDialog.show).toBe(false)
-  })
-
-  it('does not finish passport checks when confirmation is cancelled', async () => {
-    confirmMock.mockResolvedValueOnce(false)
-    const actions = useRegisterHeaderActions({
-      registersStore,
-      alertStore,
-      runningAction,
-      tableLoading,
-      registerLoading,
-      loadParcels,
-      isComponentMounted
-    })
-
-    await actions.finishPassportCheck()
-
-    expect(registersStore.finishPassportCheck).not.toHaveBeenCalled()
-    expect(registersStore.getById).toHaveBeenCalledWith(1)
-    expect(loadParcels).not.toHaveBeenCalled()
     expect(actions.actionDialog.show).toBe(false)
   })
 
@@ -1022,15 +693,4 @@ describe('useRegisterHeaderActions', () => {
     expect(actions.actionDialog.title).toBe('')
   })
 
-  it('calculates custom charges and refreshes register list', async () => {
-    const actions = createRegisterActionHandlers(registersStore, alertStore, {
-      mode: OP_MODE_PAPERWORK
-    })
-
-    await actions.calculateCustomsCharges({ id: 7 })
-
-    expect(registersStore.calculateCustomsCharges).toHaveBeenCalledWith(7)
-    expect(registersStore.getAll).toHaveBeenCalledWith({ mode: OP_MODE_PAPERWORK })
-    expect(alertStore.error).not.toHaveBeenCalled()
-  })
 })

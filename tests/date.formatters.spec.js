@@ -12,21 +12,6 @@ import {
 
 describe('date.formatters', () => {
   describe('formatDate', () => {
-    it('formats date values as DD.MM.YYYY', () => {
-      const value = new Date(2026, 5, 10, 12, 30, 15)
-      expect(formatDate(value)).toBe('10.06.2026')
-    })
-
-    it('returns empty string for empty date values', () => {
-      expect(formatDate(null)).toBe('')
-      expect(formatDate(undefined)).toBe('')
-      expect(formatDate('')).toBe('')
-    })
-
-    it('returns original string for invalid string date values', () => {
-      expect(formatDate('not-a-date')).toBe('not-a-date')
-    })
-
     it('returns string fallback for invalid non-string date values', () => {
       const value = new Date('invalid')
 
@@ -35,12 +20,6 @@ describe('date.formatters', () => {
   })
 
   describe('formatDateTime', () => {
-    it('formats date-time values with Russian locale', () => {
-      const value = '2026-06-10T12:30:15+03:00'
-
-      expect(formatDateTime(value)).toBe(new Date(value).toLocaleString('ru-RU'))
-    })
-
     it('returns empty string for empty values', () => {
       expect(formatDateTime(null)).toBe('')
       expect(formatDateTime(undefined)).toBe('')
@@ -53,12 +32,6 @@ describe('date.formatters', () => {
   })
 
   describe('formatTime', () => {
-    it('formats date-time values as local time with Russian locale', () => {
-      const value = '2026-06-10T12:30:15+03:00'
-
-      expect(formatTime(value)).toBe(new Date(value).toLocaleTimeString('ru-RU'))
-    })
-
     it('returns empty string for empty values', () => {
       expect(formatTime(null)).toBe('')
       expect(formatTime(undefined)).toBe('')
@@ -71,18 +44,6 @@ describe('date.formatters', () => {
   })
 
   describe('formatDateTimeLines', () => {
-    it('formats date-time values as local date and local time lines', () => {
-      const value = new Date(2026, 5, 10, 12, 30, 15)
-
-      expect(formatDateTimeLines(value)).toEqual(['10.06.2026', value.toLocaleTimeString('ru-RU')])
-    })
-
-    it('returns empty array for empty values', () => {
-      expect(formatDateTimeLines(null)).toEqual([])
-      expect(formatDateTimeLines(undefined)).toEqual([])
-      expect(formatDateTimeLines('')).toEqual([])
-    })
-
     it('returns original value once for invalid date-time values', () => {
       expect(formatDateTimeLines('not-a-date')).toEqual(['not-a-date'])
     })

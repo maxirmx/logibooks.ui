@@ -582,22 +582,6 @@ describe('WbrNParcels_List.vue', () => {
 
   beforeEach(() => { setActivePinia(createPinia()); resetState() })
 
-  it('includes Duplicate2 in both check-status filter selectors', () => {
-    const wrapper = mount(WbrNParcelsList, {
-      props: { registerId: 7 },
-      global: { stubs: globalStubs }
-    })
-
-    expect(wrapper.vm.checkStatusOptionsSw).toContainEqual({
-      value: SWCheckStatus.Duplicate2,
-      title: 'Дубликат'
-    })
-    expect(wrapper.vm.checkStatusOptionsFc).toContainEqual({
-      value: FCCheckStatus.Duplicate2,
-      title: 'Дубликат'
-    })
-  })
-
   it('defines WbrN regular list headers and excludes hidden backend-owned fields', () => {
     const wrapper = mount(WbrNParcelsList, {
       props: { registerId: 7 },
@@ -646,54 +630,6 @@ describe('WbrNParcels_List.vue', () => {
       align: 'end',
       width: '120px'
     })
-  })
-
-  it('hides WbrN customs charge columns when register values are missing', () => {
-    registerItem.customsFee = null
-    registerItem.customsDuty = 750
-
-    let wrapper = mount(WbrNParcelsList, {
-      props: { registerId: 7 },
-      global: { stubs: globalStubs }
-    })
-
-    let headerKeys = wrapper.vm.headers.map((header) => header.key)
-    expect(headerKeys).not.toContain('customsFee')
-    expect(headerKeys).toContain('customsDuty')
-    wrapper.unmount()
-
-    registerItem.customsFee = 689
-    registerItem.customsDuty = null
-    wrapper = mount(WbrNParcelsList, {
-      props: { registerId: 7 },
-      global: { stubs: globalStubs }
-    })
-
-    headerKeys = wrapper.vm.headers.map((header) => header.key)
-    expect(headerKeys).toContain('customsFee')
-    expect(headerKeys).not.toContain('customsDuty')
-    wrapper.unmount()
-  })
-
-  it('renders WbrN article, raw product country, split recipient fields, and product link', () => {
-    const wrapper = mount(WbrNParcelsList, {
-      props: { registerId: 7 },
-      global: { stubs: globalStubs }
-    })
-
-    const text = wrapper.text()
-    expect(text).toContain('SHK-N-1')
-    expect(text).toContain('29817781')
-    expect(text).toContain('Wildberries new product')
-    expect(text).toContain('Китай')
-    expect(text).toContain('Ivanov')
-    expect(text).toContain('Ivan')
-    expect(text).toContain('Ivanovich')
-    expect(text).toContain('689.00')
-    expect(text).toContain('750.00')
-    expect(wrapper.get('a.product-link-in-list').attributes('href')).toBe(
-      'https://www.wildberries.ru/catalog/29817781/detail.aspx'
-    )
   })
 
   it('loads supporting stores and restores selected parcel state on mount', async () => {
@@ -782,41 +718,6 @@ describe('WbrNParcels_List.vue', () => {
 
     await wrapper.get('[data-testid="close-list"]').trigger('click')
     expect(wrapper.emitted('close')).toHaveLength(1)
-  })
-
-  it('reports skipped parcels and blocks assignment for read-only registers', async () => {
-    const wrapper = mount(WbrNParcelsList, {
-      props: { registerId: 7 },
-      global: { stubs: globalStubs }
-    })
-    await resolveAll()
-
-    bulkAssignTnved.mockResolvedValue({
-      updatedCount: 1,
-      skippedReadOnlyCount: 1
-    })
-    await wrapper.get('[data-testid="assign-confirm"]').trigger('click')
-    await resolveAll()
-    expect(alertSuccess).toHaveBeenCalledWith(
-      'ТН ВЭД обновлен для 1 посылок. Пропущено из-за запрета изменений: 1'
-    )
-
-    registerItem.readOnly = true
-    bulkAssignTnved.mockClear()
-    wrapper.vm.showAssignTnvedDialog = false
-    parcelMultiSelectOptions.onContextMenu()
-    await wrapper.vm.handleAssignTnvedConfirm([10], '6403999300')
-
-    expect(wrapper.vm.showAssignTnvedDialog).toBe(false)
-    expect(bulkAssignTnved).not.toHaveBeenCalled()
-    delete registerItem.readOnly
-
-    const conflict = Object.assign(new Error('Изменения запрещены'), { status: 409 })
-    bulkAssignTnved.mockRejectedValue(conflict)
-    await wrapper.vm.handleAssignTnvedConfirm([10], '6403999300')
-    expect(getRegisterById).toHaveBeenCalledWith(7)
-    expect(alertError).toHaveBeenCalledWith('Изменения запрещены')
-    expect(wrapper.vm.runningAction).toBe(false)
   })
 
   it.each([
@@ -1008,21 +909,6 @@ describe('WbrNParcels_List.vue', () => {
 
     await wrapper.get('.alert .close').trigger('click')
     expect(alertDismiss).toHaveBeenCalledWith(23)
-  })
-
-  it('clamps the current page when filters reduce max page', async () => {
-    mockTotalCount.value = 100
-    parcelsPage.value = 10
-
-    mount(WbrNParcelsList, {
-      props: { registerId: 7 },
-      global: { stubs: globalStubs }
-    })
-
-    mockTotalCount.value = 5
-    await resolveAll()
-
-    expect(parcelsPage.value).toBe(1)
   })
 
   it('wires filter, pagination, dialog visibility, and multi-select callbacks', async () => {

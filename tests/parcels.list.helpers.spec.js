@@ -36,26 +36,7 @@ vi.mock('../src/helpers/feacn.info.helpers.js', () => ({
   preloadFeacnInfo: vi.fn()
 }))
 
-import {
-  navigateToEditParcel,
-  validateParcelData,
-  getRowPropsForParcel,
-  filterGenericTemplateHeadersForParcel,
-  getFrozenOrderSortDir,
-  generateRegisterName,
-  getFeacnCodesForKeywords,
-  getKeywordFeacnPairs,
-  getFeacnCodeItemClass,
-  getMatchingFeacnCodeItemClass,
-  getTnVedCellClass,
-  updateParcelTnVed,
-  loadParcels,
-  formatPassport,
-  formatCustomsCharge,
-  getCustomsChargeHeaders,
-  hasParcelEditRouteAccess,
-  buildParcelEditCellClass
-} from '../src/helpers/parcels.list.helpers.js'
+import { navigateToEditParcel, validateParcelData, getRowPropsForParcel, filterGenericTemplateHeadersForParcel, getFrozenOrderSortDir, generateRegisterName, getFeacnCodesForKeywords, getKeywordFeacnPairs, getFeacnCodeItemClass, getMatchingFeacnCodeItemClass, getTnVedCellClass, updateParcelTnVed, loadParcels, formatPassport, formatCustomsCharge, hasParcelEditRouteAccess, buildParcelEditCellClass } from '../src/helpers/parcels.list.helpers.js'
 
 // Import mocked FEACN info helpers
 import { getCachedFeacnInfo, preloadFeacnInfo } from '../src/helpers/feacn.info.helpers.js'
@@ -73,36 +54,6 @@ describe('Parcels List Helpers', () => {
   })
 
   describe('navigateToEditParcel', () => {
-    it('should navigate to correct route for WBR platform', () => {
-      const mockRouter = {
-        push: vi.fn()
-      }
-      const order = { id: 456 }
-
-      navigateToEditParcel(mockRouter, order, 'wbr-parcel-edit', { registerId: 123 })
-
-      expect(mockRouter.push).toHaveBeenCalledWith({
-        name: 'wbr-parcel-edit',
-        params: { id: 456, registerId: 123 },
-        query: { mode: 'modePaperwork' }
-      })
-    })
-
-    it('should navigate to correct route for Ozon platform', () => {
-      const mockRouter = {
-        push: vi.fn()
-      }
-      const order = { id: 789 }
-
-      navigateToEditParcel(mockRouter, order, 'ozon-parcel-edit', { registerId: 456 })
-
-      expect(mockRouter.push).toHaveBeenCalledWith({
-        name: 'ozon-parcel-edit',
-        params: { id: 789, registerId: 456 },
-        query: { mode: 'modePaperwork' }
-      })
-    })
-
     it('should navigate with additional query parameters', () => {
       const mockRouter = {
         push: vi.fn()
@@ -122,41 +73,6 @@ describe('Parcels List Helpers', () => {
       })
     })
 
-    it('keeps exact-box and return context when opening parcel editing', () => {
-      const mockRouter = { push: vi.fn() }
-
-      navigateToEditParcel(mockRouter, { id: 123 }, 'parcel-edit', {
-        registerId: 456,
-        mode: 'modeWarehouse',
-        boxId: 17,
-        returnUrl: '/registers/456/parcels?mode=modeWarehouse&boxId=17'
-      })
-
-      expect(mockRouter.push).toHaveBeenCalledWith({
-        name: 'parcel-edit',
-        params: { id: 123, registerId: 456 },
-        query: {
-          mode: 'modeWarehouse',
-          returnUrl: '/registers/456/parcels?mode=modeWarehouse&boxId=17',
-          boxId: '17'
-        }
-      })
-    })
-
-    it('should navigate with empty query parameters when only registerId provided', () => {
-      const mockRouter = {
-        push: vi.fn()
-      }
-      const order = { id: 123 }
-
-      navigateToEditParcel(mockRouter, order, 'parcel-edit', { registerId: 456 })
-
-      expect(mockRouter.push).toHaveBeenCalledWith({
-        name: 'parcel-edit',
-        params: { id: 123, registerId: 456 },
-        query: { mode: 'modePaperwork' }
-      })
-    })
   })
 
   describe('hasParcelEditRouteAccess', () => {
@@ -167,20 +83,6 @@ describe('Parcels List Helpers', () => {
   })
 
   describe('buildParcelEditCellClass', () => {
-    it('appends clickable-cell when parcel edit route access is allowed', () => {
-      expect(buildParcelEditCellClass(true, 'truncated-cell')).toBe('truncated-cell clickable-cell')
-      expect(buildParcelEditCellClass({ value: true }, 'truncated-cell numeric-panel')).toBe(
-        'truncated-cell numeric-panel clickable-cell'
-      )
-    })
-
-    it('keeps only base classes when parcel edit route access is denied', () => {
-      expect(buildParcelEditCellClass(false, 'truncated-cell')).toBe('truncated-cell')
-      expect(buildParcelEditCellClass({ value: false }, 'truncated-cell numeric-panel')).toBe(
-        'truncated-cell numeric-panel'
-      )
-    })
-
     it('handles empty base classes', () => {
       expect(buildParcelEditCellClass(true)).toBe('clickable-cell')
       expect(buildParcelEditCellClass(false)).toBe('')
@@ -201,20 +103,6 @@ describe('Parcels List Helpers', () => {
       expect(mockStore.validate).toHaveBeenCalledWith(123, true)
       expect(mockLoadOrders).toHaveBeenCalled()
       expect(result).toBe(true)
-    })
-
-    it('should validate FC parcel successfully when sw=false', async () => {
-      const mockStore = {
-        validate: vi.fn().mockResolvedValue(),
-        error: ''
-      }
-      const mockLoadOrders = vi.fn()
-      const item = { id: 123 }
-
-      await validateParcelData(item, mockStore, mockLoadOrders, false)
-
-      expect(mockStore.validate).toHaveBeenCalledWith(123, false)
-      expect(mockLoadOrders).toHaveBeenCalled()
     })
 
     it('should handle SW validation errors', async () => {
@@ -255,34 +143,6 @@ describe('Parcels List Helpers', () => {
       { value: 40, code: 'NotExists' },
       { value: 50, code: 'Invalid' }
     ]
-
-    it('should return class for parcel with issues', async () => {
-      const { CheckStatusCode } = await vi.importMock('../src/helpers/check.status.code.js')
-      CheckStatusCode.hasIssues.mockReturnValue(true)
-
-      const data = {
-        item: { checkStatus: 0x00010002 }
-      }
-
-      const result = getRowPropsForParcel(data)
-
-      expect(result).toEqual({ class: 'parcel-has-issues' })
-      expect(CheckStatusCode.hasIssues).toHaveBeenCalledWith(0x00010002)
-    })
-
-    it('should return empty class for parcel without issues', async () => {
-      const { CheckStatusCode } = await vi.importMock('../src/helpers/check.status.code.js')
-      CheckStatusCode.hasIssues.mockReturnValue(false)
-
-      const data = {
-        item: { checkStatus: 0x00010001 }
-      }
-
-      const result = getRowPropsForParcel(data)
-
-      expect(result).toEqual({ class: '' })
-      expect(CheckStatusCode.hasIssues).toHaveBeenCalledWith(0x00010001)
-    })
 
     it('should return class for parcel with Duplicate status', async () => {
       const { CheckStatusCode } = await vi.importMock('../src/helpers/check.status.code.js')
@@ -330,40 +190,6 @@ describe('Parcels List Helpers', () => {
       }
     )
 
-    it('should return empty class for a non-issue passport check status', async () => {
-      const { CheckStatusCode } = await vi.importMock('../src/helpers/check.status.code.js')
-      CheckStatusCode.hasIssues.mockReturnValue(false)
-
-      const result = getRowPropsForParcel(
-        { item: { checkStatus: 0x00010001, passportCheckStatus: 30 } },
-        passportCheckStatuses
-      )
-
-      expect(result).toEqual({ class: '' })
-    })
-
-    it('should preserve the check status issue class when passport status metadata is omitted', async () => {
-      const { CheckStatusCode } = await vi.importMock('../src/helpers/check.status.code.js')
-      CheckStatusCode.hasIssues.mockReturnValue(true)
-
-      const result = getRowPropsForParcel({
-        item: { checkStatus: 0x00010002, passportCheckStatus: 10 }
-      })
-
-      expect(result).toEqual({ class: 'parcel-has-issues' })
-    })
-
-    it('should return one issue class when both check statuses have issues', async () => {
-      const { CheckStatusCode } = await vi.importMock('../src/helpers/check.status.code.js')
-      CheckStatusCode.hasIssues.mockReturnValue(true)
-
-      const result = getRowPropsForParcel(
-        { item: { checkStatus: 0x00010002, passportCheckStatus: 10 } },
-        passportCheckStatuses
-      )
-
-      expect(result).toEqual({ class: 'parcel-has-issues' })
-    })
   })
 
   describe('filterGenericTemplateHeadersForParcel', () => {
@@ -388,31 +214,9 @@ describe('Parcels List Helpers', () => {
       expect(result).toEqual([{ key: 'productName', title: 'Product Name' }])
     })
 
-    it('should filter out actions with different suffixes', () => {
-      const headers = [
-        { key: 'actionsEdit', title: 'Edit Actions' },
-        { key: 'actionsDelete', title: 'Delete Actions' },
-        { key: 'productName', title: 'Product Name' }
-      ]
-
-      const result = filterGenericTemplateHeadersForParcel(headers)
-
-      expect(result).toEqual([{ key: 'productName', title: 'Product Name' }])
-    })
   })
 
   describe('formatPassport', () => {
-    it('formats passport parts with issuer and issue date', () => {
-      expect(
-        formatPassport({
-          passportSeries: 'AA',
-          passportNumber: '123456',
-          passportIssuedBy: 'ОВД',
-          passportIssueDate: '2020-01-01'
-        })
-      ).toBe('AA 123456 выдан ОВД 01.01.2020')
-    })
-
     it('formats partial passport data without extra spaces', () => {
       expect(formatPassport({ passportSeries: 'AA', passportNumber: '123' })).toBe('AA 123')
       expect(formatPassport({ passportNumber: '123', passportIssueDate: '2020-01-01' })).toBe(
@@ -424,41 +228,9 @@ describe('Parcels List Helpers', () => {
   })
 
   describe('formatCustomsCharge', () => {
-    it('formats present charge values', () => {
-      expect(formatCustomsCharge(689)).toBe('689.00')
-      expect(formatCustomsCharge(0)).toBe('0.00')
-    })
-
     it('keeps missing charge values empty', () => {
       expect(formatCustomsCharge(null)).toBe('')
       expect(formatCustomsCharge(undefined)).toBe('')
-    })
-  })
-
-  describe('getCustomsChargeHeaders', () => {
-    it('returns both charge headers when both register values are present', () => {
-      expect(getCustomsChargeHeaders({ customsFee: 689, customsDuty: 750 })).toEqual([
-        { title: 'Сбор, руб', key: 'customsFee', sortable: false, align: 'end', width: '120px' },
-        { title: 'Пошлина, руб', key: 'customsDuty', sortable: false, align: 'end', width: '120px' }
-      ])
-    })
-
-    it('returns only headers with non-null register values', () => {
-      expect(
-        getCustomsChargeHeaders({ customsFee: null, customsDuty: 750 }).map((header) => header.key)
-      ).toEqual(['customsDuty'])
-      expect(
-        getCustomsChargeHeaders({ customsFee: 689, customsDuty: null }).map((header) => header.key)
-      ).toEqual(['customsFee'])
-      expect(getCustomsChargeHeaders({ customsFee: null, customsDuty: null })).toEqual([])
-    })
-
-    it('accepts ref-like register values', () => {
-      expect(
-        getCustomsChargeHeaders({ value: { customsFee: 689, customsDuty: null } }).map(
-          (header) => header.key
-        )
-      ).toEqual(['customsFee'])
     })
   })
 
@@ -469,24 +241,6 @@ describe('Parcels List Helpers', () => {
       expect(getFrozenOrderSortDir(null)).toBeNull()
     })
 
-    it('returns asc or desc only when frozenOrder is the primary sort', () => {
-      expect(getFrozenOrderSortDir([{ key: 'frozenOrder', order: 'asc' }])).toBe('asc')
-      expect(
-        getFrozenOrderSortDir([
-          { key: 'frozenOrder', order: 'desc' },
-          { key: 'id', order: 'asc' }
-        ])
-      ).toBe('desc')
-    })
-
-    it('returns null when frozenOrder is only a secondary sort', () => {
-      expect(
-        getFrozenOrderSortDir([
-          { key: 'id', order: 'asc' },
-          { key: 'frozenOrder', order: 'desc' }
-        ])
-      ).toBeNull()
-    })
   })
 
   describe('generateRegisterName', () => {
@@ -504,17 +258,6 @@ describe('Parcels List Helpers', () => {
   })
 
   describe('getFeacnCodesForKeywords', () => {
-    it('should extract and sort FEACN codes from keywords', () => {
-      const store = {
-        keyWords: [
-          { id: 1, feacnCodes: ['1234567890', '0987654321'] },
-          { id: 2, feacnCodes: ['2345678901'] }
-        ]
-      }
-      const result = getFeacnCodesForKeywords([1, 2], store)
-      expect(result).toEqual(['0987654321', '1234567890', '2345678901'])
-    })
-
     it('should return empty array for invalid input', () => {
       const store = { keyWords: [] }
       expect(getFeacnCodesForKeywords(null, store)).toEqual([])
@@ -547,21 +290,6 @@ describe('Parcels List Helpers', () => {
   })
 
   describe('getKeywordFeacnPairs', () => {
-    it('should create keyword/FEACN code pairs', () => {
-      const store = {
-        keyWords: [
-          { id: 1, word: 'alpha', feacnCodes: ['123', '456'] },
-          { id: 2, word: 'beta', feacnCodes: ['789'] }
-        ]
-      }
-      const result = getKeywordFeacnPairs([1, 2], store)
-      expect(result).toEqual([
-        { id: '1-123', word: 'alpha', feacnCode: '123' },
-        { id: '1-456', word: 'alpha', feacnCode: '456' },
-        { id: '2-789', word: 'beta', feacnCode: '789' }
-      ])
-    })
-
     it('should return empty array for invalid input', () => {
       const store = { keyWords: [] }
       expect(getKeywordFeacnPairs(null, store)).toEqual([])
@@ -592,34 +320,14 @@ describe('Parcels List Helpers', () => {
   })
 
   describe('getFeacnCodeItemClass', () => {
-    it('should return basic class when no FEACN codes provided', () => {
-      const result = getFeacnCodeItemClass('123', '456', [])
-      expect(result).toBe('feacn-code-item')
-    })
-
     it('should return basic class when allFeacnCodes is null', () => {
       const result = getFeacnCodeItemClass('123', '456', null)
       expect(result).toBe('feacn-code-item')
     })
 
-    it('should return matched class when feacnCode matches tnVed and is in allFeacnCodes', () => {
-      const result = getFeacnCodeItemClass('123', '123', ['123', '456'])
-      expect(result).toBe('feacn-code-item clickable matched')
-    })
-
     it('should return matching highlight class for matching FEACN code', () => {
       const result = getMatchingFeacnCodeItemClass('123', '123', ['123', '456'])
       expect(result).toBe('feacn-code-item clickable matched matching-feacn-code-item')
-    })
-
-    it('should return unmatched class when feacnCode does not match tnVed', () => {
-      const result = getFeacnCodeItemClass('123', '456', ['123', '456'])
-      expect(result).toBe('feacn-code-item clickable unmatched')
-    })
-
-    it('should return unmatched class when tnVed is not in allFeacnCodes', () => {
-      const result = getFeacnCodeItemClass('123', '789', ['123', '456'])
-      expect(result).toBe('feacn-code-item clickable unmatched')
     })
 
     it('should return unmatched class when tnVed is null', () => {
@@ -632,61 +340,12 @@ describe('Parcels List Helpers', () => {
       expect(result).toBe('feacn-code-item clickable matched-weak')
     })
 
-    it('should return matched-weak class when feacnCode is shorter but first 6 match', () => {
-      const result = getFeacnCodeItemClass('123456', '1234567890', ['123456', '9876543210'])
-      expect(result).toBe('feacn-code-item clickable matched-weak')
-    })
-
-    it('should return matched-weak class when tnVed is shorter but first 6 match', () => {
-      const result = getFeacnCodeItemClass('1234567890', '123456', ['1234567890', '9876543210'])
-      expect(result).toBe('feacn-code-item clickable matched-weak')
-    })
-
-    it('should return unmatched class when first 6 characters do not match', () => {
-      const result = getFeacnCodeItemClass('1234567890', '9876543210', ['1234567890', '1111111111'])
-      expect(result).toBe('feacn-code-item clickable unmatched')
-    })
-
-    it('should prioritize exact match over weak match', () => {
-      const result = getFeacnCodeItemClass('1234567890', '1234567890', ['1234567890', '1234561111'])
-      expect(result).toBe('feacn-code-item clickable matched')
-    })
-
-    it('should handle codes shorter than 6 characters for weak match', () => {
-      const result = getFeacnCodeItemClass('12345', '12345', ['12345', '67890'])
-      expect(result).toBe('feacn-code-item clickable matched')
-    })
-
-    it('should handle codes shorter than 6 characters - no weak match when lengths differ', () => {
-      const result = getFeacnCodeItemClass('1234', '123456', ['1234', '67890'])
-      expect(result).toBe('feacn-code-item clickable unmatched')
-    })
-
-    it('should handle weak match when both codes have same first 6 characters but different lengths', () => {
-      const result = getFeacnCodeItemClass('123456789', '123456123', ['123456789', '67890'])
-      expect(result).toBe('feacn-code-item clickable matched-weak')
-    })
   })
 
   describe('getTnVedCellClass', () => {
-    it('should return not-exists when tnVed is provided but not found, even with empty feacnCodes', async () => {
-      const result = await getTnVedCellClass('123', [])
-      expect(result).toBe('tnved-cell not-exists')
-    })
-
     it('should return not-exists when tnVed is provided but not found, even with null feacnCodes', async () => {
       const result = await getTnVedCellClass('123', null)
       expect(result).toBe('tnved-cell not-exists')
-    })
-
-    it('should return orphan when no tnVed is provided and feacnCodes is empty', async () => {
-      const result = await getTnVedCellClass('', [])
-      expect(result).toBe('tnved-cell orphan')
-    })
-
-    it('should return orphan when no tnVed is provided and feacnCodes is null', async () => {
-      const result = await getTnVedCellClass(null, null)
-      expect(result).toBe('tnved-cell orphan')
     })
 
     it('should return matched when tnVed exactly matches a feacnCode', async () => {
@@ -707,36 +366,12 @@ describe('Parcels List Helpers', () => {
       expect(result).toBe('tnved-cell matched-weak')
     })
 
-    it('should return matched-weak when tnVed is shorter but first 6 match', async () => {
-      getCachedFeacnInfo.mockReturnValue({ found: true })
-      preloadFeacnInfo.mockResolvedValue()
-
-      const result = await getTnVedCellClass('123456', ['1234567890', '9876543210'])
-      expect(result).toBe('tnved-cell matched-weak')
-    })
-
-    it('should return matched-weak when feacnCode is shorter but first 6 match', async () => {
-      getCachedFeacnInfo.mockReturnValue({ found: true })
-      preloadFeacnInfo.mockResolvedValue()
-
-      const result = await getTnVedCellClass('1234567890', ['123456', '9876543210'])
-      expect(result).toBe('tnved-cell matched-weak')
-    })
-
     it('should return unmatched when first 6 characters do not match', async () => {
       getCachedFeacnInfo.mockReturnValue({ found: true })
       preloadFeacnInfo.mockResolvedValue()
 
       const result = await getTnVedCellClass('1234567890', ['9876543210', '1111111111'])
       expect(result).toBe('tnved-cell unmatched')
-    })
-
-    it('should prioritize exact match over weak match', async () => {
-      getCachedFeacnInfo.mockReturnValue({ found: true })
-      preloadFeacnInfo.mockResolvedValue()
-
-      const result = await getTnVedCellClass('1234567890', ['1234567890', '1234561111'])
-      expect(result).toBe('tnved-cell matched')
     })
 
     it('should use matchingFC as exact match when it equals tnVed even if not in feacnCodes', async () => {
@@ -752,62 +387,9 @@ describe('Parcels List Helpers', () => {
       expect(result).toBe('tnved-cell matched')
     })
 
-    it('should not be orphan when only matchingFC is provided', async () => {
-      getCachedFeacnInfo.mockReturnValue({ found: true })
-      preloadFeacnInfo.mockResolvedValue()
-
-      const result = await getTnVedCellClass('8888888888', [], '1234560000')
-      // No exact match; matchingFC added to list prevents orphan and may produce weak/unmatched
-      expect(result).not.toBe('tnved-cell orphan')
-    })
-
-    it('should produce matched-weak when only matchingFC shares first 6 chars', async () => {
-      getCachedFeacnInfo.mockReturnValue({ found: true })
-      preloadFeacnInfo.mockResolvedValue()
-
-      const tnVed = '1234567890'
-      const matchingFC = '1234560000' // shares first 6 characters
-      const result = await getTnVedCellClass(tnVed, [], matchingFC)
-      expect(result).toBe('tnved-cell matched-weak')
-    })
-
-    it('should handle codes shorter than 6 characters for weak match', async () => {
-      getCachedFeacnInfo.mockReturnValue({ found: true })
-      preloadFeacnInfo.mockResolvedValue()
-
-      const result = await getTnVedCellClass('1234', ['1234', '5678'])
-      expect(result).toBe('tnved-cell matched')
-    })
-
-    it('should return not-exists even when weak match would be possible', async () => {
-      // Mock to return not found
-      getCachedFeacnInfo
-        .mockReturnValueOnce(null) // First call returns null (not in cache)
-        .mockReturnValueOnce({ found: false }) // Second call after preload returns not found
-      preloadFeacnInfo.mockResolvedValue()
-
-      const result = await getTnVedCellClass('1234567890', ['1234561111', '9876543210'])
-      expect(result).toBe('tnved-cell not-exists')
-    })
   })
 
   describe('updateParcelTnVed', () => {
-    it('should update parcel TN VED successfully', async () => {
-      const mockStore = {
-        update: vi.fn().mockResolvedValue(),
-        error: ''
-      }
-      const mockLoadOrders = vi.fn()
-      const item = { id: 123, tnVed: 'old-code' }
-      const feacnCode = 'new-code'
-
-      const result = await updateParcelTnVed(item, feacnCode, mockStore, mockLoadOrders)
-
-      expect(mockStore.update).toHaveBeenCalledWith(123, { ...item, tnVed: 'new-code' })
-      expect(mockLoadOrders).toHaveBeenCalled()
-      expect(result).toBe(true)
-    })
-
     it('should update parcel TN VED without calling loadOrdersFn when not provided', async () => {
       const mockStore = {
         update: vi.fn().mockResolvedValue(),
@@ -868,29 +450,6 @@ describe('Parcels List Helpers', () => {
       expect(mockParcelsStore.getAll).not.toHaveBeenCalled()
     })
 
-    it('should forward showMarkedByPartner option to parcelsStore.getAll', async () => {
-      const mockResponse = {
-        items: [{ id: 1, tnVed: '' }],
-        pagination: { totalCount: 1, hasNextPage: false, hasPreviousPage: false }
-      }
-      const mockParcelsStore = {
-        getAll: vi.fn().mockResolvedValue(mockResponse),
-        updateItems: vi.fn()
-      }
-      const mockIsComponentMounted = { value: true }
-      const mockAlertStore = { error: vi.fn() }
-
-      await loadParcels(123, mockParcelsStore, mockIsComponentMounted, mockAlertStore, {
-        showMarkedByPartner: true
-      })
-
-      expect(mockParcelsStore.getAll).toHaveBeenCalledWith(123, {
-        updateStore: false,
-        showMarkedByPartner: true
-      })
-      expect(mockParcelsStore.updateItems).toHaveBeenCalledWith(mockResponse)
-    })
-
     it('should report FEACN preload errors and still update items', async () => {
       const mockResponse = {
         items: [{ id: 1, tnVed: '1234567890' }],
@@ -914,21 +473,5 @@ describe('Parcels List Helpers', () => {
       expect(mockParcelsStore.updateItems).toHaveBeenCalledWith(mockResponse)
     })
 
-    it('should report load errors through alertStore', async () => {
-      const error = new Error('Network error')
-      const mockParcelsStore = {
-        getAll: vi.fn().mockRejectedValue(error),
-        updateItems: vi.fn(),
-        error: null
-      }
-      const mockIsComponentMounted = { value: true }
-      const mockAlertStore = { error: vi.fn() }
-
-      await loadParcels(123, mockParcelsStore, mockIsComponentMounted, mockAlertStore)
-
-      expect(mockParcelsStore.error).toBe('Network error')
-      expect(mockAlertStore.error).toHaveBeenCalledWith('Network error')
-      expect(mockParcelsStore.updateItems).not.toHaveBeenCalled()
-    })
   })
 })

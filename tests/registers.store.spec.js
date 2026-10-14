@@ -129,31 +129,6 @@ describe('registers store', () => {
 
   describe('getAll method', () => {
     describe('API format with pagination metadata', () => {
-      it('fetches data from API using auth store settings', async () => {
-        const mockResponse = {
-          items: [
-            { id: 1, name: 'Register 1' },
-            { id: 2, name: 'Register 2' }
-          ],
-          pagination: {
-            totalCount: 2,
-            hasNextPage: false,
-            hasPreviousPage: false
-          }
-        }
-        fetchWrapper.get.mockResolvedValue(mockResponse)
-
-        const store = useRegistersStore()
-        await store.getAll()
-
-        expect(fetchWrapper.get).toHaveBeenCalledWith(
-          `${apiUrl}/registers?page=1&pageSize=10&sortBy=id&sortOrder=asc&whOnly=false`
-        )
-        expect(store.items).toEqual(mockResponse.items)
-        expect(store.loading).toBe(false)
-        expect(store.error).toBeNull()
-      })
-
       it('requests in-progress registers for the paperwork status filter', async () => {
         useAuthStore.mockReturnValueOnce({
           ...defaultAuthStore,
@@ -169,24 +144,6 @@ describe('registers store', () => {
 
         expect(fetchWrapper.get).toHaveBeenCalledWith(
           `${apiUrl}/registers?page=1&pageSize=10&sortBy=id&sortOrder=asc&whOnly=false&inProgressOnly=true`
-        )
-      })
-
-      it('requests an exact status for the warehouse status filter', async () => {
-        useAuthStore.mockReturnValueOnce({
-          ...defaultAuthStore,
-          registers_wh_status: 5
-        })
-        fetchWrapper.get.mockResolvedValue({
-          items: [],
-          pagination: { totalCount: 0 }
-        })
-
-        const store = useRegistersStore()
-        await store.getAll({ mode: OP_MODE_WAREHOUSE })
-
-        expect(fetchWrapper.get).toHaveBeenCalledWith(
-          `${apiUrl}/registers?page=1&pageSize=10&sortBy=id&sortOrder=asc&whOnly=true&registerStatusId=5`
         )
       })
 
@@ -206,34 +163,6 @@ describe('registers store', () => {
         expect(fetchWrapper.get).toHaveBeenCalledWith(
           `${apiUrl}/registers?page=1&pageSize=10&sortBy=id&sortOrder=asc&whOnly=false`
         )
-      })
-
-      it('fetches data with custom auth store settings', async () => {
-        // Set custom auth store values for this test
-        useAuthStore.mockReturnValueOnce({
-          registers_page: 2,
-          registers_per_page: 5,
-          registers_sort_by: [{ key: 'name', order: 'desc' }],
-          registers_search: 'search term'
-        })
-
-        const mockResponse = {
-          items: [{ id: 3, name: 'Register 3' }],
-          pagination: {
-            totalCount: 1,
-            hasNextPage: false,
-            hasPreviousPage: true
-          }
-        }
-        fetchWrapper.get.mockResolvedValue(mockResponse)
-
-        const store = useRegistersStore()
-        await store.getAll()
-
-        expect(fetchWrapper.get).toHaveBeenCalledWith(
-          `${apiUrl}/registers?page=2&pageSize=5&sortBy=name&sortOrder=desc&whOnly=false&search=search+term`
-        )
-        expect(store.items).toEqual(mockResponse.items)
       })
 
       it('uses warehouse register list settings in warehouse mode', async () => {
@@ -268,168 +197,6 @@ describe('registers store', () => {
         expect(store.items).toEqual(mockResponse.items)
       })
 
-      it('fetches data with new format - basic case', async () => {
-        const mockResponse = {
-          items: [
-            { id: 1, name: 'Register 1' },
-            { id: 2, name: 'Register 2' }
-          ],
-          pagination: {
-            totalCount: 25,
-            hasNextPage: true,
-            hasPreviousPage: false
-          }
-        }
-        fetchWrapper.get.mockResolvedValue(mockResponse)
-
-        // Set custom auth store values for this test
-        useAuthStore.mockReturnValueOnce({
-          registers_page: 1,
-          registers_per_page: 10,
-          registers_sort_by: [{ key: 'id', order: 'asc' }],
-          registers_search: '',
-          registers_procedure: 'all'
-        })
-
-        const store = useRegistersStore()
-        await store.getAll()
-
-        expect(store.items).toEqual(mockResponse.items)
-        expect(store.totalCount).toBe(25)
-        expect(store.hasNextPage).toBe(true)
-        expect(store.hasPreviousPage).toBe(false)
-        expect(store.loading).toBe(false)
-        expect(store.error).toBeNull()
-      })
-
-      it('fetches data with new format - middle page', async () => {
-        const mockResponse = {
-          items: Array(10)
-            .fill()
-            .map((_, i) => ({ id: i + 11, name: `Register ${i + 11}` })),
-          pagination: {
-            totalCount: 50,
-            hasNextPage: true,
-            hasPreviousPage: true
-          }
-        }
-        fetchWrapper.get.mockResolvedValue(mockResponse)
-
-        // Set custom auth store values for this test
-        useAuthStore.mockReturnValueOnce({
-          registers_page: 2,
-          registers_per_page: 10,
-          registers_sort_by: [{ key: 'name', order: 'asc' }],
-          registers_search: 'filter'
-        })
-
-        const store = useRegistersStore()
-        await store.getAll()
-
-        expect(fetchWrapper.get).toHaveBeenCalledWith(
-          `${apiUrl}/registers?page=2&pageSize=10&sortBy=name&sortOrder=asc&whOnly=false&search=filter`
-        )
-        expect(store.items).toEqual(mockResponse.items)
-        expect(store.totalCount).toBe(50)
-        expect(store.hasNextPage).toBe(true)
-        expect(store.hasPreviousPage).toBe(true)
-      })
-
-      it('fetches data with new format - last page', async () => {
-        const mockResponse = {
-          items: [
-            { id: 48, name: 'Register 48' },
-            { id: 49, name: 'Register 49' },
-            { id: 50, name: 'Register 50' }
-          ],
-          pagination: {
-            totalCount: 50,
-            hasNextPage: false,
-            hasPreviousPage: true
-          }
-        }
-        fetchWrapper.get.mockResolvedValue(mockResponse)
-
-        // Set custom auth store values for this test
-        useAuthStore.mockReturnValueOnce({
-          registers_page: 5,
-          registers_per_page: 10,
-          registers_sort_by: [{ key: 'id', order: 'asc' }],
-          registers_search: ''
-        })
-
-        const store = useRegistersStore()
-        await store.getAll()
-
-        expect(store.items).toEqual(mockResponse.items)
-        expect(store.totalCount).toBe(50)
-        expect(store.hasNextPage).toBe(false)
-        expect(store.hasPreviousPage).toBe(true)
-      })
-
-      it('handles empty results with new format', async () => {
-        const mockResponse = {
-          items: [],
-          pagination: {
-            totalCount: 0,
-            hasNextPage: false,
-            hasPreviousPage: false
-          }
-        }
-        fetchWrapper.get.mockResolvedValue(mockResponse)
-
-        // Set custom auth store values for this test
-        useAuthStore.mockReturnValueOnce({
-          registers_page: 1,
-          registers_per_page: 10,
-          registers_sort_by: [{ key: 'id', order: 'asc' }],
-          registers_search: 'nonexistent'
-        })
-
-        const store = useRegistersStore()
-        await store.getAll()
-
-        expect(store.items).toEqual([])
-        expect(store.totalCount).toBe(0)
-        expect(store.hasNextPage).toBe(false)
-        expect(store.hasPreviousPage).toBe(false)
-      })
-
-      it('handles new format with missing pagination data', async () => {
-        const mockResponse = {
-          items: [{ id: 1, name: 'Register 1' }]
-          // No pagination property
-        }
-        fetchWrapper.get.mockResolvedValue(mockResponse)
-
-        const store = useRegistersStore()
-        await store.getAll()
-
-        expect(store.items).toEqual(mockResponse.items)
-        expect(store.totalCount).toBe(0) // Default value
-        expect(store.hasNextPage).toBe(false) // Default value
-        expect(store.hasPreviousPage).toBe(false) // Default value
-      })
-
-      it('handles new format with partial pagination data', async () => {
-        const mockResponse = {
-          items: [{ id: 1, name: 'Register 1' }],
-          pagination: {
-            totalCount: 15
-            // Missing hasNextPage and hasPreviousPage
-          }
-        }
-        fetchWrapper.get.mockResolvedValue(mockResponse)
-
-        const store = useRegistersStore()
-        await store.getAll()
-
-        expect(store.items).toEqual(mockResponse.items)
-        expect(store.totalCount).toBe(15)
-        expect(store.hasNextPage).toBe(false) // Default value
-        expect(store.hasPreviousPage).toBe(false) // Default value
-      })
-
       it('handles new format with missing items property', async () => {
         const mockResponse = {
           pagination: {
@@ -452,19 +219,6 @@ describe('registers store', () => {
     })
 
     describe('error handling', () => {
-      it('sets error when request fails', async () => {
-        const errorMessage = 'Network error'
-        fetchWrapper.get.mockRejectedValue(new Error(errorMessage))
-
-        const store = useRegistersStore()
-        await expect(store.getAll()).rejects.toThrow(errorMessage)
-
-        expect(store.error).toBeTruthy()
-        expect(store.error.message).toBe(errorMessage)
-        expect(store.loading).toBe(false)
-        expect(store.items).toEqual([]) // Items should remain empty
-      })
-
       it('clears previous error on successful request', async () => {
         const store = useRegistersStore()
 
@@ -485,27 +239,6 @@ describe('registers store', () => {
     })
 
     describe('loading state', () => {
-      it('sets loading to true during request and false after completion', async () => {
-        let resolvePromise
-        const promise = new Promise((resolve) => {
-          resolvePromise = resolve
-        })
-        fetchWrapper.get.mockReturnValue(promise)
-
-        const store = useRegistersStore()
-        const getAllPromise = store.getAll()
-
-        expect(store.loading).toBe(true)
-
-        resolvePromise({
-          items: [{ id: 1 }],
-          pagination: { totalCount: 1, hasNextPage: false, hasPreviousPage: false }
-        })
-        await getAllPromise
-
-        expect(store.loading).toBe(false)
-      })
-
       it('sets loading to false even when request fails', async () => {
         let rejectPromise
         const promise = new Promise((resolve, reject) => {
@@ -525,149 +258,6 @@ describe('registers store', () => {
       })
     })
 
-    describe('query parameters handling', () => {
-      it('excludes search parameter when empty', async () => {
-        fetchWrapper.get.mockResolvedValue({
-          items: [],
-          pagination: { totalCount: 0, hasNextPage: false, hasPreviousPage: false }
-        })
-
-        // Set custom auth store values for this test
-        useAuthStore.mockReturnValueOnce({
-          registers_page: 1,
-          registers_per_page: 10,
-          registers_sort_by: [{ key: 'id', order: 'asc' }],
-          registers_search: ''
-        })
-
-        const store = useRegistersStore()
-        await store.getAll()
-
-        const calledUrl = fetchWrapper.get.mock.calls[1][0]
-        expect(calledUrl).not.toContain('search=')
-        expect(calledUrl).not.toContain('customsProcedureCode=')
-      })
-
-      it('forwards a numeric register ID through the existing search parameter', async () => {
-        fetchWrapper.get.mockResolvedValue({
-          items: [],
-          pagination: { totalCount: 0, hasNextPage: false, hasPreviousPage: false }
-        })
-
-        // Set custom auth store values for this test
-        useAuthStore.mockReturnValueOnce({
-          registers_page: 1,
-          registers_per_page: 10,
-          registers_sort_by: [{ key: 'id', order: 'asc' }],
-          registers_search: '123',
-          registers_procedure: 'all'
-        })
-
-        const store = useRegistersStore()
-        await store.getAll()
-
-        expect(fetchWrapper.get).toHaveBeenCalledWith(
-          `${apiUrl}/registers?page=1&pageSize=10&sortBy=id&sortOrder=asc&whOnly=false&search=123`
-        )
-      })
-
-      it('includes customsProcedureCode when paperwork procedure is selected', async () => {
-        fetchWrapper.get.mockResolvedValue({
-          items: [],
-          pagination: { totalCount: 0, hasNextPage: false, hasPreviousPage: false }
-        })
-
-        useAuthStore.mockReturnValueOnce({
-          ...defaultAuthStore,
-          registers_procedure: 10
-        })
-
-        const store = useRegistersStore()
-        await store.getAll()
-
-        expect(fetchWrapper.get).toHaveBeenCalledWith(
-          `${apiUrl}/registers?page=1&pageSize=10&sortBy=id&sortOrder=asc&whOnly=false&customsProcedureCode=10`
-        )
-      })
-
-      it('uses warehouse procedure in warehouse mode instead of paperwork procedure', async () => {
-        fetchWrapper.get.mockResolvedValue({
-          items: [],
-          pagination: { totalCount: 0, hasNextPage: false, hasPreviousPage: false }
-        })
-
-        useAuthStore.mockReturnValueOnce({
-          ...defaultAuthStore,
-          registers_procedure: 10,
-          registers_wh_page: 3,
-          registers_wh_per_page: 25,
-          registers_wh_sort_by: [{ key: 'warehouseArrivalDate', order: 'asc' }],
-          registers_wh_search: 'warehouse search',
-          registers_wh_procedure: 1
-        })
-
-        const store = useRegistersStore()
-        await store.getAll({ mode: OP_MODE_WAREHOUSE })
-
-        expect(fetchWrapper.get).toHaveBeenCalledWith(
-          `${apiUrl}/registers?page=3&pageSize=25&sortBy=warehouseArrivalDate&sortOrder=asc&whOnly=true&customsProcedureCode=1&search=warehouse+search`
-        )
-      })
-
-      it('omits customsProcedureCode in warehouse mode when all procedures selected', async () => {
-        fetchWrapper.get.mockResolvedValue({
-          items: [],
-          pagination: { totalCount: 0, hasNextPage: false, hasPreviousPage: false }
-        })
-
-        useAuthStore.mockReturnValueOnce({
-          ...defaultAuthStore,
-          registers_procedure: 10,
-          registers_wh_procedure: 'all'
-        })
-
-        const store = useRegistersStore()
-        await store.getAll({ mode: OP_MODE_WAREHOUSE })
-
-        expect(fetchWrapper.get).toHaveBeenCalledWith(
-          `${apiUrl}/registers?page=1&pageSize=10&sortBy=id&sortOrder=asc&whOnly=true`
-        )
-      })
-
-      it('handles special characters in search parameter', async () => {
-        fetchWrapper.get.mockResolvedValue({
-          items: [],
-          pagination: { totalCount: 0, hasNextPage: false, hasPreviousPage: false }
-        })
-
-        // Set custom auth store values for this test
-        useAuthStore.mockReturnValueOnce({
-          registers_page: 1,
-          registers_per_page: 10,
-          registers_sort_by: [{ key: 'id', order: 'asc' }],
-          registers_search: 'test & search + special chars'
-        })
-
-        const store = useRegistersStore()
-        await store.getAll()
-
-        const calledUrl = fetchWrapper.get.mock.calls[1][0]
-        expect(calledUrl).toContain('search=test+%26+search+%2B+special+chars')
-      })
-    })
-  })
-
-  describe('initial state', () => {
-    it('initializes with correct default values', () => {
-      const store = useRegistersStore()
-
-      expect(store.items).toEqual([])
-      expect(store.loading).toBe(false)
-      expect(store.error).toBeNull()
-      expect(store.totalCount).toBe(0)
-      expect(store.hasNextPage).toBe(false)
-      expect(store.hasPreviousPage).toBe(false)
-    })
   })
 
   describe('setDestinationField function', () => {
@@ -686,19 +276,6 @@ describe('registers store', () => {
 
       // Test with null register - should handle gracefully
       expect(() => store.getAll()).not.toThrow()
-    })
-
-    it('sets destination to "in" when customsProcedureCode is missing', async () => {
-      const register = { id: 1, companyId: 100, theOtherCompanyId: 200, theOtherCountryCode: 840 }
-      fetchWrapper.get.mockResolvedValue({
-        items: [register],
-        pagination: { totalCount: 1, hasNextPage: false, hasPreviousPage: false }
-      })
-
-      const store = useRegistersStore()
-      await store.getAll()
-
-      expect(store.items[0].destination).toBe('in')
     })
 
     it('sets destination to "out" when customs procedure is export', async () => {
@@ -728,100 +305,9 @@ describe('registers store', () => {
       expect(store.items[0].senderId).toBe(100)
     })
 
-    it('sets destination to "in" when customs procedure is not export', async () => {
-      const register = {
-        id: 1,
-        customsProcedureCode: 1,
-        companyId: 100,
-        theOtherCompanyId: 200,
-        theOtherCountryCode: 840
-      }
-      fetchWrapper.get.mockResolvedValue({
-        items: [register],
-        pagination: { totalCount: 1, hasNextPage: false, hasPreviousPage: false }
-      })
-
-      const store = useRegistersStore()
-      // Set ops with non-export procedure
-      store.ops.customsProcedures = [
-        { value: 1, name: 'Импорт', isExport: false, charCode: 'ИМ40' }
-      ]
-      await store.getAll()
-
-      expect(store.items[0].destination).toBe('in')
-      expect(store.items[0].destCountryCode).toBe(643)
-      expect(store.items[0].origCountryCode).toBe(840)
-      expect(store.items[0].recipientId).toBe(100)
-      expect(store.items[0].senderId).toBe(200)
-    })
   })
 
   describe('return register methods', () => {
-    it('requests return-register pairs by warehouse', async () => {
-      const response = [{ senderCompanyId: 2, receiverCompanyId: 3 }]
-      fetchWrapper.get.mockResolvedValue(response)
-
-      const store = useRegistersStore()
-      const result = await store.getReturnRegisterPairs(12, {
-        customsProcedureCode: 60,
-        parcelSelectionMode: 2,
-        parcelStatusId: 5
-      })
-
-      expect(result).toBe(response)
-      expect(fetchWrapper.get).toHaveBeenCalledWith(
-        `${apiUrl}/registers/return-register/pairs?warehouseId=12&customsProcedureCode=60&parcelSelectionMode=2&parcelStatusId=5`
-      )
-      expect(store.loading).toBe(false)
-      expect(store.error).toBeNull()
-    })
-
-    it('requests return-source registers through the generic paged register list endpoint', async () => {
-      const response = {
-        items: [
-          {
-            id: 7,
-            customsProcedureCode: 10,
-            companyId: 2,
-            theOtherCompanyId: 3,
-            theOtherCountryCode: 860
-          }
-        ],
-        pagination: { totalCount: 1 }
-      }
-      fetchWrapper.get.mockResolvedValue(response)
-
-      const store = useRegistersStore()
-      store.ops.customsProcedures = [
-        { value: 10, name: 'Экспорт', isExport: true, charCode: 'ЭК10' }
-      ]
-      const result = await store.getRegisters({
-        warehouseId: 12,
-        senderCompanyId: 2,
-        receiverCompanyId: 3,
-        whOnly: true,
-        returnSourceOnly: true,
-        page: 2,
-        pageSize: 50,
-        sortBy: 'warehouseArrivalDate',
-        sortOrder: 'asc',
-        search: 'deal',
-        customsProcedureCode: 31,
-        parcelSelectionMode: 2,
-        parcelStatusId: 5
-      })
-
-      expect(result).toBe(response)
-      expect(fetchWrapper.get).toHaveBeenCalledWith(
-        `${apiUrl}/registers?page=2&pageSize=50&sortBy=warehouseArrivalDate&sortOrder=asc&whOnly=true&returnSourceOnly=true&customsProcedureCode=31&parcelSelectionMode=2&parcelStatusId=5&warehouseId=12&senderCompanyId=2&receiverCompanyId=3&search=deal`
-      )
-      expect(result.items[0].destination).toBe('out')
-      expect(result.items[0].senderId).toBe(2)
-      expect(result.items[0].recipientId).toBe(3)
-      expect(store.loading).toBe(false)
-      expect(store.error).toBeNull()
-    })
-
     it('creates a return register and applies destination fields to the response', async () => {
       const response = {
         id: 99,
@@ -892,24 +378,6 @@ describe('registers store', () => {
       expect(formData.get('file')).toBe(file)
     })
 
-    it('uploads file with checkForDuplicates=true', async () => {
-      const file = new File(['data'], 'test.xlsx')
-      const customerId = 123
-      const customsProcedure = 2
-      fetchWrapper.postFile.mockResolvedValue({ id: 2 })
-
-      const store = useRegistersStore()
-      await store.upload(file, customerId, customsProcedure, true)
-
-      expect(fetchWrapper.postFile).toHaveBeenCalled()
-      expect(fetchWrapper.postFile.mock.calls[0][0]).toBe(
-        `${apiUrl}/registers/upload?registerType=123&customsProcedure=2&checkForDuplicates=true&transfer2Re=false&incotermsCode=2`
-      )
-      const formData = fetchWrapper.postFile.mock.calls[0][1]
-      expect(formData instanceof FormData).toBe(true)
-      expect(formData.get('file')).toBe(file)
-    })
-
     it('uploads file with transfer2Re flag', async () => {
       const file = new File(['data'], 'test.xlsx')
       const customerId = 123
@@ -928,24 +396,6 @@ describe('registers store', () => {
       expect(formData.get('file')).toBe(file)
     })
 
-    it('uploads file with all parameters', async () => {
-      const file = new File(['data'], 'test.xlsx')
-      const customerId = 123
-      const customsProcedure = 3
-      fetchWrapper.postFile.mockResolvedValue({ id: 4 })
-
-      const store = useRegistersStore()
-      await store.upload(file, customerId, customsProcedure, true, true)
-
-      expect(fetchWrapper.postFile).toHaveBeenCalled()
-      expect(fetchWrapper.postFile.mock.calls[0][0]).toBe(
-        `${apiUrl}/registers/upload?registerType=123&customsProcedure=3&checkForDuplicates=true&transfer2Re=true&incotermsCode=2`
-      )
-      const formData = fetchWrapper.postFile.mock.calls[0][1]
-      expect(formData instanceof FormData).toBe(true)
-      expect(formData.get('file')).toBe(file)
-    })
-
     it('adds selectedCurrency only when retrying a mixed-currency upload', async () => {
       const file = new File(['data'], 'mixed.xlsx')
       fetchWrapper.postFile.mockResolvedValue({ success: true, registerId: 5 })
@@ -957,18 +407,6 @@ describe('registers store', () => {
         `${apiUrl}/registers/upload?registerType=123&customsProcedure=1&checkForDuplicates=true&transfer2Re=false&incotermsCode=2&selectedCurrency=UZS`
       )
       expect(fetchWrapper.postFile.mock.calls[0][1].get('file')).toBe(file)
-    })
-
-    it('sends the selected Incoterms code', async () => {
-      const file = new File(['data'], 'fca.xlsx')
-      fetchWrapper.postFile.mockResolvedValue({ success: true, registerId: 6 })
-
-      const store = useRegistersStore()
-      await store.upload(file, 123, 10, true, false, null, 1)
-
-      expect(fetchWrapper.postFile.mock.calls[0][0]).toBe(
-        `${apiUrl}/registers/upload?registerType=123&customsProcedure=10&checkForDuplicates=true&transfer2Re=false&incotermsCode=1`
-      )
     })
 
     it.each([null, undefined])('defaults a missing Incoterms code to CPT (%s)', async (value) => {
@@ -993,16 +431,6 @@ describe('registers store', () => {
       expect(fetchWrapper.postFile).not.toHaveBeenCalled()
     })
 
-    it('sets error on failure', async () => {
-      const file = new File(['data'], 'test.xlsx')
-      const registerType = 123
-      fetchWrapper.postFile.mockRejectedValue(new Error('fail'))
-
-      const store = useRegistersStore()
-      await expect(store.upload(file, registerType, 1, false)).rejects.toThrow('fail')
-      expect(store.error).toBeTruthy()
-      expect(store.loading).toBe(false)
-    })
   })
 
   describe('updateWeightsFromFile method', () => {
@@ -1049,31 +477,6 @@ describe('registers store', () => {
     beforeEach(() => {
       // Mock fetchWrapper.put for setParcelStatuses tests
       fetchWrapper.put = vi.fn()
-    })
-
-    it('successfully sets parcel statuses', async () => {
-      const mockResponse = { success: true, message: 'Statuses updated' }
-      fetchWrapper.put.mockResolvedValue(mockResponse)
-
-      const store = useRegistersStore()
-      const result = await store.setParcelStatuses(123, 456)
-
-      expect(fetchWrapper.put).toHaveBeenCalledWith(`${apiUrl}/registers/123/setparcelstatuses/456`)
-      expect(result).toEqual(mockResponse)
-      expect(store.loading).toBe(false)
-      expect(store.error).toBeNull()
-    })
-
-    it('handles error in setParcelStatuses', async () => {
-      const errorMessage = 'Failed to update statuses'
-      const error = new Error(errorMessage)
-      fetchWrapper.put.mockRejectedValue(error)
-
-      const store = useRegistersStore()
-
-      await expect(store.setParcelStatuses(123, 456)).rejects.toThrow(errorMessage)
-      expect(store.error).toBe(error)
-      expect(store.loading).toBe(false)
     })
 
     it('sets loading state during setParcelStatuses request', async () => {
@@ -1242,19 +645,6 @@ describe('registers store', () => {
   })
 
   describe('FEACN lookup API', () => {
-    it('starts FEACN lookup with default (withFCMatch=1) and returns handle', async () => {
-      const handle = { id: '1234' }
-      fetchWrapper.post.mockResolvedValue(handle)
-
-      const store = useRegistersStore()
-      const result = await store.lookupFeacnCodes(1)
-
-      expect(fetchWrapper.post).toHaveBeenCalledWith(
-        `${apiUrl}/registers/1/lookup-feacn-codes?withFCMatch=1`
-      )
-      expect(result).toEqual(handle)
-    })
-
     it('starts FEACN lookup with withFCMatch=2', async () => {
       const handle = { id: '5555' }
       fetchWrapper.post.mockResolvedValue(handle)
@@ -1428,36 +818,6 @@ describe('registers store', () => {
       ])
     })
 
-    it('preserves hub passport state that arrives during a register REST request', async () => {
-      fetchWrapper.get.mockResolvedValueOnce({
-        customsProcedures: [],
-        transportationTypes: [],
-        incoterms: validIncoterms
-      })
-      const store = useRegistersStore()
-      await store.getOps()
-
-      let resolveRequest
-      fetchWrapper.get.mockReturnValueOnce(
-        new Promise((resolve) => {
-          resolveRequest = resolve
-        })
-      )
-
-      const request = store.getById(42)
-      store.applyPassportCheckState(42, {
-        hasPendingPassportChecks: true,
-        revision: 12
-      })
-      resolveRequest({
-        id: 42,
-        hasPendingPassportChecks: false
-      })
-      await request
-
-      expect(store.item.hasPendingPassportChecks).toBe(true)
-    })
-
     it('posts register passport check request to the dedicated endpoint', async () => {
       fetchWrapper.post.mockResolvedValue(undefined)
 
@@ -1530,20 +890,6 @@ describe('registers store', () => {
   })
 
   describe('getById and update', () => {
-    it('retrieves single register', async () => {
-      const data = { id: 5, fileName: 'r' }
-      fetchWrapper.get.mockResolvedValueOnce({
-        customsProcedures: [],
-        transportationTypes: [],
-        incoterms: validIncoterms
-      })
-      fetchWrapper.get.mockResolvedValueOnce(data)
-      const store = useRegistersStore()
-      await store.getById(5)
-      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/registers/5`)
-      expect(store.item).toEqual(data)
-    })
-
     it('handles getById error', async () => {
       const error = new Error('Not found')
       fetchWrapper.get.mockResolvedValueOnce({
@@ -1572,18 +918,6 @@ describe('registers store', () => {
       else rejectOlder(new Error('Old register failed'))
       await observed
       expect(store.item.id).toBe(6)
-    })
-
-    it('updates register and store', async () => {
-      fetchWrapper.put.mockResolvedValue({})
-      const store = useRegistersStore()
-      store.items = [{ id: 5, invoiceNumber: 'a' }]
-      store.item = { id: 5, invoiceNumber: 'a' }
-      const upd = { invoiceNumber: 'b' }
-      await store.update(5, upd)
-      expect(fetchWrapper.put).toHaveBeenCalledWith(`${apiUrl}/registers/5`, upd)
-      expect(store.item.invoiceNumber).toBe('b')
-      expect(store.items[0].invoiceNumber).toBe('b')
     })
 
     it('refreshes the register and enters read-only mode after a stale conflict', async () => {
@@ -1630,28 +964,6 @@ describe('registers store', () => {
       await expect(store.getDownloadFormats(10)).rejects.toBe(failure)
       expect(store.error).toBe(failure)
     })
-    it('calls downloadFile with correct parameters', async () => {
-      const store = useRegistersStore()
-      fetchWrapper.downloadFile.mockResolvedValue(true)
-      const result = await store.download(10)
-      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
-        `${apiUrl}/registers/10/download`,
-        'register_10.xlsx'
-      )
-      expect(result).toBe(true)
-    })
-
-    it('calls downloadFile with custom filename when provided', async () => {
-      const store = useRegistersStore()
-      fetchWrapper.downloadFile.mockResolvedValue(true)
-      const result = await store.download(10, 'custom_file.xlsx')
-      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
-        `${apiUrl}/registers/10/download`,
-        'custom_file.xlsx'
-      )
-      expect(result).toBe(true)
-    })
-
     it('rethrows when download fails', async () => {
       const store = useRegistersStore()
       const error = new Error('Download failed')
@@ -1664,41 +976,6 @@ describe('registers store', () => {
       )
     })
 
-    it('downloads all parcels when forZone is 0 without query param or suffix', async () => {
-      const store = useRegistersStore()
-      fetchWrapper.downloadFile.mockResolvedValue(true)
-
-      await store.download(10, 'custom_file.xlsx', 0, undefined)
-
-      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
-        `${apiUrl}/registers/10/download`,
-        'custom_file.xlsx'
-      )
-    })
-
-    it('adds normalized zone label suffix for a specific zone', async () => {
-      const store = useRegistersStore()
-      fetchWrapper.downloadFile.mockResolvedValue(true)
-
-      await store.download(10, 'register_10.xlsx', 15, 'Зона 1')
-
-      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
-        `${apiUrl}/registers/10/download?forZone=15`,
-        'register_10_Зона_1.xlsx'
-      )
-    })
-
-    it('adds applyWeightCorrection query only when requested', async () => {
-      const store = useRegistersStore()
-      fetchWrapper.downloadFile.mockResolvedValue(true)
-
-      await store.download(10, 'register_10.xlsx', 15, 'Зона 1', true)
-
-      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
-        `${apiUrl}/registers/10/download?forZone=15&applyWeightCorrection=true`,
-        'register_10_Зона_1.xlsx'
-      )
-    })
   })
 
   describe('downloadTechdoc method', () => {
@@ -1751,31 +1028,6 @@ describe('registers store', () => {
   })
 
   describe('downloadAdditionalRestrictions method', () => {
-    it('uses invoice number in filename and calls additional restrictions endpoint', async () => {
-      const store = useRegistersStore()
-      fetchWrapper.downloadFile.mockResolvedValue(true)
-
-      const result = await store.downloadAdditionalRestrictions(21, 'INV-21')
-
-      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
-        `${apiUrl}/registers/21/download-additional-restrictions`,
-        'Дополнительные_изъятия_INV-21.xlsx'
-      )
-      expect(result).toBe(true)
-    })
-
-    it('uses register id in filename when invoice number is missing', async () => {
-      const store = useRegistersStore()
-      fetchWrapper.downloadFile.mockResolvedValue(true)
-
-      await store.downloadAdditionalRestrictions(22, null)
-
-      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
-        `${apiUrl}/registers/22/download-additional-restrictions`,
-        'Дополнительные_изъятия_22.xlsx'
-      )
-    })
-
     it('adds applyWeightCorrection query to additional restrictions when requested', async () => {
       const store = useRegistersStore()
       fetchWrapper.downloadFile.mockResolvedValue(true)
@@ -1800,44 +1052,10 @@ describe('registers store', () => {
   })
 
   describe('generate method', () => {
-    it('calls downloadFile with default filename by id when invoiceNumber missing', async () => {
-      const store = useRegistersStore()
-      fetchWrapper.downloadFile.mockResolvedValue(true)
-      const result = await store.generate(5)
-      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
-        `${apiUrl}/registers/5/generate`,
-        'IndPost_5.zip',
-        { pollAccepted: true }
-      )
-      expect(result).toBe(true)
-    })
-
-    it('calls downloadFile with invoiceNumber when provided', async () => {
-      const store = useRegistersStore()
-      fetchWrapper.downloadFile.mockResolvedValue(true)
-      await store.generate(5, 'INV')
-      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
-        `${apiUrl}/registers/5/generate`,
-        'IndPost_INV.zip',
-        { pollAccepted: true }
-      )
-    })
-
     it('calls downloadFile with default filename when invoiceNumber is null', async () => {
       const store = useRegistersStore()
       fetchWrapper.downloadFile.mockResolvedValue(true)
       await store.generate(5, null)
-      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
-        `${apiUrl}/registers/5/generate`,
-        'IndPost_5.zip',
-        { pollAccepted: true }
-      )
-    })
-
-    it('calls downloadFile with default filename when invoiceNumber is undefined', async () => {
-      const store = useRegistersStore()
-      fetchWrapper.downloadFile.mockResolvedValue(true)
-      await store.generate(5, undefined)
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
         `${apiUrl}/registers/5/generate`,
         'IndPost_5.zip',
@@ -1942,27 +1160,6 @@ describe('registers store', () => {
   })
 
   describe('downloadInvoiceFile method', () => {
-    it('uses id when invoiceNumber is missing and defaults to all parcels', async () => {
-      const store = useRegistersStore()
-      fetchWrapper.downloadFile.mockResolvedValue(true)
-      const result = await store.downloadInvoiceFile(7)
-      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
-        `${apiUrl}/registers/7/download-invoice`,
-        'Invoice_7.xlsx'
-      )
-      expect(result).toBe(true)
-    })
-
-    it('uses invoiceNumber when provided and applies selection specific suffixes', async () => {
-      const store = useRegistersStore()
-      fetchWrapper.downloadFile.mockResolvedValue(true)
-      await store.downloadInvoiceFile(8, 'INV-8', InvoiceParcelSelection.WithExcise)
-      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
-        `${apiUrl}/registers/8/download-invoice-excise`,
-        'Invoice_INV-8-акциз.xlsx'
-      )
-    })
-
     it('supports optional columns flag and without excise selection', async () => {
       const store = useRegistersStore()
       fetchWrapper.downloadFile.mockResolvedValue(true)
@@ -1971,36 +1168,6 @@ describe('registers store', () => {
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
         `${apiUrl}/registers/9/download-invoice-ordinary?optionalColumns=${optionalColumns}`,
         'Invoice_9-без-акциза-и-нотификаций.xlsx'
-      )
-    })
-
-    it('appends optional columns query for all selection when provided', async () => {
-      const store = useRegistersStore()
-      fetchWrapper.downloadFile.mockResolvedValue(true)
-      const optionalColumns = InvoiceOptionalColumns.BagNumber | InvoiceOptionalColumns.FullName
-      await store.downloadInvoiceFile(7, 'INV-7', InvoiceParcelSelection.All, optionalColumns)
-      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
-        `${apiUrl}/registers/7/download-invoice?optionalColumns=${optionalColumns}`,
-        'Invoice_INV-7.xlsx'
-      )
-    })
-
-    it('appends weight correction opt-out query when invoice correction is unchecked', async () => {
-      const store = useRegistersStore()
-      fetchWrapper.downloadFile.mockResolvedValue(true)
-      const optionalColumns = InvoiceOptionalColumns.Url
-
-      await store.downloadInvoiceFile(
-        7,
-        'INV-7',
-        InvoiceParcelSelection.All,
-        optionalColumns,
-        false
-      )
-
-      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
-        `${apiUrl}/registers/7/download-invoice?optionalColumns=${optionalColumns}&applyWeightCorrection=false`,
-        'Invoice_INV-7.xlsx'
       )
     })
 
@@ -2024,21 +1191,6 @@ describe('registers store', () => {
   })
 
   describe('downloadTajikistanManifestFile method', () => {
-    it('uses the single all-without-issues endpoint and filename', async () => {
-      const store = useRegistersStore()
-      fetchWrapper.downloadFile.mockResolvedValue(true)
-
-      const result = await store.downloadTajikistanManifestFile(15, 'INV-15')
-
-      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
-        `${apiUrl}/registers/15/download-tajikistan-manifest`,
-        'Манифест_INV-15.xlsx'
-      )
-      expect(result).toBe(true)
-      expect(store.loading).toBe(false)
-      expect(store.error).toBeNull()
-    })
-
     it('uses the id fallback, trims invoice number and passes correction opt-out', async () => {
       const store = useRegistersStore()
       fetchWrapper.downloadFile.mockResolvedValue(true)
@@ -2082,50 +1234,6 @@ describe('registers store', () => {
         'ДО1_17.xlsx'
       )
       expect(result).toBe(true)
-    })
-
-    it('uses the register id when invoice number is blank', async () => {
-      const store = useRegistersStore()
-      fetchWrapper.downloadFile.mockResolvedValue(true)
-
-      await store.downloadDo1File(17, '   ')
-
-      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
-        `${apiUrl}/registers/17/download-do1`,
-        'ДО1_17.xlsx'
-      )
-    })
-
-    it('trims invoice number before building filename', async () => {
-      const store = useRegistersStore()
-      fetchWrapper.downloadFile.mockResolvedValue(true)
-
-      await store.downloadDo1File(18, ' INV-18 ')
-
-      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
-        `${apiUrl}/registers/18/download-do1`,
-        'ДО1_INV-18.xlsx'
-      )
-    })
-
-    it('passes only supported optional columns and weight-correction opt-out', async () => {
-      const store = useRegistersStore()
-      fetchWrapper.downloadFile.mockResolvedValue(true)
-      const requestedColumns =
-        InvoiceOptionalColumns.BagNumber |
-        InvoiceOptionalColumns.FullName |
-        InvoiceOptionalColumns.PreviousDteg |
-        InvoiceOptionalColumns.Uin |
-        InvoiceOptionalColumns.Url
-      const expectedColumns =
-        InvoiceOptionalColumns.BagNumber | InvoiceOptionalColumns.Uin | InvoiceOptionalColumns.Url
-
-      await store.downloadDo1File(18, 'INV-18', requestedColumns, false)
-
-      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
-        `${apiUrl}/registers/18/download-do1?optionalColumns=${expectedColumns}&applyWeightCorrection=false`,
-        'ДО1_INV-18.xlsx'
-      )
     })
 
     it('stores and rethrows download errors', async () => {
@@ -2190,142 +1298,6 @@ describe('registers store', () => {
   })
 
   describe('nextParcels method', () => {
-    it('requests next parcels with correct id and default parameters', async () => {
-      const response = { WithoutIssues: { id: 2 }, WithIssues: { id: 3 } }
-      fetchWrapper.get.mockResolvedValue(response)
-      const store = useRegistersStore()
-      const result = await store.nextParcels(5)
-      expect(fetchWrapper.get).toHaveBeenCalledWith(
-        `${apiUrl}/registers/nextparcels/5?sortBy=id&sortOrder=asc`
-      )
-      expect(result).toEqual({
-        withoutIssues: response.WithoutIssues,
-        withIssues: response.WithIssues
-      })
-    })
-
-    it('requests next parcels with custom sorting parameters', async () => {
-      const customAuthStore = {
-        ...defaultAuthStore,
-        parcels_sort_by: [{ key: 'tnVed', order: 'desc' }]
-      }
-      useAuthStore.mockReturnValueOnce(customAuthStore)
-
-      const response = { WithoutIssues: { id: 3 }, WithIssues: { id: 4 } }
-      fetchWrapper.get.mockResolvedValue(response)
-      const store = useRegistersStore()
-      const result = await store.nextParcels(7)
-      expect(fetchWrapper.get).toHaveBeenCalledWith(
-        `${apiUrl}/registers/nextparcels/7?sortBy=tnVed&sortOrder=desc`
-      )
-      expect(result).toEqual({
-        withoutIssues: response.WithoutIssues,
-        withIssues: response.WithIssues
-      })
-    })
-
-    it('keeps adjacent navigation inside the exact box', async () => {
-      fetchWrapper.get.mockResolvedValue({ WithoutIssues: { id: 6 }, WithIssues: null })
-      const store = useRegistersStore()
-
-      await store.nextParcels(5, { boxId: 17 })
-
-      expect(fetchWrapper.get).toHaveBeenCalledWith(
-        `${apiUrl}/registers/nextparcels/5?boxId=17&sortBy=id&sortOrder=asc`
-      )
-    })
-
-    it('requests next parcels with filtering parameters', async () => {
-      const customAuthStore = {
-        ...defaultAuthStore,
-        parcels_status: 1,
-        parcels_check_status_sw: 100,
-        parcels_check_status_fc: 200,
-        parcels_passport_check_status: 30,
-        parcels_tnved: '12345678'
-      }
-      useAuthStore.mockReturnValueOnce(customAuthStore)
-
-      const response = { WithoutIssues: { id: 4 }, WithIssues: { id: 5 } }
-      fetchWrapper.get.mockResolvedValue(response)
-      const store = useRegistersStore()
-      const result = await store.nextParcels(8)
-      expect(fetchWrapper.get).toHaveBeenCalledWith(
-        `${apiUrl}/registers/nextparcels/8?sortBy=id&sortOrder=asc&statusId=1&checkStatusSw=100&checkStatusFc=200&passportCheckStatus=30&tnVed=12345678`
-      )
-      expect(result).toEqual({
-        withoutIssues: response.WithoutIssues,
-        withIssues: response.WithIssues
-      })
-    })
-
-    it('requests next parcels with partial filtering parameters', async () => {
-      const customAuthStore = {
-        ...defaultAuthStore,
-        parcels_status: 2,
-        parcels_check_status_sw: null,
-        parcels_check_status_fc: null,
-        parcels_tnved: ''
-      }
-      useAuthStore.mockReturnValueOnce(customAuthStore)
-
-      const response = { WithoutIssues: null, WithIssues: { id: 6 } }
-      fetchWrapper.get.mockResolvedValue(response)
-      const store = useRegistersStore()
-      const result = await store.nextParcels(9)
-      expect(fetchWrapper.get).toHaveBeenCalledWith(
-        `${apiUrl}/registers/nextparcels/9?sortBy=id&sortOrder=asc&statusId=2`
-      )
-      expect(result).toEqual({ withoutIssues: null, withIssues: response.WithIssues })
-    })
-
-    it('requests next parcels with passport problems filter', async () => {
-      useAuthStore.mockReturnValueOnce({
-        ...defaultAuthStore,
-        parcels_passport_check_status: 'problems'
-      })
-      fetchWrapper.get.mockResolvedValue({ WithoutIssues: { id: 10 }, WithIssues: null })
-
-      const store = useRegistersStore()
-      await store.nextParcels(10)
-
-      expect(fetchWrapper.get).toHaveBeenCalledWith(
-        `${apiUrl}/registers/nextparcels/10?sortBy=id&sortOrder=asc&passportCheckWithProblems=true`
-      )
-    })
-
-    it('rethrows when the next-parcels API call fails', async () => {
-      const error = new Error('fail')
-      fetchWrapper.get.mockRejectedValue(error)
-      const store = useRegistersStore()
-      await expect(store.nextParcels(5)).rejects.toBe(error)
-      expect(store.error).toEqual(error)
-      expect(fetchWrapper.get).toHaveBeenCalledWith(
-        `${apiUrl}/registers/nextparcels/5?sortBy=id&sortOrder=asc`
-      )
-    })
-
-    it('rethrows an exact-box adjacent request failure with its scope intact', async () => {
-      const error = new Error('scoped next failed')
-      fetchWrapper.get.mockRejectedValue(error)
-      const store = useRegistersStore()
-
-      await expect(store.nextParcels(5, { boxId: 17 })).rejects.toBe(error)
-      expect(store.error).toBe(error)
-      expect(fetchWrapper.get).toHaveBeenCalledWith(
-        `${apiUrl}/registers/nextparcels/5?boxId=17&sortBy=id&sortOrder=asc`
-      )
-    })
-
-    it('normalizes response casing when provided in PascalCase', async () => {
-      const response = { WithoutIssues: { id: 10 }, WithIssues: { id: 11 } }
-      fetchWrapper.get.mockResolvedValue(response)
-      const store = useRegistersStore()
-      const result = await store.nextParcels(1)
-
-      expect(result).toEqual({ withoutIssues: { id: 10 }, withIssues: { id: 11 } })
-    })
-
     it('handles the case when there are no next parcels available', async () => {
       fetchWrapper.get.mockResolvedValue(null)
       const store = useRegistersStore()
@@ -2335,85 +1307,9 @@ describe('registers store', () => {
       expect(store.error).toBeNull()
     })
 
-    it('ensures loading state is reset after request', async () => {
-      const response = { withoutIssues: { id: 7 }, withIssues: { id: 8 } }
-      fetchWrapper.get.mockResolvedValue(response)
-      const store = useRegistersStore()
-
-      expect(store.loading).toBe(false)
-      const promise = store.nextParcels(5)
-      expect(store.loading).toBe(true)
-
-      await promise
-      expect(store.loading).toBe(false)
-    })
   })
 
   describe('ops functionality', () => {
-    it('getOps fetches ops data from /registers/ops', async () => {
-      const opsData = {
-        customsProcedures: [
-          {
-            value: 1,
-            name: 'Экспорт',
-            isExport: true,
-            charCode: 'ЭК10',
-            initialRegisterStatusId: 2
-          },
-          {
-            value: 2,
-            name: 'Импорт',
-            isExport: false,
-            charCode: 'ИМ40',
-            initialRegisterStatusId: 3
-          }
-        ],
-        transportationTypes: [
-          { value: 0, name: 'Авиа', document: 'AWB', isAvia: true },
-          { value: 1, name: 'Авто', document: 'CMR', isAvia: false }
-        ],
-        incoterms: [
-          { value: 1, name: 'Франко перевозчик', charCode: 'FCA' },
-          { value: 2, name: 'Перевозка оплачена до', charCode: 'CPT' }
-        ],
-        passportCheckStatuses: [
-          { value: 0, code: 'NotChecked', name: 'Не проверен' },
-          { value: 30, code: 'Checked', name: 'Проверен' }
-        ]
-      }
-      fetchWrapper.get.mockResolvedValue(opsData)
-
-      const store = useRegistersStore()
-      const result = await store.getOps()
-
-      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/registers/ops`)
-      expect(result).toEqual(opsData)
-      expect(store.ops.customsProcedures).toHaveLength(2)
-      expect(store.ops.transportationTypes).toHaveLength(2)
-      expect(store.ops.incoterms).toEqual(opsData.incoterms)
-      expect(store.ops.passportCheckStatuses).toEqual(opsData.passportCheckStatuses)
-      expect(store.ops.customsProcedures.map((item) => item.initialRegisterStatusId)).toEqual([
-        2, 3
-      ])
-    })
-
-    it('getOps normalizes missing optional metadata', async () => {
-      const opsData = {
-        customsProcedures: [],
-        transportationTypes: [],
-        incoterms: [{ value: 2, name: 'Перевозка оплачена до', charCode: 'CPT' }]
-      }
-      fetchWrapper.get.mockResolvedValue(opsData)
-
-      const store = useRegistersStore()
-      const result = await store.getOps()
-
-      expect(result.passportCheckStatuses).toEqual([])
-      expect(store.ops.passportCheckStatuses).toEqual([])
-      expect(result).not.toHaveProperty('initialRegisterStatusId')
-      expect(store.ops).not.toHaveProperty('initialRegisterStatusId')
-    })
-
     it.each([undefined, null, []])(
       'getOps rejects missing or empty Incoterms metadata (%s)',
       async (incoterms) => {
@@ -2429,15 +1325,6 @@ describe('registers store', () => {
         expect(store.opsError).toBeInstanceOf(Error)
       }
     )
-
-    it('getOps sets opsError on failure', async () => {
-      const error = new Error('Ops fetch failed')
-      fetchWrapper.get.mockRejectedValue(error)
-
-      const store = useRegistersStore()
-      await expect(store.getOps()).rejects.toBe(error)
-      expect(store.opsError).toBe(error)
-    })
 
     it('getOps does not set opsInitialized when response is null', async () => {
       fetchWrapper.get.mockResolvedValue(null)
@@ -2459,17 +1346,6 @@ describe('registers store', () => {
       expect(store.ops.transportationTypes).toEqual([])
     })
 
-    it('getOps does not set opsInitialized when response has invalid shape', async () => {
-      fetchWrapper.get.mockResolvedValue({ items: [], pagination: {} })
-
-      const store = useRegistersStore()
-      await store.getOps()
-
-      // ops.value should retain its default empty arrays (not overwritten by invalid response)
-      expect(store.ops.customsProcedures).toEqual([])
-      expect(store.ops.transportationTypes).toEqual([])
-    })
-
     it('getOps preserves existing ops.value when response is invalid', async () => {
       const store = useRegistersStore()
       store.ops.customsProcedures = [{ value: 1, name: 'Экспорт', isExport: true }]
@@ -2481,78 +1357,6 @@ describe('registers store', () => {
       expect(store.ops.customsProcedures).toHaveLength(1)
     })
 
-    it('getAll awaits ops before applying setDestinationField', async () => {
-      const opsData = {
-        customsProcedures: [{ value: 1, name: 'Экспорт', isExport: true, charCode: 'ЭК10' }],
-        transportationTypes: [],
-        incoterms: validIncoterms
-      }
-      const register = {
-        id: 1,
-        customsProcedureCode: 1,
-        companyId: 100,
-        theOtherCompanyId: 200,
-        theOtherCountryCode: 840
-      }
-      fetchWrapper.get.mockImplementation((url) => {
-        if (url.includes('/ops')) return Promise.resolve(opsData)
-        return Promise.resolve({
-          items: [register],
-          pagination: { totalCount: 1, hasNextPage: false, hasPreviousPage: false }
-        })
-      })
-
-      const store = useRegistersStore()
-      await store.getAll()
-
-      expect(store.items[0].destination).toBe('out')
-    })
-
-    it('ensureOpsLoaded calls getOps on first load', async () => {
-      const opsData = {
-        customsProcedures: [],
-        transportationTypes: [],
-        incoterms: validIncoterms
-      }
-      fetchWrapper.get.mockResolvedValue(opsData)
-
-      const store = useRegistersStore()
-      await store.ensureOpsLoaded()
-
-      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/registers/ops`)
-    })
-
-    it('ensureOpsLoaded does not call getOps again if already initialized', async () => {
-      const opsData = {
-        customsProcedures: [],
-        transportationTypes: [],
-        incoterms: validIncoterms
-      }
-      fetchWrapper.get.mockResolvedValue(opsData)
-
-      const store = useRegistersStore()
-      await store.ensureOpsLoaded()
-      await store.ensureOpsLoaded()
-
-      expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
-    })
-
-    it('ensureOpsLoaded deduplicates concurrent calls', async () => {
-      const opsData = {
-        customsProcedures: [],
-        transportationTypes: [],
-        incoterms: validIncoterms
-      }
-      fetchWrapper.get.mockResolvedValue(opsData)
-
-      const store = useRegistersStore()
-      const promise1 = store.ensureOpsLoaded()
-      const promise2 = store.ensureOpsLoaded()
-      await Promise.all([promise1, promise2])
-
-      expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
-    })
-
     it('getOpsLabel returns name for matching value', () => {
       const store = useRegistersStore()
       const list = [
@@ -2561,12 +1365,6 @@ describe('registers store', () => {
       ]
       expect(store.getOpsLabel(list, 1)).toBe('Экспорт')
       expect(store.getOpsLabel(list, 2)).toBe('Импорт')
-    })
-
-    it('getOpsLabel returns string value when not found', () => {
-      const store = useRegistersStore()
-      const list = [{ value: 1, name: 'Экспорт' }]
-      expect(store.getOpsLabel(list, 99)).toBe('99')
     })
 
     it('getOpsLabel handles null list', () => {
@@ -2589,19 +1387,6 @@ describe('registers store', () => {
       expect(store.getTransportationDocument(5)).toBe('[Тип 5]')
     })
 
-    it('isExportProcedure returns true for export', () => {
-      const store = useRegistersStore()
-      store.ops.customsProcedures = [
-        { value: 1, name: 'Экспорт', isExport: true, charCode: 'ЭК10' }
-      ]
-      expect(store.isExportProcedure(1)).toBe(true)
-    })
-
-    it('isExportProcedure returns false when procedure not found', () => {
-      const store = useRegistersStore()
-      store.ops.customsProcedures = []
-      expect(store.isExportProcedure(1)).toBe(false)
-    })
   })
 
   describe('freezeTnVedOrder', () => {

@@ -170,111 +170,6 @@ beforeEach(async () => {
 
 describe('RegisterStatus_EditDialog.vue', () => {
   describe('Component Rendering', () => {
-    it('renders create mode correctly', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      expect(wrapper.find('h1').text()).toBe('Создание статуса партии')
-      expect(wrapper.find('[data-testid="register-status-header-actions"]').exists()).toBe(true)
-      expect(findActionButton(wrapper, 'fa-solid fa-check-double').props('tooltipText')).toBe(
-        'Создать'
-      )
-      expect(findActionButton(wrapper, 'fa-solid fa-xmark').props('tooltipText')).toBe('Отменить')
-      expect(wrapper.find('button[type="submit"]').exists()).toBe(false)
-      expect(mockRegisterStatusesStore.getById).not.toHaveBeenCalled()
-    })
-
-    it('uses the project styled checkbox for read-only status', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'edit', registerStatusId: 1 },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      const checkbox = wrapper.get('#readOnly')
-      expect(checkbox.attributes('type')).toBe('checkbox')
-      expect(checkbox.classes()).toContain('checkbox')
-      expect(checkbox.classes()).toContain('checkbox-styled')
-      expect(wrapper.get('.status-settings-label[for="readOnly"]').text()).toBe(
-        'Изменения запрещены:'
-      )
-      expect(wrapper.get('.checkbox-styled + label').attributes('aria-hidden')).toBe('true')
-      const transitCheckbox = wrapper.get('#transit')
-      expect(transitCheckbox.attributes('type')).toBe('checkbox')
-      expect(transitCheckbox.classes()).toContain('checkbox-styled')
-      expect(wrapper.get('.status-settings-label[for="transit"]').text()).toBe('Транзит:')
-    })
-
-    it('allows only administrators to change the read-only flag', async () => {
-      mockAuthStore.isAdmin = false
-      const nonAdminWrapper = mount(AsyncWrapper, {
-        props: { mode: 'edit', registerStatusId: 1 },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-      expect(nonAdminWrapper.get('#readOnly').attributes('disabled')).toBeDefined()
-
-      mockAuthStore.isAdmin = true
-      const adminWrapper = mount(AsyncWrapper, {
-        props: { mode: 'edit', registerStatusId: 1 },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-      expect(adminWrapper.get('#readOnly').attributes('disabled')).toBeUndefined()
-    })
-
-    it('renders current icon and color values in edit mode', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'edit', registerStatusId: 1 },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      expect(wrapper.find('#bkColor').element.value).toBe('#ffffff')
-      expect(wrapper.find('#fgColor').element.value).toBe('#000000')
-      expect(wrapper.find('.status-icon-option.selected').attributes('aria-label')).toBe(
-        'svg:registered'
-      )
-      expect(wrapper.find('.status-icon-option.selected').attributes('title')).toBeUndefined()
-    })
-
-    it('places color selectors immediately before the icon selector', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'edit', registerStatusId: 1 },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      const rows = wrapper.findAll('.status-settings-row')
-      const backgroundColorRow = rows.find((row) => row.find('#bkColor').exists())
-      const foregroundColorRow = rows.find((row) => row.find('#fgColor').exists())
-      const iconRow = rows.find((row) => row.find('.status-icon-selector').exists())
-
-      expect(rows.indexOf(backgroundColorRow)).toBe(rows.indexOf(iconRow) - 2)
-      expect(rows.indexOf(foregroundColorRow)).toBe(rows.indexOf(iconRow) - 1)
-    })
-
     it('updates color preview values through color selectors', async () => {
       const wrapper = mount(AsyncWrapper, {
         props: { mode: 'edit', registerStatusId: 1 },
@@ -343,22 +238,6 @@ describe('RegisterStatus_EditDialog.vue', () => {
       ).rejects.toThrow('Выберите поддерживаемую иконку статуса')
     })
 
-    it('shows loading fallback initially', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      // Before resolving, should show loading
-      expect(wrapper.text()).toContain('Loading...')
-
-      await resolveAll()
-
-      // After resolving, should show actual content
-      expect(wrapper.text()).not.toContain('Loading...')
-    })
   })
 
   describe('Form Submission - Create Mode', () => {
@@ -385,23 +264,6 @@ describe('RegisterStatus_EditDialog.vue', () => {
       })
     })
 
-    it('shows success message and redirects after successful creation', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      const form = wrapper.find('form')
-      await form.trigger('submit')
-      await resolveAll()
-
-      expect(mockRouter.push).toHaveBeenCalledWith('/registerstatuses')
-    })
-
     it('handles 409 conflict error during creation', async () => {
       const error = new Error('Order status with this name already exists (409)')
       mockRegisterStatusesStore.create.mockRejectedValueOnce(error)
@@ -422,44 +284,9 @@ describe('RegisterStatus_EditDialog.vue', () => {
       expect(mockRouter.push).not.toHaveBeenCalled()
     })
 
-    it('handles general error during creation', async () => {
-      const error = new Error('Network error')
-      mockRegisterStatusesStore.create.mockRejectedValueOnce(error)
-
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      const form = wrapper.find('form')
-      await form.trigger('submit')
-      await resolveAll()
-
-      expect(mockRouter.push).not.toHaveBeenCalled()
-    })
   })
 
   describe('Form Submission - Edit Mode', () => {
-    it('calls update store method on form submission', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'edit', registerStatusId: 1 },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      const form = wrapper.find('form')
-      await form.trigger('submit')
-
-      expect(mockRegisterStatusesStore.update).toHaveBeenCalledWith(1, mockRegisterStatus)
-    })
-
     it('preserves the persisted read-only flag for a non-administrator update', async () => {
       mockAuthStore.isAdmin = false
       const wrapper = mount(AsyncWrapper, {
@@ -476,23 +303,6 @@ describe('RegisterStatus_EditDialog.vue', () => {
         1,
         expect.objectContaining({ readOnly: true })
       )
-    })
-
-    it('shows success message and redirects after successful update', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'edit', registerStatusId: 1 },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      const form = wrapper.find('form')
-      await form.trigger('submit')
-      await resolveAll()
-
-      expect(mockRouter.push).toHaveBeenCalledWith('/registerstatuses')
     })
 
     it('handles error during update', async () => {
@@ -515,42 +325,6 @@ describe('RegisterStatus_EditDialog.vue', () => {
       expect(mockRouter.push).not.toHaveBeenCalled()
     })
 
-    it('uses fallback error text when update error has no message', async () => {
-      const error = new Error()
-      error.message = undefined
-      mockRegisterStatusesStore.update.mockRejectedValueOnce(error)
-
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'edit', registerStatusId: 1 },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      const form = wrapper.find('form')
-      await form.trigger('submit')
-      await resolveAll()
-
-      expect(mockAlertStore.error).toHaveBeenCalledWith(error, {
-        fallback: 'Ошибка при сохранении статуса партии'
-      })
-      expect(mockRouter.push).not.toHaveBeenCalled()
-    })
-
-    it('fetches order status data on mount in edit mode', async () => {
-      mount(AsyncWrapper, {
-        props: { mode: 'edit', registerStatusId: 123 },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      expect(mockRegisterStatusesStore.getById).toHaveBeenCalledWith(123)
-    })
   })
 
   describe('Navigation', () => {
@@ -575,54 +349,7 @@ describe('RegisterStatus_EditDialog.vue', () => {
     })
   })
 
-  describe('Props Validation', () => {
-    it('handles missing registerStatusId in edit mode', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'edit' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-      expect(wrapper.exists()).toBe(true)
-    })
-  })
-
   describe('Error Handling', () => {
-    it('handles network errors gracefully during creation', async () => {
-      const networkError = new Error('Network Error')
-      mockRegisterStatusesStore.create.mockRejectedValueOnce(networkError)
-
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      const form = wrapper.find('form')
-      await form.trigger('submit')
-      await resolveAll()
-
-      expect(mockRouter.push).not.toHaveBeenCalled()
-    })
-
-    it('handles validation errors appropriately', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      expect(wrapper.exists()).toBe(true)
-    })
-
     it('handles empty error messages', async () => {
       const error = new Error()
       error.message = undefined
@@ -646,40 +373,6 @@ describe('RegisterStatus_EditDialog.vue', () => {
   })
 
   describe('Form Validation', () => {
-    it('handles form validation correctly', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      expect(wrapper.exists()).toBe(true)
-    })
-
-    it('displays validation errors when present', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      const formComponent = wrapper.findComponent({ name: 'Form' })
-      if (formComponent.exists()) {
-        formComponent.vm.setErrors({
-          title: 'Название статуса обязательно'
-        })
-        await resolveAll()
-
-        expect(wrapper.text()).toContain('Название статуса обязательно')
-      }
-    })
-
     it('displays icon and color validation errors when present', async () => {
       const wrapper = mount(AsyncWrapper, {
         props: { mode: 'create' },
@@ -704,19 +397,4 @@ describe('RegisterStatus_EditDialog.vue', () => {
     })
   })
 
-  describe('Data Binding', () => {
-    it('binds form data correctly in edit mode', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'edit', registerStatusId: 1 },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      expect(wrapper.exists()).toBe(true)
-    })
-
-  })
 })

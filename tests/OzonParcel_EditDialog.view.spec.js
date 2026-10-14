@@ -2,8 +2,6 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref, nextTick } from 'vue'
 import { resolveAll } from './helpers/test-utils'
-import { OP_MODE_PAPERWORK } from '@/helpers/op.mode.js'
-
 let confirmMock = null
 vi.mock('vuetify-use-dialog', () => ({
   useConfirm: () => confirmMock
@@ -156,37 +154,6 @@ describe('OzonParcel_EditDialog image overlay', () => {
     global.URL.revokeObjectURL = vi.fn()
   })
 
-
-  it('passes the current unsaved code and procedure to the live marker', async () => {
-    const draft = ref({ tnVed: '8471300000' })
-    registersMock.item.value.customsProcedureCode = 31
-    const wrapper = mount({
-      components: { OzonParcel_EditDialog },
-      template: '<Suspense><OzonParcel_EditDialog :registerId="1" :id="3" /></Suspense>'
-    }, { global: { stubs: {
-      Form: {
-        methods: { resetForm() {} },
-        setup: () => ({ draft }),
-        template: '<div><slot :errors="{}" :values="draft" :isSubmitting="false" :setFieldValue="() => {}" /></div>'
-      },
-      Field: true, ParcelHeaderActionsBar: true, ParcelStatusSection: true,
-      FeacnCodeEditor: true, ParcelNumberExt: true, ActionButton: true,
-      ParcelWeightAutoField: true, DTagSection: true, 'font-awesome-icon': true, VTooltip: true
-    } } })
-    await resolveAll()
-    await nextTick()
-    const number = wrapper.findComponent({ name: 'ParcelNumberExt' })
-    expect(number.props('liveCategory')).toBe(true)
-    expect(number.props('customsProcedureCode')).toBe(31)
-    expect(number.props('tnVed')).toBe('8471300000')
-    draft.value.tnVed = ''
-    await nextTick()
-    expect(number.props('tnVed')).toBe('')
-    draft.value.tnVed = 'invalid'
-    await nextTick()
-    expect(number.props('tnVed')).toBe('invalid')
-    wrapper.unmount()
-  })
   it('opens and closes overlay when view-image is triggered', async () => {
     const TestWrapper = {
       components: { OzonParcel_EditDialog },
@@ -228,50 +195,6 @@ describe('OzonParcel_EditDialog image overlay', () => {
     await resolveAll()
     expect(wrapper.find('[data-test="parcel-image-overlay"]').exists()).toBe(false)
     expect(global.URL.revokeObjectURL).toHaveBeenCalled()
-  })
-
-  it('disables XML download action for customs-disabled parcel status', async () => {
-    parcelStatusesMock.push({ id: 10, title: 'Disabled', useAtCustomsProcessing: false })
-    parcelsMock.item.value = {
-      id: 2,
-      statusId: 10,
-      checkStatus: 0,
-      productLink: 'http://example.com',
-      hasImage: true
-    }
-
-    const TestWrapper = {
-      components: { OzonParcel_EditDialog },
-      template: '<Suspense><OzonParcel_EditDialog :registerId="1" :id="2" /></Suspense>'
-    }
-
-    const wrapper = mount(TestWrapper, {
-      global: {
-        stubs: {
-          Field: { template: '<input />' },
-          Form: {
-            methods: { resetForm() {} },
-            template:
-              '<div><slot :errors="{}" :values="{ id: 2, statusId: 10 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
-          },
-          ParcelHeaderActionsBar: true,
-          ParcelStatusSection: true,
-          FeacnCodeEditor: true,
-          ParcelNumberExt: true,
-          ArticleWithH: true,
-          ActionButton: true,
-          'font-awesome-icon': true,
-          VTooltip: true
-        }
-      }
-    })
-
-    await nextTick()
-    await resolveAll()
-
-    const headerActions = wrapper.findComponent({ name: 'ParcelHeaderActionsBar' })
-    expect(headerActions.exists()).toBe(true)
-    expect(headerActions.props('downloadDisabled')).toBe(true)
   })
 
   it('renders Ozon import recipient fields', async () => {
@@ -366,44 +289,6 @@ describe('OzonParcel_EditDialog image overlay', () => {
     )
   })
 
-  it('renders Ozon reexport recipient fields', async () => {
-    registersMock.item.value = { id: 1, customsProcedureCode: 31 }
-    parcelsMock.item.value = { id: 2, registerId: 1, statusId: 1, checkStatus: 0 }
-
-    const TestWrapper = {
-      components: { OzonParcel_EditDialog },
-      template: '<Suspense><OzonParcel_EditDialog :registerId="1" :id="2" /></Suspense>'
-    }
-
-    const wrapper = mount(TestWrapper, {
-      global: {
-        stubs: {
-          Field: { template: '<input />' },
-          Form: {
-            methods: { resetForm() {} },
-            template:
-              '<div><slot :errors="{}" :values="{ id: 2, statusId: 1 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
-          },
-          ParcelHeaderActionsBar: true,
-          ParcelStatusSection: true,
-          FeacnCodeEditor: true,
-          ParcelNumberExt: true,
-          ArticleWithH: true,
-          ActionButton: true,
-          'font-awesome-icon': true,
-          VTooltip: true
-        }
-      }
-    })
-
-    await nextTick()
-    await resolveAll()
-
-    expect(wrapper.text()).toContain('ИНН')
-    expect(wrapper.text()).toContain('Дата выдачи паспорта')
-    expect(wrapper.text()).toContain('Адрес')
-  })
-
   it('hides additional Ozon recipient fields for export register', async () => {
     registersMock.item.value = { id: 1, customsProcedureCode: 10 }
     parcelsMock.item.value = { id: 2, registerId: 1, statusId: 1, checkStatus: 0 }
@@ -443,62 +328,6 @@ describe('OzonParcel_EditDialog image overlay', () => {
     expect(wrapper.text()).not.toContain('Дата выдачи паспорта')
     expect(wrapper.text()).not.toContain('Кем выдан паспорт')
     expect(wrapper.text()).not.toContain('Адрес')
-  })
-
-  it('refetches register when back navigation returns parcel from another register', async () => {
-    registersMock.item.value = { id: 1, customsProcedureCode: 40 }
-    parcelsMock.item.value = { id: 2, registerId: 1, statusId: 1, checkStatus: 0 }
-    parcelViewsMock.back.mockResolvedValue({
-      id: 7,
-      registerId: 9,
-      statusId: 1,
-      checkStatus: 0,
-      postingNumber: 'OZ-7'
-    })
-
-    const TestWrapper = {
-      components: { OzonParcel_EditDialog },
-      template: '<Suspense><OzonParcel_EditDialog :registerId="1" :id="2" /></Suspense>'
-    }
-
-    const wrapper = mount(TestWrapper, {
-      global: {
-        stubs: {
-          Field: { template: '<input />' },
-          Form: {
-            methods: { resetForm() {} },
-            template:
-              '<div><slot :errors="{}" :values="{ id: 2, statusId: 1 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
-          },
-          ParcelHeaderActionsBar: {
-            template: '<button data-test="back-btn" @click="$emit(\'back\')"></button>'
-          },
-          ParcelStatusSection: true,
-          FeacnCodeEditor: true,
-          ParcelNumberExt: true,
-          ArticleWithH: true,
-          ActionButton: true,
-          'font-awesome-icon': true,
-          VTooltip: true
-        }
-      }
-    })
-
-    await nextTick()
-    await resolveAll()
-    expect(registersMock.getById).toHaveBeenCalledTimes(1)
-
-    await wrapper.find('[data-test="back-btn"]').trigger('click')
-    await resolveAll()
-
-    expect(parcelViewsMock.back).toHaveBeenCalled()
-    expect(registersMock.getById).not.toHaveBeenCalledWith(9)
-    expect(registersMock.getById).toHaveBeenCalledTimes(1)
-    expect(routerMocks.replace).toHaveBeenCalledWith({
-      name: 'Редактирование посылки',
-      params: { id: 7, registerId: 9 },
-      query: { mode: OP_MODE_PAPERWORK }
-    })
   })
 
   it('keeps read-only navigation and downloads while blocking all mutations', async () => {

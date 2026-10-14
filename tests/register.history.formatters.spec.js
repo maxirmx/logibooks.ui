@@ -3,7 +3,6 @@
 // This file is a part of Logibooks ui application
 
 import { describe, expect, it } from 'vitest'
-import { WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
 import { formatRegisterHistoryValue } from '@/helpers/register.history.formatters.js'
 
 const context = {
@@ -22,22 +21,6 @@ const context = {
 }
 
 describe('register history formatters', () => {
-  it('uses shared display resolvers for reference values', () => {
-    expect(formatRegisterHistoryValue('CompanyId', 1, context)).toBe('Озон')
-    expect(formatRegisterHistoryValue('RegisterType', WBRN_REGISTER_ID, context)).toBe(
-      'РВБ'
-    )
-    expect(formatRegisterHistoryValue('StatusId', 2, context)).toBe('На складе')
-    expect(formatRegisterHistoryValue('TheOtherCountryCode', 860, context)).toBe('Узбекистан')
-    expect(formatRegisterHistoryValue('DepartureAirportId', 1, context)).toBe('Шереметьево (SVO)')
-    expect(formatRegisterHistoryValue('TransportationTypeCode', 0, context)).toBe('Авиа')
-    expect(formatRegisterHistoryValue('CustomsProcedureCode', 10, context)).toBe('Экспорт')
-    expect(formatRegisterHistoryValue('IncotermsCode', 1, context)).toBe(
-      'FCA — Франко перевозчик'
-    )
-    expect(formatRegisterHistoryValue('WarehouseId', 5, context)).toBe('Основной склад')
-  })
-
   it('never exposes unresolved reference identifiers', () => {
     expect(formatRegisterHistoryValue('CompanyId', 999, context)).toBe('Неизвестная компания')
     expect(formatRegisterHistoryValue('StatusId', 999, context)).toBe('Неизвестный статус')

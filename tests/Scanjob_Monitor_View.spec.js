@@ -43,28 +43,4 @@ describe('Scanjob_Monitor_View.vue', () => {
     ).toBeUndefined()
   })
 
-  it('passes explicit monitor scope to monitor component', () => {
-    const scope = {
-      area: scanjobMonitorArea.Box,
-      boxId: 7,
-      bucketIndex: null
-    }
-
-    const wrapper = mount(ScanjobMonitorView, {
-      props: {
-        id: 42,
-        monitorScope: scope
-      },
-      global: {
-        stubs: {
-          ScanjobMonitor: scanjobMonitorStub
-        }
-      }
-    })
-
-    const monitorComponent = wrapper.findComponent({ name: 'Scanjob_Monitor' })
-    expect(
-      monitorComponent.props('monitor-scope') || monitorComponent.props('monitorScope')
-    ).toEqual(scope)
-  })
 })

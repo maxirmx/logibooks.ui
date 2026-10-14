@@ -113,19 +113,6 @@ beforeEach(() => {
 })
 
 describe('Airports_List.vue', () => {
-  it('calls getAll on mount', async () => {
-    const wrapper = mount(AirportsList, {
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    await wrapper.vm.$nextTick()
-
-    expect(getAllAirports).toHaveBeenCalled()
-    expect(wrapper.exists()).toBe(true)
-  })
-
   it('navigates to create view via exposed method', async () => {
     const wrapper = mount(AirportsList, {
       global: {

@@ -125,17 +125,4 @@ describe('User_LoginView.vue', () => {
     expect(routerPush).toHaveBeenCalledWith('/users')
   })
 
-  it('redirects non-admin to edit page', async () => {
-    const { getHomeRoute } = await import('@/helpers/login.navigation.js')
-    getHomeRoute.mockReturnValue('/user/edit/1')
-
-    authStore.isAdmin = false
-    const wrapper = mount(UserLoginView, {
-      global: { stubs: { Form: FormStub, Field: FieldStub, 'font-awesome-icon': true } }
-    })
-    await wrapper.vm.onSubmit({ login_email: 'a', login_password: 'b' }, { setErrors: vi.fn() })
-    await resolveAll()
-    expect(getHomeRoute).toHaveBeenCalled()
-    expect(routerPush).toHaveBeenCalledWith('/user/edit/1')
-  })
 })

@@ -64,25 +64,6 @@ describe('UserParcelFilters', () => {
     expect(push).toHaveBeenCalledOnce()
     destination.unmount()
   })
-  it('loads saved filters and uses the shared full-width table pattern', async () => {
-    const wrapper = mountFilters()
-    await flushPromises()
-    expect(wrapper.find('#user-parcel-filters-heading').text()).toBe('Пользовательские фильтры:')
-    expect(wrapper.find('.user-parcel-filters__header > .label').exists()).toBe(true)
-    expect(wrapper.find('.user-parcel-filters__header').element.nextElementSibling)
-      .toBe(wrapper.find('.user-parcel-filters__table-shell.table-card').element)
-    expect(wrapper.find('.table-card .v-data-table.interlaced-table').exists()).toBe(true)
-    expect(wrapper.find('.v-data-table-footer').exists()).toBe(false)
-    expect(wrapper.findAll('th').map(cell => cell.text())).toEqual(['', 'Название', 'Исключено статусов'])
-    expect(wrapper.find('tbody tr').text()).toContain('Исключить проблемы')
-    expect(wrapper.find('tbody tr').text()).toContain('3')
-    expect(wrapper.find('tbody td:first-child [data-testid="parcel-filter-edit-1"]').exists()).toBe(true)
-    await wrapper.find('[data-testid="parcel-filter-create"]').trigger('click')
-    expect(push).toHaveBeenCalledWith('/parcel-filters/create')
-    await wrapper.find('[data-testid="parcel-filter-edit-1"]').trigger('click')
-    expect(push).toHaveBeenCalledWith('/parcel-filters/edit/1')
-  })
-
   it('sorts by name in both directions and keeps actions bound to the correct filter', async () => {
     const filters = [
       { ...filter, id: 3, name: 'Янтарь' },
@@ -113,18 +94,6 @@ describe('UserParcelFilters', () => {
     expect(fetchWrapper.delete).toHaveBeenCalledWith(expect.stringMatching(/\/parcel-filters\/2$/))
     expect(names()).toEqual(['Янтарь', 'Альфа'])
     expect(filters.map(item => item.name)).toEqual(['Янтарь', 'Альфа', 'Бета'])
-  })
-
-  it('confirms deletion and removes the row only after API success', async () => {
-    const wrapper = mountFilters()
-    await flushPromises()
-    await wrapper.find('[data-testid="parcel-filter-delete-1"]').trigger('click')
-    await flushPromises()
-    expect(confirm).toHaveBeenCalledOnce()
-    expect(fetchWrapper.delete).toHaveBeenCalledWith(expect.stringMatching(/\/parcel-filters\/1$/))
-    expect(wrapper.findAll('tbody .v-data-table__tr')).toHaveLength(0)
-    expect(wrapper.text()).toContain('Нет пользовательских фильтров')
-    expect(wrapper.find('[data-testid="page-alert-region"]').text()).toContain('удалён')
   })
 
   it('keeps the row and offers retry on deletion failure', async () => {

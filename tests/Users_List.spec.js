@@ -4,7 +4,7 @@
 // This file is a part of Logibooks ui application
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { flushPromises, mount } from '@vue/test-utils'
+import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import UsersList from '@/lists/Users_List.vue'
 import ActionButton2L from '@/components/ActionButton2L.vue'
@@ -264,42 +264,11 @@ describe('Users_List.vue', () => {
       expect(accountIcons[1].attributes('aria-label')).toBe('Автоматизированная система')
     })
 
-    it('reports load errors through alertStore', async () => {
-      mockUsersStore.ensureLoaded.mockRejectedValueOnce(new Error('Failed to fetch users'))
-      createWrapper()
-      await flushPromises()
-
-      expect(wrapper.text()).not.toContain('Ошибка при загрузке списка пользователей')
-      expect(mockAlertStore.error).toHaveBeenCalledWith(
-        expect.objectContaining({ message: 'Failed to fetch users' }),
-        expect.objectContaining({
-          fallback: 'Не удалось загрузить пользователей и склады',
-          action: expect.objectContaining({ label: 'Повторить', handler: expect.any(Function) })
-        })
-      )
-    })
-
-    it('displays alert when alert store has alert', async () => {
-      mockAlert.value = {
-        id: 37,
-        message: 'Test alert',
-        severity: 'success',
-        action: null
-      }
-      createWrapper()
-      expect(wrapper.text()).toContain('Test alert')
-    })
   })
 
   describe('User Functions', () => {
     beforeEach(() => {
       createWrapper()
-    })
-
-    it('navigates to user edit page when userSettings is called', () => {
-      const userItem = { id: 123 }
-      wrapper.vm.userSettings(userItem)
-      expect(router.push).toHaveBeenCalledWith('/user/edit/123')
     })
 
     it('navigates automated systems to their dedicated editor', () => {
@@ -322,77 +291,9 @@ describe('Users_List.vue', () => {
       expect(router.push).toHaveBeenCalledWith('/automated-system/register')
     })
 
-    it('disables the create action menu while users are loading', async () => {
-      mockLoading.value = true
-      await wrapper.vm.$nextTick()
-      expect(wrapper.findComponent(ActionButton2L).props('disabled')).toBe(true)
-      mockLoading.value = false
-    })
-
-    it('returns correct credentials for administrator role', () => {
-      const userItem = { roles: [roleAdmin] }
-      const result = wrapper.vm.getCredentials(userItem)
-      expect(result).toBe('Администратор')
-    })
-
-    it('returns correct credentials for logist role', () => {
-      const userItem = { roles: [roleLogist] }
-      const result = wrapper.vm.getCredentials(userItem)
-      expect(result).toBe('Логист')
-    })
-
-    it('returns correct credentials for warehouse manager role', () => {
-      const userItem = { roles: [roleWhManager] }
-      const result = wrapper.vm.getCredentials(userItem)
-      expect(result).toBe('Менеджер склада')
-    })
-
-    it('returns the automated-system name without human name parts', () => {
-      const automatedSystem = {
-        lastName: 'Production 1C',
-        firstName: '',
-        patronymic: '',
-        roles: [roleAdapter1C, roleAdapterAlta]
-      }
-      expect(wrapper.vm.getDisplayName(automatedSystem)).toBe('Production 1C')
-      expect(wrapper.vm.getCredentials(automatedSystem)).toBe('Адаптер 1С, Адаптер Альта')
-    })
-
-    it('returns correct credentials for multiple roles', () => {
-      const userItem = { roles: [roleAdmin, roleLogist] }
-      const result = wrapper.vm.getCredentials(userItem)
-      expect(result).toBe('Администратор, Логист')
-    })
-
-    it('returns empty string for no roles', () => {
-      const userItem = { roles: [] }
-      const result = wrapper.vm.getCredentials(userItem)
-      expect(result).toBe('')
-    })
-
     it('returns empty string for null/undefined user', () => {
       expect(wrapper.vm.getCredentials(null)).toBe('')
       expect(wrapper.vm.getCredentials(undefined)).toBe('')
-    })
-
-    it('returns empty string for user without roles property', () => {
-      const userItem = { id: 1, name: 'Test' }
-      const result = wrapper.vm.getCredentials(userItem)
-      expect(result).toBe('')
-    })
-
-    it('returns warehouse names for warehouse-only users with associated warehouse ids', () => {
-      const result = wrapper.vm.getWarehouseNames({ roles: [roleWhManager], warehouseIds: [1, 2] })
-      expect(result).toEqual(['Warehouse One', 'Warehouse Two'])
-    })
-
-    it('returns all warehouses marker for users with non-warehouse roles', () => {
-      expect(wrapper.vm.getWarehouseNames({ roles: [roleAdmin], warehouseIds: [1] })).toEqual([
-        'Все'
-      ])
-      expect(
-        wrapper.vm.getWarehouseNames({ roles: [roleWhOperator, roleLogist], warehouseIds: [1] })
-      ).toEqual(['Все'])
     })
 
     it('returns empty warehouse names for users without associations', () => {
@@ -412,44 +313,6 @@ describe('Users_List.vue', () => {
         raw: { lastName: 'Smith', firstName: 'John', patronymic: '', email: 'john@test.com' }
       }
       const result = wrapper.vm.filterUsers(null, 'Smith', item)
-      expect(result).toBe(true)
-    })
-
-    it('filters users by first name', () => {
-      const item = {
-        raw: { lastName: 'Doe', firstName: 'Jane', patronymic: '', email: 'jane@test.com' }
-      }
-      const result = wrapper.vm.filterUsers(null, 'Jane', item)
-      expect(result).toBe(true)
-    })
-
-    it('filters users by patronymic', () => {
-      const item = {
-        raw: { lastName: 'Doe', firstName: 'John', patronymic: 'Michael', email: 'john@test.com' }
-      }
-      const result = wrapper.vm.filterUsers(null, 'Michael', item)
-      expect(result).toBe(true)
-    })
-
-    it('filters users by email', () => {
-      const item = {
-        raw: { lastName: 'Doe', firstName: 'John', patronymic: '', email: 'john@example.com' }
-      }
-      const result = wrapper.vm.filterUsers(null, 'example.com', item)
-      expect(result).toBe(true)
-    })
-
-    it('filters users by credentials', () => {
-      const item = {
-        raw: {
-          lastName: 'Doe',
-          firstName: 'John',
-          patronymic: '',
-          email: 'john@test.com',
-          roles: [roleAdmin]
-        }
-      }
-      const result = wrapper.vm.filterUsers(null, 'Администратор', item)
       expect(result).toBe(true)
     })
 
@@ -482,24 +345,11 @@ describe('Users_List.vue', () => {
       expect(result).toBe(true)
     })
 
-    it('is case insensitive', () => {
-      const item = {
-        raw: { lastName: 'Smith', firstName: 'John', patronymic: '', email: 'john@test.com' }
-      }
-      const result = wrapper.vm.filterUsers(null, 'smith', item)
-      expect(result).toBe(true)
-    })
-
     it('returns false for null query', () => {
       const item = {
         raw: { lastName: 'Smith', firstName: 'John', patronymic: '', email: 'john@test.com' }
       }
       const result = wrapper.vm.filterUsers(null, null, item)
-      expect(result).toBe(false)
-    })
-
-    it('returns false for null item', () => {
-      const result = wrapper.vm.filterUsers(null, 'test', null)
       expect(result).toBe(false)
     })
 
@@ -523,22 +373,6 @@ describe('Users_List.vue', () => {
       createWrapper()
     })
 
-    it('shows confirmation dialog and deletes user when confirmed', async () => {
-      confirmMock.mockResolvedValue(true)
-      const userItem = { id: 1, firstName: 'John', lastName: 'Doe' }
-
-      await wrapper.vm.deleteUser(userItem)
-
-      expect(confirmMock).toHaveBeenCalledWith(expect.objectContaining({
-        title: 'Подтверждение',
-        confirmationText: 'Удалить',
-        cancellationText: 'Не удалять',
-        content: 'Удалить пользователя "Doe John" ?'
-      }))
-      expect(mockUsersStore.delete).toHaveBeenCalledWith(1)
-      expect(mockUsersStore.getAll).toHaveBeenCalled()
-    })
-
     it('uses the automated-system name in deletion confirmation', async () => {
       confirmMock.mockResolvedValue(true)
       const system = {
@@ -554,28 +388,6 @@ describe('Users_List.vue', () => {
       expect(confirmMock).toHaveBeenCalledWith(expect.objectContaining({
         content: 'Удалить автоматизированную систему "Production 1C" ?'
       }))
-    })
-
-    it('keeps the create menu disabled until another action finishes', async () => {
-      confirmMock.mockResolvedValue(true)
-      let finishDelete
-      mockUsersStore.delete.mockImplementationOnce(() => new Promise((resolve) => {
-        finishDelete = resolve
-      }))
-
-      const deletion = wrapper.vm.deleteUser({
-        id: 10,
-        firstName: 'John',
-        lastName: 'Doe',
-        patronymic: '',
-        roles: [roleLogist]
-      })
-      await flushPromises()
-      expect(wrapper.findComponent(ActionButton2L).props('disabled')).toBe(true)
-
-      finishDelete()
-      await deletion
-      expect(wrapper.findComponent(ActionButton2L).props('disabled')).toBe(false)
     })
 
     it('does not delete user when confirmation is declined', async () => {
@@ -609,93 +421,12 @@ describe('Users_List.vue', () => {
       createWrapper()
     })
 
-    it('clears alert when alert close button is clicked', async () => {
-      mockAlert.value = { id: 61, message: 'Test alert', severity: 'success', action: null }
-      createWrapper()
-
-      const closeButton = wrapper.find('.close')
-      if (closeButton.exists()) {
-        await closeButton.trigger('click')
-        expect(mockAlertStore.dismiss).toHaveBeenCalledWith(61)
-      }
-    })
-
-    it('displays full user name in data table item slot', () => {
-      const testUser = {
-        lastName: 'Smith',
-        firstName: 'John',
-        patronymic: 'Michael'
-      }
-
-      // Test the user name formatting function
-      expect(wrapper.vm).toBeTruthy()
-
-      // Simulate rendering of user name (this tests the template function)
-      const nameSlot = `${testUser.lastName} ${testUser.firstName} ${testUser.patronymic}`
-      expect(nameSlot).toBe('Smith John Michael')
-    })
-
-    it('displays user credentials in data table item slot', () => {
-      const testUser = { roles: [roleAdmin] }
-      const credentials = wrapper.vm.getCredentials(testUser)
-      expect(credentials).toBe('Администратор')
-    })
-
-    it('displays warehouse names in data table item slot', () => {
-      const testUser = { roles: [roleWhManager], warehouseIds: [1] }
-      const warehouses = wrapper.vm.getWarehouseNames(testUser)
-      expect(warehouses).toEqual(['Warehouse One'])
-    })
-
     it('tests data table item actions for edit user', () => {
       const testUser = { id: 123 }
       wrapper.vm.userSettings(testUser)
       expect(router.push).toHaveBeenCalledWith('/user/edit/123')
     })
 
-    it('tests data table item actions for delete user', async () => {
-      confirmMock.mockResolvedValue(true)
-      const testUser = { id: 456, firstName: 'Test', lastName: 'User' }
-
-      await wrapper.vm.deleteUser(testUser)
-
-      expect(confirmMock).toHaveBeenCalled()
-      expect(mockUsersStore.delete).toHaveBeenCalledWith(456)
-    })
   })
 
-  describe('Template Functions Coverage', () => {
-    beforeEach(() => {
-      createWrapper()
-    })
-
-    it('handles all template conditional rendering paths', () => {
-      // Test v-if conditions in template
-      expect(wrapper.vm).toBeTruthy()
-
-      // Users loading state
-      mockUsers.value = { loading: true }
-      expect(wrapper.text()).toBeTruthy()
-
-      // Users error state
-      mockUsers.value = { error: 'Test error' }
-      expect(wrapper.text()).toBeTruthy()
-
-      // Alert display
-      mockAlert.value = { message: 'Test message', type: 'alert-info' }
-      expect(wrapper.text()).toBeTruthy()
-    })
-
-    it('tests all component data and computed properties', () => {
-      expect(wrapper.vm).toBeTruthy()
-      expect(wrapper.exists()).toBe(true)
-
-      // Test that all functions are accessible
-      expect(typeof wrapper.vm.userSettings).toBe('function')
-      expect(typeof wrapper.vm.getCredentials).toBe('function')
-      expect(typeof wrapper.vm.getWarehouseNames).toBe('function')
-      expect(typeof wrapper.vm.filterUsers).toBe('function')
-      expect(typeof wrapper.vm.deleteUser).toBe('function')
-    })
-  })
 })

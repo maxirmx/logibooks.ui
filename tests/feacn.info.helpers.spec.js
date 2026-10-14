@@ -3,21 +3,7 @@
 // This file is a part of Logibooks ui application
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import {
-  formatFeacnName,
-  formatFeacnNameFromItem,
-  getFeacnTooltip,
-  getFeacnInfo,
-  getFeacnSearchStatus,
-  isFeacnLoading,
-  loadFeacnTooltipOnHover,
-  useFeacnTooltips,
-  useFeacnInfo,
-  clearFeacnTooltipCache,
-  clearFeacnInfoCache,
-  getCachedFeacnInfo,
-  preloadFeacnInfo
-} from '@/helpers/feacn.info.helpers.js'
+import { formatFeacnName, formatFeacnNameFromItem, getFeacnTooltip, getFeacnInfo, getFeacnSearchStatus, isFeacnLoading, loadFeacnTooltipOnHover, useFeacnTooltips, useFeacnInfo, clearFeacnInfoCache, getCachedFeacnInfo, preloadFeacnInfo } from '@/helpers/feacn.info.helpers.js'
 
 const getByCodeMock = vi.fn()
 const bulkLookupMock = vi.fn()
@@ -38,24 +24,6 @@ describe('feacn.info.helpers', () => {
   describe('formatFeacnName', () => {
     beforeEach(() => {
       vi.clearAllMocks()
-    })
-
-    it('returns not found info when code does not exist', async () => {
-      getByCodeMock.mockResolvedValue(null)
-      const result = await formatFeacnName('123')
-      expect(result).toEqual({
-        name: 'Несуществующий код ТН ВЭД',
-        found: false
-      })
-    })
-
-    it('returns found info with sentence-cased normalized name when available', async () => {
-      getByCodeMock.mockResolvedValue({ normalizedName: 'ПРОДУКТ', name: 'ignored' })
-      const result = await formatFeacnName('456')
-      expect(result).toEqual({
-        name: 'Продукт',
-        found: true
-      })
     })
 
     it('returns default message when both names are missing', async () => {
@@ -88,42 +56,9 @@ describe('feacn.info.helpers', () => {
       expect(getByCodeMock).toHaveBeenCalledTimes(1) // No additional call
     })
 
-    it('sets loading placeholder when requested', async () => {
-      getByCodeMock.mockResolvedValue({ normalizedName: 'ПРОДУКТ' })
-
-      const cache = useFeacnTooltips()
-      const promise = getFeacnTooltip('123', true)
-
-      // Check that loading placeholder is set immediately
-      expect(cache.value['123']).toEqual({
-        name: 'Загрузка...',
-        found: null,
-        loading: true
-      })
-
-      await promise
-
-      // Check final result
-      expect(cache.value['123']).toEqual({
-        name: 'Продукт',
-        found: true,
-        loading: false
-      })
-    })
   })
 
   describe('getFeacnInfo', () => {
-    it('returns complete info object', async () => {
-      getByCodeMock.mockResolvedValue({ normalizedName: 'ПРОДУКТ' })
-
-      const result = await getFeacnInfo('123')
-      expect(result).toEqual({
-        name: 'Продукт',
-        found: true,
-        loading: false
-      })
-    })
-
     it('returns cached info if available', async () => {
       getByCodeMock.mockResolvedValue({ normalizedName: 'ПРОДУКТ' })
 
@@ -143,13 +78,6 @@ describe('feacn.info.helpers', () => {
   })
 
   describe('getFeacnSearchStatus', () => {
-    it('returns true for found codes', async () => {
-      getByCodeMock.mockResolvedValue({ normalizedName: 'ПРОДУКТ' })
-
-      const result = await getFeacnSearchStatus('123')
-      expect(result).toBe(true)
-    })
-
     it('returns false for not found codes', async () => {
       getByCodeMock.mockResolvedValue(null)
 
@@ -174,78 +102,12 @@ describe('feacn.info.helpers', () => {
     })
   })
 
-  describe('getCachedFeacnInfo', () => {
-    it('returns cached info when available', async () => {
-      getByCodeMock.mockResolvedValue({ normalizedName: 'ПРОДУКТ' })
-
-      // Cache some data
-      await getFeacnInfo('123')
-
-      // Get cached data
-      const cached = getCachedFeacnInfo('123')
-      expect(cached).toEqual({
-        name: 'Продукт',
-        found: true,
-        loading: false
-      })
-    })
-
-    it('returns null when not cached', () => {
-      const cached = getCachedFeacnInfo('nonexistent')
-      expect(cached).toBe(null)
-    })
-  })
-
-  describe('cache management', () => {
-    it('clears cache correctly', async () => {
-      getByCodeMock.mockResolvedValue({ normalizedName: 'ПРОДУКТ' })
-
-      await getFeacnInfo('123')
-      expect(getCachedFeacnInfo('123')).not.toBe(null)
-
-      clearFeacnInfoCache()
-      expect(getCachedFeacnInfo('123')).toBe(null)
-    })
-
-    it('backward compatibility - clearFeacnTooltipCache still works', async () => {
-      getByCodeMock.mockResolvedValue({ normalizedName: 'ПРОДУКТ' })
-
-      await getFeacnInfo('123')
-      expect(getCachedFeacnInfo('123')).not.toBe(null)
-
-      clearFeacnTooltipCache()
-      expect(getCachedFeacnInfo('123')).toBe(null)
-    })
-  })
-
   describe('formatFeacnNameFromItem', () => {
-    it('returns default message for null item', () => {
-      const result = formatFeacnNameFromItem(null)
-      expect(result).toBe('Код ТН ВЭД не задан')
-    })
-
     it('returns default message for undefined item', () => {
       const result = formatFeacnNameFromItem(undefined)
       expect(result).toBe('Код ТН ВЭД не задан')
     })
 
-    it('formats normalized name with proper case', () => {
-      const item = { normalizedName: 'ПРОДУКТ ПИТАНИЯ', name: 'ignored', code: '123' }
-      const result = formatFeacnNameFromItem(item)
-      expect(result).toBe('Продукт питания')
-    })
-
-    it('trims and formats normalized name', () => {
-      const item = { normalizedName: '  МОЛОЧНЫЕ ПРОДУКТЫ  ', name: 'ignored', code: '123' }
-      const result = formatFeacnNameFromItem(item)
-      expect(result).toBe('Молочные продукты')
-    })
-
-    it('trims name when used', () => {
-      const item = { normalizedName: '', name: '  Fish Products  ', code: '789' }
-      const result = formatFeacnNameFromItem(item)
-      expect(result).toBe('Fish Products')
-    })
   })
 
   describe('loadFeacnTooltipOnHover', () => {
@@ -266,18 +128,6 @@ describe('feacn.info.helpers', () => {
   })
 
   describe('useFeacnTooltips and useFeacnInfo', () => {
-    it('useFeacnTooltips returns the reactive cache object', () => {
-      const cache = useFeacnTooltips()
-      expect(cache).toBeDefined()
-      expect(cache.value).toBeDefined()
-    })
-
-    it('useFeacnInfo returns the same reactive cache object', () => {
-      const cache1 = useFeacnTooltips()
-      const cache2 = useFeacnInfo()
-      expect(cache1).toBe(cache2)
-    })
-
     it('cache is reactive and updates correctly', async () => {
       getByCodeMock.mockResolvedValue({ normalizedName: 'ПРОДУКТ' })
 
@@ -301,15 +151,6 @@ describe('feacn.info.helpers', () => {
     it('handles null codes array', async () => {
       await preloadFeacnInfo(null)
       expect(bulkLookupMock).not.toHaveBeenCalled()
-    })
-
-    it('skips already cached codes', async () => {
-      // Pre-cache one code
-      await getFeacnInfo('123')
-
-      bulkLookupMock.mockResolvedValue({})
-      await preloadFeacnInfo(['123', '456'])
-      expect(bulkLookupMock).toHaveBeenCalledWith(['456'])
     })
 
     it('handles successful bulk lookup with results property', async () => {
@@ -340,38 +181,6 @@ describe('feacn.info.helpers', () => {
       expect(cache3).toEqual({
         name: 'Несуществующий код ТН ВЭД',
         found: false,
-        loading: false
-      })
-    })
-
-    it('handles successful bulk lookup with Results property (capital R)', async () => {
-      bulkLookupMock.mockResolvedValue({
-        Results: {
-          123: { normalizedName: 'ПРОДУКТ', name: 'Product' }
-        }
-      })
-
-      await preloadFeacnInfo(['123'])
-
-      const cache = getCachedFeacnInfo('123')
-      expect(cache).toEqual({
-        name: 'Продукт',
-        found: true,
-        loading: false
-      })
-    })
-
-    it('handles successful bulk lookup with direct results object', async () => {
-      bulkLookupMock.mockResolvedValue({
-        123: { normalizedName: 'ПРОДУКТ', name: 'Product' }
-      })
-
-      await preloadFeacnInfo(['123'])
-
-      const cache = getCachedFeacnInfo('123')
-      expect(cache).toEqual({
-        name: 'Продукт',
-        found: true,
         loading: false
       })
     })

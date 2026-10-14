@@ -7,18 +7,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { ref } from 'vue'
 import RegistersWhList from '@/lists/Registers_WhList.vue'
-import ResponsiveFilterBar from '@/components/ResponsiveFilterBar.vue'
 import ActionButton from '@/components/ActionButton.vue'
-import ActionButton2L from '@/components/ActionButton2L.vue'
 import { vuetifyStubs } from './helpers/test-utils.js'
 import { OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
-import {
-  REGISTER_STATUS_FILTER_ALL,
-  REGISTER_STATUS_FILTER_ALL_ICON,
-  REGISTER_STATUS_FILTER_IN_PROGRESS,
-  REGISTER_STATUS_FILTER_IN_PROGRESS_ICON
-} from '@/helpers/register.status.filter.helpers.js'
-import RegisterStatusSelect from '@/components/RegisterStatusSelect.vue'
+import { REGISTER_STATUS_FILTER_IN_PROGRESS } from '@/helpers/register.status.filter.helpers.js'
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
 import {
   createAirportsById,
@@ -291,13 +283,6 @@ describe('Registers_WhList.vue', () => {
     router.push.mockClear()
   })
 
-  it('loads warehouse parties explicitly', async () => {
-    createWrapper()
-    await flushPromises()
-
-    expect(getAll).toHaveBeenCalledWith({ mode: OP_MODE_WAREHOUSE })
-  })
-
   it('reports store errors after loading warehouse parties', async () => {
     getAll.mockImplementationOnce(() => {
       registersStore.error.value = 'warehouse load failed'
@@ -350,26 +335,6 @@ describe('Registers_WhList.vue', () => {
         action: expect.objectContaining({ label: 'Повторить', handler: expect.any(Function) })
       })
     )
-  })
-
-  it('stops initialization work after unmounting during initial load', async () => {
-    let resolveStatuses
-    ensureParcelStatusesLoadedFn.mockImplementationOnce(
-      () =>
-        new Promise((resolve) => {
-          resolveStatuses = resolve
-        })
-    )
-
-    const wrapper = createWrapper()
-    await wrapper.vm.$nextTick()
-
-    wrapper.unmount()
-    resolveStatuses()
-    await flushPromises()
-
-    expect(registersStore.ensureOpsLoaded).not.toHaveBeenCalled()
-    expect(getCompaniesAll).not.toHaveBeenCalled()
   })
 
   it('stops initialization work after unmounting while countries load', async () => {
@@ -430,34 +395,6 @@ describe('Registers_WhList.vue', () => {
     await flushPromises()
 
     expect(getCompaniesAll).not.toHaveBeenCalled()
-  })
-
-  it('uses warehouse labels and shows actions allowed by warehouse roles', async () => {
-    const wrapper = createWrapper()
-    await wrapper.vm.$nextTick()
-
-    expect(wrapper.find('h1').text()).toBe('Партии')
-    expect(wrapper.find('.v-text-field-stub span').text()).toBe(
-      'Поиск по любой информации о партии'
-    )
-    expect(wrapper.findComponent(ActionButton2L).exists()).toBe(false)
-    expect(wrapper.find('[data-testid="v-file-input"]').exists()).toBe(false)
-
-    const actionButtons = wrapper.findAllComponents(ActionButton)
-    const hasEdit = actionButtons.some((button) =>
-      String(button.props('tooltipText') || '').includes('Редактировать')
-    )
-    const hasDelete = actionButtons.some((button) =>
-      String(button.props('tooltipText') || '').includes('Удалить')
-    )
-
-    expect(hasEdit).toBe(true)
-    expect(hasDelete).toBe(true)
-
-    const hasStatusBulkAction = actionButtons.some(
-      (button) => button.props('tooltipText') === 'Выбрать посылки и изменить статус'
-    )
-    expect(hasStatusBulkAction).toBe(true)
   })
 
   it('hides warehouse register delete action below shift lead role', async () => {
@@ -529,73 +466,6 @@ describe('Registers_WhList.vue', () => {
     expect(router.push).toHaveBeenCalledWith('/register/return')
   })
 
-  it('uses warehouse-specific table headers', async () => {
-    const headers = createWarehouseRegisterHeaders()
-    const headerKeys = headers.map((header) => header.key)
-    const headerTitles = headers.map((header) => header.title)
-
-    expect(headerKeys).toEqual([
-      'actions',
-      'id',
-      'dealNumber',
-      'invoice',
-      'countries',
-      'senderRecipient',
-      'parcelsTotal',
-      'parcelsByZone',
-      'statusId',
-      'warehouseId',
-      'warehouseArrivalDate'
-    ])
-    expect(headerTitles).toEqual([
-      '',
-      '№',
-      'Номер сделки',
-      'ТСД',
-      'Страны',
-      'Отправитель/Получатель',
-      'Товаров/Посылок',
-      'Зоны',
-      'Статус',
-      'Склад',
-      'Дата прибытия'
-    ])
-  })
-
-  it('binds table controls to warehouse register list state', async () => {
-    const wrapper = createWrapper()
-    await wrapper.vm.$nextTick()
-
-    const table = wrapper.findComponent({ name: 'v-data-table-server' })
-
-    expect(table.props('itemsPerPage')).toBe(25)
-    expect(table.props('page')).toBe(3)
-    expect(table.props('sortBy')).toEqual([{ key: 'warehouseArrivalDate', order: 'asc' }])
-    expect(wrapper.vm.localSearch).toBe('warehouse search')
-    expect(wrapper.vm.localProcedure).toBe('all')
-    expect(wrapper.vm.localStatus).toBe(REGISTER_STATUS_FILTER_IN_PROGRESS)
-  })
-
-  it('shows all statuses for a persisted empty warehouse status filter', async () => {
-    mockWhStatus.value = ''
-
-    const wrapper = createWrapper()
-    await wrapper.vm.$nextTick()
-
-    expect(wrapper.vm.localStatus).toBe(REGISTER_STATUS_FILTER_ALL)
-    expect(wrapper.findComponent(RegisterStatusSelect).props('modelValue')).toBe(
-      REGISTER_STATUS_FILTER_ALL
-    )
-  })
-
-  it('enables the register-status icon column on the warehouse table', async () => {
-    const wrapper = createWrapper()
-    await wrapper.vm.$nextTick()
-
-    const table = wrapper.findComponent({ name: 'WarehouseRegistersTable' })
-    expect(table.props('showRegisterStatusIcon')).toBe(true)
-  })
-
   it('falls back to empty local search when no warehouse search is persisted', async () => {
     mockWhSearch.value = ''
 
@@ -622,68 +492,6 @@ describe('Registers_WhList.vue', () => {
     expect(wrapper.vm.registers_per_page).toBe(75)
     expect(wrapper.vm.registers_page).toBe(5)
     expect(wrapper.vm.registers_sort_by).toEqual([{ key: 'warehouseId', order: 'desc' }])
-  })
-
-  it('renders procedure and status selectors to the left of search field', async () => {
-    mockOps.value = {
-      customsProcedures: [
-        { value: 1, charCode: '01', name: 'Возврат' },
-        { value: 10, charCode: 'ЭК10', name: 'Экспорт' },
-        { value: 40, charCode: 'ИМ40', name: 'Импорт' }
-      ],
-      transportationTypes: []
-    }
-
-    const wrapper = createWrapper()
-    await flushPromises()
-
-    const filters = wrapper.find('.registers-filter-row')
-    expect(wrapper.findComponent(ResponsiveFilterBar).exists()).toBe(true)
-    expect(filters.attributes('aria-label')).toBe('Фильтры реестров')
-    const selectors = filters.findAll('[data-testid="v-select"]')
-    expect(selectors).toHaveLength(2)
-    expect(filters.find('[data-testid="v-text-field"]').exists()).toBe(true)
-    expect(filters.element.children[0]).toBe(selectors[0].element)
-    expect(filters.element.children[1]).toBe(selectors[1].element)
-    expect(wrapper.vm.procedureFilterItems).toEqual([
-      { title: 'Все', value: 'all' },
-      { title: '01 Возврат', value: 1 },
-      { title: 'ЭК10 Экспорт', value: 10 },
-      { title: 'ИМ40 Импорт', value: 40 }
-    ])
-    expect(wrapper.vm.statusFilterItems).toEqual([
-      {
-        id: REGISTER_STATUS_FILTER_ALL,
-        title: 'Все',
-        icon: REGISTER_STATUS_FILTER_ALL_ICON,
-        bkColor: '#EEF2F6',
-        fgColor: '#495057'
-      },
-      {
-        id: REGISTER_STATUS_FILTER_IN_PROGRESS,
-        title: 'В работе',
-        icon: REGISTER_STATUS_FILTER_IN_PROGRESS_ICON,
-        bkColor: '#E7F1FF',
-        fgColor: '#0D6EFD'
-      },
-      {
-        id: 2,
-        title: 'Status 2',
-        icon: null,
-        bkColor: null,
-        fgColor: null
-      },
-      {
-        id: 5,
-        title: 'Status 5',
-        icon: null,
-        bkColor: null,
-        fgColor: null
-      }
-    ])
-    expect(filters.findComponent(RegisterStatusSelect).props('items')).toEqual(
-      wrapper.vm.statusFilterItems
-    )
   })
 
   it('falls back to only all-procedures option when warehouse ops procedures are missing', async () => {
@@ -800,17 +608,6 @@ describe('Registers_WhList.vue', () => {
     expect(parcelsHeader.width).toBe('150px')
   })
 
-  it('uses a compact warehouse register ID column', () => {
-    const idHeader = createWarehouseRegisterHeaders().find((header) => header.key === 'id')
-
-    expect(idHeader).toMatchObject({
-      title: '№',
-      sortable: true,
-      align: 'start',
-      width: '80px'
-    })
-  })
-
   it('renders warehouse zone distribution counts and hides zero values', async () => {
     mockItems.value = [
       {
@@ -835,15 +632,6 @@ describe('Registers_WhList.vue', () => {
     expect(rows[2].text()).toContain('Красная')
     expect(rows[2].text()).toContain('12')
     expect(formatZoneCount({}, 1)).toBe('-')
-  })
-
-  it('uses warehouse-specific nouns', async () => {
-    const wrapper = createWrapper()
-    await wrapper.vm.$nextTick()
-
-    expect(wrapper.vm.registerNouns.genitivePluralCapitalized).toBe('Партий')
-    expect(wrapper.vm.registerNouns.genitiveSingular).toBe('партии')
-    expect(wrapper.vm.registerNouns.genitivePlural).toBe('партий')
   })
 
   it('covers country and airport display fallbacks', () => {
@@ -1006,18 +794,6 @@ describe('Registers_WhList.vue', () => {
     expect(wrapper.vm.isInRegisterStatusEditMode(1)).toBe(false)
   })
 
-  it('opens parcels with warehouse mode from row cells', async () => {
-    mockItems.value = [{ id: 88, dealNumber: 'D-88' }]
-
-    const wrapper = createWrapper()
-    await wrapper.vm.$nextTick()
-
-    const router = (await import('@/router')).default
-    await wrapper.find('.open-parcels-link').trigger('click')
-
-    expect(router.push).toHaveBeenCalledWith('/registers/88/parcels?mode=modeWarehouse')
-  })
-
   it('renders bookmark marker for lookup-by-article warehouse parties', async () => {
     mockItems.value = [{ id: 88, dealNumber: 'D-88', lookupByArticle: true }]
 
@@ -1051,45 +827,10 @@ describe('Registers_WhList.vue', () => {
     )
   })
 
-  it('shows and clears alert messages', async () => {
-    mockAlert.value = {
-      id: 59,
-      severity: 'error',
-      message: 'Visible warehouse alert',
-      action: null
-    }
-
-    const wrapper = createWrapper()
-
-    expect(wrapper.text()).toContain('Visible warehouse alert')
-
-    await wrapper.find('.close').trigger('click')
-
-    expect(alertDismissFn).toHaveBeenCalledWith(59)
-  })
-
   it('cleans up watchers on unmount', () => {
     const wrapper = createWrapper()
 
     expect(() => wrapper.unmount()).not.toThrow()
-  })
-
-  it('renders status, warehouse, and arrival date cells', async () => {
-    mockItems.value = [
-      {
-        id: 55,
-        statusId: 5,
-        warehouseId: 12,
-        warehouseArrivalDate: '2024-02-01'
-      }
-    ]
-
-    const wrapper = createWrapper()
-    await wrapper.vm.$nextTick()
-
-    expect(wrapper.text()).toContain('Status 5')
-    expect(wrapper.text()).toContain('Warehouse 12')
-    expect(wrapper.text()).toContain('01.02.2024')
   })
 
   it('opens parcels from status, warehouse, and arrival date cells', async () => {

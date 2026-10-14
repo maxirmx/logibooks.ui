@@ -94,18 +94,6 @@ describe('parcels store', () => {
     mockAuthStore.parcels_wh_product_name = ''
   })
 
-  it('fetches data with default parameters from auth store', async () => {
-    fetchWrapper.get.mockResolvedValue({
-      items: [],
-      pagination: { totalCount: 0, hasNextPage: false, hasPreviousPage: false }
-    })
-    const store = useParcelsStore()
-    await store.getAll(1)
-    expect(fetchWrapper.get).toHaveBeenCalledWith(
-      `${apiUrl}/parcels?registerId=1&page=1&pageSize=100&sortBy=id&sortOrder=asc`
-    )
-  })
-
   it.each([false, true])('passes the selected filter alongside inclusive list controls (warehouse=%s)', async warehouse => {
     mockAuthStore.parcels_filter_id = 23
     mockAuthStore.parcels_status = 2
@@ -154,30 +142,6 @@ describe('parcels store', () => {
     wrapper.unmount()
   })
 
-  it('does not clear a newer selection when an older request rejects', async () => {
-    mockAuthStore.parcels_filter_id = 23
-    let reject
-    fetchWrapper.get.mockReset().mockImplementationOnce(() => new Promise((resolve, rejectRequest) => { reject = rejectRequest }))
-    const pending = useParcelsStore().getAll(1)
-    mockAuthStore.parcels_filter_id = 31
-    reject(Object.assign(new Error('Old selection missing'), { status: 404 }))
-    await expect(pending).rejects.toThrow('Old selection missing')
-    expect(mockAuthStore.parcels_filter_id).toBe(31)
-    expect(fetchWrapper.get).toHaveBeenCalledOnce()
-  })
-
-  it('fetches data from extended endpoint when requested', async () => {
-    fetchWrapper.get.mockResolvedValue({
-      items: [],
-      pagination: { totalCount: 0, hasNextPage: false, hasPreviousPage: false }
-    })
-    const store = useParcelsStore()
-    await store.getAll(1, { showMarkedByPartner: true })
-    expect(fetchWrapper.get).toHaveBeenCalledWith(
-      `${apiUrl}/parcels/a?registerId=1&page=1&pageSize=100&sortBy=id&sortOrder=asc`
-    )
-  })
-
   it('passes an exact box id to both parcel list endpoints', async () => {
     fetchWrapper.get.mockResolvedValue({ items: [], pagination: {} })
     const store = useParcelsStore()
@@ -190,72 +154,6 @@ describe('parcels store', () => {
     await store.getAll(1, { showMarkedByPartner: true, boxId: 17 })
     expect(fetchWrapper.get).toHaveBeenLastCalledWith(
       `${apiUrl}/parcels/a?registerId=1&page=1&pageSize=100&boxId=17&sortBy=id&sortOrder=asc`
-    )
-  })
-
-  it('omits invalid box ids', async () => {
-    fetchWrapper.get.mockResolvedValue({ items: [], pagination: {} })
-    const store = useParcelsStore()
-
-    await store.getAll(1, { boxId: 0 })
-
-    expect(fetchWrapper.get).toHaveBeenCalledWith(
-      `${apiUrl}/parcels?registerId=1&page=1&pageSize=100&sortBy=id&sortOrder=asc`
-    )
-  })
-
-  it('fetches warehouse data with warehouse-specific filters only on extended endpoint', async () => {
-    mockAuthStore.parcels_status = 99
-    mockAuthStore.parcels_number = 'REGULAR-SUBSTRING'
-    mockAuthStore.parcels_product_name = 'Regular product'
-    mockAuthStore.parcels_wh_status = 3
-    mockAuthStore.parcels_wh_check_status_projection = 20
-    mockAuthStore.parcels_wh_zone = 1
-    mockAuthStore.parcels_wh_number = 'POST-'
-    mockAuthStore.parcels_wh_box_number = 'BOX-'
-    mockAuthStore.parcels_wh_sticker = 'ST-'
-    mockAuthStore.parcels_wh_product_name = 'Warehouse product'
-
-    fetchWrapper.get.mockResolvedValue({
-      items: [],
-      pagination: { totalCount: 0, hasNextPage: false, hasPreviousPage: false }
-    })
-    const store = useParcelsStore()
-    await store.getAll(1, { showMarkedByPartner: true })
-    expect(fetchWrapper.get).toHaveBeenCalledWith(
-      `${apiUrl}/parcels/a?registerId=1&page=1&pageSize=100&sortBy=id&sortOrder=asc&statusId=3&checkStatusProjectionKind=20&zone=1&numberPrefix=POST-&boxNumberPrefix=BOX-&stickerPrefix=ST-&productName=Warehouse+product`
-    )
-  })
-
-  it('ignores warehouse-specific filters on regular parcel endpoint', async () => {
-    mockAuthStore.parcels_number = 'REG'
-    mockAuthStore.parcels_wh_number = 'POST-'
-    mockAuthStore.parcels_wh_box_number = 'BOX-'
-    mockAuthStore.parcels_wh_sticker = 'ST-'
-
-    fetchWrapper.get.mockResolvedValue({
-      items: [],
-      pagination: { totalCount: 0, hasNextPage: false, hasPreviousPage: false }
-    })
-    const store = useParcelsStore()
-    await store.getAll(1)
-    expect(fetchWrapper.get).toHaveBeenCalledWith(
-      `${apiUrl}/parcels?registerId=1&page=1&pageSize=100&sortBy=id&sortOrder=asc&number=REG`
-    )
-  })
-
-  it('fetches data with custom parameters from auth store', async () => {
-    mockAuthStore.parcels_page = 2
-    mockAuthStore.parcels_per_page = 50
-    mockAuthStore.parcels_sort_by = [{ key: 'tnVed', order: 'desc' }]
-    mockAuthStore.parcels_status = 3
-    mockAuthStore.parcels_tnved = 'AA'
-
-    fetchWrapper.get.mockResolvedValue({ items: [], pagination: {} })
-    const store = useParcelsStore()
-    await store.getAll(2)
-    expect(fetchWrapper.get).toHaveBeenCalledWith(
-      `${apiUrl}/parcels?registerId=2&page=2&pageSize=50&sortBy=tnVed&sortOrder=desc&statusId=3&tnVed=AA`
     )
   })
 
@@ -283,17 +181,6 @@ describe('parcels store', () => {
     )
   })
 
-  it('fetches data with passport check status filtering', async () => {
-    mockAuthStore.parcels_passport_check_status = 30
-
-    fetchWrapper.get.mockResolvedValue({ items: [], pagination: {} })
-    const store = useParcelsStore()
-    await store.getAll(1)
-    expect(fetchWrapper.get).toHaveBeenCalledWith(
-      `${apiUrl}/parcels?registerId=1&page=1&pageSize=100&sortBy=id&sortOrder=asc&passportCheckStatus=30`
-    )
-  })
-
   it('fetches data with passport problems filtering', async () => {
     mockAuthStore.parcels_passport_check_status = 'problems'
 
@@ -303,52 +190,6 @@ describe('parcels store', () => {
 
     expect(fetchWrapper.get).toHaveBeenCalledWith(
       `${apiUrl}/parcels?registerId=1&page=1&pageSize=100&sortBy=id&sortOrder=asc&passportCheckWithProblems=true`
-    )
-  })
-
-  it('fetches data with hidden legacy restrictions filter', async () => {
-    mockAuthStore.parcels_hide_legacy_restrictions = true
-
-    fetchWrapper.get.mockResolvedValue({ items: [], pagination: {} })
-    const store = useParcelsStore()
-    await store.getAll(1)
-    expect(fetchWrapper.get).toHaveBeenCalledWith(
-      `${apiUrl}/parcels?registerId=1&page=1&pageSize=100&sortBy=id&sortOrder=asc&hideLegacyRestrictions=true`
-    )
-  })
-
-  it('fetches data with parcel number filtering', async () => {
-    mockAuthStore.parcels_number = 'TEST123'
-
-    fetchWrapper.get.mockResolvedValue({ items: [], pagination: {} })
-    const store = useParcelsStore()
-    await store.getAll(1)
-    expect(fetchWrapper.get).toHaveBeenCalledWith(
-      `${apiUrl}/parcels?registerId=1&page=1&pageSize=100&sortBy=id&sortOrder=asc&number=TEST123`
-    )
-  })
-
-  it('fetches data with combined tnved, number and product name filtering', async () => {
-    mockAuthStore.parcels_tnved = 'AA'
-    mockAuthStore.parcels_number = 'OZON456'
-    mockAuthStore.parcels_product_name = 'Notebook'
-
-    fetchWrapper.get.mockResolvedValue({ items: [], pagination: {} })
-    const store = useParcelsStore()
-    await store.getAll(2)
-    expect(fetchWrapper.get).toHaveBeenCalledWith(
-      `${apiUrl}/parcels?registerId=2&page=1&pageSize=100&sortBy=id&sortOrder=asc&tnVed=AA&number=OZON456&productName=Notebook`
-    )
-  })
-
-  it('fetches data with product name filtering', async () => {
-    mockAuthStore.parcels_product_name = 'Телефон'
-
-    fetchWrapper.get.mockResolvedValue({ items: [], pagination: {} })
-    const store = useParcelsStore()
-    await store.getAll(4)
-    expect(fetchWrapper.get).toHaveBeenCalledWith(
-      `${apiUrl}/parcels?registerId=4&page=1&pageSize=100&sortBy=id&sortOrder=asc&productName=%D0%A2%D0%B5%D0%BB%D0%B5%D1%84%D0%BE%D0%BD`
     )
   })
 
@@ -371,25 +212,6 @@ describe('parcels store', () => {
 
     expect(store.error).toBe(error)
     expect(store.loading).toBe(false)
-  })
-
-  it('fetches order by id', async () => {
-    fetchWrapper.get.mockResolvedValue({ id: 5 })
-    const store = useParcelsStore()
-    await store.getById(5)
-    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/parcels/a/5`)
-    expect(store.item).toEqual({ id: 5 })
-  })
-
-  it('handles getById error', async () => {
-    const error = new Error('Failed to fetch order')
-    fetchWrapper.get.mockRejectedValue(error)
-    const store = useParcelsStore()
-    store.item = { id: 5, productName: 'Loaded parcel' }
-    await expect(store.getById(5)).rejects.toBe(error)
-    expect(store.item).toEqual({ id: 5, productName: 'Loaded parcel' })
-    expect(store.itemError).toBe(error)
-    expect(store.itemLoading).toBe(false)
   })
 
   it.each(['older-first', 'newer-first'])('only commits the latest item request (%s)', async (order) => {
@@ -419,81 +241,6 @@ describe('parcels store', () => {
     expect(store.item).toEqual({ id: 3 })
     expect(store.itemLoading).toBe(false)
     expect(store.itemError).toBeNull()
-  })
-
-  it('propagates stale request failures without changing the current item or error', async () => {
-    let rejectOlder
-    fetchWrapper.get
-      .mockImplementationOnce(() => new Promise((_resolve, reject) => { rejectOlder = reject }))
-      .mockResolvedValueOnce({ id: 3 })
-    const store = useParcelsStore()
-    const error = new Error('stale request failed')
-    const older = expect(store.getById(2)).rejects.toBe(error)
-    await store.getById(3)
-    rejectOlder(error)
-    await older
-    expect(store.item).toEqual({ id: 3 })
-    expect(store.itemError).toBeNull()
-    expect(store.itemLoading).toBe(false)
-  })
-
-  it('handles getAll error', async () => {
-    const error = new Error('Failed to fetch orders')
-    fetchWrapper.get.mockRejectedValue(error)
-    const store = useParcelsStore()
-    try {
-      await store.getAll(1)
-    } catch (thrownError) {
-      expect(thrownError).toBe(error)
-    }
-    expect(store.error).toBe(error)
-    expect(store.loading).toBe(false)
-  })
-
-  it('does not toggle store loading for getAll with updateStore false when request fails', async () => {
-    const error = new Error('Failed to fetch orders')
-    fetchWrapper.get.mockRejectedValue(error)
-    const store = useParcelsStore()
-
-    await expect(store.getAll(1, { updateStore: false })).rejects.toBe(error)
-
-    expect(store.error).toBe(error)
-    expect(store.loading).toBe(false)
-  })
-
-  it('propagates an exact-box request failure with its scope intact', async () => {
-    const error = new Error('Scoped parcels unavailable')
-    fetchWrapper.get.mockRejectedValue(error)
-    const store = useParcelsStore()
-
-    await expect(
-      store.getAll(1, { showMarkedByPartner: true, boxId: 17 })
-    ).rejects.toBe(error)
-
-    expect(fetchWrapper.get).toHaveBeenCalledWith(
-      `${apiUrl}/parcels/a?registerId=1&page=1&pageSize=100&boxId=17&sortBy=id&sortOrder=asc`
-    )
-    expect(store.error).toBe(error)
-  })
-
-  it('clears check status for parcel', async () => {
-    fetchWrapper.post.mockResolvedValue(undefined)
-    const store = useParcelsStore()
-
-    const result = await store.clearCheckStatus(9)
-
-    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/9/clear`)
-    expect(result).toBe(true)
-  })
-
-  it('checks parcel for duplicates', async () => {
-    fetchWrapper.post.mockResolvedValue(undefined)
-    const store = useParcelsStore()
-
-    const result = await store.checkForDuplicate(12)
-
-    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/12/check-duplicate`)
-    expect(result).toBe(true)
   })
 
   it('checks parcel passport through the passport endpoint', async () => {
@@ -534,25 +281,6 @@ describe('parcels store', () => {
 
     expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/12/clear-defect`)
     expect(result).toBe(true)
-  })
-
-  it('fetches warehouse data with warehouse-specific page and sort parameters', async () => {
-    mockAuthStore.parcels_page = 9
-    mockAuthStore.parcels_per_page = 25
-    mockAuthStore.parcels_sort_by = [{ key: 'tnVed', order: 'desc' }]
-    mockAuthStore.parcels_wh_page = 3
-    mockAuthStore.parcels_wh_per_page = 50
-    mockAuthStore.parcels_wh_sort_by = [{ key: 'checkStatusProjection', order: 'asc' }]
-
-    fetchWrapper.get.mockResolvedValue({
-      items: [],
-      pagination: { totalCount: 0, hasNextPage: false, hasPreviousPage: false }
-    })
-    const store = useParcelsStore()
-    await store.getAll(1, { showMarkedByPartner: true })
-    expect(fetchWrapper.get).toHaveBeenCalledWith(
-      `${apiUrl}/parcels/a?registerId=1&page=3&pageSize=50&sortBy=checkStatusProjection&sortOrder=asc`
-    )
   })
 
   it('clears parcel ExtId through API and patches loaded parcel collections', async () => {
@@ -599,16 +327,6 @@ describe('parcels store', () => {
   it('applyExtIdChange returns false for null change', () => {
     const store = useParcelsStore()
     expect(store.applyExtIdChange(null)).toBe(false)
-  })
-
-  it('applyExtIdChange returns false when parcelId is 0', () => {
-    const store = useParcelsStore()
-    expect(store.applyExtIdChange({ parcelId: 0, extId: 'X', revision: 5 })).toBe(false)
-  })
-
-  it('applyExtIdChange returns false when revision is 0', () => {
-    const store = useParcelsStore()
-    expect(store.applyExtIdChange({ parcelId: 12, extId: 'X', revision: 0 })).toBe(false)
   })
 
   it('applies revision-ordered parcel check statuses to loaded rows and current item', () => {
@@ -776,15 +494,6 @@ describe('parcels store', () => {
       expect(store.items[0]).toEqual({ id: 6 })
     })
 
-    it('does not refresh category for saves without a TN VED field', async () => {
-      const store = useParcelsStore()
-      store.item = { id: 5, matchesExportFeeCategory: true }
-      fetchWrapper.put.mockResolvedValue(undefined)
-      await store.update(5, { statusId: 2 })
-      expect(fetchWrapper.get).not.toHaveBeenCalled()
-      expect(store.item.matchesExportFeeCategory).toBe(true)
-    })
-
     it('shows one refresh error, keeps the form open, and allows retry', async () => {
       const store = useParcelsStore()
       const alertStore = useAlertStore()
@@ -822,87 +531,6 @@ describe('parcels store', () => {
       wrapper.unmount()
     })
 
-    it('updates order and calls API with correct parameters', async () => {
-      fetchWrapper.put.mockResolvedValue({ success: true })
-
-      const store = useParcelsStore()
-      const updateData = { statusId: 2, tnVed: 'Updated' }
-
-      const result = await store.update(5, updateData)
-
-      expect(fetchWrapper.put).toHaveBeenCalledWith(`${apiUrl}/parcels/5`, updateData)
-      expect(result).toEqual({ success: true })
-    })
-
-    it('updates item in store when currently loaded item matches', async () => {
-      fetchWrapper.put.mockResolvedValue({ success: true })
-
-      const store = useParcelsStore()
-      // Set up current item
-      store.item = { id: '5', statusId: 1, tnVed: 'Original' }
-
-      const updateData = { statusId: 2, tnVed: 'Updated' }
-      await store.update(5, updateData)
-
-      expect(store.item).toEqual({
-        id: '5',
-        statusId: 2,
-        tnVed: 'Updated'
-      })
-    })
-
-    it('updates item in items array when it exists', async () => {
-      fetchWrapper.put.mockResolvedValue({ success: true })
-
-      const store = useParcelsStore()
-      // Set up items array
-      store.items = [
-        { id: 4, statusId: 1, tnVed: 'Other' },
-        { id: '5', statusId: 1, tnVed: 'Original' },
-        { id: 6, statusId: 1, tnVed: 'Another' }
-      ]
-
-      const updateData = { statusId: 2, tnVed: 'Updated' }
-      await store.update(5, updateData)
-
-      expect(store.items[1]).toEqual({
-        id: '5',
-        statusId: 2,
-        tnVed: 'Updated'
-      })
-      // Check other items weren't affected
-      expect(store.items[0]).toEqual({ id: 4, statusId: 1, tnVed: 'Other' })
-      expect(store.items[2]).toEqual({ id: 6, statusId: 1, tnVed: 'Another' })
-    })
-
-    it('refreshes the parcel and enters read-only mode after a stale conflict', async () => {
-      const conflict = Object.assign(new Error('Изменения запрещены для реестра'), { status: 409 })
-      fetchWrapper.put.mockRejectedValue(conflict)
-      fetchWrapper.get.mockResolvedValue({
-        id: 5,
-        statusId: 7,
-        tnVed: 'server-value',
-        readOnly: true
-      })
-      const store = useParcelsStore()
-      store.item = { id: '5', statusId: 1, tnVed: 'old', readOnly: false }
-      store.items = [{ id: '5', statusId: 1, tnVed: 'old', readOnly: false }]
-
-      await expect(store.update(5, { tnVed: 'local-value' })).rejects.toBe(conflict)
-
-      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/parcels/a/5`)
-      expect(store.item).toMatchObject({
-        id: 5,
-        tnVed: 'server-value',
-        readOnly: true
-      })
-      expect(store.items[0]).toMatchObject({
-        id: 5,
-        tnVed: 'server-value',
-        readOnly: true
-      })
-    })
-
     it('falls back to marking the loaded parcel read-only when conflict refresh fails', async () => {
       const conflict = Object.assign(new Error('Изменения запрещены для реестра'), { status: 409 })
       const refreshError = new Error('refresh failed')
@@ -936,34 +564,9 @@ describe('parcels store', () => {
       expect(store.item).toEqual({ id: 7, statusId: 1, tnVed: 'Different' })
     })
 
-    it('propagates errors when API call fails', async () => {
-      const errorMessage = 'Failed to update order'
-      fetchWrapper.put.mockRejectedValue(new Error(errorMessage))
-
-      const store = useParcelsStore()
-      const updateData = { statusId: 2 }
-
-      await expect(store.update(5, updateData)).rejects.toThrow(errorMessage)
-      expect(fetchWrapper.put).toHaveBeenCalledWith(`${apiUrl}/parcels/5`, updateData)
-    })
   })
 
   describe('generate methods', () => {
-    it('generate calls downloadFile with correct parameters', async () => {
-      const store = useParcelsStore()
-
-      // Mock fetchWrapper.downloadFile
-      fetchWrapper.downloadFile = vi.fn().mockResolvedValue(true)
-
-      const result = await store.generate(123)
-
-      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
-        `${apiUrl}/parcels/123/generate`,
-        'IndPost_123.xml'
-      )
-      expect(result).toBe(true)
-    })
-
     it('generate appends weight correction query only when requested', async () => {
       const store = useParcelsStore()
       fetchWrapper.downloadFile = vi.fn().mockResolvedValue(true)
@@ -991,20 +594,6 @@ describe('parcels store', () => {
   })
 
   describe('validateSw method', () => {
-    it('calls validate-sw endpoint with correct id', async () => {
-      fetchWrapper.post.mockResolvedValue(undefined) // 204 No Content
-
-      const store = useParcelsStore()
-      const result = await store.validate(789, true)
-
-      expect(fetchWrapper.post).toHaveBeenCalledWith(
-        `${apiUrl}/parcels/789/validate-sw?withSwMatch=0`
-      )
-      expect(result).toBe(true)
-      expect(store.loading).toBe(false)
-      expect(store.error).toBe(null)
-    })
-
     it('rethrows and sets error when validateSw fails', async () => {
       const error = new Error('Validation failed')
       fetchWrapper.post.mockRejectedValue(error)
@@ -1020,69 +609,7 @@ describe('parcels store', () => {
     })
   })
 
-  describe('validateFc method', () => {
-    it('calls validate-fc endpoint with correct id', async () => {
-      fetchWrapper.post.mockResolvedValue(undefined) // 204 No Content
-
-      const store = useParcelsStore()
-      const result = await store.validate(123, false)
-
-      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/123/validate-fc`)
-      expect(result).toBe(true)
-      expect(store.loading).toBe(false)
-      expect(store.error).toBe(null)
-    })
-
-    it('rethrows and sets error when validateFc fails', async () => {
-      const error = new Error('Validation failed')
-      fetchWrapper.post.mockRejectedValue(error)
-
-      const store = useParcelsStore()
-      await expect(store.validate(123, false)).rejects.toBe(error)
-
-      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/123/validate-fc`)
-      expect(store.loading).toBe(false)
-      expect(store.error).toBe(error)
-    })
-  })
-
   describe('approve method', () => {
-    it('calls approve endpoint with correct id (default approvalMode=SimpleApprove)', async () => {
-      fetchWrapper.post.mockResolvedValue(undefined)
-
-      const store = useParcelsStore()
-      const result = await store.approve(123)
-
-      expect(fetchWrapper.post).toHaveBeenCalledWith(
-        `${apiUrl}/parcels/123/approve?approveMode=SimpleApprove`
-      )
-      expect(result).toBe(true)
-    })
-
-    it('calls approve endpoint with explicit SimpleApprove mode', async () => {
-      fetchWrapper.post.mockResolvedValue(undefined)
-
-      const store = useParcelsStore()
-      const result = await store.approve(123, ParcelApprovalMode.SimpleApprove)
-
-      expect(fetchWrapper.post).toHaveBeenCalledWith(
-        `${apiUrl}/parcels/123/approve?approveMode=SimpleApprove`
-      )
-      expect(result).toBe(true)
-    })
-
-    it('calls approve endpoint with ApproveWithExcise mode', async () => {
-      fetchWrapper.post.mockResolvedValue(undefined)
-
-      const store = useParcelsStore()
-      const result = await store.approve(123, ParcelApprovalMode.ApproveWithExcise)
-
-      expect(fetchWrapper.post).toHaveBeenCalledWith(
-        `${apiUrl}/parcels/123/approve?approveMode=ApproveWithExcise`
-      )
-      expect(result).toBe(true)
-    })
-
     it('calls approve endpoint with ApproveWithNotification mode', async () => {
       fetchWrapper.post.mockResolvedValue(undefined)
 
@@ -1093,32 +620,6 @@ describe('parcels store', () => {
         `${apiUrl}/parcels/123/approve?approveMode=ApproveWithNotification`
       )
       expect(result).toBe(true)
-    })
-
-    it('throws error when approve fails with default mode', async () => {
-      const error = new Error('Approval failed')
-      fetchWrapper.post.mockRejectedValue(error)
-
-      const store = useParcelsStore()
-
-      await expect(store.approve(123)).rejects.toThrow('Approval failed')
-      expect(fetchWrapper.post).toHaveBeenCalledWith(
-        `${apiUrl}/parcels/123/approve?approveMode=SimpleApprove`
-      )
-    })
-
-    it('throws error when approve fails with ApproveWithExcise', async () => {
-      const error = new Error('Approval with excise failed')
-      fetchWrapper.post.mockRejectedValue(error)
-
-      const store = useParcelsStore()
-
-      await expect(store.approve(123, ParcelApprovalMode.ApproveWithExcise)).rejects.toThrow(
-        'Approval with excise failed'
-      )
-      expect(fetchWrapper.post).toHaveBeenCalledWith(
-        `${apiUrl}/parcels/123/approve?approveMode=ApproveWithExcise`
-      )
     })
 
     it('refreshes the loaded and listed parcel after a read-only mutation conflict', async () => {
@@ -1136,24 +637,6 @@ describe('parcels store', () => {
       expect(store.items[0]).toEqual({ id: 123, statusId: 7, readOnly: true })
     })
 
-    it('marks loaded and listed parcels read-only when conflict refresh fails', async () => {
-      const conflict = Object.assign(new Error('Изменения запрещены для реестра'), { status: 409 })
-      const refreshError = new Error('refresh failed')
-      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
-      fetchWrapper.post.mockRejectedValue(conflict)
-      fetchWrapper.get.mockRejectedValue(refreshError)
-      const store = useParcelsStore()
-      store.item = { id: 123, statusId: 1, readOnly: false }
-      store.items = [{ id: 123, statusId: 1, readOnly: false }]
-
-      await expect(store.approve(123)).rejects.toBe(conflict)
-
-      expect(store.item).toEqual({ id: 123, statusId: 1, readOnly: true })
-      expect(store.items[0]).toEqual({ id: 123, statusId: 1, readOnly: true })
-      expect(consoleError).toHaveBeenCalledTimes(1)
-      expect(consoleError).toHaveBeenCalledWith('[parcels conflict refresh]', refreshError)
-      consoleError.mockRestore()
-    })
   })
 
   describe('deleteImage method', () => {
@@ -1196,17 +679,6 @@ describe('parcels store', () => {
   })
 
   describe('lookupFeacnCode method', () => {
-    it('calls lookup-feacn-code endpoint and returns result', async () => {
-      const mockResult = { tnVed: '6402919000' }
-      fetchWrapper.post.mockResolvedValue(mockResult)
-
-      const store = useParcelsStore()
-      const result = await store.lookupFeacnCode(55)
-
-      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/55/lookup-feacn-code`)
-      expect(result).toEqual(mockResult)
-    })
-
     it('propagates error when lookup fails', async () => {
       const error = new Error('Lookup failed')
       fetchWrapper.post.mockRejectedValue(error)

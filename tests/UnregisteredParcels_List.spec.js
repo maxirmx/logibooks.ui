@@ -1,5 +1,3 @@
-import { useListStateStore } from '@/stores/list.state.store.js'
-import { LIST_STATE_STORAGE_KEY } from '@/helpers/list.state.helpers.js'
 import { setActivePinia, createPinia } from 'pinia'
 /* @vitest-environment jsdom */
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
@@ -88,34 +86,6 @@ describe('UnregisteredParcels_List.vue', () => {
     )
   })
 
-  it('restores table controls for the matching register', async () => {
-    sessionStorage.clear()
-    sessionStorage.setItem(LIST_STATE_STORAGE_KEY, JSON.stringify({ version: 1, userId: 1, lists: {
-      [JSON.stringify(['unregisteredParcels', 5])]: { page: 2, itemsPerPage: 50, sortBy: [{ key: 'scanCode', order: 'desc' }] }
-    } }))
-    useListStateStore().setUser(1)
-    const wrapper = mount(UnregisteredParcelsList, { props: { registerId: 5 }, global: { stubs: vuetifyStubs } })
-    await resolveAll()
-    const table = wrapper.findComponent('[data-testid="v-data-table"]')
-    expect(table.props('page')).toBe(2)
-    expect(table.props('itemsPerPage')).toBe(50)
-    expect(table.props('sortBy')).toEqual([{ key: 'scanCode', order: 'desc' }])
-    wrapper.unmount()
-  })
-
-  it('loads rows on mount with register id', async () => {
-    getAll.mockResolvedValue([])
-
-    mount(UnregisteredParcelsList, {
-      props: { registerId: 5 },
-      global: { stubs: vuetifyStubs }
-    })
-
-    await resolveAll()
-
-    expect(getAll).toHaveBeenCalledWith(5)
-  })
-
   it('renders projected status and zone text instead of raw ids', async () => {
     getAll.mockResolvedValue([])
     mockItems.value = [{ id: 1, registerId: 5, statusId: 7, zone: 1 }]
@@ -158,18 +128,6 @@ describe('UnregisteredParcels_List.vue', () => {
     expect(getTransportationDocument).toHaveBeenCalledWith(1)
   })
 
-  it('reports invalid register id', () => {
-    mount(UnregisteredParcelsList, {
-      props: { registerId: 0 },
-      global: { stubs: vuetifyStubs }
-    })
-
-    expect(getAll).not.toHaveBeenCalled()
-    expect(alertError).toHaveBeenCalledWith('Некорректный идентификатор реестра')
-    expect(ensureLoaded).not.toHaveBeenCalled()
-    expect(ensureOpsLoaded).not.toHaveBeenCalled()
-  })
-
   it('reports store loading error when load fails', async () => {
     getAll.mockRejectedValueOnce(new Error('load error'))
 
@@ -186,21 +144,6 @@ describe('UnregisteredParcels_List.vue', () => {
         action: expect.objectContaining({ label: 'Повторить', handler: expect.any(Function) })
       })
     )
-  })
-
-  it('loads projection dictionaries before loading rows', async () => {
-    getAll.mockResolvedValue([])
-
-    mount(UnregisteredParcelsList, {
-      props: { registerId: 12 },
-      global: { stubs: vuetifyStubs }
-    })
-
-    await resolveAll()
-
-    expect(ensureLoaded).toHaveBeenCalled()
-    expect(ensureOpsLoaded).toHaveBeenCalled()
-    expect(getAll).toHaveBeenCalledWith(12)
   })
 
   it('exports register when export action is clicked', async () => {

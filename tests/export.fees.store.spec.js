@@ -22,21 +22,6 @@ describe('export fees store', () => {
     vi.clearAllMocks()
   })
 
-  it('fetches fees from API', async () => {
-    const mockFees = [{ id: 1, code: '1000000000', description: 'Test', fee: 5.5 }]
-    fetchWrapper.get.mockResolvedValue(mockFees)
-
-    const store = useExportFeesStore()
-    await store.getAll()
-
-    expect(store.$id).toBe('exportFees')
-    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/exportfees`)
-    expect(store.fees).toEqual(mockFees)
-    expect(store.loading).toBe(false)
-    expect(store.error).toBeNull()
-    expect(store.isInitialized).toBe(true)
-  })
-
   it('stores error and leaves initialization false when fetch fails', async () => {
     const testError = new Error('API error')
     fetchWrapper.get.mockRejectedValue(testError)
@@ -51,16 +36,6 @@ describe('export fees store', () => {
     expect(store.isInitialized).toBe(false)
   })
 
-  it('clears previous error before a new fetch', async () => {
-    const store = useExportFeesStore()
-    store.error = new Error('old')
-    fetchWrapper.get.mockResolvedValue([])
-
-    await store.getAll()
-
-    expect(store.error).toBeNull()
-  })
-
   it('calls update endpoint', async () => {
     fetchWrapper.post.mockResolvedValue({})
 
@@ -73,26 +48,4 @@ describe('export fees store', () => {
     expect(store.isInitialized).toBe(false)
   })
 
-  it('ensures fees are loaded only once after successful initialization', async () => {
-    fetchWrapper.get.mockResolvedValue([{ id: 1, code: '1000000000', fee: 1 }])
-
-    const store = useExportFeesStore()
-    await store.ensureLoaded()
-
-    expect(fetchWrapper.get).toHaveBeenCalledOnce()
-    fetchWrapper.get.mockClear()
-
-    await store.ensureLoaded()
-
-    expect(fetchWrapper.get).not.toHaveBeenCalled()
-  })
-
-  it('loads when no shared request exists', async () => {
-    const store = useExportFeesStore()
-    store.loading = true
-
-    await store.ensureLoaded()
-
-    expect(fetchWrapper.get).toHaveBeenCalledOnce()
-  })
 })

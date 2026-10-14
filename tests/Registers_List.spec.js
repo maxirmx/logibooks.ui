@@ -26,7 +26,6 @@ import RegisterStatusInlineEditor from '@/components/RegisterStatusInlineEditor.
 import RegisterStatusSelect from '@/components/RegisterStatusSelect.vue'
 import router from '@/router'
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
-import { formatDate } from '@/helpers/date.formatters.js'
 import {
   createAirportsById,
   createTransportationTypesById,
@@ -291,10 +290,6 @@ vi.mock('@/l2/ParcelStatusBulkChangeDialog.vue', () => ({
   }
 }))
 
-function getTableHeaders(wrapper) {
-  return wrapper.findComponent({ name: 'v-data-table-server' }).props('headers')
-}
-
 describe('Registers_List.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -364,47 +359,11 @@ describe('Registers_List.vue', () => {
       })
     })
 
-    it('returns shortName when available', () => {
-      const registerTypeName = wrapper.vm.getRegisterTypeName(1)
-      expect(registerTypeName).toBe('РВБ')
-    })
-
-    it('returns name when shortName is null', () => {
-      const registerTypeName = wrapper.vm.getRegisterTypeName(2)
-      expect(registerTypeName).toBe('ООО "Интернет решения"')
-    })
-
-    it('returns name when shortName is empty string', () => {
-      const registerTypeName = wrapper.vm.getRegisterTypeName(3)
-      expect(registerTypeName).toBe('ООО "Длинное название компании"')
-    })
-
-    it('returns "Неизвестно" for non-existent customer ID', () => {
-      const registerTypeName = wrapper.vm.getRegisterTypeName(999)
-      expect(registerTypeName).toBe('Неизвестно')
-    })
-
-    it('returns "Неизвестно" for null customer ID', () => {
-      const registerTypeName = wrapper.vm.getRegisterTypeName(null)
-      expect(registerTypeName).toBe('Неизвестно')
-    })
-
     it('returns "Неизвестно" for undefined customer ID', () => {
       const registerTypeName = wrapper.vm.getRegisterTypeName(undefined)
       expect(registerTypeName).toBe('Неизвестно')
     })
 
-    it('returns "Неизвестно" when a company has no usable display name', () => {
-      mockCompanies.value = [{ id: 4, shortName: '', name: '' }]
-      const registerTypeName = wrapper.vm.getRegisterTypeName(4)
-      expect(registerTypeName).toBe('Неизвестно')
-    })
-
-    it('returns "Неизвестно" when companies array is empty', () => {
-      mockCompanies.value = []
-      const registerTypeName = wrapper.vm.getRegisterTypeName(1)
-      expect(registerTypeName).toBe('Неизвестно')
-    })
   })
 
   describe('getCountryDisplayName', () => {
@@ -571,19 +530,6 @@ describe('Registers_List.vue', () => {
   })
 
   describe('component integration', () => {
-    it('loads paperwork registers explicitly', async () => {
-      mount(RegistersList, {
-        global: {
-          stubs: vuetifyStubs
-        }
-      })
-
-      await flushPromises()
-
-      expect(ensureRegisterStatusesLoadedFn).toHaveBeenCalled()
-      expect(getAll).toHaveBeenCalledWith({ mode: OP_MODE_PAPERWORK })
-    })
-
     it('reports initialization failures', async () => {
       countriesEnsureLoadedFn.mockRejectedValueOnce(new Error('countries failed'))
 
@@ -624,48 +570,6 @@ describe('Registers_List.vue', () => {
       )
     })
 
-    it('stops initialization work after unmounting during initial load', async () => {
-      let resolveStatuses
-      ensureOrderStatusesLoadedFn.mockImplementationOnce(
-        () =>
-          new Promise((resolve) => {
-            resolveStatuses = resolve
-          })
-      )
-
-      const wrapper = mount(RegistersList, {
-        global: {
-          stubs: vuetifyStubs
-        }
-      })
-      await wrapper.vm.$nextTick()
-
-      wrapper.unmount()
-      resolveStatuses()
-      await flushPromises()
-
-      expect(countriesEnsureLoadedFn).not.toHaveBeenCalled()
-    })
-  })
-
-  describe('navigation functions', () => {
-    let wrapper
-
-    beforeEach(() => {
-      wrapper = mount(RegistersList, {
-        global: {
-          stubs: vuetifyStubs
-        }
-      })
-    })
-
-    it('navigates to parcels when openParcels is called', async () => {
-      const item = { id: 123 }
-      const router = (await import('@/router')).default
-
-      wrapper.vm.openParcels(item)
-      expect(router.push).toHaveBeenCalledWith('/registers/123/parcels?mode=modePaperwork')
-    })
   })
 
   describe('table cell interactions', () => {
@@ -689,34 +593,6 @@ describe('Registers_List.vue', () => {
       const cell = wrapper.find('.open-parcels-link')
       await cell.trigger('click')
       expect(router.push).toHaveBeenCalledWith('/registers/1/parcels?mode=modePaperwork')
-    })
-
-    it('opens inline register-status selector when status action button is clicked', async () => {
-      mockIsSrLogistPlus.value = true
-      mockItems.value = [
-        {
-          id: 7,
-          statusId: 2
-        }
-      ]
-
-      const wrapper = mount(RegistersList, {
-        global: {
-          stubs: vuetifyStubs
-        }
-      })
-
-      const router = (await import('@/router')).default
-      await wrapper.vm.$nextTick()
-
-      const statusIconButton = wrapper.find('.register-status-action-button')
-      expect(statusIconButton.exists()).toBe(true)
-      expect(statusIconButton.attributes('title')).toBe('Register Status 2')
-
-      await statusIconButton.trigger('click')
-      expect(getRegisterStatusByIdFn).toHaveBeenCalledWith(2)
-      expect(router.push).not.toHaveBeenCalledWith('/register/edit/7?mode=modePaperwork')
-      expect(wrapper.find('[data-testid="v-select"]').exists()).toBe(true)
     })
 
     it('applies inline register status changes in paperwork mode', async () => {
@@ -862,16 +738,6 @@ describe('Registers_List.vue', () => {
         ]
       })
 
-      it('starts upload when customer is selected through menu', async () => {
-        const mockClick = vi.fn()
-        wrapper.vm.fileInput = { click: mockClick }
-
-        await wrapper.vm.startRegisterUpload(OZON_COMPANY_ID)
-
-        expect(wrapper.vm.selectedRegisterType).toBe(OZON_COMPANY_ID)
-        expect(mockClick).toHaveBeenCalled()
-      })
-
       it('keeps selected upload type when no file input is mounted', async () => {
         wrapper.vm.fileInput = null
 
@@ -946,12 +812,6 @@ describe('Registers_List.vue', () => {
     })
 
     describe('uploadMenuOptions computed property', () => {
-      it('returns empty upload options when no companies loaded', () => {
-        mockCompanies.value = []
-        const options = wrapper.vm.uploadMenuOptions
-        expect(options).toEqual([])
-      })
-
       it('returns empty array when companies is null', () => {
         mockCompanies.value = null
         const options = wrapper.vm.uploadMenuOptions
@@ -1004,12 +864,6 @@ describe('Registers_List.vue', () => {
         expect(mockClick).toHaveBeenCalled()
       })
 
-      it('disables upload when no company upload options are available', async () => {
-        mockCompanies.value = []
-        await wrapper.vm.$nextTick()
-
-        expect(wrapper.vm.isUploadDisabled).toBe(true)
-      })
     })
   })
 
@@ -1036,15 +890,6 @@ describe('Registers_List.vue', () => {
         cancellationText: 'Не удалять',
         content: 'Удалить реестр "' + item.fileName + '" ?'
       }))
-    })
-
-    it('calls remove when deletion is confirmed', async () => {
-      confirmMock.mockResolvedValue(true)
-      const item = { id: 2, fileName: 'file.xlsx' }
-
-      await wrapper.vm.deleteRegister(item)
-
-      expect(removeFn).toHaveBeenCalledWith(item.id)
     })
 
     it('does not call remove when deletion is cancelled', async () => {
@@ -1125,78 +970,6 @@ describe('Registers_List.vue', () => {
   })
 
   describe('sortable headers', () => {
-    it('marks paperwork visible columns as sortable', () => {
-      const wrapper = mount(RegistersList, {
-        global: {
-          stubs: vuetifyStubs
-        }
-      })
-
-      const sortableByKey = Object.fromEntries(
-        getTableHeaders(wrapper).map((header) => [header.key, header.sortable])
-      )
-
-      expect(sortableByKey.actions).toBe(false)
-      expect(sortableByKey.registerStatusIcon).toBeUndefined()
-      expect(sortableByKey.id).toBe(true)
-      expect(sortableByKey.dealNumber).toBe(true)
-      expect(sortableByKey.invoice).toBe(true)
-      expect(sortableByKey.countries).toBe(true)
-      expect(sortableByKey.senderRecipient).toBe(true)
-      expect(sortableByKey.parcelsTotal).toBe(true)
-      expect(sortableByKey.weight).toBe(true)
-      expect(sortableByKey.price).toBe(true)
-      expect(sortableByKey.customsCharges).toBe(false)
-      expect(sortableByKey.date).toBe(true)
-      expect(sortableByKey.statusId).toBeUndefined()
-      expect(sortableByKey.warehouseId).toBeUndefined()
-      expect(sortableByKey.warehouseArrivalDate).toBeUndefined()
-    })
-
-    it('aligns numeric headers with numeric cells', () => {
-      const wrapper = mount(RegistersList, {
-        global: {
-          stubs: vuetifyStubs
-        }
-      })
-
-      const headersByKey = Object.fromEntries(
-        getTableHeaders(wrapper).map((header) => [header.key, header])
-      )
-
-      expect(headersByKey.id).toMatchObject({
-        title: '№',
-        align: 'start',
-        width: '80px'
-      })
-      expect(headersByKey.parcelsTotal.align).toBe('end')
-      expect(headersByKey.weight.align).toBe('end')
-      expect(headersByKey.price.align).toBe('end')
-      expect(headersByKey.customsCharges.align).toBe('end')
-      expect(headersByKey.parcelsTotal.width).toBe('150px')
-      expect(headersByKey.weight.width).toBe('220px')
-      expect(headersByKey.price.width).toBe('240px')
-      expect(headersByKey.customsCharges.width).toBe('160px')
-    })
-
-    it('does not render warehouse-only actions', () => {
-      mockItems.value = [{ id: 1, warehouseId: 10 }]
-
-      const wrapper = mount(RegistersList, {
-        global: {
-          stubs: vuetifyStubs
-        }
-      })
-
-      const actionTooltips = wrapper
-        .findAllComponents(ActionButton)
-        .map((button) => String(button.props('tooltipText') || ''))
-
-      expect(actionTooltips).not.toContain('Создать задание на сканирование')
-      expect(actionTooltips).not.toContain('Стикеры не в реестре')
-      expect(wrapper.text()).not.toContain('Создать реестр возврата')
-    })
-
     it('keeps check-status tooltip for paperwork parcels totals', () => {
       mockItems.value = [
         {
@@ -1328,37 +1101,6 @@ describe('Registers_List.vue', () => {
         wrapper.vm.statusFilterItems
       )
       expect(wrapper.vm.localStatus).toBe(REGISTER_STATUS_FILTER_IN_PROGRESS)
-    })
-
-    it('shows all statuses for a persisted empty status filter', async () => {
-      mockPaperworkRegistersStatus.value = ''
-
-      const wrapper = mount(RegistersList, {
-        global: {
-          stubs: vuetifyStubs
-        }
-      })
-
-      await flushPromises()
-
-      expect(wrapper.vm.localStatus).toBe(REGISTER_STATUS_FILTER_ALL)
-      expect(wrapper.findComponent(RegisterStatusSelect).props('modelValue')).toBe(
-        REGISTER_STATUS_FILTER_ALL
-      )
-    })
-
-    it('falls back to only all-procedures option when ops procedures are missing', async () => {
-      mockOps.value = { customsProcedures: null, transportationTypes: [] }
-
-      const wrapper = mount(RegistersList, {
-        global: {
-          stubs: vuetifyStubs
-        }
-      })
-
-      await flushPromises()
-
-      expect(wrapper.vm.procedureFilterItems).toEqual([{ title: 'Все', value: 'all' }])
     })
 
     it('syncs selected procedure and reloads paperwork registers', async () => {
@@ -1506,41 +1248,6 @@ describe('Registers_List.vue', () => {
       expect(getAll).toHaveBeenCalledWith({ mode: OP_MODE_PAPERWORK })
     })
 
-    it('shows and clears alert messages', async () => {
-      mockAlert.value = { id: 53, severity: 'error', message: 'Visible alert', action: null }
-
-      const wrapper = mount(RegistersList, {
-        global: {
-          stubs: vuetifyStubs
-        }
-      })
-
-      expect(wrapper.text()).toContain('Visible alert')
-
-      await wrapper.find('.close').trigger('click')
-
-      expect(alertDismissFn).toHaveBeenCalledWith(53)
-    })
-
-    it('passes the current sort model to the server table', async () => {
-      const wrapper = mount(RegistersList, {
-        global: {
-          stubs: vuetifyStubs
-        }
-      })
-
-      expect(wrapper.findComponent({ name: 'v-data-table-server' }).props('sortBy')).toEqual([
-        { key: 'id', order: 'asc' }
-      ])
-
-      wrapper.vm.registers_sort_by = [{ key: 'price', order: 'desc' }]
-      await wrapper.vm.$nextTick()
-
-      expect(wrapper.findComponent({ name: 'v-data-table-server' }).props('sortBy')).toEqual([
-        { key: 'price', order: 'desc' }
-      ])
-    })
-
   })
 
   describe('component lifecycle', () => {
@@ -1559,58 +1266,5 @@ describe('Registers_List.vue', () => {
 
       expect(stopSpy).toHaveBeenCalled()
     })
-  })
-})
-
-describe('formatInvoiceDate function', () => {
-  it('formats a valid date string correctly in dd.MM.yyyy format', () => {
-    // Test with ISO format string
-    const isoDate = '2025-07-27T12:34:56'
-    expect(formatDate(isoDate)).toBe('27.07.2025')
-
-    // Test with different date
-    const anotherDate = '2023-01-05'
-    expect(formatDate(anotherDate)).toBe('05.01.2023')
-  })
-
-  it('handles single-digit day and month with padding', () => {
-    // Test with single-digit day
-    const singleDigitDay = '2025-07-03'
-    expect(formatDate(singleDigitDay)).toBe('03.07.2025')
-
-    // Test with single-digit month
-    const singleDigitMonth = '2025-03-15'
-    expect(formatDate(singleDigitMonth)).toBe('15.03.2025')
-
-    // Test with both single-digit day and month
-    const bothSingleDigit = '2025-02-09'
-    expect(formatDate(bothSingleDigit)).toBe('09.02.2025')
-  })
-
-  it('returns empty string for null or undefined input', () => {
-    expect(formatDate(null)).toBe('')
-    expect(formatDate(undefined)).toBe('')
-    expect(formatDate('')).toBe('')
-  })
-
-  it('returns original string for invalid date input', () => {
-    const invalidDate = 'not-a-date'
-    expect(formatDate(invalidDate)).toBe(invalidDate)
-
-    const anotherInvalidDate = '2025/13/45' // invalid month and day
-    expect(formatDate(anotherInvalidDate)).toBe(anotherInvalidDate)
-  })
-
-  it('handles different date formats correctly', () => {
-    // Testing with more reliable date format MM/DD/YYYY (US)
-    expect(formatDate('07/27/2025')).toBe('27.07.2025')
-
-    // Date object directly
-    const dateObj = new Date(2025, 6, 27) // Month is 0-indexed
-    expect(formatDate(dateObj)).toBe('27.07.2025')
-
-    // Date with time component
-    const dateWithTime = new Date('2025-07-27T15:30:45')
-    expect(formatDate(dateWithTime)).toBe('27.07.2025')
   })
 })

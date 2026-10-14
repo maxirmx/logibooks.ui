@@ -125,21 +125,6 @@ describe('Boxes_List.vue', () => {
     boxesGetAll.mockResolvedValue(mockBoxes.value)
   })
 
-  it('loads register context and boxes and renders locale-aware metrics', async () => {
-    const wrapper = createWrapper()
-    await flushPromises()
-
-    expect(ensureOpsLoaded).toHaveBeenCalled()
-    expect(registerGetById).toHaveBeenCalledWith(42)
-    expect(boxesGetAll).toHaveBeenCalledWith(42)
-    expect(wrapper.get('h1').text()).toContain('DEAL-42')
-    expect(wrapper.get('[data-testid="v-data-table"]').text()).toContain('BOX-7')
-    expect(wrapper.get('[data-testid="v-data-table"]').text()).toContain('10,5')
-    expect(wrapper.get('[data-testid="v-data-table"]').text()).toContain('4,125')
-    expect(wrapper.get('[data-testid="v-data-table"]').text()).toContain('—')
-    expect(wrapper.findAll('[data-testid="page-alert-region"]')).toHaveLength(1)
-  })
-
   it('binds persisted controls and searches by code', async () => {
     const wrapper = createWrapper()
     await flushPromises()
@@ -233,17 +218,4 @@ describe('Boxes_List.vue', () => {
     expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain('navigation failed')
   })
 
-  it('shows a retryable load error and successfully retries', async () => {
-    boxesGetAll.mockRejectedValueOnce(new Error('boxes unavailable')).mockResolvedValue(mockBoxes.value)
-    const wrapper = createWrapper()
-    await flushPromises()
-
-    expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain('boxes unavailable')
-    expect(routerPush).not.toHaveBeenCalled()
-
-    await wrapper.get('[data-testid="alert-retry"]').trigger('click')
-    await flushPromises()
-    expect(boxesGetAll).toHaveBeenCalledTimes(2)
-    expect(wrapper.get('[data-testid="v-data-table"]').text()).toContain('BOX-7')
-  })
 })

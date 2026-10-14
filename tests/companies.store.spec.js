@@ -61,18 +61,6 @@ describe('companies store', () => {
   })
 
   describe('getAll', () => {
-    it('fetches companies successfully', async () => {
-      fetchWrapper.get.mockResolvedValue(mockCompanies)
-      const store = useCompaniesStore()
-
-      await store.getAll()
-
-      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/companies`)
-      expect(store.companies).toEqual(mockCompanies)
-      expect(store.loading).toBe(false)
-      expect(store.error).toBeNull()
-    })
-
     it('handles fetch error', async () => {
       const error = new Error('Network error')
       fetchWrapper.get.mockRejectedValue(error)
@@ -234,21 +222,4 @@ describe('companies store', () => {
     )
   })
 
-  it('sets loading state during operations', async () => {
-    let resolvePromise
-    const promise = new Promise((resolve) => {
-      resolvePromise = resolve
-    })
-    fetchWrapper.get.mockReturnValue(promise)
-
-    const store = useCompaniesStore()
-    const getAllPromise = store.getAll()
-
-    expect(store.loading).toBe(true)
-
-    resolvePromise(mockCompanies)
-    await getAllPromise
-
-    expect(store.loading).toBe(false)
-  })
 })

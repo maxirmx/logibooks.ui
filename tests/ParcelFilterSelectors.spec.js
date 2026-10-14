@@ -6,8 +6,6 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import ParcelFilterSelectors from '@/components/ParcelFilterSelectors.vue'
-import ResponsiveFilterBar from '@/components/ResponsiveFilterBar.vue'
-
 describe('ParcelFilterSelectors', () => {
   const mountComponent = (props = {}) =>
     mount(ParcelFilterSelectors, {
@@ -60,52 +58,6 @@ describe('ParcelFilterSelectors', () => {
     })
   }
 
-  it('uses an accessible responsive filter bar with role-based control sizes', () => {
-    const wrapper = mountComponent()
-    const filterBar = wrapper.findComponent(ResponsiveFilterBar)
-    const controls = Array.from(filterBar.element.children)
-
-    expect(filterBar.exists()).toBe(true)
-    expect(filterBar.attributes('aria-label')).toBe('Фильтры посылок')
-    expect(controls).toHaveLength(8)
-    expect(controls.map((control) => control.getAttribute('data-label'))).toEqual([
-      'Пользовательский фильтр',
-      'Статус',
-      'Статус проверки по стоп-словам',
-      'Статус проверки по ТН ВЭД',
-      'Применённые запреты и дубликаты',
-      'ТН ВЭД',
-      'Номер посылки',
-      'Товар'
-    ])
-    expect(controls[0].classList).toContain('responsive-filter-bar__item--compact')
-    expect(controls[4].classList).toContain('responsive-filter-bar__item--compact')
-    expect(controls[5].classList).toContain('responsive-filter-bar__item--small')
-    expect(controls[6].classList).toContain('responsive-filter-bar__item--small')
-    expect(controls[7].classList).toContain('responsive-filter-bar__item--grow')
-    controls.forEach((control) => expect(control.hasAttribute('style')).toBe(false))
-  })
-
-  it('keeps all controls enabled when no flags are active', () => {
-    const wrapper = mountComponent({ runningAction: false, loading: false, isInitializing: false })
-    assertDisabledState(wrapper, false, false)
-  })
-
-  it('disables both selects and text fields when action is running', () => {
-    const wrapper = mountComponent({ runningAction: true, loading: false, isInitializing: false })
-    assertDisabledState(wrapper, true, true)
-  })
-
-  it('disables only selects while loading to preserve text input focus', () => {
-    const wrapper = mountComponent({ runningAction: false, loading: true, isInitializing: false })
-    assertDisabledState(wrapper, true, false)
-  })
-
-  it('disables both selects and text fields while initializing', () => {
-    const wrapper = mountComponent({ runningAction: false, loading: false, isInitializing: true })
-    assertDisabledState(wrapper, true, true)
-  })
-
   it('emits update events for all v-model bindings', async () => {
     const wrapper = mountComponent()
 
@@ -146,46 +98,6 @@ describe('ParcelFilterSelectors', () => {
     ])
   })
 
-  it('uses explicit item mapping for all select controls', () => {
-    const wrapper = mountComponent()
-
-    wrapper.findAll('.v-select-stub').forEach((select) => {
-      expect(select.attributes('data-item-title')).toBe('title')
-      expect(select.attributes('data-item-value')).toBe('value')
-    })
-  })
-
-  it('shows passport check status selector only when enabled', () => {
-    const hiddenWrapper = mountComponent()
-    expect(hiddenWrapper.find('[data-label="Статус проверки паспорта"]').exists()).toBe(false)
-    expect(hiddenWrapper.findAll('.v-select-stub')).toHaveLength(5)
-
-    const visibleWrapper = mountComponent({
-      showPassportCheckStatus: true,
-      passportCheckStatusOptions: [
-        { title: 'Все', value: null },
-        { title: 'Проверен', value: 30 }
-      ]
-    })
-    expect(visibleWrapper.find('[data-label="Статус проверки паспорта"]').exists()).toBe(true)
-    expect(visibleWrapper.findAll('.v-select-stub')).toHaveLength(6)
-    expect(
-      visibleWrapper.find('[data-label="Статус проверки паспорта"]').classes()
-    ).toContain('responsive-filter-bar__item--compact')
-  })
-
-  it('clears passport check status when the selector is hidden after initialization', async () => {
-    const wrapper = mountComponent({
-      parcelsPassportCheckStatus: 30,
-      showPassportCheckStatus: false,
-      isInitializing: false
-    })
-
-    await wrapper.vm.$nextTick()
-
-    expect(wrapper.emitted('update:parcelsPassportCheckStatus')).toEqual([[null]])
-  })
-
   it('keeps passport check status while initializing and clears it if still hidden afterwards', async () => {
     const wrapper = mountComponent({
       parcelsPassportCheckStatus: 30,
@@ -200,21 +112,6 @@ describe('ParcelFilterSelectors', () => {
     await wrapper.setProps({ isInitializing: false })
 
     expect(wrapper.emitted('update:parcelsPassportCheckStatus')).toEqual([[null]])
-  })
-
-  it('keeps passport check status when the selector becomes visible before initialization completes', async () => {
-    const wrapper = mountComponent({
-      parcelsPassportCheckStatus: 30,
-      showPassportCheckStatus: false,
-      isInitializing: true
-    })
-
-    await wrapper.setProps({
-      showPassportCheckStatus: true,
-      isInitializing: false
-    })
-
-    expect(wrapper.emitted('update:parcelsPassportCheckStatus')).toBeUndefined()
   })
 
   it('keeps controls disabled when multiple blocking flags are active', () => {

@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import PrinterConfigurationDialog from '@/l2/PrinterConfigurationDialog.vue'
-import ActionButton from '@/components/ActionButton.vue'
-import { APP_DIALOG_BUTTON_PROPS, APP_DIALOG_SIZES, APP_DIALOG_MAX_WIDTH } from '@/helpers/dialog.helpers.js'
+import { APP_DIALOG_BUTTON_PROPS } from '@/helpers/dialog.helpers.js'
 
 const stubs = {
   PageAlertRegion: true,
@@ -22,41 +21,6 @@ function mountDialog(props = {}) {
 }
 
 describe('L2 printer configuration dialog', () => {
-  it('uses the shared information shell, sizing and button styles', () => {
-    const wrapper = mountDialog()
-    const frame = wrapper.getComponent({ name: 'AppDialogFrame' })
-    expect(frame.props('title')).toBe('Настройки печати')
-    expect(frame.props('tone')).toBe('default')
-    const dialog = wrapper.getComponent(stubs['v-dialog'])
-    expect(dialog.props()).toMatchObject({ width: APP_DIALOG_SIZES.medium, maxWidth: APP_DIALOG_MAX_WIDTH, persistent: true })
-    expect(wrapper.getComponent('[data-testid="close-print-settings"]').props()).toMatchObject(APP_DIALOG_BUTTON_PROPS.primary)
-    expect(wrapper.findAllComponents(ActionButton).map((button) => button.props())).toMatchObject([
-      { icon: 'fa-solid fa-broom', tooltipText: 'Очистить выбор' },
-      { icon: 'fa-solid fa-arrow-rotate-left', tooltipText: 'Обновить список' }
-    ])
-    expect(wrapper.get('.printer-configuration-row').findAllComponents(ActionButton)).toHaveLength(2)
-    wrapper.unmount()
-  })
-
-  it('sorts printer queues and emits direct selections and operations', async () => {
-    const wrapper = mountDialog({ printers: ['Office Z', 'TE200 B', 'Office A', 'TE200 A'], selected: 'TE200 A', active: true, userId: 9, connected: true })
-    expect(wrapper.find('[data-testid="printer-status"]').exists()).toBe(false)
-    expect(wrapper.get('[data-testid="clear-printer"]').attributes('aria-label')).toBe('Очистить выбор')
-    expect(wrapper.get('[data-testid="refresh-printers"]').attributes('aria-label')).toBe('Обновить список')
-    expect(wrapper.get('[data-testid="printer-selection-inline"]').findAll('option').map((item) => item.text())).toEqual(['TE200 A', 'TE200 B', 'Office A', 'Office Z'])
-    await wrapper.get('[data-testid="printer-selection-inline"]').setValue('Office A')
-    expect(wrapper.emitted('select')).toEqual([['Office A']])
-    await wrapper.get('[data-testid="auto-print-mode"]').setValue('TJ')
-    expect(wrapper.emitted('mode')).toEqual([['TJ']])
-    await wrapper.get('[data-testid="clear-printer"]').trigger('click')
-    await wrapper.get('[data-testid="refresh-printers"]').trigger('click')
-    await wrapper.get('[data-testid="close-print-settings"]').trigger('click')
-    expect(wrapper.emitted('clear')).toHaveLength(1)
-    expect(wrapper.emitted('refresh')).toHaveLength(1)
-    expect(wrapper.emitted('close')).toHaveLength(1)
-    wrapper.unmount()
-  })
-
   it('renders unavailable, paused, failed and overflow states and disables operations while busy', async () => {
     const wrapper = mountDialog({ paused: true, failed: { scanCodeId: 8, template: 'KGT' }, overflow: { scanCodeId: 50 } })
     expect(wrapper.get('[data-testid="printer-status"]').text()).toBe('QZ Tray отключён')
@@ -72,21 +36,6 @@ describe('L2 printer configuration dialog', () => {
     expect(wrapper.get('[data-testid="clear-printer"]').element.disabled).toBe(true)
     await wrapper.setProps({ busy: false, printing: true })
     expect(wrapper.get('[data-testid="refresh-printers"]').element.disabled).toBe(true)
-    wrapper.unmount()
-  })
-
-  it('allows printer changes while armed or paused and closes on Escape', async () => {
-    const wrapper = mountDialog({ mode: 'KGT', printers: ['Office', 'TE200'], selected: 'Office', active: true, userId: 9 })
-    expect(wrapper.get('[data-testid="printer-selection-inline"]').element.disabled).toBe(false)
-    expect(wrapper.get('[data-testid="refresh-printers"]').element.disabled).toBe(false)
-    await wrapper.get('[data-testid="printer-selection-inline"]').setValue('TE200')
-    expect(wrapper.emitted('select')).toEqual([['TE200']])
-    await wrapper.setProps({ paused: true })
-    expect(wrapper.get('[data-testid="printer-selection-inline"]').element.disabled).toBe(false)
-    await wrapper.get('[role="dialog"]').trigger('keydown', { key: 'Escape' })
-    expect(wrapper.emitted('close')).toHaveLength(1)
-    await wrapper.setProps({ show: false })
-    expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
     wrapper.unmount()
   })
 

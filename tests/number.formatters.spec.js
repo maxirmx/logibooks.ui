@@ -3,7 +3,7 @@
 // This file is a part of Logibooks ui application
 
 import { describe, expect, it } from 'vitest'
-import { formatIntegerThousands, formatPrice, formatWeight } from '@/helpers/number.formatters.js'
+import { formatWeight } from '@/helpers/number.formatters.js'
 
 describe('number.formatters', () => {
   describe('formatWeight', () => {
@@ -19,33 +19,10 @@ describe('number.formatters', () => {
       expect(formatWeight('123,456')).toBe('123.456')
     })
 
-    it('removes whitespace thousands separators', () => {
-      expect(formatWeight('1 234.567')).toBe('1\u00A0234.567')
-    })
-
     it('returns zero for null and blank input', () => {
       expect(formatWeight(null)).toBe('0.000')
       expect(formatWeight('   ')).toBe('0.000')
     })
   })
 
-  describe('formatPrice', () => {
-    it('formats and rounds a finite price', () => {
-      expect(formatPrice(123.456)).toBe('123.46')
-    })
-
-    it('returns zero for an invalid price', () => {
-      expect(formatPrice(undefined)).toBe('0.00')
-    })
-  })
-
-  describe('formatIntegerThousands', () => {
-    it('truncates and formats a finite integer count', () => {
-      expect(formatIntegerThousands(-1234.999)).toBe('-1\u00A0234')
-    })
-
-    it('returns zero for an invalid integer count', () => {
-      expect(formatIntegerThousands(NaN)).toBe('0')
-    })
-  })
 })

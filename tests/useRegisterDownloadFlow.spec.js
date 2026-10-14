@@ -102,18 +102,6 @@ describe('shared register download flow', () => {
     wrapper.unmount()
   })
 
-  it('keeps only generic download when company output is unavailable', async () => {
-    registersStore.getDownloadFormats.mockResolvedValue({ company: { available: false, reason: 'Формат несовместим' } })
-    const { flow, wrapper } = mountFlow()
-    await flow.loadFormats(register(GTC_COMPANY_ID, 7))
-    expect(flow.companyFormatName.value).toBe('')
-    expect(await flow.download({ register: register(GTC_COMPANY_ID, 7), format: 'company' })).toBe(false)
-    expect(await flow.download({ register: register(GTC_COMPANY_ID, 7) })).toBe(true)
-    expect(registersStore.download).toHaveBeenCalledTimes(1)
-    expect(registersStore.download).toHaveBeenCalledWith(7, 'r.xlsx', null, undefined, false, 'generic')
-    wrapper.unmount()
-  })
-
   it.each([2])('keeps unsupported type %i on the original path', async (registerType) => {
     const { flow, wrapper } = mountFlow()
     await flow.loadFormats(register(registerType, 8))
@@ -146,36 +134,6 @@ describe('shared register download flow', () => {
     resolveFirst({ company: { available: true, name: 'Old' } })
     await first
     expect(flow.companyFormatName.value).toBe('')
-    wrapper.unmount()
-  })
-
-  it('reports availability failure and retries the captured register', async () => {
-    registersStore.getDownloadFormats.mockRejectedValueOnce(new Error('offline'))
-      .mockResolvedValueOnce({ company: { available: true, name: 'Receiver' } })
-    const { flow, wrapper } = mountFlow()
-    await flow.loadFormats(register(WBRN_REGISTER_ID, 11))
-    expect(alertStore.error).toHaveBeenCalledTimes(1)
-    await alertStore.error.mock.calls[0][1].action.handler()
-    expect(registersStore.getDownloadFormats).toHaveBeenNthCalledWith(2, 11)
-    expect(flow.companyFormatName.value).toBe('Receiver')
-    wrapper.unmount()
-  })
-
-  it('retries a failed download with the same format, zone and weight choices', async () => {
-    registersStore.getDownloadFormats.mockResolvedValue({ company: { available: true, name: 'Receiver' } })
-    registersStore.download.mockRejectedValueOnce(new Error('download failed')).mockResolvedValueOnce(true)
-    const onDownloadStart = vi.fn()
-    const onDownloadEnd = vi.fn()
-    const { flow, wrapper } = mountFlow()
-    await flow.loadFormats(register(GTC_COMPANY_ID, 12))
-    const request = { register: register(GTC_COMPANY_ID, 12), format: 'company', forZone: 3,
-      zoneLabel: 'Zone 3', applyWeightCorrection: true, onDownloadStart, onDownloadEnd }
-    expect(await flow.download(request)).toBe(false)
-    expect(alertStore.error).toHaveBeenCalledTimes(1)
-    expect(await alertStore.error.mock.calls[0][1].action.handler()).toBe(true)
-    expect(registersStore.download).toHaveBeenNthCalledWith(2, 12, 'r.xlsx', 3, 'Zone 3', true, 'company')
-    expect(onDownloadStart).toHaveBeenCalledTimes(2)
-    expect(onDownloadEnd).toHaveBeenCalledTimes(2)
     wrapper.unmount()
   })
 

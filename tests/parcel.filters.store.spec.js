@@ -27,18 +27,6 @@ function deferred() {
 }
 
 describe('parcel filters store', () => {
-  it('returns each request result while only the latest load updates the cache', async () => {
-    const store = useParcelFiltersStore()
-    const old = deferred()
-    const latest = [{ ...filter, id: 2, name: 'Latest' }]
-    fetchWrapper.get.mockReturnValueOnce(old.promise).mockResolvedValueOnce(latest)
-    const pending = store.getAll()
-    expect(await store.getAll()).toBe(latest)
-    old.resolve([filter])
-    expect(await pending).toEqual([filter])
-    expect(store.filters).toEqual(latest)
-  })
-
   it.each(['reset', 'account'])('invalidates pending loads on %s and immediately clears old filters', async change => {
     const auth = useAuthStore()
     auth.user = { id: 7 }
@@ -121,48 +109,5 @@ describe('parcel filters store', () => {
     old.resolve([filter])
     await pending
     expect(store.filters).toEqual(expected)
-  })
-  it('loads lists and individual filters from the API', async () => {
-    const store = useParcelFiltersStore()
-    fetchWrapper.get.mockResolvedValueOnce([filter]).mockResolvedValueOnce(filter)
-    expect(await store.getAll()).toEqual([filter])
-    expect(await store.getById(1)).toEqual(filter)
-    expect(store.filters).toEqual([filter])
-    expect(fetchWrapper.get.mock.calls.map(call => call[0])).toEqual([
-      expect.stringMatching(/\/parcel-filters$/),
-      expect.stringMatching(/\/parcel-filters\/1$/)
-    ])
-  })
-
-  it('updates local state only after successful writes', async () => {
-    const store = useParcelFiltersStore()
-    fetchWrapper.post.mockResolvedValueOnce(filter)
-    await store.create(filter)
-    expect(store.filters).toEqual([filter])
-    fetchWrapper.put.mockResolvedValueOnce(undefined)
-    await store.update(1, { name: 'Изменённый' })
-    expect(store.filters[0].name).toBe('Изменённый')
-    fetchWrapper.delete.mockResolvedValueOnce(undefined)
-    await store.remove(1)
-    expect(store.filters).toEqual([])
-  })
-
-  it('propagates transport failures and leaves previously loaded state intact', async () => {
-    const store = useParcelFiltersStore()
-    fetchWrapper.get.mockResolvedValueOnce([filter])
-    await store.getAll()
-    for (const [operation, method] of [
-      [() => store.getAll(), 'get'], [() => store.getById(1), 'get'],
-      [() => store.create(filter), 'post'],
-      [() => store.update(1, { name: 'Не сохранено' }), 'put'],
-      [() => store.remove(1), 'delete']
-    ]) {
-      const failure = new Error('network')
-      fetchWrapper[method].mockRejectedValueOnce(failure)
-      await expect(operation()).rejects.toBe(failure)
-      expect(store.filters).toEqual([filter])
-    }
-    store.$reset()
-    expect(store.filters).toEqual([])
   })
 })

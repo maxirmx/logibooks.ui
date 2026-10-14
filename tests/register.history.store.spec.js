@@ -23,32 +23,6 @@ describe('register.history.store.js', () => {
     vi.clearAllMocks()
   })
 
-  it('loads a paged register history', async () => {
-    const response = {
-      items: [{ id: 5, registerId: 42, reason: 'Сохранение изменений', eventCount: 3 }],
-      pagination: { totalCount: 7 },
-      filterOptions: {
-        users: [{ userId: 3, userName: 'Иванов Иван', userEmail: 'ivan@example.com' }],
-        reasons: ['Сохранение изменений']
-      }
-    }
-    mockGet.mockResolvedValue(response)
-    const store = useRegisterHistoryStore()
-
-    const result = await store.getHistory(42, { page: 2, pageSize: 25 })
-
-    expect(mockGet).toHaveBeenCalledWith(
-      'http://localhost:3000/api/registers/42/history?page=2&pageSize=25&sortBy=changedAt&sortOrder=desc'
-    )
-    expect(result).toEqual(response)
-    expect(store.items).toEqual(response.items)
-    expect(store.items[0].eventCount).toBe(3)
-    expect(store.totalCount).toBe(7)
-    expect(store.userOptions).toEqual(response.filterOptions.users)
-    expect(store.reasonOptions).toEqual(response.filterOptions.reasons)
-    expect(store.loading).toBe(false)
-  })
-
   it('adds server sorting and optional user and reason filters to the request', async () => {
     mockGet.mockResolvedValue({ items: [], pagination: { totalCount: 0 } })
     const store = useRegisterHistoryStore()

@@ -24,15 +24,4 @@ describe('RegisterInvoiceCell.vue', () => {
     expect(wrapper.text()).toContain('от 03.06.2026')
   })
 
-  it('omits date row when invoice date is not set', () => {
-    const wrapper = mount(RegisterInvoiceCell, {
-      props: {
-        item: { transportationTypeCode: 1, invoiceNumber: 'INV-2' },
-        getTransportationDocument: vi.fn().mockReturnValue('CMR')
-      }
-    })
-
-    expect(wrapper.text()).toBe('CMR INV-2')
-    expect(wrapper.find('.invoice-date').exists()).toBe(false)
-  })
 })

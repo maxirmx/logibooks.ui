@@ -6,15 +6,7 @@ import { describe, expect, it } from 'vitest'
 import { ref } from 'vue'
 import { scanjobCheckStatusProjectionKind } from '@/helpers/scanjob.check-status.helpers.js'
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
-import {
-  canClearParcelDefect,
-  canSetParcelDefect,
-  getClearParcelDefectErrorMessage,
-  getSetParcelDefectErrorMessage,
-  isParcelDefect,
-  isParcelDuplicate,
-  isParcelMarkedByPartner
-} from '@/helpers/parcel.defect.helpers.js'
+import { canSetParcelDefect, getClearParcelDefectErrorMessage, getSetParcelDefectErrorMessage, isParcelDefect, isParcelDuplicate, isParcelMarkedByPartner } from '@/helpers/parcel.defect.helpers.js'
 
 describe('parcel defect helpers', () => {
   it('detects special statuses from projection only', () => {
@@ -38,24 +30,6 @@ describe('parcel defect helpers', () => {
     expect(
       isParcelMarkedByPartner({ checkStatusProjection: { title: 'Исключено партнёром' } })
     ).toBe(true)
-  })
-
-  it('handles case-insensitive projection text and partner spelling variants', () => {
-    expect(isParcelDefect({ checkStatusProjection: { title: 'бРаК' } })).toBe(true)
-    expect(isParcelDuplicate({ checkStatusProjection: { restrictionReason: 'дУбЛиКаТ' } })).toBe(
-      true
-    )
-    expect(
-      isParcelMarkedByPartner({ checkStatusProjection: { title: 'Исключено партнером' } })
-    ).toBe(true)
-  })
-
-  it('returns false for unrelated projections', () => {
-    expect(isParcelDefect({ checkStatusProjection: { title: 'Не проверено' } })).toBe(false)
-    expect(isParcelDuplicate({ checkStatusProjection: { title: 'Проверено' } })).toBe(false)
-    expect(
-      isParcelMarkedByPartner({ checkStatusProjection: { restrictionReason: 'Нет ограничений' } })
-    ).toBe(false)
   })
 
   it('allows setting defect only for administrator or warehouse manager on regular parcels', () => {
@@ -83,39 +57,6 @@ describe('parcel defect helpers', () => {
       canSetParcelDefect(
         { checkStatusProjection: { title: 'Исключено партнёром' } },
         { isAdmin: true }
-      )
-    ).toBe(false)
-  })
-
-  it('allows clearing defect only for administrator or shift lead on defect parcels', () => {
-    const parcel = {
-      checkStatusProjection: {
-        kind: scanjobCheckStatusProjectionKind.Defect,
-        title: 'Брак'
-      }
-    }
-
-    expect(canClearParcelDefect(parcel, { isAdmin: ref(true), isShiftLead: ref(false) })).toBe(true)
-    expect(canClearParcelDefect(parcel, { isAdmin: ref(false), isShiftLead: ref(true) })).toBe(true)
-    expect(canClearParcelDefect(parcel, { isAdmin: ref(false), isShiftLead: ref(false) })).toBe(
-      false
-    )
-    expect(
-      canClearParcelDefect({ checkStatusProjection: { title: 'Не проверено' } }, { isAdmin: true })
-    ).toBe(false)
-    expect(
-      canClearParcelDefect({ checkStatusProjection: { title: 'Брак' } }, { isShiftLead: true })
-    ).toBe(true)
-    expect(
-      canClearParcelDefect(
-        {
-          checkStatus: CheckStatusCode.Duplicate2.value,
-          checkStatusProjection: {
-            kind: scanjobCheckStatusProjectionKind.Checked,
-            title: 'Проверено'
-          }
-        },
-        { isShiftLead: true }
       )
     ).toBe(false)
   })

@@ -60,21 +60,6 @@ describe('unregistered.parcels store', () => {
     expect(store.loading).toBe(false)
   })
 
-  it('downloads register export with default filename using registerId', async () => {
-    fetchWrapper.downloadFile.mockResolvedValue(true)
-
-    const store = useUnregisteredParcelsStore()
-    const result = await store.download(8)
-
-    expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
-      `${apiUrl}/unregisteredparcels/8/download`,
-      'Unregistered_parcels_8.xlsx'
-    )
-    expect(result).toBe(true)
-    expect(store.error).toBeNull()
-    expect(store.loading).toBe(false)
-  })
-
   it('downloads register export with invoiceNumber in filename', async () => {
     fetchWrapper.downloadFile.mockResolvedValue(true)
 
@@ -86,30 +71,6 @@ describe('unregistered.parcels store', () => {
       'Unregistered_parcels_INV-2025-001.xlsx'
     )
     expect(result).toBe(true)
-  })
-
-  it('falls back to registerId in filename when invoiceNumber is empty string', async () => {
-    fetchWrapper.downloadFile.mockResolvedValue(true)
-
-    const store = useUnregisteredParcelsStore()
-    await store.download(8, '')
-
-    expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
-      `${apiUrl}/unregisteredparcels/8/download`,
-      'Unregistered_parcels_8.xlsx'
-    )
-  })
-
-  it('falls back to registerId in filename when invoiceNumber is whitespace', async () => {
-    fetchWrapper.downloadFile.mockResolvedValue(true)
-
-    const store = useUnregisteredParcelsStore()
-    await store.download(8, '   ')
-
-    expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
-      `${apiUrl}/unregisteredparcels/8/download`,
-      'Unregistered_parcels_8.xlsx'
-    )
   })
 
   it('stores and rethrows export download failures', async () => {

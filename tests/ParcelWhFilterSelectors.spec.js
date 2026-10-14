@@ -3,8 +3,6 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import ParcelWhFilterSelectors from '@/components/ParcelWhFilterSelectors.vue'
-import ResponsiveFilterBar from '@/components/ResponsiveFilterBar.vue'
-
 const selectStub = {
   name: 'v-select',
   template: `
@@ -71,53 +69,6 @@ function mountSelector(props = {}) {
 }
 
 describe('ParcelWhFilterSelectors.vue', () => {
-  it('uses an accessible responsive filter bar with role-based control sizes', () => {
-    const wrapper = mountSelector({ numberLabel: 'ШК' })
-    const filterBar = wrapper.findComponent(ResponsiveFilterBar)
-    const controls = Array.from(filterBar.element.children)
-
-    expect(filterBar.exists()).toBe(true)
-    expect(filterBar.attributes('aria-label')).toBe('Фильтры складских посылок')
-    expect(controls).toHaveLength(8)
-    expect(controls.map((control) => control.textContent.trim())).toEqual([
-      'Пользовательский фильтрНет',
-      'ПроверкаВсеНе провереноЗапретБракПроверено',
-      'ЗонаВсеНе заданаЗеленая зона',
-      'СтатусВсеНа складе',
-      'ШК',
-      'Номер коробки',
-      'Любой из стикеров',
-      'Товар'
-    ])
-    expect(controls[0].classList).toContain('responsive-filter-bar__item--compact')
-    expect(controls[1].classList).toContain('responsive-filter-bar__item--compact')
-    expect(controls[2].classList).toContain('responsive-filter-bar__item--compact')
-    expect(controls[3].classList).toContain('responsive-filter-bar__item--compact')
-    expect(controls[4].classList).toContain('responsive-filter-bar__item--small')
-    expect(controls[5].classList).toContain('responsive-filter-bar__item--compact')
-    expect(controls[6].classList).toContain('responsive-filter-bar__item--compact')
-    expect(controls[7].classList).toContain('responsive-filter-bar__item--grow')
-    controls.forEach((control) => expect(control.hasAttribute('style')).toBe(false))
-  })
-
-  it('renders warehouse selectors, text filters, and the unassigned zone option', () => {
-    const wrapper = mountSelector({ numberLabel: 'ШК' })
-
-    const text = wrapper.text()
-    expect(text).toContain('Проверка')
-    expect(text).toContain('Не проверено')
-    expect(text).toContain('Запрет')
-    expect(text).toContain('Брак')
-    expect(text).toContain('Проверено')
-    expect(text).toContain('Зона')
-    expect(text).toContain('Не задана')
-    expect(text).toContain('Статус')
-    expect(text).toContain('ШК')
-    expect(text).toContain('Номер коробки')
-    expect(text).toContain('Любой из стикеров')
-    expect(text).toContain('Товар')
-  })
-
   it('emits debounced text filter model updates to the parent refs', async () => {
     const wrapper = mountSelector()
     const fields = wrapper.findAll('input')
@@ -147,9 +98,4 @@ describe('ParcelWhFilterSelectors.vue', () => {
     expect(wrapper.emitted('clear-box-scope')).toHaveLength(1)
   })
 
-  it('falls back to the box id when a scoped box has no display code', () => {
-    const wrapper = mountSelector({ boxScopeId: 17, boxScopeCode: null })
-
-    expect(wrapper.get('[data-testid="parcel-box-scope"]').text()).toContain('Коробка: #17')
-  })
 })

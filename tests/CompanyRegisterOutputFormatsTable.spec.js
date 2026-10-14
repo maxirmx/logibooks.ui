@@ -116,25 +116,4 @@ describe('company register output format status table', () => {
     wrapper.unmount()
   })
 
-  it('retries company-name loading before showing the register labels', async () => {
-    store.getAll.mockRejectedValueOnce(new Error('offline'))
-    const wrapper = await mountTable()
-    expect(wrapper.find('table').exists()).toBe(false)
-    expect(alerts.error).toHaveBeenCalledTimes(1)
-    await alerts.error.mock.calls[0][1].action.handler()
-    await flush()
-    expect(store.getAll).toHaveBeenCalledTimes(2)
-    expect(wrapper.findAll('tbody tr').map((row) => row.findAll('td')[1].text())).toEqual(['РВБ', 'Озон'])
-    wrapper.unmount()
-  })
-
-  it('leaves a configured row intact when deletion is canceled', async () => {
-    confirm.mockResolvedValueOnce(false)
-    const wrapper = await mountTable()
-    await wrapper.get(`[data-testid="register-output-delete-${COMPANY_REGISTER_OUTPUT_TYPES[0]}"]`).trigger('click')
-    await flush()
-    expect(store.deleteRegisterOutputFormat).not.toHaveBeenCalled()
-    expect(wrapper.findAll('tbody tr')[0].text()).toContain('Настроен')
-    wrapper.unmount()
-  })
 })

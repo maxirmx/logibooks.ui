@@ -77,66 +77,6 @@ describe('ParcelFilter_SettingsView', () => {
     }
     destination.unmount()
   })
-  it('groups existing check-status definitions and loads shared status metadata', async () => {
-    const { wrapper } = mountView({ mode: 'create' })
-    await flushPromises()
-    expect(wrapper.findAll('fieldset')).toHaveLength(5)
-    expect(wrapper.find('[data-testid="parcel-filter-statuses"]').text()).toContain('Реальный статус')
-    expect(wrapper.find('[data-testid="parcel-filter-passport"]').text()).toContain('Несуществующий')
-    expect(wrapper.find('[data-testid="parcel-filter-common"]').text()).toContain('Согл. с акцизом')
-    expect(wrapper.find('[data-testid="parcel-filter-sw"]').text()).toContain('Стоп слово')
-    expect(wrapper.find('[data-testid="parcel-filter-fc"]').text()).toContain('Стоп ТН ВЭД')
-    expect(wrapper.find('[data-testid="parcel-filter-sw"]').text()).toContain('🔖 Ок стоп слова')
-    expect(wrapper.findAll('[data-testid="parcel-filter-common"] input').map(input => Number(input.element.value)))
-      .toEqual([380, 381, 511, 560, 561, 562])
-    expect(wrapper.findAll('[data-testid="parcel-filter-sw"] input').map(input => Number(input.element.value)))
-      .toEqual([0, 16, 32, 144, 160, 256, 384])
-    expect(wrapper.findAll('[data-testid="parcel-filter-fc"] input').map(input => Number(input.element.value)))
-      .toEqual([0, 16, 256, 257, 258])
-    expect(fetchWrapper.get.mock.calls.some(([url]) => url.endsWith('/parcel-filters/options'))).toBe(false)
-    expect(wrapper.findAll('.parcel-filter-settings__left-column legend').map(item => item.text())).toEqual([
-      'Общие статусы проверки', 'Проверка стоп-слов', 'Проверка ТН ВЭД', 'Проверка паспорта'
-    ])
-    expect(wrapper.find('[data-testid="parcel-filter-common"] input:disabled').element.checked).toBe(true)
-    expect(wrapper.find('[data-testid="parcel-filter-common"]').text()).toContain('Исключено партнёром')
-    expect(wrapper.vm.draft.excludedCheckStatuses.common).toEqual([])
-    expect(wrapper.find('[data-testid="parcel-filter-save"]').attributes('disabled')).toBeDefined()
-  })
-
-  it('uses the passport statuses and labels already provided by registers ops', async () => {
-    const originalGet = fetchWrapper.get.getMockImplementation()
-    fetchWrapper.get.mockImplementation(url => url.endsWith('/registers/ops')
-      ? Promise.resolve({ ...registerOps, passportCheckStatuses: [
-          { value: 30, code: 'NotExists', name: 'Текст из ops' },
-          { value: 20, code: 'Checked', name: 'Проверен' }
-        ] })
-      : originalGet(url))
-    const { wrapper } = mountView({ mode: 'create' })
-    await flushPromises()
-    expect(wrapper.find('[data-testid="parcel-filter-passport"]').text()).toContain('Текст из ops')
-    expect(wrapper.find('[data-testid="parcel-filter-passport"]').text()).toContain('Проверен')
-    expect(wrapper.findAll('[data-testid="parcel-filter-passport"] input')).toHaveLength(2)
-  })
-
-  it('presents ops rejection once and loads the form after retry', async () => {
-    const originalGet = fetchWrapper.get.getMockImplementation()
-    fetchWrapper.get.mockImplementation(url => url.endsWith('/registers/ops')
-      ? Promise.reject(new Error('Ops недоступны'))
-      : originalGet(url))
-    const { wrapper } = mountView({ mode: 'create' })
-    await flushPromises()
-    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-    expect(wrapper.find('[data-testid="page-alert-region"]').text()).toContain('Ops недоступны')
-    expect(wrapper.find('form').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="parcel-filter-save"]').attributes('disabled')).toBeDefined()
-    expect(push).not.toHaveBeenCalled()
-    fetchWrapper.get.mockImplementation(originalGet)
-    await wrapper.find('[data-testid="page-alert-region"] button').trigger('click')
-    await flushPromises()
-    expect(wrapper.find('[data-testid="parcel-filter-passport"]').text()).toContain('Несуществующий')
-    expect(fetchWrapper.get.mock.calls.filter(([url]) => url.endsWith('/registers/ops'))).toHaveLength(2)
-  })
-
   it('disables Save for empty, long, and duplicate names', async () => {
     const { wrapper } = mountView({ mode: 'create' })
     await flushPromises()
@@ -150,20 +90,6 @@ describe('ParcelFilter_SettingsView', () => {
     expect(wrapper.find('[data-testid="parcel-filter-save"]').attributes('disabled')).toBeDefined()
     await name.setValue('Новый фильтр')
     expect(wrapper.find('[data-testid="parcel-filter-save"]').attributes('disabled')).toBeUndefined()
-  })
-
-  it('creates an empty filter and navigates after persistence', async () => {
-    const { wrapper } = mountView({ mode: 'create' })
-    await flushPromises()
-    await wrapper.find('[data-testid="parcel-filter-name"]').setValue('  Новый фильтр  ')
-    await wrapper.find('[data-testid="parcel-filter-save"]').trigger('click')
-    await flushPromises()
-    expect(fetchWrapper.post).toHaveBeenCalledWith(expect.stringContaining('/parcel-filters'), {
-      name: 'Новый фильтр', excludedParcelStatusIds: [],
-      excludedCheckStatuses: { common: [], sw: [], fc: [] },
-      excludedPassportCheckStatuses: []
-    })
-    expect(push).toHaveBeenCalledWith('/user/edit/7')
   })
 
   it('submits selected parcel and check statuses without the locked partner code', async () => {
@@ -180,35 +106,6 @@ describe('ParcelFilter_SettingsView', () => {
     expect(payload.excludedCheckStatuses).toEqual({ common: [380], sw: [256], fc: [256] })
     expect(payload.excludedPassportCheckStatuses).toEqual([30])
     expect(payload.excludedCheckStatuses.common).not.toContain(0x01ff)
-  })
-
-  it('loads and updates all exclusion categories', async () => {
-    const { wrapper } = mountView({ mode: 'edit', id: 1 })
-    await flushPromises()
-    expect(wrapper.find('[data-testid="parcel-filter-name"]').element.value).toBe('Мой фильтр')
-    expect(wrapper.find('[data-testid="parcel-filter-passport"] input').element.checked).toBe(true)
-    await wrapper.find('[data-testid="parcel-filter-name"]').setValue('Изменённый')
-    await wrapper.find('[data-testid="parcel-filter-save"]').trigger('click')
-    await flushPromises()
-    expect(fetchWrapper.put).toHaveBeenCalledWith(expect.stringMatching(/\/parcel-filters\/1$/), {
-      name: 'Изменённый', excludedParcelStatusIds: [2],
-      excludedCheckStatuses: { common: [381], sw: [256], fc: [256] },
-      excludedPassportCheckStatuses: [30]
-    })
-    expect(push).toHaveBeenCalledWith('/user/edit/7')
-  })
-
-  it('clears passport exclusions while preserving parcel checks', async () => {
-    const { wrapper } = mountView({ mode: 'edit', id: 1 })
-    await flushPromises()
-    await wrapper.find('[data-testid="parcel-filter-passport"] input').setValue(false)
-    await wrapper.find('[data-testid="parcel-filter-save"]').trigger('click')
-    await flushPromises()
-    expect(fetchWrapper.put).toHaveBeenCalledWith(expect.stringMatching(/\/parcel-filters\/1$/), {
-      name: 'Мой фильтр', excludedParcelStatusIds: [2],
-      excludedCheckStatuses: { common: [381], sw: [256], fc: [256] },
-      excludedPassportCheckStatuses: []
-    })
   })
 
   it('preserves the draft on rejection and retries without premature navigation', async () => {

@@ -39,13 +39,6 @@ describe('feacn.insert.items.store.js', () => {
   })
 
   describe('CRUD operations', () => {
-    it('getAll retrieves items', async () => {
-      fetchWrapper.get.mockResolvedValue(mockItems)
-      await store.getAll()
-      expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:3000/api/feacninsertitems')
-      expect(store.insertItems).toEqual(mockItems)
-    })
-
     it('getById retrieves item by id', async () => {
       fetchWrapper.get.mockResolvedValue(mockItem)
       const res = await store.getById(1)

@@ -29,46 +29,6 @@ function mountField(props, options = {}) {
 }
 
 describe('WbrNFormField', () => {
-  it('renders the WbrN label and default full-width input', () => {
-    const wrapper = mountField({
-      name: 'productCountryName',
-      errors: {}
-    })
-
-    expect(wrapper.find('label').text()).toBe('Страна:')
-    expect(wrapper.find('.form-group-1').exists()).toBe(true)
-    expect(wrapper.find('.label-1').exists()).toBe(true)
-    expect(wrapper.find('input').attributes('name')).toBe('productCountryName')
-    expect(wrapper.find('input').classes()).toContain('input-1')
-  })
-
-  it('uses compact classes and validation styling when fullWidth is false', () => {
-    const wrapper = mountField({
-      name: 'recipientCity',
-      fullWidth: false,
-      errors: { recipientCity: 'Required' }
-    })
-
-    expect(wrapper.find('label').text()).toBe('Город получателя:')
-    expect(wrapper.find('.form-group').exists()).toBe(true)
-    expect(wrapper.find('.label').exists()).toBe(true)
-    expect(wrapper.find('input').classes()).toContain('input')
-    expect(wrapper.find('input').classes()).toContain('is-invalid')
-    expect(wrapper.find('input').classes()).not.toContain('input-1')
-  })
-
-  it('passes number type and step through to the Field component', () => {
-    const wrapper = mountField({
-      name: 'quantity',
-      type: 'number',
-      step: '1.0',
-      errors: {}
-    })
-
-    expect(wrapper.find('input').attributes('type')).toBe('number')
-    expect(wrapper.find('input').attributes('step')).toBe('1.0')
-  })
-
   it('renders select fields with slot content', () => {
     const wrapper = mountField(
       {

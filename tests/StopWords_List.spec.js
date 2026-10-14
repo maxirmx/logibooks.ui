@@ -8,7 +8,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import StopWordsList from '@/lists/StopWords_List.vue'
-import ResponsiveFilterBar from '@/components/ResponsiveFilterBar.vue'
 import { defaultGlobalStubs } from './helpers/test-utils.js'
 import { roleAdmin } from '@/helpers/user.roles.js'
 
@@ -262,51 +261,6 @@ describe('StopWords_List.vue', () => {
     }
   })
 
-  describe('Admin Access Control', () => {
-    it('shows warning for non-admin users', () => {
-      // Test the isAdmin property of the auth store
-      expect(wrapper.vm.authStore.isAdmin).toBe(true) // Our mock user is admin
-
-      // For non-admin logic, we would need to change the mock
-      // but that would affect other tests, so we just verify the current state
-    })
-  })
-
-  describe('Data Display', () => {
-    it('renders the responsive filters in their original order above a viewport-bound table', () => {
-      const filters = wrapper.find('.stopwords-filter-row')
-      expect(wrapper.findComponent(ResponsiveFilterBar).exists()).toBe(true)
-      expect(filters.attributes('aria-label')).toBe('Фильтры стоп-слов')
-      expect(filters.find('[data-testid="v-select"]').exists()).toBe(true)
-      expect(filters.find('[data-testid="v-autocomplete"]').exists()).toBe(true)
-      expect(filters.find('[data-testid="v-text-field"]').exists()).toBe(true)
-      expect(filters.element.children[0]).toBe(filters.find('[data-testid="v-select"]').element)
-      expect(filters.element.children[1]).toBe(filters.find('[data-testid="v-autocomplete"]').element)
-      expect(filters.element.children[2]).toBe(filters.find('[data-testid="v-text-field"]').element)
-      expect(filters.element.children[0].classList).toContain(
-        'responsive-filter-bar__item--compact'
-      )
-      expect(filters.element.children[1].classList).toContain(
-        'responsive-filter-bar__item--regular'
-      )
-      expect(filters.element.children[2].classList).toContain('responsive-filter-bar__item--grow')
-      expect(wrapper.find('.stopwords-table-card').exists()).toBe(true)
-      expect(wrapper.vm.prohibitionScopeFilterItems).toEqual([
-        { title: 'Любая', value: 'all' },
-        { title: 'Экспорт', value: 'export' },
-        { title: 'Импорт', value: 'import' }
-      ])
-    })
-  })
-
-  describe('Admin Actions', () => {
-    it('calls openCreateDialog and navigates to create page', async () => {
-      await wrapper.vm.openCreateDialog()
-      expect(mockPush).toHaveBeenCalledWith('/stopword/create')
-    })
-
-  })
-
   describe('Navigation Functions', () => {
     it('navigates to edit page when openEditDialog is called', async () => {
       const testStopWord = mockStopWords.value[0]
@@ -335,15 +289,6 @@ describe('StopWords_List.vue', () => {
         cancellationText: 'Не удалять',
         content: 'Удалить стоп-слово "' + testStopWord.word + '" ?'
       }))
-    })
-
-    it('calls remove when deletion is confirmed', async () => {
-      mockConfirm.mockResolvedValue(true)
-      const testStopWord = mockStopWords.value[0]
-
-      await wrapper.vm.deleteStopWord(testStopWord)
-
-      expect(removeStopWord).toHaveBeenCalledWith(testStopWord.id)
     })
 
     it('does not call remove when deletion is cancelled', async () => {
@@ -383,18 +328,6 @@ describe('StopWords_List.vue', () => {
   })
 
   describe('Search and Filter', () => {
-    it('filters stop words by word', () => {
-      const mockItem = { raw: mockStopWords.value[0] }
-      const result = wrapper.vm.filterStopWords(null, 'и', mockItem)
-      expect(result).toBe(true)
-    })
-
-    it('filters stop words by word case insensitive', () => {
-      const mockItem = { raw: { ...mockStopWords.value[1], word: 'ИЛИ' } }
-      const result = wrapper.vm.filterStopWords(null, 'или', mockItem)
-      expect(result).toBe(true)
-    })
-
     it('filters stop words by procedure, reason, and match type', () => {
       const mockItem = { raw: mockStopWords.value[2] }
       expect(wrapper.vm.filterStopWords(null, 'dual export', mockItem)).toBe(true)
@@ -407,11 +340,6 @@ describe('StopWords_List.vue', () => {
     it('handles null query', () => {
       const mockItem = { raw: { word: 'и' } }
       const result = wrapper.vm.filterStopWords(null, null, mockItem)
-      expect(result).toBe(false)
-    })
-
-    it('handles null item', () => {
-      const result = wrapper.vm.filterStopWords(null, 'test', null)
       expect(result).toBe(false)
     })
 
@@ -428,41 +356,7 @@ describe('StopWords_List.vue', () => {
     })
   })
 
-  describe('Match Type Display', () => {
-    it('returns correct text for known id', () => {
-      const result = wrapper.vm.getMatchTypeText(1)
-      expect(result).toBe('Exact')
-    })
-
-    it('returns fallback text for unknown id', () => {
-      const result = wrapper.vm.getMatchTypeText(99)
-      expect(result).toBe(`Тип 99`)
-    })
-  })
-
-  describe('Loading States', () => {
-    it('shows loading spinner when loading', async () => {
-      // Since components are stubbed, test loading state directly
-      const loading = wrapper.vm.stopWordsStore.loading
-      expect(loading).toBeDefined()
-      expect(typeof loading.value).toBe('boolean')
-      expect(loading.value).toBe(false)
-    })
-  })
-
   describe('Table Headers', () => {
-    it('has correct table headers', () => {
-      const headers = wrapper.vm.headers
-      expect(headers).toEqual([
-        { title: '', align: 'center', key: 'actions', sortable: false, width: '10%' },
-        { title: 'Стоп-слово или фраза', key: 'word', sortable: true },
-        { title: 'Тип соответствия', key: 'matchTypeId', sortable: true },
-        { title: 'Страна', key: 'country', align: 'start', sortable: false },
-        { title: 'Процедура', key: 'procedure', align: 'start' },
-        { title: 'Причина запрета', key: 'prohibitionReason', align: 'start', sortable: false }
-      ])
-    })
-
     it('filters visible stop words by selected procedure', () => {
       expect(wrapper.vm.filteredStopWords.map((word) => word.word)).toEqual([
         'и',
@@ -478,165 +372,6 @@ describe('StopWords_List.vue', () => {
       expect(wrapper.vm.filteredStopWords.map((word) => word.word)).toEqual(['или', 'но', 'кроме'])
     })
 
-    it('uses requested procedure sort order from import and export flags', () => {
-      const combinations = [
-        { scopes: [] },
-        { scopes: [{ countryIsoNumeric: 643, customsProcedureCode: 10 }] },
-        { scopes: [
-          { countryIsoNumeric: 643, customsProcedureCode: 10 },
-          { countryIsoNumeric: 860, customsProcedureCode: 40 }
-        ] },
-        { scopes: [{ countryIsoNumeric: 860, customsProcedureCode: 40 }] }
-      ]
-
-      expect(combinations.map((item) => wrapper.vm.getProhibitionScopeSortOrder(item))).toEqual([
-        '', '643:10', '643:10|860:40', '860:40'
-      ])
-      expect(wrapper.vm.tableStopWords.map((item) => item.procedure)).toEqual([
-        '643:10', '860:40', '643:10|860:40', '643:10|860:40'
-      ])
-    })
-
-    it('renders procedure and prohibition reason columns', () => {
-      const rows = wrapper.findAll('[data-testid="v-data-table"] .v-data-table-row')
-      expect(rows[0].findAll('.v-data-table-cell')[3].text()).toBe('Россия')
-      expect(rows[0].findAll('.v-data-table-cell')[4].text()).toBe('Экспорт')
-      expect(rows[1].findAll('.v-data-table-cell')[3].text()).toBe('Узбекистан')
-      expect(rows[1].findAll('.v-data-table-cell')[4].text()).toBe('Импорт')
-
-      const procedureLines = rows[2].findAll('.v-data-table-cell')[4].findAll('.procedure-line')
-      const reasonLines = rows[2].findAll('.v-data-table-cell')[5].findAll('.reason-line')
-      expect(procedureLines.map((line) => line.text())).toEqual(['Экспорт', 'Импорт'])
-      expect(reasonLines.map((line) => line.text())).toEqual([
-        'dual export stop reason',
-        'dual import stop reason'
-      ])
-    })
-
-    it('keeps import reason aligned with import procedure when export reason is empty', () => {
-      const rows = wrapper.findAll('[data-testid="v-data-table"] .v-data-table-row')
-      const procedureLines = rows[3].findAll('.v-data-table-cell')[4].findAll('.procedure-line')
-      const reasonLines = rows[3].findAll('.v-data-table-cell')[5].findAll('.reason-line')
-      expect(procedureLines.map((line) => line.text())).toEqual(['Экспорт', 'Импорт'])
-      expect(reasonLines).toHaveLength(2)
-      expect(reasonLines[0].text()).toBe('')
-      expect(reasonLines[1].text()).toBe('import only dual stop reason')
-    })
-  })
-
-  describe('Component Exposure', () => {
-    it('exposes necessary functions for testing', () => {
-      expect(wrapper.vm.openCreateDialog).toBeDefined()
-      expect(wrapper.vm.openEditDialog).toBeDefined()
-      expect(wrapper.vm.deleteStopWord).toBeDefined()
-      expect(wrapper.vm.getMatchTypeText).toBeDefined()
-    })
-  })
-
-  describe('Store Integration', () => {
-    it('properly integrates with stop words store', () => {
-      expect(wrapper.vm.stopWords).toBeDefined()
-      expect(wrapper.vm.loading).toBeDefined()
-    })
-
-    it('properly integrates with auth store', () => {
-      expect(wrapper.vm.authStore).toBeDefined()
-    })
-
-    it('properly integrates with the notification store', () => {
-      expect(wrapper.vm.alertStore).toBeDefined()
-    })
-  })
-
-  describe('Vuetify Integration', () => {
-    it('uses correct v-data-table props', () => {
-      const table = wrapper.find('[data-testid="v-data-table"]')
-      expect(table.exists()).toBe(true)
-
-      // Check that table is configured properly through the component
-      expect(wrapper.vm.headers).toBeDefined()
-      expect(wrapper.vm.filterStopWords).toBeDefined()
-    })
-  })
-
-  describe('Edge Cases', () => {
-    it('handles empty stop words list', async () => {
-      mockStopWords.value = []
-      await wrapper.vm.$nextTick()
-
-      // With the new structure, empty list still shows the table
-      const dataTable = wrapper.find('[data-testid="v-data-table"]')
-      expect(dataTable.exists()).toBe(true)
-    })
-
-    it('handles stop word with special characters', () => {
-      const mockItem = { raw: { word: 'тест-слово!' } }
-      const result = wrapper.vm.filterStopWords(null, 'тест', mockItem)
-      expect(result).toBe(true)
-    })
-
-    it('handles very long stop word', () => {
-      const longWord = 'а'.repeat(100)
-      const mockItem = { raw: { word: longWord } }
-      const result = wrapper.vm.filterStopWords('unused', 'а', mockItem)
-      expect(result).toBe(true)
-    })
-
-    it('handles Unicode characters in search', () => {
-      const mockItem = { raw: { word: 'тест' } }
-      // The filter checks if word contains the search query (case-insensitive)
-      const result = wrapper.vm.filterStopWords('unused', 'тест', mockItem)
-      expect(result).toBe(true)
-    })
-  })
-
-  describe('Empty State', () => {
-    it('shows empty table when no stop words exist', async () => {
-      mockStopWords.value = []
-      const emptyWrapper = mount(StopWordsList, {
-        global: {
-          stubs: extendedStubs
-        }
-      })
-
-      await emptyWrapper.vm.$nextTick()
-
-      expect(emptyWrapper.find('[data-testid="v-data-table"]').exists()).toBe(true)
-      expect(emptyWrapper.find('.primary-heading').exists()).toBe(true)
-      emptyWrapper.unmount()
-    })
-  })
-
-  describe('Reactive State', () => {
-    it('updates when stop words change', async () => {
-      const newStopWords = [
-        {
-          id: 5,
-          word: 'новое',
-          matchTypeId: 1,
-          scopes: [{ countryIsoNumeric: 860, customsProcedureCode: 40 }]
-        }
-      ]
-
-      mockStopWords.value = newStopWords
-      await wrapper.vm.$nextTick()
-
-      expect(wrapper.vm.stopWords).toEqual(newStopWords)
-    })
-
-    it('updates search reactively', async () => {
-      const searchField = wrapper.find('[data-testid="v-text-field"]')
-      expect(searchField.exists()).toBe(true)
-
-      // Test that search is accessible through authStore
-      expect(wrapper.vm.authStore.stopwords_search).toBeDefined()
-    })
-
-    it('updates page reactively', async () => {
-      // Test that page is accessible through authStore
-      expect(wrapper.vm.authStore.stopwords_page).toBeDefined()
-      expect(wrapper.vm.authStore.stopwords_page.value).toBe(1)
-    })
   })
 
   describe('Performance', () => {

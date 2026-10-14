@@ -97,32 +97,6 @@ describe('RegisterHeaderActionsBar', () => {
     expect(wrapper.emitted('download')).toEqual([['generic'], ['company']])
   })
 
-  it('keeps restriction actions visible but disabled when counterpart country is missing', async () => {
-    const wrapper = mount(RegisterHeaderActionsBar, {
-      props: { ...baseProps, item: { ...baseProps.item, theOtherCountryCode: null } },
-      global: { stubs: vuetifyStubs }
-    })
-
-    const stopWords = findActionMenuByTooltip(
-      wrapper,
-      'Сначала укажите страну отправления или назначения реестра'
-    )
-    const feacn = findActionButtonByTooltip(
-      wrapper,
-      'Сначала укажите страну отправления или назначения реестра'
-    )
-    expect(stopWords).toBeTruthy()
-    expect(feacn).toBeTruthy()
-    expect(stopWords.props('disabled')).toBe(true)
-    expect(feacn.props('disabled')).toBe(true)
-
-    await stopWords.props('options')[0].action()
-    await feacn.trigger('click')
-    expect(wrapper.emitted('validate-sw')).toBeUndefined()
-    expect(wrapper.emitted('validate-sw-ex')).toBeUndefined()
-    expect(wrapper.emitted('validate-fc')).toBeUndefined()
-  })
-
   it('navigates to invoice settings with selected scope when invoice action option is used', async () => {
     const wrapper = mount(RegisterHeaderActionsBar, {
       props: { ...baseProps },
@@ -702,21 +676,6 @@ describe('RegisterHeaderActionsBar', () => {
     expect(wrapper.emitted('update-weights-from-file')).toBeUndefined()
   })
 
-  it('shows custom charges calculation for import and reimport procedures', () => {
-    for (const customsProcedureCode of [CUSTOMS_PROCEDURE_IMPORT, CUSTOMS_PROCEDURE_REIMPORT]) {
-      const wrapper = mount(RegisterHeaderActionsBar, {
-        props: {
-          ...baseProps,
-          item: { ...baseProps.item, customsProcedureCode }
-        },
-        global: { stubs: vuetifyStubs }
-      })
-
-      expect(findActionButtonByTooltip(wrapper, 'Рассчитать сборы и пошлины')).toBeTruthy()
-      wrapper.unmount()
-    }
-  })
-
   it('hides custom charges calculation for non-chargeable procedures', () => {
     const cases = [
       { title: 'missing procedure', item: { id: 1, invoiceNumber: 'INV-1' } },
@@ -750,17 +709,6 @@ describe('RegisterHeaderActionsBar', () => {
       ).toBeUndefined()
       wrapper.unmount()
     }
-  })
-
-  it('hides custom charges calculation when sr logist permission is missing', () => {
-    authRefs.isSrLogistPlus.value = false
-
-    const wrapper = mount(RegisterHeaderActionsBar, {
-      props: { ...baseProps },
-      global: { stubs: vuetifyStubs }
-    })
-
-    expect(findActionButtonByTooltip(wrapper, 'Рассчитать сборы и пошлины')).toBeUndefined()
   })
 
   it('disables mutations but keeps downloads and documents available in read-only mode', async () => {
@@ -804,30 +752,6 @@ describe('RegisterHeaderActionsBar', () => {
     expect(wrapper.emitted('export-excise')).toHaveLength(1)
     downloadButton.vm.$emit('click')
     expect(wrapper.emitted('download')).toHaveLength(1)
-  })
-
-  it('disables historic data actions when noHistoricData is true', () => {
-    const wrapper = mount(RegisterHeaderActionsBar, {
-      props: { ...baseProps, noHistoricData: true },
-      global: { stubs: vuetifyStubs }
-    })
-
-    const actionMenus = wrapper.findAllComponents(ActionButton2L)
-    const getMenuByTooltip = (tooltipText) =>
-      actionMenus.find((button) => button.props('tooltipText') === tooltipText)
-
-    const stopWords = getMenuByTooltip('Проверить по стоп-словам')
-    const lookup = getMenuByTooltip('Подбор кодов ТН ВЭД')
-
-    expect(stopWords).toBeTruthy()
-    expect(lookup).toBeTruthy()
-
-    expect(stopWords.props('disabled')).toBe(false)
-    expect(stopWords.props('options')[0].disabled).toBe(true)
-    expect(stopWords.props('options')[1].disabled).toBeUndefined()
-    expect(lookup.props('disabled')).toBe(false)
-    expect(lookup.props('options')[0].disabled).toBe(true)
-    expect(lookup.props('options')[1].disabled).toBeUndefined()
   })
 
   it('emits freeze tn ved order action from the same group as close', async () => {

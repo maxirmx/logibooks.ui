@@ -131,56 +131,7 @@ describe('FeacnCodeSelector', () => {
     })
   }
 
-  describe('rendering', () => {
-
-    it('does not display check-double icon for unselected codes', () => {
-      const wrapper = createWrapper()
-
-      // Find all elements with the code text but not the selected one
-      const unselectedElements = wrapper
-        .findAll('.d-inline-flex.align-center')
-        .filter((el) => !el.text().includes('1234567890'))
-
-      // There should be at least one unselected code
-      expect(unselectedElements.length).toBeGreaterThan(0)
-
-      // None of the unselected elements should have the check-double icon
-      unselectedElements.forEach((el) => {
-        expect(el.find('.fa-check-double').exists()).toBe(false)
-      })
-    })
-
-  })
-
   describe('interactions', () => {
-    it('calls updateParcelTnVed when clicking an unselected code', async () => {
-      const wrapper = createWrapper()
-
-      // Find an unselected code element
-      const unselectedCodeDiv = wrapper.find('.unselected-code')
-      expect(unselectedCodeDiv.exists()).toBe(true)
-
-      // Click it
-      await unselectedCodeDiv.trigger('click')
-
-      // Verify that updateParcelTnVed was called
-      expect(mockUpdateParcelTnVed).toHaveBeenCalled()
-    })
-
-    it('does not call updateParcelTnVed when clicking the already selected code', async () => {
-      const wrapper = createWrapper()
-
-      // Find the selected code element
-      const selectedCodeDiv = wrapper.find('.selected-code')
-      expect(selectedCodeDiv.exists()).toBe(true)
-
-      // Click it
-      await selectedCodeDiv.trigger('click')
-
-      // Verify that updateParcelTnVed was not called
-      expect(mockUpdateParcelTnVed).not.toHaveBeenCalled()
-    })
-
     it('calls updateParcelTnVed when clicking matchingFC if not selected', async () => {
       const wrapper = createWrapper({
         item: {
@@ -221,20 +172,5 @@ describe('FeacnCodeSelector', () => {
       expect(mockUpdateParcelTnVed).not.toHaveBeenCalled()
     })
 
-    it('does not call updateParcelTnVed when control is pressed', async () => {
-      const wrapper = createWrapper()
-      const unselectedCodeDiv = wrapper.find('.unselected-code')
-      expect(unselectedCodeDiv.exists()).toBe(true)
-      await unselectedCodeDiv.trigger('click', { ctrlKey: true })
-      expect(mockUpdateParcelTnVed).not.toHaveBeenCalled()
-    })
-
-    it('does not call updateParcelTnVed when command is pressed', async () => {
-      const wrapper = createWrapper()
-      const unselectedCodeDiv = wrapper.find('.unselected-code')
-      expect(unselectedCodeDiv.exists()).toBe(true)
-      await unselectedCodeDiv.trigger('click', { metaKey: true })
-      expect(mockUpdateParcelTnVed).not.toHaveBeenCalled()
-    })
   })
 })

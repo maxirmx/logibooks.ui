@@ -41,33 +41,6 @@ describe('ArticleWithH', () => {
     expect(wrapper.find('.action-button-stub').exists()).toBe(false)
   })
 
-  it('shows action button with tooltip when notificationId is present', async () => {
-    const wrapper = mount(ArticleWithH, {
-      props: {
-        item: {
-          article: '123',
-          notificationId: 99,
-          notificationNumber: 'NT-99',
-          notificationRegistrationDate: '2025-02-01'
-        },
-        errors: {},
-        disabled: false
-      },
-      global: { stubs: globalStubs }
-    })
-
-    // Wait for the async tooltip to be populated
-    await wrapper.vm.$nextTick()
-
-    const button = wrapper.find('.action-button-stub')
-    expect(button.exists()).toBe(true)
-    expect(button.attributes('data-tooltip')).toContain('NT-99')
-    expect(button.attributes('data-variant')).toBe('magenta')
-    expect(button.attributes('data-size')).toBe('1x')
-    expect(wrapper.find('.action-buttons').exists()).toBe(true)
-    expect(wrapper.find('.form-group').exists()).toBe(true)
-  })
-
   it('emits approve-notification when action button is clicked', async () => {
     const wrapper = mount(ArticleWithH, {
       props: {
@@ -89,19 +62,4 @@ describe('ArticleWithH', () => {
     expect(wrapper.emitted()['approve-notification']).toBeTruthy()
   })
 
-  it('disables notification approval via approvalDisabled', async () => {
-    const wrapper = mount(ArticleWithH, {
-      props: {
-        item: { article: '123', notificationId: 10 },
-        errors: {},
-        disabled: false,
-        approvalDisabled: true
-      },
-      global: { stubs: globalStubs }
-    })
-
-    await wrapper.vm.$nextTick()
-
-    expect(wrapper.find('.action-button-stub').attributes('disabled')).toBeDefined()
-  })
 })

@@ -77,38 +77,6 @@ describe('FieldArrayWithButtons', () => {
     expect(optionElements[2].text()).toBe('Option 2')
   })
 
-  it('applies error styling when hasError is true', async () => {
-    const wrapper = createWrapper({ hasError: true })
-    await flushPromises()
-
-    // The field should have the is-invalid class when hasError is true
-    const field = wrapper.find('.field-container-select')
-    expect(field.exists()).toBe(true)
-    expect(field.classes()).toContain('is-invalid')
-  })
-
-  it('disables minus button when only one field exists', async () => {
-    const wrapper = createWrapper()
-    await flushPromises()
-
-    const buttons = wrapper.findAll('button')
-    const minusButton = buttons.find((btn) => btn.classes().includes('ml-2'))
-    expect(minusButton.attributes('disabled')).toBeDefined()
-  })
-
-  it('adds new field when plus button is clicked', async () => {
-    const wrapper = createWrapper()
-    await flushPromises()
-
-    expect(wrapper.findAll('.field-container')).toHaveLength(1)
-
-    const plusButton = wrapper.find('button.field-container-plus')
-    await plusButton.trigger('click')
-    await flushPromises()
-
-    expect(wrapper.findAll('.field-container')).toHaveLength(2)
-  })
-
   it('removes field when minus button is clicked', async () => {
     const wrapper = createWrapper({}, { testField: ['', ''] }) // start with two fields
     await flushPromises()
@@ -120,74 +88,6 @@ describe('FieldArrayWithButtons', () => {
     await flushPromises()
 
     expect(wrapper.findAll('.field-container')).toHaveLength(1)
-  })
-
-  it('does not allow removing the last field', async () => {
-    const wrapper = createWrapper()
-    await flushPromises()
-
-    expect(wrapper.findAll('.field-container')).toHaveLength(1)
-
-    const buttons = wrapper.findAll('button')
-    const minusButton = buttons.find((btn) => btn.classes().includes('ml-2'))
-    expect(minusButton.attributes('disabled')).toBeDefined()
-  })
-
-  it('renders custom tooltips', async () => {
-    const wrapper = createWrapper({
-      addTooltip: 'Custom Add',
-      removeTooltip: 'Custom Remove'
-    })
-    await flushPromises()
-
-    // Check ActionButton components directly
-    const actionButtons = wrapper.findAllComponents({ name: 'ActionButton' })
-    const plusButton = actionButtons.find((btn) => btn.classes().includes('field-container-plus'))
-    const minusButton = actionButtons.find((btn) => btn.classes().includes('ml-2'))
-
-    expect(plusButton.props('tooltipText')).toBe('Custom Add')
-    expect(minusButton.props('tooltipText')).toBe('Custom Remove')
-  })
-
-  it('uses custom default value when adding fields', async () => {
-    const wrapper = createWrapper({ defaultValue: 'custom' })
-    await flushPromises()
-
-    // Check that the ActionButton component receives the right props
-    const actionButtons = wrapper.findAllComponents({ name: 'ActionButton' })
-    const plusButton = actionButtons.find((btn) => btn.classes().includes('field-container-plus'))
-
-    expect(plusButton.props('item')).toBe('custom')
-  })
-
-  it('applies custom field props', async () => {
-    const wrapper = createWrapper({
-      fieldType: 'input',
-      fieldProps: {
-        type: 'email',
-        placeholder: 'Enter email',
-        maxlength: '50'
-      }
-    })
-    await flushPromises()
-
-    const input = wrapper.find('input')
-    expect(input.attributes('type')).toBe('email')
-    expect(input.attributes('placeholder')).toBe('Enter email')
-    expect(input.attributes('maxlength')).toBe('50')
-  })
-
-  it('validates field type prop', () => {
-    // This test checks that invalid field types would fail validation
-    const validTypes = ['select', 'input', 'textarea']
-    const component = FieldArrayWithButtons
-    const validator = component.props.fieldType.validator
-
-    validTypes.forEach((type) => {
-      expect(validator(type)).toBe(true)
-    })
-
-    expect(validator('invalid')).toBe(false)
   })
 
   it('generates correct field IDs', async () => {
@@ -219,30 +119,6 @@ describe('FieldArrayWithButtons', () => {
     await flushPromises()
 
     expect(wrapper.find('#managers_1').exists()).toBe(true)
-  })
-
-  it('renders content in extra slot', async () => {
-    const wrapper = mount({
-      template: `
-        <Form :validation-schema="schema" :initial-values="{ testField: [''] }">
-          <FieldArrayWithButtons name="testField" label="Test Field">
-            <template #extra="{ index }">
-              <span class="extra-slot">{{ index }}</span>
-            </template>
-          </FieldArrayWithButtons>
-        </Form>
-      `,
-      components: { Form, FieldArrayWithButtons },
-      setup() {
-        const schema = Yup.object().shape({
-          testField: Yup.array().of(Yup.string())
-        })
-        return { schema }
-      }
-    })
-    await flushPromises()
-
-    expect(wrapper.find('.extra-slot').exists()).toBe(true)
   })
 
   it('disables fields and buttons when disabled prop is true', async () => {

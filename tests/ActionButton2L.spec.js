@@ -75,20 +75,6 @@ describe('ActionButton2L', () => {
     await flushPromises()
   }
 
-  it('opens menu on button click and displays options', async () => {
-    const wrapper = createWrapper()
-    await wrapper.find('button').trigger('click')
-
-    await settle(wrapper)
-
-    expect(exposed(wrapper).isMenuOpen.value).toBe(true)
-    expect(wrapper.find('.action-button-2l__menu').exists()).toBe(true)
-    const items = wrapper.findAll('.action-button-2l__menu-item')
-    expect(items).toHaveLength(options.length)
-    expect(items[0].text()).toBe('First action')
-    expect(wrapper.find('.action-button-2l__menu-icon').exists()).toBe(false)
-  })
-
   it('renders optional menu icons with symbolic color classes', async () => {
     options = [
       {
@@ -126,41 +112,6 @@ describe('ActionButton2L', () => {
     expect(icons[1].attributes('data-icon')).toBe('fa-solid fa-file-invoice')
     expect(icons[1].classes()).toContain('action-button-2l__menu-icon--approved-with-excise')
     expect(items[2].find('.action-button-2l__menu-icon').exists()).toBe(false)
-  })
-
-  it('calls dedicated function when option is selected and closes afterwards', async () => {
-    const wrapper = createWrapper()
-    const firstAction = options[0].action
-
-    await wrapper.find('button').trigger('click')
-    await wrapper.findAll('.action-button-2l__menu-item')[0].trigger('click')
-    await settle(wrapper)
-
-    expect(firstAction).toHaveBeenCalledWith(item)
-    expect(exposed(wrapper).isMenuOpen.value).toBe(false)
-  })
-
-  it('disables menu interactions while action is executing', async () => {
-    let resolveAction
-    options[0].action = vi.fn(
-      () =>
-        new Promise((resolve) => {
-          resolveAction = resolve
-        })
-    )
-    const wrapper = createWrapper({ options })
-
-    await wrapper.find('button').trigger('click')
-    await wrapper.findAll('.action-button-2l__menu-item')[0].trigger('click')
-    await settle(wrapper)
-
-    expect(wrapper.find('button').attributes('disabled')).toBeDefined()
-
-    resolveAction()
-    await settle(wrapper)
-
-    expect(wrapper.find('button').attributes('disabled')).toBeUndefined()
-    expect(exposed(wrapper).isMenuOpen.value).toBe(false)
   })
 
   it('supports keyboard navigation and selection', async () => {

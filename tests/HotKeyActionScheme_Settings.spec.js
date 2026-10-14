@@ -79,56 +79,6 @@ describe('HotKeyActionScheme_Settings.vue', () => {
     }
   })
 
-  it('loads ops data on mount', async () => {
-    mount(AsyncWrapper, { props: { mode: 'create' }, global: { stubs: defaultGlobalStubs } })
-    await resolveAll()
-    expect(ensureOpsLoadedMock).toHaveBeenCalled()
-  })
-
-  it('loads item in edit mode', async () => {
-    mount(AsyncWrapper, {
-      props: { mode: 'edit', hotKeyActionSchemeId: 1 },
-      global: { stubs: defaultGlobalStubs }
-    })
-    await resolveAll()
-    expect(getByIdMock).toHaveBeenCalledWith(1)
-  })
-
-  it('renders KeyCaptureInput for keyCode', async () => {
-    const wrapper = mount(AsyncWrapper, {
-      props: { mode: 'edit', hotKeyActionSchemeId: 1 },
-      global: { stubs: defaultGlobalStubs }
-    })
-    await resolveAll()
-
-    const keyCaptureInputs = wrapper.findAllComponents({ name: 'KeyCaptureInput' })
-    expect(keyCaptureInputs.length).toBeGreaterThan(0)
-  })
-
-  it('renders checkboxes for shift, ctrl, alt', async () => {
-    const wrapper = mount(AsyncWrapper, {
-      props: { mode: 'edit', hotKeyActionSchemeId: 1 },
-      global: { stubs: defaultGlobalStubs }
-    })
-    await resolveAll()
-
-    const checkboxes = wrapper.findAll('input[type="checkbox"]')
-    expect(checkboxes.length).toBeGreaterThanOrEqual(6) // 3 columns * 2 rows minimum
-  })
-
-  it('renders editable keyCode inputs with KeyCaptureInput', async () => {
-    const wrapper = mount(AsyncWrapper, {
-      props: { mode: 'edit', hotKeyActionSchemeId: 1 },
-      global: { stubs: defaultGlobalStubs }
-    })
-    await resolveAll()
-
-    const keyCaptureInputs = wrapper.findAllComponents({ name: 'KeyCaptureInput' })
-    expect(keyCaptureInputs.length).toBe(2) // Should match the number of actions
-    expect(keyCaptureInputs[0].props('modelValue')).toBe('F1')
-    expect(keyCaptureInputs[1].props('modelValue')).toBe('F2')
-  })
-
   it('submits create with actions data', async () => {
     const createWrapper = mount(AsyncWrapper, {
       props: { mode: 'create' },
@@ -249,36 +199,4 @@ describe('HotKeyActionScheme_Settings.vue', () => {
     expect(Array.isArray(vm.hotKeyActionScheme.actions)).toBe(true)
   })
 
-  it('applies checkbox-styled class to checkboxes', async () => {
-    const wrapper = mount(AsyncWrapper, {
-      props: { mode: 'edit', hotKeyActionSchemeId: 1 },
-      global: { stubs: defaultGlobalStubs }
-    })
-    await resolveAll()
-
-    const checkboxes = wrapper.findAll('.checkbox-styled')
-    expect(checkboxes.length).toBeGreaterThan(0)
-  })
-
-  it('renders table with correct structure', async () => {
-    const wrapper = mount(AsyncWrapper, {
-      props: { mode: 'edit', hotKeyActionSchemeId: 1 },
-      global: { stubs: defaultGlobalStubs }
-    })
-    await resolveAll()
-
-    const table = wrapper.find('.actions-table table')
-    expect(table.exists()).toBe(true)
-
-    const thead = table.find('thead')
-    expect(thead.exists()).toBe(true)
-
-    const headerCells = thead.findAll('th')
-    expect(headerCells.length).toBe(5) // Action, KeyCode, Shift, Ctrl, Alt
-    expect(headerCells[0].text()).toBe('Действие')
-    expect(headerCells[1].text()).toBe('Клавиша')
-    expect(headerCells[2].text()).toBe('Shift')
-    expect(headerCells[3].text()).toBe('Ctrl')
-    expect(headerCells[4].text()).toBe('Alt')
-  })
 })

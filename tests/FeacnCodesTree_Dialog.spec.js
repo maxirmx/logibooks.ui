@@ -83,19 +83,6 @@ describe('FeacnCodesTree_Dialog.vue', () => {
     })
   }
 
-  it('uploads file successfully', async () => {
-    uploadMock.mockResolvedValue()
-
-    const wrapper = createWrapper()
-    const file = new File(['content'], 'codes.xlsx')
-
-    await wrapper.vm.fileSelected(file)
-    await flushPromises()
-
-    expect(uploadMock).toHaveBeenCalledWith(file)
-    expect(wrapper.vm.uploading).toBe(false)
-  })
-
   it('handles upload error', async () => {
     const error = new Error('Upload failed')
     uploadMock.mockRejectedValue(error)

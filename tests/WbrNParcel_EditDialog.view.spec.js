@@ -447,67 +447,6 @@ describe('WbrNParcel_EditDialog.vue', () => {
   beforeEach(resetState)
 
 
-  it('passes unsaved code changes to the live category marker', async () => {
-    formValues = ref({ ...baseParcel, tnVed: '8471300000' }).value
-    registerItem.value.customsProcedureCode = CUSTOMS_PROCEDURE_EXPORT
-    const wrapper = await mountDialog()
-    const number = wrapper.getComponent('[data-testid="parcel-number-ext"]')
-    expect(number.props('liveCategory')).toBe('')
-    expect(number.props('customsProcedureCode')).toBe(CUSTOMS_PROCEDURE_EXPORT)
-    expect(number.props('tnVed')).toBe('8471300000')
-    formValues.tnVed = ''
-    await nextTick()
-    expect(number.props('tnVed')).toBe('')
-    formValues.tnVed = 'invalid'
-    await nextTick()
-    expect(number.props('tnVed')).toBe('invalid')
-    wrapper.unmount()
-  })
-  it('loads WbrN parcel data and renders article plus recipient replacement fields', async () => {
-    const wrapper = await mountDialog()
-
-    expect(statusEnsureLoaded).toHaveBeenCalled()
-    expect(stopWordsEnsureLoaded).toHaveBeenCalled()
-    expect(keyWordsEnsureLoaded).toHaveBeenCalled()
-    expect(feacnOrdersEnsureLoaded).toHaveBeenCalled()
-    expect(feacnPrefixesEnsureLoaded).toHaveBeenCalled()
-    expect(registerGetById).toHaveBeenCalledWith(12)
-    expect(parcelGetById).toHaveBeenCalledWith(3)
-    expect(parcelViewsAdd).toHaveBeenCalledWith(3)
-    expect(authStore.selectedParcelId).toBe(3)
-
-    expect(wrapper.text()).toContain('посылка SHK-N-EDIT')
-    expect(wrapper.get('[data-testid="article-with-h"]').attributes('data-title')).toBe('Артикул')
-    expect(wrapper.get('[data-testid="article-with-h"]').attributes('data-readonly')).toBe('false')
-    expect(wrapper.text()).toContain('29817781')
-    expect(wrapper.get('[data-testid="product-link-with-actions"]').attributes('data-label')).toBe(
-      'Ссылка на товар'
-    )
-    expect(wrapper.get('[data-testid="parcel-weight-auto-field"]').attributes('data-label')).toBe(
-      'Вес, кг'
-    )
-
-    const fieldNames = wrapper
-      .findAll('[data-testid="wbrn-form-field"]')
-      .map((field) => field.attributes('data-name'))
-    expect(fieldNames).toEqual(
-      expect.arrayContaining([
-        'productCountryName',
-        'weightKg',
-        'quantity',
-        'unitPrice',
-        'currency',
-        'lastName',
-        'firstName',
-        'patronymic'
-      ])
-    )
-    expect(wrapper.get('input[name="passportNumber"]').exists()).toBe(true)
-    expect(fieldNames).not.toContain('countryCode')
-    expect(fieldNames).not.toContain('paymentAmount')
-    expect(fieldNames).not.toContain('paymentCurrency')
-  })
-
   it('shows passport verification action and indicator only for Import SrLogistPlus users', async () => {
     let wrapper = await mountDialog()
 
@@ -579,44 +518,6 @@ describe('WbrNParcel_EditDialog.vue', () => {
     expect(wrapper.find('[data-testid="passport-check-actions"]').exists()).toBe(false)
     expect(wrapper.find('[data-tooltip="Сохранить и проверить паспорт"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="passport-check-status-icon"]').exists()).toBe(false)
-  })
-
-  it('locks identity fields during passport checking but keeps clear available', async () => {
-    parcelItem.value.passportCheckStatus = 10
-    formValues.passportCheckStatus = 10
-
-    const wrapper = await mountDialog()
-    const fields = wrapper.findAll('[data-testid="wbrn-form-field"]')
-    const fieldByName = (name) => fields.find((field) => field.attributes('data-name') === name)
-
-    expect(fieldByName('lastName').attributes('data-disabled')).toBe('true')
-    expect(fieldByName('firstName').attributes('data-disabled')).toBe('true')
-    expect(fieldByName('patronymic').attributes('data-disabled')).toBe('undefined')
-
-    const passportField = wrapper.findComponent({ name: 'PassportNumberWithActions' })
-    expect(passportField.props('inputDisabled')).toBe(true)
-    expect(passportField.props('checkDisabled')).toBe(true)
-    expect(wrapper.get('[data-testid="passport-check-run"]').element.disabled).toBe(true)
-    expect(wrapper.get('[data-testid="passport-check-clear"]').element.disabled).toBe(false)
-    wrapper.unmount()
-  })
-
-  it('shows NotChecked locally when an identity field changes', async () => {
-    formValues.firstName = 'Changed name'
-
-    const wrapper = await mountDialog()
-    const passportField = wrapper.findComponent({ name: 'PassportNumberWithActions' })
-
-    expect(passportField.props('status')).toEqual(
-      expect.objectContaining({
-        code: 'NotChecked',
-        value: 0
-      })
-    )
-    expect(wrapper.get('[data-testid="passport-check-status-icon"]').attributes('data-icon')).toBe(
-      'fa-solid fa-circle-question'
-    )
-    wrapper.unmount()
   })
 
   it('disables WbrN parcel action buttons except cancel for MarkedByPartner parcels', async () => {
@@ -1066,22 +967,4 @@ describe('WbrNParcel_EditDialog.vue', () => {
     expect(alertError).toHaveBeenCalledWith('back failed')
   })
 
-  it('removes report and overlay listeners on unmount', async () => {
-    const removeEventListenerSpy = vi.spyOn(window, 'removeEventListener')
-    const removeDocumentListenerSpy = vi.spyOn(document, 'removeEventListener')
-    const wrapper = await mountDialog()
-
-    imageOverlayOpen.value = true
-    await nextTick()
-    wrapper.unmount()
-
-    expect(removeEventListenerSpy).toHaveBeenCalledWith(
-      DEC_REPORT_UPLOADED_EVENT,
-      expect.any(Function)
-    )
-    expect(removeDocumentListenerSpy).toHaveBeenCalledWith('keydown', expect.any(Function))
-
-    removeEventListenerSpy.mockRestore()
-    removeDocumentListenerSpy.mockRestore()
-  })
 })

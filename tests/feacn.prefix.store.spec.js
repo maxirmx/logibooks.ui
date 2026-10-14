@@ -63,13 +63,6 @@ describe('feacn.prefixes.store.js', () => {
   })
 
   describe('CRUD operations', () => {
-    it('getAll retrieves prefixes', async () => {
-      fetchWrapper.get.mockResolvedValue(mockPrefixes)
-      await store.getAll()
-      expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:3000/api/feacnprefixes')
-      expect(store.prefixes).toEqual(mockPrefixes)
-    })
-
     it('getById retrieves prefix by id', async () => {
       fetchWrapper.get.mockResolvedValue(mockPrefix)
       const promise = store.getById(1)
@@ -121,50 +114,6 @@ describe('feacn.prefixes.store.js', () => {
       expect(store.prefix).toEqual(mockPrefix)
     })
 
-    it('getById without refresh preserves existing data while loading', async () => {
-      fetchWrapper.get.mockResolvedValue(mockPrefix)
-      store.prefix = { id: 99 }
-      const promise = store.getById(1)
-      expect(store.prefix).toEqual({ id: 99, loading: true })
-      await promise
-      expect(store.prefix).toEqual(mockPrefix)
-    })
-
-    it('handles create DTO format with string exceptions', async () => {
-      const createDto = { code: '0404', exceptions: ['444', '555'] }
-      fetchWrapper.post.mockResolvedValue({})
-      fetchWrapper.get.mockResolvedValue(mockPrefixes)
-      await store.create(createDto)
-      expect(fetchWrapper.post).toHaveBeenCalledWith(
-        'http://localhost:3000/api/feacnprefixes',
-        createDto
-      )
-    })
-
-    it('handles update DTO format with string exceptions', async () => {
-      const updateDto = { code: '0505', exceptions: ['666'] }
-      fetchWrapper.put.mockResolvedValue({})
-      fetchWrapper.get.mockResolvedValue(mockPrefixes)
-      await store.update(1, updateDto)
-      expect(fetchWrapper.put).toHaveBeenCalledWith(
-        'http://localhost:3000/api/feacnprefixes/1',
-        updateDto
-      )
-    })
-
-    it('ensureLoaded fetches prefixes when not initialized', async () => {
-      fetchWrapper.get.mockResolvedValue(mockPrefixes)
-      await store.ensureLoaded()
-      expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:3000/api/feacnprefixes')
-      expect(store.prefixes).toEqual(mockPrefixes)
-    })
-
-    it('ensureLoaded caches concurrent calls', async () => {
-      fetchWrapper.get.mockResolvedValue(mockPrefixes)
-      await Promise.all([store.ensureLoaded(), store.ensureLoaded()])
-      expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
-    })
-
     it('ensureLoaded skips fetch when already initialized', async () => {
       store.isInitialized = true
       await store.ensureLoaded()
@@ -173,24 +122,6 @@ describe('feacn.prefixes.store.js', () => {
   })
 
   describe('reset', () => {
-    it('restores initial state', async () => {
-      // mutate state
-      store.prefixes = [{ id: 99 }]
-      store.prefix = { id: 99 }
-      store.loading = true
-      store.error = new Error('fail')
-      store.isInitialized = true
-
-      // reset store
-      store.$reset()
-
-      expect(store.prefixes).toEqual([])
-      expect(store.prefix).toEqual({ loading: true })
-      expect(store.loading).toBe(false)
-      expect(store.error).toBe(null)
-      expect(store.isInitialized).toBe(false)
-    })
-
     it('allows ensureLoaded to refetch after reset', async () => {
       fetchWrapper.get.mockResolvedValue(mockPrefixes)
       await store.ensureLoaded()

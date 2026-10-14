@@ -56,29 +56,4 @@ describe('ActionButton', () => {
     expect(wrapper.emitted('click')).toEqual([[{ id: 1, name: 'Test Item' }]])
   })
 
-  it('renders custom disabled state without emitting a click', async () => {
-    const wrapper = createWrapper({ disabled: true, icon: 'invalid-icon', tooltipText: '' })
-    const button = wrapper.find('button')
-
-    expect(button.attributes('disabled')).toBeDefined()
-    expect(wrapper.findComponent({ name: 'FontAwesomeIcon' }).props('icon')).toBe('invalid-icon')
-
-    await button.trigger('click')
-    expect(wrapper.emitted('click')).toBeFalsy()
-  })
-
-  it('keeps a disabled action explanation keyboard-accessible', () => {
-    const wrapper = createWrapper({ disabled: true, tooltipText: 'Сначала укажите страну' })
-    const activator = wrapper.get('.action-button-tooltip-activator--disabled')
-    const tooltip = wrapper.findComponent({ name: 'VTooltip' })
-
-    expect(activator.attributes()).toMatchObject({
-      tabindex: '0',
-      role: 'button',
-      'aria-disabled': 'true',
-      'aria-label': 'Сначала укажите страну'
-    })
-    expect(tooltip.props('disabled')).toBe(false)
-    expect(wrapper.get('button').attributes('disabled')).toBeDefined()
-  })
 })

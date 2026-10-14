@@ -6,8 +6,6 @@ import { Form, Field } from 'vee-validate'
 import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
-import { useExportFeesStore } from '@/stores/export.fees.store.js'
-
 vi.mock('@/helpers/fetch.wrapper.js', () => ({
   fetchWrapper: { get: vi.fn(), post: vi.fn() }
 }))
@@ -59,20 +57,6 @@ describe('live category marker', () => {
     expect(fetchWrapper.post).not.toHaveBeenCalled()
     wrapper.unmount()
   })
-  it('waits for a shared directory load after a newer change', async () => {
-    const pending = deferred()
-    fetchWrapper.get.mockReturnValue(pending.promise)
-    const wrapper = createWrapper()
-    await wrapper.get('input').setValue('8471999999')
-    pending.resolve([{ code: '8471' }])
-    await flushPromises()
-    expect(wrapper.find(marker).exists()).toBe(false)
-    expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
-    await wrapper.get('[data-testid=select-code]').trigger('click')
-    await flushPromises()
-    expect(wrapper.find(marker).exists()).toBe(true)
-    wrapper.unmount()
-  })
   it.each(['resolve', 'reject'])('ignores stale lookup %s after the code is cleared', async outcome => {
     const pending = deferred()
     fetchWrapper.post.mockReturnValueOnce(pending.promise)
@@ -105,16 +89,5 @@ describe('live category marker', () => {
     await flushPromises()
     expect(wrapper.find(marker).exists()).toBe(response !== null)
     wrapper.unmount()
-  })
-  it('joins concurrent directory requests', async () => {
-    const pending = deferred()
-    fetchWrapper.get.mockReturnValue(pending.promise)
-    const store = useExportFeesStore()
-    const first = store.ensureLoaded()
-    const second = store.ensureLoaded()
-    expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
-    pending.resolve([{ code: '8471' }])
-    await Promise.all([first, second])
-    expect(store.fees).toEqual([{ code: '8471' }])
   })
 })

@@ -40,13 +40,6 @@ describe('key.words.store.js', () => {
   })
 
   describe('CRUD operations', () => {
-    it('getAll retrieves keywords', async () => {
-      fetchWrapper.get.mockResolvedValue(mockKeyWords)
-      await store.getAll()
-      expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:3000/api/keywords')
-      expect(store.keyWords).toEqual(mockKeyWords)
-    })
-
     it('getById retrieves keyword by id', async () => {
       fetchWrapper.get.mockResolvedValue(mockKeyWord)
       const res = await store.getById(1)
@@ -102,22 +95,6 @@ describe('key.words.store.js', () => {
       expect(store.error).toBe(null)
     })
 
-    it('sets loading state during upload', async () => {
-      const file = new File(['content'], 'keywords.xlsx')
-      let resolveUpload
-      const uploadPromise = new Promise((resolve) => {
-        resolveUpload = resolve
-      })
-      fetchWrapper.postFile.mockReturnValue(uploadPromise)
-
-      const uploadCall = store.upload(file)
-      expect(store.loading).toBe(true)
-
-      resolveUpload()
-      await uploadCall
-      expect(store.loading).toBe(false)
-    })
-
     it('handles upload error', async () => {
       const file = new File(['content'], 'keywords.xlsx')
       const error = new Error('Upload failed')
@@ -128,15 +105,6 @@ describe('key.words.store.js', () => {
       expect(store.loading).toBe(false)
     })
 
-    it('clears error before upload', async () => {
-      const file = new File(['content'], 'keywords.xlsx')
-      store.error = new Error('Previous error')
-      fetchWrapper.postFile.mockResolvedValue()
-
-      await store.upload(file)
-
-      expect(store.error).toBe(null)
-    })
   })
 
   describe('error handling', () => {

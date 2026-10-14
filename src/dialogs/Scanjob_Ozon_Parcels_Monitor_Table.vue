@@ -1,4 +1,8 @@
 <script setup>
+// Copyright (C) 2026 Maxim [maxirmx] Samsonov (http://www.sw.consulting)
+// All rights reserved.
+// This file is a part of Logibooks ui application
+
 import ScanjobParcelsMonitorTable from '@/dialogs/Scanjob_Parcels_Monitor_Table.vue'
 import { scanjobOzonParcelHeaders } from '@/helpers/scanjob.monitor.helpers.js'
 

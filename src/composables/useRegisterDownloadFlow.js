@@ -1,3 +1,7 @@
+// Copyright (C) 2026 Maxim [maxirmx] Samsonov (http://www.sw.consulting)
+// All rights reserved.
+// This file is a part of Logibooks ui application
+
 import { getCurrentInstance, onUnmounted, ref } from 'vue'
 import { COMPANY_REGISTER_OUTPUT_TYPES } from '@/helpers/company.constants.js'
 import { reportError } from '@/helpers/error.helpers.js'

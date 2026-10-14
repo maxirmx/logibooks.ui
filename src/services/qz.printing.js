@@ -1,3 +1,7 @@
+// Copyright (C) 2026 Maxim [maxirmx] Samsonov (http://www.sw.consulting)
+// All rights reserved.
+// This file is a part of Logibooks ui application
+
 import qz from 'qz-tray'
 import { reactive } from 'vue'
 import { printingApi } from './printing.api.js'

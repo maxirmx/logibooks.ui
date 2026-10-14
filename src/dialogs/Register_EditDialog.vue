@@ -32,6 +32,8 @@ import ErrorDialog from '@/l2/ErrorDialog.vue'
 import RegisterCurrencySelectionDialog from '@/l2/RegisterCurrencySelectionDialog.vue'
 import { useActionDialog } from '@/composables/useActionDialog.js'
 import { useAlertStore } from '@/stores/alert.store.js'
+import { useAppConfirm } from '@/composables/useAppConfirm.js'
+import { useRegisterRestrictionChangeConfirmation } from '@/composables/useRegisterRestrictionChangeConfirmation.js'
 import AirportSelectField from '@/components/AirportSelectField.vue'
 import { OP_MODE_PAPERWORK, getRegisterNouns } from '@/helpers/op.mode.js'
 import { formatDate, formatTime } from '@/helpers/date.formatters.js'
@@ -1001,6 +1003,12 @@ function prepareRegisterPayload(formValues) {
   return payload
 }
 
+const saveWithRestrictionConfirmation = useRegisterRestrictionChangeConfirmation({
+  update: (...args) => registersStore.update(...args),
+  confirm: useAppConfirm(),
+  isActive: () => isComponentMounted.value
+})
+
 async function onSubmit(values, { setErrors } = {}) {
   if (!isComponentMounted.value) return
   if (!canSubmit.value) return
@@ -1016,7 +1024,7 @@ async function onSubmit(values, { setErrors } = {}) {
 
   try {
     if (!props.create) {
-      await registersStore.update(props.id, payload)
+      if (!await saveWithRestrictionConfirmation(props.id, payload)) return
       if (isComponentMounted.value) await router.push(returnUrl.value)
       return
     }
@@ -1063,7 +1071,13 @@ async function onSubmit(values, { setErrors } = {}) {
     }
 
     try {
-      await registersStore.update(result.registerId, payload)
+      if (!await saveWithRestrictionConfirmation(result.registerId, payload)) {
+        // Upload already created the register; recover without uploading a second copy.
+        if (isComponentMounted.value) {
+          await router.push(`/register/edit/${result.registerId}?mode=${props.mode}`)
+        }
+        return
+      }
     } catch (updateError) {
       await showErrorAndAwaitClose(
         `${registerNouns.value.singular} создан, но информация сохранена не полностью`,
@@ -1257,7 +1271,7 @@ const loadReportFields = computed(() => {
       <hr class="hr" />
 
       <PageAlertRegion />
-      <div class="form-section">
+      <div class="form-section" :inert="isSubmitting || undefined">
         <div v-if="readOnly" class="alert alert-warning register-read-only-notice">
           Изменения запрещены. Реестр доступен только для просмотра. Возможно изменение статуса
           пользователем с правами администратора.

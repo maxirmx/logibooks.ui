@@ -890,6 +890,31 @@ describe('registers store', () => {
   })
 
   describe('getById and update', () => {
+    it('transmits confirmation tokens without keeping them in register state', async () => {
+      const store = useRegistersStore()
+      store.item = { id: 5, invoiceNumber: 'old' }
+      store.items = [{ id: 5, invoiceNumber: 'old' }]
+      fetchWrapper.put.mockResolvedValueOnce(undefined)
+      const payload = { invoiceNumber: 'new', restrictionChangeConfirmationToken: 'ack' }
+      await store.update(5, payload)
+      expect(fetchWrapper.put).toHaveBeenCalledWith(`${apiUrl}/registers/5`, payload)
+      expect(store.item).toEqual({ id: 5, invoiceNumber: 'new' })
+      expect(store.items).toEqual([{ id: 5, invoiceNumber: 'new' }])
+      expect(payload.restrictionChangeConfirmationToken).toBe('ack')
+    })
+
+    it('propagates confirmation requests without changing state or refreshing the form', async () => {
+      const store = useRegistersStore()
+      store.item = { id: 5, invoiceNumber: 'entered' }
+      const conflict = Object.assign(new Error('Подтвердите изменение'), { status: 409, data: {
+        code: 'RegisterRestrictionChangeConfirmationRequired', details: { confirmationToken: 'ack' }
+      } })
+      fetchWrapper.put.mockRejectedValueOnce(conflict)
+      await expect(store.update(5, { invoiceNumber: 'new' })).rejects.toBe(conflict)
+      expect(store.item).toEqual({ id: 5, invoiceNumber: 'entered' })
+      expect(fetchWrapper.get).not.toHaveBeenCalled()
+    })
+
     it('handles getById error', async () => {
       const error = new Error('Not found')
       fetchWrapper.get.mockResolvedValueOnce({

@@ -438,12 +438,14 @@ export const useRegistersStore = defineStore('registers', () => {
       }
       throw err
     }
+    const registerData = { ...data }
+    delete registerData.restrictionChangeConfirmationToken
     if (item.value && item.value.id === id) {
-      item.value = { ...item.value, ...data }
+      item.value = { ...item.value, ...registerData }
     }
     const idx = items.value.findIndex((r) => r.id === id)
     if (idx !== -1) {
-      items.value[idx] = { ...items.value[idx], ...data }
+      items.value[idx] = { ...items.value[idx], ...registerData }
     }
     return res
   }

@@ -21,7 +21,8 @@ import { formatDate } from '@/helpers/date.formatters.js'
 import { CUSTOMS_PROCEDURE_RETURN } from '@/helpers/customs.procedure.helpers.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 
-// No need to mock vuetify-use-dialog anymore since we use custom ErrorDialog
+const restrictionConfirm = vi.hoisted(() => vi.fn())
+vi.mock('@/composables/useAppConfirm.js', () => ({ useAppConfirm: () => restrictionConfirm }))
 const CUSTOMS_PROCEDURE_EXPORT = 10
 const CUSTOMS_PROCEDURE_IMPORT = 40
 const CUSTOMS_PROCEDURE_GTC_IMPORT = 3
@@ -360,6 +361,7 @@ describe('Register_EditDialog', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    restrictionConfirm.mockReset().mockResolvedValue(true)
     upload.mockResolvedValue({ success: true, registerId: 42 })
     update.mockResolvedValue()
     Object.keys(__fieldValueMap).forEach((key) => delete __fieldValueMap[key])
@@ -2350,6 +2352,96 @@ describe('Register_EditDialog', () => {
     expect(mockItem.value.customsProcedureCode).toBe(31)
     expect(mockItem.value.companyId).toBe(GTC_COMPANY_ID)
     expect(mockItem.value.senderId).toBe(GTC_COMPANY_ID)
+  })
+
+  describe('restriction confirmation during save', () => {
+    async function mountEditor(create = false) {
+      const Parent = {
+        template: `<Suspense><RegisterEditDialog :id="1" :create="${create}" /></Suspense>`,
+        components: { RegisterEditDialog }
+      }
+      const wrapper = mount(Parent, { global: { stubs: {
+        ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub
+      } } })
+      await resolveAll()
+      return { wrapper, dialog: wrapper.findComponent(RegisterEditDialog) }
+    }
+    function challenge(token = 'first') {
+      const msg = 'При изменении страны назначения будут очищены все результаты проверок по стоп-словам и кодам ТН ВЭД для таможенной процедуры Импорт, Узбекистан.'
+      return Object.assign(new Error(msg), { status: 409, data: {
+        msg, errors: {}, code: 'RegisterRestrictionChangeConfirmationRequired',
+        details: { confirmationToken: token, changeKind: 'counterpartCountry' }
+      } })
+    }
+
+    it('confirms, locks the form, blocks duplicate submits and preserves the submitted payload', async () => {
+      const { wrapper, dialog } = await mountEditor()
+      const pending = createDeferred()
+      update.mockRejectedValueOnce(challenge())
+      restrictionConfirm.mockReturnValueOnce(pending.promise)
+      const saving = dialog.vm.onSubmit({ invoiceNumber: 'entered', theOtherCountryCode: 840 }, { setErrors: vi.fn() })
+      await resolveAll()
+      expect(restrictionConfirm).toHaveBeenCalledWith(expect.objectContaining({ content: challenge().data.msg }))
+      expect(wrapper.find('.form-section').attributes()).toHaveProperty('inert')
+      await dialog.vm.onSubmit({ invoiceNumber: 'second' })
+      expect(update).toHaveBeenCalledTimes(1)
+      expect(router.push).not.toHaveBeenCalled()
+      pending.resolve(true)
+      await saving
+      expect(update).toHaveBeenCalledTimes(2)
+      expect(update.mock.calls[1]).toEqual([1, { ...update.mock.calls[0][1], restrictionChangeConfirmationToken: 'first' }])
+      expect(router.push).toHaveBeenCalledExactlyOnceWith('/registers?mode=modePaperwork')
+      expect(useAlertStore().alert).toBeNull()
+      wrapper.unmount()
+    })
+
+    it('cancels without navigating or changing entered values, then saves on a fresh attempt', async () => {
+      const { wrapper, dialog } = await mountEditor()
+      mockItem.value.invoiceNumber = 'keep me'
+      update.mockRejectedValueOnce(challenge())
+      restrictionConfirm.mockResolvedValueOnce(false)
+      await dialog.vm.onSubmit({ invoiceNumber: 'keep me', theOtherCountryCode: 840 })
+      expect(update).toHaveBeenCalledTimes(1)
+      expect(router.push).not.toHaveBeenCalled()
+      expect(mockItem.value.invoiceNumber).toBe('keep me')
+      expect(wrapper.find('.form-section').attributes()).not.toHaveProperty('inert')
+      await dialog.vm.onSubmit({ invoiceNumber: 'keep me', theOtherCountryCode: 840 })
+      expect(update.mock.calls[1][1]).not.toHaveProperty('restrictionChangeConfirmationToken')
+      expect(router.push).toHaveBeenCalledTimes(1)
+      wrapper.unmount()
+    })
+
+    it.each(['retry', 'dialog'])('shows a %s rejection once and leaves the editor retryable', async failure => {
+      const { wrapper, dialog } = await mountEditor()
+      const alert = useAlertStore()
+      const publish = vi.spyOn(alert, 'error')
+      update.mockRejectedValueOnce(challenge())
+      if (failure === 'retry') update.mockRejectedValueOnce(new Error('Сохранение не выполнено'))
+      else restrictionConfirm.mockRejectedValueOnce(new Error('Сохранение не выполнено'))
+      await dialog.vm.onSubmit({ invoiceNumber: 'keep me', theOtherCountryCode: 840 })
+      await resolveAll()
+      expect(publish).toHaveBeenCalledTimes(1)
+      expect(wrapper.text()).toContain('Сохранение не выполнено')
+      expect(router.push).not.toHaveBeenCalled()
+      await dialog.vm.onSubmit({ invoiceNumber: 'keep me', theOtherCountryCode: 840 })
+      expect(router.push).toHaveBeenCalledTimes(1)
+      wrapper.unmount()
+    })
+
+    it('does not retry or navigate after unmounting during confirmation', async () => {
+      const { wrapper, dialog } = await mountEditor()
+      const pending = createDeferred()
+      update.mockRejectedValueOnce(challenge())
+      restrictionConfirm.mockReturnValueOnce(pending.promise)
+      const saving = dialog.vm.onSubmit({ theOtherCountryCode: 840 })
+      await resolveAll()
+      wrapper.unmount()
+      pending.resolve(true)
+      await saving
+      expect(update).toHaveBeenCalledTimes(1)
+      expect(router.push).not.toHaveBeenCalled()
+    })
+
   })
 
 })

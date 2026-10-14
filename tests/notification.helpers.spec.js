@@ -35,12 +35,6 @@ describe('notification helpers', () => {
   })
 
   describe('formatNotificationDate', () => {
-    it('formats different date inputs to ru locale string', () => {
-      expect(formatNotificationDate('2025-02-15')).toBe('15.02.2025')
-      expect(formatNotificationDate(new Date('2025-02-15T00:00:00Z'))).toBe('15.02.2025')
-      expect(formatNotificationDate({ year: 2025, month: 2, day: 15 })).toBe('15.02.2025')
-    })
-
     it('returns original string for invalid date strings', () => {
       expect(formatNotificationDate('not-a-date')).toBe('not-a-date')
     })

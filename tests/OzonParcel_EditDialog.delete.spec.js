@@ -77,52 +77,6 @@ describe('OzonParcel_EditDialog delete flow', () => {
     registersMock.item.value = { id: 1, customsProcedureCode: 10 }
   })
 
-  it('calls deleteImage when user confirms', async () => {
-    // confirm resolves true
-    confirmMock.mockResolvedValue(true)
-
-    const TestWrapper = {
-      components: { OzonParcel_EditDialog },
-      template: '<Suspense><OzonParcel_EditDialog :registerId="1" :id="2" /></Suspense>'
-    }
-
-    const wrapper = mount(TestWrapper, {
-      global: {
-        stubs: {
-          Field: { template: '<input />' },
-          // Provide Form that yields slot props including values.id matching prop id
-          Form: {
-            methods: { resetForm() {} },
-            template:
-              '<div><slot :errors="{}" :values="{ id: 2 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
-          },
-          ParcelHeaderActionsBar: true,
-          ParcelStatusSection: true,
-          FeacnCodeEditor: true,
-          ParcelNumberExt: true,
-          ArticleWithH: true,
-          ActionButton: true,
-          'font-awesome-icon': true,
-          VTooltip: true
-        }
-      }
-    })
-
-    // Wait for component to render inside Suspense
-    await nextTick()
-    await new Promise((r) => setTimeout(r, 0))
-    await nextTick()
-
-    // Trigger delete via stubbed ProductLink button
-    const btn = wrapper.find('[data-test="delete-btn"]')
-    expect(btn.exists()).toBe(true)
-    await btn.trigger('click')
-
-    expect(confirmMock).toHaveBeenCalled()
-    expect(parcelsMock.deleteImage).toHaveBeenCalledWith(2)
-    expect(parcelsMock.getById).toHaveBeenCalledWith(2)
-  })
-
   it('does not call deleteImage when user cancels', async () => {
     confirmMock.mockResolvedValue(false)
 

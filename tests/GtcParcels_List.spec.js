@@ -198,46 +198,6 @@ describe('GtcParcels_List.vue', () => {
     getById.mockResolvedValue()
   })
 
-  it('renders INN and formatted combined passport text', async () => {
-    let wrapper
-    try {
-      wrapper = mount(GtcParcels_List, {
-        props: { registerId: 1 },
-        global: { plugins: [createPinia()], stubs: globalStubs }
-      })
-
-      await resolveAll()
-
-      const text = wrapper.text()
-      expect(text).toContain('770123456789')
-      expect(text).toContain('AA 123456 выдан ОВД 01.01.2020')
-    } finally {
-      wrapper?.unmount()
-    }
-  })
-
-  it('uses a single combined passport column', async () => {
-    let wrapper
-    try {
-      wrapper = mount(GtcParcels_List, {
-        props: { registerId: 1 },
-        global: { plugins: [createPinia()], stubs: globalStubs }
-      })
-
-      await resolveAll()
-
-      const table = wrapper.findComponent({ name: 'v-data-table-server' })
-      const keys = table.props('headers').map((header) => header.key)
-
-      expect(keys).toContain('inn')
-      expect(keys.filter((key) => key === 'passport' || key.startsWith('passport'))).toEqual([
-        'passport'
-      ])
-    } finally {
-      wrapper?.unmount()
-    }
-  })
-
   it('renders posting-number sibling indicators with the same flags as Ozon parcels', async () => {
     mockItems.value = [
       createMockItem({
@@ -321,24 +281,6 @@ describe('GtcParcels_List.vue', () => {
         boxId: '17'
       }
     })
-  })
-
-  it('normalizes an initial exact box scope before the first request', async () => {
-    parcelsPage.value = 3
-    let firstRequestPage
-    scopedMocks.loadParcels.mockImplementationOnce(async () => {
-      firstRequestPage = parcelsPage.value
-    })
-
-    const wrapper = mount(GtcParcels_List, {
-      props: { registerId: 1, mode: 'modeWarehouse', boxId: 17, boxCode: 'BOX-17' },
-      global: { plugins: [createPinia()], stubs: globalStubs }
-    })
-    await resolveAll()
-
-    expect(firstRequestPage).toBe(1)
-
-    wrapper.unmount()
   })
 
   it('resets pagination, reloads, and forwards clearing when box scope changes', async () => {

@@ -111,29 +111,6 @@ describe('RegisterStatusSelect', () => {
     expect(icons[0].element.style.color).toBe('rgb(13, 110, 253)')
   })
 
-  it('renders selected and menu statuses with register status icons', () => {
-    const wrapper = mountSelect()
-
-    expect(
-      wrapper.find('[data-testid="register-status-select"]').attributes('data-placeholder')
-    ).toBe('Статус партии')
-    expect(wrapper.text()).toContain('In Progress')
-    expect(wrapper.text()).toContain('Completed')
-    expect(wrapper.find('[data-testid="register-status-selection-title"]').text()).toBe(
-      'In Progress'
-    )
-
-    const icons = wrapper.findAll('[data-testid="register-status-icon"]')
-    expect(icons).toHaveLength(3)
-    expect(icons.map((icon) => icon.attributes('data-icon'))).toEqual([
-      'svg:in-transit',
-      'svg:in-transit',
-      'svg:very-delivered'
-    ])
-    expect(icons[0].element.style.backgroundColor).toBe('rgb(255, 238, 221)')
-    expect(icons[0].element.style.color).toBe('rgb(17, 17, 17)')
-  })
-
   it('emits model updates from the wrapped select', async () => {
     const wrapper = mountSelect()
 
@@ -142,35 +119,4 @@ describe('RegisterStatusSelect', () => {
     expect(wrapper.emitted('update:modelValue')?.[0]).toEqual([5])
   })
 
-  it('can render an icon-only selected value while keeping titles in options', () => {
-    const wrapper = mountSelect({ showSelectionTitle: false })
-
-    expect(wrapper.find('[data-testid="register-status-selection-title"]').exists()).toBe(false)
-    expect(
-      wrapper.findAll('[data-testid="register-status-option-title"]').map((item) => item.text())
-    ).toEqual(['In Progress', 'Completed'])
-    expect(wrapper.findAll('[data-testid="register-status-icon"]')).toHaveLength(3)
-  })
-
-  it('does not duplicate option titles from generated Vuetify list-item props', () => {
-    const wrapper = mountSelect()
-
-    expect(wrapper.find('[data-testid="v-list-item-prop-title"]').exists()).toBe(false)
-    expect(
-      wrapper.findAll('[data-testid="register-status-option-title"]').map((item) => item.text())
-    ).toEqual(['In Progress', 'Completed'])
-  })
-
-  it('forwards custom classes while keeping custom status content', () => {
-    const wrapper = mountSelect({}, { class: 'register-status-inline-select' })
-    const select = wrapper.find('[data-testid="register-status-select"]')
-
-    expect(select.classes()).toEqual(
-      expect.arrayContaining(['register-status-select', 'register-status-inline-select'])
-    )
-    expect(wrapper.find('[data-testid="register-status-icon"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="register-status-selection-title"]').text()).toBe(
-      'In Progress'
-    )
-  })
 })

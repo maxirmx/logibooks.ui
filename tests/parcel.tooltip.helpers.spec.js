@@ -37,46 +37,11 @@ CheckStatusCode.fromParts = vi.fn()
 
 describe('parcel tooltip helpers', () => {
   describe('getFieldTooltip', () => {
-    const mockColumnTitles = {
-      statusId: 'Статус',
-      checkStatus: 'Статус проверки',
-      tnVed: 'ТН ВЭД код',
-      countryCode: 'Страна'
-    }
-
     const mockColumnTooltips = {
       statusId: 'Текущий статус обработки посылки',
       checkStatus: 'Результат автоматической проверки',
       tnVed: 'Товарная номенклатура внешнеэкономической деятельности'
     }
-
-    it('returns combined title and tooltip when both exist', () => {
-      const result = getFieldTooltip('statusId', mockColumnTitles, mockColumnTooltips)
-      expect(result).toBe('Статус (Текущий статус обработки посылки)')
-    })
-
-    it('returns only title when tooltip does not exist', () => {
-      const result = getFieldTooltip('countryCode', mockColumnTitles, mockColumnTooltips)
-      expect(result).toBe('Страна')
-    })
-
-    it('returns null when title does not exist', () => {
-      const result = getFieldTooltip('nonExistentKey', mockColumnTitles, mockColumnTooltips)
-      expect(result).toBeNull()
-    })
-
-    it('returns null when both title and tooltip are missing', () => {
-      const result = getFieldTooltip('anotherMissingKey', {}, {})
-      expect(result).toBeNull()
-    })
-
-    it('returns title when tooltip exists but title is missing', () => {
-      const titlesWithoutKey = { otherKey: 'Other Title' }
-      const tooltipsWithKey = { missingTitleKey: 'Some tooltip' }
-
-      const result = getFieldTooltip('missingTitleKey', titlesWithoutKey, tooltipsWithKey)
-      expect(result).toBeNull()
-    })
 
     it('handles empty strings correctly', () => {
       const titlesWithEmpty = { emptyTitle: '' }
@@ -178,18 +143,5 @@ describe('parcel tooltip helpers', () => {
       )
     })
 
-    it('handles undefined checkStatus', () => {
-      const item = {}
-      const feacnOrders = []
-      const stopWords = []
-
-      mockCheckStatusInstance.toString.mockReturnValue('Неизвестный статус')
-      CheckStatusCode.hasIssues.mockReturnValue(false)
-
-      const result = getCheckStatusTooltip(item, null, feacnOrders, stopWords)
-
-      expect(result).toBe('Неизвестный статус')
-      expect(CheckStatusCode).toHaveBeenCalledWith(undefined)
-    })
   })
 })

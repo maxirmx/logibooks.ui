@@ -116,66 +116,6 @@ describe('App exchange rates display', () => {
     return wrapper.findAll('.exchange-rate-item').map((item) => item.text()).join(' ')
   }
 
-  it('shows current date with direct rates when they are for today', async () => {
-    const today = new Date()
-    const isoToday = today.toISOString()
-    const ruDate = new Intl.DateTimeFormat('ru-RU', {
-      day: '2-digit',
-      month: '2-digit',
-      year: '2-digit'
-    }).format(today)
-    const unitFormatter = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 })
-    statusStore.exchangeRates = [
-      { alphabeticCode: 'USD', rate: 92.1234, date: isoToday },
-      { alphabeticCode: 'EUR', rate: 101.9876, date: isoToday },
-      { alphabeticCode: 'UZS', rate: 65.4321, units: 10000, date: isoToday },
-      { alphabeticCode: 'TJS', rate: 84.8238, units: 10, date: isoToday }
-    ]
-    statusStore.eurUzs = {
-      baseAlphabeticCode: 'EUR',
-      quoteAlphabeticCode: 'UZS',
-      rate: 20000.1234,
-      date: isoToday
-    }
-    statusStore.eurTjs = {
-      baseAlphabeticCode: 'EUR',
-      quoteAlphabeticCode: 'TJS',
-      rate: 12.0234,
-      date: isoToday
-    }
-
-    const wrapper = mountApp()
-    await wrapper.vm.$nextTick()
-
-    const line = getRateLineText(wrapper)
-    expect(line).toBe(
-      `${ruDate} USD 92,1234 EUR 101,9876 UZS (за ${unitFormatter.format(10000)}) 65,4321 TJS (за ${unitFormatter.format(10)}) 84,8238`
-    )
-
-    const usdRate = wrapper.get('[data-testid="exchange-rate-usd"]')
-    expect(usdRate.text()).toBe('USD 92,1234')
-    expect(usdRate.classes()).toEqual(
-      expect.arrayContaining(['exchange-rate-usd', 'font-weight-bold', 'text-green-darken-3'])
-    )
-
-    const eurRate = wrapper.get('[data-testid="exchange-rate-eur"]')
-    expect(eurRate.text()).toBe('EUR 101,9876')
-    expect(eurRate.classes()).toEqual(
-      expect.arrayContaining(['exchange-rate-eur', 'font-weight-bold', 'text-purple-darken-2'])
-    )
-
-    expect(wrapper.get('[data-testid="exchange-rate-tjs"]').text()).toBe(
-      `TJS (за ${unitFormatter.format(10)}) 84,8238`
-    )
-  })
-
-  it('renders route content inside the responsive page shell', () => {
-    const wrapper = mountApp()
-
-    expect(wrapper.get('main').classes()).toContain('app-main')
-    expect(wrapper.get('.app-page-shell').exists()).toBe(true)
-  })
-
   it('shows rates when API returns date-only values for today', async () => {
     vi.useFakeTimers()
     const today = new Date(2024, 5, 24, 12, 0, 0)

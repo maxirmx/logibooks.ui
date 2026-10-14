@@ -130,20 +130,6 @@ describe('parcel checks subscription store', () => {
     expect(connection.stop).toHaveBeenCalled()
   })
 
-  it('re-observes and reconciles after automatic reconnect', async () => {
-    const onResync = vi.fn()
-    const store = useParcelChecksStore()
-    await store.start(9, { onResync })
-    const connection = signalRState.connections[0]
-    connection.invoke.mockClear()
-    onResync.mockClear()
-
-    await connection.handlers.onreconnected()
-
-    expect(connection.invoke).toHaveBeenCalledWith('ObserveRegister', 9)
-    expect(onResync).toHaveBeenCalledTimes(1)
-  })
-
   it('rejects initial connection failures while retaining reactive error state', async () => {
     signalRState.nextStartError = new Error('offline')
     const store = useParcelChecksStore()

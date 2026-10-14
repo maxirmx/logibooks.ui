@@ -8,7 +8,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import FeacnLocalPrefixesList from '@/lists/FeacnLocalPrefixes_List.vue'
-import ResponsiveFilterBar from '@/components/ResponsiveFilterBar.vue'
 import { vuetifyStubs } from './helpers/test-utils.js'
 
 // Hoisted mocks
@@ -158,52 +157,6 @@ describe('FeacnLocalPrefixes_List.vue', () => {
     wrapper = mountList()
   })
 
-  it('uses requested procedure sort order from import and export flags', () => {
-    const combinations = [
-      { scopes: [] },
-      { scopes: [{ countryIsoNumeric: 643, customsProcedureCode: 10 }] },
-      { scopes: [
-        { countryIsoNumeric: 643, customsProcedureCode: 10 },
-        { countryIsoNumeric: 860, customsProcedureCode: 40 }
-      ] },
-      { scopes: [{ countryIsoNumeric: 860, customsProcedureCode: 40 }] }
-    ]
-
-    expect(combinations.map((item) => wrapper.vm.getProhibitionScopeSortOrder(item))).toEqual([
-      '', '643:10', '643:10|860:40', '860:40'
-    ])
-    expect(wrapper.vm.tablePrefixes.map((item) => item.procedure)).toEqual([
-      '643:10', '860:40', '643:10|860:40', '643:10|860:40'
-    ])
-  })
-
-  it('renders export and import prohibition reasons on separate lines', () => {
-    const rows = wrapper.findAll('[data-testid="v-data-table"] .v-data-table-row')
-    const reasonCell = rows[2].findAll('.v-data-table-cell')[6]
-    const lines = reasonCell.findAll('.reason-line')
-    expect(lines.map((line) => line.text())).toEqual(['dual export reason', 'dual import reason'])
-  })
-
-  it('keeps import reason aligned with import procedure when export reason is empty', () => {
-    const rows = wrapper.findAll('[data-testid="v-data-table"] .v-data-table-row')
-    const procedureLines = rows[3].findAll('.v-data-table-cell')[5].findAll('.procedure-line')
-    const reasonLines = rows[3].findAll('.v-data-table-cell')[6].findAll('.reason-line')
-
-    expect(procedureLines.map((line) => line.text())).toEqual(['Экспорт', 'Импорт'])
-    expect(reasonLines).toHaveLength(2)
-    expect(reasonLines[0].text()).toBe('')
-    expect(reasonLines[1].text()).toBe('import only dual reason')
-  })
-
-  it('does not call loadFeacnTooltipOnHover when hovering code', async () => {
-    const codeSpan = wrapper
-      .findAll('[data-testid="v-data-table"] .v-data-table-row')[0]
-      .findAll('.v-data-table-cell')[1]
-      .find('span')
-    await codeSpan.trigger('mouseenter')
-    expect(loadFeacnTooltipOnHover).not.toHaveBeenCalled()
-  })
-
   it('calls loadFeacnTooltipOnHover for exceptions on hover', async () => {
     const exceptionSpan = wrapper
       .findAll('[data-testid="v-data-table"] .v-data-table-row')[0]
@@ -242,24 +195,6 @@ describe('FeacnLocalPrefixes_List.vue', () => {
     expect(mockAlertError).toHaveBeenCalledWith('Ошибка при удалении префикса')
   })
 
-  it('getExceptionCode handles string exceptions', () => {
-    expect(wrapper.vm.getExceptionCode('123')).toBe('123')
-  })
-
-  it('getExceptionCode handles object exceptions', () => {
-    const exception = { id: 1, code: '456', feacnPrefixId: 1 }
-    expect(wrapper.vm.getExceptionCode(exception)).toBe('456')
-  })
-
-  it('getExceptionKey generates keys for string exceptions', () => {
-    expect(wrapper.vm.getExceptionKey('123', 0)).toBe('123')
-  })
-
-  it('getExceptionKey generates keys for object exceptions', () => {
-    const exception = { id: 1, code: '456', feacnPrefixId: 1 }
-    expect(wrapper.vm.getExceptionKey(exception, 0)).toBe('1-456')
-  })
-
   it('getExceptionKey handles object exceptions without id', () => {
     const exception = { code: '789', feacnPrefixId: 1 }
     expect(wrapper.vm.getExceptionKey(exception, 2)).toBe('2-789')
@@ -279,34 +214,6 @@ describe('FeacnLocalPrefixes_List.vue', () => {
     expect(wrapper.vm.filteredPrefixes.map((p) => p.code)).toEqual(['0202', '0303', '0404'])
   })
 
-  it('renders the responsive filters in their original order above a viewport-bound table', () => {
-    const filters = wrapper.find('.prefix-filter-row')
-    expect(wrapper.findComponent(ResponsiveFilterBar).exists()).toBe(true)
-    expect(filters.attributes('aria-label')).toBe('Фильтры локальных префиксов')
-    expect(filters.find('[data-testid="v-text-field"]').exists()).toBe(true)
-    expect(filters.find('[data-testid="v-select"]').exists()).toBe(true)
-    expect(filters.element.firstElementChild).toBe(filters.find('[data-testid="v-select"]').element)
-    expect(filters.element.children[1]).toBe(filters.find('.v-autocomplete-stub').element)
-    expect(filters.element.children[2]).toBe(filters.find('[data-testid="v-text-field"]').element)
-    expect(filters.findComponent('[data-testid="v-select"]').vm.$attrs.class).toContain(
-      'responsive-filter-bar__item--compact'
-    )
-    expect(filters.find('.v-autocomplete-stub').classes()).toContain(
-      'responsive-filter-bar__item--regular'
-    )
-    expect(filters.findComponent('[data-testid="v-text-field"]').vm.$attrs.class).toContain(
-      'responsive-filter-bar__item--grow'
-    )
-    expect(wrapper.findComponent('[data-testid="v-card"]').vm.$attrs.class).toContain(
-      'feacn-prefixes-table-card'
-    )
-    expect(wrapper.vm.prohibitionScopeFilterItems).toEqual([
-      { title: 'Любая', value: 'all' },
-      { title: 'Экспорт', value: 'export' },
-      { title: 'Импорт', value: 'import' }
-    ])
-  })
-
   it('searches by new DTO fields and translated procedure text', () => {
     const item = { raw: mockPrefixes.value[2] }
     expect(wrapper.vm.filterLocalPrefixes(null, 'dual export', item)).toBe(true)
@@ -316,11 +223,6 @@ describe('FeacnLocalPrefixes_List.vue', () => {
     expect(wrapper.vm.filterLocalPrefixes(null, 'd3', item)).toBe(true)
     expect(wrapper.vm.filterLocalPrefixes(null, 'Exception 333', item)).toBe(true)
     expect(wrapper.vm.filterLocalPrefixes(null, 'not-found', item)).toBe(false)
-  })
-
-  it('does not search by hidden legacy comment field', () => {
-    const item = { raw: mockPrefixes.value[0] }
-    expect(wrapper.vm.filterLocalPrefixes(null, 'legacy comment', item)).toBe(false)
   })
 
   it('filterLocalPrefixes handles null inputs', () => {

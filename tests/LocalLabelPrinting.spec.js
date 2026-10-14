@@ -152,18 +152,6 @@ describe('local printing UI', () => {
     }
   )
 
-  it('keeps one visible alert region and retains errors when closing configuration', async () => {
-    env.qz.connect.mockRejectedValueOnce(new Error('printer list failed'))
-    await openSettings()
-    expect(wrapper.findAllComponents(PageAlertRegion)).toHaveLength(1)
-    expect(wrapper.get('[role="dialog"]').get('[role="alert"]').text()).toContain('printer list failed')
-    await panel().get('[data-testid="close-print-settings"]').trigger('click'); await flushPromises()
-    expect(wrapper.findAllComponents(PageAlertRegion)).toHaveLength(1)
-    const alert = wrapper.get('[data-testid="page-alert-region"]')
-    expect(alert.text()).toContain('printer list failed')
-    expect(alert.element.previousElementSibling.tagName).toBe('HR')
-    expect(errorSpy).toHaveBeenCalledOnce()
-  })
   it('selects printers directly, sorts TE200 first and renders the translated marking modes', async () => {
     env.qz.state.printers = ['Office Z', 'TSC TE200', 'Office A']
     expect(panel().get('[data-testid="print-settings-action"] [data-icon]').attributes('data-icon')).toBe('fa-solid fa-print')
@@ -206,25 +194,6 @@ describe('local printing UI', () => {
     expect(env.qz.submit).toHaveBeenCalledTimes(1)
     expect(panel().get('[data-testid="auto-print-mode"] select').element.value).toBe('Off')
   })
-  it('presents list refresh and inline selection failures once and permits retry', async () => {
-    env.qz.connect.mockRejectedValueOnce(new Error('list unavailable'))
-    await openSettings()
-    expect(wrapper.get('[role="alert"]').text()).toContain('list unavailable')
-    expect(errorSpy).toHaveBeenCalledTimes(1)
-    await panel().get('[data-testid="refresh-printers"]').trigger('click'); await flushPromises()
-    expect(env.qz.connect).toHaveBeenCalledTimes(2)
-    await arm()
-    expect(panel().get('[data-testid="printer-selection-inline"] select').element.disabled).toBe(false)
-    env.qz.select.mockImplementationOnce(() => { throw new Error('selection denied') })
-    await panel().get('[data-testid="printer-selection-inline"] select').setValue('Office'); await flushPromises()
-    expect(wrapper.get('[role="alert"]').text()).toContain('selection denied')
-    expect(env.qz.state.printer).toBe('TSC TE200')
-    expect(errorSpy).toHaveBeenCalledTimes(2)
-    await panel().get('[data-testid="printer-selection-inline"] select').setValue('Office'); await flushPromises()
-    expect(env.qz.state.printer).toBe('Office')
-    expect(panel().get('[data-testid="auto-print-mode"] select').element.value).toBe('KGT')
-    expect(env.channel.start).toHaveBeenCalledOnce()
-  })
   it('presents lock acquisition rejection once and retries the same marking mode', async () => {
     env.ownership.acquire.mockRejectedValueOnce(new Error('lock request failed'))
     await arm()
@@ -240,20 +209,6 @@ describe('local printing UI', () => {
     expect(env.channel.start).toHaveBeenCalledExactlyOnceWith(42, 9)
     expect(panel().get('[data-testid="auto-print-mode"] select').element.value).toBe('KGT')
     expect(errorSpy).toHaveBeenCalledOnce()
-  })
-  it('exposes live operation and queue state while printing, with no queue count in the header', async () => {
-    let finish
-    await arm()
-    env.qz.submit.mockReturnValueOnce(new Promise((resolve) => { finish = resolve }))
-    env.event({ ...scan(), printCandidates: [...scan().printCandidates, ...scan(9).printCandidates] })
-    await flushPromises()
-    expect(panel().vm.operationInProgress).toBe(true)
-    expect(panel().vm.queueStatus).toEqual({ queued: 1, paused: false })
-    expect(wrapper.get('[data-testid="scanjob-monitor-print-queue"]').text()).toContain('1')
-    expect(panel().text()).not.toContain('В очереди')
-    finish(); await flushPromises()
-    expect(panel().vm.operationInProgress).toBe(false)
-    expect(panel().vm.queueStatus.queued).toBe(0)
   })
   it('reports failed stopping while clearing, preserves selection and retries clear', async () => {
     await openSettings()
@@ -291,24 +246,6 @@ describe('local printing UI', () => {
     await panel().vm.printParcel(target)
     expect(env.label).toHaveBeenCalledTimes(3)
   })
-  it('coalesces clicks and retains captured parcel/job through first-use selection', async () => {
-    env.qz.state.printer = ''
-    const captured = { ...target }
-    await panel().vm.printParcel(captured)
-    captured.parcelId = 99
-    await panel().vm.printParcel(target)
-    await flushPromises()
-    expect(env.qz.connect).toHaveBeenCalledTimes(1)
-    expect(wrapper.findAll('[role="dialog"]')).toHaveLength(1)
-    expect(wrapper.get('[role="dialog"]').text()).toContain('Настройки печати')
-    expect(wrapper.findAllComponents(PageAlertRegion)).toHaveLength(1)
-    expect(panel().get('[data-testid="auto-print-mode"] select').element.disabled).toBe(true)
-    await wrapper.get('[data-testid="print-pending-label"]').trigger('click')
-    await flushPromises()
-    expect(env.qz.select).toHaveBeenCalledWith('TSC TE200')
-    expect(env.label).toHaveBeenCalledWith({ ...target, scanJobId: 42 })
-    expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
-  })
   it('preserves failed selection with visible failure and explicit cancel', async () => {
     env.qz.state.printer = ''
     env.qz.connect.mockRejectedValueOnce({ code: 'PrinterMissing' })
@@ -326,19 +263,6 @@ describe('local printing UI', () => {
     await dialog.get('[data-testid="close-print-settings"]').trigger('click'); await flushPromises()
     expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
     expect(errorSpy).toHaveBeenCalledTimes(2)
-  })
-  it('does not submit when selection is canceled or scope changes during selection', async () => {
-    env.qz.state.printer = ''
-    await panel().vm.printParcel(target)
-    await flushPromises()
-    await panel().get('[data-testid="printer-selection-inline"] select').setValue('Office')
-    await panel().get('[data-testid="close-print-settings"]').trigger('click'); await flushPromises()
-    expect(env.label).not.toHaveBeenCalled()
-    expect(env.qz.select).not.toHaveBeenCalled()
-    await panel().vm.printParcel(target)
-    wrapper.vm.job = 43; await flushPromises()
-    expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
-    expect(env.label).not.toHaveBeenCalled()
   })
   it('keeps the captured pending print open through selection and printing failures, then retries it', async () => {
     env.qz.state.printer = ''

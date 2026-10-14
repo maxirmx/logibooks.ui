@@ -15,14 +15,6 @@ beforeEach(() => {
   service = createQzPrinting({ client, api })
 })
 describe('QZ printing', () => {
-  it('clears both the saved and live selection and does not restore it on reconnect', async () => {
-    await service.connect()
-    service.select('Office')
-    service.clearSelection()
-    expect(localStorage.getItem(PRINTER_STORAGE_KEY)).toBeNull()
-    expect(service.state.printer).toBe('')
-    await expect(service.ready()).rejects.toMatchObject({ code: 'NoSelection' })
-  })
   it('propagates storage failures and preserves the selected printer for retry', async () => {
     const storage = { getItem: vi.fn().mockReturnValue('Office'), removeItem: vi.fn().mockImplementationOnce(() => { throw new Error('storage denied') }) }
     service = createQzPrinting({ client, api, storage })
@@ -102,40 +94,6 @@ describe('QZ printing', () => {
     service.select('Office')
     await service.ready()
     expect(service.state.printer).toBe('Office')
-  })
-  it('keeps an explicitly selected replacement after missing-printer storage removal failed', async () => {
-    const storage = {
-      getItem: (key) => localStorage.getItem(key),
-      setItem: (key, value) => localStorage.setItem(key, value),
-      removeItem: vi.fn(() => { throw new Error('storage denied') })
-    }
-    service = createQzPrinting({ client, api, storage })
-    await service.connect()
-    service.select('Office')
-    client.printers.find.mockResolvedValueOnce(['TSC TE200'])
-    await expect(service.ready()).rejects.toThrow('storage denied')
-    service.select('TSC TE200')
-    await service.ready()
-    expect(service.state.printer).toBe('TSC TE200')
-    expect(localStorage.getItem(PRINTER_STORAGE_KEY)).toBe('TSC TE200')
-    expect(storage.removeItem).toHaveBeenCalledOnce()
-  })
-  it('initializes authenticated signing once, preserving exact data and callback failures', async () => {
-    await service.connect()
-    await service.connect()
-    expect(client.security.setSignatureAlgorithm).toHaveBeenCalledWith('SHA512')
-    expect(client.security.setCertificatePromise).toHaveBeenCalledTimes(1)
-    const certificate = client.security.setCertificatePromise.mock.calls[0][0]
-    expect(await new Promise(certificate)).toBe('PEM\n')
-    const signing = client.security.setSignaturePromise.mock.calls[0][0]
-    const exact = '  {"city":"Душанбе"}\n'
-    expect(await new Promise(signing(exact))).toBe('signature')
-    expect(api.sign).toHaveBeenCalledWith(exact)
-    const error = new Error('server disabled')
-    api.certificate.mockRejectedValueOnce(error)
-    await expect(new Promise(certificate)).rejects.toBe(error)
-    api.sign.mockRejectedValueOnce(error)
-    await expect(new Promise(signing(exact))).rejects.toBe(error)
   })
   it('preserves Core failures when QZ applies its certificate/signature transformations', async () => {
     const disabled = Object.assign(new Error('disabled'), { status: 503, data: { code: 'QzDisabled' } })

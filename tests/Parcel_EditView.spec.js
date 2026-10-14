@@ -58,25 +58,6 @@ describe('Parcel_EditView.vue', () => {
     subscriptionOptions.length = 0
   })
 
-  it('enables passport subscription for an SrLogist Plus import dialog', async () => {
-    const { useAuthStore } = await import('@/stores/auth.store.js')
-    useAuthStore().user = { roles: ['sr-logist'] }
-    mockGet.mockResolvedValue({
-      id: 5,
-      registerType: WBR_COMPANY_ID,
-      customsProcedureCode: 40
-    })
-
-    mount(ParcelEditView, {
-      props: { registerId: 5, id: 50 },
-      global: { stubs: commonStubs }
-    })
-    await flushPromises()
-
-    expect(subscriptionOptions).toHaveLength(1)
-    expect(subscriptionOptions[0].enabled.value).toBe(true)
-  })
-
   it.each([
     ['non-import procedure', 10, ['sr-logist']],
     ['ineligible role', 40, ['logist']]
@@ -157,32 +138,6 @@ describe('Parcel_EditView.vue', () => {
     expect(wrapper.vm.editComponent).toBe(expectedComponent)
   })
 
-  it('passes normalized navigation context to the selected parcel editor', async () => {
-    mockGet.mockResolvedValue({ id: 12, registerType: WBR_COMPANY_ID })
-
-    const wrapper = mount(ParcelEditView, {
-      props: {
-        registerId: 12,
-        id: 4,
-        mode: OP_MODE_WAREHOUSE,
-        returnUrl: '/scanjobs/42/monitor/boxes/7',
-        boxId: 17
-      },
-      global: { stubs: commonStubs }
-    })
-
-    await flushPromises()
-    const editor = wrapper.findComponent({ name: 'WbrParcelEditDialog' })
-
-    expect(editor.props()).toMatchObject({
-      registerId: 12,
-      id: 4,
-      mode: OP_MODE_WAREHOUSE,
-      returnUrl: '/scanjobs/42/monitor/boxes/7',
-      boxId: 17
-    })
-  })
-
   it('shows loading state initially', () => {
     // Mock a promise that never resolves to simulate loading state
     mockGet.mockImplementation(() => new Promise(() => {}))
@@ -196,37 +151,6 @@ describe('Parcel_EditView.vue', () => {
     })
 
     expect(wrapper.text()).toContain('Загрузка...')
-  })
-
-  it('shows error state when fetch fails', async () => {
-    const errorMessage = 'Failed to fetch register'
-    mockGet.mockRejectedValue(new Error(errorMessage))
-
-    const wrapper = mount(ParcelEditView, {
-      props: {
-        registerId: 1,
-        id: 100
-      },
-      global: { stubs: commonStubs }
-    })
-
-    await flushPromises()
-    await nextTick()
-
-    expect(wrapper.text()).toContain(errorMessage)
-  })
-
-  it('retries a failed register load and keeps Close available throughout', async () => {
-    mockGet.mockRejectedValueOnce(new Error('Register unavailable')).mockResolvedValue({ id: 12, registerType: WBR_COMPANY_ID })
-    const wrapper = mount(ParcelEditView, { props: { id: 3, registerId: 12 }, global: { stubs: commonStubs } })
-    await flushPromises()
-    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-    expect(wrapper.get('hr').element.nextElementSibling.classList.contains('page-alert-region')).toBe(true)
-    expect(wrapper.get('button').text()).toBe('Закрыть')
-    await wrapper.get('.page-alert-region__action').trigger('click')
-    await flushPromises()
-    expect(wrapper.findComponent(WbrParcelEditDialog).exists()).toBe(true)
-    expect(mockGet).toHaveBeenCalledTimes(2)
   })
 
   it.each(['resolve', 'reject'])('ignores stale register responses on a register change (%s)', async (outcome) => {

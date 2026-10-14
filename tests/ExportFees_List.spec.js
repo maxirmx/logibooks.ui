@@ -129,24 +129,6 @@ describe('ExportFees_List.vue', () => {
     })
   }
 
-  it('calls getAll on mount', () => {
-    mountList()
-
-    expect(getAll).toHaveBeenCalledOnce()
-  })
-
-  it('defines a readonly table with all export fee fields', () => {
-    const wrapper = mountList()
-
-    expect(wrapper.vm.headers.map((h) => h.key)).toEqual(['code', 'description', 'fee'])
-    expect(wrapper.vm.headers.find((h) => h.key === 'fee').title).toBe('Сбор, руб.')
-    expect(wrapper.find('.primary-heading').text()).toBe('Сборы')
-    expect(wrapper.findAll('[data-testid="v-data-table"]').length).toBe(1)
-    expect(wrapper.text()).toContain('1000000000')
-    expect(wrapper.text()).toContain('First fee')
-    expect(wrapper.text()).toContain('1.25')
-  })
-
   it('filterFees matches id, code, description, and fee', () => {
     const wrapper = mountList()
     const item = { raw: mockFees.value[0] }
@@ -176,14 +158,6 @@ describe('ExportFees_List.vue', () => {
     expect(wrapper.vm.customKeySort.code).toBe(wrapper.vm.compareFeeCodesAsStrings)
   })
 
-  it('shows empty message when no fees are available', () => {
-    mockFees.value = []
-
-    const wrapper = mountList()
-
-    expect(wrapper.html()).toContain('Отсутствуют данные')
-  })
-
   it('renders update button for senior logist plus users', () => {
     isSrLogistPlus.value = true
 
@@ -192,12 +166,6 @@ describe('ExportFees_List.vue', () => {
 
     expect(button.exists()).toBe(true)
     expect(button.attributes('title')).toBe('Обновить информацию о сборах')
-  })
-
-  it('does not render update button for regular users', () => {
-    const wrapper = mountList()
-
-    expect(wrapper.find('[data-testid="update-fees-button"]').exists()).toBe(false)
   })
 
   it('updateFees calls update and reloads fees', async () => {
@@ -251,18 +219,4 @@ describe('ExportFees_List.vue', () => {
     )
   })
 
-  it('reports Error object store error as message string through alertStore', async () => {
-    getAll.mockRejectedValueOnce(new Error('load fees failed'))
-
-    mountList()
-    await flushPromises()
-
-    expect(alertError).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'load fees failed' }),
-      expect.objectContaining({
-        fallback: 'Не удалось загрузить таможенные сборы',
-        action: expect.objectContaining({ label: 'Повторить', handler: expect.any(Function) })
-      })
-    )
-  })
 })

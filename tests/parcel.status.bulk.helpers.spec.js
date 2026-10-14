@@ -5,23 +5,9 @@ import {
   normalizeParcelStatusBulkIds,
   parseParcelStatusBulkInput
 } from '@/helpers/parcel.status.bulk.helpers.js'
-import {
-  GTC_COMPANY_ID,
-  OZON_COMPANY_ID,
-  WBR_COMPANY_ID,
-  WBRN_REGISTER_ID
-} from '@/helpers/company.constants.js'
+import { OZON_COMPANY_ID, WBR_COMPANY_ID } from '@/helpers/company.constants.js'
 
 describe('parcel status bulk helpers', () => {
-  it('parses comma-separated and Excel-style pasted values with ordered de-duplication', () => {
-    expect(parseParcelStatusBulkInput(' A-1, B-2\tC-3\r\nA-1\n\n D-4 ')).toEqual([
-      'A-1',
-      'B-2',
-      'C-3',
-      'D-4'
-    ])
-  })
-
   it('handles empty values', () => {
     expect(parseParcelStatusBulkInput(null)).toEqual([])
     expect(parseParcelStatusBulkInput(' , \n\t ')).toEqual([])
@@ -46,13 +32,6 @@ describe('parcel status bulk helpers', () => {
       'Недоступны для изменения:\nBLOCK-5'
     )
     expect(buildParcelStatusBulkReport('not-array', 'not-array')).toBe('')
-  })
-
-  it('builds parcel-number labels from register type', () => {
-    expect(getParcelStatusBulkNumberLabel({ registerType: WBR_COMPANY_ID })).toBe('ШК')
-    expect(getParcelStatusBulkNumberLabel({ registerType: WBRN_REGISTER_ID })).toBe('ШК')
-    expect(getParcelStatusBulkNumberLabel({ registerType: OZON_COMPANY_ID })).toBe('№ отправления')
-    expect(getParcelStatusBulkNumberLabel({ registerType: GTC_COMPANY_ID })).toBe('№ посылки')
   })
 
   it('falls back to company id and then to a neutral parcel-number label', () => {

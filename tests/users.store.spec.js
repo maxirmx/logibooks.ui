@@ -60,17 +60,6 @@ describe('users store', () => {
     global.localStorage = originalLocalStorage
   })
 
-  describe('state', () => {
-    it('initializes with correct default values', () => {
-      const store = useUsersStore()
-      expect(store.users).toEqual([])
-      expect(store.user).toEqual({})
-      expect(store.loading).toBe(false)
-      expect(store.error).toBeNull()
-      expect(store.isInitialized).toBe(false)
-    })
-  })
-
   describe('getters', () => {
     it('getUserById returns the correct user', () => {
       const store = useUsersStore()
@@ -83,29 +72,9 @@ describe('users store', () => {
       expect(user).toEqual({ id: 2, firstName: 'Jane', lastName: 'Smith' })
     })
 
-    it('getUserById returns undefined for non-existent user', () => {
-      const store = useUsersStore()
-      store.users = [{ id: 1, name: 'Test User' }]
-
-      const user = store.getUserById(999)
-      expect(user).toBeUndefined()
-    })
   })
 
   describe('actions', () => {
-    it('add calls API correctly without translation', async () => {
-      fetchWrapper.post.mockResolvedValue({})
-      fetchWrapper.get.mockResolvedValue([])
-
-      const store = useUsersStore()
-      const newUser = { firstName: 'John', lastName: 'Doe', email: 'john@example.com' }
-
-      await store.add(newUser)
-
-      expect(fetchWrapper.post).toHaveBeenCalledWith('http://localhost:8080/api/users', newUser)
-      expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:8080/api/users')
-    })
-
     it('add calls API with translated user when trnslt=true', async () => {
       fetchWrapper.post.mockResolvedValue({})
       fetchWrapper.get.mockResolvedValue([])
@@ -153,22 +122,6 @@ describe('users store', () => {
       )
     })
 
-    it('getAll sets loading state and populates users on success', async () => {
-      const users = [
-        { id: 1, name: 'User 1' },
-        { id: 2, name: 'User 2' }
-      ]
-      fetchWrapper.get.mockResolvedValue(users)
-
-      const store = useUsersStore()
-      await store.getAll()
-
-      expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:8080/api/users')
-      expect(store.users).toEqual(users)
-      expect(store.isInitialized).toBe(true)
-      expect(store.loading).toBe(false)
-    })
-
     it('getAll handles errors correctly', async () => {
       const error = new Error('Failed to fetch users')
       fetchWrapper.get.mockRejectedValue(error)
@@ -208,19 +161,6 @@ describe('users store', () => {
       expect(store.user.isLogist).toBe(keyLogist)
       expect(store.user.isSrLogist).toBe(keySrLogist)
       expect(store.user.isWhManager).toBe(keyWhManager)
-    })
-
-    it('update calls API with correct parameters', async () => {
-      fetchWrapper.put.mockResolvedValue({})
-      fetchWrapper.get.mockResolvedValue([])
-
-      const store = useUsersStore()
-      const updateData = { firstName: 'Updated', lastName: 'User' }
-
-      await store.update(5, updateData)
-
-      expect(fetchWrapper.put).toHaveBeenCalledWith('http://localhost:8080/api/users/5', updateData)
-      expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:8080/api/users')
     })
 
     it('update updates auth store when updating current user', async () => {

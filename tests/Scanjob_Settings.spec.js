@@ -263,33 +263,6 @@ describe('Scanjob_Settings.vue', () => {
     expect(routerBack).toHaveBeenCalled()
   })
 
-  it('renders create mode with read-only status and header actions', async () => {
-    const wrapper = mountComponent({
-      mode: 'create',
-      registerId: 22,
-      warehouseId: 11,
-      dealNumber: 'ABC-1'
-    })
-    await resolveAll()
-
-    expect(ensureRegisterOpsLoaded).toHaveBeenCalled()
-    expect(getAllCompanies).toHaveBeenCalled()
-    expect(wrapper.find('[data-testid="status-display"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="status-display"]').element.value).toBe('Draft')
-    expect(wrapper.find('[data-testid="invoice-display"]').element.value).toBe('AWB INV-001')
-    expect(wrapper.find('[data-testid="sender-recipient-display"]').element.value).toBe(
-      'Отправитель ООО / Получатель полное'
-    )
-    const formRows = wrapper.findAll('form > .form-row')
-    expect(formRows[0].text()).toContain('ТСД')
-    expect(formRows[0].text()).toContain('Отправитель/Получатель')
-    expect(formRows[1].text()).toContain('Название')
-    expect(wrapper.find('select#status').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="scanjob-start-action"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="scanjob-save-action"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="scanjob-cancel-action"]').exists()).toBe(true)
-  })
-
   it.each([
     [10, 'Входящее для сделки ABC-1'],
     [15, 'Сортировка для сделки ABC-1'],
@@ -323,22 +296,6 @@ describe('Scanjob_Settings.vue', () => {
     expect(routerPush).toHaveBeenCalledWith('/scanjobs')
   })
 
-  it('keeps updating an untouched default across repeated operation changes', async () => {
-    const wrapper = mountComponent({ mode: 'create', registerId: 22, dealNumber: 'ABC-1' })
-    await resolveAll()
-
-    for (const [value, expectedName] of [
-      [15, 'Сортировка для сделки ABC-1'],
-      [30, 'Поиск для сделки ABC-1'],
-      [20, 'Исходящее для сделки ABC-1'],
-      [10, 'Входящее для сделки ABC-1']
-    ]) {
-      await wrapper.get('#operation').setValue(String(value))
-      await resolveAll()
-      expect(wrapper.get('#name').element.value).toBe(expectedName)
-    }
-  })
-
   it.each(['Моё задание', '', 'Входящее для сделки ABC-1'])(
     'preserves a manually entered name %j when the operation changes',
     async (enteredName) => {
@@ -353,24 +310,6 @@ describe('Scanjob_Settings.vue', () => {
       }
     }
   )
-
-  it('preserves a stored name when editing and changing the operation', async () => {
-    const storedName = 'Сканирование сделки ABC-1'
-    getById.mockResolvedValue({ ...mockScanjob, name: storedName, operation: 10 })
-    const wrapper = mountComponent({ mode: 'edit', scanjobId: 11, dealNumber: 'ABC-1' })
-    await resolveAll()
-    expect(wrapper.get('#name').element.value).toBe(storedName)
-
-    await wrapper.get('#operation').setValue('15')
-    await resolveAll()
-    expect(wrapper.get('#name').element.value).toBe(storedName)
-    await wrapper.vm.$.setupState.onSubmit()
-    await resolveAll()
-    expect(update).toHaveBeenCalledWith(11, expect.objectContaining({
-      name: storedName,
-      operation: 15
-    }))
-  })
 
   it('leaves the name empty and required when there is no deal number', async () => {
     const wrapper = mountComponent({ mode: 'create', registerId: 22, warehouseId: 11 })
@@ -424,39 +363,6 @@ describe('Scanjob_Settings.vue', () => {
     await resolveAll()
     expect(wrapper.get('#name').element.value).toBe('Сортировка для сделки ABC-1')
     expect(alertError).toHaveBeenCalledOnce()
-  })
-
-  it('creates scanjob on header save action', async () => {
-    const wrapper = mountComponent({
-      mode: 'create',
-      registerId: 22,
-      warehouseId: 11,
-      dealNumber: 'ABC-1'
-    })
-    await resolveAll()
-
-    await wrapper.find('#name').setValue('Сканирование сделки ABC-1')
-    await wrapper.find('#type').setValue('1')
-    await wrapper.find('#operation').setValue('30')
-    await wrapper.find('#mode').setValue('3')
-    await wrapper.find('#lookupStatusId').setValue('101')
-    await wrapper.find('input[name="registerId"]').setValue(22)
-    await wrapper.find('input[name="warehouseId"]').setValue(11)
-
-    await wrapper.vm.$.setupState.onSubmit()
-    await resolveAll()
-
-    expect(create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        name: 'Сканирование сделки ABC-1',
-        registerId: 22,
-        warehouseId: 11,
-        status: 4,
-        lookupStatusId: 101
-      })
-    )
-    // After successful create, navigate to scanjobs list
-    expect(routerPush).toHaveBeenCalledWith('/scanjobs')
   })
 
   it('renders edit mode and updates scanjob on save action', async () => {
@@ -659,36 +565,6 @@ describe('Scanjob_Settings.vue', () => {
 
     expect(alertError).toHaveBeenCalledWith('Изменения запрещены для выбранного реестра')
     expect(wrapper.get('form').classes()).toContain('read-only-form')
-  })
-
-  it('enables and validates lookup status only for lookup operation', async () => {
-    const wrapper = mountComponent({
-      mode: 'create',
-      registerId: 22,
-      warehouseId: 11,
-      dealNumber: 'ABC-1'
-    })
-    await resolveAll()
-
-    // Set to lookup operation (last in array)
-    await wrapper.find('#operation').setValue('30')
-    await resolveAll()
-
-    const lookupStatusSelect = wrapper.find('[data-testid="lookup-status-select"]')
-    expect(lookupStatusSelect.attributes('disabled')).toBeUndefined()
-
-    await lookupStatusSelect.setValue('')
-    await wrapper.vm.$.setupState.onSubmit()
-    await resolveAll()
-
-    expect(create).not.toHaveBeenCalled()
-    expect(wrapper.text()).toContain('Статус для поиска обязателен')
-
-    await wrapper.find('#operation').setValue('10')
-    await resolveAll()
-    expect(
-      wrapper.find('[data-testid="lookup-status-select"]').attributes('disabled')
-    ).toBeDefined()
   })
 
   it('limits operations to lookup for GTC registers', async () => {

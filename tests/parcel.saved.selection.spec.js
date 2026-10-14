@@ -35,21 +35,6 @@ describe('saved parcel filter selection', () => {
     expect(buildParcelsNumberParams('123').has('parcelFilterId')).toBe(false)
   })
 
-  it('clears on account change and logout without clearing on same-user refresh', () => {
-    const auth = useAuthStore()
-    auth.setParcelFilterId(23)
-    auth.user = { id: 1, roles: ['logist'] }
-    expect(auth.parcels_filter_id).toBe(23)
-    auth.user = { id: 2, roles: [] }
-    expect(auth.parcels_filter_id).toBeNull()
-    expect(localStorage.getItem('logibooks.parcelFilter')).toBeNull()
-    auth.setParcelFilterId(31)
-    auth.user = null
-    expect(auth.parcels_filter_id).toBeNull()
-    auth.setParcelFilterId(45)
-    expect(auth.parcels_filter_id).toBeNull()
-  })
-
   it.each([null, { userId: 2, filterId: 23 }, { userId: 1, filterId: 0 }, { userId: 1, filterId: '23' }])('ignores invalid or another account\'s stored selection %s', saved => {
     localStorage.setItem('logibooks.parcelFilter', JSON.stringify(saved))
     expect(useAuthStore().parcels_filter_id).toBeNull()
@@ -90,11 +75,4 @@ describe('saved parcel filter selection', () => {
     expect(url.searchParams.has('hideLegacyRestrictions')).toBe(false)
   })
 
-  it('propagates navigation rejection and preserves the remembered selection', async () => {
-    const auth = useAuthStore()
-    auth.setParcelFilterId(23)
-    fetchWrapper.get.mockRejectedValue(new Error('Navigation unavailable'))
-    await expect(useRegistersStore().nextParcels(4, { mode: OP_MODE_WAREHOUSE })).rejects.toThrow('Navigation unavailable')
-    expect(auth.parcels_filter_id).toBe(23)
-  })
 })

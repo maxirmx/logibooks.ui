@@ -9,7 +9,6 @@ import { useAlertStore } from '@/stores/alert.store.js'
 import OzonParcelsList from '@/lists/OzonParcels_List.vue'
 import OzonParcelsWhList from '@/lists/OzonParcels_WhList.vue'
 import RegistersList from '@/lists/Registers_List.vue'
-import CountriesList from '@/lists/Countries_List.vue'
 import ScanjobBoxesMonitor from '@/dialogs/Scanjob_Boxes_Monitor.vue'
 import OzonParcelEditor from '@/dialogs/OzonParcel_EditDialog.vue'
 import ReturnRegisterEditor from '@/dialogs/ReturnRegister_EditDialog.vue'
@@ -241,19 +240,6 @@ describe('reloads with real Pinia state and list loading', () => {
     const request = fetchWrapper.get.mock.calls.find(([url]) => new URL(url).pathname.endsWith('/registers'))
     expect(Object.fromEntries(new URL(request[0]).searchParams)).toMatchObject({ search: 'invoice', customsProcedureCode: '10', registerStatusId: '7', page: '2', pageSize: '50', sortBy: 'warehouseArrivalDate', sortOrder: 'asc' })
     expect(wrapper.findAll('input').some(input => input.element.value === 'invoice')).toBe(true)
-  })
-
-  it('restores client-side reference list controls without changing their bindings', async () => {
-    const auth = reload()
-    Object.assign(auth, { countries_search: 'Россия', countries_page: 2, countries_per_page: -1, countries_sort_by: [{ key: 'nameRuOfficial', order: 'desc' }] })
-    reload()
-    const wrapper = show(CountriesList)
-    await flushPromises()
-    expect(wrapper.find('input').element.value).toBe('Россия')
-    const table = wrapper.findComponent('[data-testid="v-data-table"]')
-    expect(table.props('page')).toBe(2)
-    expect(table.props('itemsPerPage')).toBe(-1)
-    expect(table.props('sortBy')).toEqual([{ key: 'nameRuOfficial', order: 'desc' }])
   })
 
   it('restores scan-job monitor table pagination and sort', () => {

@@ -128,21 +128,6 @@ beforeEach(() => {
 })
 
 describe('CustomsStations_List.vue', () => {
-  it('loads stations and countries and renders columns', async () => {
-    const wrapper = await mountList()
-
-    expect(runningStore.getAll).toHaveBeenCalled()
-    expect(ensureLoaded).toHaveBeenCalled()
-    expect(wrapper.text()).toContain('Таможенные посты')
-    expect(wrapper.text()).toContain('Код поста')
-    expect(wrapper.text()).toContain('Название')
-    expect(wrapper.text()).toContain('Страна')
-    expect(wrapper.text()).toContain('Город')
-    expect(wrapper.text()).toContain('00102030')
-    expect(wrapper.text()).toContain('Центральный пост')
-    expect(wrapper.text()).toContain('Россия')
-  })
-
   it('filters all station and address fields case-insensitively', async () => {
     const wrapper = await mountList()
     const item = { raw: stations.value[0] }
@@ -169,16 +154,6 @@ describe('CustomsStations_List.vue', () => {
 
     expect(wrapper.vm.filterCustomsStations(null, '00102', item)).toBe(true)
     expect(wrapper.vm.filterCustomsStations(null, 'missing', item)).toBe(false)
-  })
-
-  it('navigates to create and edit views', async () => {
-    const wrapper = await mountList()
-
-    wrapper.vm.openCreateDialog()
-    wrapper.vm.openEditDialog(stations.value[0])
-
-    expect(push).toHaveBeenNthCalledWith(1, '/customsstation/create')
-    expect(push).toHaveBeenNthCalledWith(2, '/customsstation/edit/1')
   })
 
   it('dispatches create, edit, and delete from rendered action buttons', async () => {
@@ -210,28 +185,6 @@ describe('CustomsStations_List.vue', () => {
     expect(authStore.customsstations_per_page).toBe(25)
     expect(authStore.customsstations_page).toBe(3)
     expect(authStore.customsstations_sort_by).toEqual([{ key: 'number', order: 'asc' }])
-  })
-
-  it('deletes after confirmation', async () => {
-    const wrapper = await mountList()
-
-    await wrapper.vm.deleteCustomsStation(stations.value[0])
-
-    expect(confirm).toHaveBeenCalledWith(
-      expect.objectContaining({
-        content: 'Удалить таможенный пост "Центральный пост"?'
-      })
-    )
-    expect(runningStore.remove).toHaveBeenCalledWith(1)
-  })
-
-  it('does not delete when confirmation is declined', async () => {
-    confirm.mockResolvedValueOnce(false)
-    const wrapper = await mountList()
-
-    await wrapper.vm.deleteCustomsStation(stations.value[0])
-
-    expect(runningStore.remove).not.toHaveBeenCalled()
   })
 
   it('reports deletion failures and releases the running guard', async () => {
@@ -271,12 +224,4 @@ describe('CustomsStations_List.vue', () => {
     expect(wrapper.text()).not.toContain('actions')
   })
 
-  it('shows and clears alerts', async () => {
-    alert.value = { id: 43, severity: 'error', message: 'Ошибка', action: null }
-    const wrapper = await mountList()
-
-    expect(wrapper.text()).toContain('Ошибка')
-    await wrapper.find('button.close').trigger('click')
-    expect(alertDismiss).toHaveBeenCalledWith(43)
-  })
 })

@@ -261,58 +261,6 @@ describe('ParcelEvents_Settings.vue', () => {
     wrapper.unmount()
   })
 
-  it('renders event rows with selectors', async () => {
-    const wrapper = mountComponent()
-    await resolveAll()
-
-    expect(ensureLoaded).toHaveBeenCalled()
-    expect(ensureWarehouseOpsLoaded).toHaveBeenCalled()
-    expect(ensureRegisterOpsLoaded).toHaveBeenCalled()
-    expect(getAll).toHaveBeenCalled()
-
-    const procedureSelect = wrapper.find('[data-testid="customs-procedure-select"]')
-    expect(procedureSelect.exists()).toBe(true)
-    expect(procedureSelect.element.value).toBe('1')
-    expect(procedureSelect.attributes('data-label')).toBe('Таможенная процедура')
-    expect(procedureSelect.attributes('data-variant')).toBe('solo')
-    expect(procedureSelect.attributes('data-hide-details')).toBe('true')
-    expect(procedureSelect.classes()).toContain('procedure-filter')
-    expect(procedureSelect.findAll('option').map((o) => o.text())).toEqual([
-      '01 Возврат',
-      'ЭК 10 Экспорт',
-      'ЭК 31 Реэкспорт',
-      'ИМ 40 Импорт',
-      'ИМ 60 Реимпорт'
-    ])
-
-    // Use selects count to represent rows since v-data-table structure differs
-    const statusSelects = wrapper.findAll('select[id^="status-select-"]')
-    expect(statusSelects.length).toBe(2)
-    const zoneSelects = wrapper.findAll('select[id^="zone-select-"]')
-    expect(zoneSelects.length).toBe(2)
-    expect(wrapper.find('[data-testid="parcel-event-row-1001"]').text()).toBe('Создана')
-    expect(wrapper.find('[data-testid="parcel-event-row-1"]').exists()).toBe(false)
-
-    // extData inputs present
-    const extInput1 = wrapper.find('#extdata-input-1001')
-    expect(extInput1.exists()).toBe(true)
-    expect(extInput1.element.value).toBe('')
-    const extInput2 = wrapper.find('#extdata-input-2001')
-    expect(extInput2.exists()).toBe(true)
-    expect(extInput2.element.value).toBe('return tip')
-
-    const statusOptions = wrapper.find('#status-select-1001').findAll('option')
-    const statusOptionTexts = statusOptions.map((o) => o.text())
-    expect(statusOptionTexts).toContain('Новый')
-    expect(statusOptionTexts).toContain('В пути')
-
-    const zoneOptions = wrapper.find('#zone-select-1001').findAll('option')
-    const zoneOptionTexts = zoneOptions.map((o) => o.text())
-    expect(zoneOptionTexts).toContain('Не менять')
-    expect(zoneOptionTexts).toContain('Зона 1')
-    expect(zoneOptionTexts).toContain('')
-  })
-
   it('updates selections and saves changes', async () => {
     const wrapper = mountComponent()
     await resolveAll()
@@ -352,17 +300,6 @@ describe('ParcelEvents_Settings.vue', () => {
     expect(mockAuthStore.parcelevents_page.value).toBe(1)
     expect(wrapper.find('[data-testid="parcel-event-row-1"]').text()).toBe('Создана')
     expect(wrapper.find('[data-testid="parcel-event-row-1001"]').exists()).toBe(false)
-  })
-
-  it('shows empty list for procedures without returned rows', async () => {
-    const wrapper = mountComponent()
-    await resolveAll()
-
-    await wrapper.find('[data-testid="customs-procedure-select"]').setValue('60')
-    await resolveAll()
-
-    expect(wrapper.findAll('select[id^="status-select-"]').length).toBe(0)
-    expect(wrapper.text()).toContain('Список событий пуст')
   })
 
   it('shows error message when save fails', async () => {

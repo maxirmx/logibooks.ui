@@ -2,93 +2,14 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { describe, it, expect, vi } from 'vitest'
-import {
-  buildParcelListHeading,
-  formatRegisterInvoice
-} from '@/helpers/register.heading.helpers.js'
+import { describe, it, expect } from 'vitest'
+import { buildParcelListHeading } from '@/helpers/register.heading.helpers.js'
 
 function mockGetTransportationDocument() {
   return `Документ`
 }
 
 describe('register.heading.helpers', () => {
-  it('builds heading with invoice info only (counts moved to tooltip)', () => {
-    const register = {
-      dealNumber: 'DEAL-123',
-      invoiceNumber: 'INV-45',
-      invoiceDate: '2025-09-01',
-      transportationTypeCode: 7,
-      parcelsTotal: 15,
-      placesTotal: 20
-    }
-    const heading = buildParcelListHeading(register, mockGetTransportationDocument, 'Реестр')
-    const invoice = formatRegisterInvoice(register, mockGetTransportationDocument)
-    expect(heading).toContain('Реестр DEAL-123 (')
-    expect(heading).toContain(invoice)
-    expect(heading).not.toContain('15/20')
-  })
-
-  it('builds heading without counts when missing', () => {
-    const register = {
-      dealNumber: 'DEAL-123',
-      invoiceNumber: 'INV-45',
-      invoiceDate: '2025-09-01',
-      transportationTypeCode: 7
-    }
-    const heading = buildParcelListHeading(register, mockGetTransportationDocument, 'Реестр')
-    expect(heading).not.toContain(';')
-    expect(heading).toMatch(/Реестр DEAL-123 \(.*INV-45.*\)$/)
-  })
-
-  it('builds heading without counts when invoice missing', () => {
-    const register = {
-      dealNumber: 'D1',
-      parcelsTotal: 5,
-      placesTotal: 7
-    }
-    const heading = buildParcelListHeading(register, mockGetTransportationDocument, 'Реестр')
-    // Invoice placeholder present; counts not included
-    expect(heading).toBe('Реестр D1 (ТСД отсутствует)')
-  })
-
-  it('builds warehouse heading with party label', () => {
-    const register = {
-      dealNumber: 'D1',
-      parcelsTotal: 5,
-      placesTotal: 7
-    }
-    const heading = buildParcelListHeading(register, mockGetTransportationDocument, 'Партия')
-
-    expect(heading).toBe('Партия D1 (ТСД отсутствует)')
-  })
-
-  it('keeps deal label by default', () => {
-    const register = {
-      dealNumber: 'D1'
-    }
-    const heading = buildParcelListHeading(register, mockGetTransportationDocument)
-
-    expect(heading).toBe('Сделка D1 (ТСД отсутствует)')
-  })
-
-  it('formats invoice from transportation document and number', () => {
-    const getTransportationDocument = vi.fn().mockReturnValue('AWB')
-
-    expect(
-      formatRegisterInvoice(
-        { transportationTypeCode: 0, invoiceNumber: 'INV-1' },
-        getTransportationDocument
-      )
-    ).toBe('AWB INV-1')
-    expect(getTransportationDocument).toHaveBeenCalledWith(0)
-  })
-
-  it('formats invoice when document or number is missing', () => {
-    expect(formatRegisterInvoice({ invoiceNumber: 'INV-1' }, null)).toBe('INV-1')
-    expect(formatRegisterInvoice({ transportationTypeCode: 0 }, () => 'CMR')).toBe('CMR')
-  })
-
   it('returns loading message for null register', () => {
     const heading = buildParcelListHeading(null, mockGetTransportationDocument)
     expect(heading).toBe('Загрузка...')

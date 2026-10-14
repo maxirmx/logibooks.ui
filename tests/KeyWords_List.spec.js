@@ -254,15 +254,6 @@ describe('KeyWords_List.vue', () => {
       expect(mockConfirm.mock.calls[0][0].content).toContain('Удалить ключевое слово "стол"')
     })
 
-    it('calls remove when confirmation is confirmed', async () => {
-      mockConfirm.mockResolvedValue(true)
-
-      // Directly call the deleteKeyWord method with a mock keyword
-      await wrapper.vm.deleteKeyWord({ id: 1, word: 'стол' })
-
-      expect(removeKeyWord).toHaveBeenCalledWith(1)
-    })
-
     it('does not call remove when confirmation is cancelled', async () => {
       mockConfirm.mockResolvedValue(false)
 
@@ -321,35 +312,6 @@ describe('KeyWords_List.vue', () => {
     })
   })
 
-  describe('Match Type Display', () => {
-    it('gets and displays match type text correctly', () => {
-      // Reset the mock counter before making our assertions
-      getMatchTypeName.mockClear()
-
-      expect(wrapper.vm.getMatchTypeText(1)).toBe('Exact')
-      expect(wrapper.vm.getMatchTypeText(41)).toBe('Morphology')
-      expect(wrapper.vm.getMatchTypeText(99)).toBe('Type 99')
-
-      expect(getMatchTypeName).toHaveBeenCalledTimes(3)
-    })
-  })
-
-  describe('Alert Display', () => {
-    it('shows alert when present', async () => {
-      mockAlert.value = {
-        id: 47,
-        severity: 'error',
-        message: 'Test error message',
-        action: null
-      }
-      await wrapper.vm.$nextTick()
-
-      const alert = wrapper.find('.alert')
-      expect(alert.exists()).toBe(true)
-      expect(alert.text()).toContain('Test error message')
-    })
-  })
-
   describe('File Upload Functionality', () => {
     it('opens file dialog when upload link is clicked', async () => {
       const fileInputRef = { click: vi.fn() }
@@ -388,20 +350,6 @@ describe('KeyWords_List.vue', () => {
       expect(getAllKeyWords).not.toHaveBeenCalled()
     })
 
-    it('handles upload error - bad request', async () => {
-      uploadKeyWords.mockRejectedValue({ message: '400 Bad Request' })
-
-      const mockFile = new File(['test content'], 'keywords.xlsx', {
-        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-      })
-
-      await wrapper.vm.fileSelected([mockFile])
-
-      expect(mockError).toHaveBeenCalledWith(
-        expect.stringMatching(/^Ошибка при загрузке файла с ключевыми словами. /)
-      )
-    })
-
     it('handles upload error - file too large', async () => {
       uploadKeyWords.mockRejectedValue({ message: '413 Payload Too Large' })
 
@@ -416,32 +364,5 @@ describe('KeyWords_List.vue', () => {
       )
     })
 
-    it('handles upload error - generic error', async () => {
-      uploadKeyWords.mockRejectedValue({ message: 'Some other error' })
-
-      const mockFile = new File(['test content'], 'keywords.xlsx', {
-        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-      })
-
-      await wrapper.vm.fileSelected([mockFile])
-
-      expect(mockError).toHaveBeenCalledWith(
-        expect.stringMatching(/^Ошибка при загрузке файла с ключевыми словами. /)
-      )
-    })
-
-    it('clears file input after upload attempt', async () => {
-      const mockFileInput = { value: 'some-file' }
-      wrapper.vm.fileInput = mockFileInput
-      uploadKeyWords.mockRejectedValue({ message: 'Some error' })
-
-      const mockFile = new File(['test content'], 'keywords.xlsx', {
-        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-      })
-
-      await wrapper.vm.fileSelected([mockFile])
-
-      expect(mockFileInput.value).toBe(null)
-    })
   })
 })

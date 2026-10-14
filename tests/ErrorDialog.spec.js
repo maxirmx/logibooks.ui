@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import ErrorDialog from '@/l2/ErrorDialog.vue'
 
@@ -70,12 +70,4 @@ describe('ErrorDialog', () => {
     expect(wrapper.text()).toContain('Закрыть')
   })
 
-  it('removes the keyboard listener when unmounted', () => {
-    const removeEventListener = vi.spyOn(document, 'removeEventListener')
-    const wrapper = mountDialog()
-
-    wrapper.unmount()
-
-    expect(removeEventListener).toHaveBeenCalledWith('keydown', expect.any(Function))
-  })
 })

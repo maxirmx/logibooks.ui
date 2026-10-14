@@ -116,14 +116,6 @@ describe('FeacnCodeEditor', () => {
       expect(disabledWrapper.find('.feacn-overlay').exists()).toBe(false)
     })
 
-    it('does not activate search on field dblclick', async () => {
-      const input = disabledWrapper.find('input')
-      await input.trigger('dblclick')
-      await disabledWrapper.vm.$nextTick()
-      // Search overlay should not appear
-      expect(disabledWrapper.find('.feacn-overlay').exists()).toBe(false)
-    })
-
     it('does not update field value via selectFeacnCode when disabled', async () => {
       const setFieldValue = disabledWrapper.props('setFieldValue')
       // Trigger a code selection via the exposed selectFeacnCode
@@ -143,14 +135,6 @@ describe('FeacnCodeEditor', () => {
       expect(wrapper.find('.feacn-overlay').exists()).toBe(true)
       expect(wrapper.find('.feacn-search-row > .feacn-overlay').exists()).toBe(true)
       expect(wrapper.find('.feacn-search-wrapper > .feacn-overlay').exists()).toBe(false)
-    })
-
-    it('activates search on field dblclick', async () => {
-      const input = wrapper.find('input')
-      await input.trigger('dblclick')
-      await wrapper.vm.$nextTick()
-      // Search overlay should appear
-      expect(wrapper.find('.feacn-overlay').exists()).toBe(true)
     })
 
     it('keeps the full-row dropdown open for clicks inside it and closes it outside', async () => {

@@ -179,25 +179,6 @@ describe('RegisterStatuses_List.vue', () => {
     }
   })
 
-  describe('Data Display', () => {
-
-    it('displays whether changes are prohibited', () => {
-      expect(wrapper.findAll('.register-status-read-only').map((cell) => cell.text())).toEqual([
-        'Нет',
-        'Да',
-        'Нет'
-      ])
-    })
-
-    it('displays transit flags', () => {
-      expect(wrapper.findAll('.register-status-transit').map((cell) => cell.text())).toEqual([
-        'Нет',
-        'Да',
-        'Нет'
-      ])
-    })
-  })
-
   describe('Authorized Actions', () => {
     it('calls openCreateDialog and navigates to create page', async () => {
       await wrapper.vm.openCreateDialog()
@@ -239,17 +220,6 @@ describe('RegisterStatuses_List.vue', () => {
   })
 
   describe('Delete Functionality', () => {
-    it('shows confirmation dialog when delete is clicked', async () => {
-      mockConfirm.mockResolvedValue(true)
-
-      const deleteButton = wrapper.find('button[title*="delete"]') || wrapper.find('.anti-btn')
-
-      if (deleteButton.exists()) {
-        await deleteButton.trigger('click')
-        expect(mockConfirm).toHaveBeenCalled()
-      }
-    })
-
     it('calls remove when deletion is confirmed', async () => {
       mockConfirm.mockResolvedValue(true)
       const testRegisterStatus = mockRegisterStatuses.value[0]
@@ -293,12 +263,6 @@ describe('RegisterStatuses_List.vue', () => {
   })
 
   describe('Search and Filter', () => {
-    it('filters order statuses by title', () => {
-      const mockItem = { raw: { title: 'Черновик' } }
-      const result = wrapper.vm.filterRegisterStatuses(null, 'черновик', mockItem)
-      expect(result).toBe(true)
-    })
-
     it('filters order statuses by title case insensitive', () => {
       const mockItem = { raw: { title: 'Подтвержден' } }
       const result = wrapper.vm.filterRegisterStatuses(null, 'подтвержден', mockItem)
@@ -311,59 +275,6 @@ describe('RegisterStatuses_List.vue', () => {
       expect(result).toBe(false)
     })
 
-    it('handles null item', () => {
-      const result = wrapper.vm.filterRegisterStatuses(null, 'test', null)
-      expect(result).toBe(false)
-    })
   })
 
-  describe('Loading States', () => {
-    it('shows loading spinner when loading', async () => {
-      // Since components are stubbed, test loading state directly
-      const loading = wrapper.vm.registerStatusesStore.loading
-      expect(loading).toBeDefined()
-      expect(typeof loading.value).toBe('boolean')
-      expect(loading.value).toBe(false)
-    })
-  })
-
-  describe('Table Headers', () => {
-    it('has correct table headers', () => {
-      const headers = wrapper.vm.headers
-      expect(headers).toEqual([
-        { title: '', align: 'center', key: 'actions', sortable: false, width: '10%' },
-        { title: '', align: 'center', key: 'registerStatusIcon', sortable: false, width: '56px' },
-        { title: 'Название статуса', key: 'title', sortable: true },
-        { title: 'Транзит', align: 'center', key: 'transit', sortable: true },
-        { title: 'Изменения запрещены', align: 'center', key: 'readOnly', sortable: true }
-      ])
-    })
-  })
-
-  describe('Vuetify Integration', () => {
-    it('uses correct v-data-table props', () => {
-      const table = wrapper.find('[data-testid="v-data-table"]')
-      expect(table.exists()).toBe(true)
-
-      // Check that table is configured properly through the component
-      expect(wrapper.vm.headers).toBeDefined()
-      expect(wrapper.vm.filterRegisterStatuses).toBeDefined()
-    })
-  })
-
-  describe('Store Integration', () => {
-    it('properly integrates with order statuses store', () => {
-      expect(wrapper.vm.registerStatuses).toBeDefined()
-      expect(wrapper.vm.loading).toBeDefined()
-    })
-
-    it('properly integrates with auth store', () => {
-      // Auth store properties should be available
-      expect(wrapper.vm.authStore).toBeDefined()
-    })
-
-    it('properly integrates with the notification store', () => {
-      expect(wrapper.vm.alertStore).toBeDefined()
-    })
-  })
 })

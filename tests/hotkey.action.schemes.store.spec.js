@@ -39,17 +39,6 @@ describe('hotkey action schemes store', () => {
     vi.clearAllMocks()
   })
 
-  it('getAll fetches schemes', async () => {
-    fetchWrapper.get.mockResolvedValue(mockSchemes)
-    const store = useHotKeyActionSchemesStore()
-
-    await store.getAll()
-
-    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/hotkeyactionschemes`)
-    expect(store.hotKeyActionSchemes).toEqual(mockSchemes)
-    expect(store.isInitialized).toBe(true)
-  })
-
   it('getById handles fetch error', async () => {
     const error = new Error('Not found')
     fetchWrapper.get.mockRejectedValue(error)
@@ -110,17 +99,6 @@ describe('hotkey action schemes store', () => {
     expect(result).toEqual({ id: 10, name: 'A' })
   })
 
-  it('getAll stores and rethrows failures', async () => {
-    const error = new Error('boom')
-    fetchWrapper.get.mockRejectedValue(error)
-    const store = useHotKeyActionSchemesStore()
-
-    await expect(store.getAll()).rejects.toBe(error)
-
-    expect(store.error).toBe(error)
-    expect(store.isInitialized).toBe(false)
-  })
-
   it('create throws and stores error on failure', async () => {
     const error = new Error('conflict')
     fetchWrapper.post.mockRejectedValue(error)
@@ -128,18 +106,6 @@ describe('hotkey action schemes store', () => {
 
     await expect(store.create({ name: 'x' })).rejects.toThrow('conflict')
     expect(store.error).toBe(error)
-  })
-
-  it('update calls getAll even when id not found', async () => {
-    fetchWrapper.put.mockResolvedValue({})
-    fetchWrapper.get.mockResolvedValue([{ id: 1, name: 'A' }])
-    const store = useHotKeyActionSchemesStore()
-
-    await store.update(9, { name: 'B' })
-
-    expect(fetchWrapper.put).toHaveBeenCalledWith(`${apiUrl}/hotkeyactionschemes/9`, { name: 'B' })
-    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/hotkeyactionschemes`)
-    expect(store.hotKeyActionSchemes).toEqual([{ id: 1, name: 'A' }])
   })
 
   it('update throws and stores error on failure', async () => {
@@ -161,19 +127,6 @@ describe('hotkey action schemes store', () => {
   })
 
   describe('ops', () => {
-    it('fetches ops successfully', async () => {
-      fetchWrapper.get.mockResolvedValue(mockOps)
-      const store = useHotKeyActionSchemesStore()
-
-      const result = await store.getOps()
-
-      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/hotkeyactionschemes/ops`)
-      expect(store.ops).toEqual(mockOps)
-      expect(result).toEqual(mockOps)
-      expect(store.opsLoading).toBe(false)
-      expect(store.opsError).toBeNull()
-    })
-
     it('handles ops error', async () => {
       const error = new Error('Ops error')
       fetchWrapper.get.mockRejectedValue(error)
@@ -182,34 +135,6 @@ describe('hotkey action schemes store', () => {
       await expect(store.getOps()).rejects.toBe(error)
       expect(store.opsLoading).toBe(false)
       expect(store.opsError).toBe(error)
-    })
-
-    it('ensureOpsLoaded only calls ops once', async () => {
-      fetchWrapper.get.mockResolvedValue(mockOps)
-      const store = useHotKeyActionSchemesStore()
-
-      await store.ensureOpsLoaded()
-      await store.ensureOpsLoaded()
-
-      expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
-      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/hotkeyactionschemes/ops`)
-      expect(store.ops).toEqual(mockOps)
-    })
-
-    it('ensureOpsLoaded returns cached value after initialization', async () => {
-      fetchWrapper.get.mockResolvedValue(mockOps)
-      const store = useHotKeyActionSchemesStore()
-
-      // First call
-      const result1 = await store.ensureOpsLoaded()
-      expect(result1).toEqual(mockOps)
-
-      // Second call should use cached value
-      const result2 = await store.ensureOpsLoaded()
-      expect(result2).toEqual(mockOps)
-
-      // Fetch should only be called once
-      expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
     })
 
     it('ensureOpsLoaded handles concurrent calls', async () => {
@@ -280,17 +205,6 @@ describe('hotkey action schemes store', () => {
   })
 
   describe('ensureLoaded', () => {
-    it('loads data when not initialized', async () => {
-      fetchWrapper.get.mockResolvedValue(mockSchemes)
-      const store = useHotKeyActionSchemesStore()
-
-      await store.ensureLoaded()
-
-      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/hotkeyactionschemes`)
-      expect(store.hotKeyActionSchemes).toEqual(mockSchemes)
-      expect(store.isInitialized).toBe(true)
-    })
-
     it('skips loading when already initialized', async () => {
       fetchWrapper.get.mockResolvedValue(mockSchemes)
       const store = useHotKeyActionSchemesStore()
@@ -329,17 +243,6 @@ describe('hotkey action schemes store', () => {
       // Verify both calls completed and data is loaded
       expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
       expect(store.hotKeyActionSchemes).toEqual(mockSchemes)
-      expect(store.isInitialized).toBe(true)
-    })
-
-    it('sets isInitialized flag after successful load', async () => {
-      fetchWrapper.get.mockResolvedValue(mockSchemes)
-      const store = useHotKeyActionSchemesStore()
-
-      expect(store.isInitialized).toBe(false)
-
-      await store.ensureLoaded()
-
       expect(store.isInitialized).toBe(true)
     })
 

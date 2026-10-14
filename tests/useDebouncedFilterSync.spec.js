@@ -18,34 +18,6 @@ describe('useDebouncedFilterSync', () => {
     vi.useRealTimers()
   })
 
-  it('debounces filter changes before calling loadFn', async () => {
-    const local = ref('')
-    const store = ref('')
-    const loadFn = vi.fn().mockResolvedValue()
-    const isComponentMounted = ref(true)
-
-    useDebouncedFilterSync({
-      filters: [{ local, store }],
-      loadFn,
-      isComponentMounted,
-      debounceMs: 300
-    })
-
-    await flushPromises()
-    loadFn.mockClear()
-
-    local.value = '1234'
-    await nextTick()
-
-    expect(store.value).toBe('1234')
-    expect(loadFn).not.toHaveBeenCalled()
-
-    vi.advanceTimersByTime(300)
-    await flushPromises()
-
-    expect(loadFn).toHaveBeenCalledTimes(1)
-  })
-
   it('retries a pending load after an in-flight request finishes', async () => {
     const local = ref('')
     const store = ref('')

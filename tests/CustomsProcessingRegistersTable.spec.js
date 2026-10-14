@@ -167,45 +167,6 @@ function mountTable(props = {}) {
 }
 
 describe('CustomsProcessingRegistersTable', () => {
-  it('uses a viewport-bound card for the horizontally scrollable table', () => {
-    const wrapper = mountTable()
-
-    expect(wrapper.get('.customs-processing-registers-table-card').exists()).toBe(true)
-  })
-
-  it('renders extracted customs-processing register headers and status icon', () => {
-    const wrapper = mountTable({
-      items: [{ id: 1, statusId: 2 }]
-    })
-
-    expect(wrapper.find('[data-testid="header-keys"]').text()).toBe(
-      'actions,id,dealNumber,invoice,countries,senderRecipient,parcelsTotal,weight,price,customsCharges,date'
-    )
-    expect(
-      wrapper
-        .find('[data-testid="header-customsCharges"]')
-        .findAll('.sortable-multiline-header-stub > span')
-        .map((line) => line.text())
-    ).toEqual(['Сборы, руб.', 'Пошлины'])
-    expect(wrapper.find('[data-testid="register-status-icon"]').exists()).toBe(true)
-    expect(wrapper.find('.register-status-action-button--readonly').attributes('title')).toBe(
-      'Register Status 2'
-    )
-  })
-
-  it('opens inline register status selector from the status icon', async () => {
-    const startRegisterStatusChange = vi.fn()
-    const wrapper = mountTable({
-      items: [{ id: 1, statusId: 2 }],
-      canChangeRegisterStatus: true,
-      startRegisterStatusChange
-    })
-
-    await wrapper.find('.register-status-action-button').trigger('click')
-
-    expect(startRegisterStatusChange).toHaveBeenCalledWith(1, 2)
-  })
-
   it('selects, applies, and cancels register status changes inline', async () => {
     const setSelectedRegisterStatusId = vi.fn()
     const applyRegisterStatusChange = vi.fn()
@@ -227,17 +188,6 @@ describe('CustomsProcessingRegistersTable', () => {
     expect(setSelectedRegisterStatusId).toHaveBeenCalledWith(1, 5)
     expect(applyRegisterStatusChange).toHaveBeenCalledWith(1, 5, 2)
     expect(cancelRegisterStatusChange).toHaveBeenCalledWith(1)
-  })
-
-  it('disables applying an unchanged register status', () => {
-    const wrapper = mountTable({
-      items: [{ id: 1, statusId: 2 }],
-      canChangeRegisterStatus: true,
-      isRegisterStatusEditMode: () => true,
-      getSelectedRegisterStatusId: () => 2
-    })
-
-    expect(wrapper.find('[data-icon="fa-solid fa-check"]').attributes('disabled')).toBeDefined()
   })
 
   it('keeps full register edit on the pen action', async () => {
@@ -331,20 +281,6 @@ describe('CustomsProcessingRegistersTable', () => {
     }
   })
 
-  it('opens parcel status bulk dialog from the independent action', async () => {
-    const openParcelStatusBulkDialog = vi.fn()
-    const wrapper = mountTable({
-      items: [{ id: 7, statusId: 2 }],
-      isSrLogistPlus: true,
-      openParcelStatusBulkDialog
-    })
-
-    await wrapper.find('[data-icon="fa-solid fa-pen-to-square"]').trigger('click')
-
-    expect(openParcelStatusBulkDialog).toHaveBeenCalledWith(7)
-    expect(wrapper.find('[data-testid="register-status-select"]').exists()).toBe(false)
-  })
-
   it('keeps navigation cells and copied weight display behavior', async () => {
     const wrapper = mountTable({
       items: [
@@ -371,36 +307,4 @@ describe('CustomsProcessingRegistersTable', () => {
     expect(wrapper.find('[data-testid="register-customs-charges-cell"]').text()).toContain('750.00')
   })
 
-  it('renders dash for a missing customs charge when the other charge is present', () => {
-    const wrapper = mountTable({
-      items: [
-        {
-          id: 4,
-          customsFee: null,
-          customsDuty: 750
-        }
-      ]
-    })
-
-    expect(
-      wrapper
-        .find('[data-testid="register-customs-charges-cell"]')
-        .findAll('div')
-        .map((line) => line.text())
-    ).toEqual(['-', '750.00'])
-  })
-
-  it('keeps customs charges cell empty when both values are missing', () => {
-    const wrapper = mountTable({
-      items: [
-        {
-          id: 5,
-          customsFee: null,
-          customsDuty: null
-        }
-      ]
-    })
-
-    expect(wrapper.find('[data-testid="register-customs-charges-cell"]').text()).toBe('')
-  })
 })

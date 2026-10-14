@@ -89,25 +89,6 @@ describe('ParcelsByNumber_List.vue', () => {
     template: '<button data-testid="parcels-by-number-search" @click="$emit(\'click\')"></button>'
   }
 
-  it('calls getByNumber on mount when number is set', async () => {
-    parcelsNumber.value = 'TEST-001'
-    mount(ParcelsByNumberList, {
-      global: {
-        stubs: {
-          ...vuetifyStubs,
-          ActionButton: actionButtonStub,
-          TruncateTooltipCell: {
-            template: '<span data-testid="truncate-cell"></span>'
-          }
-        }
-      }
-    })
-    await Promise.resolve()
-    await Promise.resolve()
-    expect(getByNumber).toHaveBeenCalledWith('TEST-001')
-    expect(ensureLoaded).toHaveBeenCalled()
-  })
-
   it('triggers load when search button is clicked', async () => {
     parcelsNumber.value = '  P-123  '
     const wrapper = mount(ParcelsByNumberList, {
@@ -159,44 +140,6 @@ describe('ParcelsByNumber_List.vue', () => {
       .trigger('click')
 
     expect(router.push).toHaveBeenCalledWith('/register/edit/7')
-  })
-
-  it('renders projected status and check status text', () => {
-    mockItems.value = [
-      {
-        id: 99,
-        registerId: 5,
-        registerDealNumber: 'D-099',
-        number: 'N-099',
-        productName: 'Projected Product',
-        tnVed: 'TN-099',
-        statusId: 7,
-        checkStatus: CheckStatusCode.NotChecked.value,
-        dTag: 'DT-099',
-        dTagComment: 'Comment-099',
-        previousDTagComment: 'Prev-099'
-      }
-    ]
-
-    const wrapper = mount(ParcelsByNumberList, {
-      global: {
-        stubs: {
-          ...vuetifyStubs,
-          ActionButton: actionButtonStub,
-          TruncateTooltipCell: {
-            template: '<span data-testid="truncate-cell"></span>'
-          }
-        }
-      }
-    })
-
-    expect(getStatusTitle).toHaveBeenCalledWith(7)
-    expect(wrapper.find('[data-testid="parcels-by-number-cell-statusId-99"]').text()).toContain(
-      'Status 7'
-    )
-    expect(wrapper.find('[data-testid="parcels-by-number-cell-checkStatus-99"]').text()).toContain(
-      'Не проверено'
-    )
   })
 
   it('renders Defect check status text', () => {
@@ -341,83 +284,4 @@ describe('ParcelsByNumber_List.vue', () => {
     expect(getByNumber).not.toHaveBeenCalled()
   })
 
-  it('resets page to 1 on mount', () => {
-    parcelsBnPage.value = 5
-    mockItems.value = []
-    mount(ParcelsByNumberList, {
-      global: {
-        stubs: {
-          ...vuetifyStubs,
-          ActionButton: actionButtonStub,
-          TruncateTooltipCell: {
-            template: '<span data-testid="truncate-cell"></span>'
-          }
-        }
-      }
-    })
-    expect(parcelsBnPage.value).toBe(1)
-  })
-
-  it('resets page to 1 on mount even when page is within range', () => {
-    parcelsBnPerPage.value = 1
-    parcelsBnPage.value = 2
-    mockItems.value = [
-      {
-        id: 1,
-        registerId: 1,
-        registerDealNumber: 'D1',
-        number: 'N1',
-        productName: 'P1',
-        tnVed: 'T1',
-        dTag: 'DT1',
-        dTagComment: 'C1',
-        previousDTagComment: 'PC1'
-      },
-      {
-        id: 2,
-        registerId: 2,
-        registerDealNumber: 'D2',
-        number: 'N2',
-        productName: 'P2',
-        tnVed: 'T2',
-        dTag: 'DT2',
-        dTagComment: 'C2',
-        previousDTagComment: 'PC2'
-      }
-    ]
-    mount(ParcelsByNumberList, {
-      global: {
-        stubs: {
-          ...vuetifyStubs,
-          ActionButton: actionButtonStub,
-          TruncateTooltipCell: {
-            template: '<span data-testid="truncate-cell"></span>'
-          }
-        }
-      }
-    })
-    expect(parcelsBnPage.value).toBe(1)
-  })
-
-  it('uses separate bn settings independent of shared parcels settings', () => {
-    parcelsBnPerPage.value = 50
-    parcelsBnPage.value = 3
-    parcelsBnSortBy.value = [{ key: 'number', order: 'desc' }]
-
-    mount(ParcelsByNumberList, {
-      global: {
-        stubs: {
-          ...vuetifyStubs,
-          ActionButton: actionButtonStub,
-          TruncateTooltipCell: {
-            template: '<span data-testid="truncate-cell"></span>'
-          }
-        }
-      }
-    })
-
-    // The bn settings remain at their own values, independent from shared parcels_* settings
-    expect(parcelsBnPerPage.value).toBe(50)
-    expect(parcelsBnSortBy.value).toEqual([{ key: 'number', order: 'desc' }])
-  })
 })

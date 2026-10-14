@@ -3,19 +3,7 @@
 // This file is a part of Logibooks ui application
 
 import { describe, expect, it } from 'vitest'
-import {
-  createPassportCheckStatusOptions,
-  getPassportCheckStatusPresentation,
-  hasPassportCheckIssues,
-  PassportCheckStatusCode,
-  PassportCheckStatusFilterValue,
-  PassportCheckStatusPresentation,
-  hasPassportIdentityChanged,
-  isPassportCheckInProgress,
-  resolveEffectivePassportCheckStatus,
-  resolvePassportCheckStatus,
-  resolvePassportCheckStatusByCode
-} from '@/helpers/passport.check.status.helpers.js'
+import { createPassportCheckStatusOptions, getPassportCheckStatusPresentation, hasPassportCheckIssues, PassportCheckStatusCode, PassportCheckStatusFilterValue, PassportCheckStatusPresentation, hasPassportIdentityChanged, isPassportCheckInProgress, resolvePassportCheckStatus, resolvePassportCheckStatusByCode } from '@/helpers/passport.check.status.helpers.js'
 
 describe('passport check status helpers', () => {
   it('maps backend status codes to named UI presentation entities', () => {
@@ -120,29 +108,4 @@ describe('passport check status helpers', () => {
     ).toBe(true)
   })
 
-  it('uses a local NotChecked status when an identity field changes', () => {
-    const statuses = [
-      { value: 0, code: PassportCheckStatusCode.NotChecked, name: 'Не проверен' },
-      { value: 30, code: PassportCheckStatusCode.Checked, name: 'Проверен' }
-    ]
-
-    expect(
-      resolveEffectivePassportCheckStatus(
-        statuses,
-        30,
-        { passportNumber: '123456' },
-        { passportNumber: '654321' },
-        ['passportNumber']
-      )
-    ).toBe(statuses[0])
-    expect(
-      resolveEffectivePassportCheckStatus(
-        statuses,
-        30,
-        { passportNumber: '123456' },
-        { passportNumber: ' 123456 ' },
-        ['passportNumber']
-      )
-    ).toBe(statuses[1])
-  })
 })

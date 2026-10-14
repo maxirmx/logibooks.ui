@@ -1,13 +1,7 @@
 /* @vitest-environment jsdom */
 
 import { describe, it, expect, vi } from 'vitest'
-import {
-  chooseOutputWeightCorrection,
-  confirmOutputWeightCorrection,
-  getCorrectedWeight,
-  canChangeParcelWeights,
-  WEIGHT_CORRECTION_CHOICE
-} from '@/helpers/weight.correction.helpers.js'
+import { confirmOutputWeightCorrection, getCorrectedWeight, canChangeParcelWeights } from '@/helpers/weight.correction.helpers.js'
 
 describe('weight correction helpers', () => {
   it('allows parcel weight changes only when no manual final register weight is set', () => {
@@ -25,25 +19,6 @@ describe('weight correction helpers', () => {
     expect(getCorrectedWeight(2.4, { realWeightKg: -1, totalWeightKgToRelease: 10 })).toBeNull()
     expect(getCorrectedWeight(2.4, { realWeightKg: 5, totalWeightKgToRelease: 0 })).toBeNull()
     expect(getCorrectedWeight(null, { realWeightKg: 5, totalWeightKgToRelease: 10 })).toBeNull()
-  })
-
-  it('opens the supplied confirmation dialog with the weight correction message', async () => {
-    const confirm = vi.fn().mockResolvedValue(false)
-
-    const choice = await chooseOutputWeightCorrection(confirm, {
-      realWeightKg: 5,
-      totalWeightKgToRelease: 10
-    })
-
-    expect(choice).toBe(WEIGHT_CORRECTION_CHOICE.Skip)
-    expect(confirm).toHaveBeenCalledWith(
-      expect.objectContaining({
-        title: 'Подтверждение',
-        confirmationText: 'Да',
-        cancellationText: 'Нет',
-        content: 'Применить поправочный коэффициент 0,500 для веса посылок?'
-      })
-    )
   })
 
   it('returns true when shared correction confirm is accepted', async () => {

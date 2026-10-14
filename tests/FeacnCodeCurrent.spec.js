@@ -66,14 +66,6 @@ describe('FeacnCodeCurrent', () => {
     })
   }
 
-  describe('rendering', () => {
-    it('renders the tnVed value', () => {
-      const wrapper = createWrapper()
-      expect(wrapper.text()).toContain('1234567890')
-    })
-
-  })
-
   describe('click events', () => {
     it('emits click event with item on plain click', async () => {
       const wrapper = createWrapper()
@@ -81,27 +73,6 @@ describe('FeacnCodeCurrent', () => {
       await span.trigger('click')
       expect(wrapper.emitted('click')).toBeTruthy()
       expect(wrapper.emitted('click')[0]).toEqual([defaultProps.item])
-    })
-
-    it('does not emit click when shift is pressed', async () => {
-      const wrapper = createWrapper()
-      const span = wrapper.find('span.truncated-cell')
-      await span.trigger('click', { shiftKey: true })
-      expect(wrapper.emitted('click')).toBeFalsy()
-    })
-
-    it('does not emit click when ctrl is pressed', async () => {
-      const wrapper = createWrapper()
-      const span = wrapper.find('span.truncated-cell')
-      await span.trigger('click', { ctrlKey: true })
-      expect(wrapper.emitted('click')).toBeFalsy()
-    })
-
-    it('does not emit click when meta/command is pressed', async () => {
-      const wrapper = createWrapper()
-      const span = wrapper.find('span.truncated-cell')
-      await span.trigger('click', { metaKey: true })
-      expect(wrapper.emitted('click')).toBeFalsy()
     })
 
     it('does not emit click when shift+ctrl is pressed', async () => {

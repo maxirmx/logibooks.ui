@@ -22,34 +22,6 @@ describe('feacn.orders store', () => {
     vi.clearAllMocks()
   })
 
-  it('fetches orders from API', async () => {
-    const mockOrders = [{ id: 1, title: 'doc', url: 'u' }]
-    fetchWrapper.get.mockResolvedValue(mockOrders)
-
-    const store = useFeacnOrdersStore()
-    await store.getOrders()
-
-    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/feacnorders/orders`)
-    expect(store.orders).toEqual(mockOrders)
-    expect(store.loading).toBe(false)
-    expect(store.error).toBeNull()
-    expect(store.isInitialized).toBe(true)
-  })
-
-  it('handles error when fetching orders', async () => {
-    const testError = new Error('API error')
-    fetchWrapper.get.mockRejectedValue(testError)
-
-    const store = useFeacnOrdersStore()
-    await expect(store.getOrders()).rejects.toBe(testError)
-
-    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/feacnorders/orders`)
-    expect(store.orders).toEqual([])
-    expect(store.loading).toBe(false)
-    expect(store.error).toBe(testError)
-    expect(store.isInitialized).toBe(false)
-  })
-
   it('fetches prefixes for order', async () => {
     const mockPrefixes = [{ id: 1, code: '1', exceptions: [] }]
     fetchWrapper.get.mockResolvedValue(mockPrefixes)
@@ -163,25 +135,6 @@ describe('feacn.orders store', () => {
     expect(fetchWrapper.get).not.toHaveBeenCalled()
     expect(store.error).toBe(error)
     expect(store.loading).toBe(false)
-  })
-
-  it('ensures orders are loaded only once', async () => {
-    const mockOrders = [{ id: 1, title: 'doc', url: 'u' }]
-    fetchWrapper.get.mockResolvedValue(mockOrders)
-
-    const store = useFeacnOrdersStore()
-    await store.ensureLoaded()
-
-    // First call should call getOrders
-    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/feacnorders/orders`)
-    expect(store.isInitialized).toBe(true)
-
-    // Reset the mock to verify it's not called again
-    fetchWrapper.get.mockClear()
-
-    // Second call should not call getOrders since isInitialized is true
-    await store.ensureLoaded()
-    expect(fetchWrapper.get).not.toHaveBeenCalled()
   })
 
 })

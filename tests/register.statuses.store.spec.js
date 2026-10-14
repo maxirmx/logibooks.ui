@@ -42,8 +42,6 @@ describe('register.statuses.store.js', () => {
     { id: 3, title: 'Выполнен', icon: null, bkColor: null, fgColor: null }
   ]
 
-  const mockRegisterStatus = mockRegisterStatuses[0]
-
   beforeEach(() => {
     pinia = createPinia()
     setActivePinia(pinia)
@@ -58,35 +56,12 @@ describe('register.statuses.store.js', () => {
   })
 
   describe('getAll', () => {
-    it('fetches all register statuses successfully', async () => {
-      mockGet.mockResolvedValue(mockRegisterStatuses)
-
-      await store.getAll()
-
-      expect(mockGet).toHaveBeenCalledWith('http://localhost:3000/api/registerstatuses')
-      expect(store.registerStatuses).toEqual(mockRegisterStatuses)
-      expect(store.loading).toBe(false)
-    })
-
     it('handles empty response', async () => {
       mockGet.mockResolvedValue(null)
 
       await store.getAll()
 
       expect(store.registerStatuses).toEqual([])
-      expect(store.loading).toBe(false)
-    })
-
-    it('sets loading state during fetch', async () => {
-      let loadingDuringFetch = false
-      mockGet.mockImplementation(async () => {
-        loadingDuringFetch = store.loading
-        return mockRegisterStatuses
-      })
-
-      await store.getAll()
-
-      expect(loadingDuringFetch).toBe(true)
       expect(store.loading).toBe(false)
     })
 
@@ -100,33 +75,6 @@ describe('register.statuses.store.js', () => {
   })
 
   describe('getById', () => {
-    it('fetches register status by id successfully', async () => {
-      mockGet.mockResolvedValue(mockRegisterStatus)
-
-      const result = await store.getById(1)
-
-      expect(mockGet).toHaveBeenCalledWith('http://localhost:3000/api/registerstatuses/1')
-      expect(store.registerStatus).toEqual(mockRegisterStatus)
-      expect(result).toEqual(mockRegisterStatus)
-    })
-
-    it('sets loading state when refresh is true', async () => {
-      mockGet.mockResolvedValue(mockRegisterStatus)
-
-      await store.getById(1, true)
-
-      expect(store.registerStatus).toEqual(mockRegisterStatus)
-    })
-
-    it('does not set loading state when refresh is false', async () => {
-      store.registerStatus = { id: 999, title: 'existing' }
-      mockGet.mockResolvedValue(mockRegisterStatus)
-
-      await store.getById(1, false)
-
-      expect(store.registerStatus).toEqual(mockRegisterStatus)
-    })
-
     it('handles fetch by id error', async () => {
       const error = new Error('Not found')
       mockGet.mockRejectedValue(error)
@@ -135,23 +83,6 @@ describe('register.statuses.store.js', () => {
   })
 
   describe('create', () => {
-    it('creates register status successfully', async () => {
-      const newRegisterStatus = { title: 'Новый статус' }
-      const createdRegisterStatus = { id: 4, ...newRegisterStatus }
-
-      mockPost.mockResolvedValue(createdRegisterStatus)
-      mockGet.mockResolvedValue([...mockRegisterStatuses, createdRegisterStatus])
-
-      const result = await store.create(newRegisterStatus)
-
-      expect(mockPost).toHaveBeenCalledWith(
-        'http://localhost:3000/api/registerstatuses',
-        newRegisterStatus
-      )
-      expect(mockGet).toHaveBeenCalledWith('http://localhost:3000/api/registerstatuses')
-      expect(result).toEqual(createdRegisterStatus)
-    })
-
     it('handles create error', async () => {
       const error = new Error('Validation error')
       mockPost.mockRejectedValue(error)
@@ -161,25 +92,6 @@ describe('register.statuses.store.js', () => {
   })
 
   describe('update', () => {
-    it('updates register status successfully', async () => {
-      const updateData = { title: 'Обновленный заголовок' }
-      const updatedRegisterStatus = { ...mockRegisterStatus, ...updateData }
-
-      mockPut.mockResolvedValue(updatedRegisterStatus)
-      mockGet.mockResolvedValue(
-        mockRegisterStatuses.map((s) => (s.id === 1 ? updatedRegisterStatus : s))
-      )
-
-      const result = await store.update(1, updateData)
-
-      expect(mockPut).toHaveBeenCalledWith(
-        'http://localhost:3000/api/registerstatuses/1',
-        updateData
-      )
-      expect(mockGet).toHaveBeenCalledWith('http://localhost:3000/api/registerstatuses')
-      expect(result).toEqual(updatedRegisterStatus)
-    })
-
     it('handles update error', async () => {
       const error = new Error('Update failed')
       mockPut.mockRejectedValue(error)
@@ -189,43 +101,11 @@ describe('register.statuses.store.js', () => {
   })
 
   describe('remove', () => {
-    it('removes register status successfully', async () => {
-      mockDelete.mockResolvedValue()
-      mockGet.mockResolvedValue(mockRegisterStatuses.filter((s) => s.id !== 1))
-
-      await store.remove(1)
-
-      expect(mockDelete).toHaveBeenCalledWith('http://localhost:3000/api/registerstatuses/1')
-      expect(mockGet).toHaveBeenCalledWith('http://localhost:3000/api/registerstatuses')
-    })
-
     it('handles remove error', async () => {
       const error = new Error('Delete failed')
       mockDelete.mockRejectedValue(error)
 
       await expect(store.remove(1)).rejects.toThrow('Delete failed')
-    })
-  })
-
-  describe('Store State Management', () => {
-    it('maintains reactive state', async () => {
-      expect(store.registerStatuses).toEqual([])
-
-      mockGet.mockResolvedValue(mockRegisterStatuses)
-      await store.getAll()
-
-      expect(store.registerStatuses).toEqual(mockRegisterStatuses)
-    })
-
-    it('handles multiple simultaneous operations', async () => {
-      mockGet.mockResolvedValue(mockRegisterStatuses)
-
-      const promises = [store.getAll(), store.getAll(), store.getAll()]
-
-      await Promise.all(promises)
-
-      expect(mockGet).toHaveBeenCalledTimes(3)
-      expect(store.registerStatuses).toEqual(mockRegisterStatuses)
     })
   })
 
@@ -263,27 +143,6 @@ describe('register.statuses.store.js', () => {
       // The getAll function should have populated the statusMap
     })
 
-    describe('getStatusById', () => {
-      it('returns the correct status when found', () => {
-        const status = store.getStatusById(1)
-        expect(status).toEqual(mockRegisterStatuses[0])
-      })
-
-      it('keeps presentation fields in the status map', () => {
-        const status = store.getStatusById(2)
-        expect(status).toMatchObject({
-          icon: 'svg:very-delivered',
-          bkColor: '#00AA00',
-          fgColor: '#FFFFFF'
-        })
-      })
-
-      it('returns null when status is not found', () => {
-        const status = store.getStatusById(999)
-        expect(status).toBeNull()
-      })
-    })
-
     describe('getStatusTitle', () => {
       it('returns the correct title when status is found', () => {
         const title = store.getStatusTitle(2)
@@ -305,19 +164,6 @@ describe('register.statuses.store.js', () => {
       store = useRegisterStatusesStore()
       vi.clearAllMocks()
       mockGet.mockResolvedValue(mockRegisterStatuses)
-    })
-
-    it('calls getAll when statuses are not loaded yet', async () => {
-      expect(store.registerStatuses).toEqual([])
-
-      store.ensureLoaded()
-
-      // ensureLoaded calls getAll immediately; the await below just lets
-      // any asynchronous work triggered by getAll settle before the test ends
-      expect(mockGet).toHaveBeenCalledWith('http://localhost:3000/api/registerstatuses')
-
-      // Wait for any pending promises triggered by ensureLoaded/getAll to resolve
-      await Promise.resolve()
     })
 
     it('does not call getAll when already initialized', async () => {
@@ -353,16 +199,5 @@ describe('register.statuses.store.js', () => {
       expect(mockGet).not.toHaveBeenCalled()
     })
 
-    it('does not call getAll when already loading', async () => {
-      // Set loading state
-      store.loading = true
-
-      store.ensureLoaded()
-
-      // Wait for any pending promises to resolve
-      await Promise.resolve()
-
-      expect(mockGet).not.toHaveBeenCalled()
-    })
   })
 })

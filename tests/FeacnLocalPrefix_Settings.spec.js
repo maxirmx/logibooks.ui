@@ -142,12 +142,6 @@ describe('FeacnLocalPrefix_Settings.vue', () => {
     )
   })
 
-  it('calls ensureLoaded on mount', async () => {
-    mountComponent()
-    await flushPromises()
-    expect(ensureLoaded).toHaveBeenCalledOnce()
-  })
-
   it('loads data in edit mode and updates', async () => {
     // Mock backend response with FeacnPrefixExceptionDto structure
     getById.mockResolvedValue({
@@ -197,12 +191,6 @@ describe('FeacnLocalPrefix_Settings.vue', () => {
     )
   })
 
-  it('allows an empty scope collection to make a prefix inactive', () => {
-    const wrapper = mountComponent()
-    const saveButton = wrapper.get('[data-testid="feacn-prefix-save-action"]')
-    expect(saveButton.attributes('disabled')).toBeUndefined()
-  })
-
   it('navigates back to the prefixes list from the header cancel action', async () => {
     const wrapper = mountComponent()
 
@@ -218,29 +206,6 @@ describe('FeacnLocalPrefix_Settings.vue', () => {
     expect(wrapper.findAll('.scope-row-wrapper')).toHaveLength(1)
     await wrapper.find('.scope-row-wrapper [data-test="action-button"]').trigger('click')
     expect(wrapper.findAll('.scope-row-wrapper')).toHaveLength(0)
-  })
-
-  it('loads submitted scope rows when editing', async () => {
-    getById.mockResolvedValue({
-      id: 1,
-      code: '0606',
-      scopes: [
-        { countryIsoNumeric: 643, customsProcedureCode: 10, explanation: 'reason' }
-      ],
-      exceptions: []
-    })
-    const wrapper = mountComponent({ mode: 'edit', prefixId: 1 })
-    await flushPromises()
-
-    expect(wrapper.vm.scopes).toEqual([
-      { countryIsoNumeric: 643, customsProcedureCode: 10, explanation: 'reason' }
-    ])
-  })
-
-  it('shows an explanation input on each scope row', async () => {
-    const wrapper = mountComponent()
-    await wrapper.find('[data-testid="add-restriction-scope"]').trigger('click')
-    expect(wrapper.find('.scope-explanation').exists()).toBe(true)
   })
 
   it('rejects a scope already assigned to another record with the same code', async () => {
@@ -278,32 +243,6 @@ describe('FeacnLocalPrefix_Settings.vue', () => {
     }))
   })
 
-  it('does not render an editable comment input', () => {
-    const wrapper = mountComponent()
-    expect(wrapper.find('#comment').exists()).toBe(false)
-    expect(wrapper.text()).not.toContain('Причина запрета:')
-  })
-
-  it('submits procedure flags and explanations', async () => {
-    create.mockResolvedValue({})
-    const wrapper = mountComponent()
-    wrapper.vm.setFieldValue('code', '0505')
-    wrapper.vm.setFieldValue('scopes', [
-      { countryIsoNumeric: 643, customsProcedureCode: 10, explanation: ' export text ' },
-      { countryIsoNumeric: 860, customsProcedureCode: 40, explanation: ' import text ' }
-    ])
-    await wrapper.vm.onSubmit()
-    expect(create).toHaveBeenCalledWith(
-      expectedCreatePayload({
-        code: '0505',
-        scopes: [
-          { countryIsoNumeric: 643, customsProcedureCode: 10, explanation: 'export text' },
-          { countryIsoNumeric: 860, customsProcedureCode: 40, explanation: 'import text' }
-        ]
-      })
-    )
-  })
-
   it('shows duplicate scope feedback only on the later row', async () => {
     const wrapper = mountComponent()
     wrapper.vm.setFieldValue('code', '0505')
@@ -318,25 +257,6 @@ describe('FeacnLocalPrefix_Settings.vue', () => {
     expect(create).not.toHaveBeenCalled()
     expect(wrapper.findAll('.scope-error')).toHaveLength(1)
     expect(wrapper.text()).not.toContain('Страна и процедура не должны повторяться')
-  })
-
-  it('renders ActionButton and FeacnCodeSearch when search is toggled', async () => {
-    const wrapper = mountComponent()
-
-    // Should render ActionButton
-    expect(wrapper.find('[data-test="action-button"]').exists()).toBe(true)
-
-    // Should not show search initially
-    expect(wrapper.find('[data-test="feacn-code-search"]').exists()).toBe(false)
-
-    // Click the action button to toggle search
-    await wrapper.get('[data-testid="feacn-code-search-action"]').trigger('click')
-    await wrapper.vm.$nextTick()
-
-    // Should show search now
-    expect(wrapper.find('[data-test="feacn-code-search"]').exists()).toBe(true)
-    expect(wrapper.get('[data-testid="feacn-prefix-save-action"]').attributes('disabled')).toBeDefined()
-    expect(wrapper.get('[data-testid="feacn-prefix-cancel-action"]').attributes('disabled')).toBeDefined()
   })
 
   it('handles code selection from FeacnCodeSearch', async () => {

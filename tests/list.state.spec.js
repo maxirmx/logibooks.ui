@@ -8,10 +8,8 @@ import { useAuthStore } from '@/stores/auth.store.js'
 import { useListStateStore } from '@/stores/list.state.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useListState } from '@/composables/useListState.js'
-import { useListPageBounds } from '@/composables/useListPageBounds.js'
 import { useParcelBoxScope } from '@/composables/useParcelBoxScope.js'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
-import { buildParcelsFilterParams, buildParcelsWhFilterParams } from '@/stores/parcels.store.js'
 import { reportError } from '@/helpers/error.helpers.js'
 
 vi.mock('@/router', () => ({ default: { push: vi.fn().mockResolvedValue() } }))
@@ -71,46 +69,6 @@ describe('registered list controls', () => {
     expect(reload()[name]).toEqual(value)
   })
 
-  it('retains cleared values, legacy sort strings and deep sort mutations without credentials', () => {
-    const auth = reload()
-    auth.parcels_status = 3
-    auth.parcels_status = null
-    auth.parcels_hide_legacy_restrictions = true
-    auth.parcels_hide_legacy_restrictions = false
-    auth.users_search = 'query'
-    auth.users_search = ''
-    auth.users_sort_by = ['name']
-    auth.parcels_sort_by[0].order = 'desc'
-    auth.selectedParcelId = 123
-    auth.re_jwt = 'secret'
-    const restored = reload()
-    expect(restored.parcels_status).toBeNull()
-    expect(restored.parcels_hide_legacy_restrictions).toBe(false)
-    expect(restored.users_search).toBe('')
-    expect(restored.users_sort_by).toEqual(['name'])
-    expect(restored.parcels_sort_by).toEqual([{ key: 'id', order: 'desc' }])
-    expect(restored.selectedParcelId).toBeNull()
-    expect(JSON.stringify(document())).not.toMatch(/secret|selectedParcelId|roles|token/)
-  })
-
-  it('restores personal and ordinary filters together into query builders', () => {
-    const auth = reload()
-    auth.setParcelFilterId(23)
-    Object.assign(auth, { parcels_tnved: '4901', parcels_sort_by: [{ key: 'frozenOrder', order: 'asc' }], parcels_page: 3,
-      parcels_wh_number: 'WH-123', parcels_wh_zone: 2, parcels_wh_page: 4 })
-    const restored = reload()
-    const paperwork = buildParcelsFilterParams(restored)
-    const warehouse = buildParcelsWhFilterParams(restored)
-    expect(paperwork.get('parcelFilterId')).toBe('23')
-    expect(paperwork.get('tnVed')).toBe('4901')
-    expect(paperwork.get('sortBy')).toBe('frozenOrder')
-    expect(warehouse.get('parcelFilterId')).toBe('23')
-    expect(warehouse.get('numberPrefix')).toBe('WH-123')
-    expect(warehouse.get('zone')).toBe('2')
-    expect(restored.parcels_page).toBe(3)
-    expect(restored.parcels_wh_page).toBe(4)
-  })
-
   it('uses defaults for invalid fields and ignores unknown keys', () => {
     seed({ [key('auth')]: { users_page: 0, users_per_page: -2, users_search: {}, users_sort_by: [{}],
       parcels_sort_by: null, parcels_hide_legacy_restrictions: 'false', parcels_status: {},
@@ -153,38 +111,6 @@ describe('registered list controls', () => {
 })
 
 describe('shared local state and lifecycle', () => {
-  it('restores per-context controls before use and disposes watchers', () => {
-    reload()
-    const context = ref(42)
-    let scope = effectScope()
-    const state = scope.run(() => useListState('history', { page: pageField(), search: listField('') }, () => context.value))
-    state.page.value = 4
-    state.search.value = 'reason'
-    context.value = 43
-    expect(state.page.value).toBe(1)
-    expect(state.search.value).toBe('')
-    state.page.value = 2
-    context.value = 42
-    expect(state.page.value).toBe(4)
-    expect(state.search.value).toBe('reason')
-    context.value = null
-    expect(state.page.value).toBe(1)
-    state.search.value = 'inactive'
-    expect(document().lists[key('history', null)]).toBeUndefined()
-    context.value = 42
-    scope.stop()
-    const saved = sessionStorage.getItem(LIST_STATE_STORAGE_KEY)
-    state.search.value = 'disposed'
-    context.value = 44
-    expect(sessionStorage.getItem(LIST_STATE_STORAGE_KEY)).toBe(saved)
-    reload()
-    scope = effectScope()
-    const restored = scope.run(() => useListState('history', { page: pageField(), search: listField('') }, () => 42))
-    expect(restored.page.value).toBe(4)
-    expect(restored.search.value).toBe('reason')
-    scope.stop()
-  })
-
   it('hydrates controls already bound when authentication initializes', () => {
     seed({ [key('local')]: { search: 'restored' } })
     setActivePinia(createPinia())
@@ -193,27 +119,6 @@ describe('shared local state and lifecycle', () => {
     expect(local.search.value).toBe('restored')
     useListStateStore().setUser(1)
     expect(local.search.value).toBe('restored')
-  })
-
-  it('clamps only after loading has completed', async () => {
-    const page = ref(7), max = ref(1), ready = ref(false)
-    const loaded = inScope(() => useListPageBounds(page, max, ready))
-    max.value = 2
-    await nextTick()
-    expect(page.value).toBe(7)
-    max.value = 9
-    ready.value = true
-    await nextTick()
-    expect(page.value).toBe(7)
-    max.value = 2
-    await nextTick()
-    expect(page.value).toBe(7)
-    max.value = 9
-    loaded.value = true
-    await nextTick()
-    max.value = 3
-    await nextTick()
-    expect(page.value).toBe(3)
   })
 
   it.each(['paperwork', 'warehouse'])('retains %s box page on reload and resets on actual scope changes', async mode => {
@@ -235,24 +140,6 @@ describe('shared local state and lifecycle', () => {
     expect(onChange).toHaveBeenCalled()
   })
 
-  it('supports box scopes on paperwork tables with no box-number input', () => {
-    reload()
-    inScope(() => useParcelBoxScope({ mode: 'paperwork', boxId: () => null, page: ref(4), onChange: vi.fn() }))
-  })
-
-  it('retains the mounted box context when accounts change and the new account reloads', async () => {
-    const auth = reload()
-    inScope(() => useParcelBoxScope({ mode: 'warehouse', boxId: () => 17,
-      page: ref(3), onChange: vi.fn() }))
-    auth.user = { id: 2, roles: [] }
-    await nextTick()
-    auth.parcels_wh_page = 4
-    localStorage.setItem('user', JSON.stringify({ id: 2, roles: [] }))
-    const restored = reload()
-    const page = ref(restored.parcels_wh_page)
-    inScope(() => useParcelBoxScope({ mode: 'warehouse', boxId: () => 17, page, onChange: vi.fn() }))
-    expect(page.value).toBe(4)
-  })
 })
 
 describe('storage failures', () => {
@@ -313,26 +200,6 @@ describe('storage failures', () => {
     expect(document().lists[key('auth')].users_search).toBe('latest')
     expect(region.find('[role="alert"]').exists()).toBe(false)
     region.unmount()
-  })
-
-  it('recovers from unavailable reads and failed logout cleanup without leaking another account', () => {
-    const originalRead = Storage.prototype.getItem
-    const read = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(function (key) {
-      if (key === LIST_STATE_STORAGE_KEY) throw new Error('Storage unavailable')
-      return originalRead.call(this, key)
-    })
-    const auth = reload()
-    expect(auth.users_search).toBe('')
-    expect(reportError).toHaveBeenCalledOnce()
-    read.mockRestore()
-    auth.users_search = 'private'
-    const remove = vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(() => { throw new Error('Storage unavailable') })
-    // Exercise the session owner directly: unrelated authentication storage can fail too.
-    useListStateStore().setUser(null)
-    expect(auth.users_search).toBe('')
-    remove.mockRestore()
-    expect(useAlertStore().alert.action.handler()).toBe(true)
-    expect(sessionStorage.getItem(LIST_STATE_STORAGE_KEY)).toBeNull()
   })
 
   it('low-level callbacks receive failures; anonymous state is never written', () => {

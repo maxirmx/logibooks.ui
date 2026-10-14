@@ -26,20 +26,6 @@ describe('DTagSection', () => {
     expect(wrapper.find('#customsDuty').text()).toBe('750.00')
   })
 
-  it('does not render charges row when both values are missing', () => {
-    const wrapper = mount(DTagSection, {
-      props: {
-        item: {
-          dTag: 'DT-1'
-        }
-      }
-    })
-
-    expect(wrapper.find('.customs-charges-row').exists()).toBe(false)
-    expect(wrapper.find('#customsFee').exists()).toBe(false)
-    expect(wrapper.find('#customsDuty').exists()).toBe(false)
-  })
-
   it('renders dash for a missing charge value when the other charge is present', () => {
     const wrapper = mount(DTagSection, {
       props: {

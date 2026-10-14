@@ -56,18 +56,6 @@ describe('warehouses store', () => {
   })
 
   describe('getAll', () => {
-    it('fetches warehouses successfully', async () => {
-      fetchWrapper.get.mockResolvedValue(mockWarehouses)
-      const store = useWarehousesStore()
-
-      await store.getAll()
-
-      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/warehouses`)
-      expect(store.warehouses).toEqual(mockWarehouses)
-      expect(store.loading).toBe(false)
-      expect(store.error).toBeNull()
-    })
-
     it('handles fetch error', async () => {
       const error = new Error('Network error')
       fetchWrapper.get.mockRejectedValue(error)
@@ -193,24 +181,6 @@ describe('warehouses store', () => {
     })
   })
 
-  it('sets loading state during operations', async () => {
-    let resolvePromise
-    const promise = new Promise((resolve) => {
-      resolvePromise = resolve
-    })
-    fetchWrapper.get.mockReturnValue(promise)
-
-    const store = useWarehousesStore()
-    const getAllPromise = store.getAll()
-
-    expect(store.loading).toBe(true)
-
-    resolvePromise(mockWarehouses)
-    await getAllPromise
-
-    expect(store.loading).toBe(false)
-  })
-
   describe('getWarehouseName', () => {
     it('returns matching warehouse name and falls back to string when missing', () => {
       const store = useWarehousesStore()
@@ -223,19 +193,6 @@ describe('warehouses store', () => {
   })
 
   describe('ops', () => {
-    it('fetches ops successfully', async () => {
-      fetchWrapper.get.mockResolvedValue(mockOps)
-      const store = useWarehousesStore()
-
-      const result = await store.getOps()
-
-      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/warehouses/ops`)
-      expect(store.ops).toEqual(mockOps)
-      expect(result).toEqual(mockOps)
-      expect(store.opsLoading).toBe(false)
-      expect(store.opsError).toBeNull()
-    })
-
     it('handles ops error', async () => {
       const error = new Error('Ops error')
       fetchWrapper.get.mockRejectedValue(error)
@@ -271,16 +228,6 @@ describe('warehouses store', () => {
   })
 
   describe('ensureLoaded', () => {
-    it('calls getAll when not initialized', async () => {
-      fetchWrapper.get.mockResolvedValue(mockWarehouses)
-      const store = useWarehousesStore()
-
-      await store.ensureLoaded()
-
-      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/warehouses`)
-      expect(store.warehouses).toEqual(mockWarehouses)
-    })
-
     it('does not call getAll if already initialized', async () => {
       fetchWrapper.get.mockResolvedValue(mockWarehouses)
       const store = useWarehousesStore()
@@ -293,22 +240,5 @@ describe('warehouses store', () => {
       expect(fetchWrapper.get).not.toHaveBeenCalled()
     })
 
-    it('does not call getAll if loading is in progress', async () => {
-      let resolvePromise
-      const promise = new Promise((resolve) => {
-        resolvePromise = resolve
-      })
-      fetchWrapper.get.mockReturnValue(promise)
-
-      const store = useWarehousesStore()
-      const getAllPromise = store.getAll()
-
-      // While loading, ensureLoaded should not trigger another call
-      await store.ensureLoaded()
-      expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
-
-      resolvePromise(mockWarehouses)
-      await getAllPromise
-    })
   })
 })

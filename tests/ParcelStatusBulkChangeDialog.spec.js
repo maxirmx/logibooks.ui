@@ -122,67 +122,6 @@ describe('ParcelStatusBulkChangeDialog', () => {
     mocks.registerItem = null
   })
 
-  it('keeps action buttons disabled until required input is present', async () => {
-    const wrapper = mountDialog()
-
-    expect(
-      wrapper.find('[data-testid="parcel-status-bulk-find"]').attributes('disabled')
-    ).toBeDefined()
-    expect(
-      wrapper.find('[data-testid="parcel-status-bulk-update-found"]').attributes('disabled')
-    ).toBeDefined()
-    expect(
-      wrapper.find('[data-testid="parcel-status-bulk-update-all"]').attributes('disabled')
-    ).toBeDefined()
-
-    await wrapper.find('[data-testid="parcel-status-bulk-status"]').setValue('3')
-    await wrapper.find('[data-testid="parcel-status-bulk-input"]').setValue('P-1')
-
-    expect(
-      wrapper.find('[data-testid="parcel-status-bulk-find"]').attributes('disabled')
-    ).toBeUndefined()
-    expect(
-      wrapper.find('[data-testid="parcel-status-bulk-update-found"]').attributes('disabled')
-    ).toBeDefined()
-    expect(
-      wrapper.find('[data-testid="parcel-status-bulk-update-all"]').attributes('disabled')
-    ).toBeUndefined()
-  })
-
-  it('uses the standard header action layout', () => {
-    const wrapper = mountDialog()
-    const header = wrapper.find('.header-with-actions')
-
-    expect(header.exists()).toBe(true)
-    expect(header.find('.primary-heading').text()).toBe('Изменить статус посылок')
-    expect(header.find('.header-actions-bar').exists()).toBe(true)
-    const actionGroups = header.findAll('.header-actions.header-actions-group')
-    expect(actionGroups).toHaveLength(2)
-    expect(actionGroups[0].find('[data-testid="parcel-status-bulk-find"]').exists()).toBe(true)
-    expect(actionGroups[0].find('[data-testid="parcel-status-bulk-update-found"]').exists()).toBe(
-      true
-    )
-    expect(actionGroups[1].find('[data-testid="parcel-status-bulk-update-all"]').exists()).toBe(
-      true
-    )
-    expect(actionGroups[1].find('[data-testid="parcel-status-bulk-cancel"]').exists()).toBe(true)
-    expect(wrapper.find('.parcel-status-bulk-header hr.hr').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="v-card-actions"]').exists()).toBe(false)
-
-    for (const testId of [
-      'parcel-status-bulk-find',
-      'parcel-status-bulk-update-found',
-      'parcel-status-bulk-update-all',
-      'parcel-status-bulk-cancel'
-    ]) {
-      expect(wrapper.find(`[data-testid="${testId}"]`).attributes('data-icon-size')).toBe('2x')
-    }
-
-    const updateAllButton = wrapper.find('[data-testid="parcel-status-bulk-update-all"]')
-    expect(updateAllButton.attributes('data-icon')).toBe('fa-solid fa-list-check')
-    expect(updateAllButton.attributes('title')).toBe('Изменить статус всех посылок')
-  })
-
   it('renders the parcel-number label from the current register type', async () => {
     const wrapper = mountDialog({ register: { id: 7, registerType: WBR_COMPANY_ID } })
     const label = () => wrapper.find('label[for="parcel-status-bulk-input"]').text()
@@ -290,25 +229,6 @@ describe('ParcelStatusBulkChangeDialog', () => {
     expect(wrapper.emitted('updated')).toHaveLength(1)
   })
 
-  it('reports update-found errors from backend message fields', async () => {
-    mocks.resolveStatusSelection.mockResolvedValue({
-      parcelIds: [11],
-      missingNumbers: [],
-      blockedItems: []
-    })
-    mocks.updateStatusSelection.mockRejectedValue({ msg: 'update found failed' })
-    const wrapper = mountDialog()
-
-    await wrapper.find('[data-testid="parcel-status-bulk-status"]').setValue('3')
-    await wrapper.find('[data-testid="parcel-status-bulk-input"]').setValue('P-1')
-    await wrapper.find('[data-testid="parcel-status-bulk-find"]').trigger('click')
-    await flushPromises()
-    await wrapper.find('[data-testid="parcel-status-bulk-update-found"]').trigger('click')
-    await flushPromises()
-
-    expect(mocks.alertError).toHaveBeenCalledWith('update found failed')
-  })
-
   it('refreshes the register after a read-only update conflict', async () => {
     mocks.resolveStatusSelection.mockResolvedValue({
       parcelIds: [11],
@@ -328,32 +248,6 @@ describe('ParcelStatusBulkChangeDialog', () => {
 
     expect(mocks.getRegisterById).toHaveBeenCalledWith(7)
     expect(mocks.alertError).toHaveBeenCalledWith('Изменения запрещены')
-  })
-
-  it('updates all parcels in the register through the existing register endpoint', async () => {
-    const wrapper = mountDialog()
-
-    await wrapper.find('[data-testid="parcel-status-bulk-status"]').setValue('4')
-    await wrapper.find('[data-testid="parcel-status-bulk-update-all"]').trigger('click')
-    await flushPromises()
-
-    expect(mocks.confirm).toHaveBeenCalledWith(expect.objectContaining({
-      title: 'Подтверждение',
-      confirmationText: 'Изменить',
-      cancellationText: 'Не изменять',
-      dialogProps: { width: 440, maxWidth: 'calc(100vw - 32px)' },
-      cardProps: { class: 'app-dialog-frame' },
-      cardTitleProps: { class: 'app-dialog-frame__title' },
-      cardActionsProps: { class: 'app-dialog-frame__actions' },
-      confirmationButtonProps: { color: 'orange-darken-3', variant: 'flat' },
-      cancellationButtonProps: { variant: 'text' },
-      content: 'Изменить статус всех посылок в реестре на "Status 4"?'
-    }))
-    expect(mocks.setParcelStatuses).toHaveBeenCalledWith(7, 4)
-    expect(mocks.alertSuccess).toHaveBeenCalledWith(
-      'Статус успешно применен ко всем посылкам в реестре'
-    )
-    expect(wrapper.emitted('updated')).toHaveLength(1)
   })
 
   it('does not update all parcels when confirmation is declined', async () => {

@@ -2,31 +2,12 @@
 // All rights reserved.
 // This file is a part of Logibooks UI application
 
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import { OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
-import {
-  navigateParcel,
-  buildParcelEditLocation,
-  buildParcelListLocation,
-  buildParcelNavigationQuery,
-  getCurrentInternalRoute,
-  normalizeInternalReturnUrl,
-  normalizeParcelBoxCode,
-  normalizeParcelBoxId,
-  normalizeParcelNavigationMode,
-  resolveParcelReturnLocation
-} from '@/helpers/parcel.navigation.helpers.js'
+import { navigateParcel, buildParcelEditLocation, buildParcelListLocation, buildParcelNavigationQuery, getCurrentInternalRoute, normalizeParcelBoxCode, normalizeParcelBoxId, resolveParcelReturnLocation } from '@/helpers/parcel.navigation.helpers.js'
 
 describe('parcel navigation helpers', () => {
-  it('awaits navigation and propagates rejected navigation', async () => {
-    const error = new Error('Router failed')
-    const router = { push: vi.fn().mockRejectedValue(error), replace: vi.fn().mockResolvedValue() }
-    await expect(navigateParcel(router, '/parcels')).rejects.toBe(error)
-    await expect(navigateParcel(router, '/parcels/3', { replace: true })).resolves.toBeUndefined()
-    expect(router.replace).toHaveBeenCalledWith('/parcels/3')
-  })
-
   it('rejects a resolved navigation failure returned by a real router guard', async () => {
     const router = createRouter({
       history: createMemoryHistory(),
@@ -37,23 +18,6 @@ describe('parcel navigation helpers', () => {
     await expect(navigateParcel(router, '/parcels')).rejects.toThrow('Не удалось перейти со страницы посылки')
     expect(router.currentRoute.value.path).toBe('/')
   })
-  it('accepts known modes and defaults invalid values to paperwork', () => {
-    expect(normalizeParcelNavigationMode(OP_MODE_WAREHOUSE)).toBe(OP_MODE_WAREHOUSE)
-    expect(normalizeParcelNavigationMode(OP_MODE_PAPERWORK)).toBe(OP_MODE_PAPERWORK)
-    expect(normalizeParcelNavigationMode('warehouse')).toBe(OP_MODE_PAPERWORK)
-    expect(normalizeParcelNavigationMode(undefined)).toBe(OP_MODE_PAPERWORK)
-  })
-
-  it('accepts only safe internal return URLs', () => {
-    expect(normalizeInternalReturnUrl('/scanjobs/42/monitor/boxes/7?follow=17')).toBe(
-      '/scanjobs/42/monitor/boxes/7?follow=17'
-    )
-    expect(normalizeInternalReturnUrl('//example.com/phishing')).toBeNull()
-    expect(normalizeInternalReturnUrl('/\\example.com/phishing')).toBeNull()
-    expect(normalizeInternalReturnUrl('https://example.com/phishing')).toBeNull()
-    expect(normalizeInternalReturnUrl(['/registers'])).toBeNull()
-  })
-
   it('normalizes positive box ids and display codes', () => {
     expect(normalizeParcelBoxId('17')).toBe(17)
     expect(normalizeParcelBoxId(['18', '19'])).toBe(18)

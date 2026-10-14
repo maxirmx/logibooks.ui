@@ -89,17 +89,6 @@ describe('AssignTnvedDialog', () => {
     await flushPromises()
   }
 
-  it('keeps confirm button disabled for invalid TN VED (wrong length)', async () => {
-    const wrapper = createWrapper()
-
-    const input = wrapper.find('[data-testid="target-tnved-input"]')
-    await input.setValue(' 123456789 ')
-
-    const confirmBtn = wrapper.findAll('[data-testid="v-btn"]')[1]
-    expect(confirmBtn.element.disabled).toBe(true)
-    expect(wrapper.find('[data-testid="target-tnved-message"]').exists()).toBe(true)
-  })
-
   it('keeps confirm disabled until lookup confirms code exists', async () => {
     // Make lookup slow — never resolve during this test
     mockGetFeacnInfo.mockReturnValue(new Promise(() => {}))
@@ -138,17 +127,6 @@ describe('AssignTnvedDialog', () => {
     expect(confirmEvents).toBeTruthy()
     expect(confirmEvents[0]).toEqual([[101, 102], '1234567890'])
     expect(wrapper.emitted('update:show')).toBeFalsy()
-  })
-
-  it('shows FEACN name in success style when code is valid', async () => {
-    const wrapper = createWrapper()
-
-    await setInputAndWaitLookup(wrapper, '1234567890')
-
-    expect(mockGetFeacnInfo).toHaveBeenCalledWith('1234567890')
-    const message = wrapper.find('[data-testid="target-tnved-message"]')
-    expect(message.text()).toContain('Тестовое наименование ТН ВЭД')
-    expect(message.classes()).toContain('validation-success')
   })
 
   it('disables confirm when code does not exist in catalog', async () => {

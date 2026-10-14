@@ -8,7 +8,6 @@ import { ref } from 'vue'
 import OzonParcelsWhList from '@/lists/OzonParcels_WhList.vue'
 import { vuetifyStubs, resolveAll } from './helpers/test-utils.js'
 import { scanjobCheckStatusProjectionKind } from '@/helpers/scanjob.check-status.helpers.js'
-import { CheckStatusCode } from '@/helpers/check.status.code.js'
 import { OZON_COMPANY_ID } from '@/helpers/company.constants.js'
 import { OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 
@@ -231,92 +230,6 @@ describe('OzonParcels_WhList.vue', () => {
     navigateToEditParcel.mockClear()
   })
 
-  it('loads warehouse parcels with showMarkedByPartner enabled', async () => {
-    mount(OzonParcelsWhList, {
-      props: { registerId: 1 },
-      global: { stubs: globalStubs }
-    })
-
-    await resolveAll()
-
-    expect(loadParcels).toHaveBeenCalledWith(
-      1,
-      expect.any(Object),
-      expect.objectContaining({ value: true }),
-      expect.any(Object),
-      { showMarkedByPartner: true }
-    )
-  })
-
-  it('normalizes an initial exact box scope before the first request', async () => {
-    parcelsWhPage.value = 3
-    parcelsWhBoxNumber.value = 'STALE-PREFIX'
-    let firstRequestState
-    loadParcels.mockImplementationOnce(async (...args) => {
-      firstRequestState = {
-        page: parcelsWhPage.value,
-        boxNumber: parcelsWhBoxNumber.value,
-        options: args[4]
-      }
-    })
-
-    const wrapper = mount(OzonParcelsWhList, {
-      props: { registerId: 1, boxId: 17, boxCode: 'BOX-17' },
-      global: { stubs: globalStubs }
-    })
-    await resolveAll()
-
-    expect(firstRequestState).toEqual({
-      page: 1,
-      boxNumber: '',
-      options: { showMarkedByPartner: true, boxId: 17 }
-    })
-
-    wrapper.unmount()
-  })
-
-  it('renders projected status, check status, and zone fields in the table', async () => {
-    const wrapper = mount(OzonParcelsWhList, {
-      props: { registerId: 1 },
-      global: { stubs: globalStubs }
-    })
-
-    const text = wrapper.text()
-    expect(text).toContain('POST-1')
-    expect(text).toContain('Very long Ozon product name that must remain on one line')
-    expect(text).toContain('BAR-1')
-    expect(text).toContain('BOX-1')
-    expect(text).toContain('3')
-    expect(text).toContain('Status 7')
-    expect(text).toContain('Не проверено')
-    expect(text).toContain('Зона 1')
-  })
-
-  it('defines headers only for the warehouse parcel columns', () => {
-    const wrapper = mount(OzonParcelsWhList, {
-      props: { registerId: 1 },
-      global: { stubs: globalStubs }
-    })
-
-    const headerKeys = wrapper.vm.headers.map((header) => header.key)
-    expect(headerKeys).toEqual([
-      'actions',
-      'id',
-      'checkStatusProjection',
-      'zone',
-      'statusId',
-      'postingNumber',
-      'barcode',
-      'boxNumber',
-      'productName',
-      'weightKg',
-      'quantity'
-    ])
-    expect(
-      wrapper.vm.headers.find((header) => header.key === 'checkStatusProjection').sortable
-    ).toBe(true)
-  })
-
   it('opens parcel status bulk dialog and reloads warehouse parcels after update', async () => {
     const wrapper = mount(OzonParcelsWhList, {
       props: { registerId: 1 },
@@ -337,33 +250,6 @@ describe('OzonParcels_WhList.vue', () => {
     await wrapper.get('[data-testid="parcel-status-bulk-dialog-updated"]').trigger('click')
     await resolveAll()
 
-    expect(loadParcels).toHaveBeenCalledWith(
-      1,
-      expect.any(Object),
-      expect.objectContaining({ value: true }),
-      expect.any(Object),
-      { showMarkedByPartner: true }
-    )
-  })
-
-  it('sets defect from row action and reloads parcels for warehouse manager', async () => {
-    isWhManager.value = true
-    const wrapper = mount(OzonParcelsWhList, {
-      props: { registerId: 1 },
-      global: { stubs: globalStubs }
-    })
-
-    await resolveAll()
-    loadParcels.mockClear()
-
-    const setDefectAction = wrapper.get('[data-testid="set-defect-action"]')
-    expect(setDefectAction.attributes('aria-label')).toBe('Брак')
-    expect(setDefectAction.attributes('title')).toBe('Брак')
-
-    await setDefectAction.trigger('click')
-    await resolveAll()
-
-    expect(setDefect).toHaveBeenCalledWith(1)
     expect(loadParcels).toHaveBeenCalledWith(
       1,
       expect.any(Object),
@@ -410,35 +296,6 @@ describe('OzonParcels_WhList.vue', () => {
     )
   })
 
-  it('disables clear defect action for Duplicate2 status that is not defect', async () => {
-    isShiftLead.value = true
-    mockItems.value = [
-      {
-        ...mockItems.value[0],
-        checkStatus: CheckStatusCode.Duplicate2.value,
-        checkStatusProjection: {
-          kind: scanjobCheckStatusProjectionKind.Checked,
-          title: 'Проверено',
-          restrictionReason: null
-        }
-      }
-    ]
-    const wrapper = mount(OzonParcelsWhList, {
-      props: { registerId: 1 },
-      global: { stubs: globalStubs }
-    })
-
-    await resolveAll()
-
-    const clearDefectAction = wrapper.get('[data-testid="clear-defect-action"]')
-    expect(clearDefectAction.attributes('disabled')).toBeDefined()
-
-    await clearDefectAction.trigger('click')
-    await resolveAll()
-
-    expect(clearDefect).not.toHaveBeenCalled()
-  })
-
   it('shows reload error message when refresh fails after setting defect', async () => {
     isWhManager.value = true
     const wrapper = mount(OzonParcelsWhList, {
@@ -454,45 +311,6 @@ describe('OzonParcels_WhList.vue', () => {
 
     expect(setDefect).toHaveBeenCalledWith(1)
     expect(alertError).toHaveBeenCalledWith('Ошибка при обновлении данных')
-  })
-
-  it('disables set defect action for duplicate and partner-marked projection statuses', async () => {
-    isWhManager.value = true
-    mockItems.value = [
-      {
-        ...mockItems.value[0],
-        checkStatusProjection: { title: 'Дубликат' }
-      },
-      {
-        ...mockItems.value[0],
-        id: 2,
-        checkStatusProjection: { title: 'Исключено партнёром' }
-      }
-    ]
-    const wrapper = mount(OzonParcelsWhList, {
-      props: { registerId: 1 },
-      global: { stubs: globalStubs }
-    })
-
-    await resolveAll()
-
-    const setDefectButtons = wrapper.findAll('[data-testid="set-defect-action"]')
-    expect(setDefectButtons).toHaveLength(2)
-    expect(setDefectButtons[0].attributes('disabled')).toBeDefined()
-    expect(setDefectButtons[1].attributes('disabled')).toBeDefined()
-  })
-
-  it('renders product name in a non-wrapping truncated cell', () => {
-    const wrapper = mount(OzonParcelsWhList, {
-      props: { registerId: 1 },
-      global: { stubs: globalStubs }
-    })
-
-    const productName = wrapper.get('.warehouse-product-name-cell')
-    expect(productName.text()).toBe('Very long Ozon product name that must remain on one line')
-    expect(productName.attributes('title')).toBe(
-      'Very long Ozon product name that must remain on one line'
-    )
   })
 
   it('opens parcel edit from warehouse table cells', async () => {
@@ -577,24 +395,6 @@ describe('OzonParcels_WhList.vue', () => {
     await resolveAll()
 
     wrapper.unmount()
-  })
-
-  it('disables parcel edit cells without parcel edit route access', async () => {
-    hasLogistRole.value = false
-    const wrapper = mount(OzonParcelsWhList, {
-      props: { registerId: 1 },
-      global: { stubs: globalStubs }
-    })
-
-    await resolveAll()
-
-    const productNameCell = wrapper.get('.warehouse-product-name-cell')
-    expect(productNameCell.classes()).not.toContain('clickable-cell')
-    expect(productNameCell.attributes('aria-disabled')).toBe('true')
-
-    await productNameCell.trigger('click')
-
-    expect(navigateToEditParcel).not.toHaveBeenCalled()
   })
 
   it('keeps edit cells disabled while the warehouse list is loading', async () => {

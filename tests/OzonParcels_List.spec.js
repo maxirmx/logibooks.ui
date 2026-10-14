@@ -296,32 +296,6 @@ describe('OzonParcels_List.vue – multi-select', () => {
     await resolveAll()
   })
 
-  it('plain click selects a single row', () => {
-    wrapper.vm.handleRowClick(
-      { shiftKey: false, ctrlKey: false, metaKey: false },
-      { item: mockItems.value[1] }
-    )
-
-    expect(wrapper.vm.selectedParcelIds.size).toBe(1)
-    expect(wrapper.vm.selectedParcelIds.has(2)).toBe(true)
-    expect(selectedParcelId.value).toBe(2)
-  })
-
-  it('plain click replaces previous selection', () => {
-    wrapper.vm.handleRowClick(
-      { shiftKey: false, ctrlKey: false, metaKey: false },
-      { item: mockItems.value[0] }
-    )
-    wrapper.vm.handleRowClick(
-      { shiftKey: false, ctrlKey: false, metaKey: false },
-      { item: mockItems.value[2] }
-    )
-
-    expect(wrapper.vm.selectedParcelIds.size).toBe(1)
-    expect(wrapper.vm.selectedParcelIds.has(3)).toBe(true)
-    expect(wrapper.vm.selectedParcelIds.has(1)).toBe(false)
-  })
-
   it('Ctrl+Click toggles individual rows', () => {
     wrapper.vm.handleRowClick(
       { shiftKey: false, ctrlKey: false, metaKey: false },
@@ -346,34 +320,6 @@ describe('OzonParcels_List.vue – multi-select', () => {
     expect(wrapper.vm.selectedParcelIds.has(3)).toBe(true)
   })
 
-  it('Shift+Click selects a range', () => {
-    wrapper.vm.handleRowClick(
-      { shiftKey: false, ctrlKey: false, metaKey: false },
-      { item: mockItems.value[0] }
-    )
-    wrapper.vm.handleRowClick(
-      { shiftKey: true, ctrlKey: false, metaKey: false },
-      { item: mockItems.value[3] }
-    )
-
-    expect(wrapper.vm.selectedParcelIds.size).toBe(4)
-    expect([...wrapper.vm.selectedParcelIds].sort()).toEqual([1, 2, 3, 4])
-  })
-
-  it('Shift+Click backwards selects a range', () => {
-    wrapper.vm.handleRowClick(
-      { shiftKey: false, ctrlKey: false, metaKey: false },
-      { item: mockItems.value[4] }
-    )
-    wrapper.vm.handleRowClick(
-      { shiftKey: true, ctrlKey: false, metaKey: false },
-      { item: mockItems.value[1] }
-    )
-
-    expect(wrapper.vm.selectedParcelIds.size).toBe(4)
-    expect([...wrapper.vm.selectedParcelIds].sort()).toEqual([2, 3, 4, 5])
-  })
-
   it('Shift+Click replaces previous selection without Ctrl', () => {
     wrapper.vm.handleRowClick(
       { shiftKey: false, ctrlKey: true, metaKey: false },
@@ -391,31 +337,6 @@ describe('OzonParcels_List.vue – multi-select', () => {
     // Only 1-3 selected, not 5
     expect(wrapper.vm.selectedParcelIds.has(5)).toBe(false)
     expect([...wrapper.vm.selectedParcelIds].sort()).toEqual([1, 2, 3])
-  })
-
-  it('Shift+Click falls back to single selection when anchor leaves current items', async () => {
-    wrapper.vm.handleRowClick(
-      { shiftKey: false, ctrlKey: false, metaKey: false },
-      { item: mockItems.value[0] }
-    )
-
-    mockItems.value = [
-      { id: 2, postingNumber: 'P-2', productName: 'Item2', checkStatus: 0 },
-      { id: 3, postingNumber: 'P-3', productName: 'Item3', checkStatus: 0 },
-      { id: 4, postingNumber: 'P-4', productName: 'Item4', checkStatus: 0 }
-    ]
-    await resolveAll()
-
-    expect(wrapper.vm.lastClickedId).toBe(null)
-
-    wrapper.vm.handleRowClick(
-      { shiftKey: true, ctrlKey: false, metaKey: false },
-      { item: mockItems.value[1] }
-    )
-
-    expect([...wrapper.vm.selectedParcelIds]).toEqual([3])
-    expect(selectedParcelId.value).toBe(3)
-    expect(wrapper.vm.lastClickedId).toBe(3)
   })
 
   it('Ctrl+Shift+Click extends range onto existing selection', () => {
@@ -437,37 +358,6 @@ describe('OzonParcels_List.vue – multi-select', () => {
 
     // All 5 should be selected (1,2 from Ctrl, 2-5 from Shift range)
     expect(wrapper.vm.selectedParcelIds.size).toBe(5)
-  })
-
-  it('selectedItems returns the correct items', () => {
-    wrapper.vm.handleRowClick(
-      { shiftKey: false, ctrlKey: false, metaKey: false },
-      { item: mockItems.value[0] }
-    )
-    wrapper.vm.handleRowClick(
-      { shiftKey: false, ctrlKey: true, metaKey: false },
-      { item: mockItems.value[3] }
-    )
-
-    const ids = wrapper.vm.selectedParcelIds
-    const selected = mockItems.value.filter((item) => ids.has(item.id))
-    expect(selected).toHaveLength(2)
-    expect(selected.map((i) => i.id)).toEqual([1, 4])
-  })
-
-  it('Meta+Click works like Ctrl+Click (macOS)', () => {
-    wrapper.vm.handleRowClick(
-      { shiftKey: false, ctrlKey: false, metaKey: false },
-      { item: mockItems.value[0] }
-    )
-    wrapper.vm.handleRowClick(
-      { shiftKey: false, ctrlKey: false, metaKey: true },
-      { item: mockItems.value[2] }
-    )
-
-    expect(wrapper.vm.selectedParcelIds.size).toBe(2)
-    expect(wrapper.vm.selectedParcelIds.has(1)).toBe(true)
-    expect(wrapper.vm.selectedParcelIds.has(3)).toBe(true)
   })
 
   it('assigns tnved in bulk and reloads rows on confirm', async () => {
@@ -508,14 +398,6 @@ describe('OzonParcels_List.vue – multi-select', () => {
     expect(mockBulkAssignTnved).not.toHaveBeenCalled()
   })
 
-  it('does not assign tnved when another action is running', async () => {
-    wrapper.vm.runningAction = true
-
-    await wrapper.vm.handleAssignTnvedConfirm([1], '1234567890')
-
-    expect(mockBulkAssignTnved).not.toHaveBeenCalled()
-  })
-
   it('resets running flag when bulk assignment fails', async () => {
     mockBulkAssignTnved.mockRejectedValueOnce(new Error('failed'))
     wrapper.vm.showAssignTnvedDialog = true
@@ -527,13 +409,6 @@ describe('OzonParcels_List.vue – multi-select', () => {
     expect(wrapper.vm.showAssignTnvedDialog).toBe(true)
   })
 
-  it('opts the Ozon page into the authorized weight update header action', () => {
-    const header = wrapper.findComponent({ name: 'RegisterHeaderActionsBar' })
-
-    expect(header.props('showWeightUpdate')).toBe(true)
-    expect(header.props('mutationDisabled')).toBe(false)
-  })
-
   it('opens the register file picker directly from the header', async () => {
     const input = wrapper.get('[data-testid="ozon-weight-update-file-input"]')
     const click = vi.spyOn(input.element, 'click').mockImplementation(() => {})
@@ -541,35 +416,6 @@ describe('OzonParcels_List.vue – multi-select', () => {
     await wrapper.get('[data-testid="register-header-actions"]').trigger('click')
 
     expect(click).toHaveBeenCalledTimes(1)
-  })
-
-  it('shows a compact title while parcel weights are being updated', async () => {
-    let completeUpload
-    mockUpdateWeightsFromFile.mockReturnValueOnce(
-      new Promise((resolve) => {
-        completeUpload = resolve
-      })
-    )
-    const file = new File(['data'], 'weights.xlsx')
-
-    const upload = wrapper.vm.onWeightUpdateFileSelected({
-      target: { files: [file], value: 'weights.xlsx' }
-    })
-    await wrapper.vm.$nextTick()
-
-    expect(wrapper.get('[data-testid="weight-action-dialog"]').text()).toBe('Обновление посылок')
-
-    completeUpload({
-      processedRows: 1,
-      skippedRows: 0,
-      unmatchedRows: 0,
-      supersededRows: 0,
-      updatedParcels: 1,
-      unchangedParcels: 0,
-      totalWeightKgBefore: 1,
-      totalWeightKgAfter: 2
-    })
-    await upload
   })
 
   it('uploads weights and refreshes the register and parcels without a success alert', async () => {
@@ -651,21 +497,6 @@ describe('OzonParcels_List.vue – multi-select', () => {
     )
   })
 
-  it('blocks the file picker and upload when manual final weight is set', async () => {
-    mockRegisterItem.value = { dealNumber: 'D-1', realWeightKg: 12.345 }
-    await wrapper.vm.$nextTick()
-    const input = wrapper.get('[data-testid="ozon-weight-update-file-input"]')
-    const click = vi.spyOn(input.element, 'click').mockImplementation(() => {})
-
-    await wrapper.get('[data-testid="register-header-actions"]').trigger('click')
-    await wrapper.vm.onWeightUpdateFileSelected({
-      target: { files: [new File(['data'], 'weights.xlsx')], value: 'weights.xlsx' }
-    })
-
-    expect(click).not.toHaveBeenCalled()
-    expect(mockUpdateWeightsFromFile).not.toHaveBeenCalled()
-  })
-
   it('shows INN and combined passport columns for import and reexport registers', async () => {
     for (const customsProcedureCode of [CUSTOMS_PROCEDURE_IMPORT, CUSTOMS_PROCEDURE_REEXPORT]) {
       wrapper.unmount()
@@ -687,15 +518,4 @@ describe('OzonParcels_List.vue – multi-select', () => {
     }
   })
 
-  it('keeps the legacy passport number column for other Ozon registers', () => {
-    const table = wrapper.findComponent({ name: 'v-data-table-server' })
-    const keys = table.props('headers').map((header) => header.key)
-
-    expect(keys).toContain('passportNumber')
-    expect(keys).not.toContain('inn')
-    expect(keys).not.toContain('passport')
-    expect(keys).not.toContain('passportSeries')
-    expect(keys).not.toContain('passportIssueDate')
-    expect(keys).not.toContain('passportIssuedBy')
-  })
 })

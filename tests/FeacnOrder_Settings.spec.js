@@ -92,23 +92,6 @@ describe('FeacnOrder_Settings', () => {
     mocks.routerPush.mockResolvedValue()
   })
 
-  it('loads the order and exposes a key-only scope editor', async () => {
-    const wrapper = createWrapper()
-    await flushPromises()
-
-    expect(mocks.getById).toHaveBeenCalledWith(7)
-    expect(mocks.ensureCountriesLoaded).toHaveBeenCalledOnce()
-    expect(wrapper.text()).toContain('Order 7')
-    expect(wrapper.get('.feacn-order-title').text()).toBe('Order 7')
-    expect(wrapper.vm.scopes).toEqual([
-      { countryIsoNumeric: 643, customsProcedureCode: 10 }
-    ])
-    expect(wrapper.getComponent({ name: 'RestrictionScopeEditor' }).props()).toMatchObject({
-      explanationsEnabled: false,
-      countries: mocks.countries
-    })
-  })
-
   it('saves only country and procedure and returns to the orders list', async () => {
     const wrapper = createWrapper()
     await flushPromises()

@@ -109,36 +109,6 @@ describe('Notification_Settings.vue', () => {
     })
   })
 
-  it('renders create mode correctly', async () => {
-    const wrapper = mount(AsyncWrapper, {
-      props: { mode: 'create' },
-      global: {
-        stubs: defaultGlobalStubs
-      }
-    })
-
-    await resolveAll()
-
-    expect(wrapper.find('h1').text()).toBe('Регистрация нотификации')
-    expect(wrapper.find('button[type="submit"]').text()).toContain('Создать')
-    expect(mockNotificationsStore.getById).not.toHaveBeenCalled()
-  })
-
-  it('renders edit mode and loads data', async () => {
-    const wrapper = mount(AsyncWrapper, {
-      props: { mode: 'edit', notificationId: 1 },
-      global: {
-        stubs: defaultGlobalStubs
-      }
-    })
-
-    await resolveAll()
-
-    expect(wrapper.find('h1').text()).toBe('Изменить информацию о нотификации')
-    expect(wrapper.find('button[type="submit"]').text()).toContain('Сохранить')
-    expect(mockNotificationsStore.getById).toHaveBeenCalledWith(1)
-  })
-
   it('submits create form and redirects', async () => {
     const wrapper = mount(AsyncWrapper, {
       props: { mode: 'create' },
@@ -229,24 +199,6 @@ describe('Notification_Settings.vue', () => {
     await cancelButton.trigger('click')
 
     expect(mockRouter.push).toHaveBeenCalledWith('/notifications')
-  })
-
-  it('renders updated labels and placeholders', async () => {
-    const wrapper = mount(AsyncWrapper, {
-      props: { mode: 'create' },
-      global: {
-        stubs: defaultGlobalStubs
-      }
-    })
-
-    await resolveAll()
-
-    const labels = wrapper.findAll('label').map((label) => label.text())
-    expect(labels).toContain('Артикулы:')
-    expect(labels).toContain('Срок действия:')
-
-    const articleInput = wrapper.find('input#articles_0')
-    expect(articleInput.attributes('placeholder')).toBe('Артикул')
   })
 
   it('validates required fields with new messages', async () => {

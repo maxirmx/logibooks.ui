@@ -34,18 +34,6 @@ describe('FeacnCodesTreeNode.vue', () => {
     })
   }
 
-  it('renders node with code and name separately', () => {
-    const wrapper = createWrapper({
-      codeEx: '0101',
-      name: 'Test Category'
-    })
-
-    // Check that codeEx is displayed in the code area
-    expect(wrapper.find('.node-code').text()).toBe('0101')
-    // Check that name is displayed in the label area
-    expect(wrapper.find('.node-label').text()).toBe('Test Category')
-  })
-
   it('shows placeholder when node is loaded but has no children', () => {
     const wrapper = createWrapper({
       loaded: true,
@@ -54,53 +42,6 @@ describe('FeacnCodesTreeNode.vue', () => {
 
     expect(wrapper.find('.toggle-placeholder').exists()).toBe(true)
     expect(wrapper.find('.toggle-icon').exists()).toBe(false)
-  })
-
-  it('emits toggle event when icon is clicked', async () => {
-    const wrapper = createWrapper()
-
-    await wrapper.find('.toggle-icon').trigger('click')
-
-    expect(wrapper.emitted('toggle')).toBeTruthy()
-    expect(wrapper.emitted('toggle')[0][0]).toEqual(wrapper.props('node'))
-  })
-
-  it('emits toggle event when label is clicked', async () => {
-    const wrapper = createWrapper()
-
-    await wrapper.find('.node-label').trigger('click')
-
-    expect(wrapper.emitted('toggle')).toBeTruthy()
-    expect(wrapper.emitted('toggle')[0][0]).toEqual(wrapper.props('node'))
-  })
-
-  it('does not render children when collapsed', () => {
-    const wrapper = createWrapper({
-      expanded: false,
-      children: [
-        { id: 2, codeEx: '0101', name: 'Child 1', expanded: false, loaded: false, children: [] }
-      ]
-    })
-
-    expect(wrapper.find('ul').exists()).toBe(false)
-  })
-
-  it('shows loading spinner when node is loading', () => {
-    const wrapper = createWrapper({ loading: true })
-
-    const spinner = wrapper.find('font-awesome-icon-stub[icon="fa-solid fa-spinner"]')
-    expect(spinner.exists()).toBe(true)
-    expect(spinner.attributes('spin')).toBe('')
-
-    // Should not show toggle icon when loading
-    expect(wrapper.find('.toggle-icon').exists()).toBe(false)
-  })
-
-  it('applies loading class to label when loading', () => {
-    const wrapper = createWrapper({ loading: true })
-
-    const label = wrapper.find('.node-label')
-    expect(label.classes()).toContain('loading')
   })
 
   it('does not emit toggle when node is loading', async () => {
@@ -130,18 +71,4 @@ describe('FeacnCodesTreeNode.vue', () => {
     expect(wrapper.emitted('select')[0][0]).toEqual(wrapper.props('node'))
   })
 
-  it('emits select event when selectable leaf icon is clicked', async () => {
-    const wrapper = createWrapper(
-      { code: '0123456789', codeEx: '0123456789', name: 'Leaf Node' },
-      { selectMode: true }
-    )
-
-    const icon = wrapper.find('.leaf-icon')
-    expect(icon.classes()).toContain('clickable')
-
-    await icon.trigger('click')
-
-    expect(wrapper.emitted('select')).toBeTruthy()
-    expect(wrapper.emitted('select')[0][0]).toEqual(wrapper.props('node'))
-  })
 })

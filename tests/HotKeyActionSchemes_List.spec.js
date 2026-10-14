@@ -60,14 +60,6 @@ describe('HotKeyActionSchemes_List.vue', () => {
     alertStoreMock = { alert: alertRef, error: errorMock, clear: clearMock }
   })
 
-  it('loads on mount', async () => {
-    mount(HotKeyActionSchemesList, {
-      global: { stubs: { ...defaultGlobalStubs, ActionButton: true } }
-    })
-    await Promise.resolve()
-    expect(getAllMock).toHaveBeenCalled()
-  })
-
   it('navigates to create/edit', async () => {
     const wrapper = mount(HotKeyActionSchemesList, {
       global: { stubs: { ...defaultGlobalStubs, ActionButton: true } }

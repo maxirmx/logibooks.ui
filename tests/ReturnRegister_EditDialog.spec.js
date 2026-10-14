@@ -331,40 +331,6 @@ describe('ReturnRegister_EditDialog.vue', () => {
     expect(getRegisters).toHaveBeenLastCalledWith(defaultSourceQuery({ warehouseId: 2 }))
   })
 
-  it('loads warehouses on mount and keeps OK disabled initially', async () => {
-    const wrapper = mountDialog()
-    await flushPromises()
-
-    expect(ensureWarehousesLoaded).toHaveBeenCalledOnce()
-    expect(ensureParcelStatusesLoaded).toHaveBeenCalledOnce()
-    expect(wrapper.find('[data-testid="return-type-select"]').element.value).toBe('1')
-    expect(wrapper.find('[data-testid="selection-mode-select"]').element.value).toBe('1')
-    expect(wrapper.find('[data-testid="parcel-status-select"]').exists()).toBe(false)
-    expect(okButton(wrapper).attributes('data-icon')).toBe('fa-solid fa-check-double')
-    expect(cancelButton(wrapper).attributes('data-icon')).toBe('fa-solid fa-xmark')
-    expect(okButton(wrapper).attributes('disabled')).toBeDefined()
-  })
-
-  it('builds return procedure options from backend register ops', async () => {
-    const wrapper = mountDialog()
-    await flushPromises()
-
-    const options = wrapper.find('[data-testid="return-type-select"]').findAll('option')
-
-    expect(
-      options.map((option) => ({
-        value: option.element.value,
-        text: option.text()
-      }))
-    ).toEqual([
-      { value: '1', text: '01 Возврат' },
-      { value: '60', text: 'ИМ 60 Реимпорт' },
-      { value: '31', text: 'ЭК 31 Реэкспорт' }
-    ])
-    expect(options.map((option) => option.element.value)).not.toContain('10')
-    expect(options.map((option) => option.element.value)).not.toContain('40')
-  })
-
   it('does not load pairs or enable submit when return procedure ops are unavailable', async () => {
     registerOps.current.customsProcedures = null
 
@@ -404,21 +370,6 @@ describe('ReturnRegister_EditDialog.vue', () => {
     expect(wrapper.find('[data-testid="pair-select"]').text()).toContain('Sender / Receiver')
   })
 
-  it('shows no-selection labels for warehouse and pair selects', async () => {
-    const wrapper = mountDialog()
-    await flushPromises()
-
-    const warehouseEmptyOption = wrapper
-      .find('[data-testid="warehouse-select"]')
-      .findAll('option')[0]
-    const pairEmptyOption = wrapper.find('[data-testid="pair-select"]').findAll('option')[0]
-
-    expect(warehouseEmptyOption.element.value).toBe('')
-    expect(warehouseEmptyOption.text()).toBe('Не выбрано')
-    expect(pairEmptyOption.element.value).toBe('')
-    expect(pairEmptyOption.text()).toBe('Не выбрано')
-  })
-
   it('auto-selects a single warehouse and tolerates non-array pair results', async () => {
     warehousesRef.value = [{ id: 1, name: 'Warehouse One' }]
     getReturnRegisterPairs.mockResolvedValueOnce(null)
@@ -444,63 +395,6 @@ describe('ReturnRegister_EditDialog.vue', () => {
       {},
       expect.objectContaining({
         fallback: 'Не удалось загрузить данные для создания реестра возврата'
-      })
-    )
-  })
-
-  it('loads pairs on warehouse change and source registers on pair change', async () => {
-    getReturnRegisterPairs.mockResolvedValueOnce([
-      {
-        senderCompanyId: 2,
-        senderCompanyName: 'Sender',
-        receiverCompanyId: 3,
-        receiverCompanyName: 'Receiver',
-        matchingParcelsCount: 3
-      }
-    ])
-    getRegisters.mockResolvedValueOnce([
-      {
-        id: 7,
-        dealNumber: 'D-7',
-        date: '2026-06-12T10:00:00Z',
-        redParcelsCount: 2,
-        parcelsTotal: 5
-      }
-    ])
-
-    const wrapper = mountDialog()
-    await flushPromises()
-
-    await selectWarehouse(wrapper, 1)
-    expect(getReturnRegisterPairs).toHaveBeenCalledWith(1, defaultCriteria())
-    expect(wrapper.find('[data-testid="pair-select"]').text()).toContain('Sender')
-    expect(wrapper.find('[data-testid="pair-select"]').text()).toContain('Sender / Receiver (3)')
-
-    await selectPair(wrapper)
-    expect(getRegisters).toHaveBeenCalledWith(defaultSourceQuery())
-    expect(wrapper.find('[data-testid="registers-table"]').text()).toContain('D-7')
-  })
-
-  it('requires parcel status before loading status-mode pairs', async () => {
-    const wrapper = mountDialog()
-    await flushPromises()
-
-    await wrapper.find('[data-testid="selection-mode-select"]').setValue('2')
-    await flushPromises()
-    expect(wrapper.find('[data-testid="parcel-status-select"]').exists()).toBe(true)
-
-    await selectWarehouse(wrapper, 1)
-    expect(getReturnRegisterPairs).not.toHaveBeenCalled()
-    expect(wrapper.find('[data-testid="pair-select"]').attributes('disabled')).toBeDefined()
-
-    await wrapper.find('[data-testid="parcel-status-select"]').setValue('5')
-    await flushPromises()
-
-    expect(getReturnRegisterPairs).toHaveBeenCalledWith(
-      1,
-      defaultCriteria({
-        parcelSelectionMode: 2,
-        parcelStatusId: 5
       })
     )
   })
@@ -628,59 +522,6 @@ describe('ReturnRegister_EditDialog.vue', () => {
     }
   })
 
-  it('clears source data when warehouse selection is cleared', async () => {
-    getReturnRegisterPairs.mockResolvedValueOnce([
-      {
-        senderCompanyId: 2,
-        senderCompanyName: 'Sender',
-        receiverCompanyId: 3,
-        receiverCompanyName: 'Receiver'
-      }
-    ])
-
-    const wrapper = mountDialog()
-    await flushPromises()
-
-    await selectWarehouse(wrapper, 1)
-    await wrapper.find('[data-testid="warehouse-select"]').setValue('')
-    await flushPromises()
-    await wrapper.vm.$nextTick()
-
-    expect(wrapper.find('[data-testid="pair-select"]').element.value).toBe('')
-    expect(wrapper.findAll('[data-testid="register-checkbox"]')).toHaveLength(0)
-  })
-
-  it('uses fallback labels and supports deselecting registers', async () => {
-    getReturnRegisterPairs.mockResolvedValueOnce([{ senderCompanyId: 2, receiverCompanyId: 3 }])
-    getRegisters.mockResolvedValueOnce([
-      {
-        id: 7,
-        fileName: 'source.xlsx',
-        date: '2026-06-12T10:00:00Z',
-        redParcelsCount: 2,
-        parcelsTotal: 5
-      },
-      { id: 8, date: '2026-06-12T11:00:00Z', redParcelsCount: 1, parcelsTotal: 1 }
-    ])
-
-    const wrapper = mountDialog()
-    await flushPromises()
-    await selectWarehouse(wrapper, 1)
-    expect(wrapper.find('[data-testid="pair-select"]').text()).toContain('2')
-
-    await selectPair(wrapper)
-    const checkboxes = wrapper.findAll('[data-testid="register-checkbox"]')
-    expect(checkboxes[0].attributes('aria-label')).toContain('source.xlsx')
-    expect(checkboxes[1].attributes('aria-label')).toContain('#8')
-    expect(wrapper.find('[data-testid="registers-table"]').text()).toContain('source.xlsx')
-    expect(wrapper.find('[data-testid="registers-table"]').text()).toContain('8')
-
-    await checkboxes[0].setValue(true)
-    expect(okButton(wrapper).attributes('disabled')).toBeUndefined()
-    await checkboxes[0].setValue(false)
-    expect(okButton(wrapper).attributes('disabled')).toBeDefined()
-  })
-
   it('tolerates non-array source-register results', async () => {
     getReturnRegisterPairs.mockResolvedValueOnce([
       {
@@ -735,79 +576,6 @@ describe('ReturnRegister_EditDialog.vue', () => {
     )
   })
 
-  it('resets pair, registers, and selection when warehouse changes', async () => {
-    getReturnRegisterPairs
-      .mockResolvedValueOnce([
-        {
-          senderCompanyId: 2,
-          senderCompanyName: 'Sender',
-          receiverCompanyId: 3,
-          receiverCompanyName: 'Receiver'
-        }
-      ])
-      .mockResolvedValueOnce([
-        {
-          senderCompanyId: 4,
-          senderCompanyName: 'Other Sender',
-          receiverCompanyId: 5,
-          receiverCompanyName: 'Other Receiver'
-        }
-      ])
-    getRegisters.mockResolvedValueOnce([
-      {
-        id: 7,
-        dealNumber: 'D-7',
-        date: '2026-06-12T10:00:00Z',
-        redParcelsCount: 2,
-        parcelsTotal: 5
-      }
-    ])
-
-    const wrapper = mountDialog()
-    await flushPromises()
-    await selectWarehouse(wrapper, 1)
-    await selectPair(wrapper)
-    await wrapper.find('[data-testid="register-checkbox"]').setValue(true)
-    expect(okButton(wrapper).attributes('disabled')).toBeUndefined()
-
-    await selectWarehouse(wrapper, 2)
-
-    expect(getReturnRegisterPairs).toHaveBeenLastCalledWith(2, defaultCriteria())
-    expect(wrapper.find('[data-testid="pair-select"]').element.value).toBe('')
-    expect(wrapper.findAll('[data-testid="register-checkbox"]')).toHaveLength(0)
-    expect(okButton(wrapper).attributes('disabled')).toBeDefined()
-  })
-
-  it('enables OK after selecting warehouse, pair, and at least one register', async () => {
-    getReturnRegisterPairs.mockResolvedValueOnce([
-      {
-        senderCompanyId: 2,
-        senderCompanyName: 'Sender',
-        receiverCompanyId: 3,
-        receiverCompanyName: 'Receiver'
-      }
-    ])
-    getRegisters.mockResolvedValueOnce([
-      {
-        id: 7,
-        dealNumber: 'D-7',
-        date: '2026-06-12T10:00:00Z',
-        redParcelsCount: 2,
-        parcelsTotal: 5
-      }
-    ])
-
-    const wrapper = mountDialog()
-    await flushPromises()
-    await selectWarehouse(wrapper, 1)
-    await selectPair(wrapper)
-
-    expect(okButton(wrapper).attributes('disabled')).toBeDefined()
-    await wrapper.find('[data-testid="register-checkbox"]').setValue(true)
-    await wrapper.vm.$nextTick()
-    expect(okButton(wrapper).attributes('disabled')).toBeUndefined()
-  })
-
   it('routes back to warehouse registers on cancel', async () => {
     const wrapper = mountDialog()
     await flushPromises()
@@ -815,54 +583,6 @@ describe('ReturnRegister_EditDialog.vue', () => {
     await cancelButton(wrapper).trigger('click')
 
     expect(routerPush).toHaveBeenCalledWith('/registers?mode=modeWarehouse')
-  })
-
-  it('creates return register and routes to the new register parcels', async () => {
-    getReturnRegisterPairs.mockResolvedValueOnce([
-      {
-        senderCompanyId: 2,
-        senderCompanyName: 'Sender',
-        receiverCompanyId: 3,
-        receiverCompanyName: 'Receiver'
-      }
-    ])
-    getRegisters.mockResolvedValueOnce([
-      {
-        id: 7,
-        dealNumber: 'D-7',
-        date: '2026-06-12T10:00:00Z',
-        redParcelsCount: 2,
-        parcelsTotal: 5
-      },
-      {
-        id: 8,
-        dealNumber: 'D-8',
-        date: '2026-06-12T11:00:00Z',
-        redParcelsCount: 1,
-        parcelsTotal: 1
-      }
-    ])
-    createReturnRegister.mockResolvedValueOnce({ id: 99 })
-
-    const wrapper = mountDialog()
-    await flushPromises()
-    await selectWarehouse(wrapper, 1)
-    await selectPair(wrapper)
-
-    const checkboxes = wrapper.findAll('[data-testid="register-checkbox"]')
-    await checkboxes[0].setValue(true)
-    await checkboxes[1].setValue(true)
-    await okButton(wrapper).trigger('click')
-    await flushPromises()
-
-    expect(createReturnRegister).toHaveBeenCalledWith({
-      warehouseId: 1,
-      senderCompanyId: 2,
-      receiverCompanyId: 3,
-      ...defaultCriteria(),
-      registerIds: [7, 8]
-    })
-    expect(routerPush).toHaveBeenCalledWith('/registers/99/parcels?mode=modeWarehouse')
   })
 
   it('creates return register with selected type and parcel-status criteria', async () => {

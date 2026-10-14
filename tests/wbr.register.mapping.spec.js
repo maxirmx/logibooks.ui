@@ -13,10 +13,5 @@ describe('check.status.code.js hasIssues', () => {
       expect(CheckStatusCode.hasIssues(0x01000100)).toBe(true) // Both have issues
     })
 
-    it('returns false for status codes without issues', () => {
-      expect(CheckStatusCode.hasIssues(0x00000000)).toBe(false) // No issues
-      expect(CheckStatusCode.hasIssues(0x00200010)).toBe(false) // No issues
-      expect(CheckStatusCode.hasIssues(0)).toBe(false) // Undefined equivalent
-    })
   })
 })

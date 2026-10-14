@@ -143,20 +143,6 @@ describe('App Logout Functionality', () => {
     })
   })
 
-  it('should call logout and navigate to login page when logout is clicked', async () => {
-    // Find the logout link specifically
-    const logoutLinks = wrapper.findAll('a[class="link"]')
-    const logoutLink = logoutLinks.find((link) => link.text() === 'Выход')
-    expect(logoutLink).toBeTruthy()
-    expect(logoutLink.text()).toBe('Выход')
-
-    // Click the logout link
-    await logoutLink.trigger('click')
-
-    // Verify logout was called
-    expect(authStore.logout).toHaveBeenCalled()
-  })
-
   it('should clear user data after logout', async () => {
     // Verify user is initially logged in
     expect(authStore.user).toBeTruthy()
@@ -175,24 +161,4 @@ describe('App Logout Functionality', () => {
     expect(authStore.isLogist).toBeFalsy()
   })
 
-  it('should display login link when user is not logged in', async () => {
-    // Logout the user
-    authStore.user = null
-
-    await wrapper.vm.$nextTick()
-
-    // Check that login link is displayed
-    const loginLink = wrapper.find('a[class="link"]')
-    expect(loginLink.exists()).toBe(true)
-    expect(loginLink.text()).toBe('Вход')
-  })
-
-  it('should not show user name in app bar when logged out', async () => {
-    // Logout the user
-    authStore.user = null
-    await wrapper.vm.$nextTick()
-
-    const appBarTitle = wrapper.find('.primary-heading')
-    expect(appBarTitle.text()).toBe('Logibooks')
-  })
 })

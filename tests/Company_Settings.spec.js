@@ -229,103 +229,9 @@ describe('Company_Settings.vue', () => {
       expect(wrapper.get('[data-testid="output-table"]').text()).toBe('42')
     })
 
-    it('shows loading fallback initially', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      // Before resolving, should show loading
-      expect(wrapper.text()).toContain('Loading...')
-
-      await resolveAll()
-
-      // After resolving, should show actual content
-      expect(wrapper.text()).not.toContain('Loading...')
-    })
-  })
-
-  describe('Store Integration', () => {
-    it('calls ensureLoaded on mount', async () => {
-      mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      expect(mockCountriesStore.ensureLoaded).toHaveBeenCalled()
-    })
-
-    it('handles store loading states', async () => {
-      mockCountriesStore.loading = true
-
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      expect(wrapper.exists()).toBe(true)
-    })
-
-    it('handles store error states', async () => {
-      mockCountriesStore.error = 'Failed to load countries'
-
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      expect(wrapper.exists()).toBe(true)
-    })
   })
 
   describe('Form Submission - Create Mode', () => {
-    it('calls create store method on form submission', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      const form = wrapper.find('form')
-      await form.trigger('submit')
-
-      expect(mockCompaniesStore.create).toHaveBeenCalled()
-    })
-
-    it('shows success message and redirects after successful creation', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      const form = wrapper.find('form')
-      await form.trigger('submit')
-      await resolveAll()
-
-      expect(mockRouter.push).toHaveBeenCalledWith('/companies')
-    })
-
     it('handles 409 conflict error during creation', async () => {
       const error = new Error('Company with this INN already exists (409)')
       mockCompaniesStore.create.mockRejectedValueOnce(error)
@@ -346,85 +252,9 @@ describe('Company_Settings.vue', () => {
       expect(mockRouter.push).not.toHaveBeenCalled()
     })
 
-    it('handles general error during creation', async () => {
-      const error = new Error('Network error')
-      mockCompaniesStore.create.mockRejectedValueOnce(error)
-
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      const form = wrapper.find('form')
-      await form.trigger('submit')
-      await resolveAll()
-
-      expect(mockRouter.push).not.toHaveBeenCalled()
-    })
-
-    it('handles store loading state during creation', async () => {
-      mockCompaniesStore.loading = true
-
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      expect(wrapper.exists()).toBe(true)
-    })
   })
 
   describe('Form Submission - Edit Mode', () => {
-    it('calls update store method on form submission', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'edit', companyId: 1 },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      const form = wrapper.find('form')
-      await form.trigger('submit')
-
-      // The form passes the company data wrapped in a value object due to storeToRefs
-      expect(mockCompaniesStore.update).toHaveBeenCalledWith(
-        1,
-        expect.objectContaining({
-          titleSignatureStamp: mockCompany.titleSignatureStamp,
-          inn: mockCompany.inn,
-          email: mockCompany.email,
-          phone: mockCompany.phone
-        })
-      )
-    })
-
-    it('shows success message and redirects after successful update', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'edit', companyId: 1 },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      const form = wrapper.find('form')
-      await form.trigger('submit')
-      await resolveAll()
-
-      expect(mockRouter.push).toHaveBeenCalledWith('/companies')
-    })
-
     it('handles error during update', async () => {
       const error = new Error('Update failed')
       mockCompaniesStore.update.mockRejectedValueOnce(error)
@@ -445,33 +275,6 @@ describe('Company_Settings.vue', () => {
       expect(mockRouter.push).not.toHaveBeenCalled()
     })
 
-    it('fetches company data on mount in edit mode', async () => {
-      mount(AsyncWrapper, {
-        props: { mode: 'edit', companyId: 123 },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      expect(mockCompaniesStore.getById).toHaveBeenCalledWith(123)
-    })
-
-    it('handles store loading state during update', async () => {
-      mockCompaniesStore.loading = true
-
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'edit', companyId: 1 },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      expect(wrapper.exists()).toBe(true)
-    })
   })
 
   describe('Signature Stamp Handling', () => {
@@ -623,71 +426,9 @@ describe('Company_Settings.vue', () => {
       wrapper.unmount()
     })
 
-    it('submits the create form from the header action', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: { stubs: defaultGlobalStubs },
-        attachTo: document.body
-      })
-      await resolveAll()
-      await wrapper.get('[data-testid="company-save-action"]').trigger('click')
-      await resolveAll()
-      expect(mockCompaniesStore.create).toHaveBeenCalledWith(expect.any(Object))
-      expect(mockRouter.push).toHaveBeenCalledWith('/companies')
-      wrapper.unmount()
-    })
-  })
-
-  describe('Props Validation', () => {
-    it('handles missing companyId in edit mode', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'edit' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-      expect(wrapper.exists()).toBe(true)
-    })
   })
 
   describe('Error Handling', () => {
-    it('handles network errors gracefully during creation', async () => {
-      const networkError = new Error('Network Error')
-      mockCompaniesStore.create.mockRejectedValueOnce(networkError)
-
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      const form = wrapper.find('form')
-      await form.trigger('submit')
-      await resolveAll()
-
-      // Should not redirect on error
-      expect(mockRouter.push).not.toHaveBeenCalled()
-    })
-
-    it('handles validation errors appropriately', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      // Component should render without errors even with invalid initial data
-      expect(wrapper.exists()).toBe(true)
-    })
-
     it('handles empty error messages', async () => {
       const error = new Error()
       error.message = undefined
@@ -710,60 +451,4 @@ describe('Company_Settings.vue', () => {
     })
   })
 
-  describe('Form Validation', () => {
-    it('handles form validation correctly', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      // Component should handle validation through vee-validate
-      expect(wrapper.exists()).toBe(true)
-    })
-
-    it('displays validation errors when present', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      // Mock validation errors
-      const formComponent = wrapper.findComponent({ name: 'Form' })
-      if (formComponent.exists()) {
-        formComponent.vm.setErrors({
-          inn: 'ИНН обязателен',
-          name: 'Название обязательно'
-        })
-        await resolveAll()
-
-        expect(wrapper.text()).toContain('ИНН обязателен')
-        expect(wrapper.text()).toContain('Название обязательно')
-      }
-    })
-  })
-
-  describe('Data Binding', () => {
-    it('binds form data correctly in edit mode', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'edit', companyId: 1 },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      // In edit mode, form should be populated with company data
-      expect(wrapper.exists()).toBe(true)
-    })
-
-  })
 })

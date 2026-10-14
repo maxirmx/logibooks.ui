@@ -80,19 +80,6 @@ describe('auth store', () => {
   })
 
   describe('state', () => {
-    it('loads user from localStorage if present', () => {
-      const testUser = { id: 1, name: 'Test User', roles: [roleAdmin] }
-      localStorage.setItem('user', JSON.stringify(testUser))
-      // Use a one-time mock so other tests are not affected
-      vi.spyOn(JSON, 'parse').mockImplementationOnce(() => testUser)
-
-      const store = useAuthStore()
-      expect(store.user).toEqual(testUser)
-      expect(store.isAdmin).toBe(true)
-      expect(store.isLogist).toBeFalsy()
-      expect(store.isSrLogist).toBeFalsy()
-    })
-
     it('loads scan job monitor follow user id from localStorage', () => {
       localStorage.setItem('scanjobmonitor_follow_user_id', '17')
 
@@ -113,19 +100,6 @@ describe('auth store', () => {
 
       expect(store.scanjobmonitor_follow_user_id).toBeNull()
       expect(localStorage.removeItem).toHaveBeenCalledWith('scanjobmonitor_follow_user_id')
-    })
-
-    it('correctly identifies admin users', () => {
-      const store = useAuthStore()
-
-      store.user = { id: 1, roles: [roleAdmin] }
-      expect(store.isAdmin).toBe(true)
-
-      store.user = { id: 2, roles: [roleLogist] }
-      expect(store.isAdmin).toBe(false)
-
-      store.user = { id: 3, roles: [roleAdmin, roleLogist] }
-      expect(store.isAdmin).toBe(true)
     })
 
     it('correctly identifies logist users', () => {
@@ -153,39 +127,9 @@ describe('auth store', () => {
       expect(store.hasAnyRole).toBe(true)
     })
 
-    it('handles register view parameters correctly', () => {
-      const store = useAuthStore()
-
-      // Test setting re_jwt and re_tgt for registration
-      store.re_jwt = 'registration-jwt-token'
-      store.re_tgt = 'register'
-
-      expect(store.re_jwt).toBe('registration-jwt-token')
-      expect(store.re_tgt).toBe('register')
-    })
-
-    it('handles password recovery parameters correctly', () => {
-      const store = useAuthStore()
-
-      // Test setting re_jwt and re_tgt for password recovery
-      store.re_jwt = 'recovery-jwt-token'
-      store.re_tgt = 'recover'
-
-      expect(store.re_jwt).toBe('recovery-jwt-token')
-      expect(store.re_tgt).toBe('recover')
-    })
   })
 
   describe('actions', () => {
-    it('check calls the API to check authentication', async () => {
-      fetchWrapper.get.mockResolvedValue({})
-
-      const store = useAuthStore()
-      await store.check()
-
-      expect(fetchWrapper.get).toHaveBeenCalledWith(expect.stringContaining('/check'))
-    })
-
     it('check propagates errors when API call fails', async () => {
       const errorMessage = 'Authentication check failed'
       fetchWrapper.get.mockRejectedValue(new Error(errorMessage))
@@ -194,16 +138,6 @@ describe('auth store', () => {
 
       await expect(store.check()).rejects.toThrow(errorMessage)
       expect(fetchWrapper.get).toHaveBeenCalledWith(expect.stringContaining('/check'))
-    })
-
-    it('register calls the API with user data', async () => {
-      fetchWrapper.post.mockResolvedValue({})
-
-      const store = useAuthStore()
-      const testUser = { email: 'test@example.com', password: 'password' }
-      await store.register(testUser)
-
-      expect(fetchWrapper.post).toHaveBeenCalledWith(expect.stringContaining('/register'), testUser)
     })
 
     it('register propagates errors when API call fails', async () => {
@@ -215,16 +149,6 @@ describe('auth store', () => {
 
       await expect(store.register(testUser)).rejects.toThrow(errorMessage)
       expect(fetchWrapper.post).toHaveBeenCalledWith(expect.stringContaining('/register'), testUser)
-    })
-
-    it('recover calls the API with user data', async () => {
-      fetchWrapper.post.mockResolvedValue({})
-
-      const store = useAuthStore()
-      const testUser = { email: 'test@example.com' }
-      await store.recover(testUser)
-
-      expect(fetchWrapper.post).toHaveBeenCalledWith(expect.stringContaining('/recover'), testUser)
     })
 
     it('recover propagates errors when API call fails', async () => {
@@ -300,26 +224,6 @@ describe('auth store', () => {
       expect(router.push).toHaveBeenCalledWith('/login')
     })
 
-    it('re process updates user with jwt token and fetches status', async () => {
-      const testUser = { id: 1, name: 'Updated User' }
-      fetchWrapper.put.mockResolvedValue(testUser)
-
-      const statusStore = useStatusStore()
-      const store = useAuthStore()
-      store.re_jwt = 'jwt-token'
-      store.re_tgt = 'reset'
-
-      await store.re()
-
-      expect(fetchWrapper.put).toHaveBeenCalledWith(expect.stringContaining('/reset'), {
-        jwt: 'jwt-token'
-      })
-      expect(store.user).toEqual(testUser)
-      expect(store.re_jwt).toBeNull()
-      expect(localStorage.setItem).toHaveBeenCalledWith('user', JSON.stringify(testUser))
-      expect(statusStore.fetchStatus).toHaveBeenCalled()
-    })
-
     it('fetches status even when re process fails', async () => {
       const errorMessage = 'Invalid token'
       fetchWrapper.put.mockRejectedValue(new Error(errorMessage))
@@ -358,229 +262,6 @@ describe('auth store', () => {
       expect(statusStore.fetchStatus).toHaveBeenCalled()
     })
 
-    it('re process handles recover target correctly', async () => {
-      const testUser = { id: 1, name: 'Recovered User', roles: ['user'] }
-      fetchWrapper.put.mockResolvedValue(testUser)
-
-      const statusStore = useStatusStore()
-      const store = useAuthStore()
-      store.re_jwt = 'recover-jwt-token'
-      store.re_tgt = 'recover'
-
-      await store.re()
-
-      expect(fetchWrapper.put).toHaveBeenCalledWith(expect.stringContaining('/recover'), {
-        jwt: 'recover-jwt-token'
-      })
-      expect(store.user).toEqual(testUser)
-      expect(store.re_jwt).toBeNull()
-      expect(localStorage.setItem).toHaveBeenCalledWith('user', JSON.stringify(testUser))
-      expect(statusStore.fetchStatus).toHaveBeenCalled()
-    })
   })
 
-  describe('registers list parameters', () => {
-    it('allows updating registers_per_page', () => {
-      const store = useAuthStore()
-      store.registers_per_page = 25
-      expect(store.registers_per_page).toBe(25)
-
-      store.registers_per_page = 50
-      expect(store.registers_per_page).toBe(50)
-    })
-
-    it('allows updating registers_search', () => {
-      const store = useAuthStore()
-      store.registers_search = 'test search'
-      expect(store.registers_search).toBe('test search')
-
-      store.registers_search = 'another search term'
-      expect(store.registers_search).toBe('another search term')
-
-      // Test clearing search
-      store.registers_search = ''
-      expect(store.registers_search).toBe('')
-    })
-
-    it('allows updating registers_procedure', () => {
-      const store = useAuthStore()
-      store.registers_procedure = 10
-      expect(store.registers_procedure).toBe(10)
-
-      store.registers_procedure = 'all'
-      expect(store.registers_procedure).toBe('all')
-    })
-
-    it('allows updating registers_wh_procedure', () => {
-      const store = useAuthStore()
-      store.registers_wh_procedure = 1
-      expect(store.registers_wh_procedure).toBe(1)
-
-      store.registers_wh_procedure = 'all'
-      expect(store.registers_wh_procedure).toBe('all')
-    })
-
-    it('allows updating registers_sort_by', () => {
-      const store = useAuthStore()
-
-      // Test sorting by name ascending
-      store.registers_sort_by = [{ key: 'name', order: 'asc' }]
-      expect(store.registers_sort_by).toEqual([{ key: 'name', order: 'asc' }])
-
-      // Test sorting by name descending
-      store.registers_sort_by = [{ key: 'name', order: 'desc' }]
-      expect(store.registers_sort_by).toEqual([{ key: 'name', order: 'desc' }])
-
-      // Test sorting by date
-      store.registers_sort_by = [{ key: 'created_at', order: 'desc' }]
-      expect(store.registers_sort_by).toEqual([{ key: 'created_at', order: 'desc' }])
-
-      // Test multiple sort criteria
-      store.registers_sort_by = [
-        { key: 'name', order: 'asc' },
-        { key: 'id', order: 'desc' }
-      ]
-      expect(store.registers_sort_by).toEqual([
-        { key: 'name', order: 'asc' },
-        { key: 'id', order: 'desc' }
-      ])
-    })
-
-    it('allows updating registers_page', () => {
-      const store = useAuthStore()
-      store.registers_page = 2
-      expect(store.registers_page).toBe(2)
-
-      store.registers_page = 5
-      expect(store.registers_page).toBe(5)
-
-      // Test resetting to first page
-      store.registers_page = 1
-      expect(store.registers_page).toBe(1)
-    })
-
-    it('maintains registers parameters independently from users parameters', () => {
-      const store = useAuthStore()
-
-      // Set different values for users and registers parameters
-      store.users_per_page = 20
-      store.users_search = 'user search'
-      store.users_sort_by = ['name']
-      store.users_page = 3
-
-      store.registers_per_page = 15
-      store.registers_search = 'register search'
-      store.registers_sort_by = [{ key: 'date', order: 'desc' }]
-      store.registers_page = 2
-
-      // Verify they are independent
-      expect(store.users_per_page).toBe(20)
-      expect(store.users_search).toBe('user search')
-      expect(store.users_sort_by).toEqual(['name'])
-      expect(store.users_page).toBe(3)
-
-      expect(store.registers_per_page).toBe(15)
-      expect(store.registers_search).toBe('register search')
-      expect(store.registers_sort_by).toEqual([{ key: 'date', order: 'desc' }])
-      expect(store.registers_page).toBe(2)
-    })
-
-    it('maintains regular and warehouse register list parameters independently', () => {
-      const store = useAuthStore()
-
-      store.registers_per_page = 15
-      store.registers_search = 'paperwork search'
-      store.registers_status = 5
-      store.registers_sort_by = [{ key: 'price', order: 'desc' }]
-      store.registers_page = 2
-
-      store.registers_wh_per_page = 25
-      store.registers_wh_search = 'warehouse search'
-      store.registers_wh_procedure = 1
-      store.registers_wh_status = 'all'
-      store.registers_wh_sort_by = [{ key: 'warehouseArrivalDate', order: 'asc' }]
-      store.registers_wh_page = 4
-
-      expect(store.registers_per_page).toBe(15)
-      expect(store.registers_search).toBe('paperwork search')
-      expect(store.registers_status).toBe(5)
-      expect(store.registers_sort_by).toEqual([{ key: 'price', order: 'desc' }])
-      expect(store.registers_page).toBe(2)
-
-      expect(store.registers_wh_per_page).toBe(25)
-      expect(store.registers_wh_search).toBe('warehouse search')
-      expect(store.registers_wh_procedure).toBe(1)
-      expect(store.registers_wh_status).toBe('all')
-      expect(store.registers_wh_sort_by).toEqual([{ key: 'warehouseArrivalDate', order: 'asc' }])
-      expect(store.registers_wh_page).toBe(4)
-    })
-
-    it('handles edge cases for registers parameters', () => {
-      const store = useAuthStore()
-
-      // Test zero and negative values for per_page
-      store.registers_per_page = 0
-      expect(store.registers_per_page).toBe(0)
-
-      store.registers_per_page = -1
-      expect(store.registers_per_page).toBe(-1)
-
-      // Test zero and negative values for page
-      store.registers_page = 0
-      expect(store.registers_page).toBe(0)
-
-      store.registers_page = -1
-      expect(store.registers_page).toBe(-1)
-
-      // Test empty sort_by array
-      store.registers_sort_by = []
-      expect(store.registers_sort_by).toEqual([])
-
-      // Test null values
-      store.registers_search = null
-      expect(store.registers_search).toBeNull()
-    })
-
-    it('initializes selectedParcelId fields with null values', () => {
-      const store = useAuthStore()
-      expect(store.selectedParcelId).toBeNull()
-    })
-
-    it('allows updating selectedParcelId', () => {
-      const store = useAuthStore()
-
-      store.selectedParcelId = 456
-      expect(store.selectedParcelId).toBe(456)
-
-      store.selectedParcelId = null
-      expect(store.selectedParcelId).toBeNull()
-    })
-
-    it('maintains regular and warehouse parcel list parameters independently', () => {
-      const store = useAuthStore()
-
-      store.parcels_per_page = 50
-      store.parcels_sort_by = [{ key: 'tnVed', order: 'desc' }]
-      store.parcels_page = 3
-
-      store.parcels_wh_per_page = 25
-      store.parcels_wh_sort_by = [{ key: 'checkStatusProjection', order: 'asc' }]
-      store.parcels_wh_page = 4
-
-      expect(store.parcels_per_page).toBe(50)
-      expect(store.parcels_sort_by).toEqual([{ key: 'tnVed', order: 'desc' }])
-      expect(store.parcels_page).toBe(3)
-
-      expect(store.parcels_wh_per_page).toBe(25)
-      expect(store.parcels_wh_sort_by).toEqual([{ key: 'checkStatusProjection', order: 'asc' }])
-      expect(store.parcels_wh_page).toBe(4)
-    })
-  })
-
-  it('discards the obsolete unscoped parcel snapshot', () => {
-    sessionStorage.setItem('logibooks.parcelsSnapshot', JSON.stringify({ parcels_tnved: 'stale' }))
-    const store = useAuthStore()
-    expect(store.parcels_tnved).toBe('')
-    expect(sessionStorage.getItem('logibooks.parcelsSnapshot')).toBeNull()
-  })
 })

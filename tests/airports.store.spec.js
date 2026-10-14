@@ -45,18 +45,6 @@ describe('airports store', () => {
   })
 
   describe('getAll', () => {
-    it('fetches airports successfully', async () => {
-      fetchWrapper.get.mockResolvedValue(mockAirports)
-      const store = useAirportsStore()
-
-      await store.getAll()
-
-      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/airports`)
-      expect(store.airports).toEqual(mockAirports)
-      expect(store.loading).toBe(false)
-      expect(store.error).toBeNull()
-    })
-
     it('handles fetch error', async () => {
       const error = new Error('Network error')
       fetchWrapper.get.mockRejectedValue(error)

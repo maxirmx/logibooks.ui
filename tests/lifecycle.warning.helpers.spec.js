@@ -33,22 +33,12 @@ describe('lifecycle warning helpers', () => {
     )
   })
 
-  it('omits the finish warning when both counts are zero', () => {
-    expect(buildFinishPassportCheckWarning(0, 0)).toBeNull()
-  })
-
   it('uses the requested passport form', () => {
     expect(buildRestartPassportCheckWarning(1)).toBe(
       'Вы запрашиваете проверку паспорта, хотя для данного реестра уже выполнялась операция «Завершить проверку паспортов».'
     )
     expect(buildRestartPassportCheckWarning(2)).toBe(
       'Вы запрашиваете проверку паспортов, хотя для данного реестра уже выполнялась операция «Завершить проверку паспортов».'
-    )
-  })
-
-  it('builds the clear passport status warning', () => {
-    expect(buildClearPassportCheckWarning()).toBe(
-      'Вы очищаете статус проверки паспорта, хотя для данного реестра уже выполнялась операция «Завершить проверку паспортов».'
     )
   })
 

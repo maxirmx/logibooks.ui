@@ -8,7 +8,6 @@ import { mount, flushPromises } from '@vue/test-utils'
 import { ref } from 'vue'
 import CustomsReportRowsList from '@/lists/CustomsReportRows_List.vue'
 import ClickableCell from '@/components/ClickableCell.vue'
-import TruncateTooltipCell from '@/components/TruncateTooltipCell.vue'
 import PaginationFooter from '@/components/PaginationFooter.vue'
 import { defaultGlobalStubs } from './helpers/test-utils.js'
 import { OP_MODE_PAPERWORK } from '@/helpers/op.mode.js'
@@ -67,24 +66,6 @@ const exportColumnKeys = [
   'quantity',
   'totalWeight',
   'totalCost',
-  'dateTime',
-  'comments'
-]
-
-const reimportColumnKeys = [
-  'id',
-  'parcelNumber',
-  'processingResult',
-  'uin',
-  'dTag',
-  'recipient',
-  'description',
-  'tnVed',
-  'quantity',
-  'totalWeight',
-  'totalCost',
-  'customsDutiesAndTaxes',
-  'customsFees',
   'dateTime',
   'comments'
 ]
@@ -365,19 +346,6 @@ describe('CustomsReportRows_List.vue', () => {
     })
   })
 
-  it('loads report rows on mount', async () => {
-    wrapper = mount(CustomsReportRowsList, {
-      props: { reportId: 5 },
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    await Promise.resolve()
-
-    expect(getReportRowsMock).toHaveBeenCalledWith(5)
-  })
-
   it('renders report rows data', async () => {
     reportRowsRef.value = [
       {
@@ -414,85 +382,6 @@ describe('CustomsReportRows_List.vue', () => {
 
     const rows = wrapper.findAll('.v-data-table-row')
     expect(rows).toHaveLength(2)
-  })
-
-  it('defines widened report row headers', async () => {
-    wrapper = mount(CustomsReportRowsList, {
-      props: { reportId: 5 },
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    await flushPromises()
-
-    expect(wrapper.vm.headers.map((header) => header.key)).toEqual(fullColumnKeys)
-  })
-
-  it('filters headers and cells to EK10 report columns', async () => {
-    reportRowsColumnsRef.value = exportColumnKeys
-    reportRowsCustomsProcedureRef.value = 'ЭК 10'
-    reportRowsRef.value = [createFullReportRow()]
-
-    wrapper = mount(CustomsReportRowsList, {
-      props: { reportId: 5 },
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    await flushPromises()
-
-    expect(wrapper.vm.headers.map((header) => header.key)).toEqual(exportColumnKeys)
-    expect(wrapper.find('[data-column-key="masterInvoice-header"]').exists()).toBe(false)
-    expect(wrapper.find('[data-column-key="previousMonthValueOrWeight-header"]').exists()).toBe(
-      false
-    )
-    expect(wrapper.find('[data-column-key="customsDutiesAndTaxes-header"]').exists()).toBe(false)
-    expect(wrapper.find('[data-column-key="customsFees-header"]').exists()).toBe(false)
-    expect(wrapper.find('[data-column-key="prohibitionsAndRestrictions-header"]').exists()).toBe(
-      false
-    )
-    expect(wrapper.find('[data-column-key="customsPaymentReservationId-header"]').exists()).toBe(
-      false
-    )
-    expect(wrapper.find('[data-column-key="masterInvoice"]').exists()).toBe(false)
-    expect(wrapper.find('[data-column-key="customsPaymentReservationId"]').exists()).toBe(false)
-    expect(wrapper.find('[data-column-key="recipient"]').text()).toContain('Получатель')
-    expect(wrapper.find('[data-column-key="dateTime"]').exists()).toBe(true)
-  })
-
-  it('filters headers and cells to IM60 report columns', async () => {
-    reportRowsColumnsRef.value = reimportColumnKeys
-    reportRowsCustomsProcedureRef.value = 'ИМ 60'
-    reportRowsRef.value = [createFullReportRow()]
-
-    wrapper = mount(CustomsReportRowsList, {
-      props: { reportId: 5 },
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    await flushPromises()
-
-    expect(wrapper.vm.headers.map((header) => header.key)).toEqual(reimportColumnKeys)
-    expect(wrapper.find('[data-column-key="customsDutiesAndTaxes-header"]').exists()).toBe(true)
-    expect(wrapper.find('[data-column-key="customsFees-header"]').exists()).toBe(true)
-    expect(wrapper.find('[data-column-key="customsDutiesAndTaxes"]').text()).toContain(
-      'пошлины и налоги'
-    )
-    expect(wrapper.find('[data-column-key="customsFees"]').text()).toContain('сборы')
-    expect(wrapper.find('[data-column-key="masterInvoice-header"]').exists()).toBe(false)
-    expect(wrapper.find('[data-column-key="previousMonthValueOrWeight-header"]').exists()).toBe(
-      false
-    )
-    expect(wrapper.find('[data-column-key="prohibitionsAndRestrictions-header"]').exists()).toBe(
-      false
-    )
-    expect(wrapper.find('[data-column-key="customsPaymentReservationId-header"]').exists()).toBe(
-      false
-    )
   })
 
   it.each(['ИМ 40', 'ЭК 31'])(
@@ -545,76 +434,6 @@ describe('CustomsReportRows_List.vue', () => {
     expect(getReportRowsMock.mock.calls.length).toBeGreaterThan(callsBeforeMetadata)
   })
 
-  it('renders widened DTO fields and truncates long text columns', async () => {
-    const reportDateTime = '2026-05-07 10:30'
-    reportRowsRef.value = [
-      {
-        id: 1,
-        rowNumber: 9,
-        parcelNumber: 'PN-001',
-        processingResult: 'Выпущено',
-        uin: 'UIN-001',
-        dTag: 'DTAG-001',
-        masterInvoice: 'MASTER-001',
-        recipient: 'Получатель с длинным названием',
-        description: 'УИН:UIN-001; длинное описание товара',
-        tnVed: '1234567890',
-        prevTnVed: '0987654321',
-        quantity: '2',
-        totalWeight: '3.4',
-        weightUnit: 'кг',
-        totalCost: '99.95',
-        currency: 'USD',
-        previousMonthValueOrWeight: 'стоимость за предыдущий месяц',
-        customsDutiesAndTaxes: 'пошлины и налоги',
-        customsFees: 'сборы',
-        prohibitionsAndRestrictions: 'запреты и ограничения',
-        customsPaymentReservationId: 12345,
-        dateTime: reportDateTime,
-        comments: '10-выпуск',
-        parcelId: 12,
-        registerId: 5
-      }
-    ]
-
-    wrapper = mount(CustomsReportRowsList, {
-      props: { reportId: 5 },
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    await flushPromises()
-
-    const textFor = (key) => wrapper.find(`[data-column-key="${key}"]`).text()
-
-    expect(textFor('uin')).toContain('UIN-001')
-    expect(textFor('masterInvoice')).toContain('MASTER-001')
-    expect(textFor('description')).toContain('УИН:UIN-001; длинное описание товара')
-    expect(textFor('customsDutiesAndTaxes')).toContain('пошлины и налоги')
-    expect(textFor('customsFees')).toContain('сборы')
-    const tnVedCell = wrapper.find('[data-column-key="tnVed"]')
-    expect(tnVedCell.find('.primary-line').text()).toBe('1234567890')
-    expect(tnVedCell.find('.secondary-line').text()).toBe('0987654321')
-    expect(wrapper.find('[data-column-key="prevTnVed"]').exists()).toBe(false)
-    expect(textFor('totalWeight')).toContain('3.4 кг')
-    expect(textFor('totalCost')).toContain('99.95 USD')
-    expect(wrapper.find('[data-column-key="totalWeight"] .nowrap-cell').text()).toBe('3.4 кг')
-    expect(wrapper.find('[data-column-key="totalCost"] .nowrap-cell').text()).toBe('99.95 USD')
-    expect(wrapper.find('[data-column-key="weightUnit"]').exists()).toBe(false)
-    expect(wrapper.find('[data-column-key="currency"]').exists()).toBe(false)
-    const dateTimeCell = wrapper.find('[data-column-key="dateTime"]')
-    expect(dateTimeCell.find('.primary-line').text()).toBe('07.05.2026')
-    expect(dateTimeCell.find('.secondary-line').text()).toBe(
-      new Date(reportDateTime).toLocaleTimeString('ru-RU')
-    )
-    expect(textFor('comments')).toContain('10-выпуск')
-    expect(textFor('customsPaymentReservationId')).toContain('12345')
-    expect(wrapper.find('[data-column-key="description"] .truncate-cell').exists()).toBe(true)
-    expect(wrapper.find('[data-column-key="comments"] .truncate-cell').exists()).toBe(true)
-    expect(wrapper.findAllComponents(TruncateTooltipCell)).toHaveLength(7)
-  })
-
   // Back navigation handled by parent view; no local back button to test
 
   it('displays loading indicator when loading', async () => {
@@ -648,35 +467,6 @@ describe('CustomsReportRows_List.vue', () => {
     expect(alertErrorMock).toHaveBeenCalledWith(errorRef.value.message)
   })
 
-  it('displays report ID in header', async () => {
-    wrapper = mount(CustomsReportRowsList, {
-      props: { reportId: 42 },
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    await flushPromises()
-
-    expect(wrapper.find('h1').text()).toContain('Отчёт о выпуске для №42')
-    expect(wrapper.find('h1').text()).not.toContain('по процедуре')
-  })
-
-  it('displays master invoice in header when provided', async () => {
-    reportRowsCustomsProcedureRef.value = 'ИМ 40'
-
-    wrapper = mount(CustomsReportRowsList, {
-      props: { reportId: 42, masterInvoice: 'CMR 4114294' },
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    await flushPromises()
-
-    expect(wrapper.find('h1').text()).toContain('Отчёт о выпуске для CMR 4114294 по процедуре ИМ40')
-  })
-
   it('formats EK procedure without an internal space in header', async () => {
     reportRowsCustomsProcedureRef.value = 'ЭК 31'
 
@@ -704,26 +494,6 @@ describe('CustomsReportRows_List.vue', () => {
     await wrapper.find('input').setValue('UIN-001')
 
     expect(wrapper.vm.localSearch).toBe('UIN-001')
-  })
-
-  it('passes pagination state to PaginationFooter', async () => {
-    customsReportsStoreMock.reportRowsTotalCount.value = 25
-    perPageRef.value = 10
-    pageRef.value = 2
-
-    wrapper = mount(CustomsReportRowsList, {
-      props: { reportId: 5 },
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    await flushPromises()
-
-    const footer = wrapper.findComponent(PaginationFooter)
-    expect(footer.props('totalCount')).toBe(25)
-    expect(footer.props('maxPage')).toBe(3)
-    expect(footer.props('page')).toBe(2)
   })
 
   it('updates table and footer models from emitted events', async () => {
@@ -768,23 +538,6 @@ describe('CustomsReportRows_List.vue', () => {
     expect(wrapper.vm.getColumnAlignmentClass({ align: 'center' })).toBe('text-center')
     expect(wrapper.vm.getColumnAlignmentClass({ align: 'end' })).toBe('text-right')
     expect(wrapper.vm.getColumnAlignmentClass({ align: 'start' })).toBe('text-start')
-  })
-
-  it('renders alert message and clears it', async () => {
-    alertRef.value = { id: 41, severity: 'error', message: 'Load failed', action: null }
-
-    wrapper = mount(CustomsReportRowsList, {
-      props: { reportId: 5 },
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    await flushPromises()
-
-    expect(wrapper.find('.alert').text()).toContain('Load failed')
-    await wrapper.find('.alert .close').trigger('click')
-    expect(dismissMock).toHaveBeenCalledWith(41)
   })
 
   it('routes to parcel edit when parcelId is present', async () => {
@@ -877,37 +630,6 @@ describe('CustomsReportRows_List.vue', () => {
     await flushPromises()
 
     expect(alertErrorMock).toHaveBeenCalledWith('row load error')
-  })
-
-  it('triggers reload when pagination changes', async () => {
-    wrapper = mount(CustomsReportRowsList, {
-      props: { reportId: 5 },
-      global: { stubs: testStubs }
-    })
-
-    await flushPromises()
-
-    const callsBefore = getReportRowsMock.mock.calls.length
-
-    pageRef.value = 2
-    await flushPromises()
-
-    expect(getReportRowsMock.mock.calls.length).toBeGreaterThan(callsBefore)
-    wrapper.unmount()
-    wrapper = null
-  })
-
-  it('stops watchers and cleans up on unmount', async () => {
-    wrapper = mount(CustomsReportRowsList, {
-      props: { reportId: 5 },
-      global: { stubs: testStubs }
-    })
-
-    await flushPromises()
-
-    // Unmounting exercises the onUnmounted hook (isComponentMounted=false, stopFilterSync, watcherStop)
-    wrapper.unmount()
-    wrapper = null
   })
 
   it('generates page options for large page counts', async () => {

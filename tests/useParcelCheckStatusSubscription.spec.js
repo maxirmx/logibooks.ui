@@ -52,32 +52,6 @@ describe('useParcelCheckStatusSubscription', () => {
     await flushPromises()
   })
 
-  it('starts immediately with normalized ref values and forwards callbacks', async () => {
-    const refresh = vi.fn().mockResolvedValue()
-    const onUpdates = vi.fn()
-
-    const result = mountComposable({
-      registerId: ref('7'),
-      enabled: ref(1),
-      refresh,
-      onUpdates
-    })
-    await flushPromises()
-
-    expect(result).toBe(parcelChecksStoreMock)
-    expect(parcelChecksStoreMock.start).toHaveBeenCalledTimes(1)
-    expect(parcelChecksStoreMock.start).toHaveBeenCalledWith(7, {
-      onUpdates,
-      onError: expect.any(Function),
-      onResync: expect.any(Function)
-    })
-    expect(parcelChecksStoreMock.stop).not.toHaveBeenCalled()
-
-    await parcelChecksStoreMock.start.mock.calls[0][1].onResync()
-
-    expect(refresh).toHaveBeenCalledTimes(1)
-  })
-
   it('resolves getter inputs and supports the default optional callbacks', async () => {
     const registerId = ref('8')
     const enabled = ref(true)

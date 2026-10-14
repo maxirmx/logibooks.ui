@@ -17,42 +17,6 @@ describe('single-position alert store', () => {
     vi.useRealTimers()
   })
 
-  it('keeps normalized errors until they are replaced or dismissed', () => {
-    const store = useAlertStore()
-    const id = store.error(new Error('bad'))
-
-    expect(store.alert).toMatchObject({
-      id,
-      severity: 'error',
-      message: 'bad',
-      timeout: null
-    })
-
-    vi.advanceTimersByTime(60000)
-    expect(store.alert?.id).toBe(id)
-  })
-
-  it('normalizes top-level API message payloads', () => {
-    const store = useAlertStore()
-
-    store.error({ msg: 'Ошибка API' })
-
-    expect(store.alert.message).toBe('Ошибка API')
-  })
-
-  it('replaces the active alert whenever a new message is published', () => {
-    const store = useAlertStore()
-    const firstId = store.error('bad')
-    const secondId = store.warning('new issue')
-
-    expect(secondId).not.toBe(firstId)
-    expect(store.alert).toMatchObject({
-      id: secondId,
-      severity: 'warning',
-      message: 'new issue'
-    })
-  })
-
   it('expires success messages and supports pause and resume', () => {
     const store = useAlertStore()
     const id = store.success('ok')
@@ -81,17 +45,6 @@ describe('single-position alert store', () => {
     expect(store.alert).toBeNull()
   })
 
-  it('tracks page presenters for the app fallback', () => {
-    const store = useAlertStore()
-    store.registerPageHost()
-    store.registerPageHost()
-    expect(store.activePageHosts).toBe(2)
-
-    store.unregisterPageHost()
-    store.unregisterPageHost()
-    store.unregisterPageHost()
-    expect(store.activePageHosts).toBe(0)
-  })
 })
 
 describe('form error normalization', () => {

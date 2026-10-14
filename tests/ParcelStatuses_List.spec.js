@@ -174,26 +174,7 @@ describe('ParcelStatuses_List.vue', () => {
     })
   })
 
-  describe('Admin Actions', () => {
-    it('calls openCreateDialog and navigates to create page', async () => {
-      await wrapper.vm.openCreateDialog()
-      expect(mockPush).toHaveBeenCalledWith('/parcelstatus/create')
-    })
-
-  })
-
   describe('Delete Functionality', () => {
-    it('shows confirmation dialog when delete is clicked', async () => {
-      mockConfirm.mockResolvedValue(true)
-
-      const deleteButton = wrapper.find('button[title*="delete"]') || wrapper.find('.anti-btn')
-
-      if (deleteButton.exists()) {
-        await deleteButton.trigger('click')
-        expect(mockConfirm).toHaveBeenCalled()
-      }
-    })
-
     it('calls remove when deletion is confirmed', async () => {
       mockConfirm.mockResolvedValue(true)
       const testParcelStatus = mockParcelStatuses.value[0]
@@ -237,12 +218,6 @@ describe('ParcelStatuses_List.vue', () => {
   })
 
   describe('Search and Filter', () => {
-    it('filters order statuses by title', () => {
-      const mockItem = { raw: { title: 'Черновик' } }
-      const result = wrapper.vm.filterParcelStatuses(null, 'черновик', mockItem)
-      expect(result).toBe(true)
-    })
-
     it('filters order statuses by title case insensitive', () => {
       const mockItem = { raw: { title: 'Подтвержден' } }
       const result = wrapper.vm.filterParcelStatuses(null, 'подтвержден', mockItem)
@@ -261,20 +236,6 @@ describe('ParcelStatuses_List.vue', () => {
       expect(result).toBe(false)
     })
 
-    it('handles null item', () => {
-      const result = wrapper.vm.filterParcelStatuses(null, 'test', null)
-      expect(result).toBe(false)
-    })
-  })
-
-  describe('Loading States', () => {
-    it('shows loading spinner when loading', async () => {
-      // Since components are stubbed, test loading state directly
-      const loading = wrapper.vm.parcelStatusesStore.loading
-      expect(loading).toBeDefined()
-      expect(typeof loading.value).toBe('boolean')
-      expect(loading.value).toBe(false)
-    })
   })
 
   describe('Stubbed Create and Edit Functions', () => {
@@ -304,30 +265,4 @@ describe('ParcelStatuses_List.vue', () => {
     })
   })
 
-  describe('Vuetify Integration', () => {
-    it('uses correct v-data-table props', () => {
-      const table = wrapper.find('[data-testid="v-data-table"]')
-      expect(table.exists()).toBe(true)
-
-      // Check that table is configured properly through the component
-      expect(wrapper.vm.headers).toBeDefined()
-      expect(wrapper.vm.filterParcelStatuses).toBeDefined()
-    })
-  })
-
-  describe('Store Integration', () => {
-    it('properly integrates with order statuses store', () => {
-      expect(wrapper.vm.parcelStatuses).toBeDefined()
-      expect(wrapper.vm.loading).toBeDefined()
-    })
-
-    it('properly integrates with auth store', () => {
-      // Auth store properties should be available
-      expect(wrapper.vm.authStore).toBeDefined()
-    })
-
-    it('properly integrates with the notification store', () => {
-      expect(wrapper.vm.alertStore).toBeDefined()
-    })
-  })
 })

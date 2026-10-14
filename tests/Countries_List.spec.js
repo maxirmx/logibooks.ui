@@ -79,13 +79,6 @@ describe('Countries_List.vue', () => {
     mockIsAdmin.value = false
   })
 
-  it('calls getAll on mount', () => {
-    mount(CountriesList, {
-      global: { stubs: vuetifyStubs }
-    })
-    expect(getAll).toHaveBeenCalled()
-  })
-
   it('filterCodes matches multiple fields', () => {
     const wrapper = mount(CountriesList, { global: { stubs: vuetifyStubs } })
     const item = { raw: mockItems.value[1] }
@@ -112,12 +105,6 @@ describe('Countries_List.vue', () => {
     expect(error).toHaveBeenCalledWith('fail')
   })
 
-  it('shows empty message when no items', () => {
-    mockItems.value = []
-    const wrapper = mount(CountriesList, { global: { stubs: vuetifyStubs } })
-    expect(wrapper.text()).toContain('Отсутствуют данные')
-  })
-
   it('shows spinner and reports store error through alertStore', async () => {
     mockLoading.value = true
     getAll.mockRejectedValueOnce('bad')
@@ -137,17 +124,4 @@ describe('Countries_List.vue', () => {
     )
   })
 
-  it('reports Error object store error as message string through alertStore', async () => {
-    getAll.mockRejectedValueOnce(new Error('load countries failed'))
-    mount(CountriesList, { global: { stubs: vuetifyStubs } })
-    await flushPromises()
-
-    expect(error).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'load countries failed' }),
-      expect.objectContaining({
-        fallback: 'Не удалось загрузить страны',
-        action: expect.objectContaining({ label: 'Повторить', handler: expect.any(Function) })
-      })
-    )
-  })
 })

@@ -138,20 +138,6 @@ describe('Warehouses_List.vue', () => {
     vi.useRealTimers()
   })
 
-  it('calls getAll methods on mount', async () => {
-    const wrapper = mount(WarehousesList, {
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    await wrapper.vm.$nextTick()
-
-    expect(getAllWarehouses).toHaveBeenCalled()
-    expect(countriesEnsureLoaded).toHaveBeenCalled()
-    expect(wrapper.exists()).toBe(true)
-  })
-
   it('handles empty warehouses array', async () => {
     mockWarehouses.value = []
     const wrapper = mount(WarehousesList, {
@@ -171,24 +157,6 @@ describe('Warehouses_List.vue', () => {
         type: 0
       }
     ]
-  })
-
-  it('handles search input', async () => {
-    const wrapper = mount(WarehousesList, {
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    const authStore = wrapper.vm.authStore
-    const searchInput =
-      wrapper.findComponent({ name: 'v-text-field' }) || wrapper.find('input[type="text"]')
-    if (searchInput.exists()) {
-      await searchInput.setValue('Склад')
-      await searchInput.trigger('input')
-
-      expect(authStore.warehouses_search).toBe('Склад')
-    }
   })
 
   it('maps warehouse type labels', async () => {

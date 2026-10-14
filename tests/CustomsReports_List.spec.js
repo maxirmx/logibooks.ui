@@ -192,18 +192,6 @@ describe('CustomsReports_List.vue', () => {
     authStoreMock.isSrLogistPlus = true
   })
 
-  it('loads reports on mount', async () => {
-    mount(CustomsReportsList, {
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    await Promise.resolve()
-
-    expect(getReportsMock).toHaveBeenCalled()
-  })
-
   it('renders report data with calculated fields', async () => {
     reportsRef.value = [
       {

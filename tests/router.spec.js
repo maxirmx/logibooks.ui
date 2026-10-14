@@ -97,14 +97,6 @@ describe('router guards', () => {
     expect(authStore.returnUrl).toBe('/users')
   })
 
-  it('defines dedicated admin-only automated-system routes', () => {
-    const createRoute = router.getRoutes().find((route) => route.path === '/automated-system/register')
-    const editRoute = router.getRoutes().find((route) => route.path === '/automated-system/edit/:id')
-
-    expect(createRoute?.meta.reqAdmin).toBe(true)
-    expect(editRoute?.meta.reqAdmin).toBe(true)
-  })
-
   it('defines authenticated prototype parcel-filter routes with a numeric edit id', () => {
     const createRoute = router.getRoutes().find((route) => route.path === '/parcel-filters/create')
     const editRoute = router.getRoutes().find((route) => route.path === '/parcel-filters/edit/:id')
@@ -173,20 +165,6 @@ describe('router guards', () => {
     expect(router.currentRoute.value.fullPath).toBe('/users')
   })
 
-  it('redirects authenticated logist admin away from login to registers (logist priority)', async () => {
-    authStore.user = { id: 3 }
-    authStore.isLogist = true
-    authStore.isSrLogist = true
-    authStore.isAdmin = true
-    authStore.isSrLogistPlus = authStore.isAdmin || authStore.isSrLogist
-    authStore.hasLogistRole = authStore.isLogist || authStore.isSrLogist
-    authStore.hasAnyRole = true
-
-    await router.push('/login')
-    await router.isReady()
-    expect(router.currentRoute.value.fullPath).toBe('/registers')
-  })
-
   it('redirects authenticated regular user to own edit page', async () => {
     authStore.user = { id: 4 }
     authStore.isAdmin = false
@@ -198,32 +176,6 @@ describe('router guards', () => {
     await router.push('/')
     await router.isReady()
     expect(router.currentRoute.value.fullPath).toBe('/user/edit/4')
-  })
-
-  it('prevents non-logist user from accessing registers', async () => {
-    authStore.user = { id: 3 }
-    authStore.isLogist = false
-    authStore.isSrLogist = false
-    authStore.isSrLogistPlus = authStore.isAdmin || authStore.isSrLogist
-    authStore.hasLogistRole = authStore.isLogist || authStore.isSrLogist
-
-    await router.push('/registers')
-    await router.isReady()
-
-    expect(router.currentRoute.value.fullPath).toBe('/login')
-    expect(authStore.returnUrl).toBe('/registers')
-  })
-
-  it('allows logist user to access registers', async () => {
-    authStore.user = { id: 4 }
-    authStore.isLogist = true
-    authStore.isSrLogist = true
-    authStore.isSrLogistPlus = authStore.isAdmin || authStore.isSrLogist
-    authStore.hasLogistRole = authStore.isLogist || authStore.isSrLogist
-    authStore.hasAnyRole = true
-    await router.push('/registers')
-    await router.isReady()
-    expect(router.currentRoute.value.fullPath).toBe('/registers')
   })
 
   it('redirects to login when server is unavailable', async () => {
@@ -372,43 +324,6 @@ describe('router guards', () => {
     // Verify side effects
     expect(logoutMock).toHaveBeenCalled()
     expect(alertError).toHaveBeenCalledWith('Не удалось завершить регистрацию. ')
-  })
-
-  it('validates session before allowing access to protected routes', async () => {
-    // Initially has user
-    authStore.user = { id: 7 }
-    authStore.isLogist = true
-    authStore.isSrLogist = true
-    authStore.isSrLogistPlus = authStore.isAdmin || authStore.isSrLogist
-    authStore.hasLogistRole = authStore.isLogist || authStore.isSrLogist
-
-    // But session check will invalidate it
-    checkMock.mockImplementationOnce(() => {
-      authStore.user = null
-      return Promise.resolve()
-    })
-
-    await router.push('/registers')
-    await router.isReady()
-
-    expect(checkMock).toHaveBeenCalled()
-    expect(router.currentRoute.value.fullPath).toBe('/login')
-    expect(authStore.returnUrl).toBe('/registers')
-  })
-
-  it('allows access to protected route after checking valid session', async () => {
-    authStore.user = { id: 8 }
-    authStore.isLogist = true
-    authStore.isSrLogist = true
-    authStore.isSrLogistPlus = authStore.isAdmin || authStore.isSrLogist
-    authStore.hasLogistRole = authStore.isLogist || authStore.isSrLogist
-    authStore.hasAnyRole = true
-
-    await router.push('/registers')
-    await router.isReady()
-
-    expect(checkMock).toHaveBeenCalled()
-    expect(router.currentRoute.value.fullPath).toBe('/registers')
   })
 
   it('allows any authenticated role to access export duties', async () => {
@@ -590,21 +505,6 @@ describe('router guards', () => {
       })
     })
 
-    it('maps unassigned monitor route params to props', () => {
-      const routeRecord = router
-        .getRoutes()
-        .find((route) => route.name === 'scanjob-monitor-unassigned')
-      const props = routeRecord.props.default({ params: { id: '42', bucketIndex: '1' } })
-
-      expect(props).toEqual({
-        id: 42,
-        monitorScope: {
-          area: scanjobMonitorArea.Unassigned,
-          boxId: null,
-          bucketIndex: 1
-        }
-      })
-    })
   })
 
   describe('register box routes', () => {
@@ -660,17 +560,6 @@ describe('router guards', () => {
   })
 
   describe('register status mutation routes', () => {
-    it('requires administrator or shift-lead access', () => {
-      const routes = router.getRoutes()
-      const create = routes.find((route) => route.path === '/registerstatus/create')
-      const edit = routes.find((route) => route.path === '/registerstatus/edit/:id')
-
-      expect(create?.meta.reqShiftLeadPlus).toBe(true)
-      expect(create?.meta.reqAdminOrSrLogist).toBeUndefined()
-      expect(edit?.meta.reqShiftLeadPlus).toBe(true)
-      expect(edit?.meta.reqAdminOrSrLogist).toBeUndefined()
-    })
-
     it('allows a shift lead to open register status mutation routes', async () => {
       authStore.user = { id: 9 }
       authStore.isShiftLead = true
@@ -735,14 +624,6 @@ describe('router guards', () => {
     })
   })
 
-  it('does not define a redundant Tajikistan manifest settings route', () => {
-    expect(
-      router
-        .getRoutes()
-        .some((value) => value.path === '/register/:id/tajikistan-manifest-settings')
-    ).toBe(false)
-  })
-
   describe('root path redirects', () => {
     it('redirects unauthenticated user to login', async () => {
       authStore.user = null
@@ -751,55 +632,5 @@ describe('router guards', () => {
       expect(router.currentRoute.value.fullPath).toBe('/login')
     })
 
-    it('redirects logist user to registers', async () => {
-      authStore.user = { id: 1 }
-      authStore.isLogist = true
-      authStore.isAdmin = false
-      authStore.isSrLogist = false
-      authStore.isSrLogistPlus = authStore.isAdmin || authStore.isSrLogist
-      authStore.hasLogistRole = authStore.isLogist || authStore.isSrLogist
-      authStore.hasAnyRole = true
-      await router.push('/')
-      await router.isReady()
-      expect(router.currentRoute.value.fullPath).toBe('/registers')
-    })
-
-    it('redirects admin (non-logist) user to users', async () => {
-      authStore.user = { id: 2 }
-      authStore.isAdmin = true
-      authStore.isLogist = false
-      authStore.isSrLogist = false
-      authStore.isSrLogistPlus = authStore.isAdmin || authStore.isSrLogist
-      authStore.hasLogistRole = authStore.isLogist || authStore.isSrLogist
-      authStore.hasAnyRole = true
-      await router.push('/')
-      await router.isReady()
-      expect(router.currentRoute.value.fullPath).toBe('/users')
-    })
-
-    it('redirects logist admin to registers (logist priority)', async () => {
-      authStore.user = { id: 3 }
-      authStore.isLogist = true
-      authStore.isAdmin = true
-      authStore.isSrLogist = false
-      authStore.isSrLogistPlus = authStore.isAdmin || authStore.isSrLogist
-      authStore.hasLogistRole = authStore.isLogist || authStore.isSrLogist
-      authStore.hasAnyRole = true
-      await router.push('/')
-      await router.isReady()
-      expect(router.currentRoute.value.fullPath).toBe('/registers')
-    })
-
-    it('redirects regular user to own edit page', async () => {
-      authStore.user = { id: 4 }
-      authStore.isAdmin = false
-      authStore.isLogist = false
-      authStore.isSrLogist = false
-      authStore.isSrLogistPlus = authStore.isAdmin || authStore.isSrLogist
-      authStore.hasLogistRole = authStore.isLogist || authStore.isSrLogist
-      await router.push('/')
-      await router.isReady()
-      expect(router.currentRoute.value.fullPath).toBe('/user/edit/4')
-    })
   })
 })

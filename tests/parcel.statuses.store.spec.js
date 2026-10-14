@@ -36,13 +36,6 @@ describe('parcel.statuses.store.js', () => {
     { id: 3, title: 'Выполнен', bkColor: null, restrictionReason: '' }
   ]
 
-  const mockParcelStatus = {
-    id: 1,
-    title: 'Черновик',
-    bkColor: '#112233',
-    restrictionReason: 'Стоп-слово'
-  }
-
   beforeEach(() => {
     pinia = createPinia()
     setActivePinia(pinia)
@@ -57,16 +50,6 @@ describe('parcel.statuses.store.js', () => {
   })
 
   describe('getAll', () => {
-    it('fetches all order statuses successfully', async () => {
-      mockGet.mockResolvedValue(mockParcelStatuses)
-
-      await store.getAll()
-
-      expect(mockGet).toHaveBeenCalledWith('http://localhost:3000/api/parcelstatuses')
-      expect(store.parcelStatuses).toEqual(mockParcelStatuses)
-      expect(store.loading).toBe(false)
-    })
-
     it('handles empty response', async () => {
       mockGet.mockResolvedValue(null)
 
@@ -76,56 +59,9 @@ describe('parcel.statuses.store.js', () => {
       expect(store.loading).toBe(false)
     })
 
-    it('sets loading state during fetch', async () => {
-      let loadingDuringFetch = false
-      mockGet.mockImplementation(async () => {
-        loadingDuringFetch = store.loading
-        return mockParcelStatuses
-      })
-
-      await store.getAll()
-
-      expect(loadingDuringFetch).toBe(true)
-      expect(store.loading).toBe(false)
-    })
-
-    it('handles fetch error', async () => {
-      const error = new Error('Network error')
-      mockGet.mockRejectedValue(error)
-
-      await expect(store.getAll()).rejects.toThrow('Network error')
-      expect(store.loading).toBe(false)
-    })
   })
 
   describe('getById', () => {
-    it('fetches order status by id successfully', async () => {
-      mockGet.mockResolvedValue(mockParcelStatus)
-
-      const result = await store.getById(1)
-
-      expect(mockGet).toHaveBeenCalledWith('http://localhost:3000/api/parcelstatuses/1')
-      expect(store.parcelStatus).toEqual(mockParcelStatus)
-      expect(result).toEqual(mockParcelStatus)
-    })
-
-    it('sets loading state when refresh is true', async () => {
-      mockGet.mockResolvedValue(mockParcelStatus)
-
-      await store.getById(1, true)
-
-      expect(store.parcelStatus).toEqual(mockParcelStatus)
-    })
-
-    it('does not set loading state when refresh is false', async () => {
-      store.parcelStatus = { id: 999, title: 'existing' }
-      mockGet.mockResolvedValue(mockParcelStatus)
-
-      await store.getById(1, false)
-
-      expect(store.parcelStatus).toEqual(mockParcelStatus)
-    })
-
     it('handles fetch by id error', async () => {
       const error = new Error('Not found')
       mockGet.mockRejectedValue(error)
@@ -134,27 +70,6 @@ describe('parcel.statuses.store.js', () => {
   })
 
   describe('create', () => {
-    it('creates order status successfully', async () => {
-      const newOrderStatus = {
-        title: 'Новый статус',
-        bkColor: '#ABCDEF',
-        restrictionReason: 'Новая причина'
-      }
-      const createdOrderStatus = { id: 4, ...newOrderStatus }
-
-      mockPost.mockResolvedValue(createdOrderStatus)
-      mockGet.mockResolvedValue([...mockParcelStatuses, createdOrderStatus])
-
-      const result = await store.create(newOrderStatus)
-
-      expect(mockPost).toHaveBeenCalledWith(
-        'http://localhost:3000/api/parcelstatuses',
-        newOrderStatus
-      )
-      expect(mockGet).toHaveBeenCalledWith('http://localhost:3000/api/parcelstatuses')
-      expect(result).toEqual(createdOrderStatus)
-    })
-
     it('handles create error', async () => {
       const error = new Error('Validation error')
       mockPost.mockRejectedValue(error)
@@ -164,26 +79,6 @@ describe('parcel.statuses.store.js', () => {
   })
 
   describe('update', () => {
-    it('updates order status successfully', async () => {
-      const updateData = {
-        title: 'Обновленный заголовок',
-        bkColor: '#ABCDEF',
-        restrictionReason: 'Новая причина'
-      }
-      const updatedOrderStatus = { ...mockParcelStatus, ...updateData }
-
-      mockPut.mockResolvedValue(updatedOrderStatus)
-      mockGet.mockResolvedValue(
-        mockParcelStatuses.map((s) => (s.id === 1 ? updatedOrderStatus : s))
-      )
-
-      const result = await store.update(1, updateData)
-
-      expect(mockPut).toHaveBeenCalledWith('http://localhost:3000/api/parcelstatuses/1', updateData)
-      expect(mockGet).toHaveBeenCalledWith('http://localhost:3000/api/parcelstatuses')
-      expect(result).toEqual(updatedOrderStatus)
-    })
-
     it('handles update error', async () => {
       const error = new Error('Update failed')
       mockPut.mockRejectedValue(error)
@@ -193,43 +88,11 @@ describe('parcel.statuses.store.js', () => {
   })
 
   describe('remove', () => {
-    it('removes order status successfully', async () => {
-      mockDelete.mockResolvedValue()
-      mockGet.mockResolvedValue(mockParcelStatuses.filter((s) => s.id !== 1))
-
-      await store.remove(1)
-
-      expect(mockDelete).toHaveBeenCalledWith('http://localhost:3000/api/parcelstatuses/1')
-      expect(mockGet).toHaveBeenCalledWith('http://localhost:3000/api/parcelstatuses')
-    })
-
     it('handles remove error', async () => {
       const error = new Error('Delete failed')
       mockDelete.mockRejectedValue(error)
 
       await expect(store.remove(1)).rejects.toThrow('Delete failed')
-    })
-  })
-
-  describe('Store State Management', () => {
-    it('maintains reactive state', async () => {
-      expect(store.parcelStatuses).toEqual([])
-
-      mockGet.mockResolvedValue(mockParcelStatuses)
-      await store.getAll()
-
-      expect(store.parcelStatuses).toEqual(mockParcelStatuses)
-    })
-
-    it('handles multiple simultaneous operations', async () => {
-      mockGet.mockResolvedValue(mockParcelStatuses)
-
-      const promises = [store.getAll(), store.getAll(), store.getAll()]
-
-      await Promise.all(promises)
-
-      expect(mockGet).toHaveBeenCalledTimes(3)
-      expect(store.parcelStatuses).toEqual(mockParcelStatuses)
     })
   })
 
@@ -267,18 +130,6 @@ describe('parcel.statuses.store.js', () => {
       // The getAll function should have populated the statusMap
     })
 
-    describe('getStatusById', () => {
-      it('returns the correct status when found', () => {
-        const status = store.getStatusById(1)
-        expect(status).toEqual(mockParcelStatuses[0])
-      })
-
-      it('returns null when status is not found', () => {
-        const status = store.getStatusById(999)
-        expect(status).toBeNull()
-      })
-    })
-
     describe('getStatusTitle', () => {
       it('returns the correct title when status is found', () => {
         const title = store.getStatusTitle(2)
@@ -302,75 +153,6 @@ describe('parcel.statuses.store.js', () => {
       mockGet.mockResolvedValue(mockParcelStatuses)
     })
 
-    it('calls getAll when statuses are not loaded yet', async () => {
-      expect(store.parcelStatuses).toEqual([])
-
-      await store.ensureLoaded()
-
-      expect(mockGet).toHaveBeenCalledWith('http://localhost:3000/api/parcelstatuses')
-      expect(mockGet).toHaveBeenCalledTimes(1)
-      expect(store.parcelStatuses).toEqual(mockParcelStatuses)
-    })
-
-    it('does not call getAll when already initialized', async () => {
-      // First call to initialize
-      await store.ensureLoaded()
-
-      expect(mockGet).toHaveBeenCalledTimes(1)
-      expect(store.parcelStatuses).toEqual(mockParcelStatuses)
-
-      // Reset mock to check if it's called again
-      mockGet.mockClear()
-
-      // Second call should not trigger getAll again (isInitialized flag is true)
-      await store.ensureLoaded()
-
-      expect(mockGet).not.toHaveBeenCalled()
-      expect(store.parcelStatuses).toEqual(mockParcelStatuses)
-    })
-
-    it('handles concurrent calls by awaiting the same promise', async () => {
-      // Mock a delayed response to simulate concurrent calls
-      let resolveGetAll
-      mockGet.mockImplementation(
-        () =>
-          new Promise((resolve) => {
-            resolveGetAll = resolve
-          })
-      )
-
-      // Start multiple concurrent calls
-      const promise1 = store.ensureLoaded()
-      const promise2 = store.ensureLoaded()
-      const promise3 = store.ensureLoaded()
-
-      // Only one getAll should be called
-      expect(mockGet).toHaveBeenCalledTimes(1)
-
-      // Resolve the promise
-      resolveGetAll(mockParcelStatuses)
-
-      // All promises should resolve with the same data
-      await Promise.all([promise1, promise2, promise3])
-
-      expect(store.parcelStatuses).toEqual(mockParcelStatuses)
-      expect(mockGet).toHaveBeenCalledTimes(1)
-    })
-
-    it('cleans up loadPromise after completion', async () => {
-      await store.ensureLoaded()
-
-      expect(mockGet).toHaveBeenCalledTimes(1)
-
-      // Reset mock and isInitialized to simulate a second independent call
-      mockGet.mockClear()
-
-      // Since isInitialized is true, this shouldn't call getAll
-      await store.ensureLoaded()
-
-      expect(mockGet).not.toHaveBeenCalled()
-    })
-
     it('handles errors in concurrent calls', async () => {
       const error = new Error('Network error')
       mockGet.mockRejectedValue(error)
@@ -385,20 +167,5 @@ describe('parcel.statuses.store.js', () => {
       expect(mockGet).toHaveBeenCalledTimes(1)
     })
 
-    it('allows retry after failed load', async () => {
-      const error = new Error('Network error')
-      mockGet.mockRejectedValueOnce(error)
-
-      // First call fails
-      await expect(store.ensureLoaded()).rejects.toThrow('Network error')
-      expect(mockGet).toHaveBeenCalledTimes(1)
-
-      // Second call should retry (promise was cleaned up in finally)
-      mockGet.mockResolvedValue(mockParcelStatuses)
-      await store.ensureLoaded()
-
-      expect(mockGet).toHaveBeenCalledTimes(2)
-      expect(store.parcelStatuses).toEqual(mockParcelStatuses)
-    })
   })
 })

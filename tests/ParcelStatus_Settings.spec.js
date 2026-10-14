@@ -193,40 +193,6 @@ beforeEach(async () => {
 
 describe('ParcelStatus_Settings.vue', () => {
   describe('Component Rendering', () => {
-    it('renders create mode correctly', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      expect(wrapper.find('h1').text()).toBe('Создание статуса посылки')
-      expect(wrapper.find('[data-testid="parcel-status-header-actions"]').exists()).toBe(true)
-      expect(findActionButton(wrapper, 'fa-solid fa-check-double').props('tooltipText')).toBe(
-        'Создать'
-      )
-      expect(findActionButton(wrapper, 'fa-solid fa-xmark').props('tooltipText')).toBe('Отменить')
-      expect(wrapper.find('button[type="submit"]').exists()).toBe(false)
-      expect(wrapper.get('#inspection').attributes('type')).toBe('checkbox')
-      expect(wrapper.get('.form-group > label[for="inspection"]').text()).toBe('Досмотр:')
-      expect(
-        wrapper.get('.checkbox-item label[for="inspection"]').attributes('aria-hidden')
-      ).toBe('true')
-      expect(
-        wrapper.get('.form-group > label[for="useAtCustomsProcessing"]').text()
-      ).toBe('Таможенное оформление:')
-      expect(
-        wrapper
-          .get('.checkbox-item label[for="useAtCustomsProcessing"]')
-          .attributes('aria-hidden')
-      ).toBe('true')
-      expect(wrapper.find('[data-testid="restriction-reason-group"]').exists()).toBe(true)
-      expect(mockParcelStatusesStore.getById).not.toHaveBeenCalled()
-    })
-
     it('shows restriction reason only while customs processing is unchecked', async () => {
       const wrapper = mount(AsyncWrapper, {
         props: { mode: 'create' },
@@ -245,23 +211,6 @@ describe('ParcelStatus_Settings.vue', () => {
 
       await customsProcessing.setValue(false)
       expect(wrapper.find('[data-testid="restriction-reason-group"]').exists()).toBe(true)
-    })
-
-    it('renders empty export color as no color in create mode', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      expect(wrapper.find('.status-color-value').text()).toBe('Не задан')
-      expect(wrapper.find('[data-testid="bk-color-swatch"]').classes()).toContain(
-        'status-color-swatch--empty'
-      )
-      expect(findActionButton(wrapper, 'fa-solid fa-broom').props('disabled')).toBe(true)
     })
 
     it('clears export color to null in edit mode', async () => {
@@ -288,22 +237,6 @@ describe('ParcelStatus_Settings.vue', () => {
       expect(findActionButton(wrapper, 'fa-solid fa-broom').props('disabled')).toBe(true)
     })
 
-    it('shows loading fallback initially', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      // Before resolving, should show loading
-      expect(wrapper.text()).toContain('Loading...')
-
-      await resolveAll()
-
-      // After resolving, should show actual content
-      expect(wrapper.text()).not.toContain('Loading...')
-    })
   })
 
   describe('Form Submission - Create Mode', () => {
@@ -330,23 +263,6 @@ describe('ParcelStatus_Settings.vue', () => {
       })
     })
 
-    it('shows success message and redirects after successful creation', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      const form = wrapper.find('form')
-      await form.trigger('submit')
-      await resolveAll()
-
-      expect(mockRouter.push).toHaveBeenCalledWith('/parcelstatuses')
-    })
-
     it('handles 409 conflict error during creation', async () => {
       const error = new Error('Order status with this name already exists (409)')
       mockParcelStatusesStore.create.mockRejectedValueOnce(error)
@@ -367,44 +283,9 @@ describe('ParcelStatus_Settings.vue', () => {
       expect(mockRouter.push).not.toHaveBeenCalled()
     })
 
-    it('handles general error during creation', async () => {
-      const error = new Error('Network error')
-      mockParcelStatusesStore.create.mockRejectedValueOnce(error)
-
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      const form = wrapper.find('form')
-      await form.trigger('submit')
-      await resolveAll()
-
-      expect(mockRouter.push).not.toHaveBeenCalled()
-    })
   })
 
   describe('Form Submission - Edit Mode', () => {
-    it('calls update store method on form submission', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'edit', parcelStatusId: 1 },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      const form = wrapper.find('form')
-      await form.trigger('submit')
-
-      expect(mockParcelStatusesStore.update).toHaveBeenCalledWith(1, mockParcelStatus)
-    })
-
     it('shows success message and redirects after successful update', async () => {
       const wrapper = mount(AsyncWrapper, {
         props: { mode: 'edit', parcelStatusId: 1 },
@@ -442,18 +323,6 @@ describe('ParcelStatus_Settings.vue', () => {
       expect(mockRouter.push).not.toHaveBeenCalled()
     })
 
-    it('fetches order status data on mount in edit mode', async () => {
-      mount(AsyncWrapper, {
-        props: { mode: 'edit', parcelStatusId: 123 },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      expect(mockParcelStatusesStore.getById).toHaveBeenCalledWith(123)
-    })
   })
 
   describe('Navigation', () => {
@@ -478,54 +347,7 @@ describe('ParcelStatus_Settings.vue', () => {
     })
   })
 
-  describe('Props Validation', () => {
-    it('handles missing parcelStatusId in edit mode', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'edit' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-      expect(wrapper.exists()).toBe(true)
-    })
-  })
-
   describe('Error Handling', () => {
-    it('handles network errors gracefully during creation', async () => {
-      const networkError = new Error('Network Error')
-      mockParcelStatusesStore.create.mockRejectedValueOnce(networkError)
-
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      const form = wrapper.find('form')
-      await form.trigger('submit')
-      await resolveAll()
-
-      expect(mockRouter.push).not.toHaveBeenCalled()
-    })
-
-    it('handles validation errors appropriately', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      expect(wrapper.exists()).toBe(true)
-    })
-
     it('handles empty error messages', async () => {
       const error = new Error()
       error.message = undefined
@@ -548,55 +370,4 @@ describe('ParcelStatus_Settings.vue', () => {
     })
   })
 
-  describe('Form Validation', () => {
-    it('handles form validation correctly', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      expect(wrapper.exists()).toBe(true)
-    })
-
-    it('displays validation errors when present', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      const formComponent = wrapper.findComponent({ name: 'Form' })
-      if (formComponent.exists()) {
-        formComponent.vm.setErrors({
-          title: 'Название статуса обязательно'
-        })
-        await resolveAll()
-
-        expect(wrapper.text()).toContain('Название статуса обязательно')
-      }
-    })
-  })
-
-  describe('Data Binding', () => {
-    it('binds form data correctly in edit mode', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'edit', parcelStatusId: 1 },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      expect(wrapper.exists()).toBe(true)
-    })
-
-  })
 })

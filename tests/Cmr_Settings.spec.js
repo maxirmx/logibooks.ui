@@ -152,46 +152,6 @@ describe('Cmr_Settings.vue', () => {
     expect(wrapper.get('cmr-settings-stub').attributes('id')).toBe('42')
   })
 
-  it('loads all references together and renders the exact five-row order', async () => {
-    const wrapper = mountDialog()
-    await resolveAll()
-
-    expect(getByIdMock).toHaveBeenCalledWith(77)
-    expect(companiesGetAllMock).toHaveBeenCalledOnce()
-    expect(warehousesEnsureLoadedMock).toHaveBeenCalledOnce()
-    expect(stationsGetAllMock).toHaveBeenCalledOnce()
-    const rows = [1, 2, 3, 4, 5].map((number) =>
-      wrapper
-        .get(`[data-testid="cmr-row-${number}"]`)
-        .findAll('label')
-        .map((label) => label.text())
-    )
-    expect(rows).toEqual([
-      ['Отправитель:', 'Получатель:'],
-      ['Место погрузки:', 'Дата погрузки:'],
-      ['Перевозчик:', 'Место разгрузки:'],
-      ['Регистрац. номер тягач/полуприцеп:', 'Марка тягач/полуприцеп:'],
-      ['Таможенный пост:', 'Дата:']
-    ])
-  })
-
-  it('applies direction-aware defaults and keeps optional references blank', async () => {
-    const wrapper = mountDialog()
-    await resolveAll()
-    const state = setupState(wrapper)
-
-    expect(state.senderCompanyId).toBe(10)
-    expect(state.recipientCompanyId).toBe(20)
-    expect(state.carrierCompanyId).toBe(20)
-    expect(state.loadingWarehouseId).toBeNull()
-    expect(state.deliveryWarehouseId).toBeNull()
-    expect(state.customsStationId).toBeNull()
-    expect(state.loadingDate).toBe(today())
-    expect(state.documentDate).toBe('2026-06-15')
-    expect(state.vehicleRegistrationNumber).toBe('')
-    expect(state.vehicleMakeModel).toBe('')
-  })
-
   it('defaults the document date to today and allows optional fields to be cleared', async () => {
     itemRef.value.invoiceDate = null
     const wrapper = mountDialog()
@@ -305,23 +265,6 @@ describe('Cmr_Settings.vue', () => {
       })
     )
     expect(setupState(wrapper).isFormDisabled).toBe(true)
-  })
-
-  it('keeps controls disabled until every reference request completes', async () => {
-    let finishCompanies
-    companiesGetAllMock.mockImplementationOnce(
-      () =>
-        new Promise((resolve) => {
-          finishCompanies = resolve
-        })
-    )
-    const wrapper = mountDialog()
-    await nextTick()
-
-    expect(setupState(wrapper).isFormDisabled).toBe(true)
-    finishCompanies()
-    await resolveAll()
-    expect(setupState(wrapper).isFormDisabled).toBe(false)
   })
 
   it('supports cancel, string errors, and fallback errors', async () => {

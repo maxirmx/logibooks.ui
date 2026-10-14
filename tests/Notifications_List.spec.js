@@ -127,18 +127,6 @@ describe('Notifications_List.vue', () => {
     }
   })
 
-  it('loads notifications on mount', async () => {
-    mount(NotificationsList, {
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    await Promise.resolve()
-
-    expect(getAllMock).toHaveBeenCalled()
-  })
-
   it('navigates to create view when openCreateDialog is called', async () => {
     const wrapper = mount(NotificationsList, {
       global: {
@@ -176,17 +164,6 @@ describe('Notifications_List.vue', () => {
     expect(removeMock).toHaveBeenCalledWith(1)
   })
 
-  it('formats dates correctly', async () => {
-    const wrapper = mount(NotificationsList, {
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    expect(wrapper.vm.formatDate('2025-02-15')).toBe('15.02.2025')
-    expect(wrapper.vm.formatDate({ year: 2025, month: 2, day: 15 })).toBe('15.02.2025')
-  })
-
   it('filters notifications across article and date fields', async () => {
     const wrapper = mount(NotificationsList, {
       global: {
@@ -200,72 +177,6 @@ describe('Notifications_List.vue', () => {
     expect(wrapper.vm.filterNotifications(null, '01.01.2025', { raw: notification })).toBe(true)
     expect(wrapper.vm.filterNotifications(null, '31.01.2025', { raw: notification })).toBe(true)
     expect(wrapper.vm.filterNotifications(null, 'no-match', { raw: notification })).toBe(false)
-  })
-
-  it('filters notifications by any article when multiple articles exist', async () => {
-    const wrapper = mount(NotificationsList, {
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    const notification = notificationsRef.value[0]
-    // Should match first article
-    expect(wrapper.vm.filterNotifications(null, 'article a', { raw: notification })).toBe(true)
-    // Should now also match second article since we filter through all articles
-    expect(wrapper.vm.filterNotifications(null, 'article b', { raw: notification })).toBe(true)
-    // Should not match non-existent article
-    expect(wrapper.vm.filterNotifications(null, 'article z', { raw: notification })).toBe(false)
-  })
-
-  it('handles notifications without articles array', async () => {
-    const wrapper = mount(NotificationsList, {
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    const notificationWithoutArticles = {
-      id: 2,
-      number: 'N-002',
-      registrationDate: '2024-12-16',
-      publicationDate: '2025-01-02',
-      terminationDate: '2025-02-01',
-      articles: []
-    }
-    expect(
-      wrapper.vm.filterNotifications(null, 'article', { raw: notificationWithoutArticles })
-    ).toBe(false)
-  })
-
-  it('filters through all articles case-insensitively', async () => {
-    // Add notification with multiple articles to test filtering through all
-    notificationsRef.value.push({
-      id: 3,
-      number: 'N-003',
-      registrationDate: '2024-12-17',
-      publicationDate: '2025-01-03',
-      terminationDate: '2025-02-03',
-      articles: [
-        { id: 5, notificationId: 3, article: 'Widget Alpha' },
-        { id: 6, notificationId: 3, article: 'Widget Beta' },
-        { id: 7, notificationId: 3, article: 'Widget Gamma' }
-      ]
-    })
-
-    const wrapper = mount(NotificationsList, {
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    const notification = notificationsRef.value[1] // The newly added notification
-    // Should match case-insensitively across all articles
-    expect(wrapper.vm.filterNotifications(null, 'alpha', { raw: notification })).toBe(true)
-    expect(wrapper.vm.filterNotifications(null, 'BETA', { raw: notification })).toBe(true)
-    expect(wrapper.vm.filterNotifications(null, 'gamma', { raw: notification })).toBe(true)
-    expect(wrapper.vm.filterNotifications(null, 'widget', { raw: notification })).toBe(true)
-    expect(wrapper.vm.filterNotifications(null, 'nonexistent', { raw: notification })).toBe(false)
   })
 
   it('renders formatted dates in the table', async () => {

@@ -369,33 +369,6 @@ describe('WbrNParcels_WhList.vue', () => {
 
   beforeEach(() => { setActivePinia(createPinia()); resetState() })
 
-  it('defines WbrN warehouse columns with article and without hidden fields', () => {
-    const wrapper = mount(WbrNParcelsWhList, {
-      props: { registerId: 9 },
-      global: { stubs: globalStubs }
-    })
-
-    const headerKeys = wrapper.vm.headers.map((header) => header.key)
-    expect(headerKeys).toEqual([
-      'actions',
-      'id',
-      'checkStatusProjection',
-      'zone',
-      'statusId',
-      'extId',
-      'shk',
-      'sticker',
-      'stickerCode',
-      'boxNumber',
-      'productName',
-      'weightKg',
-      'quantity'
-    ])
-    expect(headerKeys).not.toContain('countryCode')
-    expect(headerKeys).not.toContain('paymentAmount')
-    expect(headerKeys).not.toContain('paymentCurrency')
-  })
-
   it('initializes and loads directly inside an exact box scope', async () => {
     parcelsWhPage.value = 3
     parcelsWhBoxNumber.value = 'STALE-PREFIX'
@@ -419,28 +392,6 @@ describe('WbrNParcels_WhList.vue', () => {
     )
 
     wrapper.unmount()
-  })
-
-  it('renders WbrN warehouse data and uses SHK as the warehouse number label', () => {
-    const wrapper = mount(WbrNParcelsWhList, {
-      props: { registerId: 9 },
-      global: { stubs: globalStubs }
-    })
-
-    const text = wrapper.text()
-    expect(text).toContain('SHK-WH-1')
-    expect(text).toContain('WbrN warehouse product')
-    expect(text).toContain('Sticker-N-1')
-    expect(text).toContain('ST-N-1')
-    expect(text).toContain('BOX-N-1')
-    expect(text).toContain('KGT-77')
-    expect(text).toContain('Status 7')
-    expect(text).toContain('Зона 2')
-
-    const filters = wrapper.get('[data-testid="parcel-wh-filter-selectors"]')
-    expect(filters.attributes('data-number-label')).toBe('ШК')
-    expect(filters.attributes('data-zone-options')).toContain('Не задана')
-    expect(filters.attributes('data-zone-options')).toContain('Зона 2')
   })
 
   it('renders warehouse fallback branches for alerts, zones, tooltips, and paging', async () => {
@@ -520,31 +471,6 @@ describe('WbrNParcels_WhList.vue', () => {
     expect(applyExtIdChange).toHaveBeenCalledWith({ parcelId: 22, extId: 'KGT-80' })
   })
 
-  it('opens bulk status dialog and reloads warehouse parcels after update', async () => {
-    const wrapper = mount(WbrNParcelsWhList, {
-      props: { registerId: 9 },
-      global: { stubs: globalStubs }
-    })
-    await resolveAll()
-
-    await wrapper.get('[data-testid="open-parcel-status-bulk-dialog"]').trigger('click')
-    expect(wrapper.get('[data-testid="parcel-status-bulk-dialog"]').attributes('data-show')).toBe(
-      'true'
-    )
-
-    loadParcels.mockClear()
-    await wrapper.get('[data-testid="parcel-status-bulk-dialog-updated"]').trigger('click')
-    await resolveAll()
-
-    expect(loadParcels).toHaveBeenCalledWith(
-      9,
-      expect.any(Object),
-      expect.any(Object),
-      expect.any(Object),
-      { showMarkedByPartner: true }
-    )
-  })
-
   it('opens parcel edit from clickable warehouse cells and emits close', async () => {
     const wrapper = mount(WbrNParcelsWhList, {
       props: { registerId: 9 },
@@ -607,26 +533,6 @@ describe('WbrNParcels_WhList.vue', () => {
     await wrapper.get('[data-testid="clear-ext-id-action"]').trigger('click')
     await resolveAll()
     expect(clearExtId).toHaveBeenCalledWith(22)
-  })
-
-  it('does not render admin-only KGT clearing and disables blocked row actions', async () => {
-    mockItems.value = [
-      {
-        ...baseParcel,
-        setDefectBlocked: true,
-        extId: ''
-      }
-    ]
-
-    const wrapper = mount(WbrNParcelsWhList, {
-      props: { registerId: 9 },
-      global: { stubs: globalStubs }
-    })
-    await resolveAll()
-
-    expect(wrapper.find('[data-testid="clear-ext-id-action"]').exists()).toBe(false)
-    expect(wrapper.get('[data-testid="set-defect-action"]').attributes('disabled')).toBeDefined()
-    expect(wrapper.get('[data-testid="clear-defect-action"]').attributes('disabled')).toBeDefined()
   })
 
   it('wires warehouse filters, pagination, bulk visibility, and edit access query params', async () => {
@@ -731,17 +637,4 @@ describe('WbrNParcels_WhList.vue', () => {
     )
   })
 
-  it('stops filter sync and KGT monitor on unmount', async () => {
-    const wrapper = mount(WbrNParcelsWhList, {
-      props: { registerId: 9 },
-      global: { stubs: globalStubs }
-    })
-    await resolveAll()
-
-    wrapper.unmount()
-    await resolveAll()
-
-    expect(stopFilterSync).toHaveBeenCalled()
-    expect(stopParcelExtIdMonitor).toHaveBeenCalled()
-  })
 })

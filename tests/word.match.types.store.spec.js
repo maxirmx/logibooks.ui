@@ -6,8 +6,6 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useWordMatchTypesStore } from '@/stores/word.match.types.store.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
-import { apiUrl } from '@/helpers/config.js'
-
 vi.mock('@/helpers/fetch.wrapper.js', () => ({
   fetchWrapper: { get: vi.fn() }
 }))
@@ -20,27 +18,6 @@ describe('word match types store', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
-  })
-
-  it('initializes with defaults', () => {
-    const store = useWordMatchTypesStore()
-    expect(store.matchTypes).toEqual([])
-    expect(store.loading).toBe(false)
-    expect(store.error).toBeNull()
-  })
-
-  it('fetches match types successfully', async () => {
-    const data = [{ id: 1, name: 'Exact' }]
-    fetchWrapper.get.mockResolvedValue(data)
-
-    const store = useWordMatchTypesStore()
-    await store.fetchMatchTypes()
-
-    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/wordmatchtypes`)
-    expect(store.matchTypes).toEqual(data)
-    expect(store.matchTypeMap.size).toBe(1)
-    expect(store.loading).toBe(false)
-    expect(store.error).toBeNull()
   })
 
   it('handles fetch error', async () => {

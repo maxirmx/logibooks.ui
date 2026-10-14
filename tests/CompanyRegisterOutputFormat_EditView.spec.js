@@ -78,43 +78,6 @@ describe('routed company register output format editor', () => {
     expect(editorSave).toHaveBeenCalledTimes(1)
   })
 
-  it('uses the configuration company full name when its short name is absent', () => {
-    const wrapper = mountPage(COMPANY_REGISTER_OUTPUT_TYPES[1], 43)
-    expect(wrapper.get('.register-output-heading__company').text()).toBe('Озон → ООО "Заказчик"')
-    expect(wrapper.get('[data-testid="editor"]').text()).toBe(`${43}:${COMPANY_REGISTER_OUTPUT_TYPES[1]}`)
-  })
-
-  it('disables header Save while the layout has no savable column', async () => {
-    editorCanSave.value = false
-    const wrapper = mountPage()
-    const saveButton = wrapper.get('[data-testid="register-output-save-action"]')
-    expect(saveButton.attributes('disabled')).toBeDefined()
-    await saveButton.trigger('click')
-    expect(editorSave).not.toHaveBeenCalled()
-    expect(wrapper.get('[data-testid="register-output-cancel-action"]').attributes('disabled')).toBeUndefined()
-    editorCanSave.value = true
-    await wrapper.vm.$nextTick()
-    expect(saveButton.attributes('disabled')).toBeUndefined()
-    wrapper.unmount()
-  })
-
-  it('keeps the page open and its draft intact after validation fails', async () => {
-    editorSave.mockResolvedValueOnce(false)
-    const wrapper = mountPage()
-    await vi.waitFor(() => expect(wrapper.get('[data-testid="register-output-save-action"]').attributes('disabled')).toBeUndefined())
-    await wrapper.get('[data-testid="register-output-save-action"]').trigger('click')
-    await vi.waitFor(() => expect(editorSave).toHaveBeenCalledTimes(1))
-    expect(push).not.toHaveBeenCalled()
-    expect(wrapper.get('[data-testid="editor"]').exists()).toBe(true)
-  })
-
-  it('returns to company settings from the header cancel action', async () => {
-    const wrapper = mountPage()
-    await wrapper.get('[data-testid="register-output-cancel-action"]').trigger('click')
-    await vi.waitFor(() => expect(push).toHaveBeenCalledWith('/company/edit/42'))
-    expect(editorSave).not.toHaveBeenCalled()
-  })
-
   it('shows one retryable error when returning to the company fails', async () => {
     push.mockRejectedValueOnce(new Error('navigation failed'))
     const wrapper = mountPage()

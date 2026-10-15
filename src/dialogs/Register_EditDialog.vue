@@ -6,7 +6,7 @@
 import FieldError from '@/components/FieldError.vue'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { focusFirstInvalidField } from '@/helpers/form.validation.helpers.js'
-import { reportFormError } from '@/helpers/error.helpers.js'
+import { getServerFieldErrors, reportFormError } from '@/helpers/error.helpers.js'
 import router from '@/router'
 import { Form, Field } from 'vee-validate'
 import * as Yup from 'yup'
@@ -660,6 +660,16 @@ const schema = Yup.object().shape({
     .typeError(realWeightValidationMessage)
     .moreThan(0, realWeightValidationMessage)
     .nullable(),
+  cargoPlacesTotal: Yup.number()
+    .transform((value, originalValue) =>
+      originalValue === '' || originalValue === null || originalValue === undefined
+        ? 0
+        : Number(originalValue)
+    )
+    .typeError('Количество грузовых мест должно быть целым неотрицательным числом')
+    .integer('Количество грузовых мест должно быть целым неотрицательным числом')
+    .min(0, 'Количество грузовых мест должно быть целым неотрицательным числом')
+    .max(2147483647, 'Количество грузовых мест превышает допустимое значение'),
   inspectionsCount: Yup.number()
     .transform((value, originalValue) =>
       originalValue === '' || originalValue === null || originalValue === undefined
@@ -974,6 +984,10 @@ function prepareRegisterPayload(formValues) {
     formValues.warehouseArrivalDate ?? item.value?.warehouseArrivalDate ?? null
   payload.realWeightKg = parseRealWeightPayloadValue(formValues.realWeightKg)
   if (!props.create) {
+    payload.cargoPlacesTotal = parseNumber(
+      formValues.cargoPlacesTotal ?? item.value?.cargoPlacesTotal,
+      0
+    )
     payload.inspectionsCount = parseNumber(
       formValues.inspectionsCount ?? item.value?.inspectionsCount,
       0
@@ -985,6 +999,7 @@ function prepareRegisterPayload(formValues) {
     payload.decDate = getNullableEditDate(formValues, 'decDate')
     payload.releaseDate = getNullableEditDate(formValues, 'releaseDate')
   } else {
+    delete payload.cargoPlacesTotal
     delete payload.inspectionsCount
     delete payload.withTransit
     delete payload.exportedTo1C
@@ -1100,6 +1115,7 @@ async function onSubmit(values, { setErrors } = {}) {
         error?.message
       )
     } else {
+      revealAdditionalInfoErrors(getServerFieldErrors(error))
       reportFormError(error, {
         setErrors,
         alertStore,
@@ -1145,6 +1161,17 @@ function getCustomerName(customerId) {
 
 function toggleLoadReport() {
   isLoadReportExpanded.value = !isLoadReportExpanded.value
+}
+
+function revealAdditionalInfoErrors(errors) {
+  if (['cargoPlacesTotal', 'inspectionsCount', 'decDate', 'releaseDate'].some(name => errors?.[name])) {
+    isAdditionalInfoExpanded.value = true
+  }
+}
+
+function onInvalidSubmit(submission) {
+  revealAdditionalInfoErrors(submission.errors)
+  return focusFirstInvalidField(submission)
 }
 
 function toggleAdditionalInfo() {
@@ -1237,7 +1264,7 @@ const loadReportFields = computed(() => {
 <template>
   <div class="settings form-3x form-compact">
     <Form
-      @invalid-submit="focusFirstInvalidField"
+      @invalid-submit="onInvalidSubmit"
       @submit="onSubmit"
       :initial-values="item"
       :validation-schema="schema"
@@ -1667,7 +1694,7 @@ const loadReportFields = computed(() => {
             />
           </div>
           <div
-            v-if="isAdditionalInfoExpanded"
+            v-show="isAdditionalInfoExpanded"
             id="register-additional-info-body"
             class="form-row additional-info-grid"
           >
@@ -1686,19 +1713,19 @@ const loadReportFields = computed(() => {
               <FieldError name="inspectionsCount" :errors="errors" />
             </div>
             <div class="form-group additional-info-field">
-              <label for="withTransit" class="custom-checkbox">
-                <Field
-                  id="withTransit"
-                  name="withTransit"
-                  type="checkbox"
-                  :value="true"
-                  :unchecked-value="false"
-                  class="custom-checkbox-input"
-                  :disabled="readOnly || isInitializing || registerLoadFailed"
-                />
-                <span class="custom-checkbox-box"></span>
-                <span class="label custom-checkbox-label">Транзит:</span>
-              </label>
+              <label for="cargoPlacesTotal" class="label">Количество мест:</label>
+              <Field
+                id="cargoPlacesTotal"
+                name="cargoPlacesTotal"
+                type="number"
+                min="0"
+                max="2147483647"
+                step="1"
+                class="form-control input"
+                :class="{ 'is-invalid': errors.cargoPlacesTotal }"
+                :disabled="readOnly || isInitializing || registerLoadFailed"
+              />
+              <FieldError name="cargoPlacesTotal" :errors="errors" />
             </div>
             <div class="form-group additional-info-field">
               <label for="decDate" class="label">Дата подачи ДТЭГ:</label>
@@ -1723,6 +1750,21 @@ const loadReportFields = computed(() => {
                 :disabled="readOnly || isInitializing || registerLoadFailed"
               />
               <FieldError name="releaseDate" :errors="errors" />
+            </div>
+            <div class="form-group additional-info-field">
+              <label for="withTransit" class="custom-checkbox">
+                <Field
+                  id="withTransit"
+                  name="withTransit"
+                  type="checkbox"
+                  :value="true"
+                  :unchecked-value="false"
+                  class="custom-checkbox-input"
+                  :disabled="readOnly || isInitializing || registerLoadFailed"
+                />
+                <span class="custom-checkbox-box"></span>
+                <span class="label custom-checkbox-label">Транзит:</span>
+              </label>
             </div>
             <div class="form-group additional-info-field">
               <label for="exportedTo1C" class="custom-checkbox">

@@ -465,6 +465,18 @@ describe('RegisterHistory_List.vue', () => {
     })
   })
 
+  it('labels cargo count corrections in register history', async () => {
+    mockRefs.items.value[0].changes = [
+      { field: 'CargoPlacesTotal', oldValue: '12', newValue: '13' }
+    ]
+    const wrapper = mount(RegisterHistoryList, { props: { registerId: 42 }, global: { stubs: defaultGlobalStubs } })
+    await flushPromises()
+    expect(wrapper.text()).toContain('Количество грузовых мест')
+    expect(wrapper.text()).toContain('12')
+    expect(wrapper.text()).toContain('13')
+    wrapper.unmount()
+  })
+
   it('renders reference changes as text instead of identifiers', async () => {
     mockRefs.items.value[0].changes = [
       { field: 'CompanyId', oldValue: '1', newValue: '2' },

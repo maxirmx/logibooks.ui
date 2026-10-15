@@ -137,6 +137,7 @@ const fieldLabels = {
   DecDate: 'Дата подачи ДТЭГ',
   ReleaseDate: 'Дата выпуска',
   PlacesTotal: 'Количество мест',
+  CargoPlacesTotal: 'Количество грузовых мест',
   TotalWeightKg: 'Общий вес',
   RealWeightKg: 'Фактический вес',
   TotalWeightKgToRelease: 'Вес к оформлению',

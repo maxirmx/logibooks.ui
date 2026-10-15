@@ -43,7 +43,8 @@ const baseRegisterItem = {
   arrivalAirportId: 0,
   warehouseId: 0,
   date: '2024-01-01',
-  lookupByArticle: false
+  lookupByArticle: false,
+  cargoPlacesTotal: 12
 }
 const mockItem = ref({ ...baseRegisterItem })
 const getById = vi.fn(() => Promise.resolve())
@@ -1220,7 +1221,7 @@ describe('Register_EditDialog', () => {
     const weightSection = wrapper.get('[data-testid="register-weight-section"]')
     const additionalSection = wrapper.get('[data-testid="register-additional-info-section"]')
     expect(additionalSection.get('.section-title').text()).toBe('Доп. информация для 1С')
-    expect(wrapper.find('#register-additional-info-body').exists()).toBe(false)
+    expect(wrapper.get('#register-additional-info-body').isVisible()).toBe(false)
     let toggle = getActionButton(wrapper, 'register-additional-info-toggle')
     expect(toggle).toBeTruthy()
     expect(toggle.find('button').exists()).toBe(true)
@@ -1253,7 +1254,9 @@ describe('Register_EditDialog', () => {
     expect(wrapper.get('label[for="releaseDate"]').text()).toBe('Дата выпуска:')
     expect(wrapper.get('#releaseDate').attributes('type')).toBe('date')
     const additionalFields = wrapper.findAll('#register-additional-info-body > .additional-info-field')
-    expect(additionalFields.at(-1).find('#exportedTo1C').exists()).toBe(true)
+    expect(additionalFields.map(field => field.get('label').attributes('for'))).toEqual([
+      'inspectionsCount', 'cargoPlacesTotal', 'decDate', 'releaseDate', 'withTransit', 'exportedTo1C'
+    ])
     expect(wrapper.findComponent(RegisterEditDialog).vm.prepareRegisterPayload({}).exportedTo1C).toBe(
       false
     )
@@ -1290,12 +1293,13 @@ describe('Register_EditDialog', () => {
 
     const additionalSection = wrapper.get('[data-testid="register-additional-info-section"]')
     expect(additionalSection.element.closest('fieldset')).toBeNull()
-    expect(wrapper.find('#register-additional-info-body').exists()).toBe(false)
+    expect(wrapper.get('#register-additional-info-body').isVisible()).toBe(false)
 
     await wrapper.get('[data-testid="register-additional-info-toggle"]').trigger('click')
     await nextTick()
 
     expect(wrapper.get('#register-additional-info-body').exists()).toBe(true)
+    expect(wrapper.get('#cargoPlacesTotal').element.disabled).toBe(true)
     expect(wrapper.get('#inspectionsCount').element.disabled).toBe(true)
     expect(wrapper.get('#withTransit').element.disabled).toBe(true)
     expect(wrapper.get('#exportedTo1C').element.disabled).toBe(true)
@@ -1371,6 +1375,121 @@ describe('Register_EditDialog', () => {
     expect(dialog.vm.prepareRegisterPayload({ customerOrderNumber: '   ' }).customerOrderNumber).toBe(
       ''
     )
+  })
+
+  describe('cargo unit count', () => {
+    async function mountCargoEditor(create = false, realForm = false) {
+      const Parent = {
+        template: `<Suspense><RegisterEditDialog :id="1" :create="${create}" /></Suspense>`,
+        components: { RegisterEditDialog }
+      }
+      const wrapper = mount(Parent, { attachTo: document.body, global: { stubs: {
+        ...defaultGlobalStubs,
+        Form: realForm ? false : FormStub,
+        Field: realForm ? false : FieldStub,
+        ErrorDialog: ErrorDialogStub
+      } } })
+      await resolveAll()
+      if (!create) await wrapper.get('[data-testid="register-additional-info-toggle"]').trigger('click')
+      return { wrapper, dialog: wrapper.findComponent(RegisterEditDialog) }
+    }
+
+    it('shows the saved count and submits a correction as an integer', async () => {
+      const { wrapper, dialog } = await mountCargoEditor(false, true)
+      const input = wrapper.get('#cargoPlacesTotal')
+      expect(wrapper.get('label[for="cargoPlacesTotal"]').text()).toBe('Количество мест:')
+      expect(input.element.value).toBe('12')
+      expect(input.attributes()).toMatchObject({ type: 'number', min: '0', max: '2147483647', step: '1' })
+      expect(dialog.vm.prepareRegisterPayload({}).cargoPlacesTotal).toBe(12)
+      await input.setValue('13')
+      await dialog.vm.onSubmit({ cargoPlacesTotal: '13' }, { setErrors: vi.fn() })
+      expect(update).toHaveBeenCalledWith(1, expect.objectContaining({ cargoPlacesTotal: 13 }))
+      expect(router.push).toHaveBeenCalledTimes(1)
+      wrapper.unmount()
+    })
+
+    it.each([-1, 1.5, 'invalid', 2147483648])('rejects invalid cargo count %s', async count => {
+      const { wrapper, dialog } = await mountCargoEditor()
+      await expect(dialog.vm.schema.validateAt('cargoPlacesTotal', { cargoPlacesTotal: count }))
+        .rejects.toThrow('Количество грузовых мест')
+      expect(update).not.toHaveBeenCalled()
+      wrapper.unmount()
+    })
+
+    it.each(['', null, 0, '7', 2147483647])('accepts and normalizes cargo count %s', async count => {
+      const { wrapper, dialog } = await mountCargoEditor()
+      const normalized = await dialog.vm.schema.validateAt('cargoPlacesTotal', { cargoPlacesTotal: count })
+      expect(normalized).toBe(count === null || count === '' ? 0 : Number(count))
+      expect(dialog.vm.prepareRegisterPayload({ cargoPlacesTotal: normalized }).cargoPlacesTotal).toBe(normalized)
+      wrapper.unmount()
+    })
+
+    it('keeps edited count and checkboxes when the section is collapsed and reopened', async () => {
+      const { wrapper } = await mountCargoEditor(false, true)
+      await wrapper.get('#cargoPlacesTotal').setValue('13')
+      await wrapper.get('#withTransit').setValue(true)
+      await wrapper.get('#exportedTo1C').setValue(true)
+      await wrapper.get('[data-testid="register-additional-info-toggle"]').trigger('click')
+      expect(wrapper.get('#register-additional-info-body').isVisible()).toBe(false)
+      await wrapper.get('[data-testid="register-additional-info-toggle"]').trigger('click')
+      expect(wrapper.get('#cargoPlacesTotal').element.value).toBe('13')
+      expect(wrapper.get('#withTransit').element.checked).toBe(true)
+      expect(wrapper.get('#exportedTo1C').element.checked).toBe(true)
+      wrapper.unmount()
+    })
+
+    it('reveals client validation errors when saving a collapsed section', async () => {
+      const { wrapper, dialog } = await mountCargoEditor(false, true)
+      const form = wrapper.findComponent({ name: 'Form' })
+      await wrapper.get('#cargoPlacesTotal').setValue('-1')
+      await form.vm.validate()
+      await wrapper.get('[data-testid="register-additional-info-toggle"]').trigger('click')
+      expect(wrapper.get('#register-additional-info-body').isVisible()).toBe(false)
+      await dialog.vm.onInvalidSubmit({ errors: form.vm.errors })
+      await nextTick()
+      expect(wrapper.get('#register-additional-info-body').isVisible()).toBe(true)
+      expect(wrapper.get('#cargoPlacesTotal').element.value).toBe('-1')
+      expect(wrapper.text()).toContain('Количество грузовых мест должно быть целым неотрицательным числом')
+      expect(update).not.toHaveBeenCalled()
+      expect(router.push).not.toHaveBeenCalled()
+      await dialog.vm.onInvalidSubmit({ errors: {} })
+      wrapper.unmount()
+    })
+
+    it('leaves initialization to the server during upload', async () => {
+      const { wrapper, dialog } = await mountCargoEditor(true)
+      expect(wrapper.find('#cargoPlacesTotal').exists()).toBe(false)
+      expect(dialog.vm.prepareRegisterPayload({ cargoPlacesTotal: 0 })).not.toHaveProperty('cargoPlacesTotal')
+      wrapper.unmount()
+    })
+
+    it('shows a server field error once, retains the correction and retries without navigating on failure', async () => {
+      const { wrapper, dialog } = await mountCargoEditor(false, true)
+      const message = 'Количество грузовых мест должно быть неотрицательным'
+      const input = wrapper.get('#cargoPlacesTotal')
+      await input.setValue('13')
+      update.mockRejectedValueOnce(Object.assign(new Error(message), { status: 400, data: {
+        msg: message, errors: { cargoPlacesTotal: [message] }
+      } }))
+      const form = wrapper.findComponent({ name: 'Form' })
+      await form.vm.validate()
+      await wrapper.get('[data-testid="register-additional-info-toggle"]').trigger('click')
+      expect(wrapper.get('#register-additional-info-body').isVisible()).toBe(false)
+      await dialog.vm.onSubmit({ cargoPlacesTotal: '13' }, { setErrors: form.vm.setErrors })
+      await resolveAll()
+      const errors = wrapper.findAll('[role="alert"]').filter(node => node.text() === message)
+      expect(errors).toHaveLength(1)
+      expect(wrapper.get('#register-additional-info-body').isVisible()).toBe(true)
+      expect(errors[0].element.parentElement).toBe(input.element.parentElement)
+      expect(input.element.value).toBe('13')
+      expect(router.push).not.toHaveBeenCalled()
+      expect(useAlertStore().alert).toBeNull()
+      await dialog.vm.onSubmit({ cargoPlacesTotal: '13' }, { setErrors: form.vm.setErrors })
+      expect(update).toHaveBeenCalledTimes(2)
+      expect(update.mock.calls[1][1].cargoPlacesTotal).toBe(13)
+      expect(router.push).toHaveBeenCalledTimes(1)
+      wrapper.unmount()
+    })
   })
 
   it('places weight section before load report section', async () => {

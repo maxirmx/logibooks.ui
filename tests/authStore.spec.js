@@ -130,6 +130,20 @@ describe('auth store', () => {
   })
 
   describe('actions', () => {
+    it('clears an expired session without navigation, requests, or notifications', () => {
+      const testUser = { id: 1, token: 'expired' }
+      localStorage.setItem('user', JSON.stringify(testUser))
+      const store = useAuthStore()
+      store.returnUrl = '/registers?statusId=7'
+      store.clearSession()
+      expect(store.user).toBeNull()
+      expect(localStorage.getItem('user')).toBeNull()
+      expect(store.returnUrl).toBe('/registers?statusId=7')
+      expect(router.push).not.toHaveBeenCalled()
+      expect(useStatusStore().fetchStatus).not.toHaveBeenCalled()
+      expect(mockAlertStore.error).not.toHaveBeenCalled()
+    })
+
     it('check propagates errors when API call fails', async () => {
       const errorMessage = 'Authentication check failed'
       fetchWrapper.get.mockRejectedValue(new Error(errorMessage))

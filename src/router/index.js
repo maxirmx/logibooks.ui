@@ -19,6 +19,15 @@ import { COMPANY_REGISTER_OUTPUT_TYPES } from '@/helpers/company.constants.js'
 const publicPages = ['/recover', '/register']
 const loginPages = ['/login']
 
+function authenticationStatus(error) {
+  return error?.status ?? error?.response?.status
+}
+
+function requireLogin(auth, alert) {
+  auth.clearSession()
+  alert.error('Необходимо войти в систему')
+}
+
 function routeToLogin(to, auth) {
   if (loginPages.includes(to.path)) {
     return true
@@ -719,8 +728,8 @@ router.beforeEach(async (to) => {
         // Otherwise redirect to role-appropriate home
         return getHomeRoute()
       }
-    } catch {
-      // Server unavailable but it's OK for login page
+    } catch (error) {
+      if (authenticationStatus(error) === 401 && auth.user) requireLogin(auth, alert)
     }
     // Allow access to login page if not logged in or server check failed
     return true
@@ -767,11 +776,16 @@ router.beforeEach(async (to) => {
 
     // User is authenticated and has proper permissions
     return true
-  } catch {
-    // Server unavailable or other error
-    auth.logout()
+  } catch (error) {
     auth.returnUrl = to.fullPath
-    alert.error('Сервер недоступен. Пожалуйста, попробуйте позже.')
+    const status = authenticationStatus(error)
+    if (status === 401) {
+      requireLogin(auth, alert)
+    } else {
+      auth.clearSession()
+      if (status >= 400 && status < 500) alert.error(error)
+      else alert.error('Сервер недоступен. Пожалуйста, попробуйте позже.')
+    }
     return '/login'
   }
 })

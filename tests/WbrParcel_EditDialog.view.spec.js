@@ -226,6 +226,7 @@ describe('WbrParcel_EditDialog image overlay', () => {
   })
 
   it('keeps read-only navigation and downloads while blocking all mutations', async () => {
+    const setExciseField = vi.fn()
     const statusSectionStub = {
       emits: ['validate-sw', 'approve', 'approve-excise'],
       template: `
@@ -260,9 +261,9 @@ describe('WbrParcel_EditDialog image overlay', () => {
             stubs: {
               Field: { template: '<input />' },
               Form: {
-                methods: { resetForm() {} },
+                methods: { resetForm() {}, setExciseField },
                 template:
-                  '<div><slot :errors="{}" :values="{ id: 3, statusId: 1 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
+                  '<div><slot :errors="{}" :values="{ id: 3, statusId: 1 }" :isSubmitting="false" :setFieldValue="setExciseField"></slot></div>'
               },
               ParcelHeaderActionsBar: actionBarStub,
               ParcelStatusSection: statusSectionStub,
@@ -301,10 +302,12 @@ describe('WbrParcel_EditDialog image overlay', () => {
       await wrapper.get(`[data-testid="${testId}"]`).trigger('click')
       await resolveAll()
     }
+    parcelsMock.item.value.tnVed = '9900000000'
     for (const testId of ['validate', 'approve', 'approve-excise']) {
       await wrapper.get(`[data-testid="${testId}"]`).trigger('click')
       await resolveAll()
     }
+    expect(setExciseField).toHaveBeenCalledWith('tnVed', '9900000000')
     expect(parcelsMock.update).toHaveBeenCalled()
     expect(parcelsMock.lookupFeacnCode).toHaveBeenCalledWith(3)
     expect(parcelsMock.generate).toHaveBeenCalled()

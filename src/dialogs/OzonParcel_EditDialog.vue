@@ -305,7 +305,7 @@ async function viewProductImage() {
   await openImageOverlay(item.value?.id)
 }
 
-async function validateParcel(values, sw, matchMode) {
+async function validateParcel(values, sw, matchMode, setErrors) {
   if (!editorReady.value) return
   if (readOnly.value || !isComponentMounted.value || runningAction.value) return
   runningAction.value = true
@@ -313,7 +313,7 @@ async function validateParcel(values, sw, matchMode) {
     // Wait for next parcels info to complete before calling helper
     await ensureNextParcelsPromise()
 
-    await validateParcelData(values, item, parcelsStore, sw, matchMode, updateParcelWithLifecycleGuard)
+    await validateParcelData(values, item, parcelsStore, sw, matchMode, updateParcelWithLifecycleGuard, { setErrors })
   } catch (error) {
     alertStore.error(error?.message || String(error))
   } finally {
@@ -341,7 +341,7 @@ async function runCheckStatusAction(values, actionFn, passportAction = null) {
 }
 
 // Approve the parcel
-async function approveParcel(values) {
+async function approveParcel(values, setErrors) {
   if (!editorReady.value) return
   if (readOnly.value || !isComponentMounted.value || runningAction.value) return
   runningAction.value = true
@@ -349,7 +349,7 @@ async function approveParcel(values) {
     // Wait for next parcels info to complete before calling helper
     await ensureNextParcelsPromise()
 
-    await approveParcelHelper(values, item, parcelsStore, undefined, updateParcelWithLifecycleGuard)
+    await approveParcelHelper(values, item, parcelsStore, undefined, updateParcelWithLifecycleGuard, { setErrors })
   } catch (error) {
     alertStore.error(error?.message || String(error))
   } finally {
@@ -358,7 +358,7 @@ async function approveParcel(values) {
 }
 
 // Approve the parcel with excise
-async function approveParcelWithExcise(values, setFieldValue) {
+async function approveParcelWithExcise(values, setFieldValue, setErrors) {
   if (!editorReady.value) return
   if (readOnly.value || !isComponentMounted.value || runningAction.value) return
   runningAction.value = true
@@ -366,10 +366,14 @@ async function approveParcelWithExcise(values, setFieldValue) {
     // Wait for next parcels info to complete before calling helper
     await ensureNextParcelsPromise()
 
-    const result = await approveParcelWithExciseHelper(values, item, parcelsStore, updateParcelWithLifecycleGuard)
-    if (result?.tnVed != null) {
-      setFieldValue('tnVed', result.tnVed)
-    }
+    await approveParcelWithExciseHelper(values, item, parcelsStore, updateParcelWithLifecycleGuard, {
+      setErrors,
+      onRefreshed: result => {
+        if (isComponentMounted.value && currentParcelId.value == values.id && result?.tnVed != null) {
+          setFieldValue('tnVed', result.tnVed)
+        }
+      }
+    })
   } catch (error) {
     alertStore.error(error?.message || String(error))
   } finally {
@@ -378,14 +382,14 @@ async function approveParcelWithExcise(values, setFieldValue) {
 }
 
 // Approve the parcel with notification
-async function approveParcelWithNotification(values) {
+async function approveParcelWithNotification(values, setErrors) {
   if (!editorReady.value) return
   if (readOnly.value || !isComponentMounted.value || runningAction.value) return
   runningAction.value = true
   try {
     await ensureNextParcelsPromise()
 
-    await approveParcelWithNotificationHelper(values, item, parcelsStore, updateParcelWithLifecycleGuard)
+    await approveParcelWithNotificationHelper(values, item, parcelsStore, updateParcelWithLifecycleGuard, { setErrors })
   } catch (error) {
     alertStore.error(error?.message || String(error))
   } finally {
@@ -581,7 +585,7 @@ async function onLookup(values, setFieldValue) {
       @submit="onSubmit"
       keep-values
       :validation-schema="editorReady ? schema : undefined"
-      v-slot="{ errors, values, isSubmitting, setFieldValue }"
+      v-slot="{ errors, values, isSubmitting, setFieldValue, setErrors }"
       :class="{ 'form-disabled': overlayActive || imageOverlayOpen, 'read-only-form': readOnly }"
     >
       <div class="header-with-actions">
@@ -643,11 +647,11 @@ async function onLookup(values, setFieldValue) {
           :clear-check-status-disabled="
             readOnly || isSubmitting || runningAction || loading || markedByPartnerActionsDisabled
           "
-          @validate-sw="(vals) => validateParcel(vals, true, SwValidationMatchMode.NoSwMatch)"
-          @validate-sw-ex="(vals) => validateParcel(vals, true, SwValidationMatchMode.SwMatch)"
-          @validate-fc="(vals) => validateParcel(vals, false)"
-          @approve="approveParcel"
-          @approve-excise="(vals) => approveParcelWithExcise(vals, setFieldValue)"
+          @validate-sw="(vals) => validateParcel(vals, true, SwValidationMatchMode.NoSwMatch, setErrors)"
+          @validate-sw-ex="(vals) => validateParcel(vals, true, SwValidationMatchMode.SwMatch, setErrors)"
+          @validate-fc="(vals) => validateParcel(vals, false, undefined, setErrors)"
+          @approve="(vals) => approveParcel(vals, setErrors)"
+          @approve-excise="(vals) => approveParcelWithExcise(vals, setFieldValue, setErrors)"
           @clear-check-status="(vals) => runCheckStatusAction(vals, parcelsStore.clearCheckStatus)"
           @check-for-duplicate="(vals) => runCheckStatusAction(vals, parcelsStore.checkForDuplicate)"
         />
@@ -722,7 +726,7 @@ async function onLookup(values, setFieldValue) {
               "
               :approval-disabled="CheckStatusCode.isEUR1000(item?.checkStatus)"
               :fullWidth="false"
-              @approve-notification="approveParcelWithNotification(values)"
+              @approve-notification="approveParcelWithNotification(values, setErrors)"
             />
             <ProductLinkWithActions
               :label="ozonRegisterColumnTitles.productLink"

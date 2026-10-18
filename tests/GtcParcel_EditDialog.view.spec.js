@@ -233,6 +233,7 @@ describe('GtcParcel_EditDialog passport verification', () => {
   })
 
   it('allows navigation and downloads but blocks mutations for read-only parcels', async () => {
+    const setExciseField = vi.fn()
     const statusSectionStub = {
       emits: ['validate-sw', 'approve', 'approve-excise', 'approve-notification'],
       template: `
@@ -268,9 +269,9 @@ describe('GtcParcel_EditDialog passport verification', () => {
             stubs: {
               Field: { template: '<input />' },
               Form: {
-                methods: { resetForm() {} },
+                methods: { resetForm() {}, setExciseField },
                 template:
-                  '<div><slot :errors="{}" :values="{ id: 5, statusId: 1 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
+                  '<div><slot :errors="{}" :values="{ id: 5, statusId: 1 }" :isSubmitting="false" :setFieldValue="setExciseField"></slot></div>'
               },
               ParcelHeaderActionsBar: actionBarStub,
               ParcelStatusSection: statusSectionStub,
@@ -309,10 +310,12 @@ describe('GtcParcel_EditDialog passport verification', () => {
       await wrapper.get(`[data-testid="${testId}"]`).trigger('click')
       await resolveAll()
     }
+    parcelsMock.item.value.tnVed = '9900000000'
     for (const testId of ['validate', 'approve', 'approve-excise', 'approve-notification']) {
       await wrapper.get(`[data-testid="${testId}"]`).trigger('click')
       await resolveAll()
     }
+    expect(setExciseField).toHaveBeenCalledWith('tnVed', '9900000000')
     expect(parcelsMock.update).toHaveBeenCalled()
     expect(parcelsMock.lookupFeacnCode).toHaveBeenCalledWith(5)
     expect(parcelsMock.generate).toHaveBeenCalled()

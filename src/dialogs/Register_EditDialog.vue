@@ -140,7 +140,17 @@ const isAdditionalInfoExpanded = ref(false)
 const isWarehouseArrivalDateEdited = ref(false)
 const isRealWeightEdited = ref(false)
 const isRegisterStatusEdited = ref(false)
-const readOnly = computed(() => !props.create && item.value?.readOnly === true)
+const readOnly = computed(() => {
+  if (props.create) return false
+  const selectedStatus = isRegisterStatusEdited.value
+    ? registerStatusesStore.getStatusById(item.value?.statusId)
+    : null
+  return (selectedStatus?.readOnly ?? item.value?.readOnly) === true
+})
+// Status and save permissions belong to the saved register, even while previewing a new lock.
+const canChangeStatus = computed(
+  () => props.create || item.value?.readOnly !== true || unref(authStore.isAdmin)
+)
 
 const airportOptions = computed(() => (Array.isArray(airports.value) ? airports.value : []))
 const selectedCustomsProcedureCode = computed(() =>
@@ -734,7 +744,7 @@ const canSubmit = computed(
     !isInitializing.value &&
     !registerLoadFailed.value &&
     typesLoaded.value &&
-    (!readOnly.value || unref(authStore.isAdmin))
+    canChangeStatus.value
 )
 
 const registerStatusesLoaded = computed(
@@ -1302,8 +1312,8 @@ const loadReportFields = computed(() => {
         <div v-if="readOnly" class="alert alert-warning register-read-only-notice">
           Изменения запрещены. Реестр доступен только для просмотра. Возможно изменение статуса
           пользователем с правами администратора.
-          Если для авиатранспорта не указаны аэропорты, администратор должен заполнить их и выбрать
-          доступный для изменения статус одним сохранением.
+          Для редактирования информации сначала выберите статус, разрешающий изменения.
+          Поля станут доступны сразу, без предварительного сохранения.
         </div>
         <h2 v-if="!props.create" class="section-title" data-testid="register-deal-section-title">
           Сделка
@@ -1341,7 +1351,7 @@ const loadReportFields = computed(() => {
                   variant="plain"
                   density="compact"
                   hide-details
-                  :disabled="readOnly && !authStore.isAdmin"
+                  :disabled="!canChangeStatus"
                   @update:model-value="(value) => handleRegisterStatusChange(value, handleChange)"
                 />
               </div>

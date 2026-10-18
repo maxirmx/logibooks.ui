@@ -153,11 +153,12 @@ const warehousesStore = createMockStore({
 })
 const registerStatusesStore = createMockStore({
   registerStatuses: [
-    { id: 1, title: 'New', icon: 'svg:registered', bkColor: '#FFFFFF', fgColor: '#000000' },
-    { id: 2, title: 'In Progress', icon: 'svg:in-transit', bkColor: '#FFEEDD', fgColor: '#111111' },
+    { id: 1, title: 'New', icon: 'svg:registered', bkColor: '#FFFFFF', fgColor: '#000000', readOnly: false },
+    { id: 2, title: 'In Progress', icon: 'svg:in-transit', bkColor: '#FFEEDD', fgColor: '#111111', readOnly: false },
     {
       id: 3,
       title: 'Completed',
+      readOnly: true,
       icon: 'svg:very-delivered',
       bkColor: '#00AA00',
       fgColor: '#FFFFFF'
@@ -633,26 +634,148 @@ describe('Register_EditDialog', () => {
       expect(publishError).toHaveBeenCalledOnce()
     })
 
-    it('submits an administrator airport repair and unlock in one request', async () => {
+    it('unlocks register fields immediately so an administrator can repair airports and save together', async () => {
       mockIsAdmin.value = true
       await mountForm({ values: { readOnly: true, statusId: 3 } })
-      expect(wrapper.text()).toContain('одним сохранением')
-      expect(wrapper.get('#departureAirportId').element.disabled).toBe(false)
-      expect(wrapper.get('#arrivalAirportId').element.disabled).toBe(false)
+      const editableFields = [
+        '#dealNumber', '#customerOrderNumber', '#incotermsCode', '#departureAirportId',
+        '#arrivalAirportId', '#transportationTypeCode', '#customsProcedureCode', '#warehouseId',
+        '#realWeightKg'
+      ]
+      expect(wrapper.find('.register-read-only-notice').exists()).toBe(true)
+      editableFields.forEach(selector => expect(wrapper.get(selector).element.matches(':disabled')).toBe(true))
 
-      wrapper.findComponent({ name: 'RegisterStatusSelect' }).vm.$emit('update:modelValue', 2)
+      wrapper.findComponent({ name: 'RegisterStatusSelect' }).vm.$emit('update:modelValue', '2')
+      await nextTick()
+      editableFields.forEach(selector => expect(wrapper.get(selector).element.matches(':disabled')).toBe(false))
+      expect(wrapper.find('.register-read-only-notice').exists()).toBe(false)
+      expect(mockItem.value.readOnly).toBe(true)
+      expect(update).not.toHaveBeenCalled()
+      expect(router.push).not.toHaveBeenCalled()
+
+      await wrapper.get('form').trigger('submit')
+      await vi.waitFor(() => expect(wrapper.findAll('.invalid-feedback')).toHaveLength(2))
+      expect(update).not.toHaveBeenCalled()
+      expect(router.push).not.toHaveBeenCalled()
       await wrapper.get('#departureAirportId').setValue('1')
       await wrapper.get('#arrivalAirportId').setValue('2')
+      await wrapper.get('#customerOrderNumber').setValue('CORRECTED-ORDER')
       await wrapper.get('form').trigger('submit')
 
       await vi.waitFor(() => expect(update).toHaveBeenCalledOnce())
       expect(update).toHaveBeenCalledWith(1, expect.objectContaining({
         statusId: 2,
+        customerOrderNumber: 'CORRECTED-ORDER',
         departureAirportId: 1,
         arrivalAirportId: 2,
         transportationTypeCode: 0
       }))
       await vi.waitFor(() => expect(router.push).toHaveBeenCalledOnce())
+    })
+
+    it('retains the unsaved unlock and corrections after a rejection and retries the same update', async () => {
+      const message = 'Не удалось сохранить изменения реестра'
+      update.mockRejectedValueOnce(new Error(message))
+      const publishError = vi.spyOn(useAlertStore(), 'error')
+      await mountForm({ values: { readOnly: true, statusId: 3 } })
+      const statusSelect = wrapper.findComponent({ name: 'RegisterStatusSelect' })
+      statusSelect.vm.$emit('update:modelValue', 2)
+      await nextTick()
+      await wrapper.get('#departureAirportId').setValue('1')
+      await wrapper.get('#arrivalAirportId').setValue('2')
+      await wrapper.get('#dealNumber').setValue('CORRECTED-DEAL')
+      await wrapper.get('.header-actions button').trigger('click')
+      await vi.waitFor(() => expect(wrapper.get('.page-alert-region').text()).toContain(message))
+
+      expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+      expect(publishError).toHaveBeenCalledOnce()
+      expect(router.push).not.toHaveBeenCalled()
+      expect(statusSelect.props('modelValue')).toBe(2)
+      expect(wrapper.get('#departureAirportId').element.matches(':disabled')).toBe(false)
+      expect(wrapper.get('#departureAirportId').element.value).toBe('1')
+      expect(wrapper.get('#arrivalAirportId').element.value).toBe('2')
+      expect(wrapper.get('#dealNumber').element.value).toBe('CORRECTED-DEAL')
+
+      await wrapper.get('.header-actions button').trigger('click')
+      await vi.waitFor(() => expect(router.push).toHaveBeenCalledOnce())
+      expect(update).toHaveBeenCalledTimes(2)
+      expect(update.mock.calls[1]).toEqual(update.mock.calls[0])
+      expect(update.mock.calls[1][1]).toMatchObject({ statusId: 2, dealNumber: 'CORRECTED-DEAL' })
+      expect(upload).not.toHaveBeenCalled()
+      expect(publishError).toHaveBeenCalledOnce()
+    })
+
+    it.each([false, true])('locks immediately when a blocking status is selected from readOnly=%s', async readOnly => {
+      await mountForm({ values: { readOnly, statusId: readOnly ? 3 : 2 } })
+      const statusSelect = wrapper.findComponent({ name: 'RegisterStatusSelect' })
+      statusSelect.vm.$emit('update:modelValue', 2)
+      await nextTick()
+      await wrapper.get('#departureAirportId').setValue('1')
+      await wrapper.get('#dealNumber').setValue('KEEP-ME')
+      statusSelect.vm.$emit('update:modelValue', 3)
+      await nextTick()
+
+      expect(wrapper.find('.register-read-only-notice').exists()).toBe(true)
+      expect(wrapper.get('#departureAirportId').element.matches(':disabled')).toBe(true)
+      expect(wrapper.get('#dealNumber').element.disabled).toBe(true)
+      expect(statusSelect.props('disabled')).toBe(false)
+      statusSelect.vm.$emit('update:modelValue', 2)
+      await nextTick()
+      expect(wrapper.get('#departureAirportId').element.matches(':disabled')).toBe(false)
+      expect(wrapper.get('#departureAirportId').element.value).toBe('1')
+      expect(wrapper.get('#dealNumber').element.value).toBe('KEEP-ME')
+      expect(update).not.toHaveBeenCalled()
+      expect(router.push).not.toHaveBeenCalled()
+    })
+
+    it.each([false, true])('preserves the saved readOnly=%s flag when selected status metadata is unavailable', async readOnly => {
+      await mountForm({ values: { readOnly, statusId: 2 } })
+      wrapper.findComponent({ name: 'RegisterStatusSelect' }).vm.$emit('update:modelValue', 999)
+      await nextTick()
+      expect(wrapper.get('#dealNumber').element.disabled).toBe(readOnly)
+      expect(wrapper.get('#departureAirportId').element.matches(':disabled')).toBe(readOnly)
+      expect(update).not.toHaveBeenCalled()
+    })
+
+    it('keeps upload fields editable when selecting a blocking initial status', async () => {
+      await mountForm({ create: true, values: { readOnly: true, statusId: 3 } })
+      wrapper.findComponent({ name: 'RegisterStatusSelect' }).vm.$emit('update:modelValue', 3)
+      await nextTick()
+      expect(wrapper.find('.register-read-only-notice').exists()).toBe(false)
+      expect(wrapper.get('#dealNumber').element.disabled).toBe(false)
+      expect(wrapper.get('#departureAirportId').element.matches(':disabled')).toBe(false)
+      expect(update).not.toHaveBeenCalled()
+    })
+
+    it('lets a non-administrator revert or save a newly selected blocking status on an editable register', async () => {
+      mockIsAdmin.value = false
+      await mountForm({ values: { readOnly: false, statusId: 2, departureAirportId: 1, arrivalAirportId: 2 } })
+      const statusSelect = wrapper.findComponent({ name: 'RegisterStatusSelect' })
+      statusSelect.vm.$emit('update:modelValue', 3)
+      await nextTick()
+      expect(wrapper.get('#dealNumber').element.disabled).toBe(true)
+      expect(statusSelect.props('disabled')).toBe(false)
+      expect(wrapper.get('.header-actions button').element.disabled).toBe(false)
+
+      statusSelect.vm.$emit('update:modelValue', 2)
+      await nextTick()
+      expect(wrapper.get('#dealNumber').element.disabled).toBe(false)
+      statusSelect.vm.$emit('update:modelValue', 3)
+      await nextTick()
+      await wrapper.get('.header-actions button').trigger('click')
+      await vi.waitFor(() => expect(router.push).toHaveBeenCalledOnce())
+      expect(update).toHaveBeenCalledExactlyOnceWith(1, expect.objectContaining({ statusId: 3 }))
+    })
+
+    it('keeps status changes and saving disabled for a non-administrator on a saved blocking status', async () => {
+      mockIsAdmin.value = false
+      const dialog = await mountForm({ values: { readOnly: true, statusId: 3 }, waitForReady: false })
+      expect(wrapper.findComponent({ name: 'RegisterStatusSelect' }).props('disabled')).toBe(true)
+      expect(wrapper.get('#departureAirportId').element.matches(':disabled')).toBe(true)
+      expect(wrapper.get('.header-actions button').element.disabled).toBe(true)
+      await dialog.vm.onSubmit({ statusId: 2 })
+      expect(update).not.toHaveBeenCalled()
+      expect(router.push).not.toHaveBeenCalled()
     })
 
   })

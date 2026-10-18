@@ -75,7 +75,7 @@ describe('parcel actions helpers', () => {
       expect(mockParcelsStore.getById).not.toHaveBeenCalled()
     })
 
-    it('keeps the validation error visible when the following reload also fails', async () => {
+    it('preserves the validation failure without reloading the entered values', async () => {
       const refreshError = new Error('refresh failed')
       const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
       mockParcelsStore.validate.mockRejectedValueOnce(new Error('validation failed'))
@@ -86,8 +86,9 @@ describe('parcel actions helpers', () => {
       ).resolves.toBe(false)
 
       expect(alertErrorMock).toHaveBeenCalledOnce()
-      expect(alertErrorMock).toHaveBeenCalledWith('Ошибка при проверке информации о посылке')
-      expect(consoleError).toHaveBeenCalledOnce()
+      expect(alertErrorMock).toHaveBeenCalledWith('validation failed', { fallback: 'Ошибка при проверке информации о посылке' })
+      expect(mockParcelsStore.getById).not.toHaveBeenCalled()
+      expect(consoleError).not.toHaveBeenCalled()
       consoleError.mockRestore()
     })
   })
@@ -103,7 +104,7 @@ describe('parcel actions helpers', () => {
         mockParcelsStore,
         ParcelApprovalMode.ApproveWithNotification
       )
-      expect(mockParcelsStore.error).toBe('Ошибка при согласовании посылки')
+      expect(mockParcelsStore.error).toBe('Approval failed')
     })
 
     it('should handle approval errors with API message', async () => {

@@ -413,7 +413,11 @@ function resetState() {
   registerGetById.mockResolvedValue({ id: 12 })
   validateParcelData.mockResolvedValue()
   approveParcel.mockResolvedValue()
-  approveParcelWithExcise.mockResolvedValue({ tnVed: '6403999300' })
+  approveParcelWithExcise.mockImplementation(async (values, item, store, update, options) => {
+    const result = { tnVed: '6403999300' }
+    await options.onRefreshed(result)
+    return result
+  })
   approveParcelWithNotification.mockResolvedValue()
   generateXml.mockResolvedValue()
   deleteProductImage.mockResolvedValue()
@@ -735,7 +739,8 @@ describe('WbrNParcel_EditDialog.vue', () => {
       expect.any(Object),
       true,
       0,
-      expect.any(Function)
+      expect.any(Function),
+      expect.any(Object)
     )
     expect(validateParcelData).toHaveBeenCalledWith(
       expect.objectContaining({ id: 3 }),
@@ -743,7 +748,8 @@ describe('WbrNParcel_EditDialog.vue', () => {
       expect.any(Object),
       true,
       1,
-      expect.any(Function)
+      expect.any(Function),
+      expect.any(Object)
     )
     expect(validateParcelData).toHaveBeenCalledWith(
       expect.objectContaining({ id: 3 }),
@@ -751,7 +757,8 @@ describe('WbrNParcel_EditDialog.vue', () => {
       expect.any(Object),
       false,
       undefined,
-      expect.any(Function)
+      expect.any(Function),
+      expect.any(Object)
     )
 
     await wrapper.get('[data-testid="approve"]').trigger('click')
@@ -761,7 +768,8 @@ describe('WbrNParcel_EditDialog.vue', () => {
       parcelItem,
       expect.any(Object),
       undefined,
-      expect.any(Function)
+      expect.any(Function),
+      expect.any(Object)
     )
 
     await wrapper.get('[data-testid="approve-excise"]').trigger('click')
@@ -770,7 +778,8 @@ describe('WbrNParcel_EditDialog.vue', () => {
       expect.objectContaining({ id: 3 }),
       parcelItem,
       expect.any(Object),
-      expect.any(Function)
+      expect.any(Function),
+      expect.any(Object)
     )
     expect(setFieldValue).toHaveBeenCalledWith('tnVed', '6403999300')
 
@@ -780,7 +789,8 @@ describe('WbrNParcel_EditDialog.vue', () => {
       expect.objectContaining({ id: 3 }),
       parcelItem,
       expect.any(Object),
-      expect.any(Function)
+      expect.any(Function),
+      expect.any(Object)
     )
 
     await wrapper.get('[data-testid="clear-check-status"]').trigger('click')

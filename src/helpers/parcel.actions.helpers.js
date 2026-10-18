@@ -4,7 +4,7 @@
 
 import { useAlertStore } from '@/stores/alert.store.js'
 import { ParcelApprovalMode } from '@/models/parcel.approval.mode.js'
-import { reportError } from '@/helpers/error.helpers.js'
+import { getErrorMessage, reportError, reportFormError } from '@/helpers/error.helpers.js'
 import {
   chooseOutputWeightCorrection,
   WEIGHT_CORRECTION_CHOICE
@@ -44,29 +44,40 @@ export async function validateParcelData(
   parcelsStore,
   sw,
   matchMode,
-  updateParcel = (id, data) => parcelsStore.update(id, data)
+  updateParcel = (id, data) => parcelsStore.update(id, data),
+  { setErrors } = {}
 ) {
   if (item.value.id != values.id) return Promise.resolve(false)
   const alertStore = useAlertStore()
-  let updateAccepted = false
-  let validationSucceeded = false
   try {
-    updateAccepted = (await updateParcel(item.value.id, values)) !== false
+    const updateAccepted = (await updateParcel(item.value.id, values)) !== false
     if (!updateAccepted) return false
     await parcelsStore.validate(item.value.id, sw, matchMode)
-    validationSucceeded = true
   } catch (error) {
-    parcelsStore.error = error?.response?.data?.message || 'Ошибка при проверке информации о посылке'
-    alertStore.error(parcelsStore.error)
-  } finally {
-    if (updateAccepted) {
-      const refreshed = await refreshParcelAfterMutation(parcelsStore, item.value.id, alertStore, {
-        errorAlreadyReported: !validationSucceeded
-      })
-      if (!refreshed) validationSucceeded = false
-    }
+    const fallback = 'Ошибка при проверке информации о посылке'
+    parcelsStore.error = getErrorMessage(error, fallback)
+    reportFormError(error, { setErrors, alertStore, fallback })
+    return false
   }
-  return validationSucceeded
+  return (await reloadCompletedParcelAction(parcelsStore, item.value.id, alertStore, 'Проверка посылки выполнена')) !== false
+}
+
+async function reloadCompletedParcelAction(parcelsStore, parcelId, alertStore, completedMessage, onRefreshed) {
+  try {
+    const parcel = await parcelsStore.getById(parcelId)
+    await onRefreshed?.(parcel)
+    return parcel
+  } catch (error) {
+    const message = `${completedMessage}. Не удалось обновить данные посылки. ${getErrorMessage(error)}`
+    parcelsStore.error = message
+    alertStore.error(message, {
+      action: {
+        label: 'Обновить',
+        handler: () => reloadCompletedParcelAction(parcelsStore, parcelId, alertStore, completedMessage, onRefreshed)
+      }
+    })
+    return false
+  }
 }
 
 /**
@@ -83,9 +94,10 @@ export async function approveParcel(
   item,
   parcelsStore,
   approvalMode = ParcelApprovalMode.SimpleApprove,
-  updateParcel = (id, data) => parcelsStore.update(id, data)
+  updateParcel = (id, data) => parcelsStore.update(id, data),
+  { setErrors, onRefreshed } = {}
 ) {
-  if (item.value.id != values.id) return Promise.resolve()
+  if (item.value.id != values.id) return false
   const alertStore = useAlertStore()
   try {
     // First update the parcel with current form values
@@ -95,17 +107,12 @@ export async function approveParcel(
     await parcelsStore.approve(item.value.id, approvalMode)
     // Reload the order data to reflect any changes
   } catch (error) {
-    parcelsStore.error = error?.response?.data?.message || 'Ошибка при согласовании посылки'
-
-    alertStore.error(parcelsStore?.error || 'Ошибка при согласовании посылки')
-  } 
-  try {
-      return await parcelsStore.getById(item.value.id)
-  } catch (e) {
-    parcelsStore.error = e?.response?.data?.message || 'Ошибка при загрузке посылки'
-    alertStore.error(parcelsStore.error)
-    return Promise.resolve()
+    const fallback = 'Ошибка при согласовании посылки'
+    parcelsStore.error = getErrorMessage(error, fallback)
+    reportFormError(error, { setErrors, alertStore, fallback })
+    return false
   }
+  return reloadCompletedParcelAction(parcelsStore, item.value.id, alertStore, 'Посылка согласована', onRefreshed)
 }
 
 /**
@@ -150,8 +157,8 @@ export async function generateXml(item, parcelsStore, filenameOrGenerator, { con
  * @param {Object} params - Parameters object (same as approveParcel)
  * @returns {Promise<void>}
  */
-export async function approveParcelWithExcise(values, item, parcelsStore, updateParcel) {
-  return approveParcel(values, item, parcelsStore, ParcelApprovalMode.ApproveWithExcise, updateParcel)
+export async function approveParcelWithExcise(values, item, parcelsStore, updateParcel, options) {
+  return approveParcel(values, item, parcelsStore, ParcelApprovalMode.ApproveWithExcise, updateParcel, options)
 }
 
 /**
@@ -159,8 +166,8 @@ export async function approveParcelWithExcise(values, item, parcelsStore, update
  * @param {Object} params - Parameters object (same as approveParcel)
  * @returns {Promise<void>}
  */
-export async function approveParcelWithNotification(values, item, parcelsStore, updateParcel) {
-  return approveParcel(values, item, parcelsStore, ParcelApprovalMode.ApproveWithNotification, updateParcel)
+export async function approveParcelWithNotification(values, item, parcelsStore, updateParcel, options) {
+  return approveParcel(values, item, parcelsStore, ParcelApprovalMode.ApproveWithNotification, updateParcel, options)
 }
 
 /**

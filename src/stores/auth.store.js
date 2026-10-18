@@ -156,13 +156,17 @@ export const useAuthStore = defineStore('auth', () => {
     })
   }
 
+  function clearSession() {
+    user.value = null
+    localStorage.removeItem('user')
+  }
+
   function logout() {
     // Fetch status information regardless of logout success, failure, or exception
     const statusStore = useStatusStore()
 
     try {
-      user.value = null
-      localStorage.removeItem('user')
+      clearSession()
       router.push('/login')
     } catch (error) {
       // Ensure status is fetched before re-throwing the error
@@ -229,6 +233,7 @@ export const useAuthStore = defineStore('auth', () => {
     recover,
     re,
     login,
+    clearSession,
     logout,
     setScanjobMonitorFollowUserId
   }

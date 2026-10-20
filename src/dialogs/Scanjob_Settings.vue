@@ -5,7 +5,7 @@
 
 import FieldError from '@/components/FieldError.vue'
 import { focusFirstInvalidField } from '@/helpers/form.validation.helpers.js'
-import { reportFormError } from '@/helpers/error.helpers.js'
+import { getErrorMessage, reportFormError } from '@/helpers/error.helpers.js'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import router from '@/router'
@@ -25,6 +25,7 @@ import { getCompanyDisplayName } from '@/helpers/register.display.helpers.js'
 import { formatRegisterInvoice } from '@/helpers/register.heading.helpers.js'
 import ActionButton from '@/components/ActionButton.vue'
 import { useAppConfirm } from '@/composables/useAppConfirm.js'
+import { useScanjobFinishConfirmation } from '@/composables/useScanjobFinishConfirmation.js'
 
 const props = defineProps({
   mode: {
@@ -61,6 +62,7 @@ const parcelStatusesStore = useParcelStatusesStore()
 const alertStore = useAlertStore()
 const authStore = useAuthStore()
 const confirm = useAppConfirm()
+const finishConfirmation = useScanjobFinishConfirmation(scanJobsStore.getFinishOptions, confirm)
 const { ops } = storeToRefs(scanJobsStore)
 const { companies } = storeToRefs(companiesStore)
 
@@ -350,6 +352,14 @@ function buildPayload(values) {
   }
 }
 
+function handleReadOnlyConflict(error) {
+  if (error?.status !== 409 || !getErrorMessage(error).includes('Изменения запрещены')) return false
+  if (currentScanjob.value) currentScanjob.value = { ...currentScanjob.value, readOnly: true }
+  if (currentRegister.value) currentRegister.value = { ...currentRegister.value, readOnly: true }
+  alertStore.error('Изменения запрещены для выбранного реестра')
+  return true
+}
+
 // Save without redirecting, returns true on success
 async function saveScanjobQuiet() {
   if (readOnly.value) {
@@ -420,15 +430,8 @@ async function saveScanjobQuiet() {
     }
     return true
   } catch (error) {
-    if (error?.status === 409 && String(error?.message || '').includes('Изменения запрещены')) {
-      currentScanjob.value = currentScanjob.value
-        ? { ...currentScanjob.value, readOnly: true }
-        : null
-      currentRegister.value = currentRegister.value
-        ? { ...currentRegister.value, readOnly: true }
-        : null
-      alertStore.error('Изменения запрещены для выбранного реестра')
-    } else if (error?.status === 409 || String(error?.message || '').includes('409')) {
+    if (handleReadOnlyConflict(error)) return false
+    if (error?.status === 409 || String(error?.message || '').includes('409')) {
       alertStore.error('Такое задание на сканирование уже существует')
     } else {
       reportFormError(error, {
@@ -466,15 +469,8 @@ const onSubmit = handleSubmit(async (values) => {
       router.back()
     }
   } catch (error) {
-    if (error?.status === 409 && String(error?.message || '').includes('Изменения запрещены')) {
-      currentScanjob.value = currentScanjob.value
-        ? { ...currentScanjob.value, readOnly: true }
-        : null
-      currentRegister.value = currentRegister.value
-        ? { ...currentRegister.value, readOnly: true }
-        : null
-      alertStore.error('Изменения запрещены для выбранного реестра')
-    } else if (error?.status === 409 || String(error?.message || '').includes('409')) {
+    if (handleReadOnlyConflict(error)) return
+    if (error?.status === 409 || String(error?.message || '').includes('409')) {
       alertStore.error('Такое задание на сканирование уже существует')
     } else {
       alertStore.error(error.message || 'Ошибка при сохранении задания на сканирование')
@@ -546,28 +542,33 @@ async function pauseScanjob() {
 async function finishScanjob() {
   if (runningAction.value || isCreate.value || readOnly.value) return
   runningAction.value = true
+  let completed = false
   try {
-    const actionName = name.value || currentScanjob.value?.name || props.scanjobId
-    const confirmed = await confirm({
-      title: 'Подтверждение',
-      confirmationText: 'Завершить',
-      cancellationText: 'Не завершать',
-      content: 'Завершить задание на сканирование "' + actionName + '" ?'
+    const choices = await finishConfirmation.request({
+      id: props.scanjobId,
+      name: name.value || currentScanjob.value?.name || props.scanjobId,
+      operation: Number(operation.value)
     })
-
-    if (!confirmed) return
-
+    if (!choices) return
     const saved = await saveScanjobQuiet()
     if (!saved) return
-    await scanJobsStore.finish(props.scanjobId)
+    await scanJobsStore.finish(props.scanjobId, choices)
+    completed = true
+    finishConfirmation.reset()
+    status.value = 20
+    currentScanjob.value = { ...currentScanjob.value, status: 20, allowStart: false, allowPause: false, allowFinish: false }
     await refreshScanjobStatus()
   } catch (error) {
-    if (error.message?.includes('403')) {
+    if (completed) {
+      alertStore.error('Задание завершено, но не удалось обновить данные. Обновите страницу.')
+    } else if (handleReadOnlyConflict(error)) {
+      return
+    } else if (error.status === 403 || error.message?.includes('403')) {
       alertStore.error('Нет прав для завершения сканирования')
-    } else if (error.message?.includes('404')) {
+    } else if (error.status === 404 || error.message?.includes('404')) {
       alertStore.error('Задание на сканирование не найдено')
     } else {
-      alertStore.error('Ошибка при завершении сканирования')
+      alertStore.error(error, { fallback: 'Ошибка при завершении сканирования' })
     }
   } finally {
     runningAction.value = false
@@ -696,6 +697,7 @@ defineExpose({ onSubmit, cancel })
             class="form-control input"
             :class="{ 'is-invalid': errors.name }"
             placeholder="Название"
+            :readonly="readOnly"
             v-model="name"
             @input="nameManuallyEdited = true"
           />
@@ -720,6 +722,7 @@ defineExpose({ onSubmit, cancel })
             id="type"
             class="form-control input"
             :class="{ 'is-invalid': errors.type }"
+            :disabled="readOnly"
             v-model="type"
           >
             <option v-for="item in ops?.types" :key="item.value" :value="item.value">
@@ -737,6 +740,7 @@ defineExpose({ onSubmit, cancel })
             id="mode"
             class="form-control input"
             :class="{ 'is-invalid': errors.mode }"
+            :disabled="readOnly"
             v-model="fieldMode"
           >
             <option v-for="item in ops?.modes" :key="item.value" :value="item.value">
@@ -767,6 +771,7 @@ defineExpose({ onSubmit, cancel })
             id="operation"
             class="form-control input"
             :class="{ 'is-invalid': errors.operation }"
+            :disabled="readOnly"
             v-model="operation"
           >
             <option v-for="item in operationOptions" :key="item.value" :value="item.value">
@@ -781,7 +786,7 @@ defineExpose({ onSubmit, cancel })
             id="lookupStatusId"
             class="form-control input"
             :class="{ 'is-invalid': errors.lookupStatusId }"
-            :disabled="!isLookupOperation"
+            :disabled="readOnly || !isLookupOperation"
             v-model="lookupStatusId"
             data-testid="lookup-status-select"
           >

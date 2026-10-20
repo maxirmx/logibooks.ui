@@ -635,6 +635,11 @@ a,
   transition: transform 0.2s ease-in-out;
 }
 
+.radio-styled input[type="radio"]:focus-visible + .radio-mark {
+  outline: 2px solid #1976d2;
+  outline-offset: 3px;
+}
+
 .radio-styled input[type="radio"]:checked + .radio-mark::after {
   transform: translate(-50%, -50%) scale(1);
 }

@@ -71,6 +71,7 @@ const update = vi.hoisted(() => vi.fn())
 const start = vi.hoisted(() => vi.fn())
 const pause = vi.hoisted(() => vi.fn())
 const finish = vi.hoisted(() => vi.fn())
+const getFinishOptions = vi.hoisted(() => vi.fn())
 const ensureLoaded = vi.hoisted(() => vi.fn())
 const getRegisterById = vi.hoisted(() => vi.fn())
 const ensureRegisterOpsLoaded = vi.hoisted(() => vi.fn())
@@ -109,6 +110,7 @@ vi.mock('@/stores/scanjobs.store.js', () => ({
     start,
     pause,
     finish,
+    getFinishOptions,
     getOpsLabel: (list, value) => {
       const match = list?.find((item) => Number(item.value) === Number(value))
       return match ? match.name : String(value)
@@ -244,6 +246,7 @@ describe('Scanjob_Settings.vue', () => {
     start.mockResolvedValue(true)
     pause.mockResolvedValue(true)
     finish.mockResolvedValue(true)
+    getFinishOptions.mockResolvedValue({ canMarkUnscannedAsNotFound: true, targetRegisterStatus: { id: 2, title: 'Готов' } })
     confirmMock.mockResolvedValue(true)
   })
 
@@ -586,6 +589,168 @@ describe('Scanjob_Settings.vue', () => {
     expect(options[0].text()).toBe('Поиск')
     expect(wrapper.find('#operation').element.value).toBe('30')
     expect(wrapper.get('#name').element.value).toBe('Поиск для сделки ABC-1')
+  })
+
+
+  describe('independent completion workflow', () => {
+    async function openEditor() {
+      getById.mockResolvedValue({ ...mockScanjob, operation: 10, allowFinish: true })
+      const wrapper = mountComponent({ mode: 'edit', scanjobId: 11 })
+      await resolveAll()
+      return wrapper
+    }
+
+    it.each([[true, true], [true, false], [false, true], [false, false]])('saves and submits choices %s / %s', async (mark, updateFlag) => {
+      const wrapper = await openEditor()
+      await wrapper.get('#operation').setValue('15')
+      confirmMock.mockImplementationOnce(async ({ contentComponentProps: props }) => {
+        props.onChange('markUnscannedAsNotFound', mark)
+        props.onChange('updateRegisterStatus', updateFlag)
+        return true
+      })
+      await wrapper.get('[data-testid="scanjob-finish-action"]').trigger('click')
+      await resolveAll()
+      expect(getFinishOptions).toHaveBeenCalledWith(11, { operation: 15 })
+      expect(update).toHaveBeenCalledWith(11, expect.objectContaining({ operation: 15 }))
+      expect(finish).toHaveBeenCalledWith(11, { markUnscannedAsNotFound: mark, updateRegisterStatus: updateFlag })
+      expect(update.mock.invocationCallOrder[0]).toBeLessThan(finish.mock.invocationCallOrder[0])
+      expect(routerPush).not.toHaveBeenCalled()
+    })
+
+    it.each([true, false])('uses simple confirmation in the editor, accepted: %s', async (accepted) => {
+      const wrapper = await openEditor()
+      getFinishOptions.mockResolvedValue({ canMarkUnscannedAsNotFound: false, targetRegisterStatus: null })
+      confirmMock.mockResolvedValueOnce(accepted)
+      await wrapper.get('[data-testid="scanjob-finish-action"]').trigger('click')
+      await resolveAll()
+      expect(confirmMock).toHaveBeenCalledWith(expect.objectContaining({ content: 'Завершить задание?' }))
+      expect(confirmMock.mock.calls[0][0]).not.toHaveProperty('contentComponent')
+      if (accepted) {
+        expect(update).toHaveBeenCalledTimes(1)
+        expect(finish).toHaveBeenCalledWith(11, { markUnscannedAsNotFound: false, updateRegisterStatus: false })
+      } else {
+        expect(update).not.toHaveBeenCalled()
+        expect(finish).not.toHaveBeenCalled()
+      }
+    })
+
+    it('shows a preview failure without saving or completing', async () => {
+      const wrapper = await openEditor()
+      getFinishOptions.mockRejectedValueOnce(Object.assign(new Error('Не найдено'), { status: 404 }))
+      await wrapper.get('[data-testid="scanjob-finish-action"]').trigger('click')
+      await resolveAll()
+      expect(update).not.toHaveBeenCalled()
+      expect(finish).not.toHaveBeenCalled()
+      expect(confirmMock).not.toHaveBeenCalled()
+      expect(alertError).toHaveBeenCalledTimes(1)
+      expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain('Задание на сканирование не найдено')
+      expect(routerPush).not.toHaveBeenCalled()
+    })
+
+    describe('read-only completion conflicts', () => {
+      it.each(['preview', 'save', 'finish'].flatMap((stage) => ['message', 'payload'].map((shape) => [stage, shape])))('locks the editor after a %s conflict in %s', async (stage, shape) => {
+        const wrapper = await openEditor()
+        await wrapper.get('#name').setValue('Несохранённое название')
+        await wrapper.get('#operation').setValue('30')
+        await wrapper.get('#lookupStatusId').setValue('102')
+        const conflict = Object.assign(new Error(shape === 'message' ? 'Изменения запрещены для выбранного реестра' : '409 Conflict'), {
+          status: 409,
+          ...(shape === 'payload' ? { data: { msg: 'Изменения запрещены для выбранного реестра', errors: {} } } : {})
+        })
+        const action = { preview: getFinishOptions, save: update, finish }[stage]
+        action.mockRejectedValueOnce(conflict)
+
+        await wrapper.get('[data-testid="scanjob-finish-action"]').trigger('click')
+        await resolveAll()
+
+        expect(wrapper.get('#name').element.value).toBe('Несохранённое название')
+        expect(wrapper.get('#operation').element.value).toBe('30')
+        expect(wrapper.get('#lookupStatusId').element.value).toBe('102')
+        expect(wrapper.get('#name').element.readOnly).toBe(true)
+        for (const selector of ['#type', '#mode', '#operation', '#lookupStatusId']) {
+          expect(wrapper.get(selector).element.disabled).toBe(true)
+        }
+        expect(wrapper.get('form').classes()).toContain('read-only-form')
+        expect(wrapper.get('.read-only-notice').text()).toContain('Изменения и операции сканирования запрещены')
+        expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain('Изменения запрещены для выбранного реестра')
+        expect(alertError).toHaveBeenCalledTimes(1)
+        for (const testId of ['scanjob-start-action', 'scanjob-pause-action', 'scanjob-finish-action', 'scanjob-save-action']) {
+          expect(wrapper.get('[data-testid="' + testId + '"]').attributes('disabled')).toBeDefined()
+        }
+        expect(wrapper.vm.$.setupState.currentScanjob.readOnly).toBe(true)
+        expect(wrapper.vm.$.setupState.currentRegister.readOnly).toBe(true)
+        expect(confirmMock).toHaveBeenCalledTimes(stage === 'preview' ? 0 : 1)
+        expect(update).toHaveBeenCalledTimes(stage === 'preview' ? 0 : 1)
+        expect(finish).toHaveBeenCalledTimes(stage === 'finish' ? 1 : 0)
+        const counts = [getFinishOptions, update, start, pause, finish].map((fn) => fn.mock.calls.length)
+
+        // Even programmatic retries cannot reach the server after the conflict.
+        await wrapper.vm.$.setupState.finishScanjob()
+        await wrapper.vm.$.setupState.startScanjob()
+        await wrapper.vm.$.setupState.pauseScanjob()
+        await wrapper.vm.$.setupState.onSubmit()
+        await resolveAll()
+
+        expect([getFinishOptions, update, start, pause, finish].map((fn) => fn.mock.calls.length)).toEqual(counts)
+        expect(routerPush).not.toHaveBeenCalled()
+        expect(routerBack).not.toHaveBeenCalled()
+      })
+
+      it('keeps editing available after an unrelated preview conflict and allows retry', async () => {
+        const wrapper = await openEditor()
+        const conflict = Object.assign(new Error('Задание уже завершено другим пользователем'), { status: 409 })
+        getFinishOptions.mockRejectedValueOnce(conflict)
+        await wrapper.get('#name').setValue('Мой ввод')
+        await wrapper.get('[data-testid="scanjob-finish-action"]').trigger('click')
+        await resolveAll()
+        expect(wrapper.find('.read-only-notice').exists()).toBe(false)
+        expect(wrapper.get('#name').element.readOnly).toBe(false)
+        expect(wrapper.get('#operation').element.disabled).toBe(false)
+        expect(wrapper.get('[data-testid="scanjob-finish-action"]').attributes('disabled')).toBeUndefined()
+        expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain(conflict.message)
+        expect(alertError).toHaveBeenCalledTimes(1)
+        await wrapper.get('[data-testid="scanjob-finish-action"]').trigger('click')
+        await resolveAll()
+        expect(getFinishOptions).toHaveBeenCalledTimes(2)
+        expect(update).toHaveBeenCalledWith(11, expect.objectContaining({ name: 'Мой ввод' }))
+        expect(finish).toHaveBeenCalledTimes(1)
+      })
+    })
+
+    it.each(['save', 'finish'])('preserves fields and selections after a %s failure, then retries', async (stage) => {
+      const wrapper = await openEditor()
+      await wrapper.get('#name').setValue('Сохранённый ввод')
+      confirmMock.mockImplementationOnce(async ({ contentComponentProps: props }) => {
+        props.onChange('markUnscannedAsNotFound', false)
+        props.onChange('updateRegisterStatus', false)
+        return true
+      }).mockResolvedValue(true)
+      const error = new Error('Операция недоступна')
+      if (stage === 'save') update.mockRejectedValueOnce(error)
+      else finish.mockRejectedValueOnce(error)
+      await wrapper.get('[data-testid="scanjob-finish-action"]').trigger('click')
+      await resolveAll()
+      expect(wrapper.get('#name').element.value).toBe('Сохранённый ввод')
+      expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain('Операция недоступна')
+      expect(alertError).toHaveBeenCalledTimes(1)
+      expect(routerPush).not.toHaveBeenCalled()
+      if (stage === 'save') expect(finish).not.toHaveBeenCalled()
+      await wrapper.get('[data-testid="scanjob-finish-action"]').trigger('click')
+      await resolveAll()
+      expect(finish).toHaveBeenLastCalledWith(11, { markUnscannedAsNotFound: false, updateRegisterStatus: false })
+      expect(alertError).toHaveBeenCalledTimes(1)
+    })
+
+    it('reports refresh failure after success and disables further completion', async () => {
+      const wrapper = await openEditor()
+      getById.mockRejectedValueOnce(new Error('Reload failed'))
+      await wrapper.get('[data-testid="scanjob-finish-action"]').trigger('click')
+      await resolveAll()
+      expect(finish).toHaveBeenCalledTimes(1)
+      expect(wrapper.get('[data-testid="scanjob-finish-action"]').attributes('disabled')).toBeDefined()
+      expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain('Задание завершено, но не удалось обновить данные')
+      expect(alertError).toHaveBeenCalledTimes(1)
+    })
   })
 
   it('reports refresh errors when status update fails', async () => {

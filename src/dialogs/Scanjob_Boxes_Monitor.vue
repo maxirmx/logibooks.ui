@@ -7,6 +7,8 @@ import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useAuthStore } from '@/stores/auth.store.js'
 import ClickableCell from '@/components/ClickableCell.vue'
+import BoxStickerField from '@/components/BoxStickerField.vue'
+import { WBR_COMPANY_ID } from '@/helpers/company.constants.js'
 import ScanjobMonitorSummary from '@/components/ScanjobMonitorSummary.vue'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import {
@@ -41,6 +43,13 @@ const {
   scanjobmonitor_boxes_page
 } = storeToRefs(authStore)
 
+const headers = computed(() => {
+  const result = [...scanjobBoxHeaders]
+  if (props.snapshot?.companyId === WBR_COMPANY_ID) result.splice(3, 0, {
+    title: 'Стикер', key: 'wbrSticker', align: 'start'
+  })
+  return result
+})
 const summaryCards = computed(() => {
   const snapshot = props.snapshot
   if (!snapshot) return []
@@ -84,7 +93,7 @@ function openBox(item) {
         v-model:page="scanjobmonitor_boxes_page"
         v-model:sort-by="scanjobmonitor_boxes_sort_by"
         v-else
-        :headers="scanjobBoxHeaders"
+        :headers="headers"
         :items="props.boxes"
         :items-per-page-options="itemsPerPageOptions"
         items-per-page-text="Коробок на странице"
@@ -103,6 +112,10 @@ function openBox(item) {
             :disabled="props.loading"
             @click="openBox(item)"
           />
+        </template>
+
+        <template #[`item.wbrSticker`]="{ item }">
+          <BoxStickerField :box="item" :company="props.snapshot" :show-label="false" :disabled="props.loading" />
         </template>
 
         <template #[`item.dimensions`]="{ item }">

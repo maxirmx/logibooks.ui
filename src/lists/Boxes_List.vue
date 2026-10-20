@@ -3,11 +3,15 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { computed, onMounted } from 'vue'
+import { provide, computed, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { mdiMagnify } from '@mdi/js'
 import router from '@/router'
 import ActionButton from '@/components/ActionButton.vue'
+import BoxStickerField from '@/components/BoxStickerField.vue'
+import LocalLabelPrinting from '@/components/LocalLabelPrinting.vue'
+import { LABEL_PRINTING_KEY } from '@/helpers/label.printing.helpers.js'
+import { WBR_COMPANY_ID } from '@/helpers/company.constants.js'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
@@ -33,6 +37,13 @@ const registersStore = useRegistersStore()
 const { boxes, loading: boxesLoading } = storeToRefs(boxesStore)
 const { item: register, loading: registerLoading } = storeToRefs(registersStore)
 
+const printingPanel = ref(null)
+provide(LABEL_PRINTING_KEY, {
+  busy: computed(() => printingPanel.value?.busy ?? true),
+  print: (target) => printingPanel.value?.printParcel(target)
+})
+const stickerCompany = computed(() => boxes.value[0] || register.value)
+const showSticker = computed(() => stickerCompany.value?.companyId === WBR_COMPANY_ID)
 const loading = computed(() => boxesLoading.value || registerLoading.value)
 const readOnly = computed(() => register.value?.readOnly === true)
 const registerHeading = computed(() =>
@@ -43,14 +54,15 @@ const registerHeading = computed(() =>
   )
 )
 
-const headers = [
+const headers = computed(() => [
   { title: '', key: 'actions', align: 'center', sortable: false, width: '96px' },
   { title: 'Номер коробки', key: 'code', sortable: true },
+  ...(showSticker.value ? [{ title: 'Стикер', key: 'wbrSticker', sortable: true }] : []),
   { title: 'Длина, см', key: 'lengthCm', align: 'end', sortable: true },
   { title: 'Ширина, см', key: 'widthCm', align: 'end', sortable: true },
   { title: 'Высота, см', key: 'heightCm', align: 'end', sortable: true },
   { title: 'Вес, кг', key: 'weightKg', align: 'end', sortable: true }
-]
+])
 
 function filterBoxes(value, query, item) {
   const code = (item?.raw ?? item)?.code
@@ -136,6 +148,7 @@ defineExpose({
     <div class="header-with-actions">
       <h1 class="primary-heading">Коробки: {{ registerHeading }}</h1>
       <div class="header-actions-bar">
+        <LocalLabelPrinting v-if="showSticker" ref="printingPanel" />
         <div v-if="loading" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
         </div>
@@ -213,6 +226,10 @@ defineExpose({
               @click="openEditView"
             />
           </div>
+        </template>
+
+        <template #[`item.wbrSticker`]="{ item }">
+          <BoxStickerField :box="item" :show-label="false" :disabled="loading" />
         </template>
 
         <template #[`item.lengthCm`]="{ item }">

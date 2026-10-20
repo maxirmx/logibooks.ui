@@ -26,6 +26,17 @@ describe('printing API', () => {
     await printingApi.label({ scanJobId: 42, scanCodeId: 8, template: 'TJ_EXPORT' })
     expect(fetch.mock.calls[3][0]).toContain('/monitor/scans/8/label?template=TJ_EXPORT')
   })
+  it('loads box labels without a scan-job dependency and propagates failures', async () => {
+    const fetch = vi.fn().mockResolvedValueOnce(response('{"template":"WBR_BOX"}'))
+      .mockResolvedValueOnce(response('{"msg":"missing sticker","code":"Unavailable"}', 409))
+      .mockRejectedValueOnce(new Error('offline'))
+    vi.stubGlobal('fetch', fetch)
+    expect(await printingApi.label({ boxId: 7, template: 'WBR_BOX' })).toEqual({ template: 'WBR_BOX' })
+    expect(fetch.mock.calls[0][0]).toContain('/boxes/7/label?template=WBR_BOX')
+    expect(fetch.mock.calls[0][1].headers.Authorization).toBe('Bearer token')
+    await expect(printingApi.label({ boxId: 7, template: 'WBR_BOX' })).rejects.toMatchObject({ status: 409, message: 'missing sticker' })
+    await expect(printingApi.label({ boxId: 7, template: 'WBR_BOX' })).rejects.toThrow('offline')
+  })
   it('rejects transport, server, malformed and text failures without notification', async () => {
     const fetch = vi.fn().mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce(response('{"msg":"disabled","code":"QzDisabled"}', 503)).mockResolvedValueOnce(response('failure', 500, 'text/plain')).mockResolvedValueOnce(response('invalid'))
     vi.stubGlobal('fetch', fetch)

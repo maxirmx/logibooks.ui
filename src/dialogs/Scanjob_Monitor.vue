@@ -1130,6 +1130,7 @@ defineExpose({
           v-if="isBoxMode"
           :box="selectedBox"
           :register-type="visibleSnapshot?.registerType ?? 0"
+          :company="visibleSnapshot"
           :register="monitorWeightRegister"
           :loading="isLoading"
           :defect-action-loading="defectActionRunning || readOnly"

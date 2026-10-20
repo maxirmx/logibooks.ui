@@ -57,6 +57,22 @@ async function openSettings() {
   }
 }
 async function arm() { await openSettings(); await panel().get('[data-testid="auto-print-mode"] select').setValue('KGT'); await flushPromises() }
+it('manually prints a box, reports failures once, and permits retry', async () => {
+  const panel = wrapper.getComponent(LocalLabelPrinting)
+  const target = { boxId: 17, template: 'WBR_BOX' }
+  await panel.vm.printParcel(target)
+  expect(env.label).toHaveBeenCalledWith({ ...target, scanJobId: 42 })
+  expect(env.qz.submit).toHaveBeenCalledOnce()
+  expect(env.channel.start).not.toHaveBeenCalled()
+  env.label.mockRejectedValueOnce(new Error('Box offline'))
+  await panel.vm.printParcel(target)
+  await flushPromises()
+  expect(errorSpy).toHaveBeenCalledOnce()
+  expect(wrapper.text()).toContain('Box offline')
+  await panel.vm.printParcel(target)
+  expect(env.qz.submit).toHaveBeenCalledTimes(2)
+})
+
 describe('local printing UI', () => {
   it.each(['candidate', 'endpoint'].flatMap((source) => [
     'Не удалось напечатать стикер. Не указаны данные: дата общей накладной.',

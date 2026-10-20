@@ -10,6 +10,11 @@ import BoxEditDialog from '@/dialogs/Box_EditDialog.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import { defaultGlobalStubs } from './helpers/test-utils.js'
 
+const printBoxLabel = vi.hoisted(() => vi.fn())
+vi.mock('@/components/LocalLabelPrinting.vue', () => ({ default: {
+  template: '<div data-testid="box-printing-panel" />',
+  setup(_props, { expose }) { expose({ busy: false, printParcel: printBoxLabel }) }
+} }))
 const mockBox = ref(null)
 const mockBoxLoading = ref(false)
 const mockRegister = ref({})
@@ -122,6 +127,21 @@ describe('Box_EditDialog.vue', () => {
     boxCreate.mockResolvedValue({ ...mockBox.value })
     boxUpdate.mockResolvedValue()
     routerPush.mockResolvedValue()
+  })
+
+  it('shows the saved company sticker read-only and prints without submitting the form', async () => {
+    mockBox.value = { ...mockBox.value, companyId: 2, registerType: 2097154,
+      wbrSticker: '$1:1:4542503776:362877', printableTemplates: ['WBR_BOX'] }
+    const wrapper = await mountDialog({ mode: 'edit', registerId: 42, boxId: 7 })
+    expect(wrapper.text()).toContain('Стикер')
+    expect(wrapper.text()).toContain('$1:1:4542503776:362877')
+    const action = wrapper.findAllComponents(ActionButton).find((item) => item.props('tooltipText') === 'Печать стикера коробки')
+    expect(action.props('disabled')).toBe(false)
+    action.vm.$emit('click')
+    expect(printBoxLabel).toHaveBeenCalledWith({ boxId: 7, template: 'WBR_BOX' })
+    expect(boxUpdate).not.toHaveBeenCalled()
+    expect(routerPush).not.toHaveBeenCalled()
+    wrapper.unmount()
   })
 
   it('creates a box with trimmed code and normalized optional metrics', async () => {

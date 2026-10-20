@@ -1115,6 +1115,32 @@ describe('Scanjob_Monitor.vue', () => {
     expect(alertError).toHaveBeenCalledWith('Ошибка при обновлении данных')
   })
 
+  it.each([[2, true], [1, false]])('uses the generic sticker caption only for company %s', async (companyId, visible) => {
+    const sticker = '$1:1:4542503776:362877'
+    loadMonitorSnapshot
+      .mockResolvedValueOnce({
+        ...registerSnapshot, companyId,
+        boxes: [{ ...registerSnapshot.boxes[0], area: 1, wbrSticker: sticker }]
+      })
+      .mockResolvedValueOnce({ ...boxSnapshot, companyId, box: { ...boxSnapshot.box, wbrSticker: sticker } })
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 }, global: { stubs: monitorGlobalStubs }
+    })
+    await flushPromises()
+    const headers = wrapper.getComponent({ name: 'Scanjob_Boxes_Monitor' })
+      .getComponent({ name: 'v-data-table' }).props('headers')
+    expect(headers.find((header) => header.key === 'wbrSticker')?.title).toBe(visible ? 'Стикер' : undefined)
+    expect(wrapper.find('[data-testid="box-sticker-value"]').exists()).toBe(visible)
+    await wrapper.setProps({ monitorScope: box7MonitorScope })
+    await flushPromises()
+    expect(wrapper.find('[data-testid="box-sticker-value"]').exists()).toBe(visible)
+    if (visible) {
+      expect(wrapper.get('[data-testid="box-sticker-field"] .label').text()).toBe('Стикер:')
+      expect(wrapper.get('[data-testid="box-sticker-value"]').text()).toBe(sticker)
+    }
+    wrapper.unmount()
+  })
+
   it('makes every boxes table cell clickable and routes to the box monitor', async () => {
     loadMonitorSnapshot.mockResolvedValueOnce(registerSnapshot)
 

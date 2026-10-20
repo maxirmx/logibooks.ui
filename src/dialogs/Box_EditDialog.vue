@@ -3,12 +3,16 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { computed, ref } from 'vue'
+import { provide, computed, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { Form, Field } from 'vee-validate'
 import * as Yup from 'yup'
 import router from '@/router'
 import ActionButton from '@/components/ActionButton.vue'
+import BoxStickerField from '@/components/BoxStickerField.vue'
+import LocalLabelPrinting from '@/components/LocalLabelPrinting.vue'
+import { LABEL_PRINTING_KEY } from '@/helpers/label.printing.helpers.js'
+import { WBR_COMPANY_ID } from '@/helpers/company.constants.js'
 import FieldError from '@/components/FieldError.vue'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { useAlertStore } from '@/stores/alert.store.js'
@@ -49,6 +53,13 @@ const formReady = ref(false)
 const isCreate = computed(() => props.mode === 'create')
 const readOnly = computed(() => register.value?.readOnly === true)
 const manualWeightDisabled = computed(() => Number(register.value?.realWeightKg || 0) > 0)
+const printingPanel = ref(null)
+provide(LABEL_PRINTING_KEY, {
+  busy: computed(() => printingPanel.value?.busy ?? true),
+  print: (target) => printingPanel.value?.printParcel(target)
+})
+const stickerCompany = computed(() => box.value || register.value)
+const showSticker = computed(() => stickerCompany.value?.companyId === WBR_COMPANY_ID)
 const loading = computed(() => boxLoading.value || registerLoading.value)
 const registerHeading = computed(() =>
   buildParcelListHeading(
@@ -217,6 +228,7 @@ async function onSubmit(values, { setErrors } = {}) {
       <div class="header-with-actions">
         <h1 class="primary-heading">{{ getTitle() }}</h1>
         <div class="header-actions">
+          <LocalLabelPrinting v-if="!isCreate && showSticker" ref="printingPanel" />
           <ActionButton
             :item="{}"
             type="submit"
@@ -259,6 +271,8 @@ async function onSubmit(values, { setErrors } = {}) {
         </div>
         <FieldError name="code" :errors="errors" />
       </div>
+
+      <BoxStickerField v-if="!isCreate && showSticker" :box="box" :disabled="loading" />
 
       <div v-for="field in [
         { name: 'lengthCm', label: 'Длина, см:', step: '0.01' },

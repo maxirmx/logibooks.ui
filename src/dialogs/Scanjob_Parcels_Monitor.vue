@@ -5,6 +5,7 @@
 
 import { computed } from 'vue'
 import ScanjobMonitorSummary from '@/components/ScanjobMonitorSummary.vue'
+import BoxStickerField from '@/components/BoxStickerField.vue'
 import ScanjobParcelsMonitorTable from '@/dialogs/Scanjob_Parcels_Monitor_Table.vue'
 import ScanjobOzonParcelsMonitorTable from '@/dialogs/Scanjob_Ozon_Parcels_Monitor_Table.vue'
 import ScanjobWbrParcelsMonitorTable from '@/dialogs/Scanjob_Wbr_Parcels_Monitor_Table.vue'
@@ -28,6 +29,7 @@ defineOptions({ name: 'Scanjob_Parcels_Monitor' })
 const props = defineProps({
   box: { type: Object, default: null },
   registerType: { type: Number, default: 0 },
+  company: { type: Object, default: null },
   register: { type: Object, default: null },
   loading: { type: Boolean, default: false },
   defectActionLoading: { type: Boolean, default: false },
@@ -112,6 +114,8 @@ function clearDefect(item) {
 <template>
   <div data-testid="scanjob-monitor-box">
     <ScanjobMonitorSummary :cards="summaryCards" :print-queue="props.printQueue" />
+
+    <BoxStickerField v-if="props.box" :box="props.box" :company="props.company" :disabled="props.loading" />
 
     <div class="monitor-section">
       <v-card class="table-card">

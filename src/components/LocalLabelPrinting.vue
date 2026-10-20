@@ -16,7 +16,7 @@ import { createLabelPrintingCoordinator } from '@/services/label.printing.coordi
 import ActionButton from '@/components/ActionButton.vue'
 import PrinterConfigurationDialog from '@/l2/PrinterConfigurationDialog.vue'
 
-const props = defineProps({ scanJobId: { type: Number, required: true }, userId: { type: [Number, String], default: null }, active: Boolean })
+const props = defineProps({ scanJobId: { type: Number, default: null }, userId: { type: [Number, String], default: null }, active: Boolean })
 const auth = useAuthStore()
 const alerts = useAlertStore()
 const confirm = useAppConfirm()

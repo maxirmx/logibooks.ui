@@ -10,6 +10,11 @@ import BoxesList from '@/lists/Boxes_List.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import { vuetifyStubs } from './helpers/test-utils.js'
 
+const printBoxLabel = vi.hoisted(() => vi.fn())
+vi.mock('@/components/LocalLabelPrinting.vue', () => ({ default: {
+  template: '<div data-testid="box-printing-panel" />',
+  setup(_props, { expose }) { expose({ busy: false, printParcel: printBoxLabel }) }
+} }))
 const mockBoxes = ref([])
 const mockBoxesLoading = ref(false)
 const mockRegister = ref({})
@@ -123,6 +128,20 @@ describe('Boxes_List.vue', () => {
     ensureOpsLoaded.mockResolvedValue()
     registerGetById.mockResolvedValue(mockRegister.value)
     boxesGetAll.mockResolvedValue(mockBoxes.value)
+  })
+
+  it('shows the company sticker and prints the selected box through its panel', async () => {
+    mockBoxes.value[0] = { ...mockBoxes.value[0], companyId: 2, registerType: 2097154,
+      wbrSticker: '$1:1:4542503776:362877', printableTemplates: ['WBR_BOX'] }
+    const wrapper = createWrapper()
+    await flushPromises()
+    expect(wrapper.text()).toContain('Стикер')
+    expect(wrapper.text()).toContain('$1:1:4542503776:362877')
+    const action = wrapper.findAllComponents(ActionButton).find((item) => item.props('tooltipText') === 'Печать стикера коробки')
+    expect(action.props('disabled')).toBe(false)
+    action.vm.$emit('click')
+    expect(printBoxLabel).toHaveBeenCalledWith({ boxId: 7, template: 'WBR_BOX' })
+    wrapper.unmount()
   })
 
   it('binds persisted controls and searches by code', async () => {

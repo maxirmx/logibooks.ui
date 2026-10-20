@@ -747,11 +747,27 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
       loading.value = false
     }
   }
-  async function finish(id) {
+  async function getFinishOptions(id, { operation } = {}) {
     loading.value = true
     error.value = null
     try {
-      await fetchWrapper.post(`${baseUrl}/${id}/finish`)
+      const query = operation == null ? '' : `?${new URLSearchParams({ operation })}`
+      return await fetchWrapper.get(`${baseUrl}/${id}/finish-options${query}`)
+    } catch (err) {
+      error.value = err
+      await markScanJobReadOnly(id, err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function finish(id, { markUnscannedAsNotFound = true, updateRegisterStatus = true } = {}) {
+    loading.value = true
+    error.value = null
+    try {
+      const query = new URLSearchParams({ markUnscannedAsNotFound, updateRegisterStatus })
+      await fetchWrapper.post(`${baseUrl}/${id}/finish?${query}`)
       return true
     } catch (err) {
       error.value = err
@@ -811,6 +827,7 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     start,
     pause,
     finish,
+    getFinishOptions,
     getOps,
     ensureOpsLoaded,
     getOpsLabel,

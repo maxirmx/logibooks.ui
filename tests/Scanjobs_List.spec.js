@@ -92,6 +92,7 @@ const deleteScanjobFn = vi.hoisted(() => vi.fn())
 const startScanjobFn = vi.hoisted(() => vi.fn())
 const pauseScanjobFn = vi.hoisted(() => vi.fn())
 const finishScanjobFn = vi.hoisted(() => vi.fn())
+const getFinishOptions = vi.hoisted(() => vi.fn())
 const startScanJobsListMonitorFn = vi.hoisted(() => vi.fn())
 const stopScanJobsListMonitorFn = vi.hoisted(() => vi.fn())
 const errorFn = vi.hoisted(() => vi.fn())
@@ -176,6 +177,7 @@ vi.mock('@/stores/scanjobs.store.js', () => ({
     start: startScanjobFn,
     pause: pauseScanjobFn,
     finish: finishScanjobFn,
+    getFinishOptions,
     ensureOpsLoaded,
     getOpsLabel: mockGetOpsLabel,
     startScanJobsListMonitor: startScanJobsListMonitorFn,
@@ -288,6 +290,9 @@ describe('Scanjobs_List.vue', () => {
     mockScanjobsPage.value = 1
     mockTotalCount.value = 1
     confirmMock.mockResolvedValue(true)
+    finishScanjobFn.mockResolvedValue(true)
+    getFinishOptions.mockResolvedValue({ canMarkUnscannedAsNotFound: true, targetRegisterStatus: { id: 2, title: 'Готов' } })
+    errorFn.mockImplementation((value) => { mockAlert.value = { severity: 'error', message: typeof value === 'string' ? value : value.message } })
     startScanJobsListMonitorFn.mockResolvedValue(true)
     stopScanJobsListMonitorFn.mockResolvedValue(true)
   })
@@ -620,6 +625,90 @@ describe('Scanjobs_List.vue', () => {
     })
   })
 
+
+  describe('independent completion workflow', () => {
+    it.each([[true, true], [true, false], [false, true], [false, false]])('submits choices %s / %s from the list', async (mark, update) => {
+      getAllScanjobs.mockResolvedValue()
+      confirmMock.mockImplementationOnce(async ({ contentComponentProps: props }) => {
+        props.onChange('markUnscannedAsNotFound', mark)
+        props.onChange('updateRegisterStatus', update)
+        return true
+      })
+      const wrapper = mount(ScanjobsList, { global: { stubs: testStubs } })
+      await wrapper.vm.finishScanjob({ id: 1, name: 'Приёмка', operation: 10 })
+      expect(finishScanjobFn).toHaveBeenCalledWith(1, { markUnscannedAsNotFound: mark, updateRegisterStatus: update })
+    })
+
+    it.each([true, false])('uses simple confirmation from the list, accepted: %s', async (accepted) => {
+      getAllScanjobs.mockResolvedValue()
+      getFinishOptions.mockResolvedValue({ canMarkUnscannedAsNotFound: false, targetRegisterStatus: null })
+      confirmMock.mockResolvedValueOnce(accepted)
+      const wrapper = mount(ScanjobsList, { global: { stubs: testStubs } })
+      await wrapper.vm.finishScanjob({ id: 1, name: 'Поиск', operation: 30 })
+      expect(confirmMock).toHaveBeenCalledWith(expect.objectContaining({ title: 'Поиск', content: 'Завершить задание?' }))
+      expect(confirmMock.mock.calls[0][0]).not.toHaveProperty('contentComponent')
+      if (accepted) expect(finishScanjobFn).toHaveBeenCalledWith(1, { markUnscannedAsNotFound: false, updateRegisterStatus: false })
+      else expect(finishScanjobFn).not.toHaveBeenCalled()
+    })
+
+    it('shows a preview failure once and does not confirm or complete', async () => {
+      getFinishOptions.mockRejectedValueOnce(new Error('Параметры недоступны'))
+      const wrapper = mount(ScanjobsList, { global: { stubs: testStubs } })
+      await wrapper.vm.finishScanjob({ id: 1, name: 'Приёмка' })
+      expect(confirmMock).not.toHaveBeenCalled()
+      expect(finishScanjobFn).not.toHaveBeenCalled()
+      expect(errorFn).toHaveBeenCalledTimes(1)
+      expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain('Параметры недоступны')
+      expect(mockPush).not.toHaveBeenCalled()
+    })
+
+    it('retains both disabled choices when a failed completion is retried', async () => {
+      getAllScanjobs.mockResolvedValue()
+      finishScanjobFn.mockRejectedValueOnce(Object.assign(new Error('Нет доступа'), { status: 403 })).mockResolvedValue(true)
+      confirmMock.mockImplementationOnce(async ({ contentComponentProps: props }) => {
+        props.onChange('markUnscannedAsNotFound', false)
+        props.onChange('updateRegisterStatus', false)
+        return true
+      }).mockResolvedValue(true)
+      const wrapper = mount(ScanjobsList, { global: { stubs: testStubs } })
+      const job = { id: 1, name: 'Приёмка' }
+      await wrapper.vm.finishScanjob(job)
+      expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain('Нет прав для завершения')
+      await wrapper.vm.finishScanjob(job)
+      expect(finishScanjobFn.mock.calls).toEqual([
+        [1, { markUnscannedAsNotFound: false, updateRegisterStatus: false }],
+        [1, { markUnscannedAsNotFound: false, updateRegisterStatus: false }]
+      ])
+      expect(errorFn).toHaveBeenCalledTimes(1)
+    })
+
+    it('reports a post-completion reload failure without repeating completion', async () => {
+      getAllScanjobs.mockResolvedValue()
+      const wrapper = mount(ScanjobsList, { global: { stubs: testStubs } })
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      getAllScanjobs.mockRejectedValueOnce(new Error('Reload failed'))
+      const job = { id: 1, name: 'Приёмка' }
+      await wrapper.vm.finishScanjob(job)
+      expect(finishScanjobFn).toHaveBeenCalledTimes(1)
+      expect(job.allowFinish).toBe(false)
+      expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain('Задание завершено, но не удалось обновить данные')
+      expect(errorFn).toHaveBeenCalledTimes(1)
+    })
+
+    it('blocks a second click while the preview request is pending', async () => {
+      let release
+      getFinishOptions.mockImplementationOnce(() => new Promise((resolve) => { release = resolve }))
+      const wrapper = mount(ScanjobsList, { global: { stubs: testStubs } })
+      const job = { id: 1, name: 'Приёмка' }
+      const first = wrapper.vm.finishScanjob(job)
+      await wrapper.vm.finishScanjob(job)
+      expect(getFinishOptions).toHaveBeenCalledTimes(1)
+      release({ canMarkUnscannedAsNotFound: false, targetRegisterStatus: null })
+      await first
+      expect(finishScanjobFn).toHaveBeenCalledTimes(1)
+    })
+  })
+
   describe('finishScanjob', () => {
     it('calls finish function and reloads list on success', async () => {
       finishScanjobFn.mockResolvedValue(true)
@@ -635,7 +724,7 @@ describe('Scanjobs_List.vue', () => {
       await wrapper.vm.finishScanjob(scanjob)
 
       expect(confirmMock).toHaveBeenCalled()
-      expect(finishScanjobFn).toHaveBeenCalledWith(1)
+      expect(finishScanjobFn).toHaveBeenCalledWith(1, { markUnscannedAsNotFound: true, updateRegisterStatus: true })
       expect(getAllScanjobs).toHaveBeenCalled()
     })
 
@@ -652,7 +741,7 @@ describe('Scanjobs_List.vue', () => {
       await wrapper.vm.finishScanjob(scanjob)
 
       expect(confirmMock).toHaveBeenCalled()
-      expect(finishScanjobFn).toHaveBeenCalledWith(1)
+      expect(finishScanjobFn).toHaveBeenCalledWith(1, { markUnscannedAsNotFound: true, updateRegisterStatus: true })
       expect(errorFn).toHaveBeenCalledWith('Нет прав для завершения сканирования')
     })
 
@@ -669,7 +758,7 @@ describe('Scanjobs_List.vue', () => {
       await wrapper.vm.finishScanjob(scanjob)
 
       expect(confirmMock).toHaveBeenCalled()
-      expect(finishScanjobFn).toHaveBeenCalledWith(1)
+      expect(finishScanjobFn).toHaveBeenCalledWith(1, { markUnscannedAsNotFound: true, updateRegisterStatus: true })
       expect(errorFn).toHaveBeenCalledWith('Задание на сканирование не найдено')
     })
 
@@ -686,8 +775,9 @@ describe('Scanjobs_List.vue', () => {
       await wrapper.vm.finishScanjob(scanjob)
 
       expect(confirmMock).toHaveBeenCalled()
-      expect(finishScanjobFn).toHaveBeenCalledWith(1)
-      expect(errorFn).toHaveBeenCalledWith('Ошибка при завершении сканирования')
+      expect(finishScanjobFn).toHaveBeenCalledWith(1, { markUnscannedAsNotFound: true, updateRegisterStatus: true })
+      expect(errorFn).toHaveBeenCalledWith(expect.any(Error), { fallback: 'Ошибка при завершении сканирования' })
+      expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain('Server error')
     })
 
     it('does not finish if runningAction is true', async () => {

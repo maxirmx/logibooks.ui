@@ -370,6 +370,73 @@ describe('scanjobs store', () => {
     })
   })
 
+
+  describe('completion options', () => {
+    it.each([undefined, null, 15])('loads a read-only preview for operation %s', async (operation) => {
+      const options = { canMarkUnscannedAsNotFound: true, targetRegisterStatus: { id: 7, title: 'Готов' } }
+      fetchWrapper.get.mockResolvedValue(options)
+      const store = useScanjobsStore()
+      const result = operation === undefined ? await store.getFinishOptions(1) : await store.getFinishOptions(1, { operation })
+      expect(result).toEqual(options)
+      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/scanjobs/1/finish-options${operation == null ? '' : '?operation=15'}`)
+      expect(fetchWrapper.post).not.toHaveBeenCalled()
+      expect(store.loading).toBe(false)
+      expect(store.error).toBeNull()
+    })
+
+    it('rejects preview failures and clears loading without publishing an alert', async () => {
+      const error = new Error('Preview failed')
+      fetchWrapper.get.mockRejectedValue(error)
+      const store = useScanjobsStore()
+      await expect(store.getFinishOptions(1)).rejects.toBe(error)
+      expect(store.error).toBe(error)
+      expect(store.loading).toBe(false)
+    })
+
+    it.each([true, false])('propagates a preview conflict after refreshing read-only state, refresh succeeds: %s', async (refreshSucceeds) => {
+      const conflict = Object.assign(new Error('Изменения запрещены для выбранного реестра'), { status: 409 })
+      const refreshError = new Error('Refresh unavailable')
+      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const store = useScanjobsStore()
+      store.scanjob = { ...mockScanjob, readOnly: false }
+      store.items = [{ ...mockScanjob, readOnly: false }]
+      const previous = store.scanjob
+      fetchWrapper.get.mockRejectedValueOnce(conflict)
+      if (refreshSucceeds) fetchWrapper.get.mockResolvedValueOnce({ ...mockScanjob, readOnly: true })
+      else fetchWrapper.get.mockRejectedValueOnce(refreshError)
+
+      await expect(store.getFinishOptions(mockScanjob.id)).rejects.toBe(conflict)
+
+      expect(fetchWrapper.get.mock.calls).toEqual([
+        [apiUrl + '/scanjobs/' + mockScanjob.id + '/finish-options'],
+        [apiUrl + '/scanjobs/' + mockScanjob.id]
+      ])
+      expect(store.scanjob).not.toBe(previous)
+      expect(store.scanjob.readOnly).toBe(true)
+      expect(store.items[0].readOnly).toBe(true)
+      expect(store.loading).toBe(false)
+      expect(store.error).toBe(conflict)
+      expect(consoleError).toHaveBeenCalledTimes(refreshSucceeds ? 0 : 1)
+      consoleError.mockRestore()
+    })
+
+    it.each([[true, true], [true, false], [false, true], [false, false]])('sends explicit independent flags %s / %s', async (markUnscannedAsNotFound, updateRegisterStatus) => {
+      fetchWrapper.post.mockResolvedValue()
+      const store = useScanjobsStore()
+      expect(await store.finish(1, { markUnscannedAsNotFound, updateRegisterStatus })).toBe(true)
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/scanjobs/1/finish?markUnscannedAsNotFound=${markUnscannedAsNotFound}&updateRegisterStatus=${updateRegisterStatus}`)
+    })
+
+    it.each([
+      [{ markUnscannedAsNotFound: false }, 'false', 'true'],
+      [{ updateRegisterStatus: false }, 'true', 'false']
+    ])('defaults only omitted flags', async (options, mark, update) => {
+      fetchWrapper.post.mockResolvedValue()
+      await useScanjobsStore().finish(1, options)
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/scanjobs/1/finish?markUnscannedAsNotFound=${mark}&updateRegisterStatus=${update}`)
+    })
+  })
+
   describe('finish', () => {
     it('finishes scanjob successfully', async () => {
       fetchWrapper.post.mockResolvedValue({})
@@ -377,7 +444,7 @@ describe('scanjobs store', () => {
 
       const result = await store.finish(1)
 
-      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/scanjobs/1/finish`)
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/scanjobs/1/finish?markUnscannedAsNotFound=true&updateRegisterStatus=true`)
       expect(result).toBe(true)
       expect(store.loading).toBe(false)
       expect(store.error).toBeNull()

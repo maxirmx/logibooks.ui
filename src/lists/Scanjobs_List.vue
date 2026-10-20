@@ -15,6 +15,7 @@ import ActionButton from '@/components/ActionButton.vue'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useAppConfirm } from '@/composables/useAppConfirm.js'
+import { useScanjobFinishConfirmation } from '@/composables/useScanjobFinishConfirmation.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync.js'
 import { mdiMagnify } from '@mdi/js'
@@ -32,6 +33,7 @@ const companiesStore = useCompaniesStore()
 const authStore = useAuthStore()
 const alertStore = useAlertStore()
 const confirm = useAppConfirm()
+const finishConfirmation = useScanjobFinishConfirmation(scanJobsStore.getFinishOptions, confirm)
 
 const { items, loading, ops, totalCount } = storeToRefs(scanJobsStore)
 const { companies } = storeToRefs(companiesStore)
@@ -142,26 +144,24 @@ async function pauseScanjob(scanJob) {
 async function finishScanjob(scanJob) {
   if (runningAction.value || scanJob?.readOnly) return
   runningAction.value = true
+  let completed = false
   try {
-    const content = 'Завершить задание на сканирование "' + scanJob.name + '" ?'
-    const confirmed = await confirm({
-      title: 'Подтверждение',
-      confirmationText: 'Завершить',
-      cancellationText: 'Не завершать',
-      content: content
-    })
-
-    if (!confirmed) return
-
-    await scanJobsStore.finish(scanJob.id)
+    const choices = await finishConfirmation.request(scanJob)
+    if (!choices) return
+    await scanJobsStore.finish(scanJob.id, choices)
+    completed = true
+    finishConfirmation.reset()
+    Object.assign(scanJob, { status: 20, allowStart: false, allowPause: false, allowFinish: false })
     await loadScanjobs()
   } catch (error) {
-    if (error.message?.includes('403')) {
+    if (completed) {
+      alertStore.error('Задание завершено, но не удалось обновить данные. Обновите страницу.')
+    } else if (error.status === 403 || error.message?.includes('403')) {
       alertStore.error('Нет прав для завершения сканирования')
-    } else if (error.message?.includes('404')) {
+    } else if (error.status === 404 || error.message?.includes('404')) {
       alertStore.error('Задание на сканирование не найдено')
     } else {
-      alertStore.error('Ошибка при завершении сканирования')
+      alertStore.error(error, { fallback: 'Ошибка при завершении сканирования' })
     }
   } finally {
     runningAction.value = false

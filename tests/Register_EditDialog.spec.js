@@ -4,7 +4,7 @@
 // This file is a part of Logibooks ui application
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { enableAutoUnmount, mount } from '@vue/test-utils'
 import { ref, nextTick } from 'vue'
 import { createPinia, setActivePinia } from 'pinia'
 import RegisterEditDialog from '@/dialogs/Register_EditDialog.vue'
@@ -20,6 +20,8 @@ import {
 import { formatDate } from '@/helpers/date.formatters.js'
 import { CUSTOMS_PROCEDURE_RETURN } from '@/helpers/customs.procedure.helpers.js'
 import { useAlertStore } from '@/stores/alert.store.js'
+
+enableAutoUnmount(afterEach)
 
 const restrictionConfirm = vi.hoisted(() => vi.fn())
 vi.mock('@/composables/useAppConfirm.js', () => ({ useAppConfirm: () => restrictionConfirm }))
@@ -2563,7 +2565,7 @@ describe('Register_EditDialog', () => {
     }
 
     const Parent = {
-      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
+      template: '<Suspense><RegisterEditDialog :id="1" :create="true" /></Suspense>',
       components: { RegisterEditDialog }
     }
     const wrapper = mount(Parent, {
@@ -2594,6 +2596,74 @@ describe('Register_EditDialog', () => {
     expect(mockItem.value.customsProcedureCode).toBe(31)
     expect(mockItem.value.companyId).toBe(GTC_COMPANY_ID)
     expect(mockItem.value.senderId).toBe(GTC_COMPANY_ID)
+  })
+
+  describe('company identity during direction updates', () => {
+    async function mountCompanyEditor(create) {
+      const Parent = {
+        template: `<Suspense><RegisterEditDialog :id="1" :create="${create}" /></Suspense>`,
+        components: { RegisterEditDialog }
+      }
+      const wrapper = mount(Parent, { global: { stubs: {
+        ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub
+      } } })
+      await resolveAll()
+      return { wrapper, dialog: wrapper.findComponent(RegisterEditDialog) }
+    }
+
+    it.each([WBR_COMPANY_ID, WBRN_REGISTER_ID, OZON_COMPANY_ID, GTC_COMPANY_ID])(
+      'preserves the server company for existing type %i through initialization and direction changes', async (registerType) => {
+        const companyId = registerType === GTC_COMPANY_ID ? WBR_COMPANY_ID : GTC_COMPANY_ID
+        mockItem.value = {
+          ...baseRegisterItem, registerType, companyId,
+          customsProcedureCode: CUSTOMS_PROCEDURE_IMPORT,
+          theOtherCompanyId: OZON_COMPANY_ID, theOtherCountryCode: 840
+        }
+        const { wrapper, dialog } = await mountCompanyEditor(false)
+        expect(mockItem.value.companyId).toBe(companyId)
+        expect(mockItem.value.recipientId).toBe(companyId)
+        expect(mockItem.value.senderId).toBe(OZON_COMPANY_ID)
+
+        dialog.vm.handleProcedureChange({ target: { value: String(CUSTOMS_PROCEDURE_EXPORT) } })
+        await nextTick()
+        expect(mockItem.value.companyId).toBe(companyId)
+        expect(mockItem.value.senderId).toBe(companyId)
+        expect(mockItem.value.recipientId).toBe(OZON_COMPANY_ID)
+
+        mockItem.value.theOtherCompanyId = WBR_COMPANY_ID
+        mockItem.value.theOtherCountryCode = 156
+        await nextTick()
+        expect(mockItem.value.companyId).toBe(companyId)
+        expect(mockItem.value.senderId).toBe(companyId)
+        expect(mockItem.value.recipientId).toBe(WBR_COMPANY_ID)
+        expect(mockItem.value.destCountryCode).toBe(156)
+
+        dialog.vm.handleProcedureChange({ target: { value: String(CUSTOMS_PROCEDURE_GTC_IMPORT) } })
+        await nextTick()
+        expect(mockItem.value.companyId).toBe(companyId)
+        expect(mockItem.value.recipientId).toBe(companyId)
+        expect(mockItem.value.senderId).toBe(WBR_COMPANY_ID)
+        wrapper.unmount()
+      }
+    )
+
+    it.each([
+      [WBR_COMPANY_ID, WBR_COMPANY_ID],
+      [WBRN_REGISTER_ID, WBR_COMPANY_ID],
+      [OZON_COMPANY_ID, OZON_COMPANY_ID],
+      [GTC_COMPANY_ID, GTC_COMPANY_ID],
+      [undefined, null],
+      [0, null]
+    ])('selects the company from explicit type %s only for new registers', async (registerType, companyId) => {
+      mockItem.value = {
+        ...baseRegisterItem, registerType, companyId: GTC_COMPANY_ID,
+        customsProcedureCode: CUSTOMS_PROCEDURE_EXPORT
+      }
+      const { wrapper } = await mountCompanyEditor(true)
+      expect(mockItem.value.companyId).toBe(companyId)
+      expect(mockItem.value.senderId).toBe(companyId)
+      wrapper.unmount()
+    })
   })
 
   describe('restriction confirmation during save', () => {

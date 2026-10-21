@@ -10,7 +10,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { useRegisterDownloadFlow } from '@/composables/useRegisterDownloadFlow.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
-import { GTC_COMPANY_ID, OZON_COMPANY_ID, WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
+import { GTC_COMPANY_ID, OZON_COMPANY_ID, WBR_COMPANY_ID, WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
 
 const flush = async () => { await Promise.resolve(); await Promise.resolve(); await nextTick() }
 const register = (registerType, id = 10) => ({ id, registerType, fileName: 'r.xlsx' })
@@ -95,18 +95,21 @@ describe('shared register download flow', () => {
     }
   )
 
-  it.each([undefined, 0])('uses companyId when registerType is %s', async (registerType) => {
+  it.each([undefined, null, 0])('does not infer the format from companyId when registerType is %s', async (registerType) => {
     registersStore.getDownloadFormats.mockResolvedValue({ company: { available: true, name: 'Получатель' } })
     const { flow, wrapper } = mountFlow()
     const item = { id: 10, registerType, companyId: OZON_COMPANY_ID }
     await flow.loadFormats(item)
-    expect(flow.companyFormatName.value).toBe('Получатель')
+    expect(flow.companyFormatName.value).toBe('')
+    expect(registersStore.getDownloadFormats).not.toHaveBeenCalled()
+    expect(await flow.download({ register: item, format: 'company' })).toBe(false)
+    expect(registersStore.download).not.toHaveBeenCalled()
     expect(await flow.download({ register: item, format: 'generic' })).toBe(true)
-    expect(registersStore.download).toHaveBeenCalledWith(10, undefined, null, undefined, false, 'generic')
+    expect(registersStore.download).toHaveBeenCalledWith(10, undefined, null, undefined)
     wrapper.unmount()
   })
 
-  it.each([2])('keeps unsupported type %i on the original path', async (registerType) => {
+  it.each([WBR_COMPANY_ID])('keeps unsupported type %i on the original path', async (registerType) => {
     const { flow, wrapper } = mountFlow()
     await flow.loadFormats(register(registerType, 8))
     expect(registersStore.getDownloadFormats).not.toHaveBeenCalled()

@@ -16,7 +16,7 @@ defineProps({
   selectedParcelId: { type: [Number, String], default: null }
 })
 
-defineEmits(['edit-parcel', 'set-defect', 'clear-defect'])
+defineEmits(['edit-parcel', 'set-defect', 'clear-defect', 'clear-ext-id'])
 </script>
 
 <template>
@@ -30,5 +30,6 @@ defineEmits(['edit-parcel', 'set-defect', 'clear-defect'])
     @edit-parcel="$emit('edit-parcel', $event)"
     @set-defect="$emit('set-defect', $event)"
     @clear-defect="$emit('clear-defect', $event)"
+    @clear-ext-id="$emit('clear-ext-id', $event)"
   />
 </template>

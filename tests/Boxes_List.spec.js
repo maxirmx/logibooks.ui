@@ -132,15 +132,43 @@ describe('Boxes_List.vue', () => {
 
   it('shows the company sticker and prints the selected box through its panel', async () => {
     mockBoxes.value[0] = { ...mockBoxes.value[0], companyId: 2, registerType: 2097154,
-      wbrSticker: '$1:1:4542503776:362877', printableTemplates: ['WBR_BOX'] }
+      boxSticker: '$1:1:4542503776:362877', printableTemplates: ['WBR_BOX'] }
     const wrapper = createWrapper()
     await flushPromises()
-    expect(wrapper.text()).toContain('Стикер')
+    expect(wrapper.text()).toContain('Код стикера')
     expect(wrapper.text()).toContain('$1:1:4542503776:362877')
-    const action = wrapper.findAllComponents(ActionButton).find((item) => item.props('tooltipText') === 'Печать стикера коробки')
+    const action = wrapper.findAllComponents(ActionButton).find((item) => item.props('tooltipText') === 'Печать стикера')
     expect(action.props('disabled')).toBe(false)
+    const actions = wrapper.get('.actions-container')
+    expect(actions.findAllComponents(ActionButton).map((button) => button.props('tooltipText'))).toEqual([
+      'Список посылок', 'Редактировать коробку', 'Печать стикера'
+    ])
+    expect(actions.get('button[data-testid="box-print-label"]').isVisible()).toBe(true)
+    expect(wrapper.findAll('button[data-testid="box-print-label"]')).toHaveLength(1)
+    const stickerCode = wrapper.get('[data-testid="box-sticker-value"]')
+    expect(stickerCode.text()).toBe('$1:1:4542503776:362877')
+    expect(stickerCode.element.parentElement.querySelector('button')).toBeNull()
     action.vm.$emit('click')
     expect(printBoxLabel).toHaveBeenCalledWith({ boxId: 7, template: 'WBR_BOX' })
+    wrapper.unmount()
+  })
+
+  it.each([
+    [1, '$1:1:4542503776:362877', ['WBR_BOX']],
+    [2, null, ['WBR_BOX']],
+    [2, '$1:1:4542503776:362877', []]
+  ])('keeps the sticker column and unavailable print button visible for company %s', async (companyId, boxSticker, printableTemplates) => {
+    mockBoxes.value[0] = { ...mockBoxes.value[0], companyId, boxSticker, printableTemplates }
+    const wrapper = createWrapper()
+    await flushPromises()
+    const table = wrapper.findComponent(vuetifyStubs['v-data-table'])
+    expect(table.props('headers').find((header) => header.key === 'boxSticker')?.title).toBe('Код стикера')
+    expect(wrapper.get('[data-testid="box-printing-panel"]').isVisible()).toBe(true)
+    const button = wrapper.get('.actions-container').get('button[data-testid="box-print-label"]')
+    expect(button.isVisible()).toBe(true)
+    expect(button.element.disabled).toBe(true)
+    await button.trigger('click')
+    expect(printBoxLabel).not.toHaveBeenCalled()
     wrapper.unmount()
   })
 

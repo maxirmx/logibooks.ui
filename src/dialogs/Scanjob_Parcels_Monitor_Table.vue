@@ -8,6 +8,7 @@ import { storeToRefs } from 'pinia'
 import { useAuthStore } from '@/stores/auth.store.js'
 import MonitorLabelActions from '@/components/MonitorLabelActions.vue'
 import ActionButton from '@/components/ActionButton.vue'
+import { canClearParcelExtId } from '@/helpers/parcel.ext-id.helpers.js'
 import ClickableCell from '@/components/ClickableCell.vue'
 import CorrectedWeightDisplay from '@/components/CorrectedWeightDisplay.vue'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
@@ -38,7 +39,7 @@ const props = defineProps({
   selectedParcelId: { type: [Number, String], default: null }
 })
 
-const emit = defineEmits(['edit-parcel', 'set-defect', 'clear-defect'])
+const emit = defineEmits(['edit-parcel', 'set-defect', 'clear-defect', 'clear-ext-id'])
 
 const authStore = useAuthStore()
 const {
@@ -51,6 +52,13 @@ const {
 const canFollowParcelEditRoute = computed(() => hasLogistRole?.value === true)
 const isParcelCellDisabled = computed(() => props.loading || !canFollowParcelEditRoute.value)
 const areDefectActionsBusy = computed(() => props.loading || props.defectActionLoading)
+const isAdminUser = computed(() => Boolean(authStore.isAdmin?.value ?? authStore.isAdmin))
+function isClearExtIdDisabled(item) {
+  return areDefectActionsBusy.value || !canClearParcelExtId(item, authStore)
+}
+function clearExtId(item) {
+  if (!isClearExtIdDisabled(item)) emit('clear-ext-id', item)
+}
 const selectedParcelIdNumber = computed(() => toNumberOrNull(props.selectedParcelId))
 const dataTableRef = ref(null)
 
@@ -231,7 +239,9 @@ watch(
   >
     <template #[`item.actions`]="{ item }">
       <div class="actions-container">
-        <MonitorLabelActions :item="item" />
+        <ActionButton v-if="isAdminUser" :item="item" icon="fa-solid fa-broom"
+          tooltip-text="Очистить номер КГТ" aria-label="Очистить номер КГТ"
+          data-testid="scanjob-clear-ext-id-action" :disabled="isClearExtIdDisabled(item)" @click="clearExtId" />
         <ActionButton
           :item="item"
           icon="fa-solid fa-person-circle-xmark"
@@ -252,6 +262,7 @@ watch(
           @click="clearDefect"
           :disabled="isClearDefectDisabled(item)"
         />
+        <MonitorLabelActions :item="item" :disabled="areDefectActionsBusy" />
       </div>
     </template>
 

@@ -7,7 +7,7 @@ function boolValue(value) {
 }
 
 export function canClearParcelExtId(item, authStore) {
-  return Boolean(item?.id && item?.extId && boolValue(authStore?.isAdmin))
+  return Boolean((item?.id ?? item?.parcelId) && item?.extId && boolValue(authStore?.isAdmin))
 }
 
 export function getClearParcelExtIdErrorMessage(error) {

@@ -12,6 +12,12 @@ import { scanjobCheckStatusProjectionKind } from '@/helpers/scanjob.check-status
 import { OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 
 let WbrNParcelsWhList
+const printParcelLabel = vi.hoisted(() => vi.fn())
+const printerBusy = ref(false)
+vi.mock('@/components/LocalLabelPrinting.vue', () => ({ default: {
+  setup(_props, { expose }) { expose({ busy: printerBusy, printParcel: printParcelLabel }) },
+  template: '<div />'
+} }))
 
 const loadParcels = vi.fn().mockResolvedValue()
 const openParcelEdit = vi.fn()
@@ -367,7 +373,32 @@ describe('WbrNParcels_WhList.vue', () => {
     WbrNParcelsWhList = (await import('@/lists/WbrNParcels_WhList.vue')).default
   }, 30000)
 
-  beforeEach(() => { setActivePinia(createPinia()); resetState() })
+  beforeEach(() => { setActivePinia(createPinia()); resetState(); printerBusy.value = false })
+
+  it('prints a supported sticker from row actions and disables unavailable printing silently', async () => {
+    mockItems.value[0].printableTemplates = ['WBRN', 'TJ_EXPORT']
+    const wrapper = mount(WbrNParcelsWhList, { props: { registerId: 9 }, global: { stubs: globalStubs } })
+    await resolveAll()
+    const button = wrapper.get('button[data-testid="monitor-print-label"]')
+    expect(button.element.closest('.actions-container')).not.toBeNull()
+    expect(button.attributes('aria-label')).toBe('Печать стикера')
+    expect(button.element.disabled).toBe(false)
+    await button.trigger('click')
+    expect(printParcelLabel).toHaveBeenCalledWith({ parcelId: 22, template: 'WBRN' })
+    const invoice = wrapper.get('button[data-testid="monitor-print-invoice"]')
+    expect(invoice.element.closest('.actions-container')).not.toBeNull()
+    await invoice.trigger('click')
+    expect(printParcelLabel).toHaveBeenLastCalledWith({ parcelId: 22, template: 'TJ_EXPORT' })
+    expect(openParcelEdit).not.toHaveBeenCalled()
+    printerBusy.value = true; await resolveAll()
+    expect(button.element.disabled).toBe(true)
+    expect(invoice.element.disabled).toBe(true)
+    expect(alertError).not.toHaveBeenCalled()
+    printerBusy.value = false; mockItems.value[0].printableTemplates = []; await resolveAll()
+    expect(button.isVisible()).toBe(true)
+    expect(button.element.disabled).toBe(true)
+    wrapper.unmount()
+  })
 
   it('initializes and loads directly inside an exact box scope', async () => {
     parcelsWhPage.value = 3

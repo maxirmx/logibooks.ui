@@ -4,7 +4,7 @@
 
 /* @vitest-environment jsdom */
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { createRouter, createWebHistory } from 'vue-router'
 import { createPinia, setActivePinia } from 'pinia'
 import App from '@/App.vue'
@@ -42,6 +42,7 @@ const router = createRouter({
   history: createWebHistory(),
   routes: [
     { path: '/', component: { template: '<div>Home</div>' } },
+    { path: '/printing/settings', component: { template: '<div>Print settings</div>' } },
     { path: '/login', component: { template: '<div>Login</div>' } },
     { path: '/registers', component: { template: '<div>Registers</div>' } },
     { path: '/parcels/by-number', component: { template: '<div>Parcels</div>' } },
@@ -100,6 +101,7 @@ describe('App navigation for registers', () => {
         plugins: [router, vuetify],
         stubs: {
           RouterView: true,
+          'v-dialog': { props: ['modelValue'], template: '<div v-if="modelValue" role="dialog"><slot /></div>' },
           'v-app': { template: '<div class="v-app"><slot /></div>' },
           'v-app-bar': { template: '<div class="v-app-bar"><slot name="prepend" /><slot /></div>' },
           'v-app-bar-nav-icon': { template: '<button class="nav-icon" />' },
@@ -128,6 +130,19 @@ describe('App navigation for registers', () => {
       }
     })
   }
+
+  it('routes to the single settings page after scanning in the warehouse menu', async () => {
+    const wrapper = mountApp()
+    expect(wrapper.findAll('[data-testid="print-settings-menu"]')).toHaveLength(1)
+    const menu = wrapper.get('[data-testid="print-settings-menu"]')
+    expect(menu.element.closest('li').previousElementSibling.textContent).toContain('Сканирования')
+    await menu.trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.path).toBe('/printing/settings')
+    expect(router.currentRoute.value.query.returnUrl).toBe('/')
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
+    wrapper.unmount()
+  })
 
   it('shows register-status settings to shift leads without exposing administrator-only settings', async () => {
     authStore.user = {

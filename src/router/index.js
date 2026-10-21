@@ -103,6 +103,12 @@ const router = createRouter({
       meta: { reqAnyRole: true }
     },
     {
+      path: '/printing/settings',
+      name: 'Настройки печати',
+      component: () => import('@/views/Printer_SettingsView.vue'),
+      meta: { reqWhRole: true }
+    },
+    {
       path: '/scanjobs',
       name: 'Задания на сканирование',
       component: () => import('@/views/Scanjobs_View.vue'),

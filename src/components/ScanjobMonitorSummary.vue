@@ -18,13 +18,18 @@ const props = defineProps({
     <div v-for="card in props.cards" :key="card.key" class="monitor-summary-item">
       <div class="monitor-summary-content">
         <div class="monitor-summary-label">{{ card.label }}</div>
-        <div class="monitor-summary-value">
-          <span v-if="card.valueClass" :class="card.valueClass">
-            {{ card.value }}
-          </span>
-          <template v-else>
-            {{ card.value }}
-          </template>
+        <div class="monitor-summary-value-row">
+          <div class="monitor-summary-value">
+            <span v-if="card.valueClass" :class="card.valueClass">
+              {{ card.value }}
+            </span>
+            <template v-else>
+              {{ card.value }}
+            </template>
+          </div>
+          <div v-if="$slots[`card-${card.key}`]" class="monitor-summary-extra">
+            <slot :name="`card-${card.key}`" :card="card" />
+          </div>
         </div>
       </div>
     </div>

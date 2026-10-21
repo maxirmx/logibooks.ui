@@ -37,7 +37,7 @@ const props = defineProps({
   printQueue: { type: Object, default: null }
 })
 
-const emit = defineEmits(['edit-parcel', 'set-defect', 'clear-defect'])
+const emit = defineEmits(['edit-parcel', 'set-defect', 'clear-defect', 'clear-ext-id'])
 
 const parcels = computed(() => props.box?.parcels ?? [])
 const hasRegisteredParcels = computed(() => parcels.value.some((parcel) => parcel?.isInRegister !== false))
@@ -113,9 +113,17 @@ function clearDefect(item) {
 
 <template>
   <div data-testid="scanjob-monitor-box">
-    <ScanjobMonitorSummary :cards="summaryCards" :print-queue="props.printQueue" />
-
-    <BoxStickerField v-if="props.box" :box="props.box" :company="props.company" :disabled="props.loading" />
+    <ScanjobMonitorSummary :cards="summaryCards" :print-queue="props.printQueue">
+      <template #card-boxStatus>
+        <BoxStickerField
+          v-if="isPhysicalMonitorBox(props.box)"
+          :box="props.box"
+          :company="props.company"
+          :show-label="false"
+          :disabled="props.loading"
+        />
+      </template>
+    </ScanjobMonitorSummary>
 
     <div class="monitor-section">
       <v-card class="table-card">
@@ -134,6 +142,7 @@ function clearDefect(item) {
           @edit-parcel="editParcel"
           @set-defect="setDefect"
           @clear-defect="clearDefect"
+          @clear-ext-id="emit('clear-ext-id', $event)"
         />
 
         <ScanjobParcelsMonitorTable
@@ -147,6 +156,7 @@ function clearDefect(item) {
           @edit-parcel="editParcel"
           @set-defect="setDefect"
           @clear-defect="clearDefect"
+          @clear-ext-id="emit('clear-ext-id', $event)"
         />
       </v-card>
     </div>

@@ -10,6 +10,12 @@ import { vuetifyStubs, resolveAll } from './helpers/test-utils.js'
 import { scanjobCheckStatusProjectionKind } from '@/helpers/scanjob.check-status.helpers.js'
 import { OZON_COMPANY_ID } from '@/helpers/company.constants.js'
 import { OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
+const printParcelLabel = vi.hoisted(() => vi.fn())
+const printerBusy = ref(false)
+vi.mock('@/components/LocalLabelPrinting.vue', () => ({ default: {
+  setup(_props, { expose }) { expose({ busy: printerBusy, printParcel: printParcelLabel }) },
+  template: '<div />'
+} }))
 
 const { loadParcels, navigateToEditParcel, setDefect, clearDefect } = vi.hoisted(() => ({
   loadParcels: vi.fn().mockResolvedValue(),
@@ -193,6 +199,21 @@ const globalStubs = {
 }
 
 describe('OzonParcels_WhList.vue', () => {
+  it('prints supported parcel stickers using the shared settings and disables unsupported labels', async () => {
+    mockItems.value[0].printableTemplates = ['OZON']
+    const wrapper = mount(OzonParcelsWhList, { props: { registerId: 1 }, global: { stubs: globalStubs } })
+    await resolveAll()
+    const button = wrapper.get('button[data-testid="monitor-print-label"]')
+    expect(button.element.closest('.actions-container')).not.toBeNull()
+    expect(button.attributes('aria-label')).toBe('Печать стикера')
+    await button.trigger('click')
+    expect(printParcelLabel).toHaveBeenCalledWith({ parcelId: 1, template: 'OZON' })
+    expect(navigateToEditParcel).not.toHaveBeenCalled()
+    mockItems.value[0].printableTemplates = []; await resolveAll()
+    expect(button.isVisible()).toBe(true)
+    expect(button.element.disabled).toBe(true)
+    wrapper.unmount()
+  })
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()

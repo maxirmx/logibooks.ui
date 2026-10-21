@@ -33,7 +33,9 @@ export const printingApi = {
   certificate: () => printingRequest('/qz/certificate'),
   sign: async (data) => (await printingRequest('/qz/sign', { data })).signature,
   label: ({ scanJobId, parcelId, scanCodeId, boxId, template }) => printingRequest(
-    boxId != null ? `/boxes/${boxId}/label?template=${encodeURIComponent(template)}` : `/scanjobs/${scanJobId}/monitor/${scanCodeId == null ? `parcels/${parcelId}` : `scans/${scanCodeId}`}/label?template=${encodeURIComponent(template)}`
+    boxId != null ? `/boxes/${boxId}/label?template=${encodeURIComponent(template)}` :
+      scanJobId == null ? `/parcels/${parcelId}/label?template=${encodeURIComponent(template)}` :
+        `/scanjobs/${scanJobId}/monitor/${scanCodeId == null ? `parcels/${parcelId}` : `scans/${scanCodeId}`}/label?template=${encodeURIComponent(template)}`
   )
 }
 

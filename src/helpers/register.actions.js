@@ -560,7 +560,7 @@ export function useRegisterHeaderActions({
   }
 
   const runDownloadRegister = async (format = 'generic') => {
-    const registerType = Number(currentRegister.value?.registerType || currentRegister.value?.companyId)
+    const registerType = Number(currentRegister.value?.registerType)
     if (!COMPANY_REGISTER_OUTPUT_TYPES.includes(registerType)) {
       return await runDownloadActionWithDialog(downloadRegister, 'download-register')
     }

@@ -62,6 +62,46 @@ async function save() { await wrapper.get('[data-testid="save-print-settings"]')
 async function cancel() { await wrapper.get('[data-testid="cancel-print-settings"]').trigger('click'); await flushPromises() }
 
 describe('routed print settings', () => {
+  it('keeps recovery identities after scope teardown and a rejected save until Off is saved successfully', async () => {
+    await mountSettings(undefined, async (printing) => {
+      const owner = Symbol('departing monitor')
+      printing.bindScope(owner, 42, 9, true); await flushPromises()
+      printing.state.failed = { scanJobId: 42, scanCodeId: 8, template: 'KGT' }
+      printing.state.overflow = { scanJobId: 42, scanCodeId: 70, template: 'KGT' }
+      printing.unbindScope(owner); await flushPromises()
+    })
+    expect(store.state.failed).toBeNull()
+    expect(wrapper.get('[data-testid="failed-print"]').text()).toContain('скан 8 (KGT), задание 42')
+    expect(wrapper.get('[data-testid="print-overflow"]').text()).toContain('скана 70 (KGT), задание 42')
+    env.channel.stop.mockRejectedValueOnce(new Error('cannot stop'))
+    await save()
+    expect(router.currentRoute.value.path).toBe('/printing/settings')
+    expect(wrapper.get('[role="alert"]').text()).toContain('cannot stop')
+    expect(wrapper.get('[data-testid="failed-print"]').isVisible()).toBe(true)
+    expect(store.recovery).not.toBeNull()
+    await save()
+    expect(router.currentRoute.value.path).toBe('/boxes')
+    expect(store.recovery).toBeNull()
+  })
+  it('propagates discovery rejection without store presentation', async () => {
+    await mountSettings()
+    const failure = { code: 'QzTrustRejected' }
+    env.qz.connect.mockRejectedValueOnce(failure)
+    await expect(store.refreshPrinters()).rejects.toBe(failure)
+    expect(errorSpy).not.toHaveBeenCalled()
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+  })
+  it.each(['NoPrinters', 'PrinterMissing', 'QzTrustRejected'])('does not publish a late %s settings discovery after cancellation', async (code) => {
+    let rejectDiscovery
+    env.qz.connect.mockReturnValueOnce(new Promise((resolve, reject) => { rejectDiscovery = reject }))
+    await mountSettings()
+    const report = vi.spyOn(console, 'error').mockImplementation(() => {})
+    await cancel()
+    rejectDiscovery({ code }); await flushPromises()
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+    expect(errorSpy).not.toHaveBeenCalled()
+    expect(report).toHaveBeenCalledWith('[printing settings discovery after unmount]', { code })
+  })
   it('renders a normal page with header actions, one alert region and compact ungrouped printer controls', async () => {
     await mountSettings()
     expect(wrapper.get('h1').text()).toBe('Настройки печати')

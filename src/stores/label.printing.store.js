@@ -22,6 +22,7 @@ export const useLabelPrintingStore = defineStore('labelPrinting', () => {
   let availabilityCheck = null
   let qzAlertId = null
   const preferredMode = ref('Off')
+  const recovery = ref(null)
   const scope = reactive({ scanJobId: null, userId: null, active: false })
   let scopeOwner = null
   let scopeVersion = 0
@@ -45,9 +46,14 @@ export const useLabelPrintingStore = defineStore('labelPrinting', () => {
     onSent: () => { if (!disposed) alerts.success('Этикетка отправлена в очередь принтера. Физическая печать не подтверждена.') }
   })
   const state = coordinator.state
-  const busy = computed(() => !qz.state.connected || !qz.state.printer || checkingAvailability.value || controlBusy.value || state.busy || state.paused || state.queued > 0)
-  const operationInProgress = computed(() => controlBusy.value || state.busy)
-  const queueStatus = computed(() => ({ queued: state.queued, paused: state.paused }))
+  const busy = computed(() => !qz.state.connected || !qz.state.printer || checkingAvailability.value || operationInProgress.value || state.paused || state.queued > 0)
+  const operationInProgress = computed(() => controlBusy.value || state.busy || state.transitioning)
+  const queueStatus = computed(() => ({ queued: state.queued, paused: state.paused, mode: state.mode, failed: state.failed, overflow: state.overflow }))
+  function retainRecovery() {
+    if (state.failed || state.overflow) recovery.value = {
+      failed: state.failed && { ...state.failed }, overflow: state.overflow && { ...state.overflow }
+    }
+  }
   function readPreferences() {
     qz.restoreSelection()
     const saved = localStorage.getItem(PRINT_MODE_STORAGE_KEY)
@@ -58,18 +64,19 @@ export const useLabelPrintingStore = defineStore('labelPrinting', () => {
   function checkAvailability() {
     if (!availabilityCheck) {
       checkingAvailability.value = true
-      availabilityCheck = qz.connect().then(() => {
-        dismissQzAlert()
-        return true
-      }, (error) => { showError(error); return false })
+      availabilityCheck = qz.connect()
         .finally(() => { checkingAvailability.value = false; availabilityCheck = null })
     }
     return availabilityCheck
   }
   async function refreshPrinters() {
-    if (controlBusy.value || state.busy) return
+    if (operationInProgress.value) return
     controlBusy.value = true
-    try { await checkAvailability() }
+    try { await checkAvailability(); dismissQzAlert() }
+    catch (error) {
+      if (getPrintingErrorCode(error) === 'QzUnavailable') qz.state.connected = false
+      throw error
+    }
     finally { await coordinator.stopIfPrinterMissing(); controlBusy.value = false }
   }
   function setSettingsActive(active) {
@@ -99,6 +106,7 @@ export const useLabelPrintingStore = defineStore('labelPrinting', () => {
       if (!printer && nextMode !== 'Off') throw printingError('NoSelection')
       if (printer && printer !== qz.state.printer && !qz.state.printers.includes(printer)) throw printingError('PrinterMissing')
       previous = { printer: localStorage.getItem(PRINTER_STORAGE_KEY), mode: localStorage.getItem(PRINT_MODE_STORAGE_KEY) }
+      retainRecovery()
       await coordinator.disarm()
       changed = true
       if (!printer) qz.clearSelection()
@@ -107,6 +115,7 @@ export const useLabelPrintingStore = defineStore('labelPrinting', () => {
       localStorage.setItem(PRINT_MODE_STORAGE_KEY, nextMode)
       preferredMode.value = nextMode
       await restoreMode(scopeVersion)
+      if (nextMode === 'Off') recovery.value = null
       return true
     } catch (error) {
       if (changed) {
@@ -143,11 +152,21 @@ export const useLabelPrintingStore = defineStore('labelPrinting', () => {
   function bindScope(owner, scanJobId, userId, active) {
     disposed = false
     scopeOwner = owner
+    retainRecovery()
     Object.assign(scope, { scanJobId, userId, active })
     const version = ++scopeVersion
     scopeTransition = coordinator.setScope(active ? scanJobId : null, userId)
       .then(async () => {
-        if (!qz.state.connected) await checkAvailability()
+        if (version !== scopeVersion || disposed) return
+        if (!qz.state.connected) {
+          try { await checkAvailability() }
+          catch (error) {
+            if (version === scopeVersion && !disposed) showError(error)
+            // A departed scope must not publish discovery failures on another page.
+            else if (getPrintingErrorCode(error) !== 'QzUnavailable') reportError(error, { context: 'stale printing discovery' })
+            return
+          }
+        }
         // Scope restoration is background work with no initiating UI operation.
         try { await restoreMode(version) }
         catch (error) { showError(error) }
@@ -157,6 +176,7 @@ export const useLabelPrintingStore = defineStore('labelPrinting', () => {
   function unbindScope(owner) {
     if (scopeOwner !== owner) return
     scopeOwner = null
+    retainRecovery()
     ++scopeVersion
     Object.assign(scope, { scanJobId: null, userId: null, active: false })
     scopeTransition = coordinator.setScope(null, null)
@@ -166,6 +186,7 @@ export const useLabelPrintingStore = defineStore('labelPrinting', () => {
     if ((event.storageArea && event.storageArea !== localStorage) || (event.key !== null && ![PRINTER_STORAGE_KEY, PRINT_MODE_STORAGE_KEY].includes(event.key))) return
     const version = ++scopeVersion
     try {
+      retainRecovery()
       await coordinator.disarm()
       readPreferences()
       await restoreMode(version)
@@ -178,7 +199,7 @@ export const useLabelPrintingStore = defineStore('labelPrinting', () => {
     try { await qz.disconnect() }
     catch (error) { reportError(error, { context: 'local printing disconnect' }) }
   }
-  return { qzState: qz.state, state, scope, preferredMode, settingsActive, controlBusy,
+  return { qzState: qz.state, state, scope, preferredMode, recovery, settingsActive, controlBusy,
     busy, operationInProgress, queueStatus, refreshPrinters, setSettingsActive, printParcel,
     saveSettings, retry, reprint, bindScope, unbindScope, syncSettings, shutdown }
 })

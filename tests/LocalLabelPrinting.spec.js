@@ -80,6 +80,74 @@ const scan = (id = 8, template = 'KGT') => ({ scanJobId: 42, userId: 9, printCan
 const printButtons = () => wrapper.findAll('[data-testid="box-print-label"], [data-testid="monitor-print-label"]')
 async function arm(mode = 'KGT') { await flushPromises(); await store.saveSettings({ printer: 'TSC TE200', mode }); await flushPromises() }
 
+it.each(['KGT', 'TJ'])('shows the armed %s mode before any label is printed, then pause and Off', async (mode) => {
+  await arm(mode)
+  const status = () => wrapper.get('[data-testid="auto-print-status"]').text()
+  expect(status()).toContain(mode === 'KGT' ? 'КГТ' : 'Таджикистан')
+  expect(status()).not.toContain('приостановлена')
+  expect(env.qz.submit).not.toHaveBeenCalled()
+  env.failure(new Error('scanner disconnected')); await flushPromises()
+  expect(status()).toContain('приостановлена')
+  await store.saveSettings({ printer: 'TSC TE200', mode: 'Off' }); await flushPromises()
+  expect(status()).toContain('отключена')
+})
+it.each(['NoPrinters', 'PrinterMissing', 'QzTrustRejected', 'QzUnavailable'])('does not publish stale %s discovery on the destination page', async (code) => {
+  await flushPromises()
+  env.qz.state.connected = false
+  let rejectDiscovery
+  env.qz.connect.mockReturnValueOnce(new Promise((resolve, reject) => { rejectDiscovery = reject }))
+  wrapper.vm.job = 43; await flushPromises()
+  wrapper.unmount()
+  const destination = mount(PageAlertRegion, { global: { plugins: [pinia], stubs } })
+  const report = vi.spyOn(console, 'error').mockImplementation(() => {})
+  const failure = { code }
+  rejectDiscovery(failure); await flushPromises()
+  expect(destination.find('[role="alert"]').exists()).toBe(false)
+  expect(errorSpy).not.toHaveBeenCalled()
+  if (code === 'QzUnavailable') expect(report).not.toHaveBeenCalled()
+  else expect(report).toHaveBeenCalledWith('[stale printing discovery]', failure)
+  destination.unmount()
+})
+it('reports discovery for the current scope once and restores the selected mode on retry', async () => {
+  await arm()
+  env.qz.state.connected = false
+  env.qz.connect.mockRejectedValueOnce({ code: 'NoPrinters' })
+  wrapper.vm.job = 43; await flushPromises()
+  expect(wrapper.get('[role="alert"]').text()).toContain('В Windows не найдены принтеры')
+  expect(errorSpy).toHaveBeenCalledOnce()
+  wrapper.vm.job = 44; await flushPromises()
+  expect(store.state.mode).toBe('KGT')
+  expect(env.channel.start).toHaveBeenLastCalledWith(44, 9)
+})
+it('shares pending discovery with a replacement scope and reports only to the live owner', async () => {
+  await flushPromises()
+  env.qz.state.connected = false
+  let rejectDiscovery
+  env.qz.connect.mockReturnValueOnce(new Promise((resolve, reject) => { rejectDiscovery = reject }))
+  const report = vi.spyOn(console, 'error').mockImplementation(() => {})
+  wrapper.vm.job = 43; await flushPromises()
+  wrapper.vm.job = 44; await flushPromises()
+  rejectDiscovery({ code: 'QzTrustRejected' }); await flushPromises()
+  expect(env.qz.connect).toHaveBeenCalledOnce()
+  expect(errorSpy).toHaveBeenCalledOnce()
+  expect(wrapper.get('[role="alert"]').text()).toContain('QZ Tray отклонил доверие')
+  expect(report).toHaveBeenCalledOnce()
+})
+it('shows failed and overflow scan identities on the monitor and retains them when leaving', async () => {
+  await arm()
+  env.qz.submit.mockRejectedValueOnce({ code: 'SubmissionFailed' })
+  env.event(scan(8)); await flushPromises()
+  const failed = wrapper.get('[data-testid="failed-print"]').text()
+  expect(failed).toContain('скан 8 (KGT), задание 42')
+  env.event({ ...scan(), printCandidates: Array.from({ length: 51 }, (_, i) => ({ ...scan(i + 20).printCandidates[0] })) })
+  await flushPromises()
+  expect(wrapper.get('[data-testid="print-overflow"]').text()).toContain('скана 70 (KGT), задание 42')
+  wrapper.unmount(); await flushPromises()
+  expect(store.state.failed).toBeNull()
+  expect(store.state.overflow).toBeNull()
+  expect(store.recovery).toMatchObject({ failed: { scanCodeId: 8 }, overflow: { scanCodeId: 70 } })
+})
+
 it.each(['printParcel', 'reprint'].flatMap((method) => ['label', 'submit'].map((source) => ({ method, source }))))(
   'rejects a $source failure from store.$method without publishing an alert and permits retry', async ({ method, source }) => {
     await flushPromises()

@@ -4,6 +4,7 @@
 // This file is a part of Logibooks ui application
 
 import '@/assets/styles/scanjob-monitor.css'
+import PrintRecoveryDetails from './PrintRecoveryDetails.vue'
 
 defineOptions({ name: 'ScanjobMonitorSummary' })
 
@@ -37,6 +38,10 @@ const props = defineProps({
       <div class="monitor-summary-content">
         <div class="monitor-summary-label">Очередь печати</div>
         <div class="monitor-summary-value">{{ props.printQueue.queued }}{{ props.printQueue.paused ? ' — приостановлена' : '' }}</div>
+        <div data-testid="auto-print-status">
+          Автомаркировка: {{ props.printQueue.mode === 'KGT' ? 'КГТ' : props.printQueue.mode === 'TJ' ? 'Таджикистан' : 'отключена' }}{{ props.printQueue.paused ? ' — приостановлена' : '' }}
+        </div>
+        <PrintRecoveryDetails :failed="props.printQueue.failed" :overflow="props.printQueue.overflow" />
       </div>
     </div>
   </div>

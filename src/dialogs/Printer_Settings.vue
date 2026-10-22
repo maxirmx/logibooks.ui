@@ -12,7 +12,8 @@ import { useLabelPrintingStore } from '@/stores/label.printing.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { normalizeInternalReturnUrl } from '@/helpers/parcel.navigation.helpers.js'
 import { reportError } from '@/helpers/error.helpers.js'
-import { getPrintingErrorMessage } from '@/helpers/label.printing.helpers.js'
+import { getPrintingErrorCode, getPrintingErrorMessage } from '@/helpers/label.printing.helpers.js'
+import PrintRecoveryDetails from '@/components/PrintRecoveryDetails.vue'
 
 const printing = useLabelPrintingStore()
 const alerts = useAlertStore()
@@ -24,6 +25,7 @@ const errors = ref({})
 const discoveryPending = ref(true)
 const refreshing = ref(false)
 let mounted = true
+let discoveryAlertId = null
 const busy = computed(() => saving.value || printing.operationInProgress || discoveryPending.value || refreshing.value)
 const printers = computed(() => {
   const names = [...printing.qzState.printers]
@@ -58,11 +60,18 @@ async function save() {
 }
 async function refreshPrinters() {
   refreshing.value = true
-  try { await printing.refreshPrinters() }
+  try {
+    await printing.refreshPrinters()
+    if (mounted && discoveryAlertId != null) alerts.dismiss(discoveryAlertId)
+    discoveryAlertId = null
+  }
   catch (error) {
-    if (mounted) alerts.error(error, { fallback: 'Не удалось обновить список принтеров' })
+    if (mounted) {
+      const id = alerts.error(getPrintingErrorMessage(error))
+      if (getPrintingErrorCode(error) === 'QzUnavailable') discoveryAlertId = id
+    }
     // A departed settings page must not publish errors on the destination page.
-    else reportError(error, { context: 'printing settings discovery after unmount' })
+    else if (getPrintingErrorCode(error) !== 'QzUnavailable') reportError(error, { context: 'printing settings discovery after unmount' })
   } finally { refreshing.value = false }
 }
 onMounted(() => {
@@ -74,7 +83,11 @@ onMounted(() => {
     }
   }, { immediate: true })
 })
-onUnmounted(() => { mounted = false; printing.setSettingsActive(false) })
+onUnmounted(() => {
+  mounted = false
+  printing.setSettingsActive(false)
+  if (discoveryAlertId != null) alerts.dismiss(discoveryAlertId)
+})
 </script>
 
 <template>
@@ -95,6 +108,8 @@ onUnmounted(() => { mounted = false; printing.setSettingsActive(false) })
     </div>
     <hr class="hr" />
     <PageAlertRegion />
+    <PrintRecoveryDetails :failed="printing.state.failed || printing.recovery?.failed"
+      :overflow="printing.state.overflow || printing.recovery?.overflow" />
     <div class="form-group">
       <label for="label-printer" class="label">Принтер этикеток:</label>
       <div class="printer-configuration-field">

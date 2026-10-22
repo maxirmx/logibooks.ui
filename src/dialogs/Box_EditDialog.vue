@@ -227,7 +227,7 @@ async function onSubmit(values, { setErrors } = {}) {
       :validation-schema="schema"
       @invalid-submit="focusFirstInvalidField"
       @submit="onSubmit"
-      v-slot="{ errors, isSubmitting }"
+      v-slot="{ errors, isSubmitting, values }"
     >
       <div class="header-with-actions">
         <h1 class="primary-heading">{{ getTitle() }}</h1>
@@ -235,7 +235,7 @@ async function onSubmit(values, { setErrors } = {}) {
           <LocalLabelPrinting v-if="!isCreate" ref="printingPanel" />
           <div v-if="!isCreate" class="header-actions header-actions-group" data-testid="box-sticker-print-actions">
             <BoxStickerPrintButton :box="box || {}" icon-size="2x"
-              :disabled="!formReady || isSubmitting || loading" />
+              :disabled="!formReady || isSubmitting || loading || values.boxSticker !== initialValues.boxSticker" />
           </div>
           <div class="header-actions header-actions-group">
             <ActionButton

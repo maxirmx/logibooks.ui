@@ -175,6 +175,44 @@ describe('Box_EditDialog.vue', () => {
     await vi.waitFor(() => expect(boxUpdate).toHaveBeenCalledWith(7, expect.objectContaining({ boxSticker: '$1:1:BOX-7:362877' })))
     expect(routerPush).toHaveBeenCalledWith('/registers/42/boxes')
   })
+  it.each(['replacement sticker', '', '   '])('blocks printing an unsaved sticker %j and restores printing when the edit is reverted', async (draft) => {
+    mockIsAdmin.value = true
+    const saved = '$1:1:4542503776:362877'
+    mockBox.value = { ...mockBox.value, companyId: 2, boxSticker: saved, printableTemplates: ['WBR_BOX'] }
+    const wrapper = await mountDialog({ mode: 'edit', registerId: 42, boxId: 7 })
+    const print = wrapper.get('button[data-testid="box-print-label"]')
+    const sticker = wrapper.get('[data-testid="box-sticker-input"]')
+    expect(print.element.disabled).toBe(false)
+    await sticker.setValue(draft); await flushPromises()
+    expect(print.element.disabled).toBe(true)
+    await print.trigger('click')
+    expect(printBoxLabel).not.toHaveBeenCalled()
+    expect(boxUpdate).not.toHaveBeenCalled()
+    await sticker.setValue(saved); await flushPromises()
+    expect(print.element.disabled).toBe(false)
+    await print.trigger('click')
+    expect(printBoxLabel).toHaveBeenCalledExactlyOnceWith({ boxId: 7, template: 'WBR_BOX' })
+  })
+  it('keeps printing disabled after a rejected sticker save and retries the draft without printing stale data', async () => {
+    mockIsAdmin.value = true
+    mockBox.value = { ...mockBox.value, companyId: 2, boxSticker: 'saved sticker', printableTemplates: ['WBR_BOX'] }
+    boxUpdate.mockRejectedValueOnce(new Error('Не удалось сохранить код стикера'))
+    const wrapper = await mountDialog({ mode: 'edit', registerId: 42, boxId: 7 })
+    await wrapper.get('[data-testid="box-sticker-input"]').setValue('replacement sticker')
+    await wrapper.get('form').trigger('submit'); await flushPromises()
+    await vi.waitFor(() => expect(boxUpdate).toHaveBeenCalledTimes(1))
+    expect(routerPush).not.toHaveBeenCalled()
+    expect(wrapper.text().match(/Не удалось сохранить код стикера/g)).toHaveLength(1)
+    expect(wrapper.get('[data-testid="box-sticker-input"]').element.value).toBe('replacement sticker')
+    const print = wrapper.get('button[data-testid="box-print-label"]')
+    expect(print.element.disabled).toBe(true)
+    await print.trigger('click')
+    expect(printBoxLabel).not.toHaveBeenCalled()
+    await wrapper.get('form').trigger('submit'); await flushPromises()
+    await vi.waitFor(() => expect(boxUpdate).toHaveBeenCalledTimes(2))
+    expect(boxUpdate).toHaveBeenLastCalledWith(7, expect.objectContaining({ boxSticker: 'replacement sticker' }))
+    expect(routerPush).toHaveBeenCalledWith('/registers/42/boxes')
+  })
 
   it('allows an administrator to clear a sticker, but omits unchanged values', async () => {
     mockIsAdmin.value = true

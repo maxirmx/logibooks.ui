@@ -62,6 +62,47 @@ async function save() { await wrapper.get('[data-testid="save-print-settings"]')
 async function cancel() { await wrapper.get('[data-testid="cancel-print-settings"]').trigger('click'); await flushPromises() }
 
 describe('routed print settings', () => {
+  it.each([false, true])('reports an idle QZ disconnect once and clears it after reconnecting (armed: %s)', async (armed) => {
+    await mountSettings()
+    if (armed) {
+      store.bindScope(Symbol('monitor'), 42, 9, true); await flushPromises()
+      await store.saveSettings({ printer: 'TSC TE200', mode: 'TJ' }); await flushPromises()
+    }
+    env.qz.state.connected = false
+    env.qz.state.printers = []
+    env.qz.onDisconnect.mock.calls[0][0]({ code: 'QzUnavailable' })
+    await flushPromises()
+    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+    expect(wrapper.get('[role="alert"]').text()).toContain('QZ Tray недоступен.')
+    expect(errorSpy).toHaveBeenCalledOnce()
+    expect(router.currentRoute.value.path).toBe('/printing/settings')
+    env.qz.onDisconnect.mock.calls[0][0]({ code: 'QzUnavailable' }); await flushPromises()
+    expect(errorSpy).toHaveBeenCalledOnce()
+    await wrapper.get('[data-testid="refresh-printers"]').trigger('click'); await flushPromises()
+    expect(env.qz.connect).toHaveBeenCalledTimes(2)
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+    expect(store.qzState.connected).toBe(true)
+  })
+  it('removes its disconnect diagnostic when leaving and ignores later disconnects', async () => {
+    await mountSettings()
+    env.qz.state.connected = false
+    env.qz.onDisconnect.mock.calls[0][0]({ code: 'QzUnavailable' }); await flushPromises()
+    expect(wrapper.get('[role="alert"]').text()).toContain('QZ Tray недоступен.')
+    await cancel()
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+    env.qz.state.connected = true; await flushPromises()
+    env.qz.state.connected = false
+    env.qz.onDisconnect.mock.calls[0][0]({ code: 'QzUnavailable' }); await flushPromises()
+    expect(errorSpy).toHaveBeenCalledOnce()
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+  })
+  it('preserves an unrelated alert when reconnecting after a disconnect', async () => {
+    await mountSettings()
+    env.qz.state.connected = false; await flushPromises()
+    alerts.error('Another operation failed')
+    await wrapper.get('[data-testid="refresh-printers"]').trigger('click'); await flushPromises()
+    expect(wrapper.get('[role="alert"]').text()).toContain('Another operation failed')
+  })
   it('keeps recovery identities after scope teardown and a rejected save until Off is saved successfully', async () => {
     await mountSettings(undefined, async (printing) => {
       const owner = Symbol('departing monitor')

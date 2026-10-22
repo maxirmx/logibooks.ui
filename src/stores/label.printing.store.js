@@ -20,7 +20,6 @@ export const useLabelPrintingStore = defineStore('labelPrinting', () => {
   const controlBusy = ref(false)
   const checkingAvailability = ref(false)
   let availabilityCheck = null
-  let qzAlertId = null
   const preferredMode = ref('Off')
   const recovery = ref(null)
   const scope = reactive({ scanJobId: null, userId: null, active: false })
@@ -31,13 +30,8 @@ export const useLabelPrintingStore = defineStore('labelPrinting', () => {
   function showError(error) {
     if (getPrintingErrorCode(error) === 'QzUnavailable') {
       qz.state.connected = false
-      // Availability diagnostics belong to settings; other pages disable printing silently.
-      if (!disposed && settingsActive.value) qzAlertId = alerts.error(getPrintingErrorMessage(error))
+      // The mounted settings page owns availability diagnostics; other pages remain silent.
     } else if (!disposed) alerts.error(getPrintingErrorMessage(error))
-  }
-  function dismissQzAlert() {
-    if (qzAlertId != null) alerts.dismiss(qzAlertId)
-    qzAlertId = null
   }
   const channel = createPrintChannel((event) => coordinator.consume(event), (error) => coordinator.pause(error))
   const coordinator = createLabelPrintingCoordinator({ qz, api: printingApi, channel, ownership: createPrintingOwnership(),
@@ -72,7 +66,7 @@ export const useLabelPrintingStore = defineStore('labelPrinting', () => {
   async function refreshPrinters() {
     if (operationInProgress.value) return
     controlBusy.value = true
-    try { await checkAvailability(); dismissQzAlert() }
+    try { await checkAvailability() }
     catch (error) {
       if (getPrintingErrorCode(error) === 'QzUnavailable') qz.state.connected = false
       throw error
@@ -82,7 +76,6 @@ export const useLabelPrintingStore = defineStore('labelPrinting', () => {
   function setSettingsActive(active) {
     disposed = false
     settingsActive.value = active
-    if (!active) dismissQzAlert()
   }
   async function printTarget(target) {
     try { return await coordinator.manual(target) }

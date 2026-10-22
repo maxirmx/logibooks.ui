@@ -37,6 +37,15 @@ const modes = computed(() => [
   { title: 'Таджикистан', value: 'TJ', props: { disabled: !draft.printer } },
   { title: 'КГТ', value: 'KGT', props: { disabled: !draft.printer } }
 ])
+watch(() => printing.qzState.connected, (connected, wasConnected) => {
+  if (connected) {
+    if (discoveryAlertId != null) alerts.dismiss(discoveryAlertId)
+    discoveryAlertId = null
+  } else if (wasConnected && !discoveryPending.value && !refreshing.value && !saving.value) {
+    // Discovery and save failures are reported by their initiating operations.
+    discoveryAlertId = alerts.error(getPrintingErrorMessage({ code: 'QzUnavailable' }))
+  }
+})
 function clearPrinter() { draft.printer = ''; draft.mode = 'Off'; errors.value = {} }
 async function leave() {
   try {

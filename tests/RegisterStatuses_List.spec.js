@@ -42,7 +42,7 @@ const mockRegisterStatuses = ref([
     bkColor: '#FFFFFF',
     fgColor: '#000000',
     readOnly: false,
-    transit: false
+    transit: false, exportTo1C: false
   },
   {
     id: 2,
@@ -51,7 +51,7 @@ const mockRegisterStatuses = ref([
     bkColor: '#00AA00',
     fgColor: '#FFFFFF',
     readOnly: true,
-    transit: true
+    transit: true, exportTo1C: true
   },
   {
     id: 3,
@@ -60,7 +60,7 @@ const mockRegisterStatuses = ref([
     bkColor: null,
     fgColor: null,
     readOnly: false,
-    transit: false
+    transit: false, exportTo1C: false
   }
 ])
 
@@ -142,7 +142,7 @@ describe('RegisterStatuses_List.vue', () => {
         bkColor: '#FFFFFF',
         fgColor: '#000000',
         readOnly: false,
-        transit: false
+        transit: false, exportTo1C: false
       },
       {
         id: 2,
@@ -151,7 +151,7 @@ describe('RegisterStatuses_List.vue', () => {
         bkColor: '#00AA00',
         fgColor: '#FFFFFF',
         readOnly: true,
-        transit: true
+        transit: true, exportTo1C: true
       },
       {
         id: 3,
@@ -160,7 +160,7 @@ describe('RegisterStatuses_List.vue', () => {
         bkColor: null,
         fgColor: null,
         readOnly: false,
-        transit: false
+        transit: false, exportTo1C: false
       }
     ]
     mockIsShiftLeadPlus.value = true
@@ -177,6 +177,13 @@ describe('RegisterStatuses_List.vue', () => {
     if (wrapper) {
       wrapper.unmount()
     }
+  })
+
+  it('renders sortable 1C export eligibility as Да or Нет', () => {
+    expect(wrapper.vm.headers).toContainEqual(expect.objectContaining({
+      title: 'Выгружать в 1C', key: 'exportTo1C', sortable: true
+    }))
+    expect(wrapper.findAll('.register-status-export-to-1c').map(cell => cell.text())).toEqual(['Нет', 'Да', 'Нет'])
   })
 
   describe('Authorized Actions', () => {

@@ -46,8 +46,8 @@ const headers = [
     : []),
   { title: '', align: 'center', key: 'registerStatusIcon', sortable: false, width: '56px' },
   { title: 'Название статуса', key: 'title', sortable: true },
-  { title: 'Выгружать в 1C', align: 'center', key: 'exportTo1C', sortable: true },
   { title: 'Транзит', align: 'center', key: 'transit', sortable: true },
+  { title: 'Выгружать в 1C', align: 'center', key: 'exportTo1C', sortable: true },
   { title: 'Изменения запрещены', align: 'center', key: 'readOnly', sortable: true }
 ]
 

@@ -33,11 +33,12 @@ const props = defineProps({
   register: { type: Object, default: null },
   loading: { type: Boolean, default: false },
   defectActionLoading: { type: Boolean, default: false },
+  readOnly: { type: Boolean, default: false },
   selectedParcelId: { type: [Number, String], default: null },
   printQueue: { type: Object, default: null }
 })
 
-const emit = defineEmits(['edit-parcel', 'set-defect', 'clear-defect'])
+const emit = defineEmits(['edit-parcel', 'set-defect', 'clear-defect', 'clear-ext-id'])
 
 const parcels = computed(() => props.box?.parcels ?? [])
 const hasRegisteredParcels = computed(() => parcels.value.some((parcel) => parcel?.isInRegister !== false))
@@ -113,9 +114,17 @@ function clearDefect(item) {
 
 <template>
   <div data-testid="scanjob-monitor-box">
-    <ScanjobMonitorSummary :cards="summaryCards" :print-queue="props.printQueue" />
-
-    <BoxStickerField v-if="props.box" :box="props.box" :company="props.company" :disabled="props.loading" />
+    <ScanjobMonitorSummary :cards="summaryCards" :print-queue="props.printQueue">
+      <template #card-boxStatus>
+        <BoxStickerField
+          v-if="isPhysicalMonitorBox(props.box)"
+          :box="props.box"
+          :company="props.company"
+          :show-label="false"
+          :disabled="props.loading"
+        />
+      </template>
+    </ScanjobMonitorSummary>
 
     <div class="monitor-section">
       <v-card class="table-card">
@@ -130,10 +139,12 @@ function clearDefect(item) {
           :register="props.register"
           :loading="props.loading"
           :defect-action-loading="props.defectActionLoading"
+          :read-only="props.readOnly"
           :selected-parcel-id="props.selectedParcelId"
           @edit-parcel="editParcel"
           @set-defect="setDefect"
           @clear-defect="clearDefect"
+          @clear-ext-id="emit('clear-ext-id', $event)"
         />
 
         <ScanjobParcelsMonitorTable
@@ -143,10 +154,12 @@ function clearDefect(item) {
           :register="props.register"
           :loading="props.loading"
           :defect-action-loading="props.defectActionLoading"
+          :read-only="props.readOnly"
           :selected-parcel-id="props.selectedParcelId"
           @edit-parcel="editParcel"
           @set-defect="setDefect"
           @clear-defect="clearDefect"
+          @clear-ext-id="emit('clear-ext-id', $event)"
         />
       </v-card>
     </div>

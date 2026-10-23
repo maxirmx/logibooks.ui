@@ -5,12 +5,23 @@
 
 import { beforeEach, describe, it, expect, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import ScanjobMonitor from '@/dialogs/Scanjob_Monitor.vue'
 import { defaultGlobalStubs } from './helpers/test-utils'
 import { OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
+import { useLabelPrintingStore } from '@/stores/label.printing.store.js'
 
 vi.mock('@/composables/useAppConfirm.js', () => ({ useAppConfirm: () => vi.fn().mockResolvedValue(true) }))
+vi.mock('@/services/qz.printing.js', async (original) => {
+  const actual = await original()
+  const { reactive } = await import('vue')
+  return { ...actual, createQzPrinting: () => ({
+    state: reactive({ connected: true, printer: 'TSC TE200', printers: ['TSC TE200'] }),
+    restoreSelection: vi.fn(), onDisconnect: vi.fn(), connect: vi.fn().mockResolvedValue(['TSC TE200']),
+    ready: vi.fn().mockResolvedValue(), submit: vi.fn().mockResolvedValue(), disconnect: vi.fn().mockResolvedValue()
+  }) }
+})
 
 const mockBack = vi.hoisted(() => vi.fn())
 const mockPush = vi.hoisted(() => vi.fn())
@@ -66,6 +77,7 @@ const persistedFollowUserId = vi.hoisted(() => ({
 }))
 const setDefect = vi.hoisted(() => vi.fn().mockResolvedValue(true))
 const clearDefect = vi.hoisted(() => vi.fn().mockResolvedValue(true))
+const clearExtId = vi.hoisted(() => vi.fn().mockResolvedValue(true))
 const monitorBoxesPerPage = vi.hoisted(() => ({
   __v_isRef: true,
   value: 25
@@ -132,7 +144,7 @@ const registerSnapshot = {
       heightCm: 30.25,
       weightKg: 4.125,
       boxStickerScanned: true,
-      boxScannedSticker: 'BOX-7-ACTUAL',
+      boxSticker: 'BOX-7-ACTUAL',
       boxScannedUserName: 'Иванов Иван',
       boxScannedTime: '2026-01-02T09:30:00',
       totalParcels: 3,
@@ -144,7 +156,7 @@ const registerSnapshot = {
       boxId: 8,
       boxCode: 'BOX-8',
       boxStickerScanned: false,
-      boxScannedSticker: null,
+      boxSticker: null,
       boxScannedUserName: '',
       boxScannedTime: null,
       totalParcels: 2,
@@ -178,7 +190,7 @@ const boxSnapshot = {
     heightCm: 30.25,
     weightKg: 4.125,
     boxStickerScanned: true,
-    boxScannedSticker: 'BOX-7-ACTUAL',
+    boxSticker: 'BOX-7-ACTUAL',
     boxScannedUserName: 'Иванов Иван',
     boxScannedTime: '2026-01-02T09:30:00',
     totalParcels: 3,
@@ -234,7 +246,7 @@ const unassignedBucketRow = {
   bucketIndex: 1,
   boxCode: 'Без коробки 2',
   boxStickerScanned: false,
-  boxScannedSticker: null,
+  boxSticker: null,
   boxScannedUserName: '',
   boxScannedTime: null,
   totalParcels: 2,
@@ -344,7 +356,8 @@ vi.mock('@/stores/alert.store.js', () => ({
 vi.mock('@/stores/parcels.store.js', () => ({
   useParcelsStore: () => ({
     setDefect,
-    clearDefect
+    clearDefect,
+    clearExtId
   })
 }))
 
@@ -380,6 +393,7 @@ vi.mock('pinia', async () => {
   return {
     ...actual,
     storeToRefs: (store) => {
+      if (store.$id) return actual.storeToRefs(store)
       const refs = {}
       Object.keys(store).forEach((key) => {
         const value = store[key]
@@ -474,6 +488,8 @@ function getFollowEventHandler() {
 
 describe('Scanjob_Monitor.vue', () => {
   beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
     vi.useRealTimers()
     vi.clearAllMocks()
     mockCurrentRoute.value = { fullPath: '/scanjobs/42/monitor' }
@@ -499,6 +515,7 @@ describe('Scanjob_Monitor.vue', () => {
     mockScanjob.value = { id: 42, name: 'Scanjob A', type: 30, operation: 30, status: 15, registerId: 101 }
     getById.mockResolvedValue({ id: 42, name: 'Scanjob A', type: 30, operation: 30, status: 15, registerId: 101 })
     mockRegisterItem.invoiceNumber = 'INV-101'
+    delete mockRegisterItem.readOnly
     registerGetById.mockResolvedValue(true)
     getTransportationDocument.mockReturnValue('Авианакладная')
     loadMonitorSnapshot.mockResolvedValue(registerSnapshot)
@@ -516,6 +533,28 @@ describe('Scanjob_Monitor.vue', () => {
       const parsed = Number(userId)
       persistedFollowUserId.value = Number.isInteger(parsed) && parsed > 0 ? parsed : null
     })
+  })
+
+  it('uses only the header spinner during initial loading and keeps loaded data visible during refresh', async () => {
+    let finishLoading
+    monitorLoading.value = true
+    loadMonitorSnapshot.mockReturnValueOnce(new Promise((resolve) => { finishLoading = resolve }))
+    const wrapper = mount(ScanjobMonitor, { props: { scanjobId: 42 }, global: { stubs: monitorGlobalStubs } })
+    await flushPromises()
+    expect(wrapper.get('[data-testid="scanjob-monitor-operation-loading"]').isVisible()).toBe(true)
+    expect(wrapper.findAll('.spinner-border')).toHaveLength(1)
+    expect(wrapper.get('[data-testid="scanjob-monitor-loading"]').text()).toBe('Загрузка данных...')
+    expect(wrapper.get('[data-testid="scanjob-monitor-loading"]').find('.spinner-border').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('Загрузка монитора сканирования')
+    finishLoading(registerSnapshot); monitorLoading.value = false; await flushPromises()
+    expect(wrapper.find('[data-testid="scanjob-monitor-loading"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="scanjob-monitor-operation-loading"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="scanjob-monitor-boxes-table"]').isVisible()).toBe(true)
+    monitorLoading.value = true; await flushPromises()
+    expect(wrapper.findAll('.spinner-border')).toHaveLength(1)
+    expect(wrapper.get('[data-testid="scanjob-monitor-boxes-table"]').isVisible()).toBe(true)
+    monitorLoading.value = false
+    wrapper.unmount()
   })
 
   it('keeps drafts local, permits one editor and discards drafts when switching or canceling', async () => {
@@ -1045,6 +1084,69 @@ describe('Scanjob_Monitor.vue', () => {
     })
   })
 
+  it.each(['snapshot', 'scanjob', 'register'])('allows parcel printing with a read-only %s while blocking parcel changes', async (source) => {
+    isAdmin.value = true
+    const parcel = { ...boxSnapshot.box.parcels[0], extId: '77', printableTemplates: ['WBRN', 'TJ_EXPORT'] }
+    const snapshot = { ...boxSnapshot, readOnly: source === 'snapshot', box: { ...boxSnapshot.box, parcels: [parcel] } }
+    if (source === 'scanjob') mockScanjob.value = { ...mockScanjob.value, readOnly: true }
+    if (source === 'register') mockRegisterItem.readOnly = true
+    loadMonitorSnapshot.mockResolvedValueOnce(snapshot)
+    const printing = useLabelPrintingStore()
+    const print = vi.spyOn(printing, 'printParcel').mockResolvedValue(true)
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42, monitorScope: box7MonitorScope }, global: { stubs: monitorGlobalStubs }
+    })
+    await flushPromises()
+    expect(wrapper.get('.read-only-notice').isVisible()).toBe(true)
+    for (const id of ['scanjob-clear-ext-id-action', 'scanjob-set-defect-action', 'scanjob-clear-defect-action']) {
+      const action = wrapper.get(`button[data-testid="${id}"]`)
+      expect(action.element.disabled).toBe(true)
+      await action.trigger('click')
+    }
+    const panel = wrapper.getComponent({ name: 'Scanjob_Parcels_Monitor' })
+    for (const event of ['clear-ext-id', 'set-defect', 'clear-defect']) panel.vm.$emit(event, parcel)
+    await flushPromises()
+    expect(clearExtId).not.toHaveBeenCalled()
+    expect(setDefect).not.toHaveBeenCalled()
+    expect(clearDefect).not.toHaveBeenCalled()
+    for (const id of ['monitor-print-label', 'monitor-print-invoice']) {
+      const action = wrapper.get(`button[data-testid="${id}"]`)
+      expect(action.element.disabled).toBe(false)
+      await action.trigger('click'); await flushPromises()
+    }
+    expect(print.mock.calls).toEqual([[{ parcelId: 70, template: 'WBRN' }], [{ parcelId: 70, template: 'TJ_EXPORT' }]])
+    print.mockRestore()
+    wrapper.unmount()
+  })
+
+  it('clears a KGT number through box details, keeps failures visible once and retries', async () => {
+    isAdmin.value = true
+    const snapshot = { ...boxSnapshot, box: { ...boxSnapshot.box,
+      parcels: [{ ...boxSnapshot.box.parcels[0], id: undefined, parcelId: 70, extId: '77' }]
+    } }
+    loadMonitorSnapshot.mockResolvedValueOnce(snapshot)
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42, monitorScope: box7MonitorScope }, global: { stubs: monitorGlobalStubs }
+    })
+    await flushPromises()
+    clearExtId.mockRejectedValueOnce(new Error('clear failed'))
+    const action = wrapper.get('[data-testid="scanjob-clear-ext-id-action"]')
+    await action.trigger('click'); await flushPromises()
+    expect(clearExtId).toHaveBeenCalledWith(70)
+    expect(alertError).toHaveBeenCalledExactlyOnceWith('clear failed')
+    expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain('clear failed')
+    expect(mockPush).not.toHaveBeenCalled()
+    loadMonitorSnapshot.mockResolvedValueOnce(snapshot)
+    await action.trigger('click'); await flushPromises()
+    expect(clearExtId).toHaveBeenCalledTimes(2)
+    expect(loadMonitorSnapshot).toHaveBeenLastCalledWith(42, { area: 1, boxId: 7 })
+    expect(alertError).toHaveBeenCalledOnce()
+    const panel = wrapper.getComponent({ name: 'Scanjob_Parcels_Monitor' })
+    panel.vm.$emit('clear-ext-id', { parcelId: 70, extId: null }); await flushPromises()
+    expect(clearExtId).toHaveBeenCalledTimes(2)
+    wrapper.unmount()
+  })
+
   it('reports set defect errors from box monitor', async () => {
     isWhManager.value = true
     setDefect.mockRejectedValueOnce({ status: 409 })
@@ -1115,29 +1217,41 @@ describe('Scanjob_Monitor.vue', () => {
     expect(alertError).toHaveBeenCalledWith('Ошибка при обновлении данных')
   })
 
-  it.each([[2, true], [1, false]])('uses the generic sticker caption only for company %s', async (companyId, visible) => {
-    const sticker = '$1:1:4542503776:362877'
+  it.each([
+    [2, '$1:1:4542503776:362877', true],
+    [1, '$1:1:4542503776:362877', false],
+    [2, null, false]
+  ])('always shows the sticker print button in monitor list and detail for company %s', async (companyId, sticker, enabled) => {
+    const capabilities = { boxSticker: sticker, printableTemplates: ['WBR_BOX'] }
     loadMonitorSnapshot
       .mockResolvedValueOnce({
         ...registerSnapshot, companyId,
-        boxes: [{ ...registerSnapshot.boxes[0], area: 1, wbrSticker: sticker }]
+        boxes: [{ ...registerSnapshot.boxes[0], area: 1, ...capabilities }]
       })
-      .mockResolvedValueOnce({ ...boxSnapshot, companyId, box: { ...boxSnapshot.box, wbrSticker: sticker } })
+      .mockResolvedValueOnce({ ...boxSnapshot, companyId, box: { ...boxSnapshot.box, ...capabilities } })
     const wrapper = mount(ScanjobMonitor, {
       props: { scanjobId: 42 }, global: { stubs: monitorGlobalStubs }
     })
     await flushPromises()
     const headers = wrapper.getComponent({ name: 'Scanjob_Boxes_Monitor' })
       .getComponent({ name: 'v-data-table' }).props('headers')
-    expect(headers.find((header) => header.key === 'wbrSticker')?.title).toBe(visible ? 'Стикер' : undefined)
-    expect(wrapper.find('[data-testid="box-sticker-value"]').exists()).toBe(visible)
+    expect(headers.find((header) => header.key === 'boxSticker')?.title).toBe('Код стикера')
+    expect(headers.filter((header) => header.key === 'boxSticker')).toHaveLength(1)
+    expect(headers.some((header) => ['wbrSticker', 'boxScannedSticker'].includes(header.key))).toBe(false)
+    expect(headers[0].key).toBe('actions')
+    let button = wrapper.get('button[data-testid="box-print-label"]')
+    expect(button.element.closest('.v-data-table-row').firstElementChild.contains(button.element)).toBe(true)
+    expect(button.isVisible()).toBe(true)
+    expect(button.element.disabled).toBe(!enabled)
     await wrapper.setProps({ monitorScope: box7MonitorScope })
     await flushPromises()
-    expect(wrapper.find('[data-testid="box-sticker-value"]').exists()).toBe(visible)
-    if (visible) {
-      expect(wrapper.get('[data-testid="box-sticker-field"] .label').text()).toBe('Стикер:')
-      expect(wrapper.get('[data-testid="box-sticker-value"]').text()).toBe(sticker)
-    }
+    button = wrapper.get('button[data-testid="box-print-label"]')
+    expect(button.isVisible()).toBe(true)
+    expect(button.element.disabled).toBe(!enabled)
+    expect(wrapper.find('[data-testid="box-sticker-field"] .label').exists()).toBe(false)
+    expect(button.element.closest('.monitor-summary-item').textContent).toContain('Статус сканирования коробки')
+    expect(wrapper.findAll('[data-testid="box-sticker-field"]')).toHaveLength(1)
+    expect(wrapper.get('[data-testid="box-sticker-value"]').text()).toBe(sticker || '—')
     wrapper.unmount()
   })
 
@@ -1152,6 +1266,20 @@ describe('Scanjob_Monitor.vue', () => {
     await flushPromises()
 
     const registerSection = wrapper.get('[data-testid="scanjob-monitor-register"]')
+    const listActions = registerSection.findAll('button[data-testid="box-parcels-action"]')
+    expect(listActions).toHaveLength(registerSnapshot.boxes.length)
+    expect(listActions[0].element.closest('.actions-container').querySelector('button')).toBe(listActions[0].element)
+    expect(listActions[0].attributes('aria-label')).toBe('Список посылок')
+    await listActions[0].trigger('click'); await flushPromises()
+    expect(mockPush).toHaveBeenCalledExactlyOnceWith({
+      name: 'scanjob-monitor-box', params: { id: 42, boxId: 7 }
+    })
+    mockPush.mockClear()
+    monitorLoading.value = true; await flushPromises()
+    expect(listActions[0].element.disabled).toBe(true)
+    await listActions[0].trigger('click')
+    expect(mockPush).not.toHaveBeenCalled()
+    monitorLoading.value = false; await flushPromises()
     expect(registerSection.findAll('.clickable-cell')).toHaveLength(
       registerSnapshot.boxes.length * 8
     )

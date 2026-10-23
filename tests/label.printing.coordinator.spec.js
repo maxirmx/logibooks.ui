@@ -5,6 +5,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { createLabelPrintingCoordinator, MAX_PRINT_QUEUE, MAX_PRINT_HISTORY } from '@/services/label.printing.coordinator.js'
+import { createPrintingOwnership } from '@/services/printing.ownership.js'
 let qz, api, channel, ownership, errors, sent, history, coordinator
 const candidate = (scanCodeId = 8, template = 'KGT', revision = 'r1') => ({ scanJobId: 42, scanCodeId, parcelId: 7, template, revision })
 const event = (...printCandidates) => ({ scanJobId: 42, userId: 9, printCandidates })
@@ -19,6 +20,70 @@ beforeEach(async () => {
   await coordinator.setScope(42, 9)
 })
 describe('serial label printing coordinator', () => {
+  it.each([false, true])('invalidates pending activation immediately and stays silent for QZ loss (reject: %s)', async (reject) => {
+    const ready = deferred()
+    qz.ready.mockReturnValueOnce(ready.promise)
+    const activating = coordinator.arm('KGT')
+    await flushPromises()
+    const stopping = coordinator.setScope(null, null)
+    expect(coordinator.state.mode).toBe('Off')
+    const report = vi.spyOn(console, 'error').mockImplementation(() => {})
+    if (reject) ready.reject({ code: 'QzUnavailable' })
+    else ready.resolve()
+    await Promise.all([activating, stopping])
+    expect(ownership.acquire).not.toHaveBeenCalled()
+    expect(channel.start).not.toHaveBeenCalled()
+    expect(report).not.toHaveBeenCalled()
+    expect(errors).not.toHaveBeenCalled()
+    report.mockRestore()
+  })
+  it.each([false, true])('keeps the new scope exclusively owned after delayed teardown (failed stop: %s)', async (fails) => {
+    let held = false
+    const locks = { request: async (_, options, callback) => {
+      if (held) return callback(null)
+      held = true
+      try { return await callback({}) } finally { held = false }
+    } }
+    ownership = createPrintingOwnership(locks)
+    const otherTab = createPrintingOwnership(locks)
+    coordinator = createLabelPrintingCoordinator({ qz, api, channel, ownership, onError: errors, onSent: sent, history })
+    await coordinator.setScope(42, 9)
+    await coordinator.arm('KGT')
+    const stop = deferred()
+    channel.stop.mockReturnValueOnce(stop.promise)
+    const oldScope = coordinator.setScope(43, 9)
+    const observedOldScope = fails ? expect(oldScope).rejects.toThrow('stop failed') : oldScope
+    await flushPromises()
+    const newScope = coordinator.setScope(44, 10)
+    const newArm = coordinator.arm('TJ')
+    expect(coordinator.state.mode).toBe('Off')
+    expect(coordinator.state.transitioning).toBe(true)
+    coordinator.consume(event(candidate()))
+    expect(await coordinator.manual(candidate())).toBe(false)
+    expect(await coordinator.retry()).toBe(false)
+    expect(api.label).not.toHaveBeenCalled()
+    expect(await otherTab.acquire()).toBe(false)
+    if (fails) stop.reject(new Error('stop failed'))
+    else stop.resolve()
+    await Promise.all([observedOldScope, newScope, newArm])
+    expect(channel.start).toHaveBeenLastCalledWith(44, 10)
+    expect(coordinator.state).toMatchObject({ mode: 'TJ', transitioning: false })
+    expect(await otherTab.acquire()).toBe(false)
+    await coordinator.disarm()
+    expect(await otherTab.acquire()).toBe(true)
+    await otherTab.release()
+  })
+  it('cancels an obsolete queued activation before it requests readiness or ownership', async () => {
+    const stop = deferred()
+    channel.stop.mockReturnValueOnce(stop.promise)
+    const oldArm = coordinator.arm('KGT')
+    const newerArm = coordinator.arm('TJ')
+    stop.resolve()
+    await Promise.all([oldArm, newerArm])
+    expect(qz.ready).toHaveBeenCalledOnce()
+    expect(ownership.acquire).toHaveBeenCalledOnce()
+    expect(coordinator.state.mode).toBe('TJ')
+  })
   it('propagates manual and retry printer failures after turning automatic marking off', async () => {
     await coordinator.arm('TJ')
     qz.ready.mockImplementationOnce(async () => { qz.state.printer = ''; throw new Error('manual printer missing') })
@@ -224,16 +289,19 @@ describe('serial label printing coordinator', () => {
     qz.ready.mockReturnValueOnce(armReady.promise)
     const arm = coordinator.arm('KGT')
     await flushPromises()
-    await coordinator.disarm()
+    const stopArm = coordinator.disarm()
+    const report = vi.spyOn(console, 'error').mockImplementation(() => {})
     armReady.reject(new Error('canceled'))
-    await arm
+    await Promise.all([arm, stopArm])
+    expect(report).toHaveBeenCalledWith('[canceled printing activation]', expect.objectContaining({ message: 'canceled' }))
+    report.mockRestore()
     const lock = deferred()
     ownership.acquire.mockReturnValueOnce(lock.promise)
     const pendingLock = coordinator.arm('KGT')
     await flushPromises()
-    await coordinator.disarm()
+    const stopLock = coordinator.disarm()
     lock.resolve(true)
-    await pendingLock
+    await Promise.all([pendingLock, stopLock])
     expect(coordinator.state.mode).toBe('Off')
     await coordinator.arm('KGT')
     const failed = deferred()

@@ -8,7 +8,7 @@ export const LABEL_PRINTING_KEY = Symbol('localLabelPrinting')
 const messages = {
   QzDisabled: 'Печать отключена на сервере. Обратитесь к администратору.',
   QzOriginRejected: 'Сервер не разрешает печать с этого адреса UI.',
-  QzUnavailable: 'QZ Tray недоступен. Запустите QZ Tray и подключитесь снова.',
+  QzUnavailable: 'QZ Tray недоступен.',
   QzTrustRejected: 'QZ Tray отклонил доверие или подпись. Проверьте сертификаты и разрешение сайта.',
   NoPrinters: 'В Windows не найдены принтеры. Установите очередь принтера.',
   NoSelection: 'Выберите локальный принтер для этикеток.',
@@ -24,9 +24,12 @@ const messages = {
   OwnershipUnavailable: 'Браузер не поддерживает безопасную автопечать в одной вкладке. Используйте Chrome/Edge через HTTPS.',
   NoOperator: 'Выберите оператора сканера перед включением автопечати.'
 }
+export function getPrintingErrorCode(error) {
+  return error?.data?.code || error?.cause?.data?.code || error?.code
+}
 export function getPrintingErrorMessage(error) {
-  const serverCode = error?.data?.code || error?.cause?.data?.code
+  const code = getPrintingErrorCode(error)
   const serverMessage = error?.data?.msg || error?.cause?.data?.msg
-  if ((serverCode || error?.code) === 'InvalidData' && typeof serverMessage === 'string' && serverMessage.trim()) return serverMessage
-  return messages[serverCode || error?.code] || getErrorMessage(error, 'Ошибка локальной печати')
+  if (code === 'InvalidData' && typeof serverMessage === 'string' && serverMessage.trim()) return serverMessage
+  return messages[code] || getErrorMessage(error, 'Ошибка локальной печати')
 }

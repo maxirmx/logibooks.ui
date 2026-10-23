@@ -16,6 +16,12 @@ automatic marking off. Printing remains optional and does not change scanning,
 parcel data, box selection, monitor navigation, or Android behavior.
 
 WbrN/Ozon monitor rows with Core `printableTemplates` show **Печать стикера**.
+Eligible WbrN exports to Tajikistan also show **Печать инвойса** (`fa-file-invoice`)
+after the sticker action in the monitor and warehouse parcel list. This requires
+Core to advertise `TJ_EXPORT` and accept it at the parcel label endpoints.
+Manual invoices use current saved parcel and register data with the scanner's
+invoice factory and renderer; no scan is created. Missing invoice fields are
+reported through the page alert, and the operator can correct them and retry.
 Every click fetches fresh Core label bytes and sends them unchanged as raw base64.
 Success means the label was sent to the printer queue; physical output is not
 confirmed. Controls prevent overlapping manual clicks. Selecting another parcel

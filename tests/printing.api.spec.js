@@ -14,6 +14,17 @@ vi.mock('@microsoft/signalr', () => ({ HubConnectionState: { Connected: 'Connect
 afterEach(() => { vi.unstubAllGlobals(); vi.clearAllMocks(); auth.user = { token: 'token' } })
 function response(text, status = 200, type = 'application/json') { return { ok: status < 400, status, text: async () => text, headers: { get: () => type } } }
 describe('printing API', () => {
+  it('prints parcel labels outside scan jobs and propagates rejected requests', async () => {
+    const fetch = vi.fn().mockResolvedValueOnce(response('{"template":"WBRN"}'))
+      .mockResolvedValueOnce(response('{"msg":"no sticker","code":"Unavailable"}', 409))
+      .mockRejectedValueOnce(new Error('offline'))
+    vi.stubGlobal('fetch', fetch)
+    expect(await printingApi.label({ parcelId: 7, template: 'WBRN' })).toEqual({ template: 'WBRN' })
+    expect(fetch.mock.calls[0][0]).toContain('/parcels/7/label?template=WBRN')
+    expect(fetch.mock.calls[0][1]).toMatchObject({ headers: { Authorization: 'Bearer token' }, cache: 'no-store' })
+    await expect(printingApi.label({ parcelId: 7, template: 'WBRN' })).rejects.toMatchObject({ status: 409 })
+    await expect(printingApi.label({ parcelId: 7, template: 'WBRN' })).rejects.toThrow('offline')
+  })
   it('fetches fresh PEM and signs exact strings with authentication, without logging', async () => {
     const fetch = vi.fn().mockResolvedValueOnce(response('PEM\n', 200, 'text/plain')).mockResolvedValueOnce(response('{"signature":"sig"}')).mockResolvedValueOnce(response('{}')).mockResolvedValueOnce(response('{}'))
     vi.stubGlobal('fetch', fetch)

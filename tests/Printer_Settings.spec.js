@@ -62,6 +62,23 @@ async function save() { await wrapper.get('[data-testid="save-print-settings"]')
 async function cancel() { await wrapper.get('[data-testid="cancel-print-settings"]').trigger('click'); await flushPromises() }
 
 describe('routed print settings', () => {
+  it.each(['failed', 'overflow'])('does not resume retained %s recovery when settings are cancelled', async (reason) => {
+    localStorage.setItem(PRINT_MODE_STORAGE_KEY, 'KGT')
+    await mountSettings(undefined, async (printing) => {
+      const owner = Symbol('departing monitor')
+      printing.bindScope(owner, 42, 9, true); await flushPromises()
+      printing.state[reason] = { scanJobId: 42, scanCodeId: 8, template: 'KGT' }
+      printing.unbindScope(owner); await flushPromises()
+    })
+    expect(wrapper.get('[data-testid="print-recovery-details"]').text()).toContain('сохраните режим «Отключён»')
+    await cancel()
+    expect(router.currentRoute.value.path).toBe('/boxes')
+    store.bindScope(Symbol('returning monitor'), 42, 9, true); await flushPromises()
+    expect(store.state.mode).toBe('Off')
+    expect(store.queueStatus.paused).toBe(true)
+    expect(store.recovery[reason].scanCodeId).toBe(8)
+    expect(env.channel.start).toHaveBeenCalledOnce()
+  })
   it.each([false, true])('reports an idle QZ disconnect once and clears it after reconnecting (armed: %s)', async (armed) => {
     await mountSettings()
     if (armed) {

@@ -41,7 +41,7 @@ const props = defineProps({
         <div data-testid="auto-print-status">
           Автомаркировка: {{ props.printQueue.mode === 'KGT' ? 'КГТ' : props.printQueue.mode === 'TJ' ? 'Таджикистан' : 'отключена' }}{{ props.printQueue.paused ? ' — приостановлена' : '' }}
         </div>
-        <PrintRecoveryDetails :failed="props.printQueue.failed" :overflow="props.printQueue.overflow" />
+        <PrintRecoveryDetails :failed="props.printQueue.failed" :overflow="props.printQueue.overflow" :retained="props.printQueue.recoveryRequired" />
       </div>
     </div>
   </div>

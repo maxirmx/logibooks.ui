@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-defineProps({ failed: { type: Object, default: null }, overflow: { type: Object, default: null } })
+defineProps({ failed: { type: Object, default: null }, overflow: { type: Object, default: null }, retained: Boolean })
 </script>
 
 <template>
@@ -15,6 +15,9 @@ defineProps({ failed: { type: Object, default: null }, overflow: { type: Object,
     <p v-if="overflow" data-testid="print-overflow">
       Переполнение начиная со скана {{ overflow.scanCodeId }} ({{ overflow.template }}), задание {{ overflow.scanJobId }}.
       Выключите автомаркировку и проверьте сканы.
+    </p>
+    <p v-if="retained">
+      Автомаркировка приостановлена. Проверьте указанные сканы и сохраните режим «Отключён» в настройках принтера перед повторным включением.
     </p>
   </div>
 </template>

@@ -118,7 +118,7 @@ onUnmounted(() => {
     <hr class="hr" />
     <PageAlertRegion />
     <PrintRecoveryDetails :failed="printing.state.failed || printing.recovery?.failed"
-      :overflow="printing.state.overflow || printing.recovery?.overflow" />
+      :overflow="printing.state.overflow || printing.recovery?.overflow" :retained="Boolean(printing.recovery)" />
     <div class="form-group">
       <label for="label-printer" class="label">Принтер этикеток:</label>
       <div class="printer-configuration-field">

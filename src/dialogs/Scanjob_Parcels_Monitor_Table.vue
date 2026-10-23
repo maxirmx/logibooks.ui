@@ -36,6 +36,7 @@ const props = defineProps({
   register: { type: Object, default: null },
   loading: { type: Boolean, default: false },
   defectActionLoading: { type: Boolean, default: false },
+  readOnly: { type: Boolean, default: false },
   selectedParcelId: { type: [Number, String], default: null }
 })
 
@@ -51,7 +52,8 @@ const {
 
 const canFollowParcelEditRoute = computed(() => hasLogistRole?.value === true)
 const isParcelCellDisabled = computed(() => props.loading || !canFollowParcelEditRoute.value)
-const areDefectActionsBusy = computed(() => props.loading || props.defectActionLoading)
+const areActionsBusy = computed(() => props.loading || props.defectActionLoading)
+const areDefectActionsBusy = computed(() => areActionsBusy.value || props.readOnly)
 const isAdminUser = computed(() => Boolean(authStore.isAdmin?.value ?? authStore.isAdmin))
 function isClearExtIdDisabled(item) {
   return areDefectActionsBusy.value || !canClearParcelExtId(item, authStore)
@@ -262,7 +264,7 @@ watch(
           @click="clearDefect"
           :disabled="isClearDefectDisabled(item)"
         />
-        <MonitorLabelActions :item="item" :disabled="areDefectActionsBusy" />
+        <MonitorLabelActions :item="item" :disabled="areActionsBusy" />
       </div>
     </template>
 

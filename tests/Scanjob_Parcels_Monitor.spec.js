@@ -8,6 +8,7 @@ import ScanjobParcelsMonitor from '@/dialogs/Scanjob_Parcels_Monitor.vue'
 import ScanjobParcelsMonitorTable from '@/dialogs/Scanjob_Parcels_Monitor_Table.vue'
 import BoxStickerField from '@/components/BoxStickerField.vue'
 import { scanjobMonitorArea } from '@/helpers/scanjob.monitor.helpers.js'
+import { OZON_COMPANY_ID, WBR_COMPANY_ID, WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
 
 const global = { stubs: {
   ScanjobParcelsMonitorTable: true,
@@ -16,6 +17,19 @@ const global = { stubs: {
 } }
 
 describe('parcel monitor summary', () => {
+  it.each([0, OZON_COMPANY_ID, WBR_COMPANY_ID, WBRN_REGISTER_ID])('forwards read-only independently of loading for register type %s', async (registerType) => {
+    const wrapper = mount(ScanjobParcelsMonitor, { props: {
+      registerType, box: { area: scanjobMonitorArea.Box, boxId: 3, parcels: [{ parcelId: 7 }] }, readOnly: true
+    }, global })
+    const table = wrapper.getComponent(ScanjobParcelsMonitorTable)
+    expect(table.props('readOnly')).toBe(true)
+    expect(table.props('defectActionLoading')).toBe(false)
+    expect(table.props('loading')).toBe(false)
+    await wrapper.setProps({ readOnly: false, defectActionLoading: true })
+    expect(table.props('readOnly')).toBe(false)
+    expect(table.props('defectActionLoading')).toBe(true)
+    wrapper.unmount()
+  })
   it('keeps the box code and print action within its status card and preserves table actions', async () => {
     const parcel = { parcelId: 7, extId: 'KGT-7' }
     const box = { area: scanjobMonitorArea.Box, boxId: 3, boxSticker: 'BOX-QR', parcels: [parcel] }

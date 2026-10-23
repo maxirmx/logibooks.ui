@@ -33,6 +33,7 @@ const props = defineProps({
   register: { type: Object, default: null },
   loading: { type: Boolean, default: false },
   defectActionLoading: { type: Boolean, default: false },
+  readOnly: { type: Boolean, default: false },
   selectedParcelId: { type: [Number, String], default: null },
   printQueue: { type: Object, default: null }
 })
@@ -138,6 +139,7 @@ function clearDefect(item) {
           :register="props.register"
           :loading="props.loading"
           :defect-action-loading="props.defectActionLoading"
+          :read-only="props.readOnly"
           :selected-parcel-id="props.selectedParcelId"
           @edit-parcel="editParcel"
           @set-defect="setDefect"
@@ -152,6 +154,7 @@ function clearDefect(item) {
           :register="props.register"
           :loading="props.loading"
           :defect-action-loading="props.defectActionLoading"
+          :read-only="props.readOnly"
           :selected-parcel-id="props.selectedParcelId"
           @edit-parcel="editParcel"
           @set-defect="setDefect"

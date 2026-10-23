@@ -10,6 +10,7 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 import ScanjobMonitor from '@/dialogs/Scanjob_Monitor.vue'
 import { defaultGlobalStubs } from './helpers/test-utils'
 import { OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
+import { useLabelPrintingStore } from '@/stores/label.printing.store.js'
 
 vi.mock('@/composables/useAppConfirm.js', () => ({ useAppConfirm: () => vi.fn().mockResolvedValue(true) }))
 vi.mock('@/services/qz.printing.js', async (original) => {
@@ -514,6 +515,7 @@ describe('Scanjob_Monitor.vue', () => {
     mockScanjob.value = { id: 42, name: 'Scanjob A', type: 30, operation: 30, status: 15, registerId: 101 }
     getById.mockResolvedValue({ id: 42, name: 'Scanjob A', type: 30, operation: 30, status: 15, registerId: 101 })
     mockRegisterItem.invoiceNumber = 'INV-101'
+    delete mockRegisterItem.readOnly
     registerGetById.mockResolvedValue(true)
     getTransportationDocument.mockReturnValue('Авианакладная')
     loadMonitorSnapshot.mockResolvedValue(registerSnapshot)
@@ -1080,6 +1082,41 @@ describe('Scanjob_Monitor.vue', () => {
         returnUrl: '/scanjobs/42/monitor/unassigned/1'
       }
     })
+  })
+
+  it.each(['snapshot', 'scanjob', 'register'])('allows parcel printing with a read-only %s while blocking parcel changes', async (source) => {
+    isAdmin.value = true
+    const parcel = { ...boxSnapshot.box.parcels[0], extId: '77', printableTemplates: ['WBRN', 'TJ_EXPORT'] }
+    const snapshot = { ...boxSnapshot, readOnly: source === 'snapshot', box: { ...boxSnapshot.box, parcels: [parcel] } }
+    if (source === 'scanjob') mockScanjob.value = { ...mockScanjob.value, readOnly: true }
+    if (source === 'register') mockRegisterItem.readOnly = true
+    loadMonitorSnapshot.mockResolvedValueOnce(snapshot)
+    const printing = useLabelPrintingStore()
+    const print = vi.spyOn(printing, 'printParcel').mockResolvedValue(true)
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42, monitorScope: box7MonitorScope }, global: { stubs: monitorGlobalStubs }
+    })
+    await flushPromises()
+    expect(wrapper.get('.read-only-notice').isVisible()).toBe(true)
+    for (const id of ['scanjob-clear-ext-id-action', 'scanjob-set-defect-action', 'scanjob-clear-defect-action']) {
+      const action = wrapper.get(`button[data-testid="${id}"]`)
+      expect(action.element.disabled).toBe(true)
+      await action.trigger('click')
+    }
+    const panel = wrapper.getComponent({ name: 'Scanjob_Parcels_Monitor' })
+    for (const event of ['clear-ext-id', 'set-defect', 'clear-defect']) panel.vm.$emit(event, parcel)
+    await flushPromises()
+    expect(clearExtId).not.toHaveBeenCalled()
+    expect(setDefect).not.toHaveBeenCalled()
+    expect(clearDefect).not.toHaveBeenCalled()
+    for (const id of ['monitor-print-label', 'monitor-print-invoice']) {
+      const action = wrapper.get(`button[data-testid="${id}"]`)
+      expect(action.element.disabled).toBe(false)
+      await action.trigger('click'); await flushPromises()
+    }
+    expect(print.mock.calls).toEqual([[{ parcelId: 70, template: 'WBRN' }], [{ parcelId: 70, template: 'TJ_EXPORT' }]])
+    print.mockRestore()
+    wrapper.unmount()
   })
 
   it('clears a KGT number through box details, keeps failures visible once and retries', async () => {

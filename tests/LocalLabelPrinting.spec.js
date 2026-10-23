@@ -148,6 +148,52 @@ it('shows failed and overflow scan identities on the monitor and retains them wh
   expect(store.recovery).toMatchObject({ failed: { scanCodeId: 8 }, overflow: { scanCodeId: 70 } })
 })
 
+it.each(['failed', 'overflow'].flatMap((reason) => ['KGT', 'TJ'].map((mode) => ({ reason, mode }))))(
+  'keeps $mode paused after $reason across navigation and settings changes until Off is saved', async ({ reason, mode }) => {
+    await arm(mode)
+    const template = mode === 'TJ' ? 'TJ_EXPORT' : 'KGT'
+    if (reason === 'failed') {
+      env.qz.submit.mockRejectedValueOnce({ code: 'SubmissionFailed' })
+      env.event(scan(8, template))
+    } else {
+      env.event({ ...scan(), printCandidates: Array.from({ length: 51 }, (_, i) => scan(i, template).printCandidates[0]) })
+    }
+    await flushPromises()
+    const retained = { ...store.state[reason] }
+    wrapper.unmount(); await flushPromises()
+    wrapper = mount(host, { global: { plugins: [pinia], stubs } })
+    await flushPromises()
+    const assertPaused = async () => {
+      expect(store.state.mode).toBe('Off')
+      expect(store.recovery[reason]).toEqual(retained)
+      expect(wrapper.get('[data-testid="auto-print-status"]').text()).toContain('приостановлена')
+      const details = wrapper.get('[data-testid="print-recovery-details"]').text()
+      expect(details).toContain(`(${template}), задание 42`)
+      expect(details).toContain('сохраните режим «Отключён»')
+      env.event(scan(200, template)); await flushPromises()
+      expect(env.qz.submit).toHaveBeenCalledTimes(reason === 'failed' ? 1 : 0)
+      expect(env.channel.start).toHaveBeenCalledOnce()
+    }
+    await assertPaused()
+    await store.syncSettings(new window.StorageEvent('storage', { key: PRINT_MODE_STORAGE_KEY }))
+    await assertPaused()
+    await store.saveSettings({ printer: 'TSC TE200', mode })
+    await assertPaused()
+    const failure = new Error('cannot stop')
+    env.channel.stop.mockRejectedValueOnce(failure)
+    await expect(store.saveSettings({ printer: 'TSC TE200', mode: 'Off' })).rejects.toBe(failure)
+    await assertPaused()
+    await store.saveSettings({ printer: 'TSC TE200', mode: 'Off' }); await flushPromises()
+    expect(store.recovery).toBeNull()
+    expect(wrapper.find('[data-testid="print-recovery-details"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="auto-print-status"]').text()).toContain('отключена')
+    await arm(mode)
+    env.event(scan(201, template)); await flushPromises()
+    expect(env.label).toHaveBeenLastCalledWith(scan(201, template).printCandidates[0])
+    expect(env.qz.submit).toHaveBeenCalledTimes(reason === 'failed' ? 2 : 1)
+  }
+)
+
 it.each(['printParcel', 'reprint'].flatMap((method) => ['label', 'submit'].map((source) => ({ method, source }))))(
   'rejects a $source failure from store.$method without publishing an alert and permits retry', async ({ method, source }) => {
     await flushPromises()

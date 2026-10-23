@@ -42,7 +42,14 @@ export const useLabelPrintingStore = defineStore('labelPrinting', () => {
   const state = coordinator.state
   const busy = computed(() => !qz.state.connected || !qz.state.printer || checkingAvailability.value || operationInProgress.value || state.paused || state.queued > 0)
   const operationInProgress = computed(() => controlBusy.value || state.busy || state.transitioning)
-  const queueStatus = computed(() => ({ queued: state.queued, paused: state.paused, mode: state.mode, failed: state.failed, overflow: state.overflow }))
+  const queueStatus = computed(() => ({
+    queued: state.queued,
+    paused: state.paused || Boolean(recovery.value),
+    mode: recovery.value ? preferredMode.value : state.mode,
+    failed: state.failed || recovery.value?.failed,
+    overflow: state.overflow || recovery.value?.overflow,
+    recoveryRequired: Boolean(recovery.value)
+  }))
   function retainRecovery() {
     if (state.failed || state.overflow) recovery.value = {
       failed: state.failed && { ...state.failed }, overflow: state.overflow && { ...state.overflow }
@@ -137,7 +144,8 @@ export const useLabelPrintingStore = defineStore('labelPrinting', () => {
   }
   async function reprint() { if (!busy.value && state.last) return printTarget({ ...state.last }) }
   async function restoreMode(version) {
-    if (version !== scopeVersion || !scope.active || !scope.userId || !qz.state.connected || !qz.state.printer || preferredMode.value === 'Off') return
+    // Navigation and settings synchronization must not bypass an unresolved failed scan or overflow.
+    if (recovery.value || version !== scopeVersion || !scope.active || !scope.userId || !qz.state.connected || !qz.state.printer || preferredMode.value === 'Off') return
     controlBusy.value = true
     try { await coordinator.arm(preferredMode.value) }
     finally { controlBusy.value = false }

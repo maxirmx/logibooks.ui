@@ -74,6 +74,40 @@ const mockScrollIntoView = () => {
 }
 
 describe('Scanjob parcel monitor typed tables', () => {
+  it.each([ScanjobWbrNParcelsMonitorTable, ScanjobWbrParcelsMonitorTable, ScanjobOzonParcelsMonitorTable, ScanjobParcelsMonitorTable])(
+    'allows read-only sticker and invoice printing while blocking mutations', async (table) => {
+      isAdmin.value = true
+      const parcel = { parcelId: 41, extId: '77', printableTemplates: ['WBRN', 'TJ_EXPORT'] }
+      const print = vi.fn()
+      const wrapper = mount(table, { props: {
+        headers: [{ key: 'actions', title: 'Действия' }], parcels: [parcel], readOnly: true
+      }, global: { ...globalWithFontAwesome, provide: { [LABEL_PRINTING_KEY]: { busy: ref(false), print } } } })
+      const mutations = wrapper.findAll('button').filter((button) => ['Очистить номер КГТ', 'Брак', 'Отменить брак'].includes(button.attributes('aria-label')))
+      expect(mutations).toHaveLength(3)
+      for (const button of mutations) {
+        expect(button.element.disabled).toBe(true)
+        await button.trigger('click')
+      }
+      for (const event of ['clear-ext-id', 'set-defect', 'clear-defect']) expect(wrapper.emitted(event)).toBeUndefined()
+      const labels = wrapper.findAll('button[data-testid="monitor-print-label"], button[data-testid="monitor-print-invoice"]')
+      expect(labels).toHaveLength(2)
+      for (const button of labels) {
+        expect(button.element.disabled).toBe(false)
+        await button.trigger('click')
+      }
+      expect(print.mock.calls).toEqual([[{ parcelId: 41, template: 'WBRN' }], [{ parcelId: 41, template: 'TJ_EXPORT' }]])
+      for (const loading of ['loading', 'defectActionLoading']) {
+        await wrapper.setProps({ [loading]: true })
+        for (const button of labels) {
+          expect(button.element.disabled).toBe(true)
+          await button.trigger('click')
+        }
+        expect(print).toHaveBeenCalledTimes(2)
+        await wrapper.setProps({ [loading]: false })
+      }
+      wrapper.unmount()
+    }
+  )
   it('prints an invoice after the sticker action in the WBR-N monitor', async () => {
     const print = vi.fn()
     const wrapper = mount(ScanjobWbrNParcelsMonitorTable, { props: {

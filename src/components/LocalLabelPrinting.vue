@@ -33,6 +33,7 @@ async function runPrint(operation) {
 const printParcel = (target) => runPrint(() => printing.printParcel(target))
 const reprint = () => runPrint(() => printing.reprint())
 const retry = () => runPrint(() => printing.retry(confirm))
+const reconnect = () => runPrint(() => printing.refreshPrinters())
 watch(() => [props.scanJobId, props.userId, props.active, auth.user?.token], () => {
   printing.bindScope(owner, props.scanJobId, props.userId, Boolean(props.active && auth.user?.token))
 }, { immediate: true, flush: 'sync' })
@@ -52,6 +53,17 @@ defineExpose({ printParcel, busy, operationInProgress, queueStatus })
       :disabled="busy || !state.last"
       @click="reprint"
       data-testid="reprint-label"
+    />
+    <ActionButton
+      v-if="state.paused && !qzState.connected"
+      :item="{}"
+      icon="fa-solid fa-plug-circle-plus"
+      icon-size="2x"
+      tooltip-text="Восстановить подключение к QZ Tray"
+      aria-label="Восстановить подключение к QZ Tray"
+      :disabled="operationInProgress"
+      @click="reconnect"
+      data-testid="reconnect-print"
     />
     <ActionButton
       v-if="state.paused && !state.overflow"

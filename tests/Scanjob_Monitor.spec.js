@@ -21,6 +21,8 @@ const mockCurrentRoute = vi.hoisted(() => ({
 }))
 const dismissAlert = vi.hoisted(() => vi.fn())
 const alertError = vi.hoisted(() => vi.fn(() => 71))
+const alertSuccess = vi.hoisted(() => vi.fn())
+const alertInfo = vi.hoisted(() => vi.fn())
 const mockAlert = await vi.hoisted(async () => {
   const { ref } = await import('vue')
   return ref(null)
@@ -313,7 +315,7 @@ vi.mock(
 
 vi.mock('@/stores/scanjobs.store.js', () => ({
   useScanjobsStore: () => ({
-    ops: { constants: { inProgressStatus: 15, boxOnlyType: 20, parcelScanSource: 10 } },
+    ops: { constants: { inProgressStatus: 15, boxOnlyType: 20, parcelScanSource: 10, lookupOperation: 30 } },
     ensureOpsLoaded: vi.fn().mockResolvedValue(true),
     getScanJobLabel: job => `#${job.id}`,
     scanjob: mockScanjob,
@@ -343,7 +345,8 @@ vi.mock('@/stores/alert.store.js', () => ({
   useAlertStore: () => ({
     get alert() { return mockAlert.value },
     error: alertError,
-    success: vi.fn(),
+    success: alertSuccess,
+    info: alertInfo,
     dismiss: dismissAlert
   })
 }))
@@ -1708,6 +1711,31 @@ describe('Scanjob_Monitor.vue', () => {
     await flushPromises()
     expect(wrapper.find('[data-testid="scanjob-monitor-closed"]').exists()).toBe(true)
     expect(wrapper.get('button[data-testid="scanjob-monitor-follow-user-open"]').classes()).not.toContain('anti-btn-green')
+  })
+  it.each([0, 1])('refreshes a Lookup scan as scanned and reports its match outcome (count: %s)', async count => {
+    isAdmin.value = true
+    const job = { id: 42, name: 'Поиск', type: 30, operation: 30, lookupStatusId: 6, status: 15, registerId: 101 }
+    mockScanjob.value = job
+    getById.mockResolvedValue(job)
+    loadMonitorSnapshot.mockResolvedValue(boxSnapshot)
+    manualScanParcel.mockResolvedValueOnce({ count, parcelCount: 1, scanSource: 10 })
+    const wrapper = mount(ScanjobMonitor, { props: { scanjobId: 42, monitorScope: box7MonitorScope }, global: { stubs: monitorGlobalStubs } })
+    await flushPromises()
+    const scanned = globalThis.structuredClone(boxSnapshot)
+    scanned.box.parcels[1].stickerScanned = true
+    scanned.box.parcels[1].scannedSticker = 'Вручную: посылка #71'
+    loadMonitorSnapshot.mockResolvedValueOnce(scanned)
+    expect(await wrapper.vm.manualScan.run([{ parcelId: 71 }], 42)).toBe(true)
+    await flushPromises()
+    expect(wrapper.vm.manualScan.completedIds.value).toEqual([71])
+    expect(alertError).not.toHaveBeenCalled()
+    expect(count ? alertInfo : alertSuccess).toHaveBeenCalledOnce()
+    expect(count ? alertSuccess : alertInfo).not.toHaveBeenCalled()
+    expect(count ? alertInfo : alertSuccess).toHaveBeenCalledWith(count
+      ? 'Посылка соответствует условиям поиска'
+      : 'Посылка не соответствует условиям поиска')
+    expect(wrapper.text()).toContain('Вручную: посылка #71')
+    wrapper.unmount()
   })
   it('shows the header spinner after scan confirmation and disables monitor actions', async () => {
     isAdmin.value = true

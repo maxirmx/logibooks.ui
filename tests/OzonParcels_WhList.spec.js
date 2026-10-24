@@ -2,7 +2,7 @@ const manualScanApi = vi.hoisted(() => ({
   getInProgress: vi.fn().mockResolvedValue([]), getById: vi.fn(), scanParcel: vi.fn(),
   getAll: vi.fn(), updateItems: vi.fn()
 }))
-vi.mock('@/stores/scanjobs.store.js', () => ({ useScanjobsStore: () => ({ ops: { constants: { inProgressStatus: 15, boxOnlyType: 20, parcelScanSource: 10 } }, ensureOpsLoaded: vi.fn().mockResolvedValue(true), getScanJobLabel: job => `#${job.id}`, createScanJobsListChannel: () => ({ start: vi.fn().mockResolvedValue(true), stop: vi.fn().mockResolvedValue(true) }), getInProgress: manualScanApi.getInProgress, getById: manualScanApi.getById, scanParcel: manualScanApi.scanParcel, startScanJobsListMonitor: vi.fn().mockResolvedValue(true), stopScanJobsListMonitor: vi.fn().mockResolvedValue(true) }) }))
+vi.mock('@/stores/scanjobs.store.js', () => ({ useScanjobsStore: () => ({ ops: { constants: { inProgressStatus: 15, boxOnlyType: 20, parcelScanSource: 10, lookupOperation: 30 } }, ensureOpsLoaded: vi.fn().mockResolvedValue(true), getScanJobLabel: job => `#${job.id}`, createScanJobsListChannel: () => ({ start: vi.fn().mockResolvedValue(true), stop: vi.fn().mockResolvedValue(true) }), getInProgress: manualScanApi.getInProgress, getById: manualScanApi.getById, scanParcel: manualScanApi.scanParcel, startScanJobsListMonitor: vi.fn().mockResolvedValue(true), stopScanJobsListMonitor: vi.fn().mockResolvedValue(true) }) }))
 const manualScanConfirm = vi.hoisted(() => vi.fn().mockResolvedValue(true))
 vi.mock('@/composables/useAppConfirm.js', () => ({ useAppConfirm: () => manualScanConfirm }))
 import { setActivePinia, createPinia } from 'pinia'
@@ -484,7 +484,7 @@ describe('OzonParcels_WhList.vue', () => {
     expect(header.props('loading')).toBe(false)
     expect(header.props('disabled')).toBe(true)
     expect(manualScanApi.scanParcel).not.toHaveBeenCalled()
-    expect(manualScanConfirm.mock.lastCall[0].content).toContain('Количество: 2')
+    expect(manualScanConfirm.mock.lastCall[0].contentComponentProps.count).toBe(2)
     expect(wrapper.find('[data-testid="parcel-scan-selection"]').exists()).toBe(false)
     accept(true)
     await resolveAll()

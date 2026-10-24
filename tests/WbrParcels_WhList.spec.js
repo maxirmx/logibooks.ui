@@ -145,7 +145,7 @@ vi.mock('@/stores/parcels.store.js', () => ({
 }))
 
 vi.mock('@/stores/scanjobs.store.js', () => ({
-  useScanjobsStore: () => ({ ops: { constants: { inProgressStatus: 15, boxOnlyType: 20, parcelScanSource: 10 } }, ensureOpsLoaded: vi.fn().mockResolvedValue(true), getScanJobLabel: job => `#${job.id}`, createScanJobsListChannel: () => ({ start: vi.fn().mockResolvedValue(true), stop: vi.fn().mockResolvedValue(true) }),
+  useScanjobsStore: () => ({ ops: { constants: { inProgressStatus: 15, boxOnlyType: 20, parcelScanSource: 10, lookupOperation: 30 } }, ensureOpsLoaded: vi.fn().mockResolvedValue(true), getScanJobLabel: job => `#${job.id}`, createScanJobsListChannel: () => ({ start: vi.fn().mockResolvedValue(true), stop: vi.fn().mockResolvedValue(true) }),
     getInProgress: manualScanApi.getInProgress,
     getById: manualScanApi.getById,
     scanParcel: manualScanApi.scanParcel,
@@ -626,7 +626,7 @@ describe('WbrParcels_WhList.vue', () => {
     expect(header.props('loading')).toBe(false)
     expect(header.props('disabled')).toBe(true)
     expect(manualScanApi.scanParcel).not.toHaveBeenCalled()
-    expect(manualScanConfirm.mock.lastCall[0].content).toContain('Количество: 2')
+    expect(manualScanConfirm.mock.lastCall[0].contentComponentProps.count).toBe(2)
     expect(wrapper.find('[data-testid="parcel-scan-selection"]').exists()).toBe(false)
     accept(true)
     await resolveAll()

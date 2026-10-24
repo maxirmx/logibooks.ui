@@ -4,6 +4,7 @@
 // This file is a part of Logibooks ui application
 
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { VOverlay } from 'vuetify/components'
 import ActionButton from './ActionButton.vue'
 import { actionButtonProps } from './actionButtonShared'
 
@@ -21,6 +22,7 @@ const optionColorClasses = {
 
 const props = defineProps({
   ...actionButtonProps,
+  menuLocation: { type: String, default: 'bottom end' },
   options: {
     type: Array,
     required: false,
@@ -56,6 +58,7 @@ const isExecuting = ref(false)
 const focusedIndex = ref(-1)
 const optionRefs = ref([])
 const rootRef = ref(null)
+const menuRef = ref(null)
 
 const effectiveDisabled = computed(() => props.disabled || isExecuting.value)
 
@@ -182,16 +185,20 @@ function handleButtonClick() {
 }
 
 function handleOptionClick(index) {
-  activateOption(index)
+  return activateOption(index)
 }
 
 function handleDocumentClick(event) {
   const root = rootRef.value
-  if (!root || root.contains(event.target)) {
+  if (!root || root.contains(event.target) || menuRef.value?.contains(event.target)) {
     return
   }
 
   closeMenu({ restoreFocus: false })
+}
+
+function handleOverlayUpdate(open) {
+  if (!open) closeMenu({ restoreFocus: false })
 }
 
 function handleKeydown(event) {
@@ -207,6 +214,11 @@ function handleKeydown(event) {
     return
   }
 
+  const focusedOption = event.target?.closest?.('[role="menuitem"]')
+  if (focusedOption && menuRef.value?.contains(focusedOption)) {
+    focusedIndex.value = Number(focusedOption.dataset.index)
+  }
+
   switch (event.key) {
     case 'ArrowDown':
       event.preventDefault()
@@ -219,12 +231,17 @@ function handleKeydown(event) {
     case 'Enter':
       event.preventDefault()
       if (focusedIndex.value !== -1) {
-        activateOption(focusedIndex.value)
+        return activateOption(focusedIndex.value)
       }
       break
     case 'Escape':
       event.preventDefault()
       closeMenu()
+      break
+    case 'Tab':
+      // Let the browser continue from the trigger rather than the teleported menu.
+      closeMenu({ restoreFocus: false })
+      rootRef.value?.querySelector('button')?.focus()
       break
     default:
       break
@@ -260,7 +277,6 @@ defineExpose({
   <div
     class="action-button-2l"
     ref="rootRef"
-    @keydown.capture="handleKeydown"
   >
     <ActionButton
       :item="props.item"
@@ -273,18 +289,34 @@ defineExpose({
       :aria-expanded="isMenuOpen"
       :aria-controls="menuId"
       @click="handleButtonClick"
+      @keydown.capture="handleKeydown"
       v-bind="$attrs"
     />
-    <transition name="action-button-2l__fade">
+    <VOverlay
+      :model-value="isMenuOpen"
+      :activator="rootRef"
+      :open-on-click="false"
+      :scrim="false"
+      :location="props.menuLocation"
+      location-strategy="connected"
+      scroll-strategy="reposition"
+      :min-width="220"
+      :max-width="360"
+      :offset="4"
+      transition="action-button-2l__fade"
+      @update:model-value="handleOverlayUpdate"
+    >
       <ul
         v-if="isMenuOpen"
+        ref="menuRef"
         class="action-button-2l__menu"
         role="menu"
         :id="menuId"
+        @keydown.capture="handleKeydown"
       >
         <li
           v-for="(option, index) in props.options"
-          :key="option.label"
+          :key="option.key ?? option.label"
           role="none"
         >
           <button
@@ -309,29 +341,26 @@ defineExpose({
           </button>
         </li>
       </ul>
-    </transition>
+    </VOverlay>
   </div>
 </template>
 
 <style scoped>
 .action-button-2l {
-  position: relative;
-  display: inline-block;
+  display: inline-flex;
+  vertical-align: middle;
 }
 
 .action-button-2l__menu {
-  position: absolute;
-  right: 0;
-  margin-top: 20px;
+  margin: 0;
   padding: 4px 0;
   list-style: none;
   background-color: #fff;
   border: 1px solid rgba(0, 0, 0, 0.12);
   border-radius: 4px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
-  z-index: 10;
-  min-width: 220px;
-  max-width: min(360px, calc(100vw - 24px));
+  max-height: inherit;
+  overflow-y: auto;
 }
 
 .action-button-2l__menu-item {
@@ -357,6 +386,7 @@ defineExpose({
 .action-button-2l__menu-label {
   flex: 1 1 auto;
   min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .action-button-2l__menu-icon--has-issues {

@@ -16,6 +16,7 @@ const disabled = computed(() => !scan || scan.disabled.value || scan.locked.valu
 const tooltip = computed(() => reason.value ||
   (isBulk.value ? 'Отметить выбранные как отсканированные' : 'Отметить как отсканированную'))
 const options = computed(() => jobs.value.map(job => ({
+  key: job.id,
   label: scan.jobLabel(job),
   action: () => scan.run(targets.value, job.id, isBulk.value)
 })))
@@ -24,6 +25,7 @@ const options = computed(() => jobs.value.map(job => ({
 <template>
   <span v-if="scan?.canScan.value" @click.stop>
     <ActionButton2L v-if="jobs.length > 1" :item="parcels" icon="fa-solid fa-qrcode"
+      menu-location="bottom start"
       :icon-size="iconSize" :tooltip-text="tooltip" :aria-label="tooltip" :disabled="disabled"
       :options="options" data-testid="manual-parcel-scan-menu" />
     <ActionButton v-else :item="parcels" icon="fa-solid fa-qrcode" :icon-size="iconSize"

@@ -53,6 +53,12 @@ export async function waitForTicks(ticks = 2) {
 
 // Comprehensive Vuetify component stubs that handle common props
 export const vuetifyStubs = {
+  'v-overlay': {
+    name: 'VOverlay',
+    props: ['modelValue'],
+    emits: ['update:modelValue'],
+    template: '<div v-if="modelValue"><slot /></div>'
+  },
   'v-chip': {
     template:
       '<div class="v-chip-stub"><slot></slot><button v-if="closable" type="button" data-testid="v-chip-close" :disabled="disabled" @click="$emit(\'click:close\')">×</button></div>',

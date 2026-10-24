@@ -66,7 +66,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   fetchWrapper.get.mockImplementation(async url => {
     const path = new URL(url).pathname
-    if (path.endsWith('/scanjobs/ops')) return { types: [], operations: [], modes: [], statuses: [], constants: { inProgressStatus: 15, boxOnlyType: 20, parcelScanSource: 10 } }
+    if (path.endsWith('/scanjobs/ops')) return { types: [], operations: [], modes: [], statuses: [], constants: { inProgressStatus: 15, boxOnlyType: 20, parcelScanSource: 10, lookupOperation: 30 } }
     if (path.endsWith('/ops')) return { customsProcedures: [{ value: 10, name: 'Экспорт' }], transportationTypes: [], incoterms: [{ value: 2, name: 'FCA' }] }
     if (/\/registers\/\d+$/.test(path)) return { id: 4307, customsProcedureCode: 10 }
     if (/\/parcels\/a\/\d+$/.test(path)) return { id: 2, registerId: 4307, statusId: 1, checkStatus: 0 }

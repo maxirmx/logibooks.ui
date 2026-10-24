@@ -10,7 +10,7 @@ import { useAppConfirm } from '@/composables/useAppConfirm.js'
 import { APP_DIALOG_BUTTON_PROPS } from '@/helpers/dialog.helpers.js'
 import { getErrorMessage, reportError } from '@/helpers/error.helpers.js'
 import { MANUAL_PARCEL_SCAN_KEY,
-  parcelScanDisabledReason, parcelScanId } from '@/helpers/parcel.scan.helpers.js'
+  parcelScanDisabledReason, parcelScanId, parcelScanSuccessMessage } from '@/helpers/parcel.scan.helpers.js'
 
 export function useManualParcelScan({ registerId, job = null, disabled = false,
   scopeKey = null, refresh, onScanned = () => {} }) {
@@ -30,7 +30,7 @@ export function useManualParcelScan({ registerId, job = null, disabled = false,
   const completedIds = ref([])
   const constants = computed(() => {
     const values = store.ops.constants
-    return values && [values.inProgressStatus, values.boxOnlyType, values.parcelScanSource].every(Number.isInteger) ? values : null
+    return values && [values.inProgressStatus, values.boxOnlyType, values.lookupOperation].every(Number.isInteger) ? values : null
   })
   const jobs = computed(() => (job ? [toValue(job)] : activeJobs.value)
     .filter(candidate => candidate && constants.value && Number(candidate.status) === constants.value.inProgressStatus))
@@ -47,10 +47,14 @@ export function useManualParcelScan({ registerId, job = null, disabled = false,
     return jobs.value.filter(candidate => !disabledReason(candidate))
   }
 
+  function jobLabel(candidate) {
+    return candidate.name || 'Без названия'
+  }
+
   async function loadJobDefinitions() {
     try {
       await store.ensureOpsLoaded()
-      if (!constants.value) throw new Error('Сервер не предоставил параметры сканирования. Обновите Core и повторите загрузку.')
+      if (!constants.value) throw new Error('Не удалось загрузить параметры сканирования.')
       return true
     } catch (error) {
       if (mounted) alerts.error(error, { fallback: 'Не удалось загрузить справочник заданий сканирования' })
@@ -90,23 +94,27 @@ export function useManualParcelScan({ registerId, job = null, disabled = false,
     if (reason) { alerts.error(reason); return false }
     confirming.value = true
     let completed = 0
+    let matched = 0
+    let lookup = false
     let failure = null
     let failureMessage = null
     let refreshNeeded = false
     let requestInFlight = false
-    const parcelScanSource = constants.value.parcelScanSource
     try {
       const choice = reactive({ jobId: targetJob.id })
       if (bulk && !await confirm({ title: 'Сканирование посылок',
-        ...(jobId == null && candidates.length > 1 ? {
-          contentComponent: markRaw(ParcelScanConfirmationContent),
-          contentComponentProps: { count: frozenParcels.length, jobs: candidates.map(item => ({ id: item.id, label: store.getScanJobLabel(item) })), choice, onSelectJob: id => { choice.jobId = id } }
-        } : { content: `Отметить выбранные посылки как отсканированные? Количество: ${frozenParcels.length}. Задание: ${store.getScanJobLabel(targetJob)}.` }),
+        contentComponent: markRaw(ParcelScanConfirmationContent),
+        contentComponentProps: {
+          count: frozenParcels.length,
+          jobs: (jobId == null ? candidates : [targetJob]).map(item => ({ id: item.id, label: jobLabel(item) })),
+          choice, onSelectJob: id => { choice.jobId = id }
+        },
         confirmationText: 'Отметить как отсканированные', cancellationText: 'Отмена',
         confirmationButtonProps: APP_DIALOG_BUTTON_PROPS.primary })) return false
       if (!current()) return false
       targetJob = candidates.find(item => Number(item.id) === Number(choice.jobId))
       jobId = targetJob.id
+      lookup = Number(targetJob.operation) === constants.value.lookupOperation
       busy.value = true
       confirming.value = false
       refreshNeeded = true
@@ -118,12 +126,11 @@ export function useManualParcelScan({ registerId, job = null, disabled = false,
         if (toValue(disabled) || !canScan.value) throw Object.assign(new Error('Операция остановлена'), { knownOutcome: true })
         const id = parcelScanId(parcel)
         requestInFlight = true
+        // Like the scanner, accept a completed request even when Lookup finds no match.
         const result = await store.scanParcel(jobId, id)
         requestInFlight = false
         if (!current()) return false
-        if (result?.parcelCount !== 1 || result?.scanSource !== parcelScanSource) {
-          throw Object.assign(new Error(`Посылка #${id} не соответствует условиям задания сканирования.`), { knownOutcome: true })
-        }
+        if (lookup && result?.count > 0) matched++
         completed++
         onScanned(id)
         completedIds.value = [...completedIds.value, id]
@@ -146,7 +153,9 @@ export function useManualParcelScan({ registerId, job = null, disabled = false,
         // Refresh failures must not replace the scan error or offer another scan.
         try {
           await refresh()
-          if (!failure && current()) alerts.success(`Отсканировано посылок: ${completed}.`)
+          if (!failure && current()) {
+            alerts[matched > 0 ? 'info' : 'success'](parcelScanSuccessMessage({ completed, matched, lookup }))
+          }
         }
         catch (error) {
           if (failure || !current()) reportError(error, { context: 'manual scan failure refresh' })
@@ -195,7 +204,7 @@ export function useManualParcelScan({ registerId, job = null, disabled = false,
   })
 
   const context = { jobs, jobsLoading, busy, locked, progress, pendingBatch, completedIds, run, disabledReason, invalidateBatch, canScan, compatibleJobs,
-    jobLabel: store.getScanJobLabel,
+    jobLabel,
     scopeKey: computed(() => toValue(scopeKey)),
     disabled: computed(() => toValue(disabled) || uncertainOutcome.value) }
   provide(MANUAL_PARCEL_SCAN_KEY, context)

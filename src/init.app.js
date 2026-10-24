@@ -3,6 +3,7 @@
 // This file is a part of Logibooks ui application
 
 import { createApp } from 'vue'
+import '@/helpers/validation.locale.js'
 import { createPinia } from 'pinia'
 import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
 
@@ -66,6 +67,7 @@ import {
   faH,
   faFileImage,
   faBarcode,
+  faQrcode,
   faPause,
   faBroom,
   faClone,
@@ -152,6 +154,7 @@ library.add(
   faH,
   faFileImage,
   faBarcode,
+  faQrcode,
   faPause,
   faBroom,
   faClone,
@@ -248,7 +251,7 @@ export function initializeApp() {
   const vuetify = createVuetify({
     locale: {
       locale: 'ru',
-      fallback: 'en',
+      fallback: 'ru',
       messages: { ru: customRu }
     },
     breakpoint: {

@@ -7,7 +7,7 @@ import FieldError from '@/components/FieldError.vue'
 import { useAlertStore } from '@/stores/alert.store.js'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { focusFirstInvalidField } from '@/helpers/form.validation.helpers.js'
-import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
+import { runWithAlert } from '@/helpers/notification.helpers.js'
 import { reportFormError } from '@/helpers/error.helpers.js'
 import { ref, computed } from 'vue'
 import router from '@/router'
@@ -41,7 +41,7 @@ let airport = ref({
 
 if (!isCreate.value) {
   ;({ airport } = storeToRefs(airportsStore))
-  await runWithRetryAlert(() => airportsStore.getById(props.airportId), {
+  await runWithAlert(() => airportsStore.getById(props.airportId), {
     fallback: 'Не удалось загрузить аэропорт'
   })
 }

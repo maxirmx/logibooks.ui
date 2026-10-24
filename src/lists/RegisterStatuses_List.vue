@@ -14,7 +14,7 @@ import { useAlertStore } from '@/stores/alert.store.js'
 import { useAppConfirm } from '@/composables/useAppConfirm.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
-import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
+import { runWithAlert } from '@/helpers/notification.helpers.js'
 import RegisterStatusIcon from '@/components/RegisterStatusIcon.vue'
 
 const registerStatusesStore = useRegisterStatusesStore()
@@ -91,7 +91,7 @@ async function deleteRegisterStatus(registerStatus) {
 
 // Initialize data
 onMounted(() =>
-  runWithRetryAlert(() => registerStatusesStore.getAll(), {
+  runWithAlert(() => registerStatusesStore.getAll(), {
     fallback: 'Не удалось загрузить статусы партий'
   })
 )

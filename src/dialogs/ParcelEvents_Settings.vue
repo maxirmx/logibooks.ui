@@ -167,8 +167,7 @@ async function loadData() {
   } catch (error) {
     initialLoadFailed.value = true
     alertStore.error(error, {
-      fallback: 'Не удалось загрузить настройки событий посылок',
-      action: { label: 'Повторить', handler: loadData }
+      fallback: 'Не удалось загрузить настройки событий посылок'
     })
   } finally {
     initializing.value = false

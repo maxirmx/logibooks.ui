@@ -7,7 +7,7 @@ import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { mdiMagnify } from '@mdi/js'
-import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
+import { runWithAlert } from '@/helpers/notification.helpers.js'
 import { useAppConfirm } from '@/composables/useAppConfirm.js'
 import router from '@/router'
 import ActionButton from '@/components/ActionButton.vue'
@@ -90,7 +90,7 @@ async function deleteCustomsStation(station) {
 }
 
 onMounted(() =>
-  runWithRetryAlert(
+  runWithAlert(
     () => Promise.all([countriesStore.ensureLoaded(), customsStationsStore.getAll()]),
     {
       fallback: 'Не удалось загрузить таможенные посты'

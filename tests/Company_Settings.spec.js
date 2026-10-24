@@ -365,7 +365,7 @@ describe('Company_Settings.vue', () => {
       expect(mockRouter.push).toHaveBeenCalledWith('/companies')
     })
 
-    it('keeps the company form open when header cancel navigation fails and retries', async () => {
+    it('keeps the company form open when header cancel navigation fails', async () => {
       const wrapper = mount(AsyncWrapper, {
         props: { mode: 'edit', companyId: 1 },
         global: { stubs: defaultGlobalStubs }
@@ -376,16 +376,15 @@ describe('Company_Settings.vue', () => {
       await resolveAll()
       expect(wrapper.find('form').exists()).toBe(true)
       expect(mockAlertStore.error).toHaveBeenCalledTimes(1)
-      expect(mockAlertStore.error.mock.calls[0][1].action.label).toBe('Повторить')
-      await mockAlertStore.error.mock.calls[0][1].action.handler()
-      expect(mockRouter.push).toHaveBeenCalledTimes(2)
+      expect(mockAlertStore.error.mock.calls[0][1]).not.toHaveProperty('action')
+      expect(wrapper.find('.page-alert-region__action').exists()).toBe(false)
     })
 
-    it.each(['create', 'edit'])('awaits %s navigation and retries it without saving twice', async mode => {
+    it.each(['create', 'edit'])('awaits %s navigation and reports failure without saving twice', async mode => {
       let failNavigation
       mockRouter.push.mockReturnValueOnce(new Promise((_resolve, reject) => { failNavigation = reject }))
-      mockAlertStore.error.mockImplementationOnce((error, options) => {
-        mockAlertStore.alert = { id: 1, severity: 'error', message: error.message, action: options.action }
+      mockAlertStore.error.mockImplementationOnce((error) => {
+        mockAlertStore.alert = { id: 1, severity: 'error', message: error.message }
       })
       mockAlertStore.dismiss = vi.fn(() => { mockAlertStore.alert = null })
       const wrapper = mount(AsyncWrapper, {
@@ -405,12 +404,8 @@ describe('Company_Settings.vue', () => {
       expect(wrapper.get('[role="alert"]').text()).toContain('navigation failed')
       expect(mockAlertStore.error).toHaveBeenCalledTimes(1)
       expect(mockAlertStore.error.mock.calls[0][1].fallback).toContain('Компания сохранена')
-      await wrapper.get('.page-alert-region__action').trigger('click')
-      await resolveAll()
-      expect(mockRouter.push).toHaveBeenCalledTimes(2)
-      expect(saveMethod).toHaveBeenCalledTimes(1)
-      expect(wrapper.find('[role="alert"]').exists()).toBe(false)
-      wrapper.unmount()
+      expect(wrapper.find('.page-alert-region__action').exists()).toBe(false)
+    wrapper.unmount()
     })
 
     it('submits the same validated form from the header save action', async () => {

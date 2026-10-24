@@ -6,7 +6,7 @@
 import FieldError from '@/components/FieldError.vue'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { focusFirstInvalidField } from '@/helpers/form.validation.helpers.js'
-import { reportFormError } from '@/helpers/error.helpers.js'
+import { getErrorMessage, reportFormError } from '@/helpers/error.helpers.js'
 import { ref, computed, onMounted, nextTick, watch, onUnmounted } from 'vue'
 import { useForm, useField } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/yup'
@@ -108,8 +108,7 @@ async function initialize() {
     }
   } catch (error) {
     alertStore.error(error, {
-      fallback: 'Ошибка при загрузке данных ключевого слова',
-      action: { label: 'Повторить', handler: initialize }
+      fallback: 'Ошибка при загрузке данных ключевого слова'
     })
   } finally {
     loading.value = false
@@ -245,7 +244,7 @@ defineExpose({
           @input="onWordInput"
           :readonly="searchActive"
         />
-        <div v-if="errors.word" class="invalid-feedback">{{ errors.word }}</div>
+        <div v-if="errors.word" class="invalid-feedback">{{ getErrorMessage(errors.word, 'Некорректное значение') }}</div>
       </div>
 
       <div class="feacn-search-wrapper">
@@ -291,7 +290,7 @@ defineExpose({
           @select="handleCodeSelect"
         />
       </div>
-      <div v-if="feacnCodesError" class="invalid-feedback">{{ feacnCodesError }}</div>
+      <div v-if="feacnCodesError" class="invalid-feedback">{{ getErrorMessage(feacnCodesError, 'Некорректное значение') }}</div>
 
       <div class="form-group match-type-group">
         <label class="label">Тип соответствия:</label>

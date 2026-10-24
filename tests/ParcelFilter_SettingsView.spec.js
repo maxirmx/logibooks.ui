@@ -67,12 +67,12 @@ describe('ParcelFilter_SettingsView', () => {
       wrapper.unmount()
       destination = mount(PageAlertRegion, { global: { plugins: [pinia] } })
     }
-    alertStore.error('Current page alert')
+    alertStore.error('Сообщение текущей страницы')
     await flushPromises()
     const failure = new Error('Abandoned editor navigation')
     rejectNavigation(failure)
     await flushPromises()
-    expect(destination.get('[role="alert"]').text()).toContain('Current page alert')
+    expect(destination.get('[role="alert"]').text()).toContain('Сообщение текущей страницы')
     expect(destination.text()).not.toContain('Abandoned editor navigation')
     expect(reportError).toHaveBeenCalledWith(failure, { context: 'parcel filter profile navigation after editor change' })
     if (change === 'unmount') {
@@ -161,7 +161,8 @@ describe('ParcelFilter_SettingsView', () => {
     await flushPromises()
     expect(wrapper.find('[data-testid="page-alert-region"]').text()).toContain('Переход не удался')
     expect(wrapper.find('[data-testid="parcel-filter-save"]').attributes('disabled')).toBeDefined()
-    await wrapper.find('[data-testid="page-alert-region"] button').trigger('click')
+    expect(wrapper.find('.page-alert-region__action').exists()).toBe(false)
+    await wrapper.find('[data-testid="parcel-filter-back"]').trigger('click')
     await flushPromises()
     expect(push).toHaveBeenCalledTimes(2)
     expect(fetchWrapper.post).toHaveBeenCalledOnce()
@@ -214,15 +215,17 @@ describe('ParcelFilter_SettingsView', () => {
     expect(wrapper.find('[data-testid="page-alert-region"]').text()).not.toContain('Старое сохранение')
   })
 
-  it('offers retry for load rejection and ignores a late rejection after unmount', async () => {
+  it('shows a load rejection, recovers on reopening, and ignores late errors', async () => {
     fetchWrapper.get.mockRejectedValueOnce(new Error('Статусы недоступны'))
     const { wrapper } = mountView({ mode: 'create' })
     await flushPromises()
     expect(wrapper.find('[data-testid="page-alert-region"]').text()).toContain('Статусы недоступны')
     expect(wrapper.find('form').exists()).toBe(false)
-    await wrapper.find('[data-testid="page-alert-region"] button').trigger('click')
+    expect(wrapper.find('.page-alert-region__action').exists()).toBe(false)
+    wrapper.unmount()
+    const reloaded = mountView({ mode: 'create' })
     await flushPromises()
-    expect(wrapper.findAll('fieldset')).toHaveLength(5)
+    expect(reloaded.wrapper.findAll('fieldset')).toHaveLength(5)
 
     let rejectLoad
     fetchWrapper.get.mockImplementationOnce(() => new Promise((resolve, reject) => { rejectLoad = reject }))

@@ -488,6 +488,28 @@ describe('scanjobs store', () => {
   })
 
   describe('ops', () => {
+    it('formats scan job labels from Core definitions and reflects refreshed names', async () => {
+      fetchWrapper.get.mockResolvedValue({
+        ...mockOps,
+        types: [{ value: 30, name: 'Тип от Core' }],
+        operations: [{ value: 10, name: 'Операция от Core' }]
+      })
+      const store = useScanjobsStore()
+      const job = { id: 7, name: 'Приёмка', operation: '10', type: '30' }
+      await store.ensureOpsLoaded()
+      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/scanjobs/ops`)
+      expect(store.getScanJobLabel(job)).toBe('#7 Приёмка — Операция от Core, Тип от Core')
+      store.ops.operations[0].name = 'Обновлённая операция от Core'
+      expect(store.getScanJobLabel(job)).toBe('#7 Приёмка — Обновлённая операция от Core, Тип от Core')
+    })
+
+    it('uses the existing numeric fallback before definitions load or for unknown values', () => {
+      const store = useScanjobsStore()
+      expect(store.getScanJobLabel({ id: 8, operation: 99, type: 98 })).toBe('#8  — 99, 98')
+      store.ops = mockOps
+      expect(store.getScanJobLabel({ id: 8, operation: 99, type: 98 })).toBe('#8  — 99, 98')
+    })
+
     it('handles ops error', async () => {
       const error = new Error('Ops error')
       fetchWrapper.get.mockRejectedValue(error)
@@ -969,8 +991,7 @@ describe('scanjobs store', () => {
       await store.startScanJobsListMonitor({ onChanged: vi.fn() })
       signalRConnection.invoke.mockRejectedValueOnce(reconnectError)
 
-      signalRHandlers.onreconnected()
-      await Promise.resolve()
+      await signalRHandlers.onreconnected()
 
       expect(signalRConnection.invoke).toHaveBeenCalledWith('ObserveScanJobs')
       expect(store.error).toBe(reconnectError)
@@ -1118,4 +1139,63 @@ describe('scanjobs store', () => {
       expect(store.error).toBe(stopError)
     })
   })
+})
+
+
+describe('manual scan API methods', () => {
+  beforeEach(() => { setActivePinia(createPinia()); vi.clearAllMocks() })
+  it('refreshes listeners after re-observing jobs and isolates channel cleanup', async () => {
+    const store = useScanjobsStore()
+    const first = store.createScanJobsListChannel()
+    const second = store.createScanJobsListChannel()
+    const onFirst = vi.fn()
+    const onSecond = vi.fn()
+    await first.start({ onChanged: onFirst })
+    const firstConnection = signalRConnections.at(-1)
+    await second.start({ onChanged: onSecond })
+    const secondConnection = signalRConnections.at(-1)
+    expect(secondConnection).not.toBe(firstConnection)
+    await secondConnection.handlers.onreconnected()
+    expect(onSecond).toHaveBeenCalledOnce()
+    await first.stop()
+    secondConnection.handlers.ScanJobsChanged()
+    expect(onSecond).toHaveBeenCalledTimes(2)
+    expect(onFirst).not.toHaveBeenCalled()
+    await second.stop()
+  })
+  it('loads active jobs without overwriting paginated list state', async () => {
+    const store = useScanjobsStore()
+    store.items = [{ id: 99 }]
+    fetchWrapper.get.mockResolvedValueOnce([{ id: 7, status: 15 }])
+    expect(await store.getInProgress()).toEqual([{ id: 7, status: 15 }])
+    expect(fetchWrapper.get).toHaveBeenCalledWith(apiUrl + '/scanjobs/in-progress')
+    expect(store.items).toEqual([{ id: 99 }])
+    const failure = new Error('Active jobs failed')
+    fetchWrapper.get.mockRejectedValueOnce(failure)
+    await expect(store.getInProgress()).rejects.toBe(failure)
+    expect(store.error).toBe(failure)
+  })
+  it('scans the exact parcel and propagates failures', async () => {
+    const store = useScanjobsStore()
+    const result = { parcelCount: 1, scanSource: 10 }
+    fetchWrapper.post.mockResolvedValueOnce(result)
+    expect(await store.scanParcel(7, 21)).toBe(result)
+    expect(fetchWrapper.post).toHaveBeenCalledWith(apiUrl + '/scanjobs/7/parcels/21/scan', {})
+    const failure = Object.assign(new Error('Read only'), { status: 409 })
+    fetchWrapper.post.mockRejectedValueOnce(failure)
+    await expect(store.scanParcel(7, 21)).rejects.toBe(failure)
+    expect(store.error).toBe(failure)
+  })
+  it('scans the exact box and propagates failures', async () => {
+    const store = useScanjobsStore()
+    const result = { parcelCount: 0, boxCount: 1, scanSource: 20 }
+    fetchWrapper.post.mockResolvedValueOnce(result)
+    expect(await store.scanBox(7, 21)).toBe(result)
+    expect(fetchWrapper.post).toHaveBeenCalledWith(apiUrl + '/scanjobs/7/boxes/21/scan', {})
+    const failure = Object.assign(new Error('Изменения запрещены'), { status: 409 })
+    fetchWrapper.post.mockRejectedValueOnce(failure)
+    await expect(store.scanBox(7, 21)).rejects.toBe(failure)
+    expect(store.error).toBe(failure)
+  })
+
 })

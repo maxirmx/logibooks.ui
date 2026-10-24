@@ -241,22 +241,22 @@ describe('CustomsStation_Settings.vue', () => {
     const form = wrapper.findComponent({ name: 'Form' })
 
     form.vm.setErrors({
-      number: 'number error',
-      name: 'name error',
-      countryIsoNumeric: 'country error',
-      postalCode: 'postal error',
-      city: 'city error',
-      street: 'street error'
+      number: 'Ошибка номера',
+      name: 'Ошибка названия',
+      countryIsoNumeric: 'Ошибка страны',
+      postalCode: 'Ошибка индекса',
+      city: 'Ошибка города',
+      street: 'Ошибка улицы'
     })
     await resolveAll()
 
     const validationMessages = [
-      'number error',
-      'name error',
-      'country error',
-      'postal error',
-      'city error',
-      'street error'
+      'Ошибка номера',
+      'Ошибка названия',
+      'Ошибка страны',
+      'Ошибка индекса',
+      'Ошибка города',
+      'Ошибка улицы'
     ]
 
     expect(wrapper.findAll('.invalid-feedback').map((error) => error.text())).toEqual(

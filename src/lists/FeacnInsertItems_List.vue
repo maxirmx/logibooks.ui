@@ -14,7 +14,7 @@ import { useAlertStore } from '@/stores/alert.store.js'
 import { useAppConfirm } from '@/composables/useAppConfirm.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
-import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
+import { runWithAlert } from '@/helpers/notification.helpers.js'
 import { loadFeacnTooltipOnHover, useFeacnTooltips } from '@/helpers/feacn.info.helpers.js'
 
 const insertItemsStore = useFeacnInsertItemsStore()
@@ -64,7 +64,7 @@ const headers = [
 ]
 
 onMounted(() =>
-  runWithRetryAlert(() => insertItemsStore.getAll(), {
+  runWithAlert(() => insertItemsStore.getAll(), {
     fallback: 'Не удалось загрузить правила вставки'
   })
 )

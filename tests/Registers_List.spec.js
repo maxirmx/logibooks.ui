@@ -544,8 +544,7 @@ describe('Registers_List.vue', () => {
       expect(alertErrorFn).toHaveBeenCalledWith(
         expect.objectContaining({ message: 'countries failed' }),
         expect.objectContaining({
-          fallback: 'Ошибка при загрузке данных',
-          action: expect.objectContaining({ label: 'Повторить', handler: expect.any(Function) })
+          fallback: 'Ошибка при загрузке данных'
         })
       )
     })
@@ -564,8 +563,7 @@ describe('Registers_List.vue', () => {
       expect(alertErrorFn).toHaveBeenCalledWith(
         'countries failed',
         expect.objectContaining({
-          fallback: 'Ошибка при загрузке данных',
-          action: expect.objectContaining({ label: 'Повторить', handler: expect.any(Function) })
+          fallback: 'Ошибка при загрузке данных'
         })
       )
     })

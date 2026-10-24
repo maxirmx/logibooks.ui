@@ -19,6 +19,13 @@ describe('detailed core sticker validation messages', () => {
   })
   it('retains tailored messages for other error codes', () => {
     expect(getPrintingErrorMessage({ data: { code: 'Overflow', msg: detail } })).toContain('не помещается')
-    expect(getPrintingErrorMessage(new Error('network failure'))).toBe('network failure')
+    expect(getPrintingErrorMessage(new Error('network failure'))).toBe('Не удалось соединиться с сервером. Пожалуйста, проверьте подключение к сети.')
+  })
+  it('localizes technical validation details while preserving Russian explanations with Latin identifiers', () => {
+    expect(getPrintingErrorMessage({ data: { code: 'InvalidData', msg: 'Invalid label data' } }))
+      .toBe('Данные этикетки некорректны.')
+    const message = 'Не удалось напечатать стикер коробки BOX-17 компании WBR.'
+    expect(getPrintingErrorMessage({ cause: { data: { code: 'InvalidData', msg: message } } }))
+      .toBe(message)
   })
 })

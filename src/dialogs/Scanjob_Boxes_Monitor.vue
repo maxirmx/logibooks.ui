@@ -3,7 +3,9 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import BoxScanAction from '@/components/BoxScanAction.vue'
+import { useManualScanSelection } from '@/composables/useManualScanSelection.js'
 import { storeToRefs } from 'pinia'
 import { useAuthStore } from '@/stores/auth.store.js'
 import ClickableCell from '@/components/ClickableCell.vue'
@@ -43,6 +45,13 @@ const {
   scanjobmonitor_boxes_page
 } = storeToRefs(authStore)
 
+const dataTableRef = ref(null)
+const { selection, locked, updateDisplayedItems } = useManualScanSelection({
+  loading: computed(() => props.loading), page: scanjobmonitor_boxes_page, dataTableRef,
+  scopeKey: () => JSON.stringify([props.snapshot?.scanJobId, scanjobmonitor_boxes_page.value, scanjobmonitor_boxes_per_page.value, scanjobmonitor_boxes_sort_by.value])
+})
+const controlsBusy = computed(() => props.loading || locked.value)
+
 const summaryCards = computed(() => {
   const snapshot = props.snapshot
   if (!snapshot) return []
@@ -67,6 +76,7 @@ const summaryCards = computed(() => {
 })
 
 function openBox(item) {
+  if (controlsBusy.value) return
   emit('open-box', item)
 }
 </script>
@@ -82,6 +92,13 @@ function openBox(item) {
       </div>
 
       <v-data-table
+        ref="dataTableRef"
+        :disable-sort="locked"
+        :inert="locked || undefined"
+        :row-props="selection.getRowProps"
+        @click:row="selection.handleRowClick"
+        @contextmenu:row="selection.handleRowContextMenu"
+        @update:current-items="updateDisplayedItems"
         v-model:items-per-page="scanjobmonitor_boxes_per_page"
         v-model:page="scanjobmonitor_boxes_page"
         v-model:sort-by="scanjobmonitor_boxes_sort_by"
@@ -96,23 +113,30 @@ function openBox(item) {
         class="elevation-1 interlaced-table"
         data-testid="scanjob-monitor-boxes-table"
       >
+        <template #bottom>
+          <v-defaults-provider :defaults="{ VSelect: { disabled: locked }, VPagination: { disabled: locked } }">
+            <v-data-table-footer :items-per-page-options="itemsPerPageOptions" items-per-page-text="Коробок на странице" page-text="{0}-{1} из {2}" />
+          </v-defaults-provider>
+        </template>
+
         <template #[`item.boxCode`]="{ item }">
           <ClickableCell
             :item="item"
             :display-value="item.boxCode"
             cell-class="clickable-cell"
             data-testid="scanjob-monitor-box-row"
-            :disabled="props.loading"
+            :disabled="controlsBusy"
             @click="openBox(item)"
           />
         </template>
 
         <template #[`item.actions`]="{ item }">
-          <div class="actions-container">
+          <div class="actions-container" @click.stop>
             <ActionButton :item="item" icon="fa-solid fa-list"
               tooltip-text="Список посылок" aria-label="Список посылок"
-              :disabled="props.loading" data-testid="box-parcels-action" @click="openBox" />
-            <BoxStickerPrintButton :box="item" :company="props.snapshot" :disabled="props.loading" />
+              :disabled="controlsBusy" data-testid="box-parcels-action" @click="openBox" />
+            <BoxScanAction v-if="item.boxId != null" :boxes="[item]" :selection="selection" />
+            <BoxStickerPrintButton :box="item" :company="props.snapshot" :disabled="controlsBusy" />
           </div>
         </template>
 
@@ -121,7 +145,7 @@ function openBox(item) {
             :item="item"
             :display-value="formatBoxDimensions(item)"
             cell-class="clickable-cell"
-            :disabled="props.loading"
+            :disabled="controlsBusy"
             @click="openBox(item)"
           />
         </template>
@@ -131,7 +155,7 @@ function openBox(item) {
             :item="item"
             :display-value="formatBoxWeight(item.weightKg)"
             cell-class="clickable-cell"
-            :disabled="props.loading"
+            :disabled="controlsBusy"
             @click="openBox(item)"
           />
         </template>
@@ -141,7 +165,7 @@ function openBox(item) {
             :item="item"
             :display-value="monitorBoxStickerText(item)"
             :cell-class="`${monitorBoxStickerClass(item)} clickable-cell`"
-            :disabled="props.loading"
+            :disabled="controlsBusy"
             @click="openBox(item)"
           />
         </template>
@@ -152,7 +176,7 @@ function openBox(item) {
             :display-value="valueOrDash(item.boxSticker)"
             data-testid="box-sticker-value"
             cell-class="clickable-cell"
-            :disabled="props.loading"
+            :disabled="controlsBusy"
             @click="openBox(item)"
           />
         </template>
@@ -162,7 +186,7 @@ function openBox(item) {
             :item="item"
             :display-value="valueOrDash(item.boxScannedUserName)"
             cell-class="clickable-cell"
-            :disabled="props.loading"
+            :disabled="controlsBusy"
             @click="openBox(item)"
           />
         </template>
@@ -172,7 +196,7 @@ function openBox(item) {
             :item="item"
             :display-value="valueOrDash(formatScanTime(item.boxScannedTime))"
             cell-class="clickable-cell"
-            :disabled="props.loading"
+            :disabled="controlsBusy"
             @click="openBox(item)"
           />
         </template>
@@ -182,7 +206,7 @@ function openBox(item) {
             :item="item"
             :display-value="''"
             cell-class="clickable-cell"
-            :disabled="props.loading"
+            :disabled="controlsBusy"
             @click="openBox(item)"
           >
             <span class="scanjob-monitor-parcel-progress-panel">

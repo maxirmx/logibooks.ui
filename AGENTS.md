@@ -4,6 +4,8 @@ These instructions apply to the entire repository. Follow them for every new fea
 
 ## Error propagation and ownership
 
+- All user-facing error and validation messages must be in Russian, including transport, SignalR, browser, framework, import, and background-operation failures. Preserve useful Russian domain explanations and entity identifiers. Never display or append raw technical exception text; use a contextual Russian fallback for unknown failures and retain the original exception for diagnostics.
+- This language rule applies to explanatory error text only. Preserve parameter values verbatim, including Latin company/document names, filenames, codes, and other identifiers; never hide, mask, translate, or restrict them based on language.
 - Every user-relevant failure must be displayed exactly once or rethrown to a caller that will display it.
 - Store methods may update reactive `error` state, but transport and server failures must still reject. Use `false` or `null` only for legitimate domain outcomes.
 - The UI operation closest to the user action owns presentation. Domain stores must not also publish the same notification.
@@ -22,6 +24,7 @@ These instructions apply to the entire repository. Follow them for every new fea
 ## Message presentation
 
 - Publish application messages through `useAlertStore`; do not introduce page-specific alert stores or custom notification mechanisms.
+- The alert area must contain only the message and a small cross (`×`) dismissal button. Do not pass action callbacks or render retry, recovery, navigation, or other operation controls in alerts; use the page's normal controls instead.
 - Every route-level list, edit form, settings form, and full-screen dialog must render one `PageAlertRegion` immediately after its `<hr class="hr">` header rule.
 - Do not render global alerts at the bottom of forms or tables.
 - Put validation messages directly with their fields, on a dedicated row beneath the associated control. They must never participate in the control's horizontal flex row or reduce the control's width. Put general API and load failures in `PageAlertRegion`.

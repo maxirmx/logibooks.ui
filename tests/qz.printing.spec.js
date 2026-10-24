@@ -35,10 +35,10 @@ describe('QZ printing', () => {
   })
 
   it('propagates storage failures and preserves the selected printer for retry', async () => {
-    const storage = { getItem: vi.fn().mockReturnValue('Office'), removeItem: vi.fn().mockImplementationOnce(() => { throw new Error('storage denied') }) }
+    const storage = { getItem: vi.fn().mockReturnValue('Office'), removeItem: vi.fn().mockImplementationOnce(() => { throw new Error('Доступ к хранилищу запрещён') }) }
     service = createQzPrinting({ client, api, storage })
     await service.connect()
-    expect(() => service.clearSelection()).toThrow('storage denied')
+    expect(() => service.clearSelection()).toThrow('Доступ к хранилищу запрещён')
     expect(service.state.printer).toBe('Office')
     service.clearSelection()
     expect(service.state.printer).toBe('')
@@ -66,7 +66,7 @@ describe('QZ printing', () => {
     { printers: [], code: 'NoPrinters' },
     { printers: ['TSC TE200'], code: 'PrinterMissing' }
   ])('clears live selection and propagates storage removal failure for $code', async ({ printers, code }) => {
-    const denied = new Error('storage denied')
+    const denied = new Error('Доступ к хранилищу запрещён')
     const storage = {
       getItem: (key) => localStorage.getItem(key),
       setItem: (key, value) => localStorage.setItem(key, value),
@@ -89,7 +89,7 @@ describe('QZ printing', () => {
     { printers: [], code: 'NoPrinters' },
     { printers: ['TSC TE200'], code: 'PrinterMissing' }
   ])('never restores an invalidated selection when storage fails and a queue immediately returns for $code', async ({ printers }) => {
-    const denied = new Error('storage denied')
+    const denied = new Error('Доступ к хранилищу запрещён')
     const storage = {
       getItem: (key) => localStorage.getItem(key),
       setItem: (key, value) => localStorage.setItem(key, value),
@@ -166,7 +166,7 @@ describe('QZ printing', () => {
     expect(() => service.select('gone')).toThrow('PrinterMissing')
   })
   it('rejects unavailable, untrusted, absent and unselected printers', async () => {
-    client.websocket.connect.mockRejectedValueOnce(new Error('offline'))
+    client.websocket.connect.mockRejectedValueOnce(new Error('Нет подключения'))
     await expect(service.connect()).rejects.toMatchObject({ code: 'QzUnavailable' })
     client.printers.find.mockRejectedValueOnce(new Error('trust'))
     await expect(service.connect()).rejects.toMatchObject({ code: 'QzTrustRejected' })
@@ -188,8 +188,8 @@ describe('QZ printing', () => {
     expect(service.state.connected).toBe(false)
     expect(closed).toHaveBeenCalledWith(expect.objectContaining({ code: 'QzUnavailable' }))
     await service.connect()
-    client.websocket.disconnect.mockRejectedValueOnce(new Error('stop failed'))
-    await expect(service.disconnect()).rejects.toThrow('stop failed')
+    client.websocket.disconnect.mockRejectedValueOnce(new Error('Ошибка остановки'))
+    await expect(service.disconnect()).rejects.toThrow('Ошибка остановки')
     await service.disconnect()
     client.websocket.setClosedCallbacks.mock.calls[0][0]()
     expect(closed).toHaveBeenCalledTimes(2)
@@ -212,7 +212,7 @@ describe('QZ printing', () => {
   it('presents distinct domain errors and safe fallbacks', () => {
     expect(getPrintingErrorMessage({ cause: { data: { code: 'QzDisabled' } }, code: 'QzUnavailable' })).toContain('отключена на сервере')
     expect(getPrintingErrorMessage({ data: { code: 'Overflow' } })).toContain('не помещается')
-    expect(getPrintingErrorMessage(new Error('network'))).toBe('network')
+    expect(getPrintingErrorMessage(new Error('network'))).toBe('Не удалось соединиться с сервером. Пожалуйста, проверьте подключение к сети.')
     expect(getPrintingErrorMessage(null)).toBe('Ошибка локальной печати')
   })
 })

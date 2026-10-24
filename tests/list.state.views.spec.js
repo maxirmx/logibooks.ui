@@ -8,6 +8,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { computed } from 'vue'
 import { createPagination, providePagination } from 'vuetify/lib/components/VDataTable/composables/paginate.js'
 import { useAuthStore } from '@/stores/auth.store.js'
+import { useScanjobsStore } from '@/stores/scanjobs.store.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import OzonParcelsList from '@/lists/OzonParcels_List.vue'
@@ -43,6 +44,10 @@ function reload() {
   const pinia = createPinia()
   piniaInstances.push(pinia)
   setActivePinia(pinia)
+  // Persisted-list-state tests use real stores without a live SignalR server.
+  vi.spyOn(useScanjobsStore(), 'createScanJobsListChannel').mockReturnValue({
+    start: vi.fn().mockResolvedValue(true), stop: vi.fn().mockResolvedValue(true)
+  })
   return useAuthStore()
 }
 function show(component, props = {}, stubs = {}) {
@@ -61,6 +66,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   fetchWrapper.get.mockImplementation(async url => {
     const path = new URL(url).pathname
+    if (path.endsWith('/scanjobs/ops')) return { types: [], operations: [], modes: [], statuses: [], constants: { inProgressStatus: 15, parcelOnlyType: 10, boxOnlyType: 20, parcelScanSource: 10, lookupOperation: 30 } }
     if (path.endsWith('/ops')) return { customsProcedures: [{ value: 10, name: 'Экспорт' }], transportationTypes: [], incoterms: [{ value: 2, name: 'FCA' }] }
     if (/\/registers\/\d+$/.test(path)) return { id: 4307, customsProcedureCode: 10 }
     if (/\/parcels\/a\/\d+$/.test(path)) return { id: 2, registerId: 4307, statusId: 1, checkStatus: 0 }
@@ -82,7 +88,7 @@ describe('reloads with real Pinia state and list loading', () => {
     auth.parcels_wh_box_number = 'OLD'
     const get = fetchWrapper.get.getMockImplementation()
     fetchWrapper.get.mockImplementation(url => {
-      if (fail && new URL(url).searchParams.get('boxId') === '17') return Promise.reject(new Error('Scope unavailable'))
+      if (fail && new URL(url).searchParams.get('boxId') === '17') return Promise.reject(new Error('Область недоступна'))
       return get(url)
     })
     const wrapper = show(OzonParcelsWhList, { registerId: 4307 }, { RegisterWhHeaderActionBar: true })
@@ -99,7 +105,7 @@ describe('reloads with real Pinia state and list loading', () => {
     expect(Object.fromEntries(new URL(requests[0][0]).searchParams)).toMatchObject({ boxId: '17', page: '1' })
     expect(auth.parcels_wh_box_number).toBe('')
     expect(wrapper.findAll('[role="alert"]')).toHaveLength(fail ? 1 : 0)
-    if (fail) expect(wrapper.get('[role="alert"]').text()).toContain('Scope unavailable')
+    if (fail) expect(wrapper.get('[role="alert"]').text()).toContain('Область недоступна')
   })
 
   it('retains a restored parcel page after a failed initial load and requests it on retry', async () => {
@@ -108,7 +114,7 @@ describe('reloads with real Pinia state and list loading', () => {
     const get = fetchWrapper.get.getMockImplementation()
     let fail = true
     fetchWrapper.get.mockImplementation(url => {
-      if (fail && new URL(url).pathname.endsWith('/parcels')) return Promise.reject(new Error('List unavailable'))
+      if (fail && new URL(url).pathname.endsWith('/parcels')) return Promise.reject(new Error('Список недоступен'))
       return get(url)
     })
     const wrapper = show(OzonParcelsList, { registerId: 4307 })
@@ -116,7 +122,7 @@ describe('reloads with real Pinia state and list loading', () => {
     await flushPromises()
     expect(auth.parcels_page).toBe(3)
     expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-    expect(wrapper.get('[role="alert"]').text()).toContain('List unavailable')
+    expect(wrapper.get('[role="alert"]').text()).toContain('Список недоступен')
     fail = false
     const table = wrapper.findComponent({ name: 'v-data-table-server' })
     table.vm.$emit('update:sortBy', [{ key: 'frozenOrder', order: 'desc' }])
@@ -278,11 +284,11 @@ describe('reloads with real Pinia state and list loading', () => {
     await flushPromises()
     await flushPromises()
     if (action === 'save') {
-      fetchWrapper.put.mockRejectedValueOnce(new Error('Save unavailable'))
+      fetchWrapper.put.mockRejectedValueOnce(new Error('Сохранение недоступно'))
       await wrapper.get('[data-testid="save"]').trigger('click')
       await flushPromises()
       expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-      expect(wrapper.get('[role="alert"]').text()).toContain('Save unavailable')
+      expect(wrapper.get('[role="alert"]').text()).toContain('Сохранение недоступно')
       expect(router.push).not.toHaveBeenCalled()
       expect(auth.parcels_tnved).toBe('4901')
       fetchWrapper.put.mockResolvedValueOnce({})

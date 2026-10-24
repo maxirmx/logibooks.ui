@@ -213,8 +213,7 @@ describe('ExportFees_List.vue', () => {
     expect(alertError).toHaveBeenCalledWith(
       'bad',
       expect.objectContaining({
-        fallback: 'Не удалось загрузить таможенные сборы',
-        action: expect.objectContaining({ label: 'Повторить', handler: expect.any(Function) })
+        fallback: 'Не удалось загрузить таможенные сборы'
       })
     )
   })

@@ -30,6 +30,6 @@ export function getPrintingErrorCode(error) {
 export function getPrintingErrorMessage(error) {
   const code = getPrintingErrorCode(error)
   const serverMessage = error?.data?.msg || error?.cause?.data?.msg
-  if (code === 'InvalidData' && typeof serverMessage === 'string' && serverMessage.trim()) return serverMessage
+  if (code === 'InvalidData' && typeof serverMessage === 'string' && serverMessage.trim()) return getErrorMessage(serverMessage, messages.InvalidData)
   return messages[code] || getErrorMessage(error, 'Ошибка локальной печати')
 }

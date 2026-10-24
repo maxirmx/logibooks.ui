@@ -41,8 +41,7 @@ async function load() {
       return false
     }
     alertStore.error(error, {
-      fallback: 'Не удалось загрузить пользовательские фильтры',
-      action: { label: 'Повторить', handler: load }
+      fallback: 'Не удалось загрузить пользовательские фильтры'
     })
     return false
   }
@@ -77,8 +76,7 @@ async function removeConfirmed(id) {
       return false
     }
     alertStore.error(error, {
-      fallback: 'Не удалось удалить пользовательский фильтр',
-      action: { label: 'Повторить', handler: () => removeConfirmed(id) }
+      fallback: 'Не удалось удалить пользовательский фильтр'
     })
     return false
   } finally {

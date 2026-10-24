@@ -1079,6 +1079,8 @@ a,
   background-color: var(--parcel-row-selected-hover-bg) !important;
 }
 
+
+
 /* Custom pagination styling to match Vuetify's default exactly */
 .v-data-table-footer {
   display: flex;

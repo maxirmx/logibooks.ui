@@ -14,7 +14,7 @@ import ActionButton from '@/components/ActionButton.vue'
 import { useAppConfirm } from '@/composables/useAppConfirm.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
-import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
+import { runWithAlert } from '@/helpers/notification.helpers.js'
 
 const hotKeyActionSchemesStore = useHotKeyActionSchemesStore()
 const authStore = useAuthStore()
@@ -82,7 +82,7 @@ async function deleteHotKeyActionScheme(hotKeyActionScheme) {
 }
 
 onMounted(() =>
-  runWithRetryAlert(() => hotKeyActionSchemesStore.getAll(), {
+  runWithAlert(() => hotKeyActionSchemesStore.getAll(), {
     fallback: 'Не удалось загрузить схемы настройки клавиатуры'
   })
 )

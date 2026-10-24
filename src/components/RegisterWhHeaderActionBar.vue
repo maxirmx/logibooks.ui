@@ -79,8 +79,7 @@ async function downloadRegisterForZone(forZone, zoneLabel, format = 'generic') {
     })
   } catch (error) {
     alertStore.error(error, {
-      fallback: 'Не удалось выбрать параметры выгрузки',
-      action: { label: 'Повторить', handler: () => downloadRegisterForZone(forZone, zoneLabel, format) }
+      fallback: 'Не удалось выбрать параметры выгрузки'
     })
     return false
   } finally {

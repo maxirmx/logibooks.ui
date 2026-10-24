@@ -13,15 +13,17 @@ import { reportError } from '@/helpers/error.helpers.js'
 import { useAppConfirm } from '@/composables/useAppConfirm.js'
 import ActionButton from '@/components/ActionButton.vue'
 
-const props = defineProps({ scanJobId: { type: Number, default: null }, userId: { type: [Number, String], default: null }, active: Boolean })
+const props = defineProps({ scanJobId: { type: Number, default: null }, userId: { type: [Number, String], default: null }, active: Boolean, disabled: Boolean })
 const auth = useAuthStore()
 const alerts = useAlertStore()
 const printing = useLabelPrintingStore()
 const confirm = useAppConfirm()
 const owner = Symbol('printing scope')
 let mounted = true
-const { state, busy, operationInProgress, queueStatus, qzState } = storeToRefs(printing)
+const { state, busy: printingBusy, operationInProgress, queueStatus, qzState } = storeToRefs(printing)
+const busy = computed(() => props.disabled || printingBusy.value)
 async function runPrint(operation) {
+  if (props.disabled) return false
   try { return await operation() }
   catch (error) {
     // Availability diagnostics belong to settings; unmounted pages must not publish alerts.
@@ -61,7 +63,7 @@ defineExpose({ printParcel, busy, operationInProgress, queueStatus })
       icon-size="2x"
       tooltip-text="Восстановить подключение к QZ Tray"
       aria-label="Восстановить подключение к QZ Tray"
-      :disabled="operationInProgress"
+      :disabled="disabled || operationInProgress"
       @click="reconnect"
       data-testid="reconnect-print"
     />
@@ -72,7 +74,7 @@ defineExpose({ printParcel, busy, operationInProgress, queueStatus })
       icon-size="2x"
       :tooltip-text="state.failed ? 'Повторить отправку' : 'Продолжить'"
       :aria-label="state.failed ? 'Повторить отправку' : 'Продолжить'"
-      :disabled="operationInProgress || !qzState.connected"
+      :disabled="disabled || operationInProgress || !qzState.connected"
       @click="retry"
       data-testid="retry-print"
     />

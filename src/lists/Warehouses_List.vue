@@ -15,7 +15,7 @@ import { useAlertStore } from '@/stores/alert.store.js'
 import { useAppConfirm } from '@/composables/useAppConfirm.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
-import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
+import { runWithAlert } from '@/helpers/notification.helpers.js'
 
 const warehousesStore = useWarehousesStore()
 const countriesStore = useCountriesStore()
@@ -110,7 +110,7 @@ async function deleteWarehouse(warehouse) {
 }
 
 onMounted(() =>
-  runWithRetryAlert(() => Promise.all([countriesStore.ensureLoaded(), warehousesStore.getAll()]), {
+  runWithAlert(() => Promise.all([countriesStore.ensureLoaded(), warehousesStore.getAll()]), {
     fallback: 'Не удалось загрузить склады'
   })
 )

@@ -116,7 +116,7 @@ describe('useRegisterHeaderActions', () => {
     expect(alertStore.error).not.toHaveBeenCalled()
   })
 
-  it('reports a supported paperwork download error once and retries the same format', async () => {
+  it('reports a supported paperwork download failure once without alert callbacks', async () => {
     registersStore.item.registerType = WBRN_REGISTER_ID
     registersStore.download.mockRejectedValueOnce(new Error('download failed'))
     const actions = useRegisterHeaderActions({
@@ -127,9 +127,6 @@ describe('useRegisterHeaderActions', () => {
     const first = actions.downloadRegister('company')
     expect(await first).toBe(false)
     expect(alertStore.error).toHaveBeenCalledTimes(1)
-    expect(await alertStore.error.mock.calls[0][1].action.handler()).toBe(true)
-    expect(registersStore.getDownloadFormats).toHaveBeenCalledTimes(1)
-    expect(registersStore.download).toHaveBeenNthCalledWith(2, 1, 'register.xlsx', null, undefined, false, 'company')
   })
 
   it('initiates extended FEACN lookup with withFCMatch=true', async () => {

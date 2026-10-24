@@ -66,8 +66,7 @@ async function initialize() {
     }))
   } catch (error) {
     alertStore.error(error, {
-      fallback: 'Не удалось загрузить правила применения нормативного документа',
-      action: { label: 'Повторить', handler: initialize }
+      fallback: 'Не удалось загрузить правила применения нормативного документа'
     })
   } finally {
     loading.value = false

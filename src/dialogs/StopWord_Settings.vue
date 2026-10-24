@@ -6,7 +6,7 @@
 import FieldError from '@/components/FieldError.vue'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { focusFirstInvalidField } from '@/helpers/form.validation.helpers.js'
-import { reportFormError } from '@/helpers/error.helpers.js'
+import { getErrorMessage, reportFormError } from '@/helpers/error.helpers.js'
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useForm, useField } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/yup'
@@ -135,8 +135,7 @@ async function initialize() {
     }
   } catch (error) {
     alertStore.error(error, {
-      fallback: 'Ошибка при загрузке данных стоп-слова',
-      action: { label: 'Повторить', handler: initialize }
+      fallback: 'Ошибка при загрузке данных стоп-слова'
     })
   } finally {
     loading.value = false
@@ -249,7 +248,7 @@ defineExpose({
           v-model="word"
           @input="onWordInput"
         />
-        <div v-if="errors.word" class="invalid-feedback">{{ errors.word }}</div>
+        <div v-if="errors.word" class="invalid-feedback">{{ getErrorMessage(errors.word, 'Некорректное значение') }}</div>
       </div>
 
       <div class="form-group match-type-group">

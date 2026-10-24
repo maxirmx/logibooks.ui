@@ -25,7 +25,7 @@ import {
   matchesProhibitionScope
 } from '@/helpers/prohibition.scope.helpers.js'
 import { mdiMagnify } from '@mdi/js'
-import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
+import { runWithAlert } from '@/helpers/notification.helpers.js'
 
 const stopWordsStore = useStopWordsStore()
 const matchTypesStore = useWordMatchTypesStore()
@@ -139,7 +139,7 @@ async function deleteStopWord(stopWord) {
 
 // Initialize data
 onMounted(() =>
-  runWithRetryAlert(() => Promise.all([
+  runWithAlert(() => Promise.all([
     matchTypesStore.ensureLoaded(),
     countriesStore.ensureLoaded(),
     stopWordsStore.getAll()

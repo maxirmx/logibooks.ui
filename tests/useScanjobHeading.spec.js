@@ -75,8 +75,7 @@ describe('useScanjobHeading', () => {
     expect(alertError).toHaveBeenCalledWith(
       expect.objectContaining({ message: 'Network error' }),
       expect.objectContaining({
-        fallback: 'Ошибка при загрузке данных',
-        action: expect.objectContaining({ label: 'Повторить', handler: expect.any(Function) })
+        fallback: 'Ошибка при загрузке данных'
       })
     )
   })

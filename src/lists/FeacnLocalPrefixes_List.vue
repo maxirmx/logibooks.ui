@@ -24,7 +24,7 @@ import {
   matchesProhibitionScope
 } from '@/helpers/prohibition.scope.helpers.js'
 import { mdiMagnify } from '@mdi/js'
-import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
+import { runWithAlert } from '@/helpers/notification.helpers.js'
 import {
   preloadFeacnInfo,
   loadFeacnTooltipOnHover,
@@ -128,7 +128,7 @@ async function loadPrefixes() {
 }
 
 onMounted(() =>
-  runWithRetryAlert(() => Promise.all([countriesStore.ensureLoaded(), loadPrefixes()]), {
+  runWithAlert(() => Promise.all([countriesStore.ensureLoaded(), loadPrefixes()]), {
     fallback: 'Не удалось загрузить локальные префиксы'
   })
 )

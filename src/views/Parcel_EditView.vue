@@ -61,8 +61,7 @@ async function refreshParcel() {
   } catch (error) {
     if (isComponentMounted.value && id === props.id && sequence === registerRequestSequence) {
       alertStore.error(error, {
-        fallback: 'Не удалось обновить данные посылки',
-        action: { label: 'Повторить', handler: refreshParcel }
+        fallback: 'Не удалось обновить данные посылки'
       })
     } else {
       // A refresh from the previous editor must not notify the destination page.
@@ -95,8 +94,7 @@ async function loadRegister() {
     if (isComponentMounted.value && sequence === registerRequestSequence) {
       error.value = err
       alertStore.error(err, {
-        fallback: 'Не удалось загрузить реестр',
-        action: { label: 'Повторить', handler: loadRegister }
+        fallback: 'Не удалось загрузить реестр'
       })
     } else {
       // The register request may finish after a route change or unmount.

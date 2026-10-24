@@ -14,7 +14,7 @@ import { useAlertStore } from '@/stores/alert.store.js'
 import { useAppConfirm } from '@/composables/useAppConfirm.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
-import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
+import { runWithAlert } from '@/helpers/notification.helpers.js'
 
 const parcelStatusesStore = useParcelStatusesStore()
 const authStore = useAuthStore()
@@ -91,7 +91,7 @@ async function deleteParcelStatus(parcelStatus) {
 
 // Initialize data
 onMounted(() =>
-  runWithRetryAlert(() => parcelStatusesStore.getAll(), {
+  runWithAlert(() => parcelStatusesStore.getAll(), {
     fallback: 'Не удалось загрузить статусы посылок'
   })
 )

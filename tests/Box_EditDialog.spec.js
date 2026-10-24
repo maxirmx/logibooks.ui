@@ -63,13 +63,12 @@ vi.mock('@/router', () => ({ default: { push: routerPush } }))
 
 vi.mock('@/stores/alert.store.js', () => ({
   useAlertStore: () => ({
-    warning: (message, options = {}) => {
-      mockAlert.value = { message, action: options.action }
+    warning: (message) => {
+      mockAlert.value = { message }
     },
     error: (error, options = {}) => {
       mockAlert.value = {
-        message: error?.message || error || options.fallback,
-        action: options.action
+        message: error?.message || error || options.fallback
       }
     }
   })
@@ -79,7 +78,7 @@ vi.mock('@/components/PageAlertRegion.vue', () => ({
   default: {
     setup: () => ({ mockAlert }),
     template:
-      '<div data-testid="page-alert-region"><span>{{ mockAlert?.message }}</span><button v-if="mockAlert?.action" data-testid="alert-retry" @click="mockAlert.action.handler()">Повторить</button></div>'
+      '<div data-testid="page-alert-region"><span>{{ mockAlert?.message }}</span></div>'
   }
 }))
 
@@ -415,7 +414,7 @@ describe('Box_EditDialog.vue', () => {
     expect(routerPush).toHaveBeenCalledWith('/registers/42/boxes')
   })
 
-  it('shows retry after an uncached box fails to load and renders the form after retry', async () => {
+  it('shows an uncached box load failure without retaining an alert callback', async () => {
     const loadedBox = mockBox.value
     mockBox.value = null
     boxGetById.mockRejectedValueOnce(new Error('load failed')).mockImplementation(async () => {
@@ -442,15 +441,8 @@ describe('Box_EditDialog.vue', () => {
     expect(boxUpdate).not.toHaveBeenCalled()
     expect(routerPush).not.toHaveBeenCalled()
 
-    await wrapper.get('[data-testid="alert-retry"]').trigger('click')
-    await flushPromises()
-
-    expect(boxGetById).toHaveBeenCalledTimes(2)
-    expect(wrapper.get('#code').element.value).toBe('BOX-7')
-    const retriedSave = wrapper
-      .findAllComponents(ActionButton)
-      .find((item) => item.props('tooltipText') === 'Сохранить')
-    expect(retriedSave.props('disabled')).toBe(false)
+    expect(wrapper.find('[data-testid="alert-retry"]').exists()).toBe(false)
+    expect(wrapper.find('.page-alert-region__action').exists()).toBe(false)
   })
 
   it('rejects an edit URL whose box belongs to another register', async () => {

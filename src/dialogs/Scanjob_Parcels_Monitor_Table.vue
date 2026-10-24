@@ -3,7 +3,10 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, inject, nextTick, onUnmounted, ref, watch } from 'vue'
+import { useParcelMultiSelect } from '@/composables/useParcelMultiSelect.js'
+import { MANUAL_PARCEL_SCAN_KEY, parcelScanId } from '@/helpers/parcel.scan.helpers.js'
+import ParcelScanAction from '@/components/ParcelScanAction.vue'
 import { storeToRefs } from 'pinia'
 import { useAuthStore } from '@/stores/auth.store.js'
 import MonitorLabelActions from '@/components/MonitorLabelActions.vue'
@@ -51,8 +54,9 @@ const {
 } = storeToRefs(authStore)
 
 const canFollowParcelEditRoute = computed(() => hasLogistRole?.value === true)
-const isParcelCellDisabled = computed(() => props.loading || !canFollowParcelEditRoute.value)
-const areActionsBusy = computed(() => props.loading || props.defectActionLoading)
+const manualScan = inject(MANUAL_PARCEL_SCAN_KEY, null)
+const isParcelCellDisabled = computed(() => props.loading || manualScan?.locked.value || !canFollowParcelEditRoute.value)
+const areActionsBusy = computed(() => props.loading || props.defectActionLoading || manualScan?.locked.value)
 const areDefectActionsBusy = computed(() => areActionsBusy.value || props.readOnly)
 const isAdminUser = computed(() => Boolean(authStore.isAdmin?.value ?? authStore.isAdmin))
 function isClearExtIdDisabled(item) {
@@ -63,9 +67,46 @@ function clearExtId(item) {
 }
 const selectedParcelIdNumber = computed(() => toNumberOrNull(props.selectedParcelId))
 const dataTableRef = ref(null)
+const currentPageItems = ref(null)
+const displayedParcels = computed(() => {
+  if (currentPageItems.value) return currentPageItems.value
+  const perPage = Number(scanjobmonitor_parcels_per_page.value)
+  const start = (Number(scanjobmonitor_parcels_page.value) - 1) * perPage
+  return perPage <= 0 ? getSortedParcels() : getSortedParcels().slice(start, start + perPage)
+})
+const selection = useParcelMultiSelect({
+  items: displayedParcels, loading: computed(() => props.loading), selectedParcelId: ref(null),
+  page: scanjobmonitor_parcels_page, dataTableRef,
+  scopeKey: () => JSON.stringify([manualScan?.scopeKey.value, scanjobmonitor_parcels_per_page.value, scanjobmonitor_parcels_sort_by.value]),
+  getItemId: parcelScanId,
+  isItemSelectable: item => parcelScanId(item) != null,
+  disabled: () => manualScan?.locked.value,
+  onContextMenu: () => manualScan?.run(selection.selectedItems.value, null, true),
+  getBaseRowClass: data => getParcelId(data.item) === selectedParcelIdNumber.value ? 'monitor-followed-parcel-row' : ''
+})
+onUnmounted(selection.stop)
+if (manualScan) watch(manualScan.completedIds, ids => selection.removeSelected(ids))
 
-function editParcel(item) {
-  if (isParcelCellDisabled.value) {
+function updateDisplayedParcels(items) {
+  currentPageItems.value = items.map(item => item.raw ?? item)
+}
+
+function handleTableControlsChange() {
+  selection.clearSelection()
+  manualScan?.invalidateBatch()
+}
+
+function handlePageChange(nextPage) {
+  const perPage = Number(scanjobmonitor_parcels_per_page.value)
+  const maxPage = perPage <= 0 ? 1 : Math.max(1, Math.ceil(props.parcels.length / perPage))
+  // Vuetify also emits page updates when a snapshot reduces the page count.
+  const automaticClamp = Number(scanjobmonitor_parcels_page.value) > maxPage && Number(nextPage) === maxPage
+  scanjobmonitor_parcels_page.value = nextPage
+  if (!automaticClamp) handleTableControlsChange()
+}
+
+function editParcel(item, event) {
+  if (isParcelCellDisabled.value || event?.shiftKey || event?.ctrlKey || event?.metaKey) {
     return
   }
 
@@ -190,7 +231,7 @@ async function scrollToSelectedParcel() {
 
   await nextTick()
   const tableElement = dataTableRef.value?.$el ?? dataTableRef.value
-  const selectedRows = tableElement?.querySelectorAll?.('.selected-parcel-row')
+  const selectedRows = tableElement?.querySelectorAll?.('.monitor-followed-parcel-row')
   const selectedRow = selectedRows?.[selectedRows.length - 1]
   selectedRow?.scrollIntoView?.({
     behavior: 'smooth',
@@ -200,10 +241,7 @@ async function scrollToSelectedParcel() {
 }
 
 function getRowProps(data) {
-  const item = data?.item ?? data
-  return getParcelId(item) === selectedParcelIdNumber.value
-    ? { class: 'selected-parcel-row' }
-    : {}
+  return selection.getRowProps(data)
 }
 
 watch(
@@ -226,11 +264,18 @@ watch(
   <v-data-table
     ref="dataTableRef"
     v-model:items-per-page="scanjobmonitor_parcels_per_page"
-    v-model:page="scanjobmonitor_parcels_page"
+    :page="scanjobmonitor_parcels_page"
     v-model:sort-by="scanjobmonitor_parcels_sort_by"
     :headers="props.headers"
     :items="props.parcels"
     :row-props="getRowProps"
+    @click:row="selection.handleRowClick"
+    @contextmenu:row="selection.handleRowContextMenu"
+    @update:current-items="updateDisplayedParcels"
+    @update:page="handlePageChange"
+    @update:items-per-page="handleTableControlsChange"
+    @update:sort-by="handleTableControlsChange"
+    :disable-sort="manualScan?.locked.value"
     :items-per-page-options="itemsPerPageOptions"
     items-per-page-text="Посылок на странице"
     page-text="{0}-{1} из {2}"
@@ -239,8 +284,14 @@ watch(
     class="elevation-1 interlaced-table single-line-table scanjob-monitor-parcels-table"
     data-testid="scanjob-monitor-parcels-table"
   >
+    <template #bottom>
+      <v-defaults-provider :defaults="{ VSelect: { disabled: manualScan?.locked.value }, VPagination: { disabled: manualScan?.locked.value } }">
+        <v-data-table-footer :items-per-page-options="itemsPerPageOptions" items-per-page-text="Посылок на странице" page-text="{0}-{1} из {2}" />
+      </v-defaults-provider>
+    </template>
     <template #[`item.actions`]="{ item }">
-      <div class="actions-container">
+      <div class="actions-container" @click.stop>
+        <ParcelScanAction v-if="parcelScanId(item) != null" :parcels="[item]" :selection="selection" />
         <ActionButton v-if="isAdminUser" :item="item" icon="fa-solid fa-broom"
           tooltip-text="Очистить номер КГТ" aria-label="Очистить номер КГТ"
           data-testid="scanjob-clear-ext-id-action" :disabled="isClearExtIdDisabled(item)" @click="clearExtId" />
@@ -389,7 +440,7 @@ watch(
             v-bind="tooltipProps"
             :class="parcelCellClass(`status-cell ${getScanjobCheckStatusClass(item.checkStatusProjection)}`)"
             :aria-disabled="isParcelCellDisabled ? 'true' : undefined"
-            @click="editParcel(item)"
+            @click="editParcel(item, $event)"
           >
             {{ scanjobCheckStatusText(item.checkStatusProjection) }}
           </span>
@@ -402,7 +453,7 @@ watch(
         v-else
         :class="parcelCellClass(`status-cell ${getScanjobCheckStatusClass(item.checkStatusProjection)}`)"
         :aria-disabled="isParcelCellDisabled ? 'true' : undefined"
-        @click="editParcel(item)"
+        @click="editParcel(item, $event)"
       >
         {{ scanjobCheckStatusText(item.checkStatusProjection) }}
       </span>

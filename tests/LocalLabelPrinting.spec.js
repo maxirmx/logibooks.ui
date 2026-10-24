@@ -7,6 +7,10 @@ import { computed, defineComponent, provide, reactive, ref } from 'vue'
 import { createPinia } from 'pinia'
 import { flushPromises, mount } from '@vue/test-utils'
 import LocalLabelPrinting from '@/components/LocalLabelPrinting.vue'
+import BoxScanAction from '@/components/BoxScanAction.vue'
+import ParcelScanAction from '@/components/ParcelScanAction.vue'
+import { useManualBoxScan } from '@/composables/useManualBoxScan.js'
+import { useManualParcelScan } from '@/composables/useManualParcelScan.js'
 import BoxStickerPrintButton from '@/components/BoxStickerPrintButton.vue'
 import { PRINTER_STORAGE_KEY } from '@/services/qz.printing.js'
 import { useLabelPrintingStore, PRINT_MODE_STORAGE_KEY } from '@/stores/label.printing.store.js'
@@ -20,6 +24,7 @@ import { automaticPrintHistory } from '@/services/label.printing.coordinator.js'
 import { roleAdmin, roleWhManager, roleWhOperator } from '@/helpers/user.roles.js'
 const env = vi.hoisted(() => ({}))
 vi.mock('@/stores/auth.store.js', () => ({ useAuthStore: () => env.auth }))
+vi.mock('@/stores/scanjobs.store.js', () => ({ useScanjobsStore: () => env.scanStore }))
 vi.mock('@/composables/useAppConfirm.js', () => ({ useAppConfirm: () => env.confirm }))
 vi.mock('@/services/qz.printing.js', async (original) => ({ ...await original(), createQzPrinting: () => env.qz }))
 vi.mock('@/services/printing.ownership.js', () => ({ createPrintingOwnership: () => env.ownership }))
@@ -35,7 +40,7 @@ const stubs = {
 }
 const host = defineComponent({
   components: { LocalLabelPrinting, PageAlertRegion, ScanjobMonitorSummary, BoxStickerPrintButton, MonitorLabelActions },
-  template: `<div><hr class="hr" /><PageAlertRegion /><LocalLabelPrinting ref="printing" :scan-job-id="job" :user-id="user" :active="active" />
+  template: `<div><hr class="hr" /><PageAlertRegion /><LocalLabelPrinting ref="printing" :scan-job-id="job" :user-id="user" :active="active" :disabled="disabled" />
     <ScanjobMonitorSummary :print-queue="printing?.queueStatus" /><BoxStickerPrintButton :box="box" /><MonitorLabelActions :item="parcel" /></div>`,
   setup() {
     const printing = ref(null)
@@ -43,7 +48,7 @@ const host = defineComponent({
       busy: computed(() => printing.value?.busy ?? true),
       print: (target) => printing.value?.printParcel(target)
     })
-    return { printing, job: ref(42), user: ref(9), active: ref(true),
+    return { printing, job: ref(42), user: ref(9), active: ref(true), disabled: ref(false),
       box: { id: 17, companyId: 2, boxSticker: '$1:1:17:362877', printableTemplates: ['WBR_BOX'] },
       parcel: reactive({ id: 7, printableTemplates: ['WBRN', 'OZON'] }) }
   }
@@ -79,6 +84,118 @@ const target = { parcelId: 7, template: 'WBRN' }
 const scan = (id = 8, template = 'KGT') => ({ scanJobId: 42, userId: 9, printCandidates: [{ scanJobId: 42, scanCodeId: id, parcelId: 7, template, revision: 'r1' }] })
 const printButtons = () => wrapper.findAll('[data-testid="box-print-label"], [data-testid="monitor-print-label"]')
 async function arm(mode = 'KGT') { await flushPromises(); await store.saveSettings({ printer: 'TSC TE200', mode }); await flushPromises() }
+
+it('blocks manual print and repeat while an external operation owns the controls', async () => {
+  await arm()
+  env.event(scan()); await flushPromises()
+  const count = env.label.mock.calls.length
+  wrapper.vm.disabled = true; await flushPromises()
+  expect(panel().vm.busy).toBe(true)
+  expect(printButtons().every(button => button.element.disabled)).toBe(true)
+  expect(wrapper.get('[data-testid="reprint-label"]').element.disabled).toBe(true)
+  expect(await panel().vm.printParcel(target)).toBe(false)
+  await wrapper.get('[data-testid="reprint-label"]').trigger('click')
+  expect(env.label).toHaveBeenCalledTimes(count)
+  wrapper.vm.disabled = false; await flushPromises()
+  await wrapper.get('[data-testid="reprint-label"]').trigger('click'); await flushPromises()
+  expect(env.label).toHaveBeenCalledTimes(count + 1)
+  expect(store.state.mode).toBe('KGT')
+})
+
+it('blocks retry and reconnect during an external operation and restores explicit recovery', async () => {
+  await arm()
+  env.qz.submit.mockRejectedValueOnce({ code: 'SubmissionFailed' })
+  env.event(scan()); await flushPromises()
+  env.qz.state.connected = false
+  wrapper.vm.disabled = true; await flushPromises()
+  const connectCount = env.qz.connect.mock.calls.length
+  for (const name of ['retry-print', 'reconnect-print']) {
+    const button = wrapper.get(`[data-testid="${name}"]`)
+    expect(button.element.disabled).toBe(true)
+    await button.trigger('click')
+  }
+  expect(env.qz.connect).toHaveBeenCalledTimes(connectCount)
+  expect(env.qz.submit).toHaveBeenCalledOnce()
+  wrapper.vm.disabled = false; await flushPromises()
+  await wrapper.get('[data-testid="reconnect-print"]').trigger('click'); await flushPromises()
+  await wrapper.get('[data-testid="retry-print"]').trigger('click'); await flushPromises()
+  expect(env.qz.submit).toHaveBeenCalledTimes(2)
+  expect(store.state.paused).toBe(false)
+})
+
+it.each(['parcel', 'box'].flatMap(kind => [false, true].map(fails => ({ kind, fails }))))(
+  'keeps $kind manual scanning and shared printing together when scan failure is $fails', async ({ kind, fails }) => {
+    wrapper.unmount(); await flushPromises()
+    env.auth.isAdmin = true
+    const scanRequest = vi.fn()
+    env.scanStore = {
+      ops: { constants: { inProgressStatus: 15, parcelOnlyType: 10, boxOnlyType: 20, lookupOperation: 30 } },
+      ensureOpsLoaded: vi.fn().mockResolvedValue(true),
+      scanParcel: scanRequest, scanBox: scanRequest
+    }
+    let manual, accept, finish, reject
+    const entity = { id: 7, boxId: 17, printableTemplates: ['WBRN'], companyId: 2, boxSticker: 'BOX-STICKER' }
+    const job = ref({ id: 42, registerId: 1, status: 15, type: 30, operation: 10 })
+    const useScan = kind === 'box' ? useManualBoxScan : useManualParcelScan
+    const refresh = vi.fn().mockResolvedValue(true)
+    wrapper = mount(defineComponent({
+      components: { LocalLabelPrinting, PageAlertRegion, BoxScanAction, ParcelScanAction, MonitorLabelActions },
+      setup() {
+        manual = useScan({ registerId: ref(1), job, refresh })
+        const printing = ref(null)
+        provide(LABEL_PRINTING_KEY, {
+          busy: computed(() => printing.value?.busy ?? true),
+          print: target => printing.value?.printParcel(target)
+        })
+        return { printing, locked: manual.locked, entity, kind }
+      },
+      template: `<div><hr class="hr"/><PageAlertRegion/>
+        <LocalLabelPrinting ref="printing" :scan-job-id="42" :user-id="9" active :disabled="locked"/>
+        <BoxScanAction v-if="kind === 'box'" :boxes="[entity]"/>
+        <ParcelScanAction v-else :parcels="[entity]"/>
+        <MonitorLabelActions :item="entity"/>
+      </div>`
+    }), { global: { plugins: [pinia], stubs } })
+    await arm()
+    env.event(scan()); await flushPromises()
+    expect(env.qz.submit).toHaveBeenCalledOnce()
+    env.confirm.mockImplementationOnce(() => new Promise(resolve => { accept = resolve }))
+    scanRequest.mockImplementationOnce(() => new Promise((resolve, rejectRequest) => { finish = resolve; reject = rejectRequest }))
+    const pending = manual.run([entity], 42, true)
+    await flushPromises()
+    expect(wrapper.get(`[data-testid="manual-${kind}-scan"]`).element.disabled).toBe(true)
+    expect(wrapper.get('[data-testid="monitor-print-label"]').element.disabled).toBe(true)
+    expect(await panel().vm.printParcel(target)).toBe(false)
+    expect(scanRequest).not.toHaveBeenCalled()
+    accept(true); await flushPromises()
+    expect(scanRequest).toHaveBeenCalledWith(42, kind === 'box' ? 17 : 7)
+    expect(wrapper.get('[data-testid="monitor-print-label"]').element.disabled).toBe(true)
+    if (fails) reject(Object.assign(new Error('Не удалось отметить сканирование'), { status: 400 }))
+    else finish({ count: 1, parcelCount: 1, boxCount: 1 })
+    expect(await pending).toBe(!fails)
+    await flushPromises()
+    expect(refresh).toHaveBeenCalledOnce()
+    expect(wrapper.findAll('[role="alert"]')).toHaveLength(fails ? 1 : 0)
+    if (fails) {
+      expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось отметить сканирование')
+      expect(errorSpy).toHaveBeenCalledOnce()
+    }
+    expect(wrapper.get('[data-testid="monitor-print-label"]').element.disabled).toBe(false)
+    expect(wrapper.get(`[data-testid="manual-${kind}-scan"]`).element.disabled).toBe(false)
+    expect(store.state.mode).toBe('KGT')
+    if (fails) {
+      scanRequest.mockResolvedValueOnce({ count: 1, parcelCount: 1, boxCount: 1 })
+      await wrapper.get(`[data-testid="manual-${kind}-scan"]`).trigger('click'); await flushPromises()
+      expect(scanRequest).toHaveBeenCalledTimes(2)
+      expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+    }
+    await wrapper.get('[data-testid="monitor-print-label"]').trigger('click'); await flushPromises()
+    expect(env.label).toHaveBeenLastCalledWith({ parcelId: 7, template: 'WBRN', scanJobId: 42 })
+    env.event(scan(99)); await flushPromises()
+    expect(env.qz.submit).toHaveBeenCalledTimes(3)
+    expect(store.state.mode).toBe('KGT')
+  }
+)
 
 it.each(['KGT', 'TJ'])('shows the armed %s mode before any label is printed, then pause and Off', async (mode) => {
   await arm(mode)
@@ -234,7 +351,8 @@ it.each(['label', 'submit'])('presents a reprint %s failure once from the UI and
   operation.mockRejectedValueOnce(new Error(`${source} unavailable`))
   const action = wrapper.get('[data-testid="reprint-label"]')
   await action.trigger('click'); await flushPromises()
-  expect(wrapper.get('[role="alert"]').text()).toContain(`${source} unavailable`)
+  expect(wrapper.get('[role="alert"]').text()).toContain('Ошибка локальной печати')
+  expect(wrapper.get('[role="alert"]').text()).not.toContain(`${source} unavailable`)
   expect(errorSpy).toHaveBeenCalledOnce()
   expect(action.element.disabled).toBe(false)
   await action.trigger('click'); await flushPromises()
@@ -262,7 +380,7 @@ it('prints each manual label with fresh data and reports a rejection once before
   env.label.mockRejectedValueOnce(new Error('Label offline'))
   await panel().vm.printParcel(target)
   await flushPromises()
-  expect(wrapper.get('[role="alert"]').text()).toContain('Label offline')
+  expect(wrapper.get('[role="alert"]').text()).toContain('Ошибка локальной печати')
   expect(errorSpy).toHaveBeenCalledOnce()
   expect(printButtons().every((button) => !button.element.disabled)).toBe(true)
   await panel().vm.printParcel(target)
@@ -274,7 +392,7 @@ it('prints from a parcel list without a scan job and shows a failed request once
   const action = wrapper.findAll('button[data-testid="monitor-print-label"]')[0]
   await action.trigger('click'); await flushPromises()
   expect(env.label).toHaveBeenCalledWith({ parcelId: 7, template: 'WBRN', scanJobId: null })
-  expect(wrapper.get('[role="alert"]').text()).toContain('parcel label unavailable')
+  expect(wrapper.get('[role="alert"]').text()).toContain('Ошибка локальной печати')
   expect(errorSpy).toHaveBeenCalledOnce()
   expect(env.qz.submit).not.toHaveBeenCalled()
   await action.trigger('click'); await flushPromises()
@@ -341,7 +459,7 @@ it('confirms an uncertain retry, supports cancellation, and repeats the last lab
   expect(env.qz.submit).toHaveBeenCalledOnce()
   env.confirm.mockRejectedValueOnce(new Error('confirmation failed'))
   await wrapper.get('[data-testid="retry-print"]').trigger('click'); await flushPromises()
-  expect(wrapper.get('[role="alert"]').text()).toContain('confirmation failed')
+  expect(wrapper.get('[role="alert"]').text()).toContain('Ошибка локальной печати')
   await wrapper.get('[data-testid="retry-print"]').trigger('click'); await flushPromises()
   await wrapper.get('[data-testid="reprint-label"]').trigger('click'); await flushPromises()
   expect(env.qz.submit).toHaveBeenCalledTimes(3)
@@ -352,7 +470,7 @@ it('retains a connection pause until the scanner subscription can be resumed', a
   env.failure(new Error('scanner disconnected')); await flushPromises()
   env.channel.resume.mockRejectedValueOnce(new Error('subscribe failed'))
   await wrapper.get('[data-testid="retry-print"]').trigger('click'); await flushPromises()
-  expect(wrapper.get('[role="alert"]').text()).toContain('subscribe failed')
+  expect(wrapper.get('[role="alert"]').text()).toContain('Ошибка локальной печати')
   expect(store.state.paused).toBe(true)
   await store.retry(env.confirm); await flushPromises()
   expect(store.state.paused).toBe(false)
@@ -371,7 +489,8 @@ it.each(['confirmation', 'readiness', 'resumption'])('rejects %s retry failures 
   operation.mockRejectedValueOnce(failure)
   await wrapper.get('[data-testid="retry-print"]').trigger('click'); await flushPromises()
   expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-  expect(wrapper.get('[role="alert"]').text()).toContain(failure.message)
+  expect(wrapper.get('[role="alert"]').text()).toContain('Ошибка локальной печати')
+  expect(wrapper.get('[role="alert"]').text()).not.toContain(failure.message)
   expect(errorSpy).toHaveBeenCalledOnce()
   expect(store.controlBusy).toBe(false)
   await wrapper.get('[data-testid="retry-print"]').trigger('click'); await flushPromises()
@@ -501,7 +620,7 @@ it('reports background scope restoration failures once after a saved mode is res
   await arm()
   env.channel.start.mockRejectedValueOnce(new Error('cannot restore subscription'))
   wrapper.vm.user = 10; await flushPromises()
-  expect(wrapper.get('[role="alert"]').text()).toContain('cannot restore subscription')
+  expect(wrapper.get('[role="alert"]').text()).toContain('Ошибка локальной печати')
   expect(errorSpy).toHaveBeenCalledOnce()
 })
 it.each([{ code: 'QzUnavailable' }, { code: 'SubmissionFailed', cause: { data: { code: 'QzUnavailable' } } }])(
@@ -537,10 +656,10 @@ it('silently disables startup printing without QZ or a saved printer', async () 
 })
 it('disables repeat and retry after QZ disconnect and leaves existing form messages intact', async () => {
   await arm(); env.event(scan()); await flushPromises()
-  alerts.error('Existing error'); errorSpy.mockClear()
+  alerts.error('Ошибка загрузки посылки'); errorSpy.mockClear()
   env.qz.state.connected = false
   env.qz.onDisconnect.mock.calls[0][0]({ code: 'QzUnavailable' }); await flushPromises()
-  expect(wrapper.get('[role="alert"]').text()).toContain('Existing error')
+  expect(wrapper.get('[role="alert"]').text()).toContain('Ошибка загрузки посылки')
   expect(wrapper.get('[data-testid="retry-print"]').element.disabled).toBe(true)
   expect(wrapper.get('[data-testid="reprint-label"]').element.disabled).toBe(true)
   await store.retry(env.confirm)
@@ -585,7 +704,7 @@ it('applies cross-window settings, ignores unrelated storage, and stops on clear
 it('reports synchronization errors once and applies the same settings on retry', async () => {
   env.channel.stop.mockRejectedValueOnce(new Error('cannot sync'))
   await store.syncSettings(new window.StorageEvent('storage', { key: PRINT_MODE_STORAGE_KEY }))
-  await flushPromises(); expect(wrapper.get('[role="alert"]').text()).toContain('cannot sync')
+  await flushPromises(); expect(wrapper.get('[role="alert"]').text()).toContain('Ошибка локальной печати')
   expect(errorSpy).toHaveBeenCalledOnce()
   await store.syncSettings(new window.StorageEvent('storage', { key: PRINT_MODE_STORAGE_KEY }))
 })

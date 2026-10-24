@@ -82,13 +82,12 @@ describe('routed company register output format editor', () => {
     expect(editorSave).toHaveBeenCalledTimes(1)
   })
 
-  it('shows one retryable error when returning to the company fails', async () => {
+  it('shows one message-only error when returning to the company fails', async () => {
     push.mockRejectedValueOnce(new Error('navigation failed'))
     const wrapper = mountPage()
     await wrapper.get('[data-testid="register-output-cancel-action"]').trigger('click')
     await vi.waitFor(() => expect(alerts.error).toHaveBeenCalledTimes(1))
     expect(wrapper.get('[data-testid="editor"]').exists()).toBe(true)
-    await alerts.error.mock.calls[0][1].action.handler()
-    expect(push).toHaveBeenCalledTimes(2)
+    expect(wrapper.find('.page-alert-region__action').exists()).toBe(false)
   })
 })

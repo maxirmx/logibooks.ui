@@ -248,8 +248,7 @@ describe('Cmr_Settings.vue', () => {
     expect(alertErrorMock).toHaveBeenCalledWith(
       expect.objectContaining({ message: 'Companies unavailable' }),
       expect.objectContaining({
-        fallback: 'Не удалось загрузить данные для CMR',
-        action: expect.objectContaining({ label: 'Повторить', handler: expect.any(Function) })
+        fallback: 'Не удалось загрузить данные для CMR'
       })
     )
     expect(setupState(wrapper).isFormDisabled).toBe(true)
@@ -264,8 +263,7 @@ describe('Cmr_Settings.vue', () => {
     expect(alertErrorMock).toHaveBeenCalledWith(
       expect.objectContaining({ message: 'CMR доступна только для автомобильных реестров' }),
       expect.objectContaining({
-        fallback: 'Не удалось загрузить данные для CMR',
-        action: expect.objectContaining({ label: 'Повторить', handler: expect.any(Function) })
+        fallback: 'Не удалось загрузить данные для CMR'
       })
     )
     expect(setupState(wrapper).isFormDisabled).toBe(true)
@@ -284,9 +282,9 @@ describe('Cmr_Settings.vue', () => {
     expect(router.go).not.toHaveBeenCalled()
     state.isSubmitting = false
 
-    downloadCmrFileMock.mockRejectedValueOnce('String failure')
+    downloadCmrFileMock.mockRejectedValueOnce('Ошибка формирования документа')
     await state.onSubmit()
-    expect(alertErrorMock).toHaveBeenCalledWith('String failure')
+    expect(alertErrorMock).toHaveBeenCalledWith('Ошибка формирования документа')
     downloadCmrFileMock.mockRejectedValueOnce(null)
     await state.onSubmit()
     expect(alertErrorMock).toHaveBeenCalledWith('Не удалось сформировать CMR')
@@ -301,8 +299,7 @@ describe('Cmr_Settings.vue', () => {
     expect(alertErrorMock).toHaveBeenCalledWith(
       expect.objectContaining({ message: 'Реестр не найден' }),
       expect.objectContaining({
-        fallback: 'Не удалось загрузить данные для CMR',
-        action: expect.objectContaining({ label: 'Повторить', handler: expect.any(Function) })
+        fallback: 'Не удалось загрузить данные для CMR'
       })
     )
     state.initializeDefaults()

@@ -316,8 +316,7 @@ describe('Registers_WhList.vue', () => {
     expect(alertErrorFn).toHaveBeenCalledWith(
       expect.objectContaining({ message: 'ops failed' }),
       expect.objectContaining({
-        fallback: 'Ошибка при загрузке данных',
-        action: expect.objectContaining({ label: 'Повторить', handler: expect.any(Function) })
+        fallback: 'Ошибка при загрузке данных'
       })
     )
   })
@@ -331,8 +330,7 @@ describe('Registers_WhList.vue', () => {
     expect(alertErrorFn).toHaveBeenCalledWith(
       'ops failed',
       expect.objectContaining({
-        fallback: 'Ошибка при загрузке данных',
-        action: expect.objectContaining({ label: 'Повторить', handler: expect.any(Function) })
+        fallback: 'Ошибка при загрузке данных'
       })
     )
   })

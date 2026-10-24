@@ -60,7 +60,7 @@ describe('fetchWrapper', () => {
       text: () => Promise.resolve(JSON.stringify({ msg: 'bad' }))
     }
     global.fetch = vi.fn(() => Promise.resolve(response))
-    await expect(fetchWrapper.get(`${baseUrl}/fail`)).rejects.toThrow('bad')
+    await expect(fetchWrapper.get(`${baseUrl}/fail`)).rejects.toThrow('Ошибка 401')
   })
 
   it('throws network error in russian', async () => {
@@ -101,7 +101,7 @@ describe('fetchWrapper', () => {
       global.fetch = vi.fn(() => Promise.reject(customError))
 
       await expect(fetchWrapper.postFile(`${baseUrl}/upload`, new FormData())).rejects.toThrow(
-        'Произошла непредвиденная ошибка при обращении к серверу: Custom network error'
+        'Не удалось соединиться с сервером. Пожалуйста, проверьте подключение к сети.'
       )
     })
 
@@ -115,7 +115,7 @@ describe('fetchWrapper', () => {
       global.fetch = vi.fn(() => Promise.resolve(response))
 
       await expect(fetchWrapper.postFile(`${baseUrl}/upload`, new FormData())).rejects.toThrow(
-        'File format not supported'
+        'Ошибка 400'
       )
     })
 
@@ -143,7 +143,7 @@ describe('fetchWrapper', () => {
       global.fetch = vi.fn(() => Promise.resolve(response))
 
       await expect(fetchWrapper.postFile(`${baseUrl}/upload`, new FormData())).rejects.toThrow(
-        'File too large'
+        'Ошибка 413'
       )
     })
 
@@ -239,7 +239,7 @@ describe('fetchWrapper', () => {
       }
       global.fetch = vi.fn(() => Promise.resolve(response))
 
-      await expect(fetchWrapper.get(`${baseUrl}/test`)).rejects.toThrow('invalid json {')
+      await expect(fetchWrapper.get(`${baseUrl}/test`)).rejects.toThrow('Сервер вернул данные в некорректном формате')
     })
 
     it('handles non-ok response without msg property, falls back to status code', async () => {
@@ -262,7 +262,7 @@ describe('fetchWrapper', () => {
       global.fetch = vi.fn(() => Promise.reject(customError))
 
       await expect(fetchWrapper.post(`${baseUrl}/test`, { data: 'test' })).rejects.toThrow(
-        'Произошла непредвиденная ошибка при обращении к серверу: Connection timeout'
+        'Сервер не ответил вовремя. Повторите операцию.'
       )
     })
   })
@@ -274,7 +274,7 @@ describe('fetchWrapper', () => {
       global.fetch = vi.fn(() => Promise.reject(customError))
 
       await expect(fetchWrapper.getFile(`${baseUrl}/download`)).rejects.toThrow(
-        'Произошла непредвиденная ошибка при обращении к серверу: SSL error'
+        'Не удалось установить защищённое соединение с сервером. Обратитесь к администратору.'
       )
     })
 
@@ -287,7 +287,7 @@ describe('fetchWrapper', () => {
       }
       global.fetch = vi.fn(() => Promise.resolve(response))
 
-      await expect(fetchWrapper.getFile(`${baseUrl}/download`)).rejects.toThrow('Access denied')
+      await expect(fetchWrapper.getFile(`${baseUrl}/download`)).rejects.toThrow('Недостаточно прав для выполнения операции.')
     })
   })
 
@@ -612,7 +612,7 @@ describe('fetchWrapper', () => {
       try {
         await expect(
           fetchWrapper.downloadFile(`${baseUrl}/download/file`, 'fallback.txt')
-        ).rejects.toThrow('File not found')
+        ).rejects.toThrow('Ошибка 404')
       } finally {
         // Restore console.error
         console.error = originalConsoleError

@@ -3,6 +3,8 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
+import { getErrorMessage } from '@/helpers/error.helpers.js'
+
 import { computed } from 'vue'
 import ActionButton from '@/components/ActionButton.vue'
 
@@ -217,7 +219,7 @@ defineExpose({
               class="invalid-feedback scope-field-error"
               :data-field-error="scopeFieldName(item.__index, 'countryIsoNumeric')"
             >
-              {{ getScopeFieldError(item.__index, 'countryIsoNumeric') }}
+              {{ getErrorMessage(getScopeFieldError(item.__index, 'countryIsoNumeric'), 'Некорректное значение') }}
             </div>
             <div v-if="isDuplicate(item.__index)" class="invalid-feedback scope-error">
               Такая страна и процедура уже добавлены
@@ -253,7 +255,7 @@ defineExpose({
               class="invalid-feedback scope-field-error"
               :data-field-error="scopeFieldName(item.__index, 'customsProcedureCode')"
             >
-              {{ getScopeFieldError(item.__index, 'customsProcedureCode') }}
+              {{ getErrorMessage(getScopeFieldError(item.__index, 'customsProcedureCode'), 'Некорректное значение') }}
             </div>
           </div>
         </template>
@@ -292,7 +294,7 @@ defineExpose({
     </div>
 
     <div v-if="generalScopeError" class="invalid-feedback scope-error">
-      {{ generalScopeError }}
+      {{ getErrorMessage(generalScopeError, 'Некорректное значение') }}
     </div>
   </div>
 </template>

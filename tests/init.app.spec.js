@@ -77,12 +77,12 @@ vi.mock('@/stores/alert.store.js', () => ({
 }))
 
 describe('init.app', () => {
-  it('registers all explicitly used account icons with the app icon set', async () => {
+  it('registers account and scan icons with the app icon set', async () => {
     await import('@/init.app.js')
 
     expect(libraryAdd).toHaveBeenCalledTimes(1)
     const registeredIconNames = libraryAdd.mock.calls[0].map((icon) => icon?.iconName)
-    expect(registeredIconNames).toEqual(expect.arrayContaining(['passport', 'user', 'robot']))
+    expect(registeredIconNames).toEqual(expect.arrayContaining(['passport', 'user', 'robot', 'qrcode']))
     const registeredIcons = libraryAdd.mock.calls[0].map(icon => `${icon.prefix}:${icon.iconName}`)
     expect(registeredIcons).toEqual(expect.arrayContaining([
       'fas:square-plus', 'far:square-plus', 'fas:person-circle-plus', 'fas:plug-circle-plus'

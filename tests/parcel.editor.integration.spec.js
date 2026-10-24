@@ -223,48 +223,42 @@ describe.each(editors)('%s editor with real forms and stores', (_name, component
     const failed = deferred()
     parcelRequests.push(failed)
     window.dispatchEvent(new Event(DEC_REPORT_UPLOADED_EVENT))
-    failed.reject(new Error('Background refresh failed'))
+    failed.reject(new Error('Ошибка фонового обновления'))
     await settle()
     expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-    expect(wrapper.get('[role="alert"]').text()).toContain('Background refresh failed')
+    expect(wrapper.get('[role="alert"]').text()).toContain('Ошибка фонового обновления')
     expect(input(wrapper).element.value).toBe('Unsaved product')
     expect(form.vm.meta.touched).toBe(true)
     expect(form.vm.errors.productName).toBe('Draft validation')
     expect(store.item.readOnly).toBe(true)
   })
 
-  it('shows one required-load failure and retries initialization', async () => {
-    requiredFailure = new Error('Dictionary unavailable')
+  it('shows one required-load failure without alert callbacks', async () => {
+    requiredFailure = new Error('Справочник недоступен')
     const wrapper = mountEditor(component)
     await settle()
     expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-    expect(wrapper.get('[role="alert"]').text()).toContain('Dictionary unavailable')
+    expect(wrapper.get('[role="alert"]').text()).toContain('Справочник недоступен')
     expect(parcelGets()).toHaveLength(0)
     expect(wrapper.find('[name="productName"]').exists()).toBe(false)
     expect(action(wrapper, 'Отменить').attributes('disabled')).toBeUndefined()
-    await wrapper.get('.page-alert-region__action').trigger('click')
-    await settle()
-    expect(input(wrapper).element.value).toBe('Product 3')
-    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+    expect(wrapper.find('.page-alert-region__action').exists()).toBe(false)
   })
 
-  it('keeps Close available after a parcel-load rejection and retries the parcel', async () => {
+  it('keeps Close available after a parcel-load rejection', async () => {
     const pending = deferred()
     parcelRequests.push(pending)
     const wrapper = mountEditor(component)
     await settle()
-    pending.reject(new Error('Parcel unavailable'))
+    pending.reject(new Error('Посылка недоступна'))
     await settle()
     expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-    expect(wrapper.get('[role="alert"]').text()).toContain('Parcel unavailable')
+    expect(wrapper.get('[role="alert"]').text()).toContain('Посылка недоступна')
     expect(wrapper.find('[name="productName"]').exists()).toBe(false)
-    await wrapper.get('.page-alert-region__action').trigger('click')
-    await settle()
-    expect(input(wrapper).element.value).toBe('Product 3')
-    expect(parcelGets()).toHaveLength(2)
+    expect(wrapper.find('.page-alert-region__action').exists()).toBe(false)
   })
 
-  it('retries history alone without resetting the draft or duplicating concurrent attempts', async () => {
+  it('preserves the draft when view history fails without retrying automatically', async () => {
     const history = deferred(), retry = deferred()
     historyRequests.push(history, retry)
     const wrapper = mountEditor(component)
@@ -273,30 +267,19 @@ describe.each(editors)('%s editor with real forms and stores', (_name, component
     history.reject(new Error('History unavailable'))
     await settle()
     expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-    const gets = transport.get.mock.calls.length
-    const retryHistory = useAlertStore().alert.action.handler
-    await wrapper.get('.page-alert-region__action').trigger('click')
-    const duplicate = retryHistory()
-    await settle()
-    expect(transport.post.mock.calls.filter(([url]) => url.endsWith('/parcelviews'))).toHaveLength(2)
-    expect(transport.get.mock.calls).toHaveLength(gets)
     expect(input(wrapper).element.value).toBe('Draft before history completes')
-    retry.resolve()
-    await duplicate
-    await retryHistory()
-    expect(transport.post.mock.calls.filter(([url]) => url.endsWith('/parcelviews'))).toHaveLength(2)
-    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+    expect(wrapper.find('.page-alert-region__action').exists()).toBe(false)
   })
 
   it('keeps entered values and the editor open after a failed save and retries the update', async () => {
-    transport.put.mockRejectedValueOnce(new Error('Save unavailable'))
+    transport.put.mockRejectedValueOnce(new Error('Сохранение недоступно'))
     const wrapper = mountEditor(component)
     await settle()
     await input(wrapper).setValue('Unsaved product')
     await action(wrapper, 'Сохранить').trigger('click')
     await settle()
     expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-    expect(wrapper.get('[role="alert"]').text()).toContain('Save unavailable')
+    expect(wrapper.get('[role="alert"]').text()).toContain('Сохранение недоступно')
     expect(input(wrapper).element.value).toBe('Unsaved product')
     expect(router.push).not.toHaveBeenCalled()
     await action(wrapper, 'Сохранить').trigger('click')
@@ -367,13 +350,13 @@ describe.each(editors)('%s editor with real forms and stores', (_name, component
     const wrapper = mountEditor(component)
     await settle()
     await input(wrapper).setValue('Draft during navigation')
-    router.push.mockRejectedValueOnce(new Error('Navigation failed'))
-    router.replace.mockRejectedValueOnce(new Error('Navigation failed'))
+    router.push.mockRejectedValueOnce(new Error('Ошибка перехода'))
+    router.replace.mockRejectedValueOnce(new Error('Ошибка перехода'))
     const labels = { close: 'Отменить', next: 'Следующая посылка', previous: 'Назад' }
     await action(wrapper, labels[direction]).trigger('click')
     await settle()
     expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-    expect(wrapper.get('[role="alert"]').text()).toContain('Navigation failed')
+    expect(wrapper.get('[role="alert"]').text()).toContain('Ошибка перехода')
     expect(input(wrapper).element.value).toBe('Draft during navigation')
     expect(useParcelsStore().item.id).toBe(3)
   })
@@ -421,7 +404,7 @@ it('keeps SignalR check statuses when a REST refresh completes and preserves the
   expect(input(wrapper).element.value).toBe('Live draft')
 })
 
-it('presents a SignalR resync failure once and retries the refresh without resetting the draft', async () => {
+it('presents a SignalR resync failure once while preserving the draft', async () => {
   const wrapper = mountEditor()
   useAuthStore().user = { roles: ['sr-logist'] }
   await settle()
@@ -429,15 +412,12 @@ it('presents a SignalR resync failure once and retries the refresh without reset
   const pending = deferred()
   parcelRequests.push(pending)
   const reconnecting = signalR.connections[0].handlers.reconnected()
-  pending.reject(new Error('Resync unavailable'))
+  pending.reject(new Error('Синхронизация недоступна'))
   await reconnecting
   await settle()
   expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-  expect(wrapper.get('[role="alert"]').text()).toContain('Resync unavailable')
-  await wrapper.get('.page-alert-region__action').trigger('click')
-  await settle()
-  expect(input(wrapper).element.value).toBe('Live draft')
-  expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+  expect(wrapper.get('[role="alert"]').text()).toContain('Синхронизация недоступна')
+  expect(wrapper.find('.page-alert-region__action').exists()).toBe(false)
 })
 
 it('does not alert a destination page when an old SignalR refresh fails', async () => {

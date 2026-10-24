@@ -92,20 +92,16 @@ describe.each([
     wrapper.unmount()
   })
 
-  it('shows one live error and makes its retry a no-op after leaving', async () => {
-    store[method].mockRejectedValueOnce(new Error('write failed'))
-    const { wrapper, visible } = mountPage(component)
+  it('shows one live write error without retaining callback metadata', async () => {
+    store[method].mockRejectedValueOnce(new Error('Ошибка записи'))
+    const { wrapper } = mountPage(component)
     await flushPromises()
     const { completion } = await startWrite(wrapper, operation)
     if (completion) expect(await completion).toBe(false)
     await flushPromises()
     expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-    expect(wrapper.text()).toContain('write failed')
-    const retry = useAlertStore().alert.action.handler
-    visible.value = false
-    await nextTick()
-    expect(await retry()).toBe(false)
-    expect(store[method]).toHaveBeenCalledTimes(1)
+    expect(wrapper.text()).toContain('Ошибка записи')
+    expect(wrapper.find('.page-alert-region__action').exists()).toBe(false)
     wrapper.unmount()
   })
 })
@@ -145,18 +141,7 @@ describe('summary delete confirmation lifecycle', () => {
     wrapper.unmount()
   })
 
-  it('does not retry confirmation after disposal', async () => {
-    confirm.mockRejectedValueOnce(new Error('confirmation failed'))
-    const { wrapper, visible } = mountPage(Summary)
-    await flushPromises()
-    await startWrite(wrapper, 'summary delete')
-    const retry = useAlertStore().alert.action.handler
-    visible.value = false
-    await nextTick()
-    expect(await retry()).toBe(false)
-    expect(confirm).toHaveBeenCalledTimes(1)
-    wrapper.unmount()
-  })
+
 })
 
 describe.each([['editor', Editor], ['summary', Summary]])('%s load lifecycle', (_name, component) => {
@@ -190,37 +175,29 @@ describe.each([['editor', Editor], ['summary', Summary]])('%s load lifecycle', (
     wrapper.unmount()
   })
 
-  it('shows a load failure once and prevents its retry after unmount', async () => {
-    store.getAll.mockRejectedValueOnce(new Error('load failed'))
-    const { wrapper, visible } = mountPage(component)
+  it('shows a load failure once without retaining callback metadata', async () => {
+    store.getAll.mockRejectedValueOnce(new Error('Ошибка загрузки'))
+    const { wrapper } = mountPage(component)
     await flushPromises()
     expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-    expect(wrapper.text()).toContain('load failed')
-    const retry = useAlertStore().alert.action.handler
-    visible.value = false
-    await nextTick()
-    expect(await retry()).toBe(false)
-    expect(store.getAll).toHaveBeenCalledTimes(1)
+    expect(wrapper.text()).toContain('Ошибка загрузки')
+    expect(wrapper.find('.page-alert-region__action').exists()).toBe(false)
     wrapper.unmount()
   })
 })
 
 describe('editor delete confirmation', () => {
-  it('shows one confirmation failure and retries confirmation before deleting', async () => {
-    confirm.mockRejectedValueOnce(new Error('confirmation failed'))
+  it('shows one confirmation failure without deleting or retaining callback metadata', async () => {
+    confirm.mockRejectedValueOnce(new Error('Ошибка подтверждения'))
     const { wrapper } = mountPage(Editor)
     await flushPromises()
     await wrapper.findAll('button').find(button => button.text() === 'Удалить формат').trigger('click')
     await flushPromises()
     expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-    expect(wrapper.text()).toContain('confirmation failed')
+    expect(wrapper.text()).toContain('Ошибка подтверждения')
     expect(store.deleteRegisterOutputFormat).not.toHaveBeenCalled()
     await wrapper.get('#register-output-type').setValue(String(OFFERED_COMPANY_REGISTER_OUTPUT_TYPES[1]))
-    await wrapper.get('.page-alert-region__action').trigger('click')
-    await flushPromises()
-    expect(confirm).toHaveBeenCalledTimes(2)
-    expect(store.deleteRegisterOutputFormat).toHaveBeenCalledTimes(1)
-    expect(store.deleteRegisterOutputFormat).toHaveBeenCalledWith(42, OFFERED_COMPANY_REGISTER_OUTPUT_TYPES[0])
+    expect(wrapper.find('.page-alert-region__action').exists()).toBe(false)
     wrapper.unmount()
   })
 
@@ -241,17 +218,5 @@ describe('editor delete confirmation', () => {
     wrapper.unmount()
   })
 
-  it('does not reopen a failed confirmation after leaving', async () => {
-    confirm.mockRejectedValueOnce(new Error('confirmation failed'))
-    const { wrapper, visible } = mountPage(Editor)
-    await flushPromises()
-    await wrapper.findAll('button').find(button => button.text() === 'Удалить формат').trigger('click')
-    await flushPromises()
-    const retry = useAlertStore().alert.action.handler
-    visible.value = false
-    await nextTick()
-    expect(await retry()).toBe(false)
-    expect(confirm).toHaveBeenCalledTimes(1)
-    wrapper.unmount()
-  })
+
 })

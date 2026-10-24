@@ -1,3 +1,9 @@
+const manualScanApi = vi.hoisted(() => ({
+  getInProgress: vi.fn().mockResolvedValue([]), getById: vi.fn(), scanParcel: vi.fn(),
+  getAll: vi.fn(), updateItems: vi.fn()
+}))
+const manualScanConfirm = vi.hoisted(() => vi.fn().mockResolvedValue(true))
+vi.mock('@/composables/useAppConfirm.js', () => ({ useAppConfirm: () => manualScanConfirm }))
 import { setActivePinia, createPinia } from 'pinia'
 /* @vitest-environment jsdom */
 // Copyright (C) 2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
@@ -143,6 +149,7 @@ vi.mock('@/helpers/parcel.ext-id.helpers.js', () => ({
 
 vi.mock('@/stores/parcels.store.js', () => ({
   useParcelsStore: () => ({
+    getAll: manualScanApi.getAll, updateItems: manualScanApi.updateItems,
     items: mockItems,
     loading: mockLoading,
     error: mockError,
@@ -155,7 +162,12 @@ vi.mock('@/stores/parcels.store.js', () => ({
 }))
 
 vi.mock('@/stores/scanjobs.store.js', () => ({
-  useScanjobsStore: () => ({
+  useScanjobsStore: () => ({ ops: { constants: { inProgressStatus: 15, boxOnlyType: 20, parcelScanSource: 10, lookupOperation: 30 } }, ensureOpsLoaded: vi.fn().mockResolvedValue(true), getScanJobLabel: job => `#${job.id}`, createScanJobsListChannel: () => ({ start: vi.fn().mockResolvedValue(true), stop: vi.fn().mockResolvedValue(true) }),
+    getInProgress: manualScanApi.getInProgress,
+    getById: manualScanApi.getById,
+    scanParcel: manualScanApi.scanParcel,
+    startScanJobsListMonitor: vi.fn().mockResolvedValue(true),
+    stopScanJobsListMonitor: vi.fn().mockResolvedValue(true),
     startParcelExtIdMonitor,
     stopParcelExtIdMonitor
   })
@@ -249,7 +261,7 @@ const globalStubs = {
       'sortBy',
       'itemsPerPageOptions'
     ],
-    emits: ['update:itemsPerPage', 'update:page', 'update:sortBy'],
+    emits: ['update:itemsPerPage', 'update:page', 'update:sortBy', 'click:row', 'contextmenu:row'],
     template: `
       <div class="v-data-table-stub" data-testid="v-data-table">
         <button data-testid="table-update-wh-items-per-page" @click="$emit('update:itemsPerPage', 100)"></button>
@@ -271,7 +283,8 @@ const globalStubs = {
     template: '<div data-testid="register-heading">{{ heading }}</div>'
   },
   RegisterWhHeaderActionBar: {
-    props: ['register', 'zones'],
+    name: 'RegisterWhHeaderActionBar',
+    props: ['register', 'zones', 'loading', 'disabled'],
     emits: ['bulk-change-parcel-status', 'close'],
     template:
       '<div data-testid="register-wh-header-action-bar" :data-register-type="register?.registerType" :data-zones="zones?.length"><button type="button" data-testid="open-parcel-status-bulk-dialog" @click="$emit(\'bulk-change-parcel-status\')"></button><button type="button" data-testid="close-list" @click="$emit(\'close\')"></button></div>'
@@ -429,8 +442,7 @@ describe('WbrNParcels_WhList.vue', () => {
     mockAlert.value = {
       id: 29,
       severity: 'warning',
-      message: 'WbrN warehouse alert',
-      action: null
+      message: 'WbrN warehouse alert'
     }
     mockTotalCount.value = 5000
     parcelsWhPage.value = 250
@@ -662,10 +674,84 @@ describe('WbrNParcels_WhList.vue', () => {
     expect(alertError).toHaveBeenCalledWith(
       expect.objectContaining({ message: 'warehouse failed' }),
       expect.objectContaining({
-        fallback: 'Ошибка при инициализации компонента',
-        action: expect.objectContaining({ label: 'Повторить', handler: expect.any(Function) })
+        fallback: 'Ошибка при инициализации компонента'
       })
     )
+  })
+
+  for (const boxId of [null, 17]) {
+    it('manually scans the selected parcel in ' + (boxId ? 'box scope' : 'whole-party scope'), async () => {
+      isAdmin.value = true
+      const activeJob = { id: 7, registerId: 9, status: 15, type: 30, operation: 10 }
+      manualScanApi.getInProgress.mockResolvedValue([activeJob])
+      manualScanApi.getById.mockResolvedValue(activeJob)
+      manualScanApi.scanParcel.mockResolvedValue({ parcelCount: 1, scanSource: 10 })
+      manualScanApi.getAll.mockResolvedValue({ items: [] })
+      const wrapper = mount(WbrNParcelsWhList, { props: { registerId: 9, boxId }, global: { stubs: globalStubs } })
+      await resolveAll()
+      wrapper.vm.selection.selectAllCurrentPage()
+      const parcelId = mockItems.value[0].id
+      await wrapper.vm.manualScan.run(wrapper.vm.selection.selectedItems.value, 7, true)
+      await resolveAll()
+      expect(manualScanApi.scanParcel).toHaveBeenCalledWith(7, parcelId)
+      expect(manualScanApi.getAll).toHaveBeenCalledWith(9, { showMarkedByPartner: true, boxId, updateStore: false })
+      expect(manualScanApi.updateItems).toHaveBeenCalledWith({ items: [] })
+      expect(wrapper.vm.selection.selectedItems.value).toEqual([])
+      wrapper.unmount()
+    })
+  }
+
+  it('retains the selected parcel when a manual scan rejects', async () => {
+    isAdmin.value = true
+    const activeJob = { id: 7, registerId: 9, status: 15, type: 30, operation: 10 }
+    manualScanApi.getInProgress.mockResolvedValue([activeJob])
+    manualScanApi.getById.mockResolvedValue(activeJob)
+    manualScanApi.scanParcel.mockRejectedValueOnce(Object.assign(new Error('Сбой сканирования'), { status: 400 }))
+    manualScanApi.getAll.mockResolvedValue({ items: mockItems.value })
+    const wrapper = mount(WbrNParcelsWhList, { props: { registerId: 9 }, global: { stubs: globalStubs } })
+    await resolveAll()
+    wrapper.vm.selection.selectAllCurrentPage()
+    await wrapper.vm.manualScan.run(wrapper.vm.selection.selectedItems.value, 7, true)
+    await resolveAll()
+    expect(wrapper.vm.manualScan.pendingBatch.value.parcels).toHaveLength(mockItems.value.length)
+    expect(wrapper.vm.selection.selectedItems.value).toHaveLength(mockItems.value.length)
+    expect(alertError).toHaveBeenCalledWith(expect.stringContaining('Сбой сканирования'))
+    wrapper.unmount()
+  })
+
+  it.each([null, 17])('confirms the right-click selection and locks the header during scanning (box: %s)', async boxId => {
+    isAdmin.value = true
+    mockItems.value = [{ id: 10, statusId: 7 }, { id: 11, statusId: 7 }]
+    const job = { id: 7, registerId: 9, status: 15, type: 30, operation: 10 }
+    manualScanApi.getInProgress.mockResolvedValue([job])
+    manualScanApi.getAll.mockResolvedValue({ items: mockItems.value })
+    manualScanApi.scanParcel.mockResolvedValue({ parcelCount: 1, scanSource: 10 })
+    let accept, finish
+    manualScanConfirm.mockImplementationOnce(() => new Promise(resolve => { accept = resolve }))
+    manualScanApi.scanParcel.mockImplementationOnce(() => new Promise(resolve => { finish = resolve }))
+    const wrapper = mount(WbrNParcelsWhList, { props: { registerId: 9, boxId }, global: { stubs: globalStubs } })
+    await resolveAll()
+    const table = wrapper.findComponent({ name: 'v-data-table-server' })
+    table.vm.$emit('click:row', { target: null }, { item: mockItems.value[0] })
+    table.vm.$emit('click:row', { target: null, ctrlKey: true }, { item: mockItems.value[1] })
+    table.vm.$emit('contextmenu:row', { preventDefault: vi.fn() }, { item: mockItems.value[0] })
+    await resolveAll()
+    const header = wrapper.findComponent({ name: 'RegisterWhHeaderActionBar' })
+    expect(header.props('loading')).toBe(false)
+    expect(header.props('disabled')).toBe(true)
+    expect(manualScanApi.scanParcel).not.toHaveBeenCalled()
+    expect(manualScanConfirm.mock.lastCall[0].contentComponentProps.count).toBe(2)
+    expect(wrapper.find('[data-testid="parcel-scan-selection"]').exists()).toBe(false)
+    accept(true)
+    await resolveAll()
+    expect(header.props('loading')).toBe(true)
+    expect(wrapper.findAll('button[data-testid="manual-parcel-scan"]').every(button => button.element.disabled)).toBe(true)
+    finish({ parcelCount: 1, scanSource: 10 })
+    await resolveAll()
+    expect(manualScanApi.scanParcel.mock.calls).toEqual([[7, 10], [7, 11]])
+    expect(header.props('loading')).toBe(false)
+    expect(header.props('disabled')).toBe(false)
+    wrapper.unmount()
   })
 
 })

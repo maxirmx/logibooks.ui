@@ -140,8 +140,7 @@ describe('UnregisteredParcels_List.vue', () => {
     expect(alertError).toHaveBeenCalledWith(
       expect.objectContaining({ message: 'load error' }),
       expect.objectContaining({
-        fallback: 'Ошибка при загрузке незарегистрированных посылок',
-        action: expect.objectContaining({ label: 'Повторить', handler: expect.any(Function) })
+        fallback: 'Ошибка при загрузке незарегистрированных посылок'
       })
     )
   })

@@ -6,7 +6,7 @@
 import FieldError from '@/components/FieldError.vue'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { focusFirstInvalidField } from '@/helpers/form.validation.helpers.js'
-import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
+import { runWithAlert } from '@/helpers/notification.helpers.js'
 import { reportFormError } from '@/helpers/error.helpers.js'
 import { ref, computed } from 'vue'
 import router from '@/router'
@@ -52,13 +52,13 @@ let warehouse = ref({
 
 const alertStore = useAlertStore()
 
-await runWithRetryAlert(() => countriesStore.ensureLoaded(), {
+await runWithAlert(() => countriesStore.ensureLoaded(), {
   fallback: 'Не удалось загрузить страны'
 })
 
 if (!isCreate.value) {
   ;({ warehouse } = storeToRefs(warehousesStore))
-  await runWithRetryAlert(() => warehousesStore.getById(props.warehouseId), {
+  await runWithAlert(() => warehousesStore.getById(props.warehouseId), {
     fallback: 'Не удалось загрузить склад'
   })
 }

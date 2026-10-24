@@ -102,7 +102,7 @@ describe('RegisterWhHeaderActionBar.vue', () => {
     expect(labels).toEqual(['Все посылки', 'Зона 1', 'Без зоны (не найдены)'])
   })
 
-  it('reports a supported warehouse download failure once and retries its same choices', async () => {
+  it('reports a supported warehouse download failure once without alert callbacks', async () => {
     download.mockRejectedValueOnce(new Error('download failed'))
     const wrapper = mountHeaderActionBar({
       register: { id: 77, registerType: OZON_COMPANY_ID, fileName: 'register_77.xlsx' },
@@ -111,9 +111,7 @@ describe('RegisterWhHeaderActionBar.vue', () => {
     await vi.waitFor(() => expect(wrapper.findComponent(ActionButton2LStub).props('options')).toHaveLength(4))
     expect(await wrapper.findComponent(ActionButton2LStub).props('options')[3].action()).toBe(false)
     expect(alertError).toHaveBeenCalledTimes(1)
-    expect(await alertError.mock.calls[0][1].action.handler()).toBe(true)
-    expect(getDownloadFormats).toHaveBeenCalledTimes(1)
-    expect(download).toHaveBeenNthCalledWith(2, 77, 'register_77.xlsx', 3, 'Zone 3', false, 'company')
+    expect(wrapper.find('.page-alert-region__action').exists()).toBe(false)
   })
 
   it('hides export action when user is not warehouse manager plus', () => {

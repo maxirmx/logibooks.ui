@@ -144,9 +144,9 @@ This file is a part of Logibooks ui application
   height: 36px !important;
 }
 
-.scanjob-monitor-parcels-table .selected-parcel-row > td,
-.scanjob-monitor-parcels-table .selected-parcel-row .v-data-table__td {
-  background-color: #b7d5fe !important;
+.scanjob-monitor-parcels-table .monitor-followed-parcel-row {
+  outline: 2px dashed var(--primary-color);
+  outline-offset: -2px;
 }
 
 .scanjob-monitor-parcel-progress-panel {

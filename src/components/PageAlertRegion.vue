@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 import { useAlertStore } from '@/stores/alert.store.js'
 
 const props = defineProps({
@@ -13,7 +13,6 @@ const props = defineProps({
 const alertStore = useAlertStore()
 const notification = computed(() => alertStore.alert ?? null)
 const activePageHosts = computed(() => alertStore.activePageHosts ?? 0)
-const runningAction = ref(false)
 
 const isVisible = computed(
   () => notification.value !== null && (!props.fallback || activePageHosts.value === 0)
@@ -28,21 +27,6 @@ function alertClass(severity) {
       error: 'alert-danger'
     }[severity] || 'alert-info'
   )
-}
-
-async function runAction(notification) {
-  const handler = notification.action?.handler
-  if (typeof handler !== 'function' || runningAction.value) return
-
-  runningAction.value = true
-  alertStore.dismiss(notification.id)
-  try {
-    await handler()
-  } catch (error) {
-    alertStore.error(error, { fallback: 'Не удалось повторить операцию' })
-  } finally {
-    runningAction.value = false
-  }
 }
 
 onMounted(() => {
@@ -76,15 +60,6 @@ onUnmounted(() => {
         <span>{{ notification.message }}</span>
       </div>
       <div class="page-alert-region__actions">
-        <button
-          v-if="notification.action"
-          type="button"
-          class="btn btn-link page-alert-region__action"
-          :disabled="runningAction"
-          @click="runAction(notification)"
-        >
-          {{ notification.action.label || 'Повторить' }}
-        </button>
         <button
           type="button"
           class="btn btn-link close page-alert-region__close"
@@ -138,7 +113,6 @@ onUnmounted(() => {
   flex-shrink: 0;
 }
 
-.page-alert-region__action,
 .page-alert-region__close {
   padding: 0 0.35rem;
 }

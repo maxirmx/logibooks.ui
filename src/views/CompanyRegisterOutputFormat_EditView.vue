@@ -37,8 +37,7 @@ async function returnToCompany() {
     return true
   } catch (error) {
     alertStore.error(error, {
-      fallback: 'Не удалось вернуться к компании',
-      action: { label: 'Повторить', handler: returnToCompany }
+      fallback: 'Не удалось вернуться к компании'
     })
     return false
   } finally {

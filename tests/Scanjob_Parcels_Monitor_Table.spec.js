@@ -417,7 +417,7 @@ describe('Scanjob parcel monitor typed tables', () => {
       await flushPromises()
 
       expect(scanjobmonitorParcelsPage.value).toBe(2)
-      expect(wrapper.find('.selected-parcel-row').exists()).toBe(true)
+      expect(wrapper.find('.monitor-followed-parcel-row').exists()).toBe(true)
       expect(scrollIntoView).toHaveBeenCalledWith({
         behavior: 'smooth',
         block: 'center',
@@ -542,7 +542,7 @@ describe('Scanjob parcel monitor typed tables', () => {
 
       await flushPromises()
 
-      const selectedRows = wrapper.findAll('.selected-parcel-row')
+      const selectedRows = wrapper.findAll('.monitor-followed-parcel-row')
       expect(selectedRows).toHaveLength(1)
       expect(selectedRows[0].text()).toContain('P-002')
     } finally {
@@ -615,8 +615,8 @@ describe('Scanjob parcel monitor typed tables', () => {
 
       await flushPromises()
 
-      expect(wrapper.find('.selected-parcel-row').exists()).toBe(true)
-      expect(wrapper.find('.selected-parcel-row').text()).toContain('P-005')
+      expect(wrapper.find('.monitor-followed-parcel-row').exists()).toBe(true)
+      expect(wrapper.find('.monitor-followed-parcel-row').text()).toContain('P-005')
     } finally {
       wrapper?.unmount()
       scrollIntoView.mockRestore()

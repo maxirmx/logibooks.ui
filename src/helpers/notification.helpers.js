@@ -59,12 +59,12 @@ export async function buildNotificationTooltip(item) {
 }
 
 /**
- * Runs a page load and turns a rejection into one persistent, retryable message.
+ * Runs a page load and reports a rejection as one persistent message.
  * The rejection is handled here, so callers may safely use this from lifecycle hooks.
  */
-export async function runWithRetryAlert(
+export async function runWithAlert(
   operation,
-  { fallback = 'Не удалось загрузить данные', title = '', actionLabel = 'Повторить' } = {}
+  { fallback = 'Не удалось загрузить данные', title = '' } = {}
 ) {
   const alertStore = useAlertStore()
 
@@ -73,11 +73,7 @@ export async function runWithRetryAlert(
   } catch (error) {
     alertStore.error(error, {
       fallback,
-      title,
-      action: {
-        label: actionLabel,
-        handler: () => runWithRetryAlert(operation, { fallback, title, actionLabel })
-      }
+      title
     })
     return null
   }

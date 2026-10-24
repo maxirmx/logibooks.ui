@@ -12,7 +12,7 @@ import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import ActionButton from '@/components/ActionButton.vue'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
-import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
+import { runWithAlert } from '@/helpers/notification.helpers.js'
 
 const exportFeesStore = useExportFeesStore()
 const authStore = useAuthStore()
@@ -28,7 +28,7 @@ const {
 } = storeToRefs(authStore)
 
 onMounted(() =>
-  runWithRetryAlert(loadFees, {
+  runWithAlert(loadFees, {
     fallback: 'Не удалось загрузить таможенные сборы'
   })
 )

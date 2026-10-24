@@ -157,8 +157,7 @@ async function returnToProfile() {
       return false
     }
     alertStore.error(error, {
-      fallback: 'Не удалось вернуться к настройкам пользователя',
-      action: { label: 'Повторить', handler: returnToProfile }
+      fallback: 'Не удалось вернуться к настройкам пользователя'
     })
     return false
   }

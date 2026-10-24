@@ -22,7 +22,7 @@ import {
   hasAllWarehouseAccess,
   isAutomatedSystem
 } from '@/helpers/user.roles.js'
-import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
+import { runWithAlert } from '@/helpers/notification.helpers.js'
 
 const authStore = useAuthStore()
 
@@ -33,7 +33,7 @@ const alertStore = useAlertStore()
 const runningAction = ref(false)
 
 onMounted(() =>
-  runWithRetryAlert(
+  runWithAlert(
     () => Promise.all([usersStore.ensureLoaded(), warehousesStore.ensureLoaded()]),
     { fallback: 'Не удалось загрузить пользователей и склады' }
   )

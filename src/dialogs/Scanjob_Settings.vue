@@ -300,9 +300,7 @@ async function initialize() {
     } else {
       const loaded = await scanJobsStore.getById(props.scanjobId)
       if (!loaded) {
-        alertStore.error('Не удалось загрузить задание на сканирование', {
-          action: { label: 'Повторить', handler: initialize }
-        })
+        alertStore.error('Не удалось загрузить задание на сканирование')
         return
       }
       await resolveRegister(loaded.registerId ?? props.registerId)
@@ -324,8 +322,7 @@ async function initialize() {
     }
   } catch (error) {
     alertStore.error(error, {
-      fallback: 'Ошибка при инициализации формы',
-      action: { label: 'Повторить', handler: initialize }
+      fallback: 'Ошибка при инициализации формы'
     })
   } finally {
     loading.value = false

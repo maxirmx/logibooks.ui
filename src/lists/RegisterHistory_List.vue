@@ -213,8 +213,7 @@ async function loadHistory() {
   } catch (error) {
     if (requestId === latestLoadRequestId) {
       alertStore.error(error, {
-        fallback: 'Не удалось загрузить историю реестра',
-        action: { label: 'Повторить', handler: loadHistory }
+        fallback: 'Не удалось загрузить историю реестра'
       })
     }
   } finally {

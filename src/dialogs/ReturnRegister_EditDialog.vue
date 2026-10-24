@@ -153,8 +153,7 @@ async function initialize() {
   } catch (error) {
     initializationFailed.value = true
     alertStore.error(error, {
-      fallback: 'Не удалось загрузить данные для создания реестра возврата',
-      action: { label: 'Повторить', handler: initialize }
+      fallback: 'Не удалось загрузить данные для создания реестра возврата'
     })
   } finally {
     isInitializing.value = false
@@ -270,8 +269,7 @@ async function loadPairs() {
     /* v8 ignore next -- stale async response guard */
     if (requestId === pairRequestId) {
       alertStore.error(error, {
-        fallback: 'Не удалось загрузить отправителей и получателей',
-        action: { label: 'Повторить', handler: loadPairs }
+        fallback: 'Не удалось загрузить отправителей и получателей'
       })
     }
   } finally {
@@ -315,8 +313,7 @@ async function loadSourceRegisters() {
     /* v8 ignore next -- stale async response guard */
     if (requestId === registerRequestId) {
       alertStore.error(error, {
-        fallback: 'Не удалось загрузить реестры',
-        action: { label: 'Повторить', handler: loadSourceRegisters }
+        fallback: 'Не удалось загрузить реестры'
       })
     }
   } finally {

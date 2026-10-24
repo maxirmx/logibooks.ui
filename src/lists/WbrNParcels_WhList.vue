@@ -33,6 +33,9 @@ import ParcelStatusBulkChangeDialog from '@/l2/ParcelStatusBulkChangeDialog.vue'
 import ClickableCell from '@/components/ClickableCell.vue'
 import CorrectedWeightDisplay from '@/components/CorrectedWeightDisplay.vue'
 import ActionButton from '@/components/ActionButton.vue'
+import ParcelScanAction from '@/components/ParcelScanAction.vue'
+import { useParcelMultiSelect } from '@/composables/useParcelMultiSelect.js'
+import { useManualParcelScan } from '@/composables/useManualParcelScan.js'
 import {
   canClearParcelDefect,
   canSetParcelDefect,
@@ -96,6 +99,33 @@ const isComponentMounted = ref(true)
 const runningAction = ref(false)
 const isAdminUser = computed(() => Boolean(authStore.isAdmin?.value ?? authStore.isAdmin))
 const readOnly = computed(() => registersStore.item?.readOnly === true)
+const dataTableRef = ref(null)
+const scanScopeKey = computed(() => JSON.stringify([
+  props.registerId, props.boxId, authStore.parcels_filter_id,
+  parcels_wh_per_page.value, parcels_wh_sort_by.value, parcels_wh_status.value,
+  parcels_wh_check_status_projection.value, parcels_wh_zone.value, localParcelNumberSearch.value,
+  localBoxNumberSearch.value, localStickerSearch.value, localProductNameSearch.value
+]))
+const manualScan = useManualParcelScan({
+  registerId: () => props.registerId,
+  scopeKey: scanScopeKey,
+  disabled: () => loading.value || isInitializing.value || runningAction.value,
+  refresh: async () => {
+    const scope = scanScopeKey.value
+    const page = parcels_wh_page.value
+    const result = await parcelsStore.getAll(props.registerId, { showMarkedByPartner: true, boxId: props.boxId, updateStore: false })
+    if (isComponentMounted.value && scope === scanScopeKey.value && page === parcels_wh_page.value) parcelsStore.updateItems(result)
+  },
+  onScanned: id => selection.removeSelected([id])
+})
+const selection = useParcelMultiSelect({
+  items, loading, selectedParcelId: ref(null), page: parcels_wh_page, dataTableRef,
+  scopeKey: scanScopeKey,
+  onContextMenu: () => manualScan.run(selection.selectedItems.value, null, true),
+  disabled: () => isInitializing.value || runningAction.value || manualScan.locked.value
+})
+onUnmounted(selection.stop)
+
 const showParcelStatusBulkDialog = ref(false)
 
 const maxPage = computed(() =>
@@ -122,7 +152,7 @@ const pageOptions = computed(() => {
 const parcelsLoaded = useListPageBounds(parcels_wh_page, maxPage, () => !loading.value && !isInitializing.value && !unref(parcelsStore.error))
 
 const headers = computed(() => [
-  { title: '', key: 'actions', align: 'center', sortable: false, width: '108px' },
+  { title: '', key: 'actions', align: 'center', sortable: false, width: '144px' },
   { title: '№', key: 'id', align: 'start' },
   {
     title: 'Проверка',
@@ -241,7 +271,7 @@ const { triggerLoad, stop: stopFilterSync } = useDebouncedFilterSync({
 
 const { isParcelEditCellDisabled, parcelEditCellClass, openParcelEdit } = useParcelEditAccess({
   router,
-  disabled: computed(() => loading.value || isInitializing.value),
+  disabled: computed(() => loading.value || isInitializing.value || manualScan.locked.value),
   getQueryParams: () => ({
     registerId: props.registerId,
     mode: OP_MODE_WAREHOUSE,
@@ -283,8 +313,7 @@ async function initializeList() {
   } catch (error) {
     if (isComponentMounted.value) {
       alertStore.error(error, {
-        fallback: 'Ошибка при инициализации компонента',
-        action: { label: 'Повторить', handler: initializeList }
+        fallback: 'Ошибка при инициализации компонента'
       })
       parcelsStore.error = error?.message || 'Ошибка при загрузке данных'
     }
@@ -317,7 +346,7 @@ function editParcel(item) {
 }
 
 async function runParcelAction(item, action, getErrorMessage) {
-  if (readOnly.value || runningAction.value || loading.value || !item?.id) return
+  if (readOnly.value || runningAction.value || manualScan.locked.value || loading.value || !item?.id) return
 
   runningAction.value = true
   try {
@@ -370,8 +399,9 @@ function handleParcelExtIdChanged(change) {
       <RegisterWhHeaderActionBar
         :register="registersStore.item"
         :zones="ops.zones"
-        :loading="registerLoading || isInitializing"
+        :loading="registerLoading || isInitializing || manualScan.busy.value"
         icon-size="2x"
+        :disabled="runningAction || manualScan.locked.value"
         @bulk-change-parcel-status="showParcelStatusBulkDialog = true"
         @close="closeList"
       />
@@ -396,7 +426,7 @@ function handleParcelExtIdChanged(change) {
       :check-status-projection-options="checkStatusProjectionOptions"
       :zone-options="zoneOptions"
       number-label="ШК"
-      :running-action="runningAction"
+      :running-action="runningAction || manualScan.locked.value"
       :loading="loading"
       :is-initializing="isInitializing"
       :box-scope-id="props.boxId"
@@ -404,8 +434,14 @@ function handleParcelExtIdChanged(change) {
       @clear-box-scope="emit('clear-box-scope')"
     />
 
+
     <v-card class="table-card">
       <v-data-table-server
+        ref="dataTableRef"
+        :row-props="selection.getRowProps"
+        @click:row="selection.handleRowClick"
+        @contextmenu:row="selection.handleRowContextMenu"
+        :disable-sort="manualScan.locked.value"
         v-model:items-per-page="parcels_wh_per_page"
         items-per-page-text="Посылок на странице"
         :items-per-page-options="itemsPerPageOptions"
@@ -421,7 +457,8 @@ function handleParcelExtIdChanged(change) {
         class="elevation-1 single-line-table interlaced-table wbr-parcels-table"
       >
         <template #[`item.actions`]="{ item }">
-          <div class="actions-container">
+          <div class="actions-container" @click.stop>
+            <ParcelScanAction :parcels="[item]" :selection="selection" />
             <ActionButton
               :item="item"
               icon="fa-solid fa-broom"
@@ -431,7 +468,7 @@ function handleParcelExtIdChanged(change) {
               data-testid="clear-ext-id-action"
               @click="clearParcelExtId"
               :disabled="
-                readOnly || runningAction || loading || !canClearParcelExtId(item, authStore)
+                readOnly || runningAction || manualScan.locked.value || loading || !canClearParcelExtId(item, authStore)
               "
               v-if="isAdminUser"
             />
@@ -444,7 +481,7 @@ function handleParcelExtIdChanged(change) {
               data-testid="set-defect-action"
               @click="setParcelDefect"
               :disabled="
-                readOnly || runningAction || loading || !canSetParcelDefect(item, authStore)
+                readOnly || runningAction || manualScan.locked.value || loading || !canSetParcelDefect(item, authStore)
               "
             />
             <ActionButton
@@ -456,7 +493,7 @@ function handleParcelExtIdChanged(change) {
               data-testid="clear-defect-action"
               @click="clearParcelDefect"
               :disabled="
-                readOnly || runningAction || loading || !canClearParcelDefect(item, authStore)
+                readOnly || runningAction || manualScan.locked.value || loading || !canClearParcelDefect(item, authStore)
               "
             />
           </div>
@@ -572,6 +609,8 @@ function handleParcelExtIdChanged(change) {
 
       <div class="v-data-table-footer">
         <PaginationFooter
+          :disabled="manualScan.locked.value"
+          @update:page="manualScan.invalidateBatch"
           v-model:items-per-page="parcels_wh_per_page"
           v-model:page="parcels_wh_page"
           :items-per-page-options="itemsPerPageOptions"
@@ -586,7 +625,7 @@ function handleParcelExtIdChanged(change) {
       :register-id="props.registerId"
       :register="registersStore.item"
       :status-options="parcelStatusStore.parcelStatuses"
-      :disabled="readOnly || runningAction || loading || isInitializing"
+      :disabled="readOnly || runningAction || manualScan.locked.value || loading || isInitializing"
       @update:show="showParcelStatusBulkDialog = $event"
       @updated="handleParcelStatusBulkUpdated"
     />

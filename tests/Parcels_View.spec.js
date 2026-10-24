@@ -161,7 +161,7 @@ describe('Parcels_View', () => {
     wrapper.unmount()
   })
 
-  it('preserves the filter after an options failure and retries the same initialization', async () => {
+  it('preserves the filter after an options failure without alert callbacks', async () => {
     const { useAuthStore } = await import('@/stores/auth.store.js')
     const auth = useAuthStore()
     auth.user = { id: 1 }
@@ -175,11 +175,7 @@ describe('Parcels_View', () => {
     expect(wrapper.find('[data-test="wbr-list"]').exists()).toBe(false)
     expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
     expect(wrapper.get('[role="alert"]').text()).toContain('Filters unavailable')
-    await wrapper.get('.page-alert-region__action').trigger('click')
-    await flushPromises()
-    expect(getSavedFilters).toHaveBeenCalledTimes(2)
-    expect(wrapper.find('[data-test="wbr-list"]').exists()).toBe(true)
-    expect(auth.parcels_filter_id).toBe(23)
+    expect(wrapper.find('.page-alert-region__action').exists()).toBe(false)
     wrapper.unmount()
   })
 
@@ -267,7 +263,7 @@ describe('Parcels_View', () => {
       await flushPromises()
 
       expect(subscriptionOptions[0].enabled.value).toBe(false)
-    }
+  }
   )
 
   it('coalesces filtered passport updates into one authoritative refresh', async () => {
@@ -325,26 +321,29 @@ describe('Parcels_View', () => {
     }
   })
 
-  it('displays a failed live filtered refresh once and retries it', async () => {
+
+
+  it('shows a failed live filtered refresh once without alert callbacks', async () => {
     vi.useFakeTimers()
     const { useAuthStore } = await import('@/stores/auth.store.js')
     const { useParcelsStore } = await import('@/stores/parcels.store.js')
-    useAuthStore().parcels_passport_check_status = 30
-    mockGet.mockResolvedValue({ registerType: WBR_COMPANY_ID })
-    const getParcels = vi.spyOn(useParcelsStore(), 'getAll').mockRejectedValueOnce(new Error('Refresh failed'))
-      .mockResolvedValueOnce({ items: [], pagination: { totalCount: 0 } })
+    const { useAlertStore } = await import('@/stores/alert.store.js')
+    const auth = useAuthStore()
+    auth.user = { id: 1, roles: ['sr-logist'] }
+    auth.parcels_passport_check_status = 30
+    mockGet.mockResolvedValue({ registerType: WBR_COMPANY_ID, customsProcedureCode: 40 })
     const wrapper = mount(ParcelsView, { props: { id: 17 } })
     try {
       await flushPromises()
+      const parcels = useParcelsStore()
+      const getParcels = vi.spyOn(parcels, 'getAll').mockRejectedValueOnce(new Error('Live refresh unavailable'))
       subscriptionOptions[0].onUpdates({}, [{ checkCode: 'passport' }])
       await vi.runOnlyPendingTimersAsync()
       await flushPromises()
       expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-      expect(wrapper.get('[role="alert"]').text()).toContain('Refresh failed')
-      await wrapper.get('.page-alert-region__action').trigger('click')
-      await flushPromises()
-      expect(getParcels).toHaveBeenCalledTimes(2)
-      expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+      expect(wrapper.get('[role="alert"]').text()).toContain('Live refresh unavailable')
+      expect(useAlertStore().alert).not.toHaveProperty('action')
+      expect(getParcels).toHaveBeenCalledOnce()
     } finally {
       wrapper.unmount()
       vi.clearAllTimers()

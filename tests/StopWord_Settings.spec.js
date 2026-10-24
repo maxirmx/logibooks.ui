@@ -235,8 +235,7 @@ describe('StopWord_Settings.vue', () => {
       await resolveAll()
 
       expect(alertError).toHaveBeenCalledWith(error, {
-        fallback: 'Ошибка при загрузке данных стоп-слова',
-        action: expect.objectContaining({ label: 'Повторить', handler: expect.any(Function) })
+        fallback: 'Ошибка при загрузке данных стоп-слова'
       })
       expect(routerPush).not.toHaveBeenCalled()
     })

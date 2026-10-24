@@ -903,7 +903,7 @@ describe('WbrNParcel_EditDialog.vue', () => {
       error: 'parcel load failed',
       blockedByFellowItem: true
     }
-    alertRef.value = { id: 17, severity: 'error', message: 'WbrN edit alert', action: null }
+    alertRef.value = { id: 17, severity: 'error', message: 'WbrN edit alert' }
     const wrapper = await mountDialog()
 
     expect(wrapper.text()).toContain('WbrN edit alert')

@@ -194,8 +194,7 @@ async function startLiveUpdates() {
     })
   } catch (error) {
     alertStore.warning(error, {
-      fallback: 'Автоматическое обновление недоступно; используйте обновление списка',
-      action: { label: 'Повторить', handler: startLiveUpdates }
+      fallback: 'Автоматическое обновление недоступно; используйте обновление списка'
     })
   }
 }
@@ -219,8 +218,7 @@ async function initializeList() {
   } catch (error) {
     if (isComponentMounted.value) {
       alertStore.error(error, {
-        fallback: 'Ошибка при загрузке данных',
-        action: { label: 'Повторить', handler: initializeList }
+        fallback: 'Ошибка при загрузке данных'
       })
     }
   } finally {

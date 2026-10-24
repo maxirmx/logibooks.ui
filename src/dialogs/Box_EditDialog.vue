@@ -16,7 +16,7 @@ import { useBoxesStore } from '@/stores/boxes.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { focusFirstInvalidField } from '@/helpers/form.validation.helpers.js'
 import { reportFormError } from '@/helpers/error.helpers.js'
-import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
+import { runWithAlert } from '@/helpers/notification.helpers.js'
 import { buildParcelListHeading } from '@/helpers/register.heading.helpers.js'
 import { getRegisterNouns, OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 
@@ -150,7 +150,7 @@ defineExpose({
   toNumberOrNull
 })
 
-await runWithRetryAlert(loadData, {
+await runWithAlert(loadData, {
   fallback: isCreate.value ? 'Не удалось подготовить создание коробки' : 'Не удалось загрузить коробку'
 })
 

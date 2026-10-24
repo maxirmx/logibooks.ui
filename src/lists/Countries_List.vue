@@ -12,7 +12,7 @@ import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
 import { onMounted, unref } from 'vue'
 import ActionButton from '@/components/ActionButton.vue'
-import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
+import { runWithAlert } from '@/helpers/notification.helpers.js'
 
 const countriesStore = useCountriesStore()
 const alertStore = useAlertStore()
@@ -26,7 +26,7 @@ async function loadCountries() {
 }
 
 onMounted(() =>
-  runWithRetryAlert(loadCountries, {
+  runWithAlert(loadCountries, {
     fallback: 'Не удалось загрузить страны'
   })
 )

@@ -6,7 +6,7 @@
 import FieldError from '@/components/FieldError.vue'
 import { useAlertStore } from '@/stores/alert.store.js'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
-import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
+import { runWithAlert } from '@/helpers/notification.helpers.js'
 import { focusFirstInvalidField } from '@/helpers/form.validation.helpers.js'
 import { reportFormError } from '@/helpers/error.helpers.js'
 import { ref, computed } from 'vue'
@@ -168,7 +168,7 @@ defineExpose({
 })
 
 if (!isCreate.value) {
-  const loaded = await runWithRetryAlert(() => notificationsStore.getById(props.notificationId), {
+  const loaded = await runWithAlert(() => notificationsStore.getById(props.notificationId), {
     fallback: 'Не удалось загрузить нотификацию'
   })
   if (loaded) {

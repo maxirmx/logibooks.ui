@@ -4,7 +4,7 @@
 // This file is a part of Logibooks ui application
 
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
-import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
+import { runWithAlert } from '@/helpers/notification.helpers.js'
 import { onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useParcelsStore } from '@/stores/parcels.store.js'
@@ -123,7 +123,7 @@ async function loadParcelsByNumber() {
 
 onMounted(async () => {
   parcels_bn_page.value = 1
-  await runWithRetryAlert(() => parcelStatusStore.ensureLoaded(), {
+  await runWithAlert(() => parcelStatusStore.ensureLoaded(), {
     fallback: 'Не удалось загрузить статусы посылок'
   })
   if (normalizedNumber()) {

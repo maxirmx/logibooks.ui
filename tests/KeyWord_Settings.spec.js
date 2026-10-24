@@ -183,8 +183,7 @@ describe('KeyWord_Settings.vue', () => {
       await resolveAll()
 
       expect(alertError).toHaveBeenCalledWith(error, {
-        fallback: 'Ошибка при загрузке данных ключевого слова',
-        action: expect.objectContaining({ label: 'Повторить', handler: expect.any(Function) })
+        fallback: 'Ошибка при загрузке данных ключевого слова'
       })
       expect(routerPush).not.toHaveBeenCalled()
     })
@@ -327,8 +326,7 @@ describe('KeyWord_Settings.vue', () => {
       mockAlert.value = {
         id: 1,
         severity: 'success',
-        message: 'Test success message',
-        action: null
+        message: 'Test success message'
       }
 
       const wrapper = mountComponent()

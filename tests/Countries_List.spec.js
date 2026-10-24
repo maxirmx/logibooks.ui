@@ -118,8 +118,7 @@ describe('Countries_List.vue', () => {
     expect(error).toHaveBeenCalledWith(
       'bad',
       expect.objectContaining({
-        fallback: 'Не удалось загрузить страны',
-        action: expect.objectContaining({ label: 'Повторить', handler: expect.any(Function) })
+        fallback: 'Не удалось загрузить страны'
       })
     )
   })

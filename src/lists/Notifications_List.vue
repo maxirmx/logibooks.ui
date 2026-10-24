@@ -16,7 +16,7 @@ import TruncateTooltipCell from '@/components/TruncateTooltipCell.vue'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { formatNotificationDate } from '@/helpers/notification.helpers.js'
 import { mdiMagnify } from '@mdi/js'
-import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
+import { runWithAlert } from '@/helpers/notification.helpers.js'
 
 const notificationsStore = useNotificationsStore()
 const authStore = useAuthStore()
@@ -114,7 +114,7 @@ async function deleteNotification(notification) {
 }
 
 onMounted(() =>
-  runWithRetryAlert(() => notificationsStore.getAll(), {
+  runWithAlert(() => notificationsStore.getAll(), {
     fallback: 'Не удалось загрузить нотификации'
   })
 )

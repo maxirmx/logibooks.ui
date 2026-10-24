@@ -582,7 +582,7 @@ describe('Register_EditDialog', () => {
       )
     })
 
-    it('shows a metadata rejection once and retries loading before validating airports', async () => {
+    it('shows a metadata rejection once without opening validation', async () => {
       mockOps.value.transportationTypes = []
       registersStore.ensureOpsLoaded
         .mockRejectedValueOnce(new Error('Не удалось загрузить типы транспорта'))
@@ -602,14 +602,6 @@ describe('Register_EditDialog', () => {
       expect(update).not.toHaveBeenCalled()
       expect(router.push).not.toHaveBeenCalled()
 
-      await wrapper.get('.page-alert-region__action').trigger('click')
-      await vi.waitFor(() => expect(wrapper.get('.header-actions button').element.disabled).toBe(false))
-      expect(registersStore.ensureOpsLoaded).toHaveBeenCalledTimes(2)
-      expect(airportsStore.getAll).toHaveBeenCalledOnce()
-      await wrapper.get('form').trigger('submit')
-      await vi.waitFor(() => expect(wrapper.findAll('.invalid-feedback')).toHaveLength(2))
-      expect(publishError).toHaveBeenCalledOnce()
-      expect(update).not.toHaveBeenCalled()
     })
 
     it('keeps airport selections after a save rejection and retries the same update', async () => {
@@ -2203,7 +2195,7 @@ describe('Register_EditDialog', () => {
 
       const dialog = wrapper.findComponent(RegisterEditDialog)
       expect(dialog.vm.item.transportationTypeCode).toBe(1)
-    }
+  }
   )
 
   it('renders default transportation type and customs procedure in upload selectors', async () => {

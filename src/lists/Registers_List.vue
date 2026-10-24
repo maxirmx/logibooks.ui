@@ -209,8 +209,7 @@ async function initializeList() {
     if (isComponentMounted.value) {
       registersStore.error = error?.message || 'Ошибка при загрузке данных'
       alertStore.error(error, {
-        fallback: 'Ошибка при загрузке данных',
-        action: { label: 'Повторить', handler: initializeList }
+        fallback: 'Ошибка при загрузке данных'
       })
     }
   } finally {

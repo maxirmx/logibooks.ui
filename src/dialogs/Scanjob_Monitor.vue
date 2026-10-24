@@ -14,6 +14,7 @@ import { useRegistersStore } from '@/stores/registers.store.js'
 import { useScanjobsStore } from '@/stores/scanjobs.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useScanjobHeading } from '@/composables/useScanjobHeading.js'
+import { useManualParcelScan } from '@/composables/useManualParcelScan.js'
 import LocalLabelPrinting from '@/components/LocalLabelPrinting.vue'
 import { LABEL_PRINTING_KEY } from '@/helpers/label.printing.helpers.js'
 import ActionButton from '@/components/ActionButton.vue'
@@ -65,7 +66,7 @@ const { scanjobHeading, loadScanjob } = useScanjobHeading(scanjobIdRef, { isComp
 
 const printingPanel = ref(null)
 provide(LABEL_PRINTING_KEY, {
-  busy: computed(() => printingPanel.value?.busy ?? true),
+  busy: computed(() => manualScan.locked.value || (printingPanel.value?.busy ?? true)),
   print: (target) => printingPanel.value?.printParcel(target)
 })
 
@@ -108,7 +109,7 @@ const isRegisterMode = computed(() => mode.value === MODE_REGISTER)
 const isBoxMode = computed(() => mode.value === MODE_BOX)
 const isLoading = computed(() => monitorLoading.value || switchingScope.value)
 const toolbarBusy = computed(() => isLoading.value || jumpLoading.value || followUsersLoading.value ||
-  followApplyLoading.value || defectActionRunning.value || printingPanel.value?.operationInProgress)
+  followApplyLoading.value || defectActionRunning.value || manualScan.busy.value || printingPanel.value?.operationInProgress)
 const printQueue = computed(() => printingPanel.value?.queueStatus ?? { queued: 0, paused: false })
 const boxes = computed(() => visibleSnapshot.value?.boxes ?? [])
 const selectedBox = computed(() => visibleSnapshot.value?.box ?? null)
@@ -138,6 +139,23 @@ const activeRegisterItem = computed(() => {
   if (storeRegister.id !== currentRegisterId) return null
 
   return storeRegister
+})
+const manualScan = useManualParcelScan({
+  registerId, job: scanjob,
+  disabled: () => isLoading.value || defectActionRunning.value || Boolean(closedInfo.value),
+  scopeKey: () => `${props.scanjobId}:${monitorScopeKey(props.monitorScope)}`,
+  refresh: refreshCurrentScopeSnapshot
+})
+const controlsBusy = computed(() => isLoading.value || manualScan.locked.value)
+let deferredFollowEvent = null
+watch(manualScan.locked, busy => {
+  if (!busy && deferredFollowEvent) {
+    const deferred = deferredFollowEvent
+    deferredFollowEvent = null
+    handleFollowEvent(deferred.event, deferred.version).catch(error => {
+      if (isComponentMounted.value) alertStore.error(error)
+    })
+  }
 })
 const basicHeading = computed(() => {
   if (registerLoading.value || !activeRegisterItem.value) return scanjobHeading.value
@@ -183,7 +201,7 @@ const followUserOptions = computed(() => [
   }))
 ])
 const isJumpDisabled = computed(
-  () => isLoading.value || jumpLoading.value || !jumpNumber.value.trim()
+  () => controlsBusy.value || jumpLoading.value || !jumpNumber.value.trim()
 )
 
 function close() {
@@ -191,7 +209,7 @@ function close() {
 }
 
 async function handleCloseAction() {
-  if (isLoading.value) {
+  if (controlsBusy.value) {
     return
   }
 
@@ -204,7 +222,7 @@ async function handleCloseAction() {
 }
 
 function openUnregisteredParcels() {
-  if (!registerId.value) {
+  if (!registerId.value || manualScan.locked.value) {
     return
   }
 
@@ -223,7 +241,7 @@ function getFollowUserLabel(user) {
 }
 
 async function startEditor(editor) {
-  if (isLoading.value || jumpLoading.value || followApplyLoading.value) return
+  if (controlsBusy.value || jumpLoading.value || followApplyLoading.value) return
   jumpNumber.value = ''
   jumpValidation.value = {}
   draftFollowUserId.value = selectedFollowUserId.value
@@ -241,7 +259,7 @@ function cancelEditor() {
 }
 
 async function applyFollowUserSelection() {
-  if (isLoading.value || followApplyLoading.value || followUsersLoading.value) return
+  if (controlsBusy.value || followApplyLoading.value || followUsersLoading.value) return
   followApplyLoading.value = true
   selectedFollowUserId.value = toNumberOrNull(draftFollowUserId.value)
   try {
@@ -313,7 +331,7 @@ function navigateToRegisterMonitor({ replace = false } = {}) {
 }
 
 function navigateToBoxMonitor(box, { replace = false } = {}) {
-  if (!box || isLoading.value) {
+  if (!box || controlsBusy.value) {
     return Promise.resolve(false)
   }
 
@@ -374,7 +392,7 @@ function getScanJobStatusText(status) {
 
 function editParcel(item) {
   const parcelId = item?.id ?? item?.parcelId
-  if (!parcelId || !registerId.value || isLoading.value) {
+  if (!parcelId || !registerId.value || controlsBusy.value) {
     return
   }
 
@@ -396,7 +414,7 @@ async function refreshCurrentScopeSnapshot() {
 
 async function runParcelDefectAction(item, action, getErrorMessage) {
   const parcelId = item?.id ?? item?.parcelId
-  if (readOnly.value || defectActionRunning.value || isLoading.value || !parcelId) {
+  if (readOnly.value || defectActionRunning.value || controlsBusy.value || !parcelId) {
     return
   }
 
@@ -616,7 +634,7 @@ async function navigateToResolvedScope(scope, { reloadIfSame = false } = {}) {
 }
 
 async function handleJumpToNumber() {
-  if (jumpLoading.value || isLoading.value) {
+  if (jumpLoading.value || controlsBusy.value) {
     return
   }
 
@@ -735,6 +753,10 @@ async function startFollowUserSubscription({
 }
 
 async function handleFollowEvent(followEvent, version = scopeVersion.value) {
+  if (manualScan.locked.value) {
+    deferredFollowEvent = { event: followEvent, version }
+    return
+  }
   const selectedUserId = toNumberOrNull(selectedFollowUserId.value)
   if (
     !isComponentMounted.value ||
@@ -918,8 +940,7 @@ async function initializeMonitor() {
   } catch (error) {
     if (isComponentMounted.value) {
       alertStore.error(error, {
-        fallback: 'Не удалось открыть монитор задания на сканирование',
-        action: { label: 'Повторить', handler: initializeMonitor }
+        fallback: 'Не удалось открыть монитор задания на сканирование'
       })
     }
   }
@@ -980,7 +1001,7 @@ defineExpose({
         <div v-if="toolbarBusy" class="header-actions header-actions-group" data-testid="scanjob-monitor-operation-loading" role="status" aria-label="Операция выполняется">
           <span class="spinner-border spinner-border-m"></span>
         </div>
-        <LocalLabelPrinting ref="printingPanel" :scan-job-id="props.scanjobId" :user-id="selectedFollowUserId"
+        <LocalLabelPrinting :disabled="manualScan.locked.value" ref="printingPanel" :scan-job-id="props.scanjobId" :user-id="selectedFollowUserId"
           :active="scanjob?.status === SCAN_JOB_STATUS_IN_PROGRESS && !closedInfo" />
         <div class="header-actions header-actions-group scanjob-monitor-navigation">
           <form v-if="activeEditor === 'jump'" class="scanjob-monitor-editor" data-testid="scanjob-monitor-jump" @submit.prevent="handleJumpToNumber">
@@ -988,7 +1009,7 @@ defineExpose({
               <v-text-field ref="jumpInput" id="scanjob-monitor-jump-input" v-model="jumpNumber"
                 density="compact" class="scanjob-monitor-editor-input" label="Перейти к посылке или коробке"
                 variant="outlined" hide-details autocomplete="off" data-testid="scanjob-monitor-jump-input"
-                :disabled="isLoading || jumpLoading" @keydown.enter.prevent="handleJumpToNumber"
+                :disabled="controlsBusy || jumpLoading" @keydown.enter.prevent="handleJumpToNumber"
                 @keydown.esc.prevent.stop="cancelEditor" />
               <ActionButton
                 :item="{}"
@@ -1007,7 +1028,7 @@ defineExpose({
                 tooltip-text="Отменить"
                 aria-label="Отменить переход"
                 data-testid="scanjob-monitor-jump-cancel"
-                :disabled="isLoading || jumpLoading"
+                :disabled="controlsBusy || jumpLoading"
                 @click="cancelEditor"
               />
             </div>
@@ -1015,7 +1036,7 @@ defineExpose({
           </form>
           <ActionButton v-else :item="{}" icon="fa-solid fa-angles-right" icon-size="2x"
             tooltip-text="Перейти к посылке или коробке" aria-label="Перейти к посылке или коробке"
-            data-testid="scanjob-monitor-jump-open" :disabled="isLoading || followApplyLoading" @click="startEditor('jump')" />
+            data-testid="scanjob-monitor-jump-open" :disabled="controlsBusy || followApplyLoading" @click="startEditor('jump')" />
           <ActionButton
             v-if="!isBoxMode"
             :item="{}"
@@ -1024,7 +1045,7 @@ defineExpose({
             tooltip-text="Стикеры не в реестре"
             aria-label="Стикеры не в реестре"
             data-testid="scanjob-monitor-unregistered-action"
-            :disabled="!registerId"
+            :disabled="!registerId || manualScan.locked.value"
             @click="openUnregisteredParcels"
           />
         </div>
@@ -1032,7 +1053,7 @@ defineExpose({
           <div v-if="activeEditor === 'follow'" class="scanjob-monitor-editor-row">
             <v-select ref="followInput" v-model="draftFollowUserId" :items="followUserOptions" item-title="title" item-value="value"
               density="compact" variant="outlined" class="scanjob-monitor-editor-input" label="Следить за сканером"
-              hide-details :disabled="isLoading || followUsersLoading || followApplyLoading"
+              hide-details :disabled="controlsBusy || followUsersLoading || followApplyLoading"
               data-testid="scanjob-monitor-follow-user-select" @keydown.esc.prevent.stop="clearFollowUserSelection" />
             <ActionButton
               :item="{}"
@@ -1041,7 +1062,7 @@ defineExpose({
               tooltip-text="Применить выбор сканера"
               aria-label="Применить выбор сканера"
               data-testid="scanjob-monitor-follow-user-apply"
-              :disabled="isLoading || followUsersLoading || followApplyLoading"
+              :disabled="controlsBusy || followUsersLoading || followApplyLoading"
               @click="applyFollowUserSelection"
             />
             <ActionButton
@@ -1051,14 +1072,14 @@ defineExpose({
               tooltip-text="Отменить"
               aria-label="Отменить выбор сканера"
               data-testid="scanjob-monitor-follow-user-cancel"
-              :disabled="isLoading || followApplyLoading"
+              :disabled="controlsBusy || followApplyLoading"
               @click="cancelEditor"
             />
           </div>
           <ActionButton v-else :item="{}" icon="fa-solid fa-magnifying-glass-plus" icon-size="2x"
             :variant="followSubscriptionActive ? 'green' : 'default'"
             tooltip-text="Следить за сканером" aria-label="Следить за сканером" data-testid="scanjob-monitor-follow-user-open"
-            :disabled="isLoading || followUsersLoading || jumpLoading" @click="startEditor('follow')" />
+            :disabled="controlsBusy || followUsersLoading || jumpLoading" @click="startEditor('follow')" />
         </div>
         <div class="header-actions header-actions-group">
           <ActionButton
@@ -1068,7 +1089,7 @@ defineExpose({
             tooltip-text="Закрыть"
             aria-label="Закрыть"
             data-testid="scanjob-monitor-close-action"
-            :disabled="isLoading"
+            :disabled="controlsBusy"
             @click="handleCloseAction"
           />
         </div>

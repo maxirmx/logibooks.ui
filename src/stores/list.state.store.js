@@ -8,11 +8,9 @@ import { reportError } from '@/helpers/error.helpers.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 
 export const useListStateStore = defineStore('listState', () => {
-  const session = createSessionListState((error, retry) => {
+  const session = createSessionListState((error) => {
     reportError(error, { context: 'list state persistence' })
-    useAlertStore().error('Не удалось сохранить или восстановить настройки списков', {
-      action: { label: 'Повторить', handler: retry }
-    })
+    useAlertStore().error('Не удалось сохранить или восстановить настройки списков')
   })
   return { setUser: session.setUser, bind: session.bind, persist: session.persist }
 })

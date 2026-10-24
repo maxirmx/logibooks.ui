@@ -56,8 +56,7 @@ async function load() {
       return false
     }
     alertStore.error(error, {
-      fallback: 'Не удалось загрузить форматы выгрузки',
-      action: { label: 'Повторить', handler: load }
+      fallback: 'Не удалось загрузить форматы выгрузки'
     })
     return false
   } finally {
@@ -71,8 +70,7 @@ async function edit(registerType) {
     return true
   } catch (error) {
     alertStore.error(error, {
-      fallback: 'Не удалось открыть формат выгрузки',
-      action: { label: 'Повторить', handler: () => edit(registerType) }
+      fallback: 'Не удалось открыть формат выгрузки'
     })
     return false
   }
@@ -94,8 +92,7 @@ async function removeConfirmed(registerType) {
       return false
     }
     alertStore.error(error, {
-      fallback: 'Не удалось удалить формат выгрузки',
-      action: { label: 'Повторить', handler: () => removeConfirmed(registerType) }
+      fallback: 'Не удалось удалить формат выгрузки'
     })
     return false
   } finally {
@@ -121,8 +118,7 @@ async function remove(registerType) {
       return false
     }
     alertStore.error(error, {
-      fallback: 'Не удалось подтвердить удаление формата',
-      action: { label: 'Повторить', handler: () => remove(registerType) }
+      fallback: 'Не удалось подтвердить удаление формата'
     })
     return false
   }

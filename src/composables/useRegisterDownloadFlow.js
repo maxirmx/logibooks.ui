@@ -32,8 +32,7 @@ export function useRegisterDownloadFlow(registersStore, alertStore) {
     } catch (error) {
       if (disposed || request !== formatRequest) return
       alertStore.error(error, {
-        fallback: 'Не удалось получить доступные форматы выгрузки',
-        action: { label: 'Повторить', handler: () => loadFormats(register) }
+        fallback: 'Не удалось получить доступные форматы выгрузки'
       })
     }
   }
@@ -73,8 +72,7 @@ export function useRegisterDownloadFlow(registersStore, alertStore) {
         return false
       }
       alertStore.error(error, {
-        fallback: 'Не удалось выгрузить реестр',
-        action: { label: 'Повторить', handler: () => runCaptured(request) }
+        fallback: 'Не удалось выгрузить реестр'
       })
       return false
     } finally {

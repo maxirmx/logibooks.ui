@@ -1186,4 +1186,16 @@ describe('manual scan API methods', () => {
     await expect(store.scanParcel(7, 21)).rejects.toBe(failure)
     expect(store.error).toBe(failure)
   })
+  it('scans the exact box and propagates failures', async () => {
+    const store = useScanjobsStore()
+    const result = { parcelCount: 0, boxCount: 1, scanSource: 20 }
+    fetchWrapper.post.mockResolvedValueOnce(result)
+    expect(await store.scanBox(7, 21)).toBe(result)
+    expect(fetchWrapper.post).toHaveBeenCalledWith(apiUrl + '/scanjobs/7/boxes/21/scan', {})
+    const failure = Object.assign(new Error('Изменения запрещены'), { status: 409 })
+    fetchWrapper.post.mockRejectedValueOnce(failure)
+    await expect(store.scanBox(7, 21)).rejects.toBe(failure)
+    expect(store.error).toBe(failure)
+  })
+
 })

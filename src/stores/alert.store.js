@@ -40,10 +40,12 @@ export const useAlertStore = defineStore('alert', () => {
   function publish(severity, value, rawOptions = {}) {
     const options = normalizeOptions(rawOptions)
     const message =
-      severity === 'error'
+      severity === 'error' || severity === 'warning' || typeof value !== 'string'
         ? getErrorMessage(value, options.fallback)
-        : getErrorMessage(value, options.fallback || 'Сообщение недоступно')
-    const title = typeof options.title === 'string' ? options.title.trim() : ''
+        : value.trim() || 'Сообщение недоступно'
+    const title = typeof options.title === 'string' && options.title.trim()
+      ? getErrorMessage(options.title, severity === 'warning' ? 'Предупреждение' : 'Ошибка')
+      : ''
     const timeout = options.timeout === undefined ? DEFAULT_TIMEOUTS[severity] : options.timeout
 
     const notification = {

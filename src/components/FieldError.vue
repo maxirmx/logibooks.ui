@@ -3,6 +3,8 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
+import { getErrorMessage } from '@/helpers/error.helpers.js'
+
 defineProps({
   name: { type: String, required: true },
   errors: { type: Object, default: () => ({}) }
@@ -11,6 +13,6 @@ defineProps({
 
 <template>
   <div v-if="errors?.[name]" class="invalid-feedback d-block" role="alert">
-    {{ errors[name] }}
+    {{ getErrorMessage(errors[name], 'Некорректное значение') }}
   </div>
 </template>

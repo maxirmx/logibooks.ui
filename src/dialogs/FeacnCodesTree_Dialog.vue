@@ -38,7 +38,7 @@ async function fileSelected(file) {
     await store.upload(file)
     treeKey.value += 1
   } catch (error) {
-    alertStore.error('Ошибка при загрузке файла: ' + (error.message || 'Неизвестная ошибка'))
+    alertStore.error(error, { fallback: 'Ошибка при загрузке файла' })
   } finally {
     uploading.value = false
     if (fileInput.value) fileInput.value.value = ''

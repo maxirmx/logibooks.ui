@@ -186,8 +186,8 @@ describe('Parcel_EditView.vue', () => {
   })
 
   it('closes a failed register page with navigation context and reports navigation failures', async () => {
-    mockGet.mockRejectedValue(new Error('Register unavailable'))
-    router.push.mockRejectedValueOnce(new Error('Close failed')).mockResolvedValue()
+    mockGet.mockRejectedValue(new Error('Реестр недоступен'))
+    router.push.mockRejectedValueOnce(new Error('Ошибка закрытия карточки')).mockResolvedValue()
     const wrapper = mount(ParcelEditView, {
       props: { id: 3, registerId: 12, mode: OP_MODE_WAREHOUSE, returnUrl: '/scanjobs/42/monitor', boxId: 17 },
       global: { stubs: commonStubs }
@@ -195,7 +195,7 @@ describe('Parcel_EditView.vue', () => {
     await flushPromises()
     await wrapper.get('button').trigger('click')
     await flushPromises()
-    expect(wrapper.get('[role="alert"]').text()).toContain('Close failed')
+    expect(wrapper.get('[role="alert"]').text()).toContain('Ошибка закрытия карточки')
     await wrapper.get('button').trigger('click')
     await flushPromises()
     expect(router.push).toHaveBeenCalledWith('/scanjobs/42/monitor')

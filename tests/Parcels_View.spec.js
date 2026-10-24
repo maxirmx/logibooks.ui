@@ -166,7 +166,7 @@ describe('Parcels_View', () => {
     const auth = useAuthStore()
     auth.user = { id: 1 }
     auth.setParcelFilterId(23)
-    getSavedFilters.mockRejectedValueOnce(new Error('Filters unavailable'))
+    getSavedFilters.mockRejectedValueOnce(new Error('Фильтры недоступны'))
       .mockResolvedValueOnce([{ id: 23, name: 'Exclude issues' }])
     mockGet.mockResolvedValue({ registerType: WBR_COMPANY_ID })
     const wrapper = mount(ParcelsView, { props: { id: 1 } })
@@ -174,7 +174,7 @@ describe('Parcels_View', () => {
     expect(auth.parcels_filter_id).toBe(23)
     expect(wrapper.find('[data-test="wbr-list"]').exists()).toBe(false)
     expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-    expect(wrapper.get('[role="alert"]').text()).toContain('Filters unavailable')
+    expect(wrapper.get('[role="alert"]').text()).toContain('Фильтры недоступны')
     expect(wrapper.find('.page-alert-region__action').exists()).toBe(false)
     wrapper.unmount()
   })
@@ -336,12 +336,12 @@ describe('Parcels_View', () => {
     try {
       await flushPromises()
       const parcels = useParcelsStore()
-      const getParcels = vi.spyOn(parcels, 'getAll').mockRejectedValueOnce(new Error('Live refresh unavailable'))
+      const getParcels = vi.spyOn(parcels, 'getAll').mockRejectedValueOnce(new Error('Обновление недоступно'))
       subscriptionOptions[0].onUpdates({}, [{ checkCode: 'passport' }])
       await vi.runOnlyPendingTimersAsync()
       await flushPromises()
       expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-      expect(wrapper.get('[role="alert"]').text()).toContain('Live refresh unavailable')
+      expect(wrapper.get('[role="alert"]').text()).toContain('Обновление недоступно')
       expect(useAlertStore().alert).not.toHaveProperty('action')
       expect(getParcels).toHaveBeenCalledOnce()
     } finally {
@@ -383,7 +383,7 @@ describe('Parcels_View', () => {
       await flushPromises()
 
       parcels.updateItems({ items: [{ id: 202 }], pagination: { totalCount: 7 } })
-      useAlertStore().error('Current page alert')
+      useAlertStore().error('Сообщение текущей страницы')
       destination = mount(PageAlertRegion, { global: { plugins: [getActivePinia()] } })
       const failure = new Error('Old refresh failed')
       finish(rejected ? failure : {
@@ -393,7 +393,7 @@ describe('Parcels_View', () => {
 
       expect(parcels.items.map(item => item.id)).toEqual([202])
       expect(parcels.totalCount).toBe(7)
-      expect(destination.get('[role="alert"]').text()).toContain('Current page alert')
+      expect(destination.get('[role="alert"]').text()).toContain('Сообщение текущей страницы')
       expect(destination.text()).not.toContain('Old refresh failed')
       expect(destination.text()).not.toContain('Фильтр сброшен')
       if (rejected) expect(reportError).toHaveBeenCalledExactlyOnceWith(failure, {
@@ -450,12 +450,12 @@ describe('Parcels_View', () => {
     if (context === 'register') await wrapper.setProps({ id: 18 })
     else if (context === 'unmount') wrapper.unmount()
     await flushPromises()
-    useAlertStore().error('Current page alert')
+    useAlertStore().error('Сообщение текущей страницы')
     const destination = mount(PageAlertRegion, { global: { plugins: [getActivePinia()] } })
     rejectRegister(failure)
     await result
     await flushPromises()
-    expect(destination.get('[role="alert"]').text()).toContain('Current page alert')
+    expect(destination.get('[role="alert"]').text()).toContain('Сообщение текущей страницы')
     if (context === 'current') expect(reportError).not.toHaveBeenCalled()
     else expect(reportError).toHaveBeenCalledExactlyOnceWith(failure, {
       context: 'parcel passport refresh after disposal or replacement'
@@ -489,7 +489,7 @@ describe('Parcels_View', () => {
   })
 
   it.each([
-    ['a string rejection', 'register load failed', 'register load failed'],
+    ['a string rejection', 'Ошибка загрузки реестра', 'Ошибка загрузки реестра'],
     ['an unknown rejection shape', {}, 'Не удалось загрузить список посылок']
   ])('renders a safe register load error for %s', async (_case, rejection, expectedMessage) => {
     mockGet.mockRejectedValueOnce(rejection)
@@ -556,7 +556,7 @@ describe('Parcels_View', () => {
       fullPath: '/registers/10/parcels?mode=modeWarehouse&boxId=17&boxCode=BOX-17',
       query
     }
-    replaceMock.mockRejectedValueOnce(new Error('replace failed'))
+    replaceMock.mockRejectedValueOnce(new Error('Ошибка смены страницы'))
     const wrapper = mount(ParcelsView, {
       props: { id: 10, mode: OP_MODE_WAREHOUSE, boxId: 17, boxCode: 'BOX-17' }
     })
@@ -566,7 +566,7 @@ describe('Parcels_View', () => {
     await flushPromises()
 
     expect(currentRouteMock.value.query).toBe(query)
-    expect(useAlertStore().alert.message).toBe('replace failed')
+    expect(useAlertStore().alert.message).toBe('Ошибка смены страницы')
   })
 
   it('ignores a clear-scope event when the parcel list is not scoped', async () => {
@@ -702,7 +702,7 @@ describe('Parcels_View', () => {
         '/registers/321/parcels?mode=modeWarehouse&boxId=17&boxCode=BOX-17&returnUrl=/registers/321/boxes',
       query
     }
-    pushMock.mockRejectedValueOnce(new Error('close failed'))
+    pushMock.mockRejectedValueOnce(new Error('Ошибка закрытия'))
     const wrapper = mount(ParcelsView, {
       props: {
         id: 321,
@@ -718,6 +718,6 @@ describe('Parcels_View', () => {
     await flushPromises()
 
     expect(currentRouteMock.value.query).toBe(query)
-    expect(useAlertStore().alert.message).toBe('close failed')
+    expect(useAlertStore().alert.message).toBe('Ошибка закрытия')
   })
 })

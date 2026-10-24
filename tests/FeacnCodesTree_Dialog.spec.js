@@ -6,12 +6,14 @@
 import { mount, flushPromises } from '@vue/test-utils'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ref } from 'vue'
+import { createPinia, setActivePinia } from 'pinia'
 import FeacnCodesTree_Dialog from '@/dialogs/FeacnCodesTree_Dialog.vue'
 import { vuetifyStubs } from './helpers/test-utils.js'
 
 const uploadMock = vi.fn()
 const alertSuccessMock = vi.fn()
 const alertErrorMock = vi.fn()
+let realAlertStore = null
 
 // Mock Pinia's storeToRefs to return the mock values
 vi.mock('pinia', async () => {
@@ -53,7 +55,7 @@ vi.mock('@/stores/auth.store.js', () => ({
 }))
 
 vi.mock('@/stores/alert.store.js', () => ({
-  useAlertStore: () => mockAlertStore
+  useAlertStore: () => realAlertStore ?? mockAlertStore
 }))
 
 const globalStubs = {
@@ -75,6 +77,7 @@ const globalStubs = {
 describe('FeacnCodesTree_Dialog.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    realAlertStore = null
   })
 
   function createWrapper() {
@@ -94,8 +97,23 @@ describe('FeacnCodesTree_Dialog.vue', () => {
     await flushPromises()
 
     expect(uploadMock).toHaveBeenCalledWith(file)
-    expect(alertErrorMock).toHaveBeenCalledWith('Ошибка при загрузке файла: Upload failed')
+    expect(alertErrorMock).toHaveBeenCalledWith(error, { fallback: 'Ошибка при загрузке файла' })
     expect(wrapper.vm.uploading).toBe(false)
+  })
+
+  it('shows one Russian upload failure and releases the spinner', async () => {
+    setActivePinia(createPinia())
+    const { useAlertStore } = await vi.importActual('@/stores/alert.store.js')
+    realAlertStore = useAlertStore()
+    uploadMock.mockRejectedValueOnce(new Error('Unexpected library failure'))
+    const wrapper = createWrapper()
+    await wrapper.vm.fileSelected(new File(['content'], 'ACME Logistics.xlsx'))
+    await flushPromises()
+    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+    expect(wrapper.get('[role="alert"]').text()).toContain('Ошибка при загрузке файла')
+    expect(wrapper.text()).not.toContain('Unexpected library failure')
+    expect(wrapper.vm.uploading).toBe(false)
+    wrapper.unmount()
   })
 
   it('opens file dialog when button is clicked', async () => {

@@ -95,9 +95,7 @@ async function fileSelected(files) {
     // Clear cached tooltips since data may have changed
     clearFeacnTooltipCache()
   } catch (error) {
-    alertStore.error(
-      'Ошибка при загрузке файла с ключевыми словами. ' + (error.message ? error.message : '')
-    )
+    alertStore.error(error, { fallback: 'Ошибка при загрузке файла с ключевыми словами' })
   } finally {
     if (fileInput.value) {
       fileInput.value.value = null

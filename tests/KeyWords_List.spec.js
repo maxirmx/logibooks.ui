@@ -7,6 +7,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
+import { createPinia, setActivePinia } from 'pinia'
 import KeyWordsList from '@/lists/KeyWords_List.vue'
 import { vuetifyStubs } from './helpers/test-utils.js'
 import { roleAdmin } from '@/helpers/user.roles.js'
@@ -25,6 +26,7 @@ const mockError = vi.hoisted(() => vi.fn())
 const mockSuccess = vi.hoisted(() => vi.fn())
 const mockAlert = ref(null)
 const mockDismiss = vi.hoisted(() => vi.fn())
+let realAlertStore = null
 
 // Mock router
 vi.mock('@/router', () => ({
@@ -83,7 +85,7 @@ vi.mock('@/stores/auth.store.js', () => ({
 }))
 
 vi.mock('@/stores/alert.store.js', () => ({
-  useAlertStore: () => ({
+  useAlertStore: () => realAlertStore ?? ({
     get alert() {
       return mockAlert.value
     },
@@ -182,6 +184,7 @@ describe('KeyWords_List.vue', () => {
   beforeEach(() => {
     // Reset all mocks
     vi.clearAllMocks()
+    realAlertStore = null
 
     // Reset reactive data
     mockKeyWords.value = [
@@ -360,8 +363,23 @@ describe('KeyWords_List.vue', () => {
       await wrapper.vm.fileSelected([mockFile])
 
       expect(mockError).toHaveBeenCalledWith(
-        expect.stringMatching(/^Ошибка при загрузке файла с ключевыми словами. /)
+        { message: '413 Payload Too Large' },
+        { fallback: 'Ошибка при загрузке файла с ключевыми словами' }
       )
+    })
+
+    it('shows one Russian upload failure with the real alert presenter', async () => {
+      wrapper.unmount()
+      setActivePinia(createPinia())
+      const { useAlertStore } = await vi.importActual('@/stores/alert.store.js')
+      realAlertStore = useAlertStore()
+      uploadKeyWords.mockRejectedValueOnce(new Error('Unexpected library failure'))
+      wrapper = mount(KeyWordsList, { global: { stubs: vuetifyStubs } })
+      await wrapper.vm.fileSelected([new File(['content'], 'Packing list.xlsx')])
+      await wrapper.vm.$nextTick()
+      expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+      expect(wrapper.get('[role="alert"]').text()).toContain('Ошибка при загрузке файла с ключевыми словами')
+      expect(wrapper.text()).not.toContain('Unexpected library failure')
     })
 
   })

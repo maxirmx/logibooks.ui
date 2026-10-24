@@ -594,12 +594,12 @@ describe('Scanjob_Monitor.vue', () => {
   it('keeps a failed scanner selection open and retries the same scanner with one subscription per attempt', async () => {
     const wrapper = mount(ScanjobMonitor, { props: { scanjobId: 42 }, global: { stubs: monitorGlobalStubs } })
     await flushPromises()
-    startMonitorFollowUser.mockRejectedValueOnce(new Error('scanner unavailable'))
+    startMonitorFollowUser.mockRejectedValueOnce(new Error('Сканер недоступен'))
     const selection = await getFollowUserSelect(wrapper)
     selection.vm.$emit('update:modelValue', 17)
     await wrapper.get('[data-testid="scanjob-monitor-follow-user-apply"]').trigger('click')
     await flushPromises()
-    expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain('scanner unavailable')
+    expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain('Сканер недоступен')
     expect(alertError).toHaveBeenCalledTimes(1)
     expect((await getFollowUserSelect(wrapper)).props('modelValue')).toBe(17)
     expect(setScanjobMonitorFollowUserId).not.toHaveBeenCalled()
@@ -620,15 +620,15 @@ describe('Scanjob_Monitor.vue', () => {
     await flushPromises()
     const selection = await getFollowUserSelect(wrapper)
     selection.vm.$emit('update:modelValue', 17)
-    clearMonitorFollowUser.mockRejectedValueOnce(new Error('stop failed'))
+    clearMonitorFollowUser.mockRejectedValueOnce(new Error('Ошибка остановки'))
     await wrapper.get('[data-testid="scanjob-monitor-follow-user-apply"]').trigger('click')
     await flushPromises()
-    expect(wrapper.get('[role="alert"]').text()).toContain('stop failed')
+    expect(wrapper.get('[role="alert"]').text()).toContain('Ошибка остановки')
     expect(startMonitorFollowUser).not.toHaveBeenCalled()
-    setScanjobMonitorFollowUserId.mockImplementationOnce(() => { throw new Error('save failed') })
+    setScanjobMonitorFollowUserId.mockImplementationOnce(() => { throw new Error('Ошибка сохранения') })
     await wrapper.get('[data-testid="scanjob-monitor-follow-user-apply"]').trigger('click')
     await flushPromises()
-    expect(wrapper.get('[role="alert"]').text()).toContain('save failed')
+    expect(wrapper.get('[role="alert"]').text()).toContain('Ошибка сохранения')
     expect((await getFollowUserSelect(wrapper)).props('modelValue')).toBe(17)
     await wrapper.get('[data-testid="scanjob-monitor-follow-user-apply"]').trigger('click')
     await flushPromises()
@@ -988,7 +988,7 @@ describe('Scanjob_Monitor.vue', () => {
 
   it('reports follow subscription errors for selected user', async () => {
     persistedFollowUserId.value = 17
-    startMonitorFollowUser.mockRejectedValueOnce({ message: 'follow failed' })
+    startMonitorFollowUser.mockRejectedValueOnce({ message: 'Ошибка наблюдения за оператором' })
 
     const wrapper = mount(ScanjobMonitor, {
       props: { scanjobId: 42 },
@@ -997,8 +997,8 @@ describe('Scanjob_Monitor.vue', () => {
 
     await flushPromises()
 
-    expect(alertError).toHaveBeenCalledWith('follow failed')
-    expect(wrapper.get('[role="alert"]').text()).toContain('follow failed')
+    expect(alertError).toHaveBeenCalledWith('Ошибка наблюдения за оператором')
+    expect(wrapper.get('[role="alert"]').text()).toContain('Ошибка наблюдения за оператором')
     expect(wrapper.get('button[data-testid="scanjob-monitor-follow-user-open"]').classes()).not.toContain('anti-btn-green')
   })
 

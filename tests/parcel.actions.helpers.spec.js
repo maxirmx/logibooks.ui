@@ -53,14 +53,14 @@ describe('parcel actions helpers', () => {
       const error = {
         response: {
           data: {
-            message: 'Validation failed'
+            message: 'Ошибка проверки'
           }
         }
       }
       mockParcelsStore.update.mockRejectedValue(error)
 
       await validateParcelData(mockValues, mockItem, mockParcelsStore, false)
-      expect(mockParcelsStore.error).toBe('Validation failed')
+      expect(mockParcelsStore.error).toBe('Ошибка проверки')
     })
 
     it('does not validate or reload when guarded update is cancelled', async () => {
@@ -95,7 +95,7 @@ describe('parcel actions helpers', () => {
 
   describe('approveParcel', () => {
     it('should handle approval errors with notification', async () => {
-      const error = new Error('Approval failed')
+      const error = new Error('Ошибка согласования')
       mockParcelsStore.approve.mockRejectedValue(error)
 
       await approveParcel(
@@ -104,21 +104,21 @@ describe('parcel actions helpers', () => {
         mockParcelsStore,
         ParcelApprovalMode.ApproveWithNotification
       )
-      expect(mockParcelsStore.error).toBe('Approval failed')
+      expect(mockParcelsStore.error).toBe('Ошибка согласования')
     })
 
     it('should handle approval errors with API message', async () => {
       const error = {
         response: {
           data: {
-            message: 'Custom approval error'
+            message: 'Ошибка согласования посылки'
           }
         }
       }
       mockParcelsStore.approve.mockRejectedValue(error)
 
       await approveParcel(mockValues, mockItem, mockParcelsStore)
-      expect(mockParcelsStore.error).toBe('Custom approval error')
+      expect(mockParcelsStore.error).toBe('Ошибка согласования посылки')
     })
 
     it('does not approve or reload when guarded update is cancelled', async () => {
@@ -163,7 +163,7 @@ describe('parcel actions helpers', () => {
     })
 
     it('should handle generate XML errors with default message', async () => {
-      mockParcelsStore.generate.mockRejectedValue(new Error('Network error'))
+      mockParcelsStore.generate.mockRejectedValue(new Error('Ошибка подключения к сети'))
 
       await generateXml(mockItem, mockParcelsStore, 'test-file')
 

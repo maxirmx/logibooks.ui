@@ -74,11 +74,11 @@ describe('live category marker', () => {
     wrapper.unmount()
   })
   it.each(['get', 'post'])('shows %s failure once, preserves the draft and retries on next change', async method => {
-    fetchWrapper[method].mockRejectedValueOnce(new Error('Category check failed'))
+    fetchWrapper[method].mockRejectedValueOnce(new Error('Ошибка проверки категории'))
     const wrapper = createWrapper()
     await flushPromises()
     expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-    expect(wrapper.get('[role="alert"]').text()).toContain('Category check failed')
+    expect(wrapper.get('[role="alert"]').text()).toContain('Ошибка проверки категории')
     expect(wrapper.get('input').element.value).toBe(code)
     expect(wrapper.find(marker).exists()).toBe(false)
     await wrapper.get('input').setValue('')

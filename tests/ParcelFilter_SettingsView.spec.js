@@ -67,12 +67,12 @@ describe('ParcelFilter_SettingsView', () => {
       wrapper.unmount()
       destination = mount(PageAlertRegion, { global: { plugins: [pinia] } })
     }
-    alertStore.error('Current page alert')
+    alertStore.error('Сообщение текущей страницы')
     await flushPromises()
     const failure = new Error('Abandoned editor navigation')
     rejectNavigation(failure)
     await flushPromises()
-    expect(destination.get('[role="alert"]').text()).toContain('Current page alert')
+    expect(destination.get('[role="alert"]').text()).toContain('Сообщение текущей страницы')
     expect(destination.text()).not.toContain('Abandoned editor navigation')
     expect(reportError).toHaveBeenCalledWith(failure, { context: 'parcel filter profile navigation after editor change' })
     if (change === 'unmount') {

@@ -128,16 +128,16 @@ describe('parcels store', () => {
 
   it.each([true, false])('preserves an existing filter when list or validation fails (validationExists=%s)', async exists => {
     mockAuthStore.parcels_filter_id = 23
-    fetchWrapper.get.mockReset().mockRejectedValueOnce(Object.assign(new Error('Register unavailable'), { status: 404 }))
+    fetchWrapper.get.mockReset().mockRejectedValueOnce(Object.assign(new Error('Реестр недоступен'), { status: 404 }))
     if (exists) fetchWrapper.get.mockResolvedValueOnce({ id: 23 })
-    else fetchWrapper.get.mockRejectedValueOnce(new Error('Validation unavailable'))
+    else fetchWrapper.get.mockRejectedValueOnce(new Error('Проверка недоступна'))
     const wrapper = mount(PageAlertRegion)
     const alerts = useAlertStore()
     const error = vi.spyOn(alerts, 'error')
     await loadParcels(1, useParcelsStore(), ref(true), alerts)
     expect(mockAuthStore.parcels_filter_id).toBe(23)
     expect(error).toHaveBeenCalledOnce()
-    expect(wrapper.text()).toContain(exists ? 'Register unavailable' : 'Validation unavailable')
+    expect(wrapper.text()).toContain(exists ? 'Реестр недоступен' : 'Проверка недоступна')
     expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
     wrapper.unmount()
   })
@@ -500,7 +500,7 @@ describe('parcels store', () => {
       store.item = { id: 5, postingNumber: 'P5', tnVed: 'old', matchesExportFeeCategory: true }
       store.items = [{ ...store.item }]
       fetchWrapper.put.mockResolvedValue(undefined)
-      fetchWrapper.get.mockRejectedValueOnce(new Error('category refresh failed'))
+      fetchWrapper.get.mockRejectedValueOnce(new Error('Ошибка обновления категории'))
         .mockResolvedValueOnce({ id: 5, matchesExportFeeCategory: false })
       const showList = ref(false)
       const save = async () => {
@@ -519,7 +519,7 @@ describe('parcels store', () => {
       await wrapper.get('button').trigger('click')
       await flushPromises()
       expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-      expect(wrapper.get('[role="alert"]').text()).toContain('category refresh failed')
+      expect(wrapper.get('[role="alert"]').text()).toContain('Ошибка обновления категории')
       expect(wrapper.get('[data-testid="location"]').text()).toBe('form')
       expect(wrapper.find('.export-fee-category-marker').exists()).toBe(false)
       expect(store.items[0].matchesExportFeeCategory).toBeUndefined()
@@ -595,7 +595,7 @@ describe('parcels store', () => {
 
   describe('validateSw method', () => {
     it('rethrows and sets error when validateSw fails', async () => {
-      const error = new Error('Validation failed')
+      const error = new Error('Ошибка проверки')
       fetchWrapper.post.mockRejectedValue(error)
 
       const store = useParcelsStore()

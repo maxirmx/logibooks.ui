@@ -354,12 +354,12 @@ describe('manual parcel scan workflow', () => {
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), { context: 'manual scan failure refresh' })
   })
   it('keeps an uncertain result locked after the automatic refresh fails', async () => {
-    api.scanParcel.mockRejectedValueOnce(new Error('Lost response'))
+    api.scanParcel.mockRejectedValueOnce(new Error('Ответ потерян'))
     const { scan, wrapper } = harness({ refresh: vi.fn().mockRejectedValue(new Error('Refresh failed')) })
     await flushPromises()
     await scan.run([parcels[0]], 7)
     expect(scan.pendingBatch.value.uncertain).toBe(true)
-    expect(wrapper.get('[role="alert"]').text()).toContain('Lost response')
+    expect(wrapper.get('[role="alert"]').text()).toContain('Ответ потерян')
     expect(wrapper.find('.page-alert-region__action').exists()).toBe(false)
     expect(await scan.run([parcels[0]], 7)).toBe(false)
   })
@@ -543,7 +543,7 @@ describe('shared scan action controls', () => {
     await flushPromises()
     expect(row.get('[data-testid="manual-parcel-scan"]').attributes('disabled')).toBeDefined()
     recordTooltip()
-    rejectScan(new Error('Lost response'))
+    rejectScan(new Error('Ответ потерян'))
     await run
     await flushPromises()
     expect(row.get('[data-testid="manual-parcel-scan"]').attributes('disabled')).toBeDefined()
@@ -678,7 +678,7 @@ describe('shared scan action controls', () => {
   })
   it('keeps compatible job choices stable while scanning is busy or recovery is required', async () => {
     api.getInProgress.mockResolvedValue([job, { ...job, id: 9 }])
-    api.scanParcel.mockRejectedValueOnce(new Error('Lost response'))
+    api.scanParcel.mockRejectedValueOnce(new Error('Ответ потерян'))
     const { wrapper, scan } = harness({}, true)
     await flushPromises()
     expect(wrapper.findAll('[data-testid="manual-parcel-scan-menu"]')).toHaveLength(3)

@@ -19,6 +19,6 @@ describe('detailed core sticker validation messages', () => {
   })
   it('retains tailored messages for other error codes', () => {
     expect(getPrintingErrorMessage({ data: { code: 'Overflow', msg: detail } })).toContain('не помещается')
-    expect(getPrintingErrorMessage(new Error('network failure'))).toBe('network failure')
+    expect(getPrintingErrorMessage(new Error('network failure'))).toBe('Не удалось соединиться с сервером. Пожалуйста, проверьте подключение к сети.')
   })
 })

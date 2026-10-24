@@ -143,7 +143,7 @@ describe('shared register download flow', () => {
     const pinia = createPinia()
     setActivePinia(pinia)
     const pageAlerts = useAlertStore()
-    registersStore.getDownloadFormats.mockRejectedValueOnce(new Error('offline'))
+    registersStore.getDownloadFormats.mockRejectedValueOnce(new Error('Нет подключения'))
       .mockResolvedValueOnce({ company: { available: true, name: 'Receiver' } })
     let flow
     const wrapper = mount(defineComponent({
@@ -155,7 +155,7 @@ describe('shared register download flow', () => {
     await flow.loadFormats(register(GTC_COMPANY_ID, 17))
     await flush()
     expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-    expect(wrapper.get('[role="alert"]').text()).toContain('offline')
+    expect(wrapper.get('[role="alert"]').text()).toContain('Нет подключения')
     expect(wrapper.find('.page-alert-region__action').exists()).toBe(false)
     wrapper.unmount()
   })

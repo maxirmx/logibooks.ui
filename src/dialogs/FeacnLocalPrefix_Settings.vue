@@ -5,7 +5,7 @@
 
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { focusFirstInvalidField } from '@/helpers/form.validation.helpers.js'
-import { reportFormError } from '@/helpers/error.helpers.js'
+import { getErrorMessage, reportFormError } from '@/helpers/error.helpers.js'
 import { ref, computed, onMounted, watch, nextTick, onUnmounted } from 'vue'
 import router from '@/router'
 import { useForm, useField } from 'vee-validate'
@@ -347,7 +347,7 @@ function cancel() {
             :disabled="false"
             data-testid="feacn-code-search-action"
           />
-          <div v-if="errors.code" class="invalid-feedback">{{ errors.code }}</div>
+          <div v-if="errors.code" class="invalid-feedback">{{ getErrorMessage(errors.code, 'Некорректное значение') }}</div>
           <FeacnCodeSearch
             v-if="codeSearchActive"
             class="feacn-overlay"
@@ -408,7 +408,7 @@ function cancel() {
           @refocus="handleRefocus"
         />
       </div>
-      <div v-if="errors.exceptions" class="invalid-feedback">{{ errors.exceptions }}</div>
+      <div v-if="errors.exceptions" class="invalid-feedback">{{ getErrorMessage(errors.exceptions, 'Некорректное значение') }}</div>
     </form>
   </div>
 </template>

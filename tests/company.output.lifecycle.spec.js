@@ -93,14 +93,14 @@ describe.each([
   })
 
   it('shows one live write error without retaining callback metadata', async () => {
-    store[method].mockRejectedValueOnce(new Error('write failed'))
+    store[method].mockRejectedValueOnce(new Error('Ошибка записи'))
     const { wrapper } = mountPage(component)
     await flushPromises()
     const { completion } = await startWrite(wrapper, operation)
     if (completion) expect(await completion).toBe(false)
     await flushPromises()
     expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-    expect(wrapper.text()).toContain('write failed')
+    expect(wrapper.text()).toContain('Ошибка записи')
     expect(wrapper.find('.page-alert-region__action').exists()).toBe(false)
     wrapper.unmount()
   })
@@ -176,11 +176,11 @@ describe.each([['editor', Editor], ['summary', Summary]])('%s load lifecycle', (
   })
 
   it('shows a load failure once without retaining callback metadata', async () => {
-    store.getAll.mockRejectedValueOnce(new Error('load failed'))
+    store.getAll.mockRejectedValueOnce(new Error('Ошибка загрузки'))
     const { wrapper } = mountPage(component)
     await flushPromises()
     expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-    expect(wrapper.text()).toContain('load failed')
+    expect(wrapper.text()).toContain('Ошибка загрузки')
     expect(wrapper.find('.page-alert-region__action').exists()).toBe(false)
     wrapper.unmount()
   })
@@ -188,13 +188,13 @@ describe.each([['editor', Editor], ['summary', Summary]])('%s load lifecycle', (
 
 describe('editor delete confirmation', () => {
   it('shows one confirmation failure without deleting or retaining callback metadata', async () => {
-    confirm.mockRejectedValueOnce(new Error('confirmation failed'))
+    confirm.mockRejectedValueOnce(new Error('Ошибка подтверждения'))
     const { wrapper } = mountPage(Editor)
     await flushPromises()
     await wrapper.findAll('button').find(button => button.text() === 'Удалить формат').trigger('click')
     await flushPromises()
     expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-    expect(wrapper.text()).toContain('confirmation failed')
+    expect(wrapper.text()).toContain('Ошибка подтверждения')
     expect(store.deleteRegisterOutputFormat).not.toHaveBeenCalled()
     await wrapper.get('#register-output-type').setValue(String(OFFERED_COMPANY_REGISTER_OUTPUT_TYPES[1]))
     expect(wrapper.find('.page-alert-region__action').exists()).toBe(false)

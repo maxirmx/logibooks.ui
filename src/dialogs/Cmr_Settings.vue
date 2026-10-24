@@ -3,6 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
+import { getErrorMessage } from '@/helpers/error.helpers.js'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { focusFirstInvalidField } from '@/helpers/form.validation.helpers.js'
 import { computed, onMounted, ref } from 'vue'
@@ -99,12 +100,6 @@ function optionalText(value) {
   return text || null
 }
 
-function normalizeError(error, fallback) {
-  if (typeof error === 'string' && error.trim()) return error
-  if (error?.message) return error.message
-  return fallback
-}
-
 function companyLabel(company) {
   return company.shortName || company.name || String(company.id)
 }
@@ -196,7 +191,7 @@ async function onSubmit() {
     )
     router.go(-1)
   } catch (error) {
-    alertStore.error(normalizeError(error, 'Не удалось сформировать CMR'))
+    alertStore.error(getErrorMessage(error, 'Не удалось сформировать CMR'))
   } finally {
     hideActionDialog()
     isSubmitting.value = false

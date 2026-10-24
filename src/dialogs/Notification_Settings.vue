@@ -8,7 +8,7 @@ import { useAlertStore } from '@/stores/alert.store.js'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { runWithAlert } from '@/helpers/notification.helpers.js'
 import { focusFirstInvalidField } from '@/helpers/form.validation.helpers.js'
-import { reportFormError } from '@/helpers/error.helpers.js'
+import { getErrorMessage, reportFormError } from '@/helpers/error.helpers.js'
 import { ref, computed } from 'vue'
 import router from '@/router'
 import { Form, Field } from 'vee-validate'
@@ -267,7 +267,7 @@ if (!isCreate.value) {
         :has-error="Boolean(getArticlesError(errors))"
       />
       <div v-if="getArticlesError(errors)" class="invalid-feedback d-block">
-        {{ getArticlesError(errors) }}
+        {{ getErrorMessage(getArticlesError(errors), 'Некорректное значение') }}
       </div>
 
       <div class="form-group mt-8">

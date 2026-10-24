@@ -6,6 +6,7 @@
  
 import { computed, onUnmounted, watch } from 'vue'
 import AppDialogFrame from '@/components/AppDialogFrame.vue'
+import { getErrorMessage } from '@/helpers/error.helpers.js'
 import {
   APP_DIALOG_BUTTON_PROPS,
   APP_DIALOG_MAX_WIDTH,
@@ -23,6 +24,7 @@ const props = defineProps({
 const emit = defineEmits(['close'])
 
 const dialogVisible = computed(() => props.show)
+const localizedTitle = computed(() => getErrorMessage(props.title, 'Ошибка'))
 
 const hasMissingItems = computed(
   () => props.missingHeaders.length > 0 || props.missingColumns.length > 0
@@ -60,11 +62,11 @@ onUnmounted(() => {
     :width="APP_DIALOG_SIZES.medium"
     :max-width="APP_DIALOG_MAX_WIDTH"
     persistent
-    :aria-label="title"
+    :aria-label="localizedTitle"
   >
-    <AppDialogFrame :title="title" tone="error">
+    <AppDialogFrame :title="localizedTitle" tone="error">
         <p v-if="message" class="error-dialog__message" data-testid="error-dialog-message">
-          {{ message }}
+          {{ getErrorMessage(message) }}
         </p>
 
         <div v-if="hasMissingItems" class="error-dialog__details">

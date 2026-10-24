@@ -4,6 +4,7 @@
 
 import { useAuthStore } from '@/stores/auth.store.js'
 import { apiUrl, enableLog } from '@/helpers/config.js'
+import { getErrorMessage } from '@/helpers/error.helpers.js'
 
 // Fields that should be treated as data-URI and stripped to raw base64 before sending.
 // Default includes the existing field used by the app.
@@ -80,12 +81,7 @@ function request(method) {
            }
            response = await fetch(url, requestOptions);
         } catch (error) {
-            // Customize your error message here
-            if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
-                throw new Error('Не удалось соединиться с сервером. Пожалуйста, проверьте подключение к сети.');
-            } else {
-                throw new Error('Произошла непредвиденная ошибка при обращении к серверу: ' + error.message );
-            }           
+            throw new Error(getErrorMessage(error, 'Не удалось выполнить запрос к серверу. Повторите операцию.'), { cause: error });
         }
             
         // Check if the response is ok (status in the range 200-299)
@@ -103,7 +99,7 @@ function request(method) {
                 errorMessage = errorText || `Ошибка ${response.status}`;
             }
 
-            const error = new Error(errorMessage);
+            const error = new Error(getErrorMessage(errorMessage, `Ошибка ${response.status}`), { cause: errorObj ?? errorText });
             error.status = response.status;
             if (errorObj) error.data = errorObj;
             // Re-throw the error for further handling if needed
@@ -131,11 +127,7 @@ function requestFile(method) {
           }
           response = await fetch(url, requestOptions);
         } catch (error) {
-            if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
-                throw new Error('Не удалось соединиться с сервером. Пожалуйста, проверьте подключение к сети.');
-            } else {
-                throw new Error('Произошла непредвиденная ошибка при обращении к серверу: ' + error.message );
-            }
+            throw new Error(getErrorMessage(error, 'Не удалось выполнить запрос к серверу. Повторите операцию.'), { cause: error });
         }
 
         // Status 422 (Unprocessable Entity) is handled differently because the API uses it to return
@@ -150,7 +142,7 @@ function requestFile(method) {
             } catch {
                 errorMessage = errorText || `Ошибка ${response.status}`;
             }
-            const error = new Error(errorMessage);
+            const error = new Error(getErrorMessage(errorMessage, `Ошибка ${response.status}`), { cause: errorObj ?? errorText });
             error.status = response.status;
             if (errorObj) error.data = errorObj;
             throw error;
@@ -191,12 +183,7 @@ function requestBlob(method) {
            }
            response = await fetch(url, requestOptions);
         } catch (error) {
-            // Customize your error message here
-            if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
-                throw new Error('Не удалось соединиться с сервером. Пожалуйста, проверьте подключение к сети.');
-            } else {
-                throw new Error('Произошла непредвиденная ошибка при обращении к серверу: ' + error.message );
-            }           
+            throw new Error(getErrorMessage(error, 'Не удалось выполнить запрос к серверу. Повторите операцию.'), { cause: error });
         }
             
         // Check if the response is ok (status in the range 200-299)
@@ -214,7 +201,7 @@ function requestBlob(method) {
                 errorMessage = errorText || `Ошибка ${response.status}`;
             }
 
-            const error = new Error(errorMessage);
+            const error = new Error(getErrorMessage(errorMessage, `Ошибка ${response.status}`), { cause: errorObj ?? errorText });
             error.status = response.status;
             if (errorObj) error.data = errorObj;
             // Re-throw the error for further handling if needed
@@ -439,15 +426,15 @@ function handleResponse(response) {
         }
 
         const error = (data && data.msg) || response.statusText
-        return Promise.reject(error)
+        return Promise.reject(new Error(getErrorMessage(error, `Ошибка ${response.status}`)))
       }
       if (response.status === 422 && data?.msg && data.details && typeof data.details === 'object' && !Array.isArray(data.details)) {
         // Import workflows consume an explicit unsuccessful result and own its presentation.
-        return { ...data.details, success: false, errMsg: data.msg }
+        return { ...data.details, success: false, errMsg: getErrorMessage(data.msg) }
       }
       return data
     } catch {
-      return Promise.reject(text)
+      return Promise.reject(new Error(getErrorMessage(text, 'Сервер вернул данные в некорректном формате'), { cause: text }))
     }
   })
 }

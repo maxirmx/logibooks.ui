@@ -6,7 +6,7 @@
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { focusFirstInvalidField } from '@/helpers/form.validation.helpers.js'
 import { runWithAlert } from '@/helpers/notification.helpers.js'
-import { reportFormError } from '@/helpers/error.helpers.js'
+import { getErrorMessage, reportFormError } from '@/helpers/error.helpers.js'
 import { computed, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { Field, Form } from 'vee-validate'
@@ -134,7 +134,7 @@ function onSubmit(values, { setErrors } = {}) {
           :class="{ 'is-invalid': errors.number }"
           placeholder="Код поста"
         />
-        <div v-if="errors.number" class="invalid-feedback">{{ errors.number }}</div>
+        <div v-if="errors.number" class="invalid-feedback">{{ getErrorMessage(errors.number, 'Некорректное значение') }}</div>
       </div>
 
       <div class="form-group">
@@ -147,7 +147,7 @@ function onSubmit(values, { setErrors } = {}) {
           :class="{ 'is-invalid': errors.name }"
           placeholder="Название"
         />
-        <div v-if="errors.name" class="invalid-feedback">{{ errors.name }}</div>
+        <div v-if="errors.name" class="invalid-feedback">{{ getErrorMessage(errors.name, 'Некорректное значение') }}</div>
       </div>
 
       <div class="form-group">
@@ -169,7 +169,7 @@ function onSubmit(values, { setErrors } = {}) {
           </option>
         </Field>
         <div v-if="errors.countryIsoNumeric" class="invalid-feedback">
-          {{ errors.countryIsoNumeric }}
+          {{ getErrorMessage(errors.countryIsoNumeric, 'Некорректное значение') }}
         </div>
       </div>
 
@@ -183,7 +183,7 @@ function onSubmit(values, { setErrors } = {}) {
           :class="{ 'is-invalid': errors.postalCode }"
           placeholder="Почтовый индекс"
         />
-        <div v-if="errors.postalCode" class="invalid-feedback">{{ errors.postalCode }}</div>
+        <div v-if="errors.postalCode" class="invalid-feedback">{{ getErrorMessage(errors.postalCode, 'Некорректное значение') }}</div>
       </div>
 
       <div class="form-group">
@@ -196,7 +196,7 @@ function onSubmit(values, { setErrors } = {}) {
           :class="{ 'is-invalid': errors.city }"
           placeholder="Город"
         />
-        <div v-if="errors.city" class="invalid-feedback">{{ errors.city }}</div>
+        <div v-if="errors.city" class="invalid-feedback">{{ getErrorMessage(errors.city, 'Некорректное значение') }}</div>
       </div>
 
       <div class="form-group">
@@ -209,7 +209,7 @@ function onSubmit(values, { setErrors } = {}) {
           :class="{ 'is-invalid': errors.street }"
           placeholder="Улица"
         />
-        <div v-if="errors.street" class="invalid-feedback">{{ errors.street }}</div>
+        <div v-if="errors.street" class="invalid-feedback">{{ getErrorMessage(errors.street, 'Некорректное значение') }}</div>
       </div>
 
       <div class="form-group mt-8">

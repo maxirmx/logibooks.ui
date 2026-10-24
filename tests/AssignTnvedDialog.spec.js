@@ -147,14 +147,14 @@ describe('AssignTnvedDialog', () => {
   })
 
   it('disables confirm when lookup throws an error', async () => {
-    mockGetFeacnInfo.mockRejectedValue(new Error('Network error'))
+    mockGetFeacnInfo.mockRejectedValue(new Error('Ошибка подключения к сети'))
     const wrapper = createWrapper()
 
     await setInputAndWaitLookup(wrapper, '1234567890')
 
     const confirmBtn = wrapper.findAll('[data-testid="v-btn"]')[1]
     expect(confirmBtn.element.disabled).toBe(true)
-    expect(wrapper.find('[data-testid="target-tnved-message"]').text()).toContain('Network error')
+    expect(wrapper.find('[data-testid="target-tnved-message"]').text()).toContain('Ошибка подключения к сети')
   })
 
   it('opens FEACN tree search overlay and applies selected code', async () => {

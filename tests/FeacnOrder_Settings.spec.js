@@ -145,7 +145,7 @@ describe('FeacnOrder_Settings', () => {
   })
 
   it('reports a rejected save once, preserves values and stays on the page', async () => {
-    const error = new Error('save failed')
+    const error = new Error('Ошибка сохранения')
     mocks.updateScopes.mockRejectedValue(error)
     const alertError = vi.spyOn(useAlertStore(), 'error')
     const wrapper = createWrapper()
@@ -159,13 +159,13 @@ describe('FeacnOrder_Settings', () => {
     expect(alertError).toHaveBeenCalledWith(error, {
       fallback: 'Не удалось сохранить правила применения нормативного документа'
     })
-    expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain('save failed')
+    expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain('Ошибка сохранения')
     expect(wrapper.vm.scopes).toEqual(submitted)
     expect(mocks.routerPush).not.toHaveBeenCalled()
   })
 
   it('shows a rejected load without alert callbacks', async () => {
-    const error = new Error('load failed')
+    const error = new Error('Ошибка загрузки')
     mocks.getById.mockRejectedValueOnce(error)
     const alertStore = useAlertStore()
     const alertError = vi.spyOn(alertStore, 'error')
@@ -173,7 +173,7 @@ describe('FeacnOrder_Settings', () => {
     await flushPromises()
 
     expect(alertError).toHaveBeenCalledOnce()
-    expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain('load failed')
+    expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain('Ошибка загрузки')
     const options = alertError.mock.calls[0][1]
     expect(options.fallback).toBe('Не удалось загрузить правила применения нормативного документа')
 

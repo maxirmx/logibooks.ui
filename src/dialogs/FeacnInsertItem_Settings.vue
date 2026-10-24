@@ -5,7 +5,7 @@
 
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { focusFirstInvalidField } from '@/helpers/form.validation.helpers.js'
-import { reportFormError } from '@/helpers/error.helpers.js'
+import { getErrorMessage, reportFormError } from '@/helpers/error.helpers.js'
 import { ref, computed, onMounted, watch, nextTick, onUnmounted } from 'vue'
 import router from '@/router'
 import { useForm, useField } from 'vee-validate'
@@ -199,7 +199,7 @@ function cancel() {
             :tooltip-text="searchActive ? 'Скрыть дерево кодов' : 'Выбрать код'"
             :disabled="false"
           />
-          <div v-if="errors.code" class="invalid-feedback">{{ errors.code }}</div>
+          <div v-if="errors.code" class="invalid-feedback">{{ getErrorMessage(errors.code, 'Некорректное значение') }}</div>
           <FeacnCodeSearch
             v-if="searchActive"
             class="feacn-overlay"
@@ -220,7 +220,7 @@ function cancel() {
           :readonly="searchActive"
           placeholder="Текст для вставки перед описанием (не обязательно)"
         />
-        <div v-if="errors.insBefore" class="invalid-feedback">{{ errors.insBefore }}</div>
+        <div v-if="errors.insBefore" class="invalid-feedback">{{ getErrorMessage(errors.insBefore, 'Некорректное значение') }}</div>
       </div>
 
       <div class="form-group">
@@ -235,7 +235,7 @@ function cancel() {
           :readonly="searchActive"
           placeholder="Текст для вставки после описанием (не обязательно)"
         />
-        <div v-if="errors.insAfter" class="invalid-feedback">{{ errors.insAfter }}</div>
+        <div v-if="errors.insAfter" class="invalid-feedback">{{ getErrorMessage(errors.insAfter, 'Некорректное значение') }}</div>
       </div>
 
       <div class="form-group mt-8">

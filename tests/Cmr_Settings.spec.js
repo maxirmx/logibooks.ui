@@ -282,9 +282,9 @@ describe('Cmr_Settings.vue', () => {
     expect(router.go).not.toHaveBeenCalled()
     state.isSubmitting = false
 
-    downloadCmrFileMock.mockRejectedValueOnce('String failure')
+    downloadCmrFileMock.mockRejectedValueOnce('Ошибка формирования документа')
     await state.onSubmit()
-    expect(alertErrorMock).toHaveBeenCalledWith('String failure')
+    expect(alertErrorMock).toHaveBeenCalledWith('Ошибка формирования документа')
     downloadCmrFileMock.mockRejectedValueOnce(null)
     await state.onSubmit()
     expect(alertErrorMock).toHaveBeenCalledWith('Не удалось сформировать CMR')

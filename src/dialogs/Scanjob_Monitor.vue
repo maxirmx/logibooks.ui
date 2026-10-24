@@ -25,7 +25,7 @@ import { formatRegisterInvoice } from '@/helpers/register.heading.helpers.js'
 import { navigateToEditParcel } from '@/helpers/parcels.list.helpers.js'
 import { getCurrentInternalRoute } from '@/helpers/parcel.navigation.helpers.js'
 import { OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
-import { reportError } from '@/helpers/error.helpers.js'
+import { getErrorMessage, reportError } from '@/helpers/error.helpers.js'
 import {
   getClearParcelDefectErrorMessage,
   getSetParcelDefectErrorMessage
@@ -853,7 +853,7 @@ function getMonitorErrorMessage(error) {
     return 'Монитор доступен только для активного задания сканирования коробок и посылок'
   }
 
-  return error?.message || 'Ошибка при загрузке монитора сканирования'
+  return getErrorMessage(error, 'Ошибка при загрузке монитора сканирования')
 }
 
 async function observeScope(scope, { subscribe = true } = {}) {

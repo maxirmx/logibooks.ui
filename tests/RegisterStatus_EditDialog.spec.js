@@ -18,7 +18,8 @@ const mockRegisterStatus = {
   bkColor: '#FFFFFF',
   fgColor: '#000000',
   readOnly: true,
-  transit: true
+  transit: true,
+  exportTo1C: true
 }
 
 // Mock stores using test-utils
@@ -170,6 +171,24 @@ beforeEach(async () => {
 
 describe('RegisterStatus_EditDialog.vue', () => {
   describe('Component Rendering', () => {
+    it.each(['create', 'edit'])('round trips the 1C export flag in %s mode', async (mode) => {
+      const wrapper = mount(AsyncWrapper, {
+        props: { mode, registerStatusId: 1 },
+        global: { stubs: defaultGlobalStubs }
+      })
+      await resolveAll()
+      expect(wrapper.get('label[for="exportTo1C"]').text()).toBe('Выгружать в 1C:')
+      expect(wrapper.get('#exportTo1C').attributes('type')).toBe('checkbox')
+      const form = wrapper.findComponent({ name: 'Form' })
+      expect(form.props('initialValues').exportTo1C).toBe(mode === 'edit')
+      await form.vm.$emit('submit', { title: 'Queue', exportTo1C: true }, { setErrors: vi.fn() })
+      await resolveAll()
+      const save = mode === 'create' ? mockRegisterStatusesStore.create : mockRegisterStatusesStore.update
+      const payload = save.mock.calls.at(-1).at(-1)
+      expect(payload.exportTo1C).toBe(true)
+      wrapper.unmount()
+    })
+
     it('updates color preview values through color selectors', async () => {
       const wrapper = mount(AsyncWrapper, {
         props: { mode: 'edit', registerStatusId: 1 },
@@ -260,7 +279,8 @@ describe('RegisterStatus_EditDialog.vue', () => {
         bkColor: null,
         fgColor: null,
         readOnly: false,
-        transit: false
+        transit: false,
+        exportTo1C: false
       })
     })
 

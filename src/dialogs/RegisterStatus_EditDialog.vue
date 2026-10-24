@@ -55,7 +55,8 @@ if (isCreate.value) {
     bkColor: null,
     fgColor: null,
     readOnly: false,
-    transit: false
+    transit: false,
+    exportTo1C: false
   })
 } else {
   const refs = storeToRefs(registerStatusesStore)
@@ -77,6 +78,7 @@ function getButtonText() {
 
 // Validation schema
 const schema = Yup.object({
+  exportTo1C: Yup.boolean().default(false),
   title: Yup.string().required('Название статуса обязательно'),
   icon: Yup.string()
     .nullable()
@@ -240,6 +242,22 @@ function onSubmit(values, { setErrors } = {}) {
           />
           <label for="transit" aria-hidden="true"></label>
         </div>
+      </div>
+
+      <div class="status-settings-row">
+        <label for="exportTo1C" class="label status-settings-label">Выгружать в 1C:</label>
+        <div class="checkbox-item">
+          <Field
+            id="exportTo1C"
+            name="exportTo1C"
+            type="checkbox"
+            class="checkbox checkbox-styled"
+            :value="true"
+            :unchecked-value="false"
+          />
+          <label for="exportTo1C" aria-hidden="true"></label>
+        </div>
+        <FieldError name="exportTo1C" :errors="errors" />
       </div>
 
       <Field name="bkColor" v-slot="{ field, handleChange }">

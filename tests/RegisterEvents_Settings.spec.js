@@ -285,6 +285,24 @@ describe('RegisterEvents_Settings.vue', () => {
     ])
   })
 
+  it('configures the 1C export event through the existing procedure-specific selector', async () => {
+    mockEvents.value.push({
+      id: 100040, eventId: 100, eventName: 'Выгрузка в 1С', customsProcedureCode: 40, registerStatusId: null
+    })
+    const wrapper = mountComponent()
+    await resolveAll()
+    expect(wrapper.find('[data-testid="register-event-row-100040"]').exists()).toBe(false)
+    await wrapper.get('[data-testid="customs-procedure-select"]').setValue('40')
+    await resolveAll()
+    expect(wrapper.get('[data-testid="register-event-row-100040"]').text()).toBe('Выгрузка в 1С')
+    expect(wrapper.get('#status-select-100040').element.value).toBe('0')
+    await wrapper.get('#status-select-100040').setValue('3')
+    await wrapper.get('[data-testid="save-button"]').trigger('click')
+    await resolveAll()
+    expect(updateMany).toHaveBeenCalledWith(expect.arrayContaining([{ id: 100040, registerStatusId: 3 }]))
+    wrapper.unmount()
+  })
+
   it('updates selections and saves changes', async () => {
     const wrapper = mountComponent()
     await resolveAll()

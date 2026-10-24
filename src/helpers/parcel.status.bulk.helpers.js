@@ -55,7 +55,7 @@ export function buildParcelStatusBulkReport(missingNumbers = [], blockedItems = 
 }
 
 export function getParcelStatusBulkNumberLabel(register) {
-  const registerType = Number(register?.registerType ?? register?.companyId)
+  const registerType = Number(register?.registerType)
 
   switch (registerType) {
     case WBR_COMPANY_ID:

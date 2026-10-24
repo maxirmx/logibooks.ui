@@ -7,6 +7,8 @@ import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useAuthStore } from '@/stores/auth.store.js'
 import ClickableCell from '@/components/ClickableCell.vue'
+import ActionButton from '@/components/ActionButton.vue'
+import BoxStickerPrintButton from '@/components/BoxStickerPrintButton.vue'
 import ScanjobMonitorSummary from '@/components/ScanjobMonitorSummary.vue'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import {
@@ -105,6 +107,15 @@ function openBox(item) {
           />
         </template>
 
+        <template #[`item.actions`]="{ item }">
+          <div class="actions-container">
+            <ActionButton :item="item" icon="fa-solid fa-list"
+              tooltip-text="Список посылок" aria-label="Список посылок"
+              :disabled="props.loading" data-testid="box-parcels-action" @click="openBox" />
+            <BoxStickerPrintButton :box="item" :company="props.snapshot" :disabled="props.loading" />
+          </div>
+        </template>
+
         <template #[`item.dimensions`]="{ item }">
           <ClickableCell
             :item="item"
@@ -135,10 +146,11 @@ function openBox(item) {
           />
         </template>
 
-        <template #[`item.boxScannedSticker`]="{ item }">
+        <template #[`item.boxSticker`]="{ item }">
           <ClickableCell
             :item="item"
-            :display-value="valueOrDash(item.boxScannedSticker)"
+            :display-value="valueOrDash(item.boxSticker)"
+            data-testid="box-sticker-value"
             cell-class="clickable-cell"
             :disabled="props.loading"
             @click="openBox(item)"

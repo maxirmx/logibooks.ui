@@ -3,15 +3,19 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { computed, ref } from 'vue'
+import { provide, computed, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { Form, Field } from 'vee-validate'
 import * as Yup from 'yup'
 import router from '@/router'
 import ActionButton from '@/components/ActionButton.vue'
+import BoxStickerPrintButton from '@/components/BoxStickerPrintButton.vue'
+import LocalLabelPrinting from '@/components/LocalLabelPrinting.vue'
+import { LABEL_PRINTING_KEY } from '@/helpers/label.printing.helpers.js'
 import FieldError from '@/components/FieldError.vue'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { useAlertStore } from '@/stores/alert.store.js'
+import { useAuthStore } from '@/stores/auth.store.js'
 import { useBoxesStore } from '@/stores/boxes.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { focusFirstInvalidField } from '@/helpers/form.validation.helpers.js'
@@ -40,6 +44,7 @@ const props = defineProps({
 })
 
 const alertStore = useAlertStore()
+const authStore = useAuthStore()
 const boxesStore = useBoxesStore()
 const registersStore = useRegistersStore()
 const { box, loading: boxLoading } = storeToRefs(boxesStore)
@@ -48,7 +53,13 @@ const formReady = ref(false)
 
 const isCreate = computed(() => props.mode === 'create')
 const readOnly = computed(() => register.value?.readOnly === true)
+const canEditSticker = computed(() => authStore.isAdmin && !readOnly.value)
 const manualWeightDisabled = computed(() => Number(register.value?.realWeightKg || 0) > 0)
+const printingPanel = ref(null)
+provide(LABEL_PRINTING_KEY, {
+  busy: computed(() => printingPanel.value?.busy ?? true),
+  print: (target) => printingPanel.value?.printParcel(target)
+})
 const loading = computed(() => boxLoading.value || registerLoading.value)
 const registerHeading = computed(() =>
   buildParcelListHeading(
@@ -70,6 +81,7 @@ const initialValues = computed(() => {
 
   return {
     code: box.value?.code || '',
+    boxSticker: box.value?.boxSticker ?? '',
     lengthCm: box.value?.lengthCm ?? null,
     widthCm: box.value?.widthCm ?? null,
     heightCm: box.value?.heightCm ?? null,
@@ -172,6 +184,9 @@ async function onSubmit(values, { setErrors } = {}) {
   if (!manualWeightDisabled.value) {
     payload.weightKg = toNumberOrNull(values.weightKg)
   }
+  if (!isCreate.value && canEditSticker.value && values.boxSticker !== initialValues.value.boxSticker) {
+    payload.boxSticker = values.boxSticker?.trim() || null
+  }
 
   try {
     if (isCreate.value) {
@@ -212,29 +227,36 @@ async function onSubmit(values, { setErrors } = {}) {
       :validation-schema="schema"
       @invalid-submit="focusFirstInvalidField"
       @submit="onSubmit"
-      v-slot="{ errors, isSubmitting }"
+      v-slot="{ errors, isSubmitting, values }"
     >
       <div class="header-with-actions">
         <h1 class="primary-heading">{{ getTitle() }}</h1>
-        <div class="header-actions">
-          <ActionButton
-            :item="{}"
-            type="submit"
-            icon="fa-solid fa-check-double"
-            icon-size="2x"
-            :tooltip-text="getButtonText()"
-            :disabled="!formReady || isSubmitting || loading || readOnly"
-            data-testid="box-save-action"
-          />
-          <ActionButton
-            :item="{}"
-            icon="fa-solid fa-xmark"
-            icon-size="2x"
-            tooltip-text="Отменить"
-            :disabled="isSubmitting || loading"
-            data-testid="box-cancel-action"
-            @click="cancel"
-          />
+        <div class="header-actions-bar">
+          <LocalLabelPrinting v-if="!isCreate" ref="printingPanel" />
+          <div v-if="!isCreate" class="header-actions header-actions-group" data-testid="box-sticker-print-actions">
+            <BoxStickerPrintButton :box="box || {}" icon-size="2x"
+              :disabled="!formReady || isSubmitting || loading || values.boxSticker !== initialValues.boxSticker" />
+          </div>
+          <div class="header-actions header-actions-group">
+            <ActionButton
+              :item="{}"
+              type="submit"
+              icon="fa-solid fa-check-double"
+              icon-size="2x"
+              :tooltip-text="getButtonText()"
+              :disabled="!formReady || isSubmitting || loading || readOnly"
+              data-testid="box-save-action"
+            />
+            <ActionButton
+              :item="{}"
+              icon="fa-solid fa-xmark"
+              icon-size="2x"
+              tooltip-text="Отменить"
+              :disabled="isSubmitting || loading"
+              data-testid="box-cancel-action"
+              @click="cancel"
+            />
+          </div>
         </div>
       </div>
 
@@ -258,6 +280,16 @@ async function onSubmit(values, { setErrors } = {}) {
           />
         </div>
         <FieldError name="code" :errors="errors" />
+      </div>
+
+      <div v-if="!isCreate" class="box-form-field">
+        <div class="box-control-row">
+          <label for="boxSticker" class="label">Код стикера:</label>
+          <Field id="boxSticker" name="boxSticker" type="text" class="form-control input"
+            :class="{ 'is-invalid': errors.boxSticker }" :readonly="!canEditSticker"
+            :disabled="readOnly || isSubmitting || loading" data-testid="box-sticker-input" />
+        </div>
+        <FieldError name="boxSticker" :errors="errors" />
       </div>
 
       <div v-for="field in [

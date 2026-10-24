@@ -17,6 +17,7 @@ import { useScanjobHeading } from '@/composables/useScanjobHeading.js'
 import LocalLabelPrinting from '@/components/LocalLabelPrinting.vue'
 import { LABEL_PRINTING_KEY } from '@/helpers/label.printing.helpers.js'
 import ActionButton from '@/components/ActionButton.vue'
+import { canClearParcelExtId, getClearParcelExtIdErrorMessage } from '@/helpers/parcel.ext-id.helpers.js'
 import FieldError from '@/components/FieldError.vue'
 import ScanjobBoxesMonitor from '@/dialogs/Scanjob_Boxes_Monitor.vue'
 import ScanjobParcelsMonitor from '@/dialogs/Scanjob_Parcels_Monitor.vue'
@@ -394,7 +395,7 @@ async function refreshCurrentScopeSnapshot() {
   applySnapshot(snapshot, { immediate: true, source: 'manual' })
 }
 
-async function runParcelDefectAction(item, action, getErrorMessage) {
+async function runParcelAction(item, action, getErrorMessage) {
   const parcelId = item?.id ?? item?.parcelId
   if (readOnly.value || defectActionRunning.value || isLoading.value || !parcelId) {
     return
@@ -425,11 +426,16 @@ async function runParcelDefectAction(item, action, getErrorMessage) {
 }
 
 async function setParcelDefect(item) {
-  await runParcelDefectAction(item, parcelsStore.setDefect, getSetParcelDefectErrorMessage)
+  await runParcelAction(item, parcelsStore.setDefect, getSetParcelDefectErrorMessage)
 }
 
 async function clearParcelDefect(item) {
-  await runParcelDefectAction(item, parcelsStore.clearDefect, getClearParcelDefectErrorMessage)
+  await runParcelAction(item, parcelsStore.clearDefect, getClearParcelDefectErrorMessage)
+}
+
+async function clearParcelExtId(item) {
+  if (!canClearParcelExtId(item, authStore)) return
+  await runParcelAction(item, parcelsStore.clearExtId, getClearParcelExtIdErrorMessage)
 }
 
 function buildScope(area, boxId = null, bucketIndex = null) {
@@ -1077,7 +1083,7 @@ defineExpose({
 
     <hr class="hr" />
 
-    <PageAlertRegion v-if="!printingPanel?.configurationOpen" />
+    <PageAlertRegion />
     <div v-if="readOnly" class="alert alert-warning read-only-notice">
       Изменения и операции сканирования запрещены. Мониторинг и просмотр посылок доступны.
     </div>
@@ -1088,8 +1094,7 @@ defineExpose({
         class="monitor-empty"
         data-testid="scanjob-monitor-loading"
       >
-        <span class="spinner-border spinner-border-m"></span>
-        <span>Загрузка монитора сканирования...</span>
+        Загрузка данных...
       </div>
 
       <div
@@ -1130,14 +1135,17 @@ defineExpose({
           v-if="isBoxMode"
           :box="selectedBox"
           :register-type="visibleSnapshot?.registerType ?? 0"
+          :company="visibleSnapshot"
           :register="monitorWeightRegister"
           :loading="isLoading"
-          :defect-action-loading="defectActionRunning || readOnly"
+          :defect-action-loading="defectActionRunning"
+          :read-only="readOnly"
           :selected-parcel-id="selectedParcelId"
           :print-queue="printQueue"
           @edit-parcel="editParcel"
           @set-defect="setParcelDefect"
           @clear-defect="clearParcelDefect"
+          @clear-ext-id="clearParcelExtId"
         />
       </template>
     </div>

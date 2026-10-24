@@ -7,7 +7,7 @@ import { COMPANY_REGISTER_OUTPUT_TYPES } from '@/helpers/company.constants.js'
 import { reportError } from '@/helpers/error.helpers.js'
 
 function supportsCompanyFormat(register) {
-  return COMPANY_REGISTER_OUTPUT_TYPES.includes(Number(register?.registerType || register?.companyId))
+  return COMPANY_REGISTER_OUTPUT_TYPES.includes(Number(register?.registerType))
 }
 
 export function useRegisterDownloadFlow(registersStore, alertStore) {

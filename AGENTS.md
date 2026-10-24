@@ -12,6 +12,13 @@ These instructions apply to the entire repository. Follow them for every new fea
 - Expected cancellation, teardown, or unmount failures must use an explicit catch with a comment explaining why no user message is needed. Report unexpected technical failures through `reportError`.
 - Never render an `Error` object directly. Use `getErrorMessage` or pass it to `useAlertStore().error`, which normalizes it.
 
+### Local printing availability exception
+
+- `QzUnavailable` is an expected availability condition. Outside printer settings, handle it silently and disable printing, including when QZ is lost during a manual print, reprint, or retry. Do not publish a page alert or technical error for this condition.
+- Printing store operations must still reject failures from user-initiated operations. The initiating UI explicitly consumes `QzUnavailable` and may return `false`; it must not report success or automatically replay the label after reconnection.
+- Show `QzUnavailable` diagnostics on the printer settings page only while that page is mounted. Background availability checks must not publish stale results after their originating scope exits.
+- This exception applies only to `QzUnavailable`, including that code in a wrapped cause. Other printing failures retain the normal propagation, single-presentation, and technical-reporting rules above.
+
 ## Message presentation
 
 - Publish application messages through `useAlertStore`; do not introduce page-specific alert stores or custom notification mechanisms.

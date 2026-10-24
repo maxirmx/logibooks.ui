@@ -6,7 +6,10 @@
 import { useParcelBoxScope } from '@/composables/useParcelBoxScope.js'
 import { useListPageBounds } from '@/composables/useListPageBounds.js'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
-import { watch, ref, computed, onMounted, onUnmounted, unref } from 'vue'
+import { watch, ref, computed, onMounted, onUnmounted, unref, provide } from 'vue'
+import LocalLabelPrinting from '@/components/LocalLabelPrinting.vue'
+import MonitorLabelActions from '@/components/MonitorLabelActions.vue'
+import { LABEL_PRINTING_KEY } from '@/helpers/label.printing.helpers.js'
 import { useParcelsStore } from '@/stores/parcels.store.js'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
@@ -56,6 +59,11 @@ const registersStore = useRegistersStore()
 const warehousesStore = useWarehousesStore()
 const authStore = useAuthStore()
 const alertStore = useAlertStore()
+const printingPanel = ref(null)
+provide(LABEL_PRINTING_KEY, {
+  busy: computed(() => printingPanel.value?.busy ?? true),
+  print: (target) => printingPanel.value?.printParcel(target)
+})
 const { items, loading, totalCount } = storeToRefs(parcelsStore)
 const {
   parcels_wh_per_page,
@@ -114,7 +122,7 @@ const pageOptions = computed(() => {
 const parcelsLoaded = useListPageBounds(parcels_wh_page, maxPage, () => !loading.value && !isInitializing.value && !unref(parcelsStore.error))
 
 const headers = computed(() => [
-  { title: '', key: 'actions', align: 'center', sortable: false, width: '72px' },
+  { title: '', key: 'actions', align: 'center', sortable: false, width: '108px' },
   { title: '№', key: 'id', align: 'start' },
   {
     title: 'Проверка',
@@ -335,14 +343,17 @@ async function clearParcelDefect(item) {
         :register="registersStore.item"
         :heading="registerHeading"
       />
-      <RegisterWhHeaderActionBar
-        :register="registersStore.item"
-        :zones="ops.zones"
-        :loading="registerLoading || isInitializing"
-        icon-size="2x"
-        @bulk-change-parcel-status="showParcelStatusBulkDialog = true"
-        @close="closeList"
-      />
+      <div class="header-actions-bar">
+        <LocalLabelPrinting ref="printingPanel" />
+        <RegisterWhHeaderActionBar
+          :register="registersStore.item"
+          :zones="ops.zones"
+          :loading="registerLoading || isInitializing"
+          icon-size="2x"
+          @bulk-change-parcel-status="showParcelStatusBulkDialog = true"
+          @close="closeList"
+        />
+      </div>
     </div>
     <hr class="hr" />
 
@@ -414,6 +425,7 @@ async function clearParcelDefect(item) {
                 readOnly || runningAction || loading || !canClearParcelDefect(item, authStore)
               "
             />
+            <MonitorLabelActions :item="item" template="OZON" :disabled="runningAction || loading || isInitializing" />
           </div>
         </template>
         <template

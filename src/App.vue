@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { RouterLink, RouterView } from 'vue-router'
+import { RouterLink, RouterView, useRoute } from 'vue-router'
 import { version } from '@/../package'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { mdiChevronDown, mdiChevronUp } from '@mdi/js'
@@ -12,6 +12,7 @@ import { useAlertStore } from '@/stores/alert.store.js'
 import { OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE, getRegisterNouns } from '@/helpers/op.mode.js'
 import { reportError } from '@/helpers/error.helpers.js'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
+import { useLabelPrintingStore } from '@/stores/label.printing.store.js'
 
 import { useDisplay } from 'vuetify'
 const { height } = useDisplay()
@@ -21,12 +22,19 @@ const authStore = useAuthStore()
 
 const statusStore = useStatusStore()
 const alertStore = useAlertStore()
+const printing = useLabelPrintingStore()
+const route = useRoute()
+const printingSettingsLink = computed(() => ({
+  path: '/printing/settings',
+  query: route.path === '/printing/settings' ? route.query : { returnUrl: route.fullPath }
+}))
 
 const baseUrl = import.meta.env.BASE_URL
 const paperworkRegisterNouns = getRegisterNouns(OP_MODE_PAPERWORK)
 const warehouseRegisterNouns = getRegisterNouns(OP_MODE_WAREHOUSE)
 
 onMounted(() => {
+  window.addEventListener('storage', printing.syncSettings)
   statusStore.fetchStatus().catch((error) => {
     reportError(error, { context: 'App.fetchStatus' })
     alertStore.error(error, { fallback: 'Не удалось загрузить состояние сервера' })
@@ -186,6 +194,8 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  window.removeEventListener('storage', printing.syncSettings)
+  printing.shutdown()
   exchangeRatesResizeObserver?.disconnect()
 })
 
@@ -292,6 +302,9 @@ function getUserName() {
           </v-list-item>
           <v-list-item>
             <RouterLink to="/scanjobs" class="link">Сканирования</RouterLink>
+          </v-list-item>
+          <v-list-item>
+            <RouterLink :to="printingSettingsLink" class="link" data-testid="print-settings-menu">Настройки печати</RouterLink>
           </v-list-item>
         </v-list-group>
 

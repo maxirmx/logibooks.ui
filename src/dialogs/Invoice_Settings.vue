@@ -6,7 +6,7 @@
 // Invoice settings dialog implemented to follow Register_EditDialog style & approach
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { focusFirstInvalidField } from '@/helpers/form.validation.helpers.js'
-import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
+import { runWithAlert } from '@/helpers/notification.helpers.js'
 import router from '@/router'
 import { Form } from 'vee-validate'
 import * as Yup from 'yup'
@@ -198,7 +198,7 @@ watch(
 )
 
 onMounted(() => {
-  return runWithRetryAlert(() => registersStore.getById(props.id), {
+  return runWithAlert(() => registersStore.getById(props.id), {
     fallback: 'Не удалось загрузить данные реестра'
   })
 })

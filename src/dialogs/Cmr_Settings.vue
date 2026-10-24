@@ -156,8 +156,7 @@ async function loadReferences() {
   } catch (error) {
     loadFailed.value = true
     alertStore.error(error, {
-      fallback: 'Не удалось загрузить данные для CMR',
-      action: { label: 'Повторить', handler: loadReferences }
+      fallback: 'Не удалось загрузить данные для CMR'
     })
   } finally {
     isInitializing.value = false

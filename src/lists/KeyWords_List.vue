@@ -4,7 +4,7 @@
 // This file is a part of Logibooks ui application
 
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
-import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
+import { runWithAlert } from '@/helpers/notification.helpers.js'
 import { onMounted, ref, computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
@@ -138,7 +138,7 @@ async function initializeList() {
 }
 
 onMounted(() =>
-  runWithRetryAlert(initializeList, {
+  runWithAlert(initializeList, {
     fallback: 'Не удалось загрузить ключевые слова'
   })
 )

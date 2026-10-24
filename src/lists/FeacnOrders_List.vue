@@ -13,7 +13,7 @@ import { useAlertStore } from '@/stores/alert.store.js'
 import ActionButton from '@/components/ActionButton.vue'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
-import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
+import { runWithAlert } from '@/helpers/notification.helpers.js'
 import { getProhibitionScopeRows } from '@/helpers/prohibition.scope.helpers.js'
 import router from '@/router'
 
@@ -39,7 +39,7 @@ const {
 // Always keep selectedOrderId in sync with visible orders
 async function loadPrefixes(orderId) {
   if (!orderId) return null
-  return runWithRetryAlert(() => feacnStore.getPrefixes(orderId), {
+  return runWithAlert(() => feacnStore.getPrefixes(orderId), {
     fallback: 'Не удалось загрузить префиксы порядка'
   })
 }
@@ -85,7 +85,7 @@ async function loadOrders() {
 }
 
 onMounted(() =>
-  runWithRetryAlert(loadOrders, {
+  runWithAlert(loadOrders, {
     fallback: 'Не удалось загрузить порядки кодов ТН ВЭД'
   })
 )

@@ -135,8 +135,7 @@ async function initialize() {
     }
   } catch (error) {
     alertStore.error(error, {
-      fallback: 'Ошибка при загрузке данных стоп-слова',
-      action: { label: 'Повторить', handler: initialize }
+      fallback: 'Ошибка при загрузке данных стоп-слова'
     })
   } finally {
     loading.value = false

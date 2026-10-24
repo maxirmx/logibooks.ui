@@ -8,6 +8,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { computed } from 'vue'
 import { createPagination, providePagination } from 'vuetify/lib/components/VDataTable/composables/paginate.js'
 import { useAuthStore } from '@/stores/auth.store.js'
+import { useScanjobsStore } from '@/stores/scanjobs.store.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import OzonParcelsList from '@/lists/OzonParcels_List.vue'
@@ -43,6 +44,10 @@ function reload() {
   const pinia = createPinia()
   piniaInstances.push(pinia)
   setActivePinia(pinia)
+  // Persisted-list-state tests use real stores without a live SignalR server.
+  vi.spyOn(useScanjobsStore(), 'createScanJobsListChannel').mockReturnValue({
+    start: vi.fn().mockResolvedValue(true), stop: vi.fn().mockResolvedValue(true)
+  })
   return useAuthStore()
 }
 function show(component, props = {}, stubs = {}) {
@@ -61,6 +66,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   fetchWrapper.get.mockImplementation(async url => {
     const path = new URL(url).pathname
+    if (path.endsWith('/scanjobs/ops')) return { types: [], operations: [], modes: [], statuses: [], constants: { inProgressStatus: 15, boxOnlyType: 20, parcelScanSource: 10 } }
     if (path.endsWith('/ops')) return { customsProcedures: [{ value: 10, name: 'Экспорт' }], transportationTypes: [], incoterms: [{ value: 2, name: 'FCA' }] }
     if (/\/registers\/\d+$/.test(path)) return { id: 4307, customsProcedureCode: 10 }
     if (/\/parcels\/a\/\d+$/.test(path)) return { id: 2, registerId: 4307, statusId: 1, checkStatus: 0 }

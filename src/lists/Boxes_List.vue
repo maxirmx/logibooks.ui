@@ -16,7 +16,7 @@ import { useRegistersStore } from '@/stores/registers.store.js'
 import { buildParcelListHeading } from '@/helpers/register.heading.helpers.js'
 import { getRegisterNouns, OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
-import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
+import { runWithAlert } from '@/helpers/notification.helpers.js'
 import { buildParcelListLocation } from '@/helpers/parcel.navigation.helpers.js'
 
 const props = defineProps({
@@ -108,7 +108,7 @@ function close() {
 }
 
 function loadData() {
-  return runWithRetryAlert(
+  return runWithAlert(
     () =>
       Promise.all([
         registersStore.ensureOpsLoaded(),

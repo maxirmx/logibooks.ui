@@ -54,7 +54,6 @@ export const useAlertStore = defineStore('alert', () => {
       timeout,
       remaining: timeout,
       expiresAt: null,
-      action: options.action ?? null,
       createdAt: Date.now()
     }
 

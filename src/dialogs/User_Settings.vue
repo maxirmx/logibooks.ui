@@ -111,8 +111,7 @@ async function initialize() {
   } catch (error) {
     initializationFailed.value = true
     alertStore.error(error, {
-      fallback: 'Не удалось загрузить данные пользователя',
-      action: { label: 'Повторить', handler: initialize }
+      fallback: 'Не удалось загрузить данные пользователя'
     })
   }
 }

@@ -100,7 +100,7 @@ describe('UserParcelFilters', () => {
     expect(filters.map(item => item.name)).toEqual(['Янтарь', 'Альфа', 'Бета'])
   })
 
-  it('keeps the row and offers retry on deletion failure', async () => {
+  it('keeps the row after deletion failure and allows repeating its action', async () => {
     fetchWrapper.delete.mockRejectedValueOnce(new Error('Удаление не удалось'))
     const wrapper = mountFilters()
     await flushPromises()
@@ -108,7 +108,8 @@ describe('UserParcelFilters', () => {
     await flushPromises()
     expect(wrapper.find('tbody tr').exists()).toBe(true)
     expect(wrapper.find('[data-testid="page-alert-region"]').text()).toContain('Удаление не удалось')
-    await wrapper.find('[data-testid="page-alert-region"] button').trigger('click')
+    expect(wrapper.find('.page-alert-region__action').exists()).toBe(false)
+    await wrapper.find('[data-testid="parcel-filter-delete-1"]').trigger('click')
     await flushPromises()
     expect(fetchWrapper.delete).toHaveBeenCalledTimes(2)
     expect(wrapper.find('tbody .v-data-table__tr').exists()).toBe(false)
@@ -124,14 +125,17 @@ describe('UserParcelFilters', () => {
     expect(wrapper.find('tbody tr').exists()).toBe(true)
   })
 
-  it('shows retryable list failure and recovers', async () => {
+  it('shows a message-only list failure and recovers when reopened', async () => {
     fetchWrapper.get.mockRejectedValueOnce(new Error('Список недоступен'))
     const wrapper = mountFilters()
     await flushPromises()
     expect(wrapper.find('[data-testid="page-alert-region"]').text()).toContain('Список недоступен')
-    await wrapper.find('[data-testid="page-alert-region"] button').trigger('click')
+    expect(wrapper.find('.page-alert-region__action').exists()).toBe(false)
+    wrapper.unmount()
+    const reloaded = mountFilters()
     await flushPromises()
-    expect(wrapper.find('tbody tr').exists()).toBe(true)
+    expect(reloaded.find('tbody .v-data-table__tr').text()).toContain(filter.name)
+    reloaded.unmount()
   })
 
   it('reports a navigation failure once', async () => {

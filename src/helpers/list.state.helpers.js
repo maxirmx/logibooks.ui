@@ -39,13 +39,13 @@ export function createSessionListState(onError) {
   let pendingEdits = Object.create(null)
   const bindings = new Set()
 
-  function attempt(operation, retry = persist) {
+  function attempt(operation) {
     try {
       operation()
       failed = false
       return true
     } catch (error) {
-      if (!failed) onError(error, () => { failed = false; return retry() })
+      if (!failed) onError(error)
       failed = true
       return false
     }
@@ -67,8 +67,8 @@ export function createSessionListState(onError) {
 
   function persist() {
     if (updating) return true
-    // A failed read must be retried before any write can replace the unread document.
-    if (pendingRead) return false
+    // Restore unread state before an ordinary persistence attempt can replace it.
+    if (pendingRead) return restorePendingState()
     return attempt(() => {
       if (userId == null) {
         sessionStorage.removeItem(LIST_STATE_STORAGE_KEY)
@@ -92,10 +92,10 @@ export function createSessionListState(onError) {
     }
   }
 
-  function retryRestoration() {
+  function restorePendingState() {
     if (!pendingRead) return persist()
     updating = true
-    const succeeded = attempt(readStoredState, retryRestoration)
+    const succeeded = attempt(readStoredState)
     if (succeeded) {
       // Explicit edits made while storage was unavailable win over saved values.
       for (const [key, edits] of Object.entries(pendingEdits)) {
@@ -125,7 +125,7 @@ export function createSessionListState(onError) {
         sessionStorage.removeItem(LEGACY_STORAGE_KEY)
         sessionStorage.removeItem(LIST_STATE_STORAGE_KEY)
       }
-    }, retryRestoration)
+    })
     bindings.forEach(restore)
     updating = false
   }

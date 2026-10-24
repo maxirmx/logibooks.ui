@@ -236,8 +236,7 @@ async function initialize() {
     }
   } catch (error) {
     alertStore.error(error, {
-      fallback: 'Ошибка при загрузке данных префикса',
-      action: { label: 'Повторить', handler: initialize }
+      fallback: 'Ошибка при загрузке данных префикса'
     })
   } finally {
     if (!isCreate.value) {

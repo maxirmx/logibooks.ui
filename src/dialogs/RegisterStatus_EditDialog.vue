@@ -7,7 +7,7 @@ import FieldError from '@/components/FieldError.vue'
 import { useAlertStore } from '@/stores/alert.store.js'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { focusFirstInvalidField } from '@/helpers/form.validation.helpers.js'
-import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
+import { runWithAlert } from '@/helpers/notification.helpers.js'
 import { reportFormError } from '@/helpers/error.helpers.js'
 import { ref, computed } from 'vue'
 import router from '@/router'
@@ -61,7 +61,7 @@ if (isCreate.value) {
 } else {
   const refs = storeToRefs(registerStatusesStore)
   registerStatus = refs.registerStatus
-  await runWithRetryAlert(() => registerStatusesStore.getById(props.registerStatusId), {
+  await runWithAlert(() => registerStatusesStore.getById(props.registerStatusId), {
     fallback: 'Не удалось загрузить статус партии'
   })
 }

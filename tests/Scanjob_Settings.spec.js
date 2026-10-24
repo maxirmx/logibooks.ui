@@ -311,7 +311,7 @@ describe('Scanjob_Settings.vue', () => {
         await resolveAll()
         expect(wrapper.get('#name').element.value).toBe(enteredName)
       }
-    }
+  }
   )
 
   it('leaves the name empty and required when there is no deal number', async () => {
@@ -336,10 +336,10 @@ describe('Scanjob_Settings.vue', () => {
       const wrapper = mountComponent({ mode: 'create', registerId: 22, dealNumber: 'ABC-1' })
       await resolveAll()
       expect(wrapper.get('#name').element.value).toBe('')
-    }
+  }
   )
 
-  it('shows initialization failure once and generates defaults after a visible retry', async () => {
+  it('shows initialization failure once without alert callbacks', async () => {
     const error = new Error('Не удалось загрузить операции')
     ensureOpsLoaded.mockRejectedValueOnce(error)
     const wrapper = mountComponent({
@@ -356,16 +356,7 @@ describe('Scanjob_Settings.vue', () => {
     expect(create).not.toHaveBeenCalled()
     expect(routerPush).not.toHaveBeenCalled()
 
-    await wrapper.get('.page-alert-region__action').trigger('click')
-    await resolveAll()
-    expect(ensureOpsLoaded).toHaveBeenCalledTimes(2)
-    expect(getRegisterById).toHaveBeenCalledOnce()
-    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
-    expect(wrapper.get('#name').element.value).toBe('Входящее для сделки ABC-1')
-    await wrapper.get('#operation').setValue('15')
-    await resolveAll()
-    expect(wrapper.get('#name').element.value).toBe('Сортировка для сделки ABC-1')
-    expect(alertError).toHaveBeenCalledOnce()
+    expect(wrapper.find('.page-alert-region__action').exists()).toBe(false)
   })
 
   it('renders edit mode and updates scanjob on save action', async () => {

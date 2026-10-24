@@ -66,8 +66,7 @@ vi.mock('@/stores/alert.store.js', () => ({
   useAlertStore: () => ({
     error: (error, options = {}) => {
       mockAlert.value = {
-        message: error?.message || options.fallback,
-        action: options.action
+        message: error?.message || options.fallback
       }
     }
   })
@@ -77,7 +76,7 @@ vi.mock('@/components/PageAlertRegion.vue', () => ({
   default: {
     setup: () => ({ mockAlert }),
     template:
-      '<div data-testid="page-alert-region"><span>{{ mockAlert?.message }}</span><button v-if="mockAlert?.action" data-testid="alert-retry" @click="mockAlert.action.handler()">Повторить</button></div>'
+      '<div data-testid="page-alert-region"><span>{{ mockAlert?.message }}</span></div>'
   }
 }))
 

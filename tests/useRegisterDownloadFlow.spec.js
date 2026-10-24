@@ -69,16 +69,14 @@ describe('shared register download flow', () => {
     wrapper.unmount()
   })
 
-  it.each(['download', 'getDownloadFormats'])('does not retry %s after unmount', async method => {
+  it.each(['download', 'getDownloadFormats'])('reports a %s failure without alert callback metadata', async method => {
     registersStore[method].mockRejectedValueOnce(new Error('failed'))
     const { flow, wrapper } = mountFlow()
     if (method === 'download') await flow.download({ register: register(WBRN_REGISTER_ID) })
     else await flow.loadFormats(register(WBRN_REGISTER_ID))
     expect(alertStore.error).toHaveBeenCalledTimes(1)
-    const retry = alertStore.error.mock.calls[0][1].action.handler
+    expect(wrapper.find('.page-alert-region__action').exists()).toBe(false)
     wrapper.unmount()
-    expect(await retry()).toBe(false)
-    expect(registersStore[method]).toHaveBeenCalledTimes(1)
   })
 
   it.each([WBRN_REGISTER_ID, OZON_COMPANY_ID, GTC_COMPANY_ID])(
@@ -92,7 +90,7 @@ describe('shared register download flow', () => {
       expect(registersStore.download).toHaveBeenCalledWith(10, 'r.xlsx', null, undefined, false, 'company')
       expect(alertStore.error).not.toHaveBeenCalled()
       wrapper.unmount()
-    }
+  }
   )
 
   it.each([undefined, 0])('uses companyId when registerType is %s', async (registerType) => {
@@ -141,7 +139,7 @@ describe('shared register download flow', () => {
     wrapper.unmount()
   })
 
-  it('shows one visible page error and retries discovery', async () => {
+  it('shows one visible discovery error without alert callbacks', async () => {
     const pinia = createPinia()
     setActivePinia(pinia)
     const pageAlerts = useAlertStore()
@@ -158,10 +156,7 @@ describe('shared register download flow', () => {
     await flush()
     expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
     expect(wrapper.get('[role="alert"]').text()).toContain('offline')
-    await wrapper.get('.page-alert-region__action').trigger('click')
-    await flush()
-    expect(flow.companyFormatName.value).toBe('Receiver')
-    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+    expect(wrapper.find('.page-alert-region__action').exists()).toBe(false)
     wrapper.unmount()
   })
 })

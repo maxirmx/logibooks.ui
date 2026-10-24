@@ -147,7 +147,7 @@ describe('shared local state and lifecycle', () => {
 })
 
 describe('storage failures', () => {
-  it.each([false, true])('retries an unread document without overwriting saved controls (intervening edit: %s)', async edit => {
+  it.each([false, true])('restores unread storage through normal persistence without overwriting edits (edit: %s)', async edit => {
     seed({ [key('auth')]: { users_search: 'saved search', parcels_tnved: '4901', parcels_page: 3 } })
     const originalRead = Storage.prototype.getItem
     const read = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(function (key) {
@@ -160,33 +160,32 @@ describe('storage failures', () => {
     if (edit) auth.users_search = 'new search'
     expect(auth.persistListState()).toBe(false)
     expect(JSON.parse(originalRead.call(sessionStorage, LIST_STATE_STORAGE_KEY)).lists[key('auth')].users_search).toBe('saved search')
-    await region.find('.page-alert-region__action').trigger('click')
-    expect(region.findAll('[role="alert"]')).toHaveLength(1)
     read.mockRestore()
-    await region.find('.page-alert-region__action').trigger('click')
+    expect(auth.persistListState()).toBe(true)
     expect(auth.users_search).toBe(edit ? 'new search' : 'saved search')
     expect(auth.parcels_tnved).toBe('4901')
     expect(auth.parcels_page).toBe(3)
     expect(document().lists[key('auth')].parcels_tnved).toBe('4901')
-    expect(region.find('[role="alert"]').exists()).toBe(false)
+    expect(useAlertStore().alert).not.toHaveProperty('action')
+    expect(region.find('.page-alert-region__action').exists()).toBe(false)
     region.unmount()
   })
 
-  it.each(['{broken', 'null', JSON.stringify({ version: 2, lists: {} }), JSON.stringify({ version: 1, lists: [] })])('shows malformed storage once and retries using live controls: %s', async raw => {
+  it.each(['{broken', 'null', JSON.stringify({ version: 2, lists: {} }), JSON.stringify({ version: 1, lists: [] })])('shows malformed storage once and persists live controls without alert callbacks: %s', async raw => {
     sessionStorage.setItem(LIST_STATE_STORAGE_KEY, raw)
     const auth = reload()
     const region = mount(PageAlertRegion)
     expect(region.findAll('[role="alert"]')).toHaveLength(1)
     expect(region.text()).toContain('Не удалось сохранить или восстановить настройки списков')
     expect(reportError).toHaveBeenCalledOnce()
-    await region.find('.page-alert-region__action').trigger('click')
+    expect(auth.persistListState()).toBe(true)
     expect(document().version).toBe(1)
     expect(auth.users_search).toBe('')
-    expect(useAlertStore().alert).toBeNull()
+    expect(region.find('.page-alert-region__action').exists()).toBe(false)
     region.unmount()
   })
 
-  it('retains values after a write failure, deduplicates automatic errors, and retries the latest state', async () => {
+  it('retains values after a write failure and persists the latest state without alert callbacks', async () => {
     const auth = reload()
     const write = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('Quota exceeded') })
     auth.users_search = 'first'
@@ -196,13 +195,10 @@ describe('storage failures', () => {
     expect(reportError).toHaveBeenCalledOnce()
     const region = mount(PageAlertRegion)
     expect(region.findAll('[role="alert"]')).toHaveLength(1)
-    await region.find('.page-alert-region__action').trigger('click')
-    expect(region.findAll('[role="alert"]')).toHaveLength(1)
-    expect(reportError).toHaveBeenCalledTimes(2)
     write.mockRestore()
-    await region.find('.page-alert-region__action').trigger('click')
+    expect(auth.persistListState()).toBe(true)
     expect(document().lists[key('auth')].users_search).toBe('latest')
-    expect(region.find('[role="alert"]').exists()).toBe(false)
+    expect(region.find('.page-alert-region__action').exists()).toBe(false)
     region.unmount()
   })
 

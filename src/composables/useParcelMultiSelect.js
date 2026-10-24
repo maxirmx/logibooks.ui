@@ -2,7 +2,8 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick, toValue } from 'vue'
+import { reportError } from '@/helpers/error.helpers.js'
 
 /**
  * Composable for multi-select behaviour on parcel data tables.
@@ -23,7 +24,13 @@ export function useParcelMultiSelect({
   dataTableRef,
   getBaseRowClass = () => '',
   onContextMenu = null,
+  getItemId = item => item.id,
+  isItemSelectable = () => true,
+  disabled = false,
+  scopeKey = null,
 }) {
+  const selectableItems = computed(() => items.value.filter(item => getItemId(item) != null && isItemSelectable(item)))
+  const isDisabled = () => loading.value || toValue(disabled)
   const selectedParcelIds = ref(new Set(
     selectedParcelId.value != null ? [selectedParcelId.value] : []
   ))
@@ -32,8 +39,8 @@ export function useParcelMultiSelect({
   // ------- selection helpers -------
 
   function updateSelectedParcelIds() {
-    if (loading.value) return
-    const currentIds = new Set(items.value.map(i => i.id))
+    if (isDisabled()) return
+    const currentIds = new Set(selectableItems.value.map(getItemId))
     selectedParcelIds.value = new Set([...selectedParcelIds.value].filter(id => currentIds.has(id)))
 
     if (selectedParcelId.value && !currentIds.has(selectedParcelId.value)) {
@@ -46,11 +53,14 @@ export function useParcelMultiSelect({
   }
 
   function handleRowClick(event, { item }) {
-    const id = item.id
+    if (isDisabled() || !isItemSelectable(item) ||
+        event.target?.closest?.('button, a, input, select, textarea, [role="button"], [role="menuitem"]')) return
+    const id = getItemId(item)
+    if (id == null) return
 
     if (event.shiftKey && lastClickedId.value != null) {
       window.getSelection()?.removeAllRanges()
-      const ids = items.value.map(i => i.id)
+      const ids = selectableItems.value.map(getItemId)
       const startIdx = ids.indexOf(lastClickedId.value)
       const endIdx = ids.indexOf(id)
       if (startIdx !== -1 && endIdx !== -1) {
@@ -98,10 +108,10 @@ export function useParcelMultiSelect({
         const selectedRows = tableElement.querySelectorAll('.selected-parcel-row')
         const lastRow = selectedRows[selectedRows.length - 1]
         if (lastRow) {
-          lastRow.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' })
+          lastRow.scrollIntoView?.({ behavior: 'smooth', block: 'center', inline: 'nearest' })
         }
-      } catch {
-        // Swallow errors during scroll attempt
+      } catch (error) {
+        reportError(error, { context: 'parcel selection scroll' })
       }
     })
   }
@@ -110,25 +120,26 @@ export function useParcelMultiSelect({
 
   function getRowProps(data) {
     const baseClass = getBaseRowClass(data)
-    const selectedClass = selectedParcelIds.value.has(data.item.id) ? 'selected-parcel-row' : ''
+    const selectedClass = selectedParcelIds.value.has(getItemId(data.item)) ? 'selected-parcel-row' : ''
     return { class: `${baseClass} ${selectedClass}`.trim() }
   }
 
   // ------- computed helpers -------
 
   const selectedItems = computed(() =>
-    items.value.filter(item => selectedParcelIds.value.has(item.id))
+    selectableItems.value.filter(item => selectedParcelIds.value.has(getItemId(item)))
   )
 
   // ------- right-click handler -------
 
   function handleRowContextMenu(event, { item }) {
+    if (isDisabled() || !isItemSelectable(item) || getItemId(item) == null) return
     event.preventDefault()
 
-    if (!selectedParcelIds.value.has(item.id)) {
-      selectedParcelIds.value = new Set([item.id])
-      selectedParcelId.value = item.id
-      lastClickedId.value = item.id
+    if (!selectedParcelIds.value.has(getItemId(item))) {
+      selectedParcelIds.value = new Set([getItemId(item)])
+      selectedParcelId.value = getItemId(item)
+      lastClickedId.value = getItemId(item)
     }
 
     onContextMenu?.()
@@ -146,15 +157,35 @@ export function useParcelMultiSelect({
     }
   )
 
-  const stopPageWatch = watch(page, () => {
+  function clearSelection() {
     selectedParcelIds.value = new Set()
     selectedParcelId.value = null
     lastClickedId.value = null
+  }
+
+  function selectAllCurrentPage() {
+    if (isDisabled()) return
+    selectedParcelIds.value = new Set(selectableItems.value.map(getItemId))
+    selectedParcelId.value = [...selectedParcelIds.value].at(-1) ?? null
+    lastClickedId.value = selectedParcelId.value
+  }
+
+  function removeSelected(ids) {
+    const removed = new Set(ids)
+    selectedParcelIds.value = new Set([...selectedParcelIds.value].filter(id => !removed.has(id)))
+    if (removed.has(selectedParcelId.value)) selectedParcelId.value = [...selectedParcelIds.value].at(-1) ?? null
+    if (removed.has(lastClickedId.value)) lastClickedId.value = selectedParcelId.value
+  }
+
+  const stopPageWatch = watch([page, () => toValue(scopeKey)], clearSelection)
+  const stopLoadingWatch = watch(() => isDisabled(), busy => {
+    if (!busy) updateSelectedParcelIds()
   })
 
   function stop() {
     stopItemsWatch()
     stopPageWatch()
+    stopLoadingWatch()
   }
 
   return {
@@ -167,5 +198,8 @@ export function useParcelMultiSelect({
     scrollToSelectedItem,
     getRowProps,
     stop,
+    clearSelection,
+    selectAllCurrentPage,
+    removeSelected,
   }
 }

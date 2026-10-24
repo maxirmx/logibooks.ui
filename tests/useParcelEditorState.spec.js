@@ -115,17 +115,12 @@ describe('parcel editor initialization lifecycle', () => {
     expect(dependencies).toHaveBeenCalledTimes(count)
   })
 
-  it('ignores a disposed editor history retry and handles synchronous history failures', async () => {
+  it('handles synchronous editor history failures without alert callbacks', async () => {
     vi.spyOn(useParcelViewsStore(), 'add').mockImplementationOnce(() => { throw new Error('History failed') })
     const { wrapper } = harness()
     await flushPromises()
     expect(wrapper.get('input').element.value).toBe('Product')
-    const retry = useAlertStore().alert.action.handler
-    await wrapper.get('.page-alert-region__action').trigger('click')
-    await flushPromises()
-    expect(transport.post).toHaveBeenCalledTimes(1)
+    expect(wrapper.find('.page-alert-region__action').exists()).toBe(false)
     wrapper.unmount()
-    expect(await retry()).toBe(false)
-    expect(transport.post).toHaveBeenCalledTimes(1)
   })
 })

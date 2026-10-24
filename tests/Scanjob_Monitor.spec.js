@@ -10,7 +10,8 @@ import ScanjobMonitor from '@/dialogs/Scanjob_Monitor.vue'
 import { defaultGlobalStubs } from './helpers/test-utils'
 import { OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 
-vi.mock('@/composables/useAppConfirm.js', () => ({ useAppConfirm: () => vi.fn().mockResolvedValue(true) }))
+const manualConfirm = vi.hoisted(() => vi.fn().mockResolvedValue(true))
+vi.mock('@/composables/useAppConfirm.js', () => ({ useAppConfirm: () => manualConfirm }))
 
 const mockBack = vi.hoisted(() => vi.fn())
 const mockPush = vi.hoisted(() => vi.fn())
@@ -31,6 +32,7 @@ const mockScanjob = vi.hoisted(() => ({
 const getById = vi.hoisted(() =>
   vi.fn().mockResolvedValue({ id: 42, name: 'Scanjob A', type: 30, operation: 30, status: 15, registerId: 101 })
 )
+const manualScanParcel = vi.hoisted(() => vi.fn())
 const mockRegisterItem = vi.hoisted(() => ({
   id: 101,
   dealNumber: 'DEAL-101',
@@ -311,6 +313,9 @@ vi.mock(
 
 vi.mock('@/stores/scanjobs.store.js', () => ({
   useScanjobsStore: () => ({
+    ops: { constants: { inProgressStatus: 15, boxOnlyType: 20, parcelScanSource: 10 } },
+    ensureOpsLoaded: vi.fn().mockResolvedValue(true),
+    getScanJobLabel: job => `#${job.id}`,
     scanjob: mockScanjob,
     monitorLoading,
     monitorError,
@@ -322,6 +327,7 @@ vi.mock('@/stores/scanjobs.store.js', () => ({
       NotInRegister: 3
     },
     getById,
+    scanParcel: manualScanParcel,
     loadMonitorSnapshot,
     resolveMonitorTarget,
     loadMonitorFollowUsers,
@@ -337,6 +343,7 @@ vi.mock('@/stores/alert.store.js', () => ({
   useAlertStore: () => ({
     get alert() { return mockAlert.value },
     error: alertError,
+    success: vi.fn(),
     dismiss: dismissAlert
   })
 }))
@@ -476,6 +483,7 @@ describe('Scanjob_Monitor.vue', () => {
   beforeEach(() => {
     vi.useRealTimers()
     vi.clearAllMocks()
+    manualConfirm.mockReset().mockResolvedValue(true)
     mockCurrentRoute.value = { fullPath: '/scanjobs/42/monitor' }
     mockAlert.value = null
     alertError.mockImplementation((error) => {
@@ -660,7 +668,7 @@ describe('Scanjob_Monitor.vue', () => {
       )
       wrapper.unmount()
       await flushPromises()
-    }
+  }
   )
 
   it.each(['', null, undefined])('uses the existing heading fallback for an unnamed scanjob: %j', async (name) => {
@@ -887,14 +895,14 @@ describe('Scanjob_Monitor.vue', () => {
     await wrapper.get('[data-testid="scanjob-monitor-jump-action"]').trigger('click')
     await flushPromises()
 
-    expect(wrapper.find('.selected-parcel-row').exists()).toBe(true)
+    expect(wrapper.find('.monitor-followed-parcel-row').exists()).toBe(true)
 
     loadMonitorSnapshot.mockResolvedValue(registerSnapshot)
     clearMonitor.mockResolvedValue(true)
     await wrapper.vm.openRegisterMonitor()
     await flushPromises()
 
-    expect(wrapper.find('.selected-parcel-row').exists()).toBe(false)
+    expect(wrapper.find('.monitor-followed-parcel-row').exists()).toBe(false)
   })
 
   it('stays on same scope without navigation when scope is unchanged and reloadIfSame is false', async () => {
@@ -1313,7 +1321,7 @@ describe('Scanjob_Monitor.vue', () => {
 
     expect(loadMonitorSnapshot).toHaveBeenLastCalledWith(42, { area: 1, boxId: 7 })
     expect(mockReplace).not.toHaveBeenCalled()
-    expect(wrapper.find('.selected-parcel-row').exists()).toBe(true)
+    expect(wrapper.find('.monitor-followed-parcel-row').exists()).toBe(true)
   })
 
   it('follows selected user event to an unassigned bucket', async () => {
@@ -1701,4 +1709,63 @@ describe('Scanjob_Monitor.vue', () => {
     expect(wrapper.find('[data-testid="scanjob-monitor-closed"]').exists()).toBe(true)
     expect(wrapper.get('button[data-testid="scanjob-monitor-follow-user-open"]').classes()).not.toContain('anti-btn-green')
   })
+  it('shows the header spinner after scan confirmation and disables monitor actions', async () => {
+    isAdmin.value = true
+    const job = { id: 42, name: 'Scanjob A', type: 30, operation: 10, status: 15, registerId: 101 }
+    mockScanjob.value = job
+    getById.mockResolvedValue(job)
+    loadMonitorSnapshot.mockResolvedValue(boxSnapshot)
+    let accept, finishScan
+    manualConfirm.mockImplementationOnce(() => new Promise(resolve => { accept = resolve }))
+    manualScanParcel.mockImplementationOnce(() => new Promise(resolve => { finishScan = resolve }))
+    const wrapper = mount(ScanjobMonitor, { props: { scanjobId: 42, monitorScope: box7MonitorScope }, global: { stubs: monitorGlobalStubs } })
+    await flushPromises()
+    const run = wrapper.vm.manualScan.run([{ parcelId: 90 }], 42, true)
+    await flushPromises()
+    expect(wrapper.find('[data-testid="scanjob-monitor-operation-loading"]').exists()).toBe(false)
+    expect(manualScanParcel).not.toHaveBeenCalled()
+    expect(wrapper.get('button[data-testid="scanjob-monitor-close-action"]').element.disabled).toBe(true)
+    accept(true)
+    await flushPromises()
+    expect(wrapper.get('[data-testid="scanjob-monitor-operation-loading"] .spinner-border').exists()).toBe(true)
+    for (const name of ['close-action', 'jump-open', 'follow-user-open']) {
+      expect(wrapper.get('button[data-testid="scanjob-monitor-' + name + '"]').element.disabled).toBe(true)
+    }
+    finishScan({ parcelCount: 1, scanSource: 10 })
+    await run
+    await flushPromises()
+    expect(wrapper.find('[data-testid="scanjob-monitor-operation-loading"]').exists()).toBe(false)
+    expect(wrapper.get('button[data-testid="scanjob-monitor-close-action"]').element.disabled).toBe(false)
+    wrapper.unmount()
+  })
+  for (const navigationFails of [false, true]) {
+    it('defers followed-scanner navigation during manual scanning' + (navigationFails ? ' and presents a replay failure' : ''), async () => {
+      persistedFollowUserId.value = 17
+      isAdmin.value = true
+      const job = { id: 42, name: 'Scanjob A', type: 30, operation: 10, status: 15, registerId: 101 }
+      mockScanjob.value = job
+      getById.mockResolvedValue(job)
+      loadMonitorSnapshot.mockResolvedValue(boxSnapshot)
+      let finishScan
+      manualScanParcel.mockImplementationOnce(() => new Promise(resolve => { finishScan = resolve }))
+      const wrapper = mount(ScanjobMonitor, { props: { scanjobId: 42, monitorScope: box7MonitorScope }, global: { stubs: monitorGlobalStubs } })
+      await flushPromises()
+      const rowAction = wrapper.findAll('button[data-testid="manual-parcel-scan"]').find(button => button.attributes('disabled') === undefined)
+      await rowAction.trigger('click')
+      await flushPromises()
+      expect(manualScanParcel).toHaveBeenCalledOnce()
+      await getFollowEventHandler()({ scanJobId: 42, userId: 17, followTarget: { area: 2, bucketIndex: 1, parcelId: 90 } })
+      expect(mockReplace).not.toHaveBeenCalled()
+      if (navigationFails) mockReplace.mockRejectedValueOnce(new Error('Follow navigation failed'))
+      finishScan({ parcelCount: 1, scanSource: 10 })
+      await flushPromises()
+      expect(mockReplace).toHaveBeenCalledWith({ name: 'scanjob-monitor-unassigned', params: { id: 42, bucketIndex: 1 } })
+      if (navigationFails) {
+        expect(alertError).toHaveBeenCalledWith(expect.objectContaining({ message: 'Follow navigation failed' }))
+        expect(wrapper.text()).toContain('Follow navigation failed')
+      }
+      wrapper.unmount()
+    })
+  }
+
 })

@@ -7,7 +7,7 @@ import FieldError from '@/components/FieldError.vue'
 import { useAlertStore } from '@/stores/alert.store.js'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { focusFirstInvalidField } from '@/helpers/form.validation.helpers.js'
-import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
+import { runWithAlert } from '@/helpers/notification.helpers.js'
 import { reportFormError } from '@/helpers/error.helpers.js'
 import { ref, computed } from 'vue'
 import router from '@/router'
@@ -43,13 +43,13 @@ let hotKeyActionScheme = ref({
 })
 
 // Load ops data
-await runWithRetryAlert(() => hotKeyActionSchemesStore.ensureOpsLoaded(), {
+await runWithAlert(() => hotKeyActionSchemesStore.ensureOpsLoaded(), {
   fallback: 'Не удалось загрузить список действий'
 })
 
 if (!isCreate.value) {
   ;({ hotKeyActionScheme } = storeToRefs(hotKeyActionSchemesStore))
-  await runWithRetryAlert(() => hotKeyActionSchemesStore.getById(props.hotKeyActionSchemeId), {
+  await runWithAlert(() => hotKeyActionSchemesStore.getById(props.hotKeyActionSchemeId), {
     fallback: 'Не удалось загрузить схему настройки клавиатуры'
   })
 

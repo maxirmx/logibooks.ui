@@ -5,7 +5,7 @@
 
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { focusFirstInvalidField } from '@/helpers/form.validation.helpers.js'
-import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
+import { runWithAlert } from '@/helpers/notification.helpers.js'
 import { reportFormError } from '@/helpers/error.helpers.js'
 import { computed, ref } from 'vue'
 import { storeToRefs } from 'pinia'
@@ -31,7 +31,7 @@ const props = defineProps({
 const customsStationsStore = useCustomsStationsStore()
 const countriesStore = useCountriesStore()
 const alertStore = useAlertStore()
-await runWithRetryAlert(() => countriesStore.ensureLoaded(), {
+await runWithAlert(() => countriesStore.ensureLoaded(), {
   fallback: 'Не удалось загрузить страны'
 })
 const { countries } = storeToRefs(countriesStore)
@@ -49,7 +49,7 @@ let customsStation = ref({
 
 if (!isCreate.value) {
   ;({ customsStation } = storeToRefs(customsStationsStore))
-  await runWithRetryAlert(() => customsStationsStore.getById(props.customsStationId), {
+  await runWithAlert(() => customsStationsStore.getById(props.customsStationId), {
     fallback: 'Ошибка при загрузке данных таможенного поста'
   })
 }

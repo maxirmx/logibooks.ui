@@ -241,8 +241,7 @@ describe('RegisterHistory_List.vue', () => {
       mockRefs.alert.value = {
         id: 1,
         severity: 'error',
-        message: error?.message || options.fallback,
-        action: options.action ?? null
+        message: error?.message || options.fallback
       }
     })
   })
@@ -391,7 +390,7 @@ describe('RegisterHistory_List.vue', () => {
     })
   })
 
-  it('shows one retryable page alert and retries the current criteria after a load failure', async () => {
+  it('shows one message-only page alert after a history load failure', async () => {
     mocks.getHistory.mockRejectedValueOnce(new Error('История недоступна'))
     const wrapper = mount(RegisterHistoryList, {
       props: { registerId: 42 },
@@ -404,11 +403,7 @@ describe('RegisterHistory_List.vue', () => {
     expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
     expect(mocks.alertError).toHaveBeenCalledTimes(1)
 
-    await alert.get('.page-alert-region__action').trigger('click')
-    await flushPromises()
-
-    expect(mocks.getHistory).toHaveBeenCalledTimes(2)
-    expect(wrapper.find('[data-testid="page-alert-region"]').exists()).toBe(false)
+    expect(wrapper.find('.page-alert-region__action').exists()).toBe(false)
   })
 
   it('does not report a stale failure after a newer filtered request succeeds', async () => {

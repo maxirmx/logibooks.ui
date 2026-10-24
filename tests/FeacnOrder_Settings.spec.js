@@ -164,7 +164,7 @@ describe('FeacnOrder_Settings', () => {
     expect(mocks.routerPush).not.toHaveBeenCalled()
   })
 
-  it('offers a retry after a rejected load', async () => {
+  it('shows a rejected load without alert callbacks', async () => {
     const error = new Error('load failed')
     mocks.getById.mockRejectedValueOnce(error)
     const alertStore = useAlertStore()
@@ -177,11 +177,7 @@ describe('FeacnOrder_Settings', () => {
     const options = alertError.mock.calls[0][1]
     expect(options.fallback).toBe('Не удалось загрузить правила применения нормативного документа')
 
-    await options.action.handler()
-    await flushPromises()
-
-    expect(mocks.getById).toHaveBeenCalledTimes(2)
-    expect(wrapper.text()).toContain('Order 7')
+    expect(wrapper.find('.page-alert-region__action').exists()).toBe(false)
   })
 
   it('returns to the orders list on cancel', async () => {

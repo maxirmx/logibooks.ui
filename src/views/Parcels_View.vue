@@ -129,7 +129,7 @@ function scheduleFilteredRefresh() {
     try {
       await refreshVisibleParcels()
     } catch (error) {
-      if (active && version === loadVersion) alertStore.error(error, { fallback: 'Не удалось обновить список посылок', action: { label: 'Повторить', handler: refreshVisibleParcels } })
+      if (active && version === loadVersion) alertStore.error(error, { fallback: 'Не удалось обновить список посылок' })
       else {
         // A completed refresh must not publish a message in a new page context.
         reportError(error, { context: 'parcel list refresh error after disposal or replacement' })
@@ -203,7 +203,7 @@ try {
     return
   }
   error.value = err
-  alertStore.error(err, { fallback: 'Не удалось загрузить список посылок', action: { label: 'Повторить', handler: load } })
+  alertStore.error(err, { fallback: 'Не удалось загрузить список посылок' })
 } finally {
   if (active && version === loadVersion) loading.value = false
 }

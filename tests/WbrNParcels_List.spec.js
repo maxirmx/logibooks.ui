@@ -878,7 +878,7 @@ describe('WbrNParcels_List.vue', () => {
 
   it('renders empty product links, alert clearing, and frozen-order sort icons', async () => {
     mockItems.value = [{ ...sampleParcel, productLink: '' }]
-    mockAlert.value = { id: 23, severity: 'error', message: 'WbrN list alert', action: null }
+    mockAlert.value = { id: 23, severity: 'error', message: 'WbrN list alert' }
     parcelsSortBy.value = [{ key: 'frozenOrder', order: 'asc' }]
 
     const wrapper = mount(WbrNParcelsList, {
@@ -985,8 +985,7 @@ describe('WbrNParcels_List.vue', () => {
     expect(alertError).toHaveBeenCalledWith(
       expect.objectContaining({ message: 'keywords failed' }),
       expect.objectContaining({
-        fallback: 'Ошибка при инициализации компонента',
-        action: expect.objectContaining({ label: 'Повторить', handler: expect.any(Function) })
+        fallback: 'Ошибка при инициализации компонента'
       })
     )
     expect(wrapper.vm.isInitializing).toBe(false)

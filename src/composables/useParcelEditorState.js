@@ -38,8 +38,7 @@ export function useParcelEditorState({ parcelId, formRef, loadDependencies, onRe
       } catch (error) {
         if (isCurrent(attemptVersion, id)) {
           alertStore.error(error, {
-            fallback: 'Не удалось сохранить историю просмотра посылки',
-            action: { label: 'Повторить', handler: () => recordView(attemptVersion, id) }
+            fallback: 'Не удалось сохранить историю просмотра посылки'
           })
         } else {
           // A history request can finish after leaving the editor; do not notify the new page.
@@ -79,8 +78,7 @@ export function useParcelEditorState({ parcelId, formRef, loadDependencies, onRe
       if (isCurrent(attemptVersion, id)) {
         phase.value = 'error'
         alertStore.error(error, {
-          fallback: 'Не удалось загрузить информацию о посылке',
-          action: { label: 'Повторить', handler: initialize }
+          fallback: 'Не удалось загрузить информацию о посылке'
         })
       } else {
         // Superseded initialization must not replace the destination page's message.

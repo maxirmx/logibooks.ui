@@ -323,8 +323,7 @@ describe('Scanjobs_List.vue', () => {
     expect(warningFn).toHaveBeenCalledWith(
       expect.objectContaining({ message: 'SignalR unavailable' }),
       expect.objectContaining({
-        fallback: 'Автоматическое обновление недоступно; используйте обновление списка',
-        action: expect.objectContaining({ label: 'Повторить', handler: expect.any(Function) })
+        fallback: 'Автоматическое обновление недоступно; используйте обновление списка'
       })
     )
     expect(wrapper.exists()).toBe(true)
@@ -345,8 +344,7 @@ describe('Scanjobs_List.vue', () => {
     expect(errorFn).toHaveBeenCalledWith(
       expect.objectContaining({ message: 'Register ops failed' }),
       expect.objectContaining({
-        fallback: 'Ошибка при загрузке данных',
-        action: expect.objectContaining({ label: 'Повторить', handler: expect.any(Function) })
+        fallback: 'Ошибка при загрузке данных'
       })
     )
     expect(wrapper.exists()).toBe(true)

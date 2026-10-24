@@ -233,7 +233,7 @@ describe.each(editors)('%s editor with real forms and stores', (_name, component
     expect(store.item.readOnly).toBe(true)
   })
 
-  it('shows one required-load failure and retries initialization', async () => {
+  it('shows one required-load failure without alert callbacks', async () => {
     requiredFailure = new Error('Dictionary unavailable')
     const wrapper = mountEditor(component)
     await settle()
@@ -242,13 +242,10 @@ describe.each(editors)('%s editor with real forms and stores', (_name, component
     expect(parcelGets()).toHaveLength(0)
     expect(wrapper.find('[name="productName"]').exists()).toBe(false)
     expect(action(wrapper, 'Отменить').attributes('disabled')).toBeUndefined()
-    await wrapper.get('.page-alert-region__action').trigger('click')
-    await settle()
-    expect(input(wrapper).element.value).toBe('Product 3')
-    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+    expect(wrapper.find('.page-alert-region__action').exists()).toBe(false)
   })
 
-  it('keeps Close available after a parcel-load rejection and retries the parcel', async () => {
+  it('keeps Close available after a parcel-load rejection', async () => {
     const pending = deferred()
     parcelRequests.push(pending)
     const wrapper = mountEditor(component)
@@ -258,13 +255,10 @@ describe.each(editors)('%s editor with real forms and stores', (_name, component
     expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
     expect(wrapper.get('[role="alert"]').text()).toContain('Parcel unavailable')
     expect(wrapper.find('[name="productName"]').exists()).toBe(false)
-    await wrapper.get('.page-alert-region__action').trigger('click')
-    await settle()
-    expect(input(wrapper).element.value).toBe('Product 3')
-    expect(parcelGets()).toHaveLength(2)
+    expect(wrapper.find('.page-alert-region__action').exists()).toBe(false)
   })
 
-  it('retries history alone without resetting the draft or duplicating concurrent attempts', async () => {
+  it('preserves the draft when view history fails without retrying automatically', async () => {
     const history = deferred(), retry = deferred()
     historyRequests.push(history, retry)
     const wrapper = mountEditor(component)
@@ -273,19 +267,8 @@ describe.each(editors)('%s editor with real forms and stores', (_name, component
     history.reject(new Error('History unavailable'))
     await settle()
     expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-    const gets = transport.get.mock.calls.length
-    const retryHistory = useAlertStore().alert.action.handler
-    await wrapper.get('.page-alert-region__action').trigger('click')
-    const duplicate = retryHistory()
-    await settle()
-    expect(transport.post.mock.calls.filter(([url]) => url.endsWith('/parcelviews'))).toHaveLength(2)
-    expect(transport.get.mock.calls).toHaveLength(gets)
     expect(input(wrapper).element.value).toBe('Draft before history completes')
-    retry.resolve()
-    await duplicate
-    await retryHistory()
-    expect(transport.post.mock.calls.filter(([url]) => url.endsWith('/parcelviews'))).toHaveLength(2)
-    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+    expect(wrapper.find('.page-alert-region__action').exists()).toBe(false)
   })
 
   it('keeps entered values and the editor open after a failed save and retries the update', async () => {
@@ -421,7 +404,7 @@ it('keeps SignalR check statuses when a REST refresh completes and preserves the
   expect(input(wrapper).element.value).toBe('Live draft')
 })
 
-it('presents a SignalR resync failure once and retries the refresh without resetting the draft', async () => {
+it('presents a SignalR resync failure once while preserving the draft', async () => {
   const wrapper = mountEditor()
   useAuthStore().user = { roles: ['sr-logist'] }
   await settle()
@@ -434,10 +417,7 @@ it('presents a SignalR resync failure once and retries the refresh without reset
   await settle()
   expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
   expect(wrapper.get('[role="alert"]').text()).toContain('Resync unavailable')
-  await wrapper.get('.page-alert-region__action').trigger('click')
-  await settle()
-  expect(input(wrapper).element.value).toBe('Live draft')
-  expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+  expect(wrapper.find('.page-alert-region__action').exists()).toBe(false)
 })
 
 it('does not alert a destination page when an old SignalR refresh fails', async () => {

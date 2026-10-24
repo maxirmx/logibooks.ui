@@ -70,12 +70,7 @@ async function reloadCompletedParcelAction(parcelsStore, parcelId, alertStore, c
   } catch (error) {
     const message = `${completedMessage}. Не удалось обновить данные посылки. ${getErrorMessage(error)}`
     parcelsStore.error = message
-    alertStore.error(message, {
-      action: {
-        label: 'Обновить',
-        handler: () => reloadCompletedParcelAction(parcelsStore, parcelId, alertStore, completedMessage, onRefreshed)
-      }
-    })
+    alertStore.error(message)
     return false
   }
 }

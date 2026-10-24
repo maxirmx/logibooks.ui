@@ -374,8 +374,7 @@ async function initializeList() {
   } catch (error) {
     if (isComponentMounted.value) {
       alertStore.error(error, {
-        fallback: 'Ошибка при инициализации компонента',
-        action: { label: 'Повторить', handler: initializeList }
+        fallback: 'Ошибка при инициализации компонента'
       })
       parcelsStore.error = error?.message || 'Ошибка при загрузке данных'
     }

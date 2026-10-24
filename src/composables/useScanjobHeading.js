@@ -36,8 +36,7 @@ export function useScanjobHeading(scanjobId, options = {}) {
     } catch (error) {
       if (isActive()) {
         alertStore.error(error, {
-          fallback: 'Ошибка при загрузке данных',
-          action: { label: 'Повторить', handler: loadScanjob }
+          fallback: 'Ошибка при загрузке данных'
         })
       }
       return null

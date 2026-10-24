@@ -101,39 +101,20 @@ describe('parcel action failure presentation', () => {
     expect(store.getById).not.toHaveBeenCalled()
   })
 
-  it.each(['approve', 'stopWords'])('%s offers refresh-only recovery after successful mutation', async action => {
+  it.each(['approve', 'stopWords'])('%s reports a refresh failure after successful mutation without resubmitting', async action => {
     store.getById.mockRejectedValueOnce(new Error('соединение потеряно'))
     await editor(action)
     await wrapper.get('[data-testid="run"]').trigger('click')
     await flushPromises()
     expect(wrapper.get('[role="alert"]').text()).toContain(action === 'approve' ? 'Посылка согласована' : 'Проверка посылки выполнена')
-    await wrapper.get('.page-alert-region__action').trigger('click')
-    await flushPromises()
-    expect(store.getById).toHaveBeenCalledTimes(2)
+    expect(alertStore.alert).not.toHaveProperty('action')
     expect(store.update).toHaveBeenCalledOnce()
     expect(action === 'approve' ? store.approve : store.validate).toHaveBeenCalledOnce()
-    expect(alertStore.alert).toBeNull()
   })
 
-  it('renders a rejected refresh retry once without resubmitting', async () => {
-    store.getById.mockRejectedValue(new Error('Сервер недоступен'))
-    await editor('approve')
-    await wrapper.get('[data-testid="run"]').trigger('click')
-    await flushPromises()
-    await wrapper.get('.page-alert-region__action').trigger('click')
-    await flushPromises()
-    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-    expect(wrapper.get('[role="alert"]').text()).toContain('Сервер недоступен')
-    expect(wrapper.get('[role="alert"]').text()).toContain('Посылка согласована')
-    store.getById.mockResolvedValueOnce({ id: 7, tnVed: 'recovered' })
-    await wrapper.get('.page-alert-region__action').trigger('click')
-    await flushPromises()
-    expect(alertStore.alert).toBeNull()
-    expect(store.getById).toHaveBeenCalledTimes(3)
-    expect(store.approve).toHaveBeenCalledOnce()
-  })
 
-  it('updates a touched TN VED field after excise refresh recovery without resubmitting', async () => {
+
+  it('preserves a touched TN VED field after a failed excise refresh', async () => {
     store.getById.mockRejectedValueOnce(new Error('соединение потеряно'))
     await editor('excise')
     await wrapper.get('[data-testid="tnved"]').setValue('edited-code')
@@ -141,12 +122,8 @@ describe('parcel action failure presentation', () => {
     await wrapper.get('[data-testid="run"]').trigger('click')
     await flushPromises()
     expect(wrapper.get('[data-testid="tnved"]').element.value).toBe('edited-code')
-    await wrapper.get('.page-alert-region__action').trigger('click')
-    await flushPromises()
-    expect(wrapper.get('[data-testid="tnved"]').element.value).toBe('1234567890')
+    expect(wrapper.get('[role="alert"]').text()).toContain('соединение потеряно')
     expect(store.approve).toHaveBeenCalledOnce()
-    expect(store.update).toHaveBeenCalledOnce()
-    expect(alertStore.alert).toBeNull()
   })
 
   it('returns unsuccessful for a stale parcel and preserves successful approval data', async () => {

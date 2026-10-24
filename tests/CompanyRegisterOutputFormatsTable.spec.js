@@ -93,30 +93,23 @@ describe('company register output format status table', () => {
     wrapper.unmount()
   })
 
-  it('keeps the row and retries the same delete after a transport failure', async () => {
+  it('keeps the row after a delete transport failure without alert callbacks', async () => {
     store.deleteRegisterOutputFormat.mockRejectedValueOnce(new Error('offline'))
     const wrapper = await mountTable()
     await wrapper.get(`[data-testid="register-output-delete-${COMPANY_REGISTER_OUTPUT_TYPES[0]}"]`).trigger('click')
     await flush()
     expect(wrapper.findAll('tbody tr')[0].text()).toContain('Настроен')
     expect(alerts.error).toHaveBeenCalledTimes(1)
-    await alerts.error.mock.calls[0][1].action.handler()
-    await flush()
-    expect(store.deleteRegisterOutputFormat).toHaveBeenCalledTimes(2)
-    expect(confirm).toHaveBeenCalledTimes(1)
-    expect(wrapper.findAll('tbody tr')[0].text()).toContain('Не настроен')
+    expect(wrapper.find('.page-alert-region__action').exists()).toBe(false)
     wrapper.unmount()
   })
 
-  it('keeps the summary hidden on load failure and retries all statuses', async () => {
+  it('keeps the summary hidden on load failure without alert callbacks', async () => {
     store.getRegisterOutputFormat.mockRejectedValueOnce(new Error('offline'))
     const wrapper = await mountTable()
     expect(wrapper.find('table').exists()).toBe(false)
     expect(alerts.error).toHaveBeenCalledTimes(1)
-    await alerts.error.mock.calls[0][1].action.handler()
-    await flush()
-    expect(store.getRegisterOutputFormat).toHaveBeenCalledTimes(4)
-    expect(wrapper.findAll('tbody tr')).toHaveLength(2)
+    expect(wrapper.find('.page-alert-region__action').exists()).toBe(false)
     wrapper.unmount()
   })
 

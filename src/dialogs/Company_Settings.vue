@@ -6,7 +6,7 @@
 import FieldError from '@/components/FieldError.vue'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { focusFirstInvalidField } from '@/helpers/form.validation.helpers.js'
-import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
+import { runWithAlert } from '@/helpers/notification.helpers.js'
 import { reportFormError } from '@/helpers/error.helpers.js'
 import { ref, computed, watch } from 'vue'
 import router from '@/router'
@@ -77,13 +77,12 @@ async function cancel() {
     await router.push('/companies')
   } catch (error) {
     alertStore.error(error, {
-      fallback: 'Не удалось вернуться к списку компаний',
-      action: { label: 'Повторить', handler: cancel }
+      fallback: 'Не удалось вернуться к списку компаний'
     })
   }
 }
 
-await runWithRetryAlert(() => countriesStore.ensureLoaded(), {
+await runWithAlert(() => countriesStore.ensureLoaded(), {
   fallback: 'Не удалось загрузить страны'
 })
 
@@ -109,7 +108,7 @@ const signatureStamp = computed(() => {
 
 if (!isCreate.value) {
   ;({ company } = storeToRefs(companiesStore))
-  await runWithRetryAlert(() => companiesStore.getById(props.companyId), {
+  await runWithAlert(() => companiesStore.getById(props.companyId), {
     fallback: 'Не удалось загрузить компанию'
   })
   const parsed = parseStampValue(company.value?.titleSignatureStamp)
@@ -218,8 +217,7 @@ async function returnAfterSave() {
     return true
   } catch (error) {
     alertStore.error(error, {
-      fallback: 'Компания сохранена, но не удалось вернуться к списку компаний',
-      action: { label: 'Повторить переход', handler: returnAfterSave }
+      fallback: 'Компания сохранена, но не удалось вернуться к списку компаний'
     })
     return false
   }

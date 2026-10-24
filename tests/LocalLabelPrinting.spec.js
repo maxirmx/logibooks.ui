@@ -30,7 +30,7 @@ const stubs = {
   'v-dialog': { props: ['modelValue'], template: '<div v-if="modelValue" role="dialog"><slot /></div>' },
   'v-card': { template: '<div><slot /></div>' }, 'v-card-title': { template: '<div><slot /></div>' }, 'v-card-text': { template: '<div><slot /></div>' }, 'v-card-actions': { template: '<div><slot /></div>' }
 }
-const host = defineComponent({ components: { LocalLabelPrinting, PageAlertRegion, ScanjobMonitorSummary }, template: '<div><hr class="hr" /><PageAlertRegion v-if="!printing?.configurationOpen" /><LocalLabelPrinting ref="printing" :scan-job-id="job" :user-id="user" :active="active" /><ScanjobMonitorSummary :print-queue="printing?.queueStatus" /></div>', setup: () => ({ printing: ref(null), job: ref(42), user: ref(9), active: ref(true) }) })
+const host = defineComponent({ components: { LocalLabelPrinting, PageAlertRegion, ScanjobMonitorSummary }, template: '<div><hr class="hr" /><PageAlertRegion v-if="!printing?.configurationOpen" /><LocalLabelPrinting ref="printing" :scan-job-id="job" :user-id="user" :active="active" :disabled="disabled" /><ScanjobMonitorSummary :print-queue="printing?.queueStatus" /></div>', setup: () => ({ printing: ref(null), job: ref(42), user: ref(9), active: ref(true), disabled: ref(false) }) })
 let wrapper, alerts, errorSpy
 beforeEach(() => {
   automaticPrintHistory.clear()
@@ -58,6 +58,20 @@ async function openSettings() {
 }
 async function arm() { await openSettings(); await panel().get('[data-testid="auto-print-mode"] select').setValue('KGT'); await flushPromises() }
 describe('local printing UI', () => {
+  it('locks printing controls for an external operation and restores them afterwards', async () => {
+    wrapper.vm.disabled = true
+    await flushPromises()
+    expect(panel().get('[data-testid="print-settings-action"]').element.disabled).toBe(true)
+    await panel().get('[data-testid="print-settings-action"]').trigger('click')
+    await panel().vm.printParcel({ parcelId: 8, template: 'OZON' })
+    expect(panel().find('[role="dialog"]').exists()).toBe(false)
+    expect(env.label).not.toHaveBeenCalled()
+    expect(env.qz.connect).not.toHaveBeenCalled()
+    wrapper.vm.disabled = false
+    await flushPromises()
+    await openSettings()
+    expect(panel().find('[role="dialog"]').exists()).toBe(true)
+  })
   it.each(['candidate', 'endpoint'].flatMap((source) => [
     'Не удалось напечатать стикер. Не указаны данные: дата общей накладной.',
     'Не удалось напечатать стикер. Не указаны данные: сумма в рублях.',
@@ -153,7 +167,7 @@ describe('local printing UI', () => {
       expect(wrapper.get('[data-testid="page-alert-region"] [role="status"]').text()).toContain('Этикетка отправлена в очередь принтера')
       expect(panel().vm.queueStatus.paused).toBe(false)
       expect(errorSpy).toHaveBeenCalledOnce()
-    }
+  }
   )
 
   it('selects printers directly, sorts TE200 first and renders the translated marking modes', async () => {

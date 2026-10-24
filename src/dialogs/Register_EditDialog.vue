@@ -508,8 +508,7 @@ async function loadRegister() {
   } catch (error) {
     registerLoadFailed.value = true
     alertStore.error(error, {
-      fallback: `Не удалось загрузить ${registerNouns.value.accusative}`,
-      action: { label: 'Повторить', handler: loadRegister }
+      fallback: `Не удалось загрузить ${registerNouns.value.accusative}`
     })
   }
 }
@@ -576,8 +575,7 @@ async function initializeDependencies() {
   } catch (error) {
     if (isComponentMounted.value) {
       alertStore.error(error, {
-        fallback: 'Не удалось загрузить данные формы',
-        action: { label: 'Повторить', handler: initializeDependencies }
+        fallback: 'Не удалось загрузить данные формы'
       })
     }
   } finally {

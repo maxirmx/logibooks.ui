@@ -14,7 +14,7 @@ import ActionButton from '@/components/ActionButton.vue'
 import { useAppConfirm } from '@/composables/useAppConfirm.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
-import { runWithRetryAlert } from '@/helpers/notification.helpers.js'
+import { runWithAlert } from '@/helpers/notification.helpers.js'
 
 const airportsStore = useAirportsStore()
 const authStore = useAuthStore()
@@ -84,7 +84,7 @@ async function deleteAirport(airport) {
 }
 
 onMounted(() =>
-  runWithRetryAlert(() => airportsStore.getAll(), {
+  runWithAlert(() => airportsStore.getAll(), {
     fallback: 'Не удалось загрузить коды аэропортов'
   })
 )

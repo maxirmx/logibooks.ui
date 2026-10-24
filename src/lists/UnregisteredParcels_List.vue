@@ -83,8 +83,7 @@ async function loadItems() {
     await unregisteredParcelsStore.getAll(registerId)
   } catch (error) {
     alertStore.error(error, {
-      fallback: 'Ошибка при загрузке незарегистрированных посылок',
-      action: { label: 'Повторить', handler: loadItems }
+      fallback: 'Ошибка при загрузке незарегистрированных посылок'
     })
   }
 }

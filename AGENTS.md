@@ -15,6 +15,7 @@ These instructions apply to the entire repository. Follow them for every new fea
 ## Message presentation
 
 - Publish application messages through `useAlertStore`; do not introduce page-specific alert stores or custom notification mechanisms.
+- The alert area must contain only the message and a small cross (`×`) dismissal button. Do not pass action callbacks or render retry, recovery, navigation, or other operation controls in alerts; use the page's normal controls instead.
 - Every route-level list, edit form, settings form, and full-screen dialog must render one `PageAlertRegion` immediately after its `<hr class="hr">` header rule.
 - Do not render global alerts at the bottom of forms or tables.
 - Put validation messages directly with their fields, on a dedicated row beneath the associated control. They must never participate in the control's horizontal flex row or reduce the control's width. Put general API and load failures in `PageAlertRegion`.

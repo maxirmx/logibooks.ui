@@ -1,6 +1,6 @@
 {
   "name": "logibooks-ui",
-  "version": "1.38.0",
+  "version": "1.37.6",
   "packageManager": "npm@11.19.1",
   "engines": {
     "npm": ">=11.0.0"
@@ -45,13 +45,13 @@
     "@mdi/js": "^7.2.96",
     "@rushstack/eslint-patch": "^1.2.0",
     "@vitejs/plugin-vue": "^6.0.7",
-    "@vitest/coverage-v8": "^4.1.8",
+    "@vitest/coverage-v8": "^4.1.12",
     "@vue/test-utils": "^2.3.2",
     "eslint": "^10.8.0",
     "eslint-plugin-vue": "^10.10.0",
     "jsdom": "^28.1.0",
     "vite": "^8.0.16",
-    "vitest": "^4.1.8",
+    "vitest": "^4.1.12",
     "vue-eslint-parser": "^10.1.4"
   },
   "allowScripts": {

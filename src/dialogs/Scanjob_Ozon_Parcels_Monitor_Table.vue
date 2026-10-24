@@ -13,10 +13,11 @@ defineProps({
   register: { type: Object, default: null },
   loading: { type: Boolean, default: false },
   defectActionLoading: { type: Boolean, default: false },
+  readOnly: { type: Boolean, default: false },
   selectedParcelId: { type: [Number, String], default: null }
 })
 
-defineEmits(['edit-parcel', 'set-defect', 'clear-defect'])
+defineEmits(['edit-parcel', 'set-defect', 'clear-defect', 'clear-ext-id'])
 </script>
 
 <template>
@@ -26,9 +27,11 @@ defineEmits(['edit-parcel', 'set-defect', 'clear-defect'])
     :register="register"
     :loading="loading"
     :defect-action-loading="defectActionLoading"
+    :read-only="readOnly"
     :selected-parcel-id="selectedParcelId"
     @edit-parcel="$emit('edit-parcel', $event)"
     @set-defect="$emit('set-defect', $event)"
     @clear-defect="$emit('clear-defect', $event)"
+    @clear-ext-id="$emit('clear-ext-id', $event)"
   />
 </template>

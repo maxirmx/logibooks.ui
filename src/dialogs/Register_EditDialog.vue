@@ -189,7 +189,7 @@ const fixedCompanyId = computed(() => {
   if (isWbrNRegister.value) {
     return WBR_COMPANY_ID
   }
-  return item.value?.registerType || item.value?.companyId || null
+  return item.value?.registerType || null
 })
 const loadReport = computed(() => item.value?.loadReport ?? null)
 const canViewLoadReport = computed(() =>
@@ -753,7 +753,9 @@ const registerStatusesLoaded = computed(
 )
 
 function updateDirection() {
-  item.value.companyId = fixedCompanyId.value
+  if (props.create) {
+    item.value.companyId = fixedCompanyId.value
+  }
   if (isExport.value) {
     item.value.destCountryCode = item.value.theOtherCountryCode
     item.value.origCountryCode = 643

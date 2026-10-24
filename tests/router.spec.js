@@ -30,6 +30,7 @@ vi.mock('@/stores/auth.store.js', () => ({
   useAuthStore: () => authStore
 }))
 
+vi.mock('@/views/Printer_SettingsView.vue', () => ({ default: { template: '<div />' } }))
 vi.mock('@/views/User_LoginView.vue', () => ({ default: { template: '<div />' } }))
 vi.mock('@/views/User_RecoverView.vue', () => ({ default: { template: '<div />' } }))
 vi.mock('@/views/User_RegisterView.vue', () => ({ default: { template: '<div />' } }))
@@ -52,6 +53,19 @@ async function resetRouter(to = '/recover') {
 
 describe('router guards', () => {
   let originalConsoleError
+
+  it('requires a warehouse role for print settings and preserves its return route', async () => {
+    authStore.user = { id: 1 }
+    authStore.hasWhRole = true
+    await router.push('/printing/settings?returnUrl=/scanjobs')
+    expect(router.currentRoute.value.path).toBe('/printing/settings')
+    expect(router.currentRoute.value.meta.reqWhRole).toBe(true)
+    expect(router.currentRoute.value.query.returnUrl).toBe('/scanjobs')
+    authStore.hasWhRole = false
+    await router.push('/recover')
+    await router.push('/printing/settings')
+    expect(router.currentRoute.value.path).toBe('/login')
+  })
 
   beforeEach(async () => {
     // Set up Pinia for store access

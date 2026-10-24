@@ -75,6 +75,7 @@ export function createQzPrinting({ client = qz, api = printingApi, storage = loc
   }
   return {
     state, connect,
+    restoreSelection() { state.printer = storage.getItem(PRINTER_STORAGE_KEY) || '' },
     onDisconnect(handler) { onDisconnect = handler },
     select(printer) {
       if (!state.printers.includes(printer)) throw printingError('PrinterMissing')

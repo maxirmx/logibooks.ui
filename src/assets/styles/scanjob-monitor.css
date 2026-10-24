@@ -23,6 +23,24 @@ This file is a part of Logibooks ui application
 
 .monitor-summary-content {
   min-width: 0;
+  flex: 1;
+}
+
+.monitor-summary-value-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.monitor-summary-value-row > .monitor-summary-value {
+  margin-top: 0;
+  flex-shrink: 0;
+}
+
+.monitor-summary-extra {
+  margin-left: auto;
+  min-width: 0;
 }
 
 .monitor-summary-label {

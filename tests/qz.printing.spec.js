@@ -19,6 +19,21 @@ beforeEach(() => {
   service = createQzPrinting({ client, api })
 })
 describe('QZ printing', () => {
+  it('restores the saved printer before the first print and validates it after reconnecting', async () => {
+    await service.connect()
+    service.select('Office')
+    const reopened = createQzPrinting({ client, api })
+    reopened.restoreSelection()
+    expect(reopened.state.printer).toBe('Office')
+    await reopened.ready()
+    await reopened.submit(label)
+    expect(client.configs.create).toHaveBeenLastCalledWith('Office', { jobName: label.jobName })
+    localStorage.removeItem(PRINTER_STORAGE_KEY)
+    reopened.restoreSelection()
+    expect(reopened.state.printer).toBe('')
+    await expect(reopened.ready()).rejects.toMatchObject({ code: 'NoSelection' })
+  })
+
   it('propagates storage failures and preserves the selected printer for retry', async () => {
     const storage = { getItem: vi.fn().mockReturnValue('Office'), removeItem: vi.fn().mockImplementationOnce(() => { throw new Error('storage denied') }) }
     service = createQzPrinting({ client, api, storage })

@@ -14,6 +14,17 @@ vi.mock('@microsoft/signalr', () => ({ HubConnectionState: { Connected: 'Connect
 afterEach(() => { vi.unstubAllGlobals(); vi.clearAllMocks(); auth.user = { token: 'token' } })
 function response(text, status = 200, type = 'application/json') { return { ok: status < 400, status, text: async () => text, headers: { get: () => type } } }
 describe('printing API', () => {
+  it('prints parcel labels outside scan jobs and propagates rejected requests', async () => {
+    const fetch = vi.fn().mockResolvedValueOnce(response('{"template":"WBRN"}'))
+      .mockResolvedValueOnce(response('{"msg":"no sticker","code":"Unavailable"}', 409))
+      .mockRejectedValueOnce(new Error('offline'))
+    vi.stubGlobal('fetch', fetch)
+    expect(await printingApi.label({ parcelId: 7, template: 'WBRN' })).toEqual({ template: 'WBRN' })
+    expect(fetch.mock.calls[0][0]).toContain('/parcels/7/label?template=WBRN')
+    expect(fetch.mock.calls[0][1]).toMatchObject({ headers: { Authorization: 'Bearer token' }, cache: 'no-store' })
+    await expect(printingApi.label({ parcelId: 7, template: 'WBRN' })).rejects.toMatchObject({ status: 409 })
+    await expect(printingApi.label({ parcelId: 7, template: 'WBRN' })).rejects.toThrow('offline')
+  })
   it('fetches fresh PEM and signs exact strings with authentication, without logging', async () => {
     const fetch = vi.fn().mockResolvedValueOnce(response('PEM\n', 200, 'text/plain')).mockResolvedValueOnce(response('{"signature":"sig"}')).mockResolvedValueOnce(response('{}')).mockResolvedValueOnce(response('{}'))
     vi.stubGlobal('fetch', fetch)
@@ -25,6 +36,17 @@ describe('printing API', () => {
     expect(fetch.mock.calls[2][0]).toContain('/scanjobs/42/monitor/parcels/7/label?template=WBRN')
     await printingApi.label({ scanJobId: 42, scanCodeId: 8, template: 'TJ_EXPORT' })
     expect(fetch.mock.calls[3][0]).toContain('/monitor/scans/8/label?template=TJ_EXPORT')
+  })
+  it('loads box labels without a scan-job dependency and propagates failures', async () => {
+    const fetch = vi.fn().mockResolvedValueOnce(response('{"template":"WBR_BOX"}'))
+      .mockResolvedValueOnce(response('{"msg":"missing sticker","code":"Unavailable"}', 409))
+      .mockRejectedValueOnce(new Error('offline'))
+    vi.stubGlobal('fetch', fetch)
+    expect(await printingApi.label({ boxId: 7, template: 'WBR_BOX' })).toEqual({ template: 'WBR_BOX' })
+    expect(fetch.mock.calls[0][0]).toContain('/boxes/7/label?template=WBR_BOX')
+    expect(fetch.mock.calls[0][1].headers.Authorization).toBe('Bearer token')
+    await expect(printingApi.label({ boxId: 7, template: 'WBR_BOX' })).rejects.toMatchObject({ status: 409, message: 'missing sticker' })
+    await expect(printingApi.label({ boxId: 7, template: 'WBR_BOX' })).rejects.toThrow('offline')
   })
   it('rejects transport, server, malformed and text failures without notification', async () => {
     const fetch = vi.fn().mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce(response('{"msg":"disabled","code":"QzDisabled"}', 503)).mockResolvedValueOnce(response('failure', 500, 'text/plain')).mockResolvedValueOnce(response('invalid'))

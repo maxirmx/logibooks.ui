@@ -5,26 +5,40 @@
 import { reactive } from 'vue'
 import { printingError } from './qz.printing.js'
 import { reportError } from '@/helpers/error.helpers.js'
+import { getPrintingErrorCode } from '@/helpers/label.printing.helpers.js'
 
 export const automaticPrintHistory = new Set()
 export const MAX_PRINT_QUEUE = 50
 export const MAX_PRINT_HISTORY = 10000
 
 export function createLabelPrintingCoordinator({ qz, api, channel, ownership, onError, onSent, history = automaticPrintHistory }) {
-  const state = reactive({ mode: 'Off', busy: false, paused: false, failed: null, overflow: null, queued: 0, last: null })
+  const state = reactive({ mode: 'Off', busy: false, transitioning: false, paused: false, failed: null, overflow: null, queued: 0, last: null })
   let scope = { scanJobId: null, userId: null }
   let epoch = 0
   let accepting = false
   let queue = []
   let working = null
   let manualRunning = false
+  let transition = Promise.resolve()
+  let pendingTransitions = 0
+
+  function serialize(operation) {
+    pendingTransitions++
+    state.transitioning = true
+    const result = transition.then(operation).finally(() => {
+      state.transitioning = --pendingTransitions > 0
+    })
+    // The returned promise belongs to the caller; a failed transition must not poison the queue.
+    transition = result.then(() => true, () => false)
+    return result
+  }
 
   function pause(error) {
     if (!accepting || state.paused) return
     state.paused = true
     if (!manualRunning) onError(error)
   }
-  async function disarm() {
+  function invalidate() {
     accepting = false
     epoch++
     queue = []
@@ -33,7 +47,14 @@ export function createLabelPrintingCoordinator({ qz, api, channel, ownership, on
     state.failed = null
     state.overflow = null
     state.queued = 0
+    return epoch
+  }
+  async function stopAndRelease() {
     try { await channel.stop() } finally { await ownership.release() }
+  }
+  function disarm() {
+    invalidate()
+    return serialize(stopAndRelease)
   }
   async function setScope(scanJobId, userId) {
     scope = { scanJobId, userId }
@@ -48,24 +69,32 @@ export function createLabelPrintingCoordinator({ qz, api, channel, ownership, on
       reportError(error, { context: 'missing printer cleanup' })
     }
   }
-  async function arm(mode) {
-    await disarm()
-    if (mode === 'Off') return
-    if (!['KGT', 'TJ'].includes(mode)) throw printingError('InvalidData')
-    if (!scope.scanJobId || !scope.userId) throw printingError('NoOperator')
-    const version = epoch
-    try {
-      await qz.ready()
-      if (version !== epoch) return
-      if (!await ownership.acquire()) throw printingError('OtherTab')
-      if (version !== epoch) { await ownership.release(); return }
-      state.mode = mode
-      accepting = true
-      await channel.start(scope.scanJobId, scope.userId)
-    } catch (error) {
-      if (version === epoch) { await disarm(); throw error }
-      // Scope changes cancel an arm operation before it can accept events.
-    }
+  function arm(mode) {
+    const version = invalidate()
+    const capturedScope = { ...scope }
+    return serialize(async () => {
+      await stopAndRelease()
+      if (version !== epoch || mode === 'Off') return
+      if (!['KGT', 'TJ'].includes(mode)) throw printingError('InvalidData')
+      if (!capturedScope.scanJobId || !capturedScope.userId) throw printingError('NoOperator')
+      try {
+        await qz.ready()
+        if (version !== epoch) return
+        if (!await ownership.acquire()) throw printingError('OtherTab')
+        if (version !== epoch) { await ownership.release(); return }
+        state.mode = mode
+        accepting = true
+        await channel.start(capturedScope.scanJobId, capturedScope.userId)
+      } catch (error) {
+        if (version === epoch) {
+          invalidate()
+          await stopAndRelease()
+          throw error
+        }
+        // Scope changes cancel activation; QZ unavailability remains an expected silent condition.
+        if (getPrintingErrorCode(error) !== 'QzUnavailable') reportError(error, { context: 'canceled printing activation' })
+      }
+    })
   }
   async function send(target, version) {
     await qz.ready()
@@ -131,7 +160,7 @@ export function createLabelPrintingCoordinator({ qz, api, channel, ownership, on
     pump()
   }
   async function manual(target) {
-    if (state.busy || queue.length || state.failed) return false
+    if (state.transitioning || state.busy || queue.length || state.failed) return false
     state.busy = true
     manualRunning = true
     const captured = { ...target }
@@ -141,7 +170,7 @@ export function createLabelPrintingCoordinator({ qz, api, channel, ownership, on
     finally { manualRunning = false; state.busy = false; pump() }
   }
   async function retry() {
-    if (state.busy || state.overflow) return false
+    if (state.transitioning || state.busy || state.overflow) return false
     state.busy = true
     const version = epoch
     try {

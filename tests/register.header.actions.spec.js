@@ -6,7 +6,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { ref, reactive } from 'vue'
 import { refreshAfterCheckStatusFreeze, useRegisterHeaderActions } from '@/helpers/register.actions.js'
-import { WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
+import { OZON_COMPANY_ID, WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
 
 const confirmMock = vi.hoisted(() => vi.fn())
 
@@ -80,6 +80,18 @@ describe('useRegisterHeaderActions', () => {
     registerLoading = ref(false)
     loadParcels = vi.fn().mockResolvedValue()
     isComponentMounted = ref(true)
+  })
+
+  it.each([undefined, null, 0])('does not select the company-format download path for type %s', async (registerType) => {
+    Object.assign(registersStore.item, { registerType, companyId: OZON_COMPANY_ID })
+    const actions = useRegisterHeaderActions({
+      registersStore, alertStore, runningAction, tableLoading, registerLoading,
+      loadParcels, isComponentMounted
+    })
+    await actions.downloadRegister()
+    expect(registersStore.getDownloadFormats).not.toHaveBeenCalled()
+    expect(registersStore.download).toHaveBeenCalledWith(1, 'register.xlsx')
+    expect(actions.companyFormatName.value).toBe('')
   })
 
   it('offers company output for a WbrN paperwork download and keeps the action locked', async () => {

@@ -12,6 +12,12 @@ import { vuetifyStubs, resolveAll } from './helpers/test-utils.js'
 import { scanjobCheckStatusProjectionKind } from '@/helpers/scanjob.check-status.helpers.js'
 import { WBR_COMPANY_ID } from '@/helpers/company.constants.js'
 import { OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
+const printParcelLabel = vi.hoisted(() => vi.fn())
+const printerBusy = ref(false)
+vi.mock('@/components/LocalLabelPrinting.vue', () => ({ default: {
+  setup(_props, { expose }) { expose({ busy: printerBusy, printParcel: printParcelLabel }) },
+  template: '<div />'
+} }))
 
 const {
   loadParcels,
@@ -219,6 +225,21 @@ const globalStubs = {
 }
 
 describe('WbrParcels_WhList.vue', () => {
+  it('keeps printing visible when unsupported and prints server-advertised stickers from row actions', async () => {
+    const wrapper = mount(WbrParcelsWhList, { props: { registerId: 1 }, global: { stubs: globalStubs } })
+    await resolveAll()
+    const button = wrapper.get('button[data-testid="monitor-print-label"]')
+    expect(button.element.closest('.actions-container')).not.toBeNull()
+    expect(button.element.disabled).toBe(true)
+    mockItems.value[0].printableTemplates = ['WBRN']; await resolveAll()
+    expect(button.element.disabled).toBe(false)
+    await button.trigger('click')
+    expect(printParcelLabel).toHaveBeenCalledWith({ parcelId: 1, template: 'WBRN' })
+    expect(navigateToEditParcel).not.toHaveBeenCalled()
+    mockLoading.value = true; await resolveAll()
+    expect(button.element.disabled).toBe(true)
+    wrapper.unmount()
+  })
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()

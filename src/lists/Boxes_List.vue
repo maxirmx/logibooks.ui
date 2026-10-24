@@ -3,11 +3,14 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { computed, onMounted } from 'vue'
+import { provide, computed, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { mdiMagnify } from '@mdi/js'
 import router from '@/router'
 import ActionButton from '@/components/ActionButton.vue'
+import BoxStickerPrintButton from '@/components/BoxStickerPrintButton.vue'
+import LocalLabelPrinting from '@/components/LocalLabelPrinting.vue'
+import { LABEL_PRINTING_KEY } from '@/helpers/label.printing.helpers.js'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
@@ -33,6 +36,11 @@ const registersStore = useRegistersStore()
 const { boxes, loading: boxesLoading } = storeToRefs(boxesStore)
 const { item: register, loading: registerLoading } = storeToRefs(registersStore)
 
+const printingPanel = ref(null)
+provide(LABEL_PRINTING_KEY, {
+  busy: computed(() => printingPanel.value?.busy ?? true),
+  print: (target) => printingPanel.value?.printParcel(target)
+})
 const loading = computed(() => boxesLoading.value || registerLoading.value)
 const readOnly = computed(() => register.value?.readOnly === true)
 const registerHeading = computed(() =>
@@ -44,12 +52,13 @@ const registerHeading = computed(() =>
 )
 
 const headers = [
-  { title: '', key: 'actions', align: 'center', sortable: false, width: '96px' },
+  { title: '', key: 'actions', align: 'center', sortable: false, width: '128px' },
   { title: 'Номер коробки', key: 'code', sortable: true },
+  { title: 'Код стикера', key: 'boxSticker', sortable: true },
+  { title: 'Вес, кг', key: 'weightKg', align: 'end', sortable: true },
   { title: 'Длина, см', key: 'lengthCm', align: 'end', sortable: true },
   { title: 'Ширина, см', key: 'widthCm', align: 'end', sortable: true },
-  { title: 'Высота, см', key: 'heightCm', align: 'end', sortable: true },
-  { title: 'Вес, кг', key: 'weightKg', align: 'end', sortable: true }
+  { title: 'Высота, см', key: 'heightCm', align: 'end', sortable: true }
 ]
 
 function filterBoxes(value, query, item) {
@@ -132,10 +141,11 @@ defineExpose({
 </script>
 
 <template>
-  <div class="settings table-2 list-with-filters" data-testid="boxes-list">
+  <div class="settings table-3 list-with-filters" data-testid="boxes-list">
     <div class="header-with-actions">
       <h1 class="primary-heading">Коробки: {{ registerHeading }}</h1>
       <div class="header-actions-bar">
+        <LocalLabelPrinting ref="printingPanel" />
         <div v-if="loading" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
         </div>
@@ -212,7 +222,12 @@ defineExpose({
               :disabled="loading || readOnly"
               @click="openEditView"
             />
+            <BoxStickerPrintButton :box="item" :disabled="loading" />
           </div>
+        </template>
+
+        <template #[`item.boxSticker`]="{ item }">
+          <span class="text-break" data-testid="box-sticker-value">{{ item.boxSticker || '—' }}</span>
         </template>
 
         <template #[`item.lengthCm`]="{ item }">

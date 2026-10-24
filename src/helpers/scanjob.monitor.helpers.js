@@ -9,9 +9,10 @@ import { wbrnRegisterColumnTitles } from '@/helpers/wbrn.register.mapping.js'
 
 export const scanjobParcelsProgressTitle = 'Посылки всего / сканировано / не сканировано / запретов'
 
-const scanjobParcelActionsHeader = { title: '', key: 'actions', align: 'center', sortable: false, width: '72px' }
+const scanjobParcelActionsHeader = { title: '', key: 'actions', align: 'center', sortable: false, width: '144px' }
 
 export const scanjobBoxHeaders = [
+  { title: '', key: 'actions', align: 'center', sortable: false, width: '72px' },
   { title: '', key: 'boxStickerScanned', align: 'start' },
   { title: 'Посылки', key: 'parcelsProgress', align: 'start', sortable: false },
   { title: 'Номер коробки', key: 'boxCode', align: 'center' },
@@ -19,7 +20,7 @@ export const scanjobBoxHeaders = [
   { title: 'Вес, кг', key: 'weightKg', align: 'end' },
   { title: 'Пользователь', key: 'boxScannedUserName', align: 'start' },
   { title: 'Время сканирования', key: 'boxScannedTime', align: 'start' },
-  { title: 'Сканированный код', key: 'boxScannedSticker', align: 'center' }
+  { title: 'Код стикера', key: 'boxSticker', align: 'center' }
 ]
 
 export const scanjobParcelScanHeaders = [

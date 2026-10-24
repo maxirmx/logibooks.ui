@@ -35,6 +35,7 @@ const getById = vi.hoisted(() =>
   vi.fn().mockResolvedValue({ id: 42, name: 'Scanjob A', type: 30, operation: 30, status: 15, registerId: 101 })
 )
 const manualScanParcel = vi.hoisted(() => vi.fn())
+const manualScanBox = vi.hoisted(() => vi.fn())
 const mockRegisterItem = vi.hoisted(() => ({
   id: 101,
   dealNumber: 'DEAL-101',
@@ -315,7 +316,7 @@ vi.mock(
 
 vi.mock('@/stores/scanjobs.store.js', () => ({
   useScanjobsStore: () => ({
-    ops: { constants: { inProgressStatus: 15, boxOnlyType: 20, parcelScanSource: 10, lookupOperation: 30 } },
+    ops: { constants: { inProgressStatus: 15, parcelOnlyType: 10, boxOnlyType: 20, parcelScanSource: 10, lookupOperation: 30 } },
     ensureOpsLoaded: vi.fn().mockResolvedValue(true),
     getScanJobLabel: job => `#${job.id}`,
     scanjob: mockScanjob,
@@ -330,6 +331,7 @@ vi.mock('@/stores/scanjobs.store.js', () => ({
     },
     getById,
     scanParcel: manualScanParcel,
+    scanBox: manualScanBox,
     loadMonitorSnapshot,
     resolveMonitorTarget,
     loadMonitorFollowUsers,
@@ -1723,7 +1725,7 @@ describe('Scanjob_Monitor.vue', () => {
     await flushPromises()
     const scanned = globalThis.structuredClone(boxSnapshot)
     scanned.box.parcels[1].stickerScanned = true
-    scanned.box.parcels[1].scannedSticker = 'Вручную: посылка #71'
+    scanned.box.parcels[1].scannedSticker = 'Вручную: посылка 71'
     loadMonitorSnapshot.mockResolvedValueOnce(scanned)
     expect(await wrapper.vm.manualScan.run([{ parcelId: 71 }], 42)).toBe(true)
     await flushPromises()
@@ -1734,24 +1736,26 @@ describe('Scanjob_Monitor.vue', () => {
     expect(count ? alertInfo : alertSuccess).toHaveBeenCalledWith(count
       ? 'Посылка соответствует условиям поиска'
       : 'Посылка не соответствует условиям поиска')
-    expect(wrapper.text()).toContain('Вручную: посылка #71')
+    expect(wrapper.text()).toContain('Вручную: посылка 71')
     wrapper.unmount()
   })
-  it('shows the header spinner after scan confirmation and disables monitor actions', async () => {
+  it.each(['parcel', 'box'])('shows the header spinner after %s scan confirmation and disables monitor actions', async kind => {
     isAdmin.value = true
     const job = { id: 42, name: 'Scanjob A', type: 30, operation: 10, status: 15, registerId: 101 }
     mockScanjob.value = job
     getById.mockResolvedValue(job)
-    loadMonitorSnapshot.mockResolvedValue(boxSnapshot)
+    const isBox = kind === 'box'
+    const scanRequest = isBox ? manualScanBox : manualScanParcel
+    loadMonitorSnapshot.mockResolvedValue(isBox ? registerSnapshot : boxSnapshot)
     let accept, finishScan
     manualConfirm.mockImplementationOnce(() => new Promise(resolve => { accept = resolve }))
-    manualScanParcel.mockImplementationOnce(() => new Promise(resolve => { finishScan = resolve }))
-    const wrapper = mount(ScanjobMonitor, { props: { scanjobId: 42, monitorScope: box7MonitorScope }, global: { stubs: monitorGlobalStubs } })
+    scanRequest.mockImplementationOnce(() => new Promise(resolve => { finishScan = resolve }))
+    const wrapper = mount(ScanjobMonitor, { props: { scanjobId: 42, monitorScope: isBox ? undefined : box7MonitorScope }, global: { stubs: monitorGlobalStubs } })
     await flushPromises()
-    const run = wrapper.vm.manualScan.run([{ parcelId: 90 }], 42, true)
+    const run = wrapper.vm.manualScan.run([isBox ? { boxId: 7, area: 1 } : { parcelId: 90 }], 42, true)
     await flushPromises()
     expect(wrapper.find('[data-testid="scanjob-monitor-operation-loading"]').exists()).toBe(false)
-    expect(manualScanParcel).not.toHaveBeenCalled()
+    expect(scanRequest).not.toHaveBeenCalled()
     expect(wrapper.get('button[data-testid="scanjob-monitor-close-action"]').element.disabled).toBe(true)
     accept(true)
     await flushPromises()
@@ -1759,7 +1763,7 @@ describe('Scanjob_Monitor.vue', () => {
     for (const name of ['close-action', 'jump-open', 'follow-user-open']) {
       expect(wrapper.get('button[data-testid="scanjob-monitor-' + name + '"]').element.disabled).toBe(true)
     }
-    finishScan({ parcelCount: 1, scanSource: 10 })
+    finishScan({ parcelCount: 1, boxCount: isBox ? 1 : 0 })
     await run
     await flushPromises()
     expect(wrapper.find('[data-testid="scanjob-monitor-operation-loading"]').exists()).toBe(false)

@@ -57,6 +57,13 @@ vi.mock('pinia', async () => {
   }
 })
 
+vi.mock('@/stores/scanjobs.store.js', () => ({ useScanjobsStore: () => ({
+  ops: { constants: { inProgressStatus: 15, parcelOnlyType: 10, lookupOperation: 30 } },
+  ensureOpsLoaded: vi.fn().mockResolvedValue(true), getInProgress: vi.fn().mockResolvedValue([]),
+  createScanJobsListChannel: () => ({ start: vi.fn().mockResolvedValue(true), stop: vi.fn().mockResolvedValue(true) })
+}) }))
+vi.mock('@/composables/useAppConfirm.js', () => ({ useAppConfirm: () => vi.fn() }))
+
 vi.mock('@/stores/boxes.store.js', () => ({ useBoxesStore: () => boxesStore }))
 vi.mock('@/stores/registers.store.js', () => ({ useRegistersStore: () => registersStore }))
 vi.mock('@/stores/auth.store.js', () => ({ useAuthStore: () => authStore }))

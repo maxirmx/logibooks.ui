@@ -1,14 +1,11 @@
 // Copyright (C) 2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
 
-export const MANUAL_PARCEL_SCAN_KEY = Symbol('manualParcelScan')
-
-const parcelCountRules = new Intl.PluralRules('ru')
-const parcelCountWords = { one: 'посылка', few: 'посылки', many: 'посылок', other: 'посылки' }
+export { MANUAL_SCAN_KEY as MANUAL_PARCEL_SCAN_KEY } from './manual.scan.key.js'
+import { scanSelectionMessage } from './manual.scan.messages.js'
 
 export function parcelScanSelectionMessage(count) {
-  const form = parcelCountRules.select(count)
-  return `${form === 'one' ? 'Выбрана' : 'Выбрано'} ${count} ${parcelCountWords[form]}`
+  return scanSelectionMessage(count, 'parcel')
 }
 
 export function parcelScanId(parcel) {

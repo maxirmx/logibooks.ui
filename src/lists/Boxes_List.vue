@@ -3,7 +3,10 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref, toRef } from 'vue'
+import BoxScanAction from '@/components/BoxScanAction.vue'
+import { useManualBoxScan } from '@/composables/useManualBoxScan.js'
+import { useManualScanSelection } from '@/composables/useManualScanSelection.js'
 import { storeToRefs } from 'pinia'
 import { mdiMagnify } from '@mdi/js'
 import router from '@/router'
@@ -34,6 +37,15 @@ const { boxes, loading: boxesLoading } = storeToRefs(boxesStore)
 const { item: register, loading: registerLoading } = storeToRefs(registersStore)
 
 const loading = computed(() => boxesLoading.value || registerLoading.value)
+const manualScan = useManualBoxScan({
+  registerId: () => props.registerId, disabled: loading, refresh: () => boxesStore.getAll(props.registerId)
+})
+const controlsBusy = computed(() => loading.value || manualScan.locked.value)
+const dataTableRef = ref(null)
+const { selection, updateDisplayedItems } = useManualScanSelection({
+  scan: manualScan, loading, page: toRef(authStore, 'boxes_page'), dataTableRef,
+  scopeKey: () => JSON.stringify([props.registerId, authStore.boxes_page, authStore.boxes_per_page, authStore.boxes_sort_by, authStore.boxes_search])
+})
 const readOnly = computed(() => register.value?.readOnly === true)
 const registerHeading = computed(() =>
   buildParcelListHeading(
@@ -44,7 +56,7 @@ const registerHeading = computed(() =>
 )
 
 const headers = [
-  { title: '', key: 'actions', align: 'center', sortable: false, width: '96px' },
+  { title: '', key: 'actions', align: 'center', sortable: false, width: '128px' },
   { title: 'Номер коробки', key: 'code', sortable: true },
   { title: 'Длина, см', key: 'lengthCm', align: 'end', sortable: true },
   { title: 'Ширина, см', key: 'widthCm', align: 'end', sortable: true },
@@ -69,17 +81,17 @@ function formatBoxMetric(value, decimals, fixed = false) {
 }
 
 function openCreateView() {
-  if (readOnly.value || loading.value) return
+  if (readOnly.value || controlsBusy.value) return
   router.push(`/registers/${props.registerId}/boxes/create`)
 }
 
 function openEditView(box) {
-  if (readOnly.value || loading.value || !box?.id) return
+  if (readOnly.value || controlsBusy.value || !box?.id) return
   router.push(`/registers/${props.registerId}/boxes/edit/${box.id}`)
 }
 
 async function openParcels(box) {
-  if (loading.value || !box?.id) return
+  if (controlsBusy.value || !box?.id) return
 
   const previousPage = authStore.parcels_wh_page
   const previousBoxNumber = authStore.parcels_wh_box_number
@@ -104,6 +116,7 @@ async function openParcels(box) {
 }
 
 function close() {
+  if (controlsBusy.value) return
   router.push({ path: '/registers', query: { mode: OP_MODE_WAREHOUSE } })
 }
 
@@ -122,6 +135,7 @@ function loadData() {
 onMounted(loadData)
 
 defineExpose({
+  manualScan, selection,
   loadData,
   openCreateView,
   openEditView,
@@ -136,7 +150,7 @@ defineExpose({
     <div class="header-with-actions">
       <h1 class="primary-heading">Коробки: {{ registerHeading }}</h1>
       <div class="header-actions-bar">
-        <div v-if="loading" class="header-actions header-actions-group">
+        <div v-if="loading || manualScan.busy.value" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
         </div>
         <div class="header-actions header-actions-group">
@@ -145,7 +159,7 @@ defineExpose({
             icon="fa-solid fa-plus"
             icon-size="2x"
             tooltip-text="Создать коробку"
-            :disabled="loading || readOnly"
+            :disabled="controlsBusy || readOnly"
             data-testid="box-create-action"
             @click="openCreateView"
           />
@@ -154,7 +168,7 @@ defineExpose({
             icon="fa-solid fa-xmark"
             icon-size="2x"
             tooltip-text="Закрыть"
-            :disabled="loading"
+            :disabled="controlsBusy"
             data-testid="boxes-close-action"
             @click="close"
           />
@@ -173,11 +187,18 @@ defineExpose({
       label="Поиск по номеру коробки"
       variant="solo"
       hide-details
-      :disabled="loading"
+      :disabled="controlsBusy"
     />
 
     <v-card class="table-card">
       <v-data-table
+        ref="dataTableRef"
+        :disable-sort="manualScan.locked.value"
+        :inert="manualScan.locked.value || undefined"
+        :row-props="selection.getRowProps"
+        @click:row="selection.handleRowClick"
+        @contextmenu:row="selection.handleRowContextMenu"
+        @update:current-items="updateDisplayedItems"
         v-model:items-per-page="authStore.boxes_per_page"
         v-model:page="authStore.boxes_page"
         v-model:sort-by="authStore.boxes_sort_by"
@@ -195,13 +216,20 @@ defineExpose({
         fixed-header
         data-testid="boxes-table"
       >
+        <template #bottom>
+          <v-defaults-provider :defaults="{ VSelect: { disabled: manualScan.locked.value }, VPagination: { disabled: manualScan.locked.value } }">
+            <v-data-table-footer :items-per-page-options="itemsPerPageOptions" items-per-page-text="Коробок на странице" page-text="{0}-{1} из {2}" />
+          </v-defaults-provider>
+        </template>
+
         <template #[`item.actions`]="{ item }">
           <div class="actions-container">
+            <BoxScanAction :boxes="[item]" :selection="selection" />
             <ActionButton
               :item="item"
               icon="fa-solid fa-list"
               tooltip-text="Список посылок"
-              :disabled="loading"
+              :disabled="controlsBusy"
               data-testid="box-parcels-action"
               @click="openParcels"
             />
@@ -209,7 +237,7 @@ defineExpose({
               :item="item"
               icon="fa-solid fa-pen"
               tooltip-text="Редактировать коробку"
-              :disabled="loading || readOnly"
+              :disabled="controlsBusy || readOnly"
               @click="openEditView"
             />
           </div>

@@ -14,7 +14,8 @@ import { useRegistersStore } from '@/stores/registers.store.js'
 import { useScanjobsStore } from '@/stores/scanjobs.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useScanjobHeading } from '@/composables/useScanjobHeading.js'
-import { useManualParcelScan } from '@/composables/useManualParcelScan.js'
+import { useManualScan } from '@/composables/useManualScan.js'
+import { BOX_SCAN, PARCEL_SCAN } from '@/helpers/manual.scan.helpers.js'
 import LocalLabelPrinting from '@/components/LocalLabelPrinting.vue'
 import { LABEL_PRINTING_KEY } from '@/helpers/label.printing.helpers.js'
 import ActionButton from '@/components/ActionButton.vue'
@@ -140,7 +141,8 @@ const activeRegisterItem = computed(() => {
 
   return storeRegister
 })
-const manualScan = useManualParcelScan({
+const manualScan = useManualScan({
+  target: computed(() => isRegisterMode.value ? BOX_SCAN : PARCEL_SCAN),
   registerId, job: scanjob,
   disabled: () => isLoading.value || defectActionRunning.value || Boolean(closedInfo.value),
   scopeKey: () => `${props.scanjobId}:${monitorScopeKey(props.monitorScope)}`,

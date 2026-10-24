@@ -654,6 +654,15 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     }
   }
 
+  async function scanBox(id, boxId) {
+    try {
+      return await fetchWrapper.post(`${baseUrl}/${id}/boxes/${boxId}/scan`, {})
+    } catch (err) {
+      error.value = err
+      throw err
+    }
+  }
+
   async function scanParcel(id, parcelId) {
     try {
       return await fetchWrapper.post(`${baseUrl}/${id}/parcels/${parcelId}/scan`, {})
@@ -860,6 +869,7 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     getById,
     getInProgress,
     scanParcel,
+    scanBox,
     create,
     update,
     remove,

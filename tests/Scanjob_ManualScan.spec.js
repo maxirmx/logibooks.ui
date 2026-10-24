@@ -11,7 +11,7 @@ import { useAuthStore } from '@/stores/auth.store.js'
 import { vuetifyStubs } from './helpers/test-utils.js'
 
 const { scanParcel, getById, confirm } = vi.hoisted(() => ({ scanParcel: vi.fn(), getById: vi.fn(), confirm: vi.fn() }))
-vi.mock('@/stores/scanjobs.store.js', () => ({ useScanjobsStore: () => ({ ops: { constants: { inProgressStatus: 15, boxOnlyType: 20, parcelScanSource: 10 } }, scanParcel, getById, ensureOpsLoaded: vi.fn().mockResolvedValue(true), getScanJobLabel: job => `#${job.id}` }) }))
+vi.mock('@/stores/scanjobs.store.js', () => ({ useScanjobsStore: () => ({ ops: { constants: { inProgressStatus: 15, boxOnlyType: 20, parcelScanSource: 10, lookupOperation: 30 } }, scanParcel, getById, ensureOpsLoaded: vi.fn().mockResolvedValue(true), getScanJobLabel: job => `#${job.id}` }) }))
 vi.mock('@/composables/useAppConfirm.js', () => ({ useAppConfirm: () => confirm }))
 const job = { id: 7, registerId: 1, status: 15, type: 30, operation: 10 }
 const rows = [
@@ -69,7 +69,8 @@ describe('monitor manual selection with the real Vuetify table', () => {
     await visibleRows[1].trigger('contextmenu')
     await flushPromises()
     expect(table.vm.selection.selectedItems.value.map(row => row.parcelId).sort()).toEqual([3, 4])
-    expect(confirm.mock.calls[0][0].content).toContain('Количество: 2')
+    expect(confirm.mock.calls[0][0].contentComponentProps.count).toBe(2)
+    expect(confirm.mock.calls[0][0].contentComponentProps.jobs).toEqual([{ id: 7, label: 'Без названия' }])
     expect(scan.busy.value).toBe(false)
     expect(wrapper.find('[data-testid="parcel-scan-selection"]').exists()).toBe(false)
     expect(scanParcel).not.toHaveBeenCalled()

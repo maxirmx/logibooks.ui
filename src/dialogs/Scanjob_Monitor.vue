@@ -1126,7 +1126,7 @@ defineExpose({
         class="monitor-empty monitor-closed"
         data-testid="scanjob-monitor-status-only"
       >
-        Задание сканирования: {{ scanjobStatusText }}. Онлайн-обновления отключены.
+        Задание на сканирование: {{ scanjobStatusText }}. Онлайн-обновления отключены.
       </div>
 
       <div

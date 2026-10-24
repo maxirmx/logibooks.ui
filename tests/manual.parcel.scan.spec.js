@@ -9,11 +9,11 @@ import ParcelScanAction from '@/components/ParcelScanAction.vue'
 import ParcelScanConfirmationContent from '@/components/ParcelScanConfirmationContent.vue'
 import ActionButton2L from '@/components/ActionButton2L.vue'
 import { useParcelMultiSelect } from '@/composables/useParcelMultiSelect.js'
-import { parcelScanDisabledReason, parcelScanId } from '@/helpers/parcel.scan.helpers.js'
+import { parcelScanDisabledReason, parcelScanId, parcelScanSuccessMessage } from '@/helpers/parcel.scan.helpers.js'
 import { vuetifyStubs } from './helpers/test-utils.js'
 
 const { api, confirm, reportError } = vi.hoisted(() => ({
-  api: { ops: null, getOps: vi.fn(), ensureOpsLoaded: vi.fn(), getScanJobLabel: vi.fn(), getInProgress: vi.fn(), getById: vi.fn(), scanParcel: vi.fn(), startScanJobsListMonitor: vi.fn(), stopScanJobsListMonitor: vi.fn(), createScanJobsListChannel: vi.fn() },
+  api: { ops: null, getOps: vi.fn(), ensureOpsLoaded: vi.fn(), getInProgress: vi.fn(), getById: vi.fn(), scanParcel: vi.fn(), startScanJobsListMonitor: vi.fn(), stopScanJobsListMonitor: vi.fn(), createScanJobsListChannel: vi.fn() },
   confirm: vi.fn(), reportError: vi.fn()
 }))
 const auth = reactive({ isAdmin: true, isWhManager: false, isWhOperator: false })
@@ -23,7 +23,7 @@ vi.mock('@/composables/useAppConfirm.js', () => ({ useAppConfirm: () => confirm 
 vi.mock('@/helpers/error.helpers.js', async importOriginal => ({ ...await importOriginal(), reportError }))
 
 const job = { id: 7, registerId: 1, type: 30, operation: 10, status: 15, name: 'Приёмка' }
-const scanConstants = { inProgressStatus: 15, boxOnlyType: 20, parcelScanSource: 10 }
+const scanConstants = { inProgressStatus: 15, boxOnlyType: 20, parcelScanSource: 10, lookupOperation: 30 }
 const parcels = [{ id: 1, statusId: 5 }, { id: 2, statusId: 5 }, { id: 3, statusId: 5 }]
 const wrappers = []
 function harness(overrides = {}, renderActions = false) {
@@ -55,7 +55,6 @@ beforeEach(() => {
   api.ops = reactive({ constants: { ...scanConstants } })
   api.getOps.mockResolvedValue(true)
   api.ensureOpsLoaded.mockResolvedValue(true)
-  api.getScanJobLabel.mockImplementation(candidate => `Задание из справочника #${candidate.id}`)
   api.scanParcel.mockResolvedValue({ parcelCount: 1, scanSource: 10, hasIssues: true })
   api.startScanJobsListMonitor.mockResolvedValue(true)
   api.stopScanJobsListMonitor.mockResolvedValue(true)
@@ -83,6 +82,14 @@ describe('manual parcel scan eligibility', () => {
   it('defers job availability until Core constants are available', () => {
     expect(parcelScanDisabledReason(job)).toBe('Нет активного задания сканирования')
   })
+  it.each([
+    [{ completed: 2, matched: 0, lookup: false }, 'Отсканировано посылок: 2.'],
+    [{ completed: 1, matched: 1, lookup: true }, 'Посылка соответствует условиям поиска'],
+    [{ completed: 1, matched: 0, lookup: true }, 'Посылка не соответствует условиям поиска'],
+    [{ completed: 3, matched: 2, lookup: true }, 'Отсканировано посылок: 3. Соответствуют условиям поиска: 2. Не соответствуют: 1.']
+  ])('describes the Core result without checking criteria in UI', (result, expected) => {
+    expect(parcelScanSuccessMessage(result)).toBe(expected)
+  })
 })
 
 describe('manual parcel scan workflow', () => {
@@ -109,12 +116,13 @@ describe('manual parcel scan workflow', () => {
     expect(api.scanParcel.mock.calls).toEqual([[7, 1], [7, 2], [7, 3]])
   })
   it('chooses a compatible job in the shared confirmation for a context-menu bulk action', async () => {
-    api.getInProgress.mockResolvedValue([{ ...job, id: 8, type: 20 }, job, { ...job, id: 9 }])
+    api.getInProgress.mockResolvedValue([{ ...job, id: 8, type: 20 }, job, { ...job, id: 9, name: 'Поиск посылок' }])
     confirm.mockImplementationOnce(async options => {
       expect(options.contentComponent).toBe(ParcelScanConfirmationContent)
       expect(options.contentComponentProps.jobs.map(candidate => candidate.id)).toEqual([7, 9])
+      expect(options.contentComponentProps.jobs.map(candidate => candidate.label)).toEqual(['Приёмка', 'Поиск посылок'])
       const content = mount(options.contentComponent, { props: options.contentComponentProps, global: { stubs: vuetifyStubs } })
-      expect(content.text()).toContain('Количество: 3')
+      expect(content.text()).toContain('Выбрано 3 посылки')
       content.findComponent({ name: 'v-select' }).vm.$emit('update:modelValue', 9)
       content.unmount()
       return true
@@ -152,17 +160,17 @@ describe('manual parcel scan workflow', () => {
     expect(api.scanParcel).not.toHaveBeenCalled()
   })
   it('keeps scanning unavailable for incomplete ops with a message-only alert', async () => {
-    api.ops.constants = { inProgressStatus: 15, boxOnlyType: 20 }
+    api.ops.constants = { inProgressStatus: 15 }
     const { wrapper, scan } = harness({}, true)
     await flushPromises()
-    expect(wrapper.get('[role="alert"]').text()).toContain('Сервер не предоставил параметры сканирования')
+    expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось загрузить параметры сканирования.')
     expect(wrapper.find('.page-alert-region__action').exists()).toBe(false)
     expect(scan.jobs.value).toEqual([])
     expect(wrapper.get('[data-testid="manual-parcel-scan"]').attributes('disabled')).toBeDefined()
     expect(api.scanParcel).not.toHaveBeenCalled()
   })
-  it('uses Core values for active status, box-only capability and successful parcel results', async () => {
-    api.ops.constants = { inProgressStatus: 115, boxOnlyType: 120, parcelScanSource: 110 }
+  it('uses Core values for active status and box-only capability and accepts completed requests', async () => {
+    api.ops.constants = { inProgressStatus: 115, boxOnlyType: 120, parcelScanSource: 110, lookupOperation: 130 }
     const activeJob = { ...job, status: 115 }
     const boxJob = { ...activeJob, id: 8, type: 120 }
     api.getInProgress.mockResolvedValue([job, boxJob, activeJob])
@@ -181,8 +189,9 @@ describe('manual parcel scan workflow', () => {
     expect(scan.completedIds.value).toEqual([1])
     expect(wrapper.text()).toContain('Отсканировано посылок: 1')
     await scan.run([parcels[1]], 7)
-    expect(scan.pendingBatch.value.parcels.map(parcel => parcel.id)).toEqual([2])
-    expect(wrapper.get('[role="alert"]').text()).toContain('не соответствует условиям задания сканирования')
+    expect(scan.completedIds.value).toEqual([2])
+    expect(scan.pendingBatch.value).toBeNull()
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
   })
   it('observes a definitions failure after teardown without publishing a stale alert', async () => {
     let rejectLabels
@@ -193,6 +202,15 @@ describe('manual parcel scan workflow', () => {
     await flushPromises()
     expect(useAlertStore().alert).toBeNull()
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), { context: 'manual scan definitions after unmount' })
+  })
+  it('blocks scanning when only the Lookup operation constant is missing', async () => {
+    delete api.ops.constants.lookupOperation
+    const { wrapper, scan } = harness({}, true)
+    await flushPromises()
+    expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось загрузить параметры сканирования.')
+    expect(scan.jobs.value).toEqual([])
+    expect(wrapper.get('[data-testid="manual-parcel-scan"]').element.disabled).toBe(true)
+    expect(api.scanParcel).not.toHaveBeenCalled()
   })
   it('loads only active jobs for this party, refreshes on notifications and cleans up', async () => {
     api.getInProgress.mockResolvedValue([job, { ...job, id: 8, registerId: 2 }, { ...job, id: 9, status: 18 }])
@@ -221,8 +239,8 @@ describe('manual parcel scan workflow', () => {
     await flushPromises()
     expect(api.scanParcel).toHaveBeenCalledTimes(1)
     expect(scan.busy.value).toBe(true)
-    expect(confirm.mock.calls[0][0].content).toContain('Количество: 3')
-    expect(confirm.mock.calls[0][0].content).toContain('Задание из справочника #7')
+    expect(confirm.mock.calls[0][0].contentComponentProps.count).toBe(3)
+    expect(confirm.mock.calls[0][0].contentComponentProps.jobs).toEqual([{ id: 7, label: 'Приёмка' }])
     await scan.run(parcels, 7, true)
     finish({ parcelCount: 1, scanSource: 10 })
     await run
@@ -256,14 +274,74 @@ describe('manual parcel scan workflow', () => {
     await scan.run(scan.pendingBatch.value.parcels, scan.pendingBatch.value.jobId, true)
     expect(api.scanParcel.mock.calls).toEqual([[7, 1], [7, 2], [7, 2], [7, 3]])
   })
-  it('stops on unsuccessful Lookup results rather than showing success', async () => {
-    api.scanParcel.mockResolvedValue({ parcelCount: 0, scanSource: 0 })
+  it.each([false, true])('accepts zero-match Lookup results, marks all selected parcels and shows success (monitor: %s)', async monitor => {
+    const lookupJob = { ...job, operation: 30, lookupStatusId: 6 }
+    api.getInProgress.mockResolvedValue([lookupJob])
+    api.scanParcel.mockResolvedValue({ count: 0, parcelCount: 0, scanSource: 0 })
+    const { scan, wrapper, selection, opts } = harness(monitor ? { job: ref(lookupJob) } : {})
+    await flushPromises()
+    selection.selectAllCurrentPage()
+    const error = vi.spyOn(useAlertStore(), 'error')
+    expect(await scan.run(selection.selectedItems.value, 7, true)).toBe(true)
+    expect(api.scanParcel.mock.calls).toEqual([[7, 1], [7, 2], [7, 3]])
+    expect(scan.completedIds.value).toEqual([1, 2, 3])
+    expect(selection.selectedItems.value).toEqual([])
+    expect(scan.pendingBatch.value).toBeNull()
+    expect(opts.refresh).toHaveBeenCalledOnce()
+    expect(wrapper.get('[role="status"]').classes()).toContain('alert-success')
+    expect(wrapper.text()).toContain('Отсканировано посылок: 3')
+    expect(wrapper.text()).toContain('Соответствуют условиям поиска: 0. Не соответствуют: 3.')
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+    expect(error).not.toHaveBeenCalled()
+  })
+  it.each([false, true])('uses an info alert for a Core-confirmed Lookup match (monitor: %s)', async monitor => {
+    api.ops.constants.lookupOperation = 130
+    const lookupJob = { ...job, operation: 130, lookupStatusId: 6 }
+    api.getInProgress.mockResolvedValue([lookupJob])
+    api.scanParcel.mockResolvedValueOnce({ count: 1, parcelCount: 1, scanSource: 10, hasIssues: true })
+    const { scan, wrapper, opts } = harness(monitor ? { job: ref(lookupJob) } : {})
+    await flushPromises()
+    const success = vi.spyOn(useAlertStore(), 'success')
+    const info = vi.spyOn(useAlertStore(), 'info')
+    expect(await scan.run([parcels[0]], 7)).toBe(true)
+    expect(wrapper.get('[role="status"]').classes()).toContain('alert-info')
+    expect(wrapper.text()).toContain('Посылка соответствует условиям поиска')
+    expect(info).toHaveBeenCalledOnce()
+    expect(success).not.toHaveBeenCalled()
+    expect(scan.completedIds.value).toEqual([1])
+    expect(opts.refresh).toHaveBeenCalledOnce()
+  })
+  it.each([[1, 0, 1], [1, 1, 1]])('uses info and reports matched and unmatched totals for Lookup batch %j', async (...counts) => {
+    const lookupJob = { ...job, operation: 30, lookupStatusId: 6 }
+    api.getInProgress.mockResolvedValue([lookupJob])
+    for (const count of counts) api.scanParcel.mockResolvedValueOnce({ count, parcelCount: 1, scanSource: 10 })
     const { scan, wrapper } = harness()
     await flushPromises()
+    expect(await scan.run(parcels, 7, true)).toBe(true)
+    const matched = counts.filter(Boolean).length
+    expect(wrapper.get('[role="status"]').classes()).toContain('alert-info')
+    expect(wrapper.text()).toContain(`Отсканировано посылок: 3. Соответствуют условиям поиска: ${matched}. Не соответствуют: ${3 - matched}.`)
+    expect(scan.completedIds.value).toEqual([1, 2, 3])
+  })
+  it('preserves a genuine rejection after a Lookup match without publishing a completion alert', async () => {
+    const lookupJob = { ...job, operation: 30, lookupStatusId: 6 }
+    api.getInProgress.mockResolvedValue([lookupJob])
+    api.scanParcel.mockResolvedValueOnce({ count: 1, parcelCount: 1, scanSource: 10 })
+      .mockRejectedValueOnce(Object.assign(new Error('Задание приостановлено'), { status: 409 }))
+    const { scan, wrapper, opts } = harness()
+    await flushPromises()
+    const alerts = useAlertStore()
+    const info = vi.spyOn(alerts, 'info')
+    const success = vi.spyOn(alerts, 'success')
+    const error = vi.spyOn(alerts, 'error')
     expect(await scan.run(parcels, 7, true)).toBe(false)
-    expect(api.scanParcel).toHaveBeenCalledTimes(1)
-    expect(wrapper.text()).toContain('не соответствует условиям задания')
-    expect(scan.pendingBatch.value.uncertain).toBe(false)
+    expect(wrapper.get('[role="alert"]').text()).toContain('Задание приостановлено')
+    expect(wrapper.text()).toContain('Отсканировано: 1 из 3')
+    expect(error).toHaveBeenCalledOnce()
+    expect(info).not.toHaveBeenCalled()
+    expect(success).not.toHaveBeenCalled()
+    expect(scan.completedIds.value).toEqual([1])
+    expect(opts.refresh).toHaveBeenCalledOnce()
   })
   it('requires a page reload after an ambiguous network failure without injecting recovery controls', async () => {
     api.scanParcel.mockRejectedValueOnce(new Error('Соединение прервано'))
@@ -383,7 +461,7 @@ describe('manual parcel scan workflow', () => {
     expect(reportError).toHaveBeenCalled()
   })
   it('lets Core reject a job that changed after selection without substituting another job', async () => {
-    api.scanParcel.mockRejectedValueOnce(Object.assign(new Error('Задание сканирования больше не выполняется'), { status: 409 }))
+    api.scanParcel.mockRejectedValueOnce(Object.assign(new Error('Задание на сканирование больше не выполняется'), { status: 409 }))
     const { scan, wrapper } = harness()
     await flushPromises()
     await scan.run(parcels, 7, true)
@@ -479,21 +557,16 @@ describe('manual parcel scan workflow', () => {
 })
 
 describe('shared scan action controls', () => {
-  it('uses reactive Core definitions in both menu labels and bulk confirmation', async () => {
-    const { useScanjobsStore } = await vi.importActual('@/stores/scanjobs.store.js')
-    const store = useScanjobsStore()
-    api.getScanJobLabel.mockImplementation(store.getScanJobLabel)
-    api.ensureOpsLoaded.mockImplementationOnce(async () => {
-      store.ops = { operations: [{ value: 10, name: 'Операция от Core' }], types: [{ value: 30, name: 'Тип от Core' }] }
-    })
-    api.getInProgress.mockResolvedValue([job, { ...job, id: 9 }])
+  it('uses only reactive job names in menu labels and bulk confirmation', async () => {
+    api.getInProgress.mockResolvedValue([job, { ...job, id: 9, name: 'Поиск для сделки XX-2' }])
     const { wrapper, selection } = harness({}, true)
     await flushPromises()
     const row = wrapper.findAllComponents(ParcelScanAction)[0]
-    expect(row.findComponent(ActionButton2L).props('options')[0].label).toBe('#7 Приёмка — Операция от Core, Тип от Core')
-    store.ops.operations[0].name = 'Обновлённая операция от Core'
+    expect(row.findComponent(ActionButton2L).props('options').map(option => option.label)).toEqual(['Приёмка', 'Поиск для сделки XX-2'])
+    api.getInProgress.mockResolvedValueOnce([{ ...job, name: 'Сканирование сделки XX-2' }, { ...job, id: 9, name: 'Поиск для сделки XX-2' }])
+    await api.startScanJobsListMonitor.mock.calls[0][0].onChanged()
     await flushPromises()
-    expect(row.findComponent(ActionButton2L).props('options')[0].label).toBe('#7 Приёмка — Обновлённая операция от Core, Тип от Core')
+    expect(row.findComponent(ActionButton2L).props('options')[0].label).toBe('Сканирование сделки XX-2')
     selection.selectAllCurrentPage()
     await flushPromises()
     const bulk = wrapper.findAllComponents(ParcelScanAction)[1]
@@ -501,7 +574,7 @@ describe('shared scan action controls', () => {
     await flushPromises()
     await bulk.findAll('[role="menuitem"]')[0].trigger('click')
     await flushPromises()
-    expect(confirm.mock.calls[0][0].content).toContain('#7 Приёмка — Обновлённая операция от Core, Тип от Core')
+    expect(confirm.mock.calls[0][0].contentComponentProps.jobs).toEqual([{ id: 7, label: 'Сканирование сделки XX-2' }])
     expect(api.ensureOpsLoaded).toHaveBeenCalledOnce()
   })
   it.each([
@@ -628,8 +701,7 @@ describe('shared scan action controls', () => {
     expect(scan.compatibleJobs().map(candidate => candidate.id)).toEqual([10, 9, 11, 12, 7])
     const rowAction = wrapper.findAllComponents(ParcelScanAction)[0]
     expect(rowAction.findComponent(ActionButton2L).props('options').map(option => option.label)).toEqual([
-      'Задание из справочника #10', 'Задание из справочника #9', 'Задание из справочника #11',
-      'Задание из справочника #12', 'Задание из справочника #7'
+      'Поиск статуса 6', 'Поиск статуса 5', 'Приёмка', 'Приёмка', 'Приёмка'
     ])
     const bulkAction = wrapper.findAllComponents(ParcelScanAction)[1]
     expect(bulkAction.get('[data-testid="manual-parcel-scan-menu"]').attributes('disabled')).toBeUndefined()
@@ -645,15 +717,16 @@ describe('shared scan action controls', () => {
     await flushPromises()
     await bulkAction.findAll('[role="menuitem"]')[0].trigger('click')
     await flushPromises()
-    expect(api.scanParcel.mock.calls).toEqual([[10, 1]])
-    expect(wrapper.get('[role="alert"]').text()).toContain('Посылка #1 не соответствует условиям задания сканирования')
-    expect(scan.pendingBatch.value.parcels).toHaveLength(3)
+    expect(api.scanParcel.mock.calls).toEqual([[10, 1], [10, 2], [10, 3]])
+    expect(wrapper.get('[role="status"]').text()).toContain('Отсканировано посылок: 3')
+    expect(scan.pendingBatch.value).toBeNull()
+    expect(selection.selectedItems.value).toEqual([])
   })
   it('submits a parcel with a different Lookup status from the plain row action', async () => {
     const lookupJob = { ...job, operation: 30, lookupStatusId: 6 }
 
     api.scanParcel.mockResolvedValueOnce({ parcelCount: 0, scanSource: 0 })
-    const { wrapper } = harness({ job: ref(lookupJob) }, true)
+    const { wrapper, scan } = harness({ job: ref(lookupJob) }, true)
     await flushPromises()
     const rowAction = wrapper.findAllComponents(ParcelScanAction)[0]
     const button = rowAction.get('[data-testid="manual-parcel-scan"]')
@@ -661,8 +734,9 @@ describe('shared scan action controls', () => {
     await button.trigger('click')
     await flushPromises()
     expect(api.scanParcel).toHaveBeenCalledWith(7, 1)
-    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-    expect(wrapper.text()).toContain('не соответствует условиям задания сканирования')
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+    expect(wrapper.get('[role="status"]').text()).toContain('Посылка не соответствует условиям поиска')
+    expect(scan.completedIds.value).toEqual([1])
   })
   it('leaves Lookup configuration validation to Core and displays its rejection once', async () => {
     const lookupJob = { ...job, operation: 30 }
@@ -729,7 +803,7 @@ describe('shared scan action controls', () => {
     const options = wrapper.findAll('[role="menuitem"]')
     expect(options).toHaveLength(2)
     expect(options.every(option => option.attributes('disabled') === undefined)).toBe(true)
-    expect(options.map(option => option.text())).toEqual([expect.stringContaining('#7'), expect.stringContaining('#9')])
+    expect(options.map(option => option.text())).toEqual(['Приёмка', 'Приёмка'])
     expect(wrapper.text()).not.toContain('#8')
 
     await options[1].trigger('click')
@@ -750,7 +824,7 @@ describe('shared scan action controls', () => {
     await rows[1].trigger('contextmenu')
     await flushPromises()
     expect(confirm).toHaveBeenCalledOnce()
-    expect(confirm.mock.calls[0][0].content).toContain('Количество: 3')
+    expect(confirm.mock.calls[0][0].contentComponentProps.count).toBe(3)
     expect(api.scanParcel.mock.calls).toEqual([[7, 1], [7, 2], [7, 3]])
     expect(selection.selectedItems.value).toEqual([])
   })})

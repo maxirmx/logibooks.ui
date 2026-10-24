@@ -1319,7 +1319,6 @@ describe('Register_EditDialog', () => {
       totalWeightKgToRelease: 10,
       inspectionsCount: 3,
       withTransit: true,
-      exportedTo1C: false,
       decDate: '2026-07-20',
       releaseDate: '2026-07-21'
     }
@@ -1367,22 +1366,16 @@ describe('Register_EditDialog', () => {
     expect(wrapper.get('#withTransit').attributes('type')).toBe('checkbox')
     expect(wrapper.get('#withTransit').classes()).toContain('custom-checkbox-input')
     expect(wrapper.get('label[for="withTransit"] .custom-checkbox-label').text()).toBe('Транзит:')
-    expect(wrapper.get('#exportedTo1C').attributes('type')).toBe('checkbox')
-    expect(wrapper.get('#exportedTo1C').classes()).toContain('custom-checkbox-input')
-    expect(wrapper.get('label[for="exportedTo1C"] .custom-checkbox-label').text()).toBe(
-      'Выгрузка в 1С выполнена'
-    )
+    expect(wrapper.find('#exportedTo1C').exists()).toBe(false)
     expect(wrapper.get('label[for="decDate"]').text()).toBe('Дата подачи ДТЭГ:')
     expect(wrapper.get('#decDate').attributes('type')).toBe('date')
     expect(wrapper.get('label[for="releaseDate"]').text()).toBe('Дата выпуска:')
     expect(wrapper.get('#releaseDate').attributes('type')).toBe('date')
     const additionalFields = wrapper.findAll('#register-additional-info-body > .additional-info-field')
     expect(additionalFields.map(field => field.get('label').attributes('for'))).toEqual([
-      'inspectionsCount', 'cargoPlacesTotal', 'decDate', 'releaseDate', 'withTransit', 'exportedTo1C'
+      'inspectionsCount', 'cargoPlacesTotal', 'decDate', 'releaseDate', 'withTransit'
     ])
-    expect(wrapper.findComponent(RegisterEditDialog).vm.prepareRegisterPayload({}).exportedTo1C).toBe(
-      false
-    )
+    expect(wrapper.findComponent(RegisterEditDialog).vm.prepareRegisterPayload({})).not.toHaveProperty('exportedTo1C')
   })
 
   it('allows a read-only register to expand additional 1C information', async () => {
@@ -1392,7 +1385,6 @@ describe('Register_EditDialog', () => {
       readOnly: true,
       inspectionsCount: 3,
       withTransit: true,
-      exportedTo1C: true,
       decDate: '2026-07-20',
       releaseDate: '2026-07-21'
     }
@@ -1425,7 +1417,6 @@ describe('Register_EditDialog', () => {
     expect(wrapper.get('#cargoPlacesTotal').element.disabled).toBe(true)
     expect(wrapper.get('#inspectionsCount').element.disabled).toBe(true)
     expect(wrapper.get('#withTransit').element.disabled).toBe(true)
-    expect(wrapper.get('#exportedTo1C').element.disabled).toBe(true)
     expect(wrapper.get('#decDate').element.disabled).toBe(true)
     expect(wrapper.get('#releaseDate').element.disabled).toBe(true)
   })
@@ -1470,7 +1461,6 @@ describe('Register_EditDialog', () => {
       {
         inspectionsCount: '7',
         withTransit: true,
-        exportedTo1C: true,
         decDate: '2026-07-20',
         releaseDate: '2026-07-21'
       },
@@ -1483,7 +1473,6 @@ describe('Register_EditDialog', () => {
       expect.objectContaining({
         inspectionsCount: 7,
         withTransit: true,
-        exportedTo1C: true,
         decDate: '2026-07-20',
         releaseDate: '2026-07-21'
       })
@@ -1551,13 +1540,11 @@ describe('Register_EditDialog', () => {
       const { wrapper } = await mountCargoEditor(false, true)
       await wrapper.get('#cargoPlacesTotal').setValue('13')
       await wrapper.get('#withTransit').setValue(true)
-      await wrapper.get('#exportedTo1C').setValue(true)
       await wrapper.get('[data-testid="register-additional-info-toggle"]').trigger('click')
       expect(wrapper.get('#register-additional-info-body').isVisible()).toBe(false)
       await wrapper.get('[data-testid="register-additional-info-toggle"]').trigger('click')
       expect(wrapper.get('#cargoPlacesTotal').element.value).toBe('13')
       expect(wrapper.get('#withTransit').element.checked).toBe(true)
-      expect(wrapper.get('#exportedTo1C').element.checked).toBe(true)
       wrapper.unmount()
     })
 

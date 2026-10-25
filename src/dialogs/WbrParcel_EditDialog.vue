@@ -603,6 +603,7 @@ async function onLookup(values, setFieldValue) {
 
         <!-- Order Identification & Status Section -->
         <ParcelStatusSection
+          :the-other-country-code="registerItem?.theOtherCountryCode"
           :item="item"
           :values="values"
           :parcel-statuses="statusStore.parcelStatuses"

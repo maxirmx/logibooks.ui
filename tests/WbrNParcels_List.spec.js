@@ -582,6 +582,38 @@ describe('WbrNParcels_List.vue', () => {
 
   beforeEach(() => { setActivePinia(createPinia()); resetState() })
 
+  it.each([
+    ['WBR', 762], ['WBR', 860], ['WBRN', 762], ['WBRN', 860]
+  ])('prefixes only dangerous parcel statuses in %s for country %s', async (kind, country) => {
+    registerItem.theOtherCountryCode = country
+    mockItems.value = [
+      { ...sampleParcel, dangerousGoods: true },
+      { ...sampleParcel, id: 11, dangerousGoods: false }
+    ]
+    const wrapper = mount(kind === 'WBR' ? WbrParcelsList : WbrNParcelsList, {
+      props: { registerId: 7 },
+      global: { stubs: { ...globalStubs, ClickableCell: false } }
+    })
+    try {
+      await resolveAll()
+      const labels = wrapper.findAll('.parcel-status-label')
+      expect(labels).toHaveLength(2)
+      expect(labels[0].text()).toBe('Status 5')
+      expect(labels[1].text()).toBe('Status 5')
+      expect(labels[0].find('[role="img"]').exists()).toBe(country === 762)
+      expect(labels[1].find('[role="img"]').exists()).toBe(false)
+      if (country === 762) {
+        navigateToEditParcel.mockClear()
+        await labels[0].get('[role="img"]').trigger('click')
+        expect(navigateToEditParcel).toHaveBeenCalledTimes(1)
+        expect(navigateToEditParcel.mock.calls[0][1].id).toBe(sampleParcel.id)
+      }
+    } finally {
+      wrapper.unmount()
+      delete registerItem.theOtherCountryCode
+    }
+  })
+
   it('defines WbrN regular list headers and excludes hidden backend-owned fields', () => {
     const wrapper = mount(WbrNParcelsList, {
       props: { registerId: 7 },

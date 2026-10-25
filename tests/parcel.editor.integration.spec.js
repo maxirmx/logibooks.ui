@@ -7,12 +7,15 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
 import { Form } from 'vee-validate'
+import { createVuetify } from 'vuetify'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import FeacnCodeSelectorW from '@/components/FeacnCodeSelectorW.vue'
 import ParcelEditView from '@/views/Parcel_EditView.vue'
 import OzonEditor from '@/dialogs/OzonParcel_EditDialog.vue'
 import WbrEditor from '@/dialogs/WbrParcel_EditDialog.vue'
 import WbrNEditor from '@/dialogs/WbrNParcel_EditDialog.vue'
 import GtcEditor from '@/dialogs/GtcParcel_EditDialog.vue'
+import { useRegistersStore } from '@/stores/registers.store.js'
 import { useParcelsStore } from '@/stores/parcels.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
@@ -77,6 +80,7 @@ function deferred() {
 }
 function parcel(id = 3, extra = {}) {
   return {
+    dangerousGoods: false,
     id, registerId: 12, postingNumber: `OZ-${id}`, shk: `SHK-${id}`,
     productName: `Product ${id}`, description: 'Description', tnVed: '6403999300',
     weight: 1200, weightKg: 1.2, quantity: 2, unitPrice: 10,
@@ -85,11 +89,11 @@ function parcel(id = 3, extra = {}) {
     ...extra
   }
 }
-let pinia, registerType, requiredFailure, parcelRequests, historyRequests, neighbors, previous
+let pinia, registerCountry, registerType, requiredFailure, parcelRequests, historyRequests, neighbors, previous
 function mountEditor(component = ParcelEditView, props = {}) {
   const wrapper = mount(component, {
     props: { registerId: 12, id: 3, ...props },
-    global: { plugins: [pinia], stubs }
+    global: { plugins: [pinia, createVuetify()], stubs }
   })
   wrappers.push(wrapper)
   return wrapper
@@ -109,6 +113,7 @@ beforeEach(() => {
   pinia = createPinia()
   setActivePinia(pinia)
   signalR.connections.length = 0
+  registerCountry = 156
   registerType = OZON_COMPANY_ID
   requiredFailure = null
   parcelRequests = []
@@ -131,7 +136,7 @@ beforeEach(() => {
       passportCheckStatuses: [{ value: 0, code: 'NotChecked', name: 'Не проверен' }, { value: 30, code: 'Checked', name: 'Проверен' }]
     }
     if (/\/registers\/nextparcels\//.test(url)) return neighbors
-    if (/\/registers\/\d+$/.test(url)) return { id: Number(url.split('/').at(-1)), registerType, customsProcedureCode: 40, theOtherCountryCode: 156 }
+    if (/\/registers\/\d+$/.test(url)) return { id: Number(url.split('/').at(-1)), registerType, customsProcedureCode: 40, theOtherCountryCode: registerCountry }
     if (url.endsWith('/hotkeyactionschemes/ops')) return { actions: [] }
     if (url.endsWith('/countries/compact')) return [{ id: 1, isoNumeric: 156, nameRuOfficial: 'Китай' }]
     if (/\/(stopwords|keywords|feacnprefixes|feacnorders\/orders)$/.test(url)) return []
@@ -148,6 +153,66 @@ afterEach(async () => {
 })
 
 describe.each(editors)('%s editor with real forms and stores', (_name, component, type) => {
+  it.each([762, '762', 156, null])('shows the shared switch only for Tajikistan (%s)', async country => {
+    registerType = type
+    registerCountry = country
+    const wrapper = mountEditor(component)
+    await settle()
+    expect(wrapper.find('[name="dangerousGoods"]').exists()).toBe(Number(country) === 762)
+    const selector = wrapper.get('[name="statusId"]')
+    expect(selector.attributes('title')).toBe('В работе')
+    expect(wrapper.get('label[for="statusId"]').text()).toBe('Статус:')
+    if (Number(country) === 762) {
+      const checkbox = wrapper.get('[name="dangerousGoods"]')
+      expect(wrapper.find('#dangerousGoodsLabel').exists()).toBe(false)
+      expect(wrapper.get('.dangerous-goods-group').text()).toBe('')
+      expect(checkbox.attributes('aria-label')).toBe('Опасный груз')
+      expect(checkbox.attributes('role')).toBe('switch')
+      expect(checkbox.element.closest('.form-group')).not.toBe(selector.element.closest('.form-group'))
+    }
+  })
+
+  it('retains the dangerous goods draft when the control is hidden', async () => {
+    registerType = type
+    registerCountry = 762
+    const wrapper = mountEditor(component)
+    await settle()
+    const checkbox = wrapper.get('[name="dangerousGoods"]')
+    expect(checkbox.element.checked).toBe(false)
+    const thumbIcon = () => wrapper.get('.dangerous-goods-control').getComponent(FontAwesomeIcon).props('icon').iconName
+    expect(thumbIcon()).toBe('circle')
+    expect(wrapper.get('.dangerous-goods-control').getComponent(FontAwesomeIcon).classes()).toContain('dangerous-goods-safe-icon')
+    await checkbox.setValue(true)
+    await settle()
+    expect(thumbIcon()).toBe('skull-crossbones')
+    expect(wrapper.get('.dangerous-goods-control').getComponent(FontAwesomeIcon).classes()).not.toContain('dangerous-goods-safe-icon')
+    useRegistersStore().item.theOtherCountryCode = 860
+    await settle()
+    expect(wrapper.find('[name="dangerousGoods"]').exists()).toBe(false)
+    expect(wrapper.getComponent(Form).vm.values.dangerousGoods).toBe(true)
+    useRegistersStore().item.theOtherCountryCode = 762
+    await settle()
+    expect(wrapper.get('[name="dangerousGoods"]').element.checked).toBe(true)
+    await wrapper.get('[name="dangerousGoods"]').setValue(false)
+    await settle()
+    expect(thumbIcon()).toBe('circle')
+    await action(wrapper, 'Сохранить').trigger('click')
+    await settle()
+    expect(transport.put).toHaveBeenCalledWith('http://test/api/parcels/3', expect.objectContaining({ dangerousGoods: false }))
+  })
+
+  it('disables the switch for a read-only parcel and displays its saved value', async () => {
+    registerType = type
+    registerCountry = 762
+    parcelRequests.push({ promise: Promise.resolve(parcel(3, { dangerousGoods: true, readOnly: true })) })
+    const wrapper = mountEditor(component)
+    await settle()
+    expect(wrapper.get('[name="dangerousGoods"]').attributes('disabled')).toBeDefined()
+    expect(wrapper.get('.dangerous-goods-control').attributes('tabindex')).toBe('0')
+    expect(wrapper.get('.dangerous-goods-control').attributes('aria-label')).toBe('Опасный груз')
+    expect(wrapper.get('[name="dangerousGoods"]').element.checked).toBe(true)
+  })
+
   it.each(['first-request-first', 'second-request-first'])('opens a populated card while the real SignalR subscription resynchronizes (%s)', async (order) => {
     registerType = type
     useAuthStore().user = { roles: ['sr-logist'] }
@@ -272,15 +337,20 @@ describe.each(editors)('%s editor with real forms and stores', (_name, component
   })
 
   it('keeps entered values and the editor open after a failed save and retries the update', async () => {
+    registerType = type
+    registerCountry = 762
     transport.put.mockRejectedValueOnce(new Error('Сохранение недоступно'))
     const wrapper = mountEditor(component)
     await settle()
     await input(wrapper).setValue('Unsaved product')
+    await wrapper.get('[name="dangerousGoods"]').setValue(true)
     await action(wrapper, 'Сохранить').trigger('click')
     await settle()
     expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
     expect(wrapper.get('[role="alert"]').text()).toContain('Сохранение недоступно')
     expect(input(wrapper).element.value).toBe('Unsaved product')
+    expect(wrapper.get('[name="dangerousGoods"]').element.checked).toBe(true)
+    expect(transport.put).toHaveBeenLastCalledWith('http://test/api/parcels/3', expect.objectContaining({ dangerousGoods: true }))
     expect(router.push).not.toHaveBeenCalled()
     await action(wrapper, 'Сохранить').trigger('click')
     await settle()

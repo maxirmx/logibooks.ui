@@ -53,6 +53,13 @@ function createWrapper(props = {}) {
 
 describe('ParcelStatusSection', () => {
 
+  it('exposes the full selected status and leaves the checkbox out for unknown country', () => {
+    const wrapper = createWrapper({ values: { statusId: 999 } })
+    expect(wrapper.get('[name="statusId"]').attributes('title')).toBe('')
+    expect(wrapper.find('[name="dangerousGoods"]').exists()).toBe(false)
+    wrapper.unmount()
+  })
+
   it('emits all action events with form values payload', async () => {
     const wrapper = createWrapper()
     const buttons = wrapper.findAllComponents(ActionButton)

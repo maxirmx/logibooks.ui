@@ -348,7 +348,9 @@ export const useParcelsStore = defineStore('parcels', () => {
         Number(parcel?.id) === numericId && Object.hasOwn(parcel, 'matchesExportFeeCategory')
       )
     const response = await runParcelMutation(id, () => fetchWrapper.put(`${baseUrl}/${id}`, data))
-    let updatedData = data
+    const updatedData = { ...data }
+    // null/omitted flags leave the persisted value unchanged.
+    if (updatedData.dangerousGoods == null) delete updatedData.dangerousGoods
 
     if (refreshCategory) {
       // A successful PUT invalidates this server-derived flag. Hide the old marker
@@ -357,7 +359,7 @@ export const useParcelsStore = defineStore('parcels', () => {
         if (Number(parcel?.id) === numericId) parcel.matchesExportFeeCategory = undefined
       }
       const refreshed = await fetchWrapper.get(`${baseUrl}/a/${id}`)
-      updatedData = { ...data, matchesExportFeeCategory: refreshed?.matchesExportFeeCategory === true }
+      updatedData.matchesExportFeeCategory = refreshed?.matchesExportFeeCategory === true
     }
 
     if (item.value && Number(item.value.id) === numericId) {

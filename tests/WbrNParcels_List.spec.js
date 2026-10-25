@@ -15,6 +15,8 @@ import {
 } from '@/helpers/customs.procedure.helpers.js'
 import { OP_MODE_PAPERWORK } from '@/helpers/op.mode.js'
 
+vi.mock('@/composables/useAppConfirm.js', () => ({ useAppConfirm: () => vi.fn().mockResolvedValue(false) }))
+
 let WbrNParcelsList
 let WbrParcelsList
 
@@ -77,6 +79,8 @@ const registerOps = {
     { value: 30, code: 'Checked', name: 'Проверен' }
   ]
 }
+const startReconciliation = vi.fn().mockResolvedValue({ id: 'op' })
+const getReconciliation = vi.fn()
 const getRegisterById = vi.fn().mockResolvedValue()
 const ensureOpsLoaded = vi.fn().mockResolvedValue()
 
@@ -253,6 +257,8 @@ vi.mock('@/stores/registers.store.js', () => ({
     item: registerItem,
     ops: registerOps,
     getById: getRegisterById,
+    startReconciliation,
+    getReconciliation,
     ensureOpsLoaded,
     getTransportationDocument: vi.fn(() => 'CMR')
   })
@@ -305,6 +311,7 @@ vi.mock('@/stores/auth.store.js', () => ({
     parcels_number: parcelsNumber,
     parcels_product_name: parcelsProductName,
     selectedParcelId,
+    isShiftLeadPlus: true,
     get isSrLogistPlus() {
       return authIsSrLogistPlus.value
     }
@@ -1035,4 +1042,49 @@ describe('WbrNParcels_List.vue', () => {
     expect(stopRegisterHeaderActions).toHaveBeenCalled()
     expect(stopFilterSync).toHaveBeenCalled()
   })
+  it('wires real page recovery controls without blocking them behind the mutation lock', async () => {
+    registerItem.theOtherCountryCode = 762
+    startReconciliation.mockReset().mockResolvedValue({ id: 'op' }).mockRejectedValueOnce(new Error('Ошибка отправки'))
+    getReconciliation.mockReset().mockRejectedValueOnce(new Error('Ошибка получения результата')).mockResolvedValue({
+      finished: true, percent: 100, result: { registerId: 7, dangerousGoodsCount: 104, markedCount: 42, newlyMarkedCount: 13, excludedCount: 2, registerOnlyCount: 0, manifestOnlyCount: 0 }
+    })
+    const wrapper = mount(WbrNParcelsList, { props: { registerId: 7 }, global: { stubs: {
+      ...globalStubs, 'v-btn': { props: ['disabled', 'variant', 'color'], template: '<button :disabled="disabled"><slot /></button>' }
+    } } })
+    try {
+      await resolveAll()
+      const file = new File(['manifest'], 'sample.xlsx')
+      await wrapper.vm.reconciliation.selectFile({ target: { files: [file], value: 'selected' } })
+      await wrapper.vm.$nextTick()
+      expect(wrapper.get('[data-testid="reconciliation-retry-start"]').attributes('disabled')).toBeUndefined()
+      await wrapper.get('[data-testid="reconciliation-retry-start"]').trigger('click')
+      await resolveAll()
+      expect(wrapper.get('[data-testid="reconciliation-retry-status"]').attributes('disabled')).toBeUndefined()
+      await wrapper.get('[data-testid="reconciliation-retry-status"]').trigger('click')
+      await resolveAll()
+      expect(startReconciliation).toHaveBeenCalledOnce()
+      expect(getReconciliation).toHaveBeenCalledTimes(2)
+      expect(wrapper.vm.reconciliationState.result.dangerousGoodsCount).toBe(104)
+      const dialogs = wrapper.findComponent({ name: 'RegisterReconciliationDialogs' })
+      dialogs.vm.$emit('summary-visible', false)
+      dialogs.vm.$emit('close-error')
+      await wrapper.vm.$nextTick()
+      expect(wrapper.vm.reconciliationState.summaryVisible).toBe(false)
+      expect(wrapper.vm.reconciliationState.error.show).toBe(false)
+      getReconciliation.mockRejectedValueOnce(Object.assign(new Error('Результат неизвестен'), {
+        status: 409, data: { code: 'ReconciliationOutcomeUnknown' }
+      }))
+      await wrapper.vm.reconciliation.selectFile({ target: { files: [file], value: 'selected' } })
+      await wrapper.vm.$nextTick()
+      await wrapper.get('[data-testid="reconciliation-new-run"]').trigger('click')
+      await resolveAll()
+      expect(wrapper.vm.reconciliationState.phase).toBe('unknown')
+      wrapper.vm.reconciliationState.refreshFailed = true
+      await wrapper.vm.$nextTick()
+      await wrapper.get('[data-testid="reconciliation-refresh"]').trigger('click')
+      await resolveAll()
+      expect(wrapper.vm.reconciliationState.refreshFailed).toBe(false)
+    } finally { wrapper.unmount(); delete registerItem.theOtherCountryCode }
+  })
+
 })

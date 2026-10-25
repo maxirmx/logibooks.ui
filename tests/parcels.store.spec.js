@@ -455,6 +455,30 @@ describe('parcels store', () => {
   })
 
   describe('update method', () => {
+    it.each([true, false, null, undefined])('merges Boolean dangerous goods and preserves null/undefined (%s)', async flag => {
+      const store = useParcelsStore()
+      store.item = { id: 5, dangerousGoods: true }
+      store.items = [{ ...store.item }]
+      fetchWrapper.put.mockResolvedValue(undefined)
+      const data = { id: 5, dangerousGoods: flag }
+      await store.update(5, data)
+      expect(fetchWrapper.put).toHaveBeenCalledWith(apiUrl + '/parcels/5', data)
+      expect(store.item.dangerousGoods).toBe(flag ?? true)
+      expect(store.items[0].dangerousGoods).toBe(flag ?? true)
+      expect(Object.hasOwn(data, 'dangerousGoods')).toBe(true)
+    })
+
+    it('keeps saved dangerous goods in both caches and rejects a failed update', async () => {
+      const store = useParcelsStore()
+      store.item = { id: 5, dangerousGoods: true }
+      store.items = [{ ...store.item }]
+      const error = new Error('Не удалось сохранить посылку')
+      fetchWrapper.put.mockRejectedValue(error)
+      await expect(store.update(5, { dangerousGoods: false })).rejects.toBe(error)
+      expect(store.item.dangerousGoods).toBe(true)
+      expect(store.items[0].dangerousGoods).toBe(true)
+    })
+
     it.each([true, false])('refreshes the marker before returning to cached list rows (%s)', async (flag) => {
       const store = useParcelsStore()
       store.item = { id: 5, tnVed: 'old', postingNumber: 'P5', matchesExportFeeCategory: !flag }

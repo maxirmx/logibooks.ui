@@ -50,6 +50,7 @@ import {
   useRegisterHeaderActions
 } from '@/helpers/register.actions.js'
 import ClickableCell from '@/components/ClickableCell.vue'
+import ParcelStatusLabel from '@/components/ParcelStatusLabel.vue'
 import CorrectedWeightDisplay from '@/components/CorrectedWeightDisplay.vue'
 import PassportCheckStatusIndicator from '@/components/PassportCheckStatusIndicator.vue'
 import ActionButton from '@/components/ActionButton.vue'
@@ -698,7 +699,12 @@ function getGenericTemplateHeaders() {
             :display-value="parcelStatusStore.getStatusTitle(item.statusId)"
             cell-class="truncated-cell clickable-cell"
             @click="editParcel"
-          />
+          >
+            <ParcelStatusLabel
+              :dangerous-goods="item.dangerousGoods"
+              :the-other-country-code="registersStore.item?.theOtherCountryCode"
+            >{{ parcelStatusStore.getStatusTitle(item.statusId) }}</ParcelStatusLabel>
+          </ClickableCell>
         </template>
 
         <template #[`item.dTag`]="{ item }">

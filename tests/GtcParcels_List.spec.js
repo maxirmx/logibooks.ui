@@ -198,6 +198,32 @@ describe('GtcParcels_List.vue', () => {
     getById.mockResolvedValue()
   })
 
+  it.each([762, 860])('prefixes only dangerous parcel statuses for country %s', async country => {
+    registerItem.value = { dealNumber: 'D-1', theOtherCountryCode: country }
+    mockItems.value = [
+      createMockItem({ statusId: 5, dangerousGoods: true }),
+      createMockItem({ id: 2, statusId: 5, dangerousGoods: false })
+    ]
+    const wrapper = mount(GtcParcels_List, {
+      props: { registerId: 1 },
+      global: { plugins: [createPinia()], stubs: { ...globalStubs, ClickableCell: false } }
+    })
+    try {
+      await resolveAll()
+      const labels = wrapper.findAll('.parcel-status-label')
+      expect(labels).toHaveLength(2)
+      expect(labels[0].text()).toBe('Status 5')
+      expect(labels[1].text()).toBe('Status 5')
+      expect(labels[0].find('[role="img"]').exists()).toBe(country === 762)
+      expect(labels[1].find('[role="img"]').exists()).toBe(false)
+      if (country === 762) {
+        scopedMocks.routerPush.mockClear()
+        await labels[0].get('[role="img"]').trigger('click')
+        expect(scopedMocks.routerPush).toHaveBeenCalledTimes(1)
+      }
+    } finally { wrapper.unmount() }
+  })
+
   it('renders posting-number sibling indicators with the same flags as Ozon parcels', async () => {
     mockItems.value = [
       createMockItem({

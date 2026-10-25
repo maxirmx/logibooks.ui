@@ -95,7 +95,8 @@ import {
   faBoxesStacked,
   faMagnifyingGlassPlus,
   faPrint,
-  faRepeat
+  faRepeat,
+  faArrowsUpToLine
 } from '@fortawesome/free-solid-svg-icons'
 
 library.add(
@@ -182,7 +183,8 @@ library.add(
   faBoxesStacked,
   faMagnifyingGlassPlus,
   faPrint,
-  faRepeat
+  faRepeat,
+  faArrowsUpToLine
 )
 
 import 'vuetify/styles'

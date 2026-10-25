@@ -16,6 +16,7 @@ import {
   isImportCustomsProcedure
 } from '@/helpers/customs.procedure.helpers.js'
 import { WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
+import { canReconcileRegister } from '@/helpers/register.reconciliation.helpers.js'
 import { canChangeParcelWeights } from '@/helpers/weight.correction.helpers.js'
 
 const TAJIKISTAN_ISO_NUMERIC = 762
@@ -50,6 +51,7 @@ const emit = defineEmits([
   'download-additional-restrictions',
   'download-techdoc',
   'bulk-change-parcel-status',
+  'reconcile-register',
   'update-weights-from-file',
   'calculate-customs-charges',
   'freeze-check-status',
@@ -66,6 +68,7 @@ const mutationEvents = new Set([
   'check-passports',
   'finish-passport-check',
   'bulk-change-parcel-status',
+  'reconcile-register',
   'update-weights-from-file',
   'calculate-customs-charges',
   'freeze-check-status',
@@ -83,6 +86,7 @@ const canCalculateCustomsCharges = computed(() => {
   return isCustomsChargesCalculationProcedure(props.item?.customsProcedureCode)
 })
 
+const reconciliationEligible = computed(() => canReconcileRegister(props.item, isShiftLeadPlus?.value))
 const weightChangesAllowed = computed(() => canChangeParcelWeights(props.item))
 const restrictionCountryMissing = computed(() => props.item?.theOtherCountryCode == null)
 const restrictionValidationTooltip = computed(() =>
@@ -191,6 +195,7 @@ const documentOptions = computed(() => {
 function run(evt, format) {
   const isRestrictionValidation = ['validate-sw', 'validate-sw-ex', 'validate-fc'].includes(evt)
   if (
+    (evt === 'reconcile-register' && !reconciliationEligible.value) ||
     props.disabled ||
     props.loading ||
     (props.mutationDisabled && mutationEvents.has(evt)) ||
@@ -375,6 +380,16 @@ function openCmrSettings() {
         :disabled="disabled || mutationDisabled || loading || !weightChangesAllowed"
         data-testid="register-weight-update-action"
         @click="run('update-weights-from-file')"
+      />
+      <ActionButton
+        v-if="reconciliationEligible"
+        :item="item"
+        icon="fa-solid fa-arrows-up-to-line"
+        tooltip-text="Сверка реестра"
+        :iconSize="iconSize"
+        :disabled="disabled || mutationDisabled || loading || item?.readOnly === true"
+        data-testid="register-reconciliation-action"
+        @click="run('reconcile-register')"
       />
       <ActionButton
         v-if="isSrLogistPlus && canCalculateCustomsCharges"

@@ -61,6 +61,7 @@ import ParcelStatusLabel from '@/components/ParcelStatusLabel.vue'
 import CorrectedWeightDisplay from '@/components/CorrectedWeightDisplay.vue'
 import PassportCheckStatusIndicator from '@/components/PassportCheckStatusIndicator.vue'
 import ActionButton from '@/components/ActionButton.vue'
+import { EXCEL_ARCHIVE_FILE_ACCEPT, openExcelFilePicker, resetExcelFileInput } from '@/helpers/excel.file.helpers.js'
 import RegisterHeaderActionsBar from '@/components/RegisterHeaderActionsBar.vue'
 import FeacnCodeSelector from '@/components/FeacnCodeSelector.vue'
 import FeacnCodeCurrent from '@/components/FeacnCodeCurrent.vue'
@@ -212,11 +213,7 @@ function openWeightUpdateFileDialog() {
     return
   }
 
-  const input = weightUpdateFileInput.value
-  if (input && typeof input.click === 'function') {
-    input.value = ''
-    input.click()
-  }
+  openExcelFilePicker(weightUpdateFileInput.value)
 }
 
 function hideWeightUpdateError() {
@@ -248,7 +245,7 @@ async function onWeightUpdateFileSelected(event) {
     loading.value ||
     isInitializing.value
   ) {
-    if (input) input.value = ''
+    resetExcelFileInput(input)
     return
   }
 
@@ -274,7 +271,7 @@ async function onWeightUpdateFileSelected(event) {
   } catch (error) {
     if (isComponentMounted.value) showWeightUpdateError(error)
   } finally {
-    if (input) input.value = ''
+    resetExcelFileInput(input)
     hideWeightUpdateActionDialog()
     runningAction.value = false
   }
@@ -742,7 +739,7 @@ function getGenericTemplateHeaders() {
       v-if="authStore.isSrLogistPlus"
       ref="weightUpdateFileInput"
       type="file"
-      accept=".xls,.xlsx,.xlsm,.zip,.rar"
+      :accept="EXCEL_ARCHIVE_FILE_ACCEPT"
       data-testid="ozon-weight-update-file-input"
       style="display: none"
       @change="onWeightUpdateFileSelected"

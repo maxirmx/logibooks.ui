@@ -786,4 +786,28 @@ describe('RegisterHeaderActionsBar', () => {
     freezeButton.vm.$emit('click')
     expect(wrapper.emitted('freeze-tnved-order')).toHaveLength(1)
   })
+  it('gates reconciliation by role, WBR-N and country and places it after weight upload', async () => {
+    const wrapper = mount(RegisterHeaderActionsBar, {
+      props: { ...baseProps, showWeightUpdate: true, item: { ...baseProps.item, registerType: WBRN_REGISTER_ID, theOtherCountryCode: 762 } },
+      global: { stubs: vuetifyStubs }
+    })
+    const action = () => findActionButtonByTooltip(wrapper, 'Сверка реестра')
+    expect(action().props('icon')).toBe('fa-solid fa-arrows-up-to-line')
+    const buttons = wrapper.findAllComponents(ActionButton)
+    expect(buttons.findIndex(button => button.props('tooltipText') === 'Сверка реестра')).toBe(buttons.findIndex(button => button.props('tooltipText') === 'Обновить веса из файла реестра') + 1)
+    action().vm.$emit('click')
+    expect(wrapper.emitted('reconcile-register')).toHaveLength(1)
+    await wrapper.setProps({ mutationDisabled: true })
+    expect(action().props('disabled')).toBe(true)
+    action().vm.$emit('click')
+    expect(wrapper.emitted('reconcile-register')).toHaveLength(1)
+    await wrapper.setProps({ item: { ...baseProps.item, registerType: WBRN_REGISTER_ID, theOtherCountryCode: 643 } })
+    expect(action()).toBeUndefined()
+    await wrapper.setProps({ item: { ...baseProps.item, registerType: 1, theOtherCountryCode: 762 } })
+    expect(action()).toBeUndefined()
+    authRefs.isShiftLeadPlus.value = false
+    await wrapper.setProps({ item: { ...baseProps.item, registerType: WBRN_REGISTER_ID, theOtherCountryCode: 762 } })
+    expect(action()).toBeUndefined()
+  })
+
 })

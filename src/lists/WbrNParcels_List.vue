@@ -58,6 +58,9 @@ import RegisterHeaderActionsBar from '@/components/RegisterHeaderActionsBar.vue'
 import FeacnCodeSelector from '@/components/FeacnCodeSelector.vue'
 import FeacnCodeCurrent from '@/components/FeacnCodeCurrent.vue'
 import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
+import { useRegisterReconciliation } from '@/composables/useRegisterReconciliation.js'
+import RegisterReconciliationDialogs from '@/l2/RegisterReconciliationDialogs.vue'
+import { APP_DIALOG_BUTTON_PROPS } from '@/helpers/dialog.helpers.js'
 import RegisterActionsDialogs from '@/l2/RegisterActionsDialogs.vue'
 import AssignTnvedDialog from '@/l2/AssignTnvedDialog.vue'
 import ParcelStatusBulkChangeDialog from '@/l2/ParcelStatusBulkChangeDialog.vue'
@@ -255,6 +258,7 @@ async function fetchRegister() {
 async function loadParcelsWrapper() {
   parcelsLoaded.value = false
   parcelsLoaded.value = await loadParcels(props.registerId, parcelsStore, isComponentMounted, alertStore)
+  return parcelsLoaded.value
 }
 
 // Provide the loadParcels function for child components
@@ -295,6 +299,13 @@ const {
   loadParcels: loadParcelsWrapper,
   isComponentMounted
 })
+
+const reconciliation = useRegisterReconciliation({
+  store: registersStore, authStore, alertStore, register: () => registersStore.item,
+  busy: () => generalActionsDisabled.value || isInitializing.value,
+  runningAction, mounted: isComponentMounted, registerId: () => props.registerId, refreshRegister: fetchRegister, refreshParcels: loadParcelsWrapper
+})
+const { state: reconciliationState, fileInput: reconciliationFileInput } = reconciliation
 
 const { triggerLoad, stop: stopFilterSync } = useDebouncedFilterSync({
   filters: [
@@ -388,6 +399,7 @@ onUnmounted(() => {
   isComponentMounted.value = false
   stopMultiSelect()
   stopRegisterHeaderActions()
+  reconciliation.stop()
   stopFilterSync()
   if (watcherStop) {
     watcherStop()
@@ -628,12 +640,21 @@ function getGenericTemplateHeaders() {
         @bulk-change-parcel-status="showParcelStatusBulkDialog = true"
         @freeze-check-status="freezeCheckStatusAndRefetch"
         @freeze-tnved-order="freezeTnVedOrderAndRefetch"
+        @reconcile-register="reconciliation.openFile"
         @close="closeList"
       />
     </div>
     <hr class="hr" />
 
     <PageAlertRegion />
+    <input ref="reconciliationFileInput" type="file" :accept="reconciliation.accept" hidden data-testid="reconciliation-file-input" @change="reconciliation.selectFile" />
+    <div v-if="['retry-start', 'retry-status', 'unknown'].includes(reconciliationState.phase) || reconciliationState.refreshFailed" class="header-actions-bar">
+      <v-btn v-if="reconciliationState.phase === 'retry-start'" v-bind="APP_DIALOG_BUTTON_PROPS.primary" data-testid="reconciliation-retry-start" @click="reconciliation.retry">Проверить результат отправки</v-btn>
+      <v-btn v-if="reconciliationState.phase === 'retry-status'" v-bind="APP_DIALOG_BUTTON_PROPS.primary" data-testid="reconciliation-retry-status" @click="reconciliation.retry">Повторить получение результата</v-btn>
+      <v-btn v-if="reconciliationState.phase === 'unknown'" v-bind="APP_DIALOG_BUTTON_PROPS.destructive" data-testid="reconciliation-new-run" @click="reconciliation.acknowledgeUnknown">Начать новую сверку</v-btn>
+      <v-btn v-if="reconciliationState.refreshFailed" v-bind="APP_DIALOG_BUTTON_PROPS.primary" data-testid="reconciliation-refresh" @click="reconciliation.refresh">Обновить данные</v-btn>
+    </div>
+    <RegisterReconciliationDialogs :state="reconciliationState" @close-error="reconciliationState.error.show = false" @summary-visible="reconciliationState.summaryVisible = $event" />
     <div v-if="registersStore.item?.readOnly" class="alert alert-warning read-only-notice">
       Изменения запрещены. Просмотр, фильтрация и скачивание документов доступны.
     </div>

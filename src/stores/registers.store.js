@@ -374,6 +374,27 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
+  async function startReconciliation(registerId, file, operationId) {
+    error.value = null
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      return await fetchWrapper.postFile(`${baseUrl}/${registerId}/reconciliation?operationId=${encodeURIComponent(operationId)}`, formData)
+    } catch (err) {
+      error.value = err
+      throw err
+    }
+  }
+
+  async function getReconciliation(registerId, operationId) {
+    try {
+      return await fetchWrapper.get(`${baseUrl}/${registerId}/reconciliation/${encodeURIComponent(operationId)}`)
+    } catch (err) {
+      error.value = err
+      throw err
+    }
+  }
+
   async function updateWeightsFromFile(registerId, file) {
     loading.value = true
     error.value = null
@@ -1113,6 +1134,8 @@ export const useRegistersStore = defineStore('registers', () => {
     getAll,
     getRegisters,
     upload,
+    startReconciliation,
+    getReconciliation,
     updateWeightsFromFile,
     getById,
     update,

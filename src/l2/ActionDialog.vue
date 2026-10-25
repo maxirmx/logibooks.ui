@@ -11,6 +11,8 @@ const props = defineProps({
   actionDialog: { type: Object, required: true }
 })
 
+const progressPercent = computed(() => Number.isFinite(props.actionDialog?.percent) ? Math.max(0, Math.min(100, props.actionDialog.percent)) : null)
+
 const actionDialogTitle = computed(
   () => props.actionDialog?.title ?? 'Пожалуйста, подождите'
 )
@@ -28,7 +30,9 @@ const actionDialogVisible = computed(
     persistent
   >
     <AppDialogFrame :title="actionDialogTitle" compact>
-      <v-progress-circular :model-value="0" indeterminate :size="70" :width="7" color="primary" />
+      <v-progress-circular :model-value="progressPercent ?? 0" :indeterminate="progressPercent === null" :size="70" :width="7" color="primary">
+        <span v-if="progressPercent !== null">{{ progressPercent }}%</span>
+      </v-progress-circular>
     </AppDialogFrame>
   </v-dialog>
 </template>

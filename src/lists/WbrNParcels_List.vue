@@ -60,6 +60,8 @@ import FeacnCodeCurrent from '@/components/FeacnCodeCurrent.vue'
 import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
 import { useRegisterReconciliation } from '@/composables/useRegisterReconciliation.js'
 import RegisterReconciliationDialogs from '@/l2/RegisterReconciliationDialogs.vue'
+import { useRegisterSplit } from '@/composables/useRegisterSplit.js'
+import RegisterSplitDialogs from '@/l2/RegisterSplitDialogs.vue'
 import { APP_DIALOG_BUTTON_PROPS } from '@/helpers/dialog.helpers.js'
 import RegisterActionsDialogs from '@/l2/RegisterActionsDialogs.vue'
 import AssignTnvedDialog from '@/l2/AssignTnvedDialog.vue'
@@ -306,6 +308,12 @@ const reconciliation = useRegisterReconciliation({
   runningAction, mounted: isComponentMounted, registerId: () => props.registerId, refreshRegister: fetchRegister, refreshParcels: loadParcelsWrapper
 })
 const { state: reconciliationState, fileInput: reconciliationFileInput } = reconciliation
+const split = useRegisterSplit({
+  store: registersStore, authStore, alertStore, register: () => registersStore.item,
+  busy: () => generalActionsDisabled.value || isInitializing.value,
+  runningAction, mounted: isComponentMounted, registerId: () => props.registerId, refreshRegister: fetchRegister
+})
+const { state: splitState } = split
 
 const { triggerLoad, stop: stopFilterSync } = useDebouncedFilterSync({
   filters: [
@@ -400,6 +408,7 @@ onUnmounted(() => {
   stopMultiSelect()
   stopRegisterHeaderActions()
   reconciliation.stop()
+  split.stop()
   stopFilterSync()
   if (watcherStop) {
     watcherStop()
@@ -641,12 +650,14 @@ function getGenericTemplateHeaders() {
         @freeze-check-status="freezeCheckStatusAndRefetch"
         @freeze-tnved-order="freezeTnVedOrderAndRefetch"
         @reconcile-register="reconciliation.openFile"
+        @split-register="split.start"
         @close="closeList"
       />
     </div>
     <hr class="hr" />
 
     <PageAlertRegion />
+    <RegisterSplitDialogs :state="splitState" @cancel="split.cancel" @retry="split.retry" @acknowledge="split.acknowledgeUnknown" @refresh="split.refresh" @close="splitState.summaryVisible = false" />
     <input ref="reconciliationFileInput" type="file" :accept="reconciliation.accept" hidden data-testid="reconciliation-file-input" @change="reconciliation.selectFile" />
     <div v-if="['retry-start', 'retry-status', 'unknown'].includes(reconciliationState.phase) || reconciliationState.refreshFailed" class="header-actions-bar">
       <v-btn v-if="reconciliationState.phase === 'retry-start'" v-bind="APP_DIALOG_BUTTON_PROPS.primary" data-testid="reconciliation-retry-start" @click="reconciliation.retry">Проверить результат отправки</v-btn>
@@ -654,7 +665,7 @@ function getGenericTemplateHeaders() {
       <v-btn v-if="reconciliationState.phase === 'unknown'" v-bind="APP_DIALOG_BUTTON_PROPS.destructive" data-testid="reconciliation-new-run" @click="reconciliation.acknowledgeUnknown">Начать новую сверку</v-btn>
       <v-btn v-if="reconciliationState.refreshFailed" v-bind="APP_DIALOG_BUTTON_PROPS.primary" data-testid="reconciliation-refresh" @click="reconciliation.refresh">Обновить данные</v-btn>
     </div>
-    <RegisterReconciliationDialogs :state="reconciliationState" @close-error="reconciliationState.error.show = false" @summary-visible="reconciliationState.summaryVisible = $event" />
+    <RegisterReconciliationDialogs :state="reconciliationState" @cancel="reconciliation.cancel" @close-error="reconciliationState.error.show = false" @summary-visible="reconciliationState.summaryVisible = $event" />
     <div v-if="registersStore.item?.readOnly" class="alert alert-warning read-only-notice">
       Изменения запрещены. Просмотр, фильтрация и скачивание документов доступны.
     </div>

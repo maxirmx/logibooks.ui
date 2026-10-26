@@ -38,3 +38,18 @@ it('preserves terminal GET metadata and returns accepted/completed data', async 
   fetch.mockResolvedValueOnce(new globalThis.Response(JSON.stringify({ finished: true, result }), { status: 200 }))
   await expect(store.getReconciliation(7, 'op')).resolves.toEqual({ finished: true, result })
 })
+
+it.each([['cancelSplit', 'split'], ['cancelReconciliation', 'reconciliation']])('preserves cancellation responses and rejects %s transport errors', async (method, segment) => {
+  const store = useRegistersStore()
+  const notification = vi.spyOn(useAlertStore(), 'error')
+  const progress = { finished: false, cancellationRequested: true, phase: 'saving' }
+  fetch.mockResolvedValueOnce(new globalThis.Response(JSON.stringify(progress), { status: 200 }))
+  await expect(store[method](7, 'op/?')).resolves.toEqual(progress)
+  expect(fetch.mock.calls[0][0]).toBe(`http://localhost/api/registers/7/${segment}/op%2F%3F/cancel`)
+  expect(fetch.mock.calls[0][1].method).toBe('POST')
+  const data = { msg: 'Недостаточно прав для отмены операции', errors: {}, code: 'Forbidden' }
+  fetch.mockResolvedValueOnce(new globalThis.Response(JSON.stringify(data), { status: 403 }))
+  await expect(store[method](7, 'op')).rejects.toMatchObject({ status: 403, data })
+  expect(store.error.data).toEqual(data)
+  expect(notification).not.toHaveBeenCalled()
+})

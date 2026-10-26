@@ -5,11 +5,16 @@
 
 import { computed } from 'vue'
 import AppDialogFrame from '@/components/AppDialogFrame.vue'
-import { APP_DIALOG_MAX_WIDTH, APP_DIALOG_SIZES } from '@/helpers/dialog.helpers.js'
+import { APP_DIALOG_BUTTON_PROPS, APP_DIALOG_MAX_WIDTH, APP_DIALOG_SIZES } from '@/helpers/dialog.helpers.js'
 
 const props = defineProps({
-  actionDialog: { type: Object, required: true }
+  actionDialog: { type: Object, required: true },
+  cancellable: { type: Boolean, default: false },
+  cancelDisabled: { type: Boolean, default: false },
+  cancelling: { type: Boolean, default: false }
 })
+
+const emit = defineEmits(['cancel'])
 
 const progressPercent = computed(() => Number.isFinite(props.actionDialog?.percent) ? Math.max(0, Math.min(100, props.actionDialog.percent)) : null)
 
@@ -33,6 +38,11 @@ const actionDialogVisible = computed(
       <v-progress-circular :model-value="progressPercent ?? 0" :indeterminate="progressPercent === null" :size="70" :width="7" color="primary">
         <span v-if="progressPercent !== null">{{ progressPercent }}%</span>
       </v-progress-circular>
+      <template v-if="cancellable" #actions>
+        <v-btn v-bind="APP_DIALOG_BUTTON_PROPS.secondary" :disabled="cancelDisabled || cancelling" data-testid="operation-cancel" @click="emit('cancel')">
+          {{ cancelling ? 'Отмена…' : 'Отменить' }}
+        </v-btn>
+      </template>
     </AppDialogFrame>
   </v-dialog>
 </template>

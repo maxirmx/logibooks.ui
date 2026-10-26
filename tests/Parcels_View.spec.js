@@ -43,6 +43,10 @@ vi.mock('@/composables/useParcelCheckStatusSubscription.js', () => ({
   useParcelCheckStatusSubscription: (options) => subscriptionOptions.push(options)
 }))
 
+vi.mock('@/l2/RegisterSplitRecovery.vue', () => ({ default: {
+  props: ['registerId'], template: '<div data-testid="split-recovery">{{ registerId }}</div>'
+} }))
+
 vi.mock('@/lists/WbrParcels_List.vue', async () => ({
   default: {
     name: 'WbrParcels_List',
@@ -174,6 +178,7 @@ describe('Parcels_View', () => {
     expect(auth.parcels_filter_id).toBe(23)
     expect(wrapper.find('[data-test="wbr-list"]').exists()).toBe(false)
     expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+
     expect(wrapper.get('[role="alert"]').text()).toContain('Фильтры недоступны')
     expect(wrapper.find('.page-alert-region__action').exists()).toBe(false)
     wrapper.unmount()
@@ -341,6 +346,7 @@ describe('Parcels_View', () => {
       await vi.runOnlyPendingTimersAsync()
       await flushPromises()
       expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+
       expect(wrapper.get('[role="alert"]').text()).toContain('Обновление недоступно')
       expect(useAlertStore().alert).not.toHaveProperty('action')
       expect(getParcels).toHaveBeenCalledOnce()
@@ -498,7 +504,9 @@ describe('Parcels_View', () => {
     await flushPromises()
 
     expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain(expectedMessage)
+    expect(wrapper.get('[data-testid="split-recovery"]').text()).toBe('20')
     expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+
   })
 
   it('passes exact box scope to the selected warehouse list and clears only that scope', async () => {

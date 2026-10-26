@@ -32,7 +32,7 @@ function harness(options = {}) {
   const notify = vi.spyOn(alertStore, 'error')
   const store = { startReconciliation: vi.fn().mockResolvedValue({ id: 'op-1' }), getReconciliation: vi.fn().mockResolvedValue(complete), ...options.store }
   const register = reactive({ id: 7, registerType: WBRN_REGISTER_ID, theOtherCountryCode: 762, readOnly: false })
-  const authStore = reactive({ isShiftLeadPlus: true })
+  const authStore = reactive({ isSrLogistPlus: true })
   const runningAction = ref(false)
   const mounted = ref(true)
   const refreshRegister = vi.fn().mockResolvedValue(undefined)
@@ -132,10 +132,10 @@ describe('register reconciliation', () => {
     h.flow.fileInput.value = picker
     expect(h.flow.openFile()).toBe(true)
     await h.flow.selectFile({ target: { value: 'x', files: [] } })
-    h.authStore.isShiftLeadPlus = false
+    h.authStore.isSrLogistPlus = false
     await h.flow.selectFile(h.event)
     expect(h.flow.openFile()).toBe(false)
-    h.authStore.isShiftLeadPlus = true
+    h.authStore.isSrLogistPlus = true
     h.register.readOnly = true
     await h.flow.selectFile(h.event)
     expect(h.flow.openFile()).toBe(false)

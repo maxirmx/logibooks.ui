@@ -10,6 +10,7 @@ import * as Yup from 'yup'
 import router from '@/router'
 import ActionButton from '@/components/ActionButton.vue'
 import BoxStickerPrintButton from '@/components/BoxStickerPrintButton.vue'
+import BoxStickerExportButton from '@/components/BoxStickerExportButton.vue'
 import LocalLabelPrinting from '@/components/LocalLabelPrinting.vue'
 import { LABEL_PRINTING_KEY } from '@/helpers/label.printing.helpers.js'
 import FieldError from '@/components/FieldError.vue'
@@ -235,6 +236,8 @@ async function onSubmit(values, { setErrors } = {}) {
           <LocalLabelPrinting v-if="!isCreate" ref="printingPanel" />
           <div v-if="!isCreate" class="header-actions header-actions-group" data-testid="box-sticker-print-actions">
             <BoxStickerPrintButton :box="box || {}" icon-size="2x"
+              :disabled="!formReady || isSubmitting || loading || values.boxSticker !== initialValues.boxSticker" />
+            <BoxStickerExportButton :box="box || {}" icon-size="2x"
               :disabled="!formReady || isSubmitting || loading || values.boxSticker !== initialValues.boxSticker" />
           </div>
           <div class="header-actions header-actions-group">

@@ -68,6 +68,10 @@ export const useBoxesStore = defineStore('boxes', () => {
     })
   }
 
+  async function downloadStickers(id) {
+    return fetchWrapper.downloadFile(`${baseUrl}/${id}/stickers.csv`, `box-${id}-stickers.csv`)
+  }
+
   return {
     boxes,
     box,
@@ -76,6 +80,7 @@ export const useBoxesStore = defineStore('boxes', () => {
     getAll,
     getById,
     create,
-    update
+    update,
+    downloadStickers
   }
 })

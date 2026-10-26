@@ -95,6 +95,7 @@ import {
   faBoxesStacked,
   faMagnifyingGlassPlus,
   faPrint,
+  faShare,
   faRepeat,
   faArrowsUpToLine
 } from '@fortawesome/free-solid-svg-icons'
@@ -183,6 +184,7 @@ library.add(
   faBoxesStacked,
   faMagnifyingGlassPlus,
   faPrint,
+  faShare,
   faRepeat,
   faArrowsUpToLine
 )

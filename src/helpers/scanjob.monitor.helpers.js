@@ -12,7 +12,7 @@ export const scanjobParcelsProgressTitle = 'Посылки всего / скан
 const scanjobParcelActionsHeader = { title: '', key: 'actions', align: 'center', sortable: false, width: '144px' }
 
 export const scanjobBoxHeaders = [
-  { title: '', key: 'actions', align: 'center', sortable: false, width: '72px' },
+  { title: '', key: 'actions', align: 'center', sortable: false, width: '104px' },
   { title: '', key: 'boxStickerScanned', align: 'start' },
   { title: 'Посылки', key: 'parcelsProgress', align: 'start', sortable: false },
   { title: 'Номер коробки', key: 'boxCode', align: 'center' },

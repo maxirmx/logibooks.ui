@@ -107,6 +107,7 @@ describe('Boxes_List.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockAlert.value = null
+    authStore.isWhManagerPlus = false
     authStore.boxes_per_page = 25
     authStore.boxes_search = ''
     authStore.boxes_sort_by = [{ key: 'code', order: 'asc' }]
@@ -269,6 +270,23 @@ describe('Boxes_List.vue', () => {
     expect(authStore.parcels_wh_page).toBe(3)
     expect(authStore.parcels_wh_box_number).toBe('PREVIOUS-')
     expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain('navigation failed')
+  })
+
+  it('places CSV export immediately after printing and downloads by box ID', async () => {
+    authStore.isWhManagerPlus = true
+    mockBoxes.value[0].boxSticker = 'QR'
+    boxesStore.downloadStickers = vi.fn().mockResolvedValue(true)
+    const wrapper = createWrapper()
+    await flushPromises()
+    const action = wrapper.get('[data-testid="box-export-stickers"]')
+    const row = action.element.closest('.actions-container')
+    expect([...row.querySelectorAll('button')].slice(-2).map(button => button.dataset.testid))
+      .toEqual(['box-print-label', 'box-export-stickers'])
+    await action.trigger('click')
+    await flushPromises()
+    expect(boxesStore.downloadStickers).toHaveBeenCalledWith(7)
+    expect(routerPush).not.toHaveBeenCalled()
+    wrapper.unmount()
   })
 
 })

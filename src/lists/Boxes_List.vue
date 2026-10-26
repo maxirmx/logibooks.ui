@@ -12,6 +12,7 @@ import { mdiMagnify } from '@mdi/js'
 import router from '@/router'
 import ActionButton from '@/components/ActionButton.vue'
 import BoxStickerPrintButton from '@/components/BoxStickerPrintButton.vue'
+import BoxStickerExportButton from '@/components/BoxStickerExportButton.vue'
 import LocalLabelPrinting from '@/components/LocalLabelPrinting.vue'
 import { LABEL_PRINTING_KEY } from '@/helpers/label.printing.helpers.js'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
@@ -64,7 +65,7 @@ const registerHeading = computed(() =>
 )
 
 const headers = [
-  { title: '', key: 'actions', align: 'center', sortable: false, width: '128px' },
+  { title: '', key: 'actions', align: 'center', sortable: false, width: '160px' },
   { title: 'Номер коробки', key: 'code', sortable: true },
   { title: 'Код стикера', key: 'boxSticker', sortable: true },
   { title: 'Вес, кг', key: 'weightKg', align: 'end', sortable: true },
@@ -251,6 +252,7 @@ defineExpose({
               @click="openEditView"
             />
             <BoxStickerPrintButton :box="item" :disabled="controlsBusy" />
+            <BoxStickerExportButton :box="item" :disabled="controlsBusy" />
           </div>
         </template>
 

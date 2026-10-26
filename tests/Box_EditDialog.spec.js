@@ -57,7 +57,7 @@ vi.mock('pinia', async () => {
 })
 
 vi.mock('@/stores/boxes.store.js', () => ({ useBoxesStore: () => boxesStore }))
-vi.mock('@/stores/auth.store.js', () => ({ useAuthStore: () => ({ get isAdmin() { return mockIsAdmin.value } }) }))
+vi.mock('@/stores/auth.store.js', () => ({ useAuthStore: () => ({ get isAdmin() { return mockIsAdmin.value }, get isWhManagerPlus() { return mockIsAdmin.value } }) }))
 vi.mock('@/stores/registers.store.js', () => ({ useRegistersStore: () => registersStore }))
 vi.mock('@/router', () => ({ default: { push: routerPush } }))
 
@@ -455,4 +455,33 @@ describe('Box_EditDialog.vue', () => {
     )
     expect(wrapper.find('#code').exists()).toBe(false)
   })
+  it('exports in the print group, blocks unsaved stickers and preserves form values after failure', async () => {
+    mockIsAdmin.value = true
+    mockBox.value.boxSticker = 'QR'
+    boxesStore.downloadStickers = vi.fn().mockRejectedValueOnce(new Error('Не удалось выгрузить стикеры'))
+      .mockResolvedValue(true)
+    const wrapper = await mountDialog({ mode: 'edit', registerId: 42, boxId: 7 })
+    const group = wrapper.get('[data-testid="box-sticker-print-actions"]')
+    expect(group.findAll('button').map(button => button.attributes('data-testid')))
+      .toEqual(['box-print-label', 'box-export-stickers'])
+    const sticker = wrapper.get('[data-testid="box-sticker-input"]')
+    await sticker.setValue('unsaved QR')
+    await vi.waitFor(() => expect(group.get('[data-testid="box-export-stickers"]').element.disabled).toBe(true))
+    await sticker.setValue('QR')
+    await vi.waitFor(() => expect(group.get('[data-testid="box-export-stickers"]').element.disabled).toBe(false))
+    await wrapper.get('#lengthCm').setValue('17')
+    await group.get('[data-testid="box-export-stickers"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain('Не удалось выгрузить стикеры')
+    expect(wrapper.get('#lengthCm').element.value).toBe('17')
+    expect(sticker.element.value).toBe('QR')
+    expect(routerPush).not.toHaveBeenCalled()
+    expect(boxUpdate).not.toHaveBeenCalled()
+    await group.get('[data-testid="box-export-stickers"]').trigger('click')
+    await flushPromises()
+    expect(boxesStore.downloadStickers).toHaveBeenCalledTimes(2)
+    expect(boxUpdate).not.toHaveBeenCalled()
+    expect(routerPush).not.toHaveBeenCalled()
+  })
+
 })

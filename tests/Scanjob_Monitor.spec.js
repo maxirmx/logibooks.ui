@@ -47,6 +47,8 @@ const getById = vi.hoisted(() =>
 )
 const manualScanParcel = vi.hoisted(() => vi.fn())
 const manualScanBox = vi.hoisted(() => vi.fn())
+const exportStickers = vi.hoisted(() => vi.fn())
+vi.mock('@/stores/boxes.store.js', () => ({ useBoxesStore: () => ({ downloadStickers: exportStickers }) }))
 const mockRegisterItem = vi.hoisted(() => ({
   id: 101,
   dealNumber: 'DEAL-101',
@@ -396,6 +398,7 @@ vi.mock('@/stores/auth.store.js', () => ({
     hasLogistRole,
     isAdmin,
     isWhManager,
+    get isWhManagerPlus() { return isAdmin.value || isWhManager.value || isShiftLead.value },
     isShiftLead
   })
 }))
@@ -1953,5 +1956,27 @@ describe('Scanjob_Monitor.vue', () => {
       wrapper.unmount()
     })
   }
+
+  it('exports a box next to Print using saved values even when its scan flag is false', async () => {
+    isWhManager.value = true
+    exportStickers.mockResolvedValue(true)
+    loadMonitorSnapshot.mockResolvedValueOnce({
+      ...registerSnapshot,
+      boxes: [{ ...registerSnapshot.boxes[0], area: 1, boxSticker: 'QR', boxStickerScanned: false }]
+    })
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 }, global: { stubs: monitorGlobalStubs }
+    })
+    await flushPromises()
+    const action = wrapper.get('button[data-testid="box-export-stickers"]')
+    expect(action.element.disabled).toBe(false)
+    const row = action.element.closest('.actions-container')
+    expect([...row.querySelectorAll('button')].slice(-2).map(button => button.dataset.testid))
+      .toEqual(['box-print-label', 'box-export-stickers'])
+    await action.trigger('click')
+    await flushPromises()
+    expect(exportStickers).toHaveBeenCalledWith(7)
+    wrapper.unmount()
+  })
 
 })

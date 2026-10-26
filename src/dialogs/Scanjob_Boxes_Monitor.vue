@@ -11,6 +11,7 @@ import { useAuthStore } from '@/stores/auth.store.js'
 import ClickableCell from '@/components/ClickableCell.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import BoxStickerPrintButton from '@/components/BoxStickerPrintButton.vue'
+import BoxStickerExportButton from '@/components/BoxStickerExportButton.vue'
 import ScanjobMonitorSummary from '@/components/ScanjobMonitorSummary.vue'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import {
@@ -137,6 +138,7 @@ function openBox(item) {
               :disabled="controlsBusy" data-testid="box-parcels-action" @click="openBox" />
             <BoxScanAction v-if="item.boxId != null" :boxes="[item]" :selection="selection" />
             <BoxStickerPrintButton :box="item" :company="props.snapshot" :disabled="controlsBusy" />
+            <BoxStickerExportButton :box="item" :disabled="controlsBusy" />
           </div>
         </template>
 

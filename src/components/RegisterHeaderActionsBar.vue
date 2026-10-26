@@ -16,7 +16,7 @@ import {
   isImportCustomsProcedure
 } from '@/helpers/customs.procedure.helpers.js'
 import { WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
-import { canReconcileRegister } from '@/helpers/register.reconciliation.helpers.js'
+import { canReconcileRegister, canSplitRegister } from '@/helpers/register.reconciliation.helpers.js'
 import { canChangeParcelWeights } from '@/helpers/weight.correction.helpers.js'
 
 const TAJIKISTAN_ISO_NUMERIC = 762
@@ -52,6 +52,7 @@ const emit = defineEmits([
   'download-techdoc',
   'bulk-change-parcel-status',
   'reconcile-register',
+  'split-register',
   'update-weights-from-file',
   'calculate-customs-charges',
   'freeze-check-status',
@@ -69,6 +70,7 @@ const mutationEvents = new Set([
   'finish-passport-check',
   'bulk-change-parcel-status',
   'reconcile-register',
+  'split-register',
   'update-weights-from-file',
   'calculate-customs-charges',
   'freeze-check-status',
@@ -86,7 +88,12 @@ const canCalculateCustomsCharges = computed(() => {
   return isCustomsChargesCalculationProcedure(props.item?.customsProcedureCode)
 })
 
-const reconciliationEligible = computed(() => canReconcileRegister(props.item, isShiftLeadPlus?.value))
+const reconciliationEligible = computed(() => canReconcileRegister(props.item, isSrLogistPlus?.value))
+const splitEligible = computed(() => canSplitRegister(props.item, isSrLogistPlus?.value))
+const reconciliationOptions = computed(() => [
+  { label: 'Сверить реестр', action: () => run('reconcile-register') },
+  { label: 'Разделить реестр', disabled: !splitEligible.value, action: () => run('split-register') }
+])
 const weightChangesAllowed = computed(() => canChangeParcelWeights(props.item))
 const restrictionCountryMissing = computed(() => props.item?.theOtherCountryCode == null)
 const restrictionValidationTooltip = computed(() =>
@@ -195,7 +202,8 @@ const documentOptions = computed(() => {
 function run(evt, format) {
   const isRestrictionValidation = ['validate-sw', 'validate-sw-ex', 'validate-fc'].includes(evt)
   if (
-    (evt === 'reconcile-register' && !reconciliationEligible.value) ||
+    (['reconcile-register', 'split-register'].includes(evt) && (!reconciliationEligible.value || props.item?.readOnly === true)) ||
+    (evt === 'split-register' && !splitEligible.value) ||
     props.disabled ||
     props.loading ||
     (props.mutationDisabled && mutationEvents.has(evt)) ||
@@ -381,15 +389,15 @@ function openCmrSettings() {
         data-testid="register-weight-update-action"
         @click="run('update-weights-from-file')"
       />
-      <ActionButton
+      <ActionButton2L
         v-if="reconciliationEligible"
         :item="item"
         icon="fa-solid fa-arrows-up-to-line"
-        tooltip-text="Сверка реестра"
+        tooltip-text="Сверить и разделить реестр"
         :iconSize="iconSize"
+        :options="reconciliationOptions"
         :disabled="disabled || mutationDisabled || loading || item?.readOnly === true"
         data-testid="register-reconciliation-action"
-        @click="run('reconcile-register')"
       />
       <ActionButton
         v-if="isSrLogistPlus && canCalculateCustomsCharges"

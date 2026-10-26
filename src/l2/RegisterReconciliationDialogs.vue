@@ -5,7 +5,7 @@ import AppDialogFrame from '@/components/AppDialogFrame.vue'
 import { APP_DIALOG_BUTTON_PROPS, APP_DIALOG_MAX_WIDTH, APP_DIALOG_SIZES } from '@/helpers/dialog.helpers.js'
 
 defineProps({ state: { type: Object, required: true } })
-const emit = defineEmits(['close-error', 'summary-visible'])
+const emit = defineEmits(['close-error', 'summary-visible', 'cancel'])
 const statistics = [
   ['dangerousGoodsCount', 'Посылок с признаком «Опасный груз»'],
   ['markedCount', 'Всего запретов'],
@@ -17,7 +17,7 @@ const statistics = [
 </script>
 
 <template>
-  <ActionDialog :action-dialog="state.progress" />
+  <ActionDialog :action-dialog="state.progress" cancellable :cancel-disabled="!state.canCancel" :cancelling="state.cancelling" @cancel="emit('cancel')" />
   <ErrorDialog :show="state.error.show" title="Ошибка сверки реестра" :message="state.error.message" @close="emit('close-error')" />
   <v-dialog :model-value="state.summaryVisible" @update:model-value="emit('summary-visible', $event)" :width="APP_DIALOG_SIZES.medium" :max-width="APP_DIALOG_MAX_WIDTH" aria-label="Результаты сверки реестра">
     <AppDialogFrame title="Результаты сверки реестра">

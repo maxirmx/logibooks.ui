@@ -374,6 +374,30 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
+  async function startSplit(registerId, operationId) {
+    error.value = null
+    try {
+      return await fetchWrapper.post(`${baseUrl}/${registerId}/split?operationId=${encodeURIComponent(operationId)}`, {})
+    } catch (err) { error.value = err; throw err }
+  }
+
+  async function cancelSplit(registerId, operationId) {
+    try {
+      return await fetchWrapper.post(`${baseUrl}/${registerId}/split/${encodeURIComponent(operationId)}/cancel`, {})
+    } catch (err) { error.value = err; throw err }
+  }
+
+  async function cancelReconciliation(registerId, operationId) {
+    try {
+      return await fetchWrapper.post(`${baseUrl}/${registerId}/reconciliation/${encodeURIComponent(operationId)}/cancel`, {})
+    } catch (err) { error.value = err; throw err }
+  }
+
+  async function getSplit(registerId, operationId) {
+    try {
+      return await fetchWrapper.get(`${baseUrl}/${registerId}/split/${encodeURIComponent(operationId)}`)
+    } catch (err) { error.value = err; throw err }
+  }
   async function startReconciliation(registerId, file, operationId) {
     error.value = null
     try {
@@ -1134,6 +1158,10 @@ export const useRegistersStore = defineStore('registers', () => {
     getAll,
     getRegisters,
     upload,
+    cancelSplit,
+    cancelReconciliation,
+    startSplit,
+    getSplit,
     startReconciliation,
     getReconciliation,
     updateWeightsFromFile,

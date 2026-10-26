@@ -786,28 +786,42 @@ describe('RegisterHeaderActionsBar', () => {
     freezeButton.vm.$emit('click')
     expect(wrapper.emitted('freeze-tnved-order')).toHaveLength(1)
   })
-  it('gates reconciliation by role, WBR-N and country and places it after weight upload', async () => {
-    const wrapper = mount(RegisterHeaderActionsBar, {
-      props: { ...baseProps, showWeightUpdate: true, item: { ...baseProps.item, registerType: WBRN_REGISTER_ID, theOtherCountryCode: 762 } },
-      global: { stubs: vuetifyStubs }
-    })
-    const action = () => findActionButtonByTooltip(wrapper, 'Сверка реестра')
-    expect(action().props('icon')).toBe('fa-solid fa-arrows-up-to-line')
-    const buttons = wrapper.findAllComponents(ActionButton)
-    expect(buttons.findIndex(button => button.props('tooltipText') === 'Сверка реестра')).toBe(buttons.findIndex(button => button.props('tooltipText') === 'Обновить веса из файла реестра') + 1)
-    action().vm.$emit('click')
-    expect(wrapper.emitted('reconcile-register')).toHaveLength(1)
-    await wrapper.setProps({ mutationDisabled: true })
-    expect(action().props('disabled')).toBe(true)
-    action().vm.$emit('click')
-    expect(wrapper.emitted('reconcile-register')).toHaveLength(1)
-    await wrapper.setProps({ item: { ...baseProps.item, registerType: WBRN_REGISTER_ID, theOtherCountryCode: 643 } })
-    expect(action()).toBeUndefined()
-    await wrapper.setProps({ item: { ...baseProps.item, registerType: 1, theOtherCountryCode: 762 } })
-    expect(action()).toBeUndefined()
+  it('offers reconciliation and split to senior logist, retaining country, format and mutation guards', async () => {
     authRefs.isShiftLeadPlus.value = false
-    await wrapper.setProps({ item: { ...baseProps.item, registerType: WBRN_REGISTER_ID, theOtherCountryCode: 762 } })
-    expect(action()).toBeUndefined()
+    authRefs.isSrLogistPlus.value = true
+    const item = { ...baseProps.item, registerType: WBRN_REGISTER_ID, theOtherCountryCode: 762, dangerousGoodsCount: 3, parcelsTotal: 5 }
+    const wrapper = mount(RegisterHeaderActionsBar, { props: { ...baseProps, item, showWeightUpdate: true }, global: { stubs: vuetifyStubs } })
+    const menu = () => wrapper.findAllComponents(ActionButton2L).find(button => button.props('tooltipText') === 'Сверить и разделить реестр')
+    expect(menu().props('options').map(option => option.label)).toEqual(['Сверить реестр', 'Разделить реестр'])
+    menu().props('options')[0].action()
+    menu().props('options')[1].action()
+    expect(wrapper.emitted('reconcile-register')).toHaveLength(1)
+    expect(wrapper.emitted('split-register')).toHaveLength(1)
+    for (const counts of [
+      { dangerousGoodsCount: 0, parcelsTotal: 5 },
+      { dangerousGoodsCount: 5, parcelsTotal: 5 },
+      { dangerousGoodsCount: 0, parcelsTotal: 0 },
+      { dangerousGoodsCount: 3, parcelsTotal: undefined }
+    ]) {
+      await wrapper.setProps({ item: { ...item, ...counts } })
+      expect(menu().props('options')[1].disabled).toBe(true)
+      menu().props('options')[1].action()
+      expect(wrapper.emitted('split-register')).toHaveLength(1)
+    }
+    for (const props of [{ mutationDisabled: true }, { mutationDisabled: false, loading: true }, { loading: false, item: { ...item, readOnly: true } }]) {
+      await wrapper.setProps(props)
+      expect(menu().props('disabled')).toBe(true)
+      menu().props('options')[0].action()
+      menu().props('options')[1].action()
+    }
+    expect(wrapper.emitted('reconcile-register')).toHaveLength(1)
+    expect(wrapper.emitted('split-register')).toHaveLength(1)
+    await wrapper.setProps({ item: { ...item, theOtherCountryCode: 643 } })
+    expect(menu()).toBeUndefined()
+    await wrapper.setProps({ item: { ...item, registerType: 1 } })
+    expect(menu()).toBeUndefined()
+    authRefs.isSrLogistPlus.value = false
+    await wrapper.setProps({ item })
+    expect(menu()).toBeUndefined()
   })
-
 })

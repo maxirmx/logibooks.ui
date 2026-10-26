@@ -1525,4 +1525,22 @@ describe('registers store', () => {
       expect(store.loading).toBe(false)
     })
   })
-})
+  describe('register split transport', () => {
+    it('posts and reads the same operation identity', async () => {
+      const store = useRegistersStore()
+      fetchWrapper.post.mockResolvedValue({ id: 'a b' })
+      fetchWrapper.get.mockResolvedValue({ phase: 'copying' })
+      await expect(store.startSplit(7, 'a b')).resolves.toEqual({ id: 'a b' })
+      await expect(store.getSplit(7, 'a b')).resolves.toEqual({ phase: 'copying' })
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/registers/7/split?operationId=a%20b`, {})
+      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/registers/7/split/a%20b`)
+    })
+    it.each(['startSplit', 'getSplit'])('propagates %s errors without swallowing them', async method => {
+      const store = useRegistersStore()
+      const error = new Error('Разделение недоступно')
+      fetchWrapper.post.mockRejectedValue(error)
+      fetchWrapper.get.mockRejectedValue(error)
+      await expect(store[method](7, 'op')).rejects.toBe(error)
+      expect(store.error).toBe(error)
+    })
+  })})

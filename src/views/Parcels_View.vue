@@ -27,6 +27,7 @@ import { reportError } from '@/helpers/error.helpers.js'
 import { useParcelFiltersStore } from '@/stores/parcel.filters.store.js'
 import { REMOVED_PARCEL_FILTER_MESSAGE } from '@/helpers/parcel.filters.js'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
+import RegisterSplitRecovery from '@/l2/RegisterSplitRecovery.vue'
 
 const props = defineProps({
   id: { type: Number, required: true },
@@ -253,6 +254,7 @@ async function closeList() {
     <h1>Посылки реестра</h1>
     <hr class="hr" />
     <PageAlertRegion />
+    <RegisterSplitRecovery v-if="mode === OP_MODE_PAPERWORK" :register-id="props.id" />
   </div>
   <Suspense v-else>
     <component

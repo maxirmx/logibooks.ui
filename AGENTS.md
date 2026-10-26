@@ -1,5 +1,9 @@
 # Logibooks UI agent rules
 
+## Copyright headers
+
+- All new files must include the project's copyright header, using comments appropriate to the file format. Migration files are exempt.
+
 These instructions apply to the entire repository. Follow them for every new feature, refactor, bug fix, and test update.
 
 ## Error propagation and ownership

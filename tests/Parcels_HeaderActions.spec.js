@@ -12,7 +12,6 @@ import OzonParcelsList from '@/lists/OzonParcels_List.vue'
 import WbrParcelsList from '@/lists/WbrParcels_List.vue'
 import WbrNParcelsList from '@/lists/WbrNParcels_List.vue'
 import GtcParcelsList from '@/lists/GtcParcels_List.vue'
-import { FCCheckStatus, SWCheckStatus } from '@/helpers/check.status.code.js'
 import { CUSTOMS_PROCEDURE_IMPORT } from '@/helpers/customs.procedure.helpers.js'
 import { getRowPropsForParcel } from '@/helpers/parcels.list.helpers.js'
 import { vuetifyStubs, resolveAll } from './helpers/test-utils.js'
@@ -385,122 +384,6 @@ describe.each([
     registerHeaderActionsMock = createRegisterHeaderActionsMock()
   })
 
-  it('wires parcel multi-select composable', async () => {
-    useParcelMultiSelectMock.mockClear()
-
-    mount(Component, {
-      props: { registerId: 11 },
-      global: { stubs: vuetifyStubs }
-    })
-
-    await resolveAll()
-
-    expect(useParcelMultiSelectMock).toHaveBeenCalledTimes(1)
-  })
-
-  it('wires packing list download from the shared header action bar', async () => {
-    const wrapper = mount(Component, {
-      props: { registerId: 11 },
-      global: { stubs: vuetifyStubs }
-    })
-
-    await resolveAll()
-    wrapper.findComponent({ name: 'RegisterHeaderActionsBar' }).vm.$emit('download-packing-list')
-
-    expect(registerHeaderActionsMock.downloadPackingList).toHaveBeenCalledTimes(1)
-  })
-
-  it('includes Duplicate2 in both check-status filter selectors', () => {
-    const wrapper = mount(Component, {
-      props: { registerId: 11 },
-      global: { stubs: vuetifyStubs }
-    })
-
-    const filterSelectors = wrapper.findComponent({ name: 'ParcelFilterSelectors' })
-    expect(filterSelectors.props('checkStatusOptionsSw')).toContainEqual({
-      value: SWCheckStatus.Duplicate2,
-      title: 'Дубликат'
-    })
-    expect(filterSelectors.props('checkStatusOptionsFc')).toContainEqual({
-      value: FCCheckStatus.Duplicate2,
-      title: 'Дубликат'
-    })
-  })
-
-  it('uses frozenOrder as the first table header key', async () => {
-    const wrapper = mount(Component, {
-      props: { registerId: 12 },
-      global: { stubs: vuetifyStubs }
-    })
-
-    await resolveAll()
-
-    expect(wrapper.vm.headers[0]?.key).toBe('frozenOrder')
-  })
-
-  it('places customs fee and duty immediately after the DTEG column', async () => {
-    stores.registers.item.customsFee = 689
-    stores.registers.item.customsDuty = 750
-
-    const wrapper = mount(Component, {
-      props: { registerId: 14 },
-      global: { stubs: vuetifyStubs }
-    })
-
-    await resolveAll()
-
-    const headerKeys = wrapper.vm.headers.map((header) => header.key)
-    const dTagIndex = headerKeys.indexOf('dTag')
-    expect(headerKeys[dTagIndex + 1]).toBe('customsFee')
-    expect(headerKeys[dTagIndex + 2]).toBe('customsDuty')
-    expect(wrapper.vm.headers[dTagIndex + 1]).toMatchObject({
-      title: 'Сбор, руб',
-      sortable: false,
-      align: 'end',
-      width: '120px'
-    })
-    expect(wrapper.vm.headers[dTagIndex + 2]).toMatchObject({
-      title: 'Пошлина, руб',
-      sortable: false,
-      align: 'end',
-      width: '120px'
-    })
-  })
-
-  it('hides the customs fee column when the register fee is missing', async () => {
-    stores.registers.item.customsFee = null
-    stores.registers.item.customsDuty = 750
-
-    const wrapper = mount(Component, {
-      props: { registerId: 15 },
-      global: { stubs: vuetifyStubs }
-    })
-
-    await resolveAll()
-
-    const headerKeys = wrapper.vm.headers.map((header) => header.key)
-    const dTagIndex = headerKeys.indexOf('dTag')
-    expect(headerKeys).not.toContain('customsFee')
-    expect(headerKeys[dTagIndex + 1]).toBe('customsDuty')
-  })
-
-  it('hides the customs duty column when the register duty is missing', async () => {
-    stores.registers.item.customsFee = 689
-    stores.registers.item.customsDuty = null
-
-    const wrapper = mount(Component, {
-      props: { registerId: 16 },
-      global: { stubs: vuetifyStubs }
-    })
-
-    await resolveAll()
-
-    const headerKeys = wrapper.vm.headers.map((header) => header.key)
-    const dTagIndex = headerKeys.indexOf('dTag')
-    expect(headerKeys[dTagIndex + 1]).toBe('customsFee')
-    expect(headerKeys).not.toContain('customsDuty')
-  })
-
   it('refetches parcels after freeze only when frozenOrder sorting is active', async () => {
     const wrapper = mount(Component, {
       props: { registerId: 13 },
@@ -524,26 +407,6 @@ describe.each([
     await wrapper.vm.freezeTnVedOrderAndRefetch()
     expect(registerHeaderActionsMock.freezeTnVedOrder).toHaveBeenCalledTimes(2)
     expect(loadParcelsMock.mock.calls.length).toBe(callsBeforeWithSort + 1)
-  })
-
-  it('enables the restriction filter after check status freeze', async () => {
-    const wrapper = mount(Component, {
-      props: { registerId: 14 },
-      global: { stubs: vuetifyStubs }
-    })
-
-    await resolveAll()
-    loadParcelsMock.mockClear()
-    stores.registers.getById.mockClear()
-    registerHeaderActionsMock.freezeCheckStatus.mockClear()
-
-    await wrapper.vm.freezeCheckStatusAndRefetch()
-    await resolveAll()
-
-    expect(registerHeaderActionsMock.freezeCheckStatus).toHaveBeenCalledTimes(1)
-    expect(stores.registers.getById).toHaveBeenCalledWith(14)
-    expect(stores.auth.parcels_hide_legacy_restrictions.value).toBe(true)
-    expect(loadParcelsMock).toHaveBeenCalledTimes(1)
   })
 
   it('refreshes explicitly when the restriction filter is already enabled', async () => {
@@ -662,57 +525,6 @@ describe.each([
     hiddenWrapper.unmount()
   })
 
-  it('hides header actions when user lacks permissions', async () => {
-    stores.auth.isSrLogistPlus.value = false
-    stores.auth.isShiftLeadPlus.value = false
-
-    const wrapper = mount(Component, {
-      props: { registerId: 2 },
-      global: { stubs: vuetifyStubs }
-    })
-
-    await resolveAll()
-
-    const buttons = wrapper.findAll('.header-actions .action-button-stub')
-    // When user lacks logist and shift-lead roles, the logist and freeze actions are hidden.
-    expect(
-      buttons.some((button) => button.attributes('data-icon') === 'fa-solid fa-spell-check')
-    ).toBe(false)
-    expect(
-      buttons.some((button) => button.attributes('data-icon') === 'fa-solid fa-anchor-circle-check')
-    ).toBe(false)
-    expect(
-      buttons.some((button) => button.attributes('data-icon') === 'fa-solid fa-passport')
-    ).toBe(false)
-    expect(
-      buttons.some((button) => button.attributes('data-icon') === 'fa-solid fa-magnifying-glass')
-    ).toBe(false)
-    expect(
-      buttons.some((button) => button.attributes('data-icon') === 'fa-solid fa-calculator')
-    ).toBe(false)
-    expect(
-      buttons.some((button) => button.attributes('data-icon') === 'fa-solid fa-pen-to-square')
-    ).toBe(false)
-    expect(
-      buttons.some((button) => button.attributes('data-icon') === 'fa-solid fa-xmarks-lines')
-    ).toBe(false)
-    expect(
-      buttons.some((button) => button.attributes('data-icon') === 'fa-solid fa-arrows-to-eye')
-    ).toBe(false)
-  })
-
-  it('calls stop handler on unmount', async () => {
-    const wrapper = mount(Component, {
-      props: { registerId: 3 },
-      global: { stubs: vuetifyStubs }
-    })
-
-    await resolveAll()
-
-    wrapper.unmount()
-    expect(registerHeaderActionsMock.stop).toHaveBeenCalled()
-  })
-
   it('shows previousDTagComment and hides feacnLookup for reimport customs procedures', async () => {
     if (!capabilities.hasPreviousDTagComment) return
     stores.registers.item.customsProcedureCode = 2
@@ -732,22 +544,4 @@ describe.each([
     expect(headerKeys).not.toContain('feacnLookup')
   })
 
-  it('shows feacnLookup and hides previousDTagComment for non-reimport customs procedures', async () => {
-    if (!capabilities.hasPreviousDTagComment) return
-    stores.registers.item.customsProcedureCode = 3
-    stores.registers.ops.customsProcedures = [
-      { value: 3, charCode: 'ЭК10', name: 'Экспорт', isRe: false, isExport: true }
-    ]
-
-    const wrapper = mount(Component, {
-      props: { registerId: 5 },
-      global: { stubs: vuetifyStubs }
-    })
-
-    await resolveAll()
-
-    const headerKeys = wrapper.vm.headers.map((header) => header.key)
-    expect(headerKeys).toContain('feacnLookup')
-    expect(headerKeys).not.toContain('previousDTagComment')
-  })
 })

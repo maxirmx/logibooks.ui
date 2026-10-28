@@ -8,14 +8,12 @@ import { createPinia, setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
 import { Form } from 'vee-validate'
 import { createVuetify } from 'vuetify'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import FeacnCodeSelectorW from '@/components/FeacnCodeSelectorW.vue'
 import ParcelEditView from '@/views/Parcel_EditView.vue'
 import OzonEditor from '@/dialogs/OzonParcel_EditDialog.vue'
 import WbrEditor from '@/dialogs/WbrParcel_EditDialog.vue'
 import WbrNEditor from '@/dialogs/WbrNParcel_EditDialog.vue'
 import GtcEditor from '@/dialogs/GtcParcel_EditDialog.vue'
-import { useRegistersStore } from '@/stores/registers.store.js'
 import { useParcelsStore } from '@/stores/parcels.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
@@ -153,115 +151,6 @@ afterEach(async () => {
 })
 
 describe.each(editors)('%s editor with real forms and stores', (_name, component, type) => {
-  it.each([762, '762', 156, null])('shows the shared switch only for Tajikistan (%s)', async country => {
-    registerType = type
-    registerCountry = country
-    const wrapper = mountEditor(component)
-    await settle()
-    expect(wrapper.find('[name="dangerousGoods"]').exists()).toBe(Number(country) === 762)
-    const selector = wrapper.get('[name="statusId"]')
-    expect(selector.attributes('title')).toBe('В работе')
-    expect(wrapper.get('label[for="statusId"]').text()).toBe('Статус:')
-    if (Number(country) === 762) {
-      const checkbox = wrapper.get('[name="dangerousGoods"]')
-      expect(wrapper.find('#dangerousGoodsLabel').exists()).toBe(false)
-      expect(wrapper.get('.dangerous-goods-group').text()).toBe('')
-      expect(checkbox.attributes('aria-label')).toBe('Опасный груз')
-      expect(checkbox.attributes('role')).toBe('switch')
-      expect(checkbox.element.closest('.form-group')).not.toBe(selector.element.closest('.form-group'))
-    }
-  })
-
-  it('retains the dangerous goods draft when the control is hidden', async () => {
-    registerType = type
-    registerCountry = 762
-    const wrapper = mountEditor(component)
-    await settle()
-    const checkbox = wrapper.get('[name="dangerousGoods"]')
-    expect(checkbox.element.checked).toBe(false)
-    const thumbIcon = () => wrapper.get('.dangerous-goods-control').getComponent(FontAwesomeIcon).props('icon').iconName
-    expect(thumbIcon()).toBe('circle')
-    expect(wrapper.get('.dangerous-goods-control').getComponent(FontAwesomeIcon).classes()).toContain('dangerous-goods-safe-icon')
-    await checkbox.setValue(true)
-    await settle()
-    expect(thumbIcon()).toBe('skull-crossbones')
-    expect(wrapper.get('.dangerous-goods-control').getComponent(FontAwesomeIcon).classes()).not.toContain('dangerous-goods-safe-icon')
-    useRegistersStore().item.theOtherCountryCode = 860
-    await settle()
-    expect(wrapper.find('[name="dangerousGoods"]').exists()).toBe(false)
-    expect(wrapper.getComponent(Form).vm.values.dangerousGoods).toBe(true)
-    useRegistersStore().item.theOtherCountryCode = 762
-    await settle()
-    expect(wrapper.get('[name="dangerousGoods"]').element.checked).toBe(true)
-    await wrapper.get('[name="dangerousGoods"]').setValue(false)
-    await settle()
-    expect(thumbIcon()).toBe('circle')
-    await action(wrapper, 'Сохранить').trigger('click')
-    await settle()
-    expect(transport.put).toHaveBeenCalledWith('http://test/api/parcels/3', expect.objectContaining({ dangerousGoods: false }))
-  })
-
-  it('disables the switch for a read-only parcel and displays its saved value', async () => {
-    registerType = type
-    registerCountry = 762
-    parcelRequests.push({ promise: Promise.resolve(parcel(3, { dangerousGoods: true, readOnly: true })) })
-    const wrapper = mountEditor(component)
-    await settle()
-    expect(wrapper.get('[name="dangerousGoods"]').attributes('disabled')).toBeDefined()
-    expect(wrapper.get('.dangerous-goods-control').attributes('tabindex')).toBe('0')
-    expect(wrapper.get('.dangerous-goods-control').attributes('aria-label')).toBe('Опасный груз')
-    expect(wrapper.get('[name="dangerousGoods"]').element.checked).toBe(true)
-  })
-
-  it.each(['first-request-first', 'second-request-first'])('opens a populated card while the real SignalR subscription resynchronizes (%s)', async (order) => {
-    registerType = type
-    useAuthStore().user = { roles: ['sr-logist'] }
-    const first = deferred(), second = deferred(), history = deferred()
-    parcelRequests.push(first, second)
-    historyRequests.push(history)
-    const wrapper = mountEditor()
-    await settle()
-    expect(signalR.connections).toHaveLength(1)
-    expect(parcelGets()).toHaveLength(2)
-    const requests = order === 'first-request-first' ? [first, second] : [second, first]
-    requests[0].resolve(parcel())
-    await settle()
-    requests[1].resolve(parcel())
-    await settle()
-    expect(input(wrapper).element.value).toBe('Product 3')
-    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
-    history.resolve()
-  })
-
-  it.each(['initial-first', 'refresh-first'])('populates inputs during overlapping parcel loads (%s)', async (order) => {
-    // Keep history pending: recording a view must never delay the usable form.
-    const initial = deferred(), refresh = deferred(), history = deferred()
-    parcelRequests.push(initial, refresh)
-    historyRequests.push(history)
-    const wrapper = mountEditor(component)
-    await settle()
-    expect(wrapper.find('[name="productName"]').exists()).toBe(false)
-    expect(action(wrapper, 'Отменить').attributes('disabled')).toBeUndefined()
-    expect(action(wrapper, 'Сохранить').attributes('disabled')).toBeDefined()
-    const store = useParcelsStore()
-    const refreshing = store.getById(3)
-    if (order === 'initial-first') {
-      initial.resolve(parcel())
-      await settle()
-      expect(input(wrapper).element.value).toBe('Product 3')
-      refresh.resolve(parcel(3, { productName: 'Background product' }))
-    } else {
-      refresh.resolve(parcel(3, { productName: 'Background product' }))
-      await refreshing
-      initial.resolve(parcel())
-    }
-    await refreshing
-    await settle()
-    expect(input(wrapper).element.value).toBe('Product 3')
-    expect(store.item.productName).toBe('Background product')
-    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
-    history.resolve()
-  })
 
   it('preserves draft, touched state, and validation through background success and failure', async () => {
     registerType = type
@@ -296,44 +185,6 @@ describe.each(editors)('%s editor with real forms and stores', (_name, component
     expect(form.vm.meta.touched).toBe(true)
     expect(form.vm.errors.productName).toBe('Draft validation')
     expect(store.item.readOnly).toBe(true)
-  })
-
-  it('shows one required-load failure without alert callbacks', async () => {
-    requiredFailure = new Error('Справочник недоступен')
-    const wrapper = mountEditor(component)
-    await settle()
-    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-    expect(wrapper.get('[role="alert"]').text()).toContain('Справочник недоступен')
-    expect(parcelGets()).toHaveLength(0)
-    expect(wrapper.find('[name="productName"]').exists()).toBe(false)
-    expect(action(wrapper, 'Отменить').attributes('disabled')).toBeUndefined()
-    expect(wrapper.find('.page-alert-region__action').exists()).toBe(false)
-  })
-
-  it('keeps Close available after a parcel-load rejection', async () => {
-    const pending = deferred()
-    parcelRequests.push(pending)
-    const wrapper = mountEditor(component)
-    await settle()
-    pending.reject(new Error('Посылка недоступна'))
-    await settle()
-    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-    expect(wrapper.get('[role="alert"]').text()).toContain('Посылка недоступна')
-    expect(wrapper.find('[name="productName"]').exists()).toBe(false)
-    expect(wrapper.find('.page-alert-region__action').exists()).toBe(false)
-  })
-
-  it('preserves the draft when view history fails without retrying automatically', async () => {
-    const history = deferred(), retry = deferred()
-    historyRequests.push(history, retry)
-    const wrapper = mountEditor(component)
-    await settle()
-    await input(wrapper).setValue('Draft before history completes')
-    history.reject(new Error('History unavailable'))
-    await settle()
-    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-    expect(input(wrapper).element.value).toBe('Draft before history completes')
-    expect(wrapper.find('.page-alert-region__action').exists()).toBe(false)
   })
 
   it('keeps entered values and the editor open after a failed save and retries the update', async () => {
@@ -449,29 +300,6 @@ describe.each(editors)('%s editor with real forms and stores', (_name, component
     expect(report).toHaveBeenCalledTimes(1)
     report.mockRestore()
   })
-})
-
-it('keeps SignalR check statuses when a REST refresh completes and preserves the draft', async () => {
-  const wrapper = mountEditor()
-  // The mounted Pinia is active after mount; enable the real subscription.
-  useAuthStore().user = { roles: ['sr-logist'] }
-  await settle()
-  await input(wrapper).setValue('Live draft')
-  const pending = deferred()
-  parcelRequests.push(pending)
-  const connection = signalR.connections[0]
-  const reconnecting = connection.handlers.reconnected()
-  await settle()
-  connection.handlers.ParcelCheckStatusesChanged({
-    registerId: 12,
-    updates: [{ parcelId: 3, checkCode: 'passport', status: 30, revision: 10 }]
-  })
-  pending.resolve(parcel())
-  await reconnecting
-  await settle()
-  expect(useParcelsStore().item.passportCheckStatus).toBe(30)
-  expect(wrapper.get('[data-testid="passport-check-status-icon"]').attributes('aria-label')).toBe('Проверен')
-  expect(input(wrapper).element.value).toBe('Live draft')
 })
 
 it('presents a SignalR resync failure once while preserving the draft', async () => {

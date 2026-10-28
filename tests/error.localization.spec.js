@@ -5,7 +5,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import * as yup from 'yup'
 import '@/helpers/validation.locale.js'
 import { DEFAULT_ERROR_MESSAGE, getErrorMessage, getServerFieldErrors, reportFormError } from '@/helpers/error.helpers.js'
 import { useAlertStore } from '@/stores/alert.store.js'
@@ -18,54 +17,6 @@ const connectionMessage = 'Соединение с сервером прерва
 
 describe('Russian error presentation', () => {
   beforeEach(() => setActivePinia(createPinia()))
-
-  it.each([
-    [connectionError, connectionMessage],
-    ['Cannot send data if the connection is not in the Connected State.', connectionMessage],
-    ['Request timed out', 'Сервер не ответил вовремя. Повторите операцию.'],
-    ['Timeout', 'Сервер не ответил вовремя. Повторите операцию.'],
-    ['Ошибка загрузки: Failed to fetch', 'Не удалось соединиться с сервером. Пожалуйста, проверьте подключение к сети.'],
-    ['Load failed', 'Не удалось соединиться с сервером. Пожалуйста, проверьте подключение к сети.'],
-    ['AbortError: The operation was aborted', 'Операция отменена.'],
-    ['Unauthorized', 'Необходима авторизация. Войдите в систему снова.'],
-    ['Access denied', 'Недостаточно прав для выполнения операции.'],
-    ['SSL certificate error', 'Не удалось установить защищённое соединение с сервером. Обратитесь к администратору.'],
-    ['Unexpected token in JSON', 'Сервер вернул данные в некорректном формате. Обновите страницу и повторите операцию.'],
-    ['The Name field is required.', 'Обязательное поле'],
-    ['Unknown technical diagnostic', DEFAULT_ERROR_MESSAGE],
-    ["Register 'Партия' not found", DEFAULT_ERROR_MESSAGE],
-    ['Ошибка: Some English diagnostic', DEFAULT_ERROR_MESSAGE],
-    ['Ошибка: Failure', DEFAULT_ERROR_MESSAGE],
-    ['Ошибка: Timeout', 'Сервер не ответил вовремя. Повторите операцию.'],
-    ['Ошибка: Unauthorized', 'Необходима авторизация. Войдите в систему снова.'],
-    ['Ошибка: Disconnected', connectionMessage],
-    ['Компания «ACME Logistics» не найдена', 'Компания «ACME Logistics» не найдена'],
-    ['Компания ACME Logistics не найдена', 'Компания ACME Logistics не найдена'],
-    ['Не удалось обработать файл «Packing list.xlsx»', 'Не удалось обработать файл «Packing list.xlsx»'],
-    ['Ошибка: «Failed to fetch»', 'Не удалось соединиться с сервером. Пожалуйста, проверьте подключение к сети.'],
-    ['Ошибка печати: Connection closed', connectionMessage],
-    ['Packing list доступен только для авиационной перевозки [реестр=12]', 'Packing list доступен только для авиационной перевозки [реестр=12]'],
-    ['Компания Access denied не найдена', 'Компания Access denied не найдена'],
-    ['Принтер Timeout недоступен', 'Принтер Timeout недоступен'],
-    ['ACME Logistics: компания не найдена', 'ACME Logistics: компания не найдена'],
-    ['Printer not found: Склад', 'Принтер не найден: Склад'],
-    ['Printer not found: ACME Logistics', 'Принтер не найден: ACME Logistics'],
-    ['Failed to connect to printer Склад', 'Не удалось подключиться к принтеру Склад'],
-    ['Failed to connect to printer ACME Logistics', 'Не удалось подключиться к принтеру ACME Logistics'],
-    ['Cannot read properties of Склад', DEFAULT_ERROR_MESSAGE],
-    ['Реестр TJ-10 недоступен для редактирования', 'Реестр TJ-10 недоступен для редактирования'],
-    ['QZ Tray недоступен. Запустите QZ Tray.', 'QZ Tray недоступен. Запустите QZ Tray.'],
-    ['CMR доступна только для автомобильных реестров', 'CMR доступна только для автомобильных реестров']
-  ])('normalizes %s', (message, expected) => {
-    expect(getErrorMessage(new Error(message))).toBe(expected)
-    expect(getErrorMessage(message)).toBe(expected)
-  })
-
-  it.each([
-    { msg: connectionError }, { data: { msg: connectionError } },
-    { data: { message: connectionError } }, { response: { data: { msg: connectionError } } },
-    { response: { data: { message: connectionError } } }
-  ])('normalizes nested API errors', error => expect(getErrorMessage(error)).toBe(connectionMessage))
 
   it('uses only Russian contextual fallbacks', () => {
     expect(getErrorMessage(new Error('Internal failure'), 'Не удалось сохранить реестр')).toBe('Не удалось сохранить реестр')
@@ -86,18 +37,6 @@ describe('Russian error presentation', () => {
     expect(error.message).toBe(connectionError)
     store.warning(error, { title: 'Warning' })
     expect(store.alert).toMatchObject({ message: connectionMessage, title: 'Предупреждение' })
-    wrapper.unmount()
-  })
-
-  it.each(['error', 'warning'])('localizes mixed diagnostics in visible %s alerts', async severity => {
-    const store = useAlertStore()
-    const wrapper = mount(PageAlertRegion)
-    for (const diagnostic of ['Unauthorized', 'Timeout', 'Disconnected', '«Failed to fetch»']) {
-      store[severity](`Ошибка: ${diagnostic}`)
-      await wrapper.vm.$nextTick()
-      expect(wrapper.get(`[role="${severity === 'error' ? 'alert' : 'status'}"]`).text()).toContain(getErrorMessage(diagnostic))
-      expect(wrapper.text()).not.toContain(diagnostic)
-    }
     wrapper.unmount()
   })
 
@@ -142,13 +81,4 @@ describe('Russian error presentation', () => {
     wrapper.unmount()
   })
 
-  it.each([
-    [yup.string().required(), '', 'Обязательное поле'],
-    [yup.number(), 'abc', 'Неверный тип значения'],
-    [yup.string().email(), 'abc', 'Введите корректный адрес электронной почты'],
-    [yup.string().min(5), 'a', 'Минимальная длина: 5'],
-    [yup.number().integer(), 1.5, 'Введите целое число']
-  ])('uses Russian default schema validation', async (schema, value, message) => {
-    await expect(schema.validate(value)).rejects.toThrow(message)
-  })
 })

@@ -6,8 +6,10 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { enableAutoUnmount, mount } from '@vue/test-utils'
 import { ref, nextTick } from 'vue'
+import * as Yup from 'yup'
 import { createPinia, setActivePinia } from 'pinia'
 import RegisterEditDialog from '@/dialogs/Register_EditDialog.vue'
+import { rememberRegisterUploadDraft, getRegisterUploadDraft, clearRegisterUploadDraft } from '@/helpers/register.upload.recovery.js'
 import { defaultGlobalStubs, createMockStore } from './helpers/test-utils.js'
 import router from '@/router'
 import { resolveAll } from './helpers/test-utils'
@@ -22,6 +24,10 @@ import { CUSTOMS_PROCEDURE_RETURN } from '@/helpers/customs.procedure.helpers.js
 import { useAlertStore } from '@/stores/alert.store.js'
 
 enableAutoUnmount(afterEach)
+afterEach(() => {
+  clearRegisterUploadDraft(42)
+  clearRegisterUploadDraft(1)
+})
 
 const restrictionConfirm = vi.hoisted(() => vi.fn())
 vi.mock('@/composables/useAppConfirm.js', () => ({ useAppConfirm: () => restrictionConfirm }))
@@ -2733,6 +2739,144 @@ describe('Register_EditDialog', () => {
       expect(router.push).not.toHaveBeenCalled()
     })
 
+  })
+
+  describe('restoration upload and recovery', () => {
+    async function mountUploadEditor(create = true, id = 1) {
+      const wrapper = mount({
+        components: { RegisterEditDialog },
+        template: `<Suspense><RegisterEditDialog :create="${create}" :id="${id}" /></Suspense>`
+      }, { global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub, ErrorDialog: ErrorDialogStub } } })
+      await resolveAll()
+      return { wrapper, dialog: wrapper.findComponent(RegisterEditDialog) }
+    }
+
+    it('defaults restoration on and remembers opt-out across procedure changes and refreshes', async () => {
+      mockOps.value.customsProcedures.push({ value: 60, name: 'Реимпорт', isRe: true, isExport: false, isGtc: false })
+      mockItem.value = { ...baseRegisterItem, customsProcedureCode: 60 }
+      const { wrapper, dialog } = await mountUploadEditor()
+      expect(wrapper.get('#transfer2Re').element.checked).toBe(true)
+      await wrapper.get('#transfer2Re').setValue(false)
+      dialog.vm.handleProcedureChange({ target: { value: '10' } }, vi.fn(), vi.fn())
+      await resolveAll()
+      expect(wrapper.get('#transfer2Re').element.disabled).toBe(true)
+      dialog.vm.handleProcedureChange({ target: { value: '60' } }, vi.fn(), vi.fn())
+      mockOps.value = { ...mockOps.value }
+      await resolveAll()
+      expect(wrapper.get('#transfer2Re').element.checked).toBe(false)
+      await dialog.vm.onSubmit({ checkForDuplicates: false }, { setErrors: vi.fn() })
+      expect(upload.mock.calls[0][4]).toBe(false)
+    })
+
+    it('submits the selected re procedure with restoration enabled', async () => {
+      mockOps.value.customsProcedures.push({ value: 60, name: 'Реимпорт', isRe: true, isExport: false, isGtc: false })
+      mockItem.value = { ...baseRegisterItem, customsProcedureCode: 60 }
+      const { dialog } = await mountUploadEditor()
+      expect(upload).not.toHaveBeenCalled()
+      await dialog.vm.onSubmit({ checkForDuplicates: false }, { setErrors: vi.fn() })
+      expect(upload.mock.calls[0][2]).toBe(60)
+      expect(upload.mock.calls[0][4]).toBe(true)
+    })
+
+    it('recovers metadata against the created ID without uploading twice', async () => {
+      update.mockRejectedValueOnce(new Error('Не удалось сохранить данные'))
+      const { dialog, wrapper } = await mountUploadEditor()
+      await dialog.vm.onSubmit({ invoiceNumber: 'KEEP-ME', dealNumber: 'DEAL' }, { setErrors: vi.fn() })
+      expect(router.push).toHaveBeenCalledWith('/register/edit/42?mode=modePaperwork')
+      expect(getRegisterUploadDraft(42).invoiceNumber).toBe('KEEP-ME')
+      wrapper.unmount()
+      getById.mockImplementationOnce(async () => { mockItem.value = { ...baseRegisterItem, id: 42, invoiceNumber: 'server' } })
+      const recovery = await mountUploadEditor(false, 42)
+      expect(recovery.dialog.vm.item.invoiceNumber).toBe('KEEP-ME')
+      await recovery.dialog.vm.onSubmit({ invoiceNumber: 'KEEP-ME' }, { setErrors: vi.fn() })
+      expect(upload).toHaveBeenCalledTimes(1)
+      expect(update).toHaveBeenLastCalledWith(42, expect.objectContaining({ invoiceNumber: 'KEEP-ME' }))
+      expect(getRegisterUploadDraft(42)).toBeNull()
+    })
+
+    it.each(['fails', 'is declined'])('keeps blank weight valid when metadata saving %s and retries without re-upload', async (outcome) => {
+      const visibleErrorDialog = {
+        props: ['show', 'message'],
+        emits: ['close'],
+        template: `<div v-if="show" data-testid="recovery-error">{{ message }}<button type="button" @click="$emit('close')">Закрыть</button></div>`
+      }
+      async function mountRealEditor(create, id) {
+        const wrapper = mount({
+          components: { RegisterEditDialog },
+          template: `<Suspense><RegisterEditDialog :create="${create}" :id="${id}" /></Suspense>`
+        }, { global: { stubs: { ...defaultGlobalStubs, ErrorDialog: visibleErrorDialog } } })
+        await resolveAll()
+        return wrapper
+      }
+      const error = new Error('Не удалось сохранить данные')
+      if (outcome === 'is declined') {
+        Object.assign(error, { status: 409, data: {
+          msg: 'При изменении страны будут очищены результаты проверок',
+          errors: {}, code: 'RegisterRestrictionChangeConfirmationRequired',
+          details: { confirmationToken: 'confirmation', changeKind: 'counterpartCountry' }
+        } })
+        restrictionConfirm.mockResolvedValueOnce(false)
+      }
+      update.mockRejectedValueOnce(error)
+      const creation = await mountRealEditor(true, 1)
+      await creation.get('#invoiceNumber').setValue('KEEP-ME')
+      await creation.get('form').trigger('submit')
+      await vi.waitFor(() => expect(update).toHaveBeenCalledTimes(1))
+      expect(update).toHaveBeenCalledWith(42, expect.objectContaining({ realWeightKg: 0 }))
+      if (outcome === 'fails') {
+        await vi.waitFor(() => expect(creation.find('[data-testid="recovery-error"]').exists()).toBe(true))
+        expect(creation.get('[data-testid="recovery-error"]').text()).toContain('Не удалось сохранить данные')
+        expect(router.push).not.toHaveBeenCalled()
+        await creation.get('[data-testid="recovery-error"] button').trigger('click')
+      }
+      await vi.waitFor(() => expect(router.push).toHaveBeenCalledWith('/register/edit/42?mode=modePaperwork'))
+      creation.unmount()
+      getById.mockImplementationOnce(async () => {
+        mockItem.value = { ...baseRegisterItem, id: 42, realWeightKg: null }
+      })
+      const recovery = await mountRealEditor(false, 42)
+      expect(recovery.get('#realWeightKg').element.value).toBe('')
+      expect(recovery.get('#invoiceNumber').element.value).toBe('KEEP-ME')
+      router.push.mockClear()
+      await recovery.get('form').trigger('submit')
+      await vi.waitFor(() => expect(update).toHaveBeenCalledTimes(2))
+      expect(update).toHaveBeenLastCalledWith(42, expect.objectContaining({ realWeightKg: 0 }))
+      expect(upload).toHaveBeenCalledTimes(1)
+      await vi.waitFor(() => expect(router.push).toHaveBeenCalledWith('/registers?mode=modePaperwork'))
+      expect(getRegisterUploadDraft(42)).toBeNull()
+    })
+
+    it('preserves positive real weight in the recovery draft', () => {
+      const payload = { realWeightKg: 12.5 }
+      rememberRegisterUploadDraft(42, payload)
+      expect(getRegisterUploadDraft(42).realWeightKg).toBe(12.5)
+      expect(payload.realWeightKg).toBe(12.5)
+    })
+
+    it('restores a Yup-cast invoice date into the real date field', async () => {
+      const submitted = await Yup.object({ invoiceDate: Yup.date() }).validate({ invoiceDate: '2026-07-21' })
+      expect(submitted.invoiceDate).toBeInstanceOf(Date)
+      rememberRegisterUploadDraft(42, submitted)
+      getById.mockImplementationOnce(async () => {
+        mockItem.value = { ...baseRegisterItem, id: 42, invoiceDate: '2020-01-01' }
+      })
+      const wrapper = mount({
+        components: { RegisterEditDialog },
+        template: '<Suspense><RegisterEditDialog :create="false" :id="42" /></Suspense>'
+      }, { global: { stubs: { ...defaultGlobalStubs, ErrorDialog: ErrorDialogStub } } })
+      await resolveAll()
+      expect(wrapper.get('#invoiceDate').element.value).toBe('2026-07-21')
+      expect(wrapper.findComponent(RegisterEditDialog).vm.item.invoiceDate).toBe('2026-07-21')
+    })
+
+    it('discards only the current register draft when cancelling', async () => {
+      rememberRegisterUploadDraft(1, { invoiceNumber: 'discard' })
+      rememberRegisterUploadDraft(42, { invoiceNumber: 'other' })
+      const { dialog } = await mountUploadEditor(false)
+      await dialog.vm.cancelEditing()
+      expect(getRegisterUploadDraft(1)).toBeNull()
+      expect(getRegisterUploadDraft(42).invoiceNumber).toBe('other')
+    })
   })
 
 })

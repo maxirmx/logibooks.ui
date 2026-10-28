@@ -40,6 +40,7 @@ import { formatDate, formatTime } from '@/helpers/date.formatters.js'
 import { formatWeight } from '@/helpers/number.formatters.js'
 import { CUSTOMS_PROCEDURE_RETURN } from '@/helpers/customs.procedure.helpers.js'
 import RegisterStatusSelect from '@/components/RegisterStatusSelect.vue'
+import { rememberRegisterUploadDraft, getRegisterUploadDraft, clearRegisterUploadDraft } from '@/helpers/register.upload.recovery.js'
 
 const DEFAULT_OTHER_COUNTRY_CODE = 860 // UZ
 const DEFAULT_TRANSPORTATION_TYPE_NAME = 'Авто'
@@ -128,6 +129,7 @@ function cancelCurrencySelection() {
 // Id = 1 --> Code = 10 (Экспорт)
 const isExport = ref(true)
 const isRe = ref(false)
+const restorePreviousData = ref(true)
 const procedureCodeLoaded = ref(false)
 const isComponentMounted = ref(true)
 const isInitializing = ref(true)
@@ -503,6 +505,8 @@ async function loadRegister() {
       item.value.warehouseId = 0
     }
     originalCustomsProcedureCode.value = parseNumber(item.value.customsProcedureCode, null)
+    const draft = getRegisterUploadDraft(props.id)
+    if (draft) item.value = { ...item.value, ...draft }
     ensureDefaultOtherCountry()
     ensureDefaultIncoterms()
   } catch (error) {
@@ -1029,6 +1033,11 @@ const saveWithRestrictionConfirmation = useRegisterRestrictionChangeConfirmation
   isActive: () => isComponentMounted.value
 })
 
+function cancelEditing() {
+  if (!props.create) clearRegisterUploadDraft(props.id)
+  return router.push(returnUrl.value)
+}
+
 async function onSubmit(values, { setErrors } = {}) {
   if (!isComponentMounted.value) return
   if (!canSubmit.value) return
@@ -1045,6 +1054,7 @@ async function onSubmit(values, { setErrors } = {}) {
   try {
     if (!props.create) {
       if (!await saveWithRestrictionConfirmation(props.id, payload)) return
+      clearRegisterUploadDraft(props.id)
       if (isComponentMounted.value) await router.push(returnUrl.value)
       return
     }
@@ -1055,7 +1065,7 @@ async function onSubmit(values, { setErrors } = {}) {
       item.value.registerType,
       payload.customsProcedureCode,
       Boolean(values.checkForDuplicates ?? checkForDuplicates.value ?? false),
-      Boolean(isRe.value && values.transfer2Re)
+      Boolean(isRe.value && (values.transfer2Re ?? restorePreviousData.value))
     ]
     let selectedCurrency = null
     let result
@@ -1090,6 +1100,7 @@ async function onSubmit(values, { setErrors } = {}) {
       return
     }
 
+    rememberRegisterUploadDraft(result.registerId, payload)
     try {
       if (!await saveWithRestrictionConfirmation(result.registerId, payload)) {
         // Upload already created the register; recover without uploading a second copy.
@@ -1110,6 +1121,7 @@ async function onSubmit(values, { setErrors } = {}) {
       return
     }
 
+    clearRegisterUploadDraft(result.registerId)
     if (isComponentMounted.value) await router.push(returnUrl.value)
   } catch (error) {
     if (!isComponentMounted.value) return
@@ -1295,7 +1307,7 @@ const loadReportFields = computed(() => {
             :iconSize="'2x'"
             tooltip-text="Отменить"
             :disabled="isSubmitting"
-            @click="router.push(returnUrl)"
+            @click="cancelEditing"
           />
         </div>
       </div>
@@ -1620,14 +1632,14 @@ const loadReportFields = computed(() => {
 
             <div class="form-group" v-if="props.create && props.mode === OP_MODE_PAPERWORK">
               <label for="transfer2Re" class="custom-checkbox" :class="{ disabled: !isRe }">
-                <Field
+                <input
                   id="transfer2Re"
                   type="checkbox"
                   name="transfer2Re"
-                  :value="true"
-                  :unchecked-value="false"
                   class="custom-checkbox-input"
+                  :checked="isRe && restorePreviousData"
                   :disabled="!isRe"
+                  @change="restorePreviousData = $event.target.checked"
                 />
                 <span class="custom-checkbox-box"></span>
                 <span class="label custom-checkbox-label"
@@ -1815,7 +1827,7 @@ const loadReportFields = computed(() => {
         <button
           class="button secondary"
           type="button"
-          @click="router.push(returnUrl)"
+          @click="cancelEditing"
           :disabled="isSubmitting"
         >
           <font-awesome-icon size="1x" icon="fa-solid fa-xmark" class="mr-1" />

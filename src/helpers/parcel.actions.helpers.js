@@ -121,6 +121,10 @@ export async function approveParcel(
  */
 export async function generateXml(item, parcelsStore, filenameOrGenerator, { confirm = null, register = null } = {}) {
   const alertStore = useAlertStore()
+  if (register?.derivedTotalsPending === true) {
+    alertStore.warning('Итоги реестра пересчитываются. Повторите выгрузку XML после завершения пересчёта.')
+    return false
+  }
   try {
     let applyWeightCorrection = false
     if (confirm && register) {
@@ -141,8 +145,9 @@ export async function generateXml(item, parcelsStore, filenameOrGenerator, { con
     await parcelsStore.generate(item.value.id, filename, applyWeightCorrection)
     return true
   } catch (error) {
-    parcelsStore.error = error?.response?.data?.message || 'Ошибка при генерации XML'
-    alertStore.error(parcelsStore.error)
+    parcelsStore.error = getErrorMessage(error, 'Ошибка при генерации XML')
+    reportError(error, { context: 'parcel XML generation' })
+    alertStore.error(error, { fallback: 'Ошибка при генерации XML' })
     return false
   }
 }

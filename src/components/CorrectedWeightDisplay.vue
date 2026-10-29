@@ -3,29 +3,28 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { computed, unref } from 'vue'
+import { computed } from 'vue'
 import { formatWeight } from '@/helpers/number.formatters.js'
-import { getCorrectedWeight } from '@/helpers/weight.correction.helpers.js'
 
 const props = defineProps({
   weight: { type: [String, Number], default: null },
-  register: { type: Object, default: null },
-  useCorrection: { type: Boolean, default: true }
+  adjustedWeight: { type: [String, Number], default: null },
+  derivedTotalsPending: { type: Boolean, default: false }
 })
-
-const correctedWeight = computed(() => (
-  props.useCorrection ? getCorrectedWeight(props.weight, unref(props.register)) : null
-))
-const hasCorrectedWeight = computed(() => correctedWeight.value !== null)
+const hasAdjustedWeight = computed(() => !props.derivedTotalsPending && props.adjustedWeight !== null)
 </script>
 
 <template>
-  <span v-if="hasCorrectedWeight" class="corrected-weight-display">
+  <span class="corrected-weight-display" :aria-busy="derivedTotalsPending ? 'true' : undefined">
     <span>{{ formatWeight(weight) }}</span>
-    <font-awesome-icon icon="fa-solid fa-arrow-right" class="mx-1 arrow-icon corrected-weight-arrow" />
-    <span>{{ formatWeight(correctedWeight) }}</span>
+    <template v-if="derivedTotalsPending">
+      <span class="mx-1" role="status">(пересчёт)</span>
+    </template>
+    <template v-else-if="hasAdjustedWeight">
+      <font-awesome-icon icon="fa-solid fa-arrow-right" class="mx-1 arrow-icon corrected-weight-arrow" />
+      <span>{{ formatWeight(adjustedWeight) }}</span>
+    </template>
   </span>
-  <span v-else>{{ formatWeight(weight) }}</span>
 </template>
 
 <style scoped>
@@ -36,8 +35,5 @@ const hasCorrectedWeight = computed(() => correctedWeight.value !== null)
   max-width: 100%;
   white-space: nowrap;
 }
-
-.corrected-weight-arrow {
-  flex-shrink: 0;
-}
+.corrected-weight-arrow { flex-shrink: 0; }
 </style>

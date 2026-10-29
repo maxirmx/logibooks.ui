@@ -1196,6 +1196,7 @@ function toggleAdditionalInfo() {
 }
 
 function formatNumberValue(value) {
+  if (item.value?.derivedTotalsPending === true) return 'Пересчёт'
   if (value === null || value === undefined || value === '') {
     return '—'
   }
@@ -1205,6 +1206,7 @@ function formatNumberValue(value) {
 }
 
 function formatCorrectionCoefficient(fieldValue) {
+  if (item.value?.derivedTotalsPending === true) return 'Пересчёт'
   const realWeightKg = parseDecimal(getRealWeightFieldValue(fieldValue), null)
   if (realWeightKg === null || realWeightKg <= 0) {
     return '1'

@@ -5,7 +5,7 @@
 /* @vitest-environment jsdom */
 
 import { describe, it, expect, vi } from 'vitest'
-import { confirmOutputWeightCorrection, getCorrectedWeight, canChangeParcelWeights } from '@/helpers/weight.correction.helpers.js'
+import { confirmOutputWeightCorrection, getWeightCorrection, canChangeParcelWeights } from '@/helpers/weight.correction.helpers.js'
 
 describe('weight correction helpers', () => {
   it('allows parcel weight changes only when no manual final register weight is set', () => {
@@ -16,13 +16,10 @@ describe('weight correction helpers', () => {
     expect(canChangeParcelWeights({ realWeightKg: -1 })).toBe(true)
   })
 
-  it('calculates corrected parcel weight only when register correction is possible', () => {
-    expect(getCorrectedWeight(2.4, { realWeightKg: 5, totalWeightKgToRelease: 10 })).toBe(1.2)
-    expect(getCorrectedWeight(2.4, { realWeightKg: null, totalWeightKgToRelease: 10 })).toBeNull()
-    expect(getCorrectedWeight(2.4, { realWeightKg: 0, totalWeightKgToRelease: 10 })).toBeNull()
-    expect(getCorrectedWeight(2.4, { realWeightKg: -1, totalWeightKgToRelease: 10 })).toBeNull()
-    expect(getCorrectedWeight(2.4, { realWeightKg: 5, totalWeightKgToRelease: 0 })).toBeNull()
-    expect(getCorrectedWeight(null, { realWeightKg: 5, totalWeightKgToRelease: 10 })).toBeNull()
+  it('does not offer corrected exports while derived totals are pending', () => {
+    const register = { realWeightKg: 5, totalWeightKgToRelease: 10, derivedTotalsPending: true }
+    expect(getWeightCorrection(register).canCorrect).toBe(false)
+    expect(canChangeParcelWeights(register)).toBe(false)
   })
 
   it('returns true when shared correction confirm is accepted', async () => {

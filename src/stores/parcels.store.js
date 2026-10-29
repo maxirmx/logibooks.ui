@@ -8,6 +8,8 @@ import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useParcelFiltersStore } from '@/stores/parcel.filters.store.js'
+import { rawWeightPayload, pendingWeightProjection } from '@/helpers/derived.weights.helpers.js'
+import { useRegistersStore } from '@/stores/registers.store.js'
 import { reportError } from '@/helpers/error.helpers.js'
 import { SwValidationMatchMode } from '@/models/sw.validation.match.mode.js'
 import { ParcelApprovalMode } from '@/models/parcel.approval.mode.js'
@@ -117,6 +119,11 @@ export const useParcelsStore = defineStore('parcels', () => {
   const itemLoading = ref(false)
   const itemError = ref(null)
   let itemRequestSequence = 0
+  let listRequestSequence = 0
+  let projectionRevision = 0
+  const invalidatedRegisters = new Map()
+  const isProjectionCurrent = (registerId, revision) => (invalidatedRegisters.get(Number(registerId)) ?? 0) <= revision
+  let lastListRequest = null
   const loading = ref(false)
   const error = ref(null)
   const totalCount = ref(0)
@@ -125,7 +132,29 @@ export const useParcelsStore = defineStore('parcels', () => {
   const extIdRevisionByParcelId = new Map()
   const liveCheckStatusesByParcelId = new Map()
   const responseCheckStatusWatermarks = new WeakMap()
+  const responseProjectionMetadata = new WeakMap()
   let liveCheckStatusArrival = 0
+
+  function invalidateDerived(registerId) {
+    if (!Number.isInteger(Number(registerId)) || Number(registerId) <= 0) return
+    invalidatedRegisters.set(Number(registerId), ++projectionRevision)
+    const patch = parcel => Number(parcel?.registerId) === Number(registerId)
+      ? pendingWeightProjection(parcel) : parcel
+    items.value = items.value.map(patch)
+    items_bn.value = items_bn.value.map(patch)
+    item.value = patch(item.value)
+    useRegistersStore().invalidateDerived(registerId)
+  }
+
+  async function refreshVisibleDerived(registerId) {
+    if (lastListRequest && Number(lastListRequest.registerId) === Number(registerId)) {
+      await getAll(registerId, { ...lastListRequest.options, updateStore: true })
+    }
+  }
+
+  async function refreshDerived(registerId) {
+    await useRegistersStore().refreshDerived(registerId)
+  }
 
   function mergeLiveParcelCheckStatuses(parcel, requestWatermark) {
     const parcelId = Number(parcel?.id)
@@ -206,6 +235,7 @@ export const useParcelsStore = defineStore('parcels', () => {
       )
     }
 
+    // Passport-only notifications do not change release eligibility or allocation readiness.
     if (accepted.length > 0) {
       items.value = items.value.map(patchParcel)
       if (item.value?.id != null) item.value = patchParcel(item.value)
@@ -216,6 +246,9 @@ export const useParcelsStore = defineStore('parcels', () => {
 
   async function getAll(registerId, options = {}) {
     const { updateStore = true, showMarkedByPartner = false, boxId = null } = options
+    const requestSequence = ++listRequestSequence
+    const revision = projectionRevision
+    lastListRequest = { registerId, options }
     const authStore = useAuthStore()
     const requestedFilterId = authStore.parcels_filter_id
     const checkStatusWatermark = liveCheckStatusArrival
@@ -244,11 +277,13 @@ export const useParcelsStore = defineStore('parcels', () => {
 
       const listEndpoint = showMarkedByPartner ? `${baseUrl}/a` : baseUrl
       const response = await fetchWrapper.get(`${listEndpoint}?${params.toString()}`)
-      const responseItems = (response.items || []).map((parcel) =>
-        mergeLiveParcelCheckStatuses(parcel, checkStatusWatermark)
-      )
+      const responseItems = (response.items || []).map((parcel) => {
+        const contextualParcel = showMarkedByPartner ? { ...parcel, registerId: parcel.registerId ?? Number(registerId) } : parcel
+        const projection = mergeLiveParcelCheckStatuses(contextualParcel, checkStatusWatermark)
+        return isProjectionCurrent(registerId, revision) ? projection : pendingWeightProjection(projection)
+      })
 
-      if (updateStore) {
+      if (updateStore && requestSequence === listRequestSequence) {
         items.value = responseItems
         totalCount.value = response.pagination?.totalCount || 0
         hasNextPage.value = response.pagination?.hasNextPage || false
@@ -264,6 +299,7 @@ export const useParcelsStore = defineStore('parcels', () => {
         }
       }
       responseCheckStatusWatermarks.set(result, checkStatusWatermark)
+      responseProjectionMetadata.set(result, { revision, requestSequence, registerId })
       return result
     } catch (err) {
       if ((err?.status ?? err?.response?.status) === 404 && requestedFilterId != null && authStore.parcels_filter_id === requestedFilterId) {
@@ -311,10 +347,13 @@ export const useParcelsStore = defineStore('parcels', () => {
 
   function updateItems(responseData) {
     if (responseData) {
+      const metadata = responseProjectionMetadata.get(responseData)
+      if (metadata && metadata.requestSequence !== listRequestSequence) return
       const checkStatusWatermark =
         responseCheckStatusWatermarks.get(responseData) ?? liveCheckStatusArrival
       items.value = (responseData.items || []).map((parcel) =>
-        mergeLiveParcelCheckStatuses(parcel, checkStatusWatermark)
+        metadata && !isProjectionCurrent(metadata.registerId, metadata.revision) ? pendingWeightProjection(mergeLiveParcelCheckStatuses(parcel, checkStatusWatermark)) :
+          mergeLiveParcelCheckStatuses(parcel, checkStatusWatermark)
       )
       totalCount.value = responseData.pagination?.totalCount || 0
       hasNextPage.value = responseData.pagination?.hasNextPage || false
@@ -325,12 +364,14 @@ export const useParcelsStore = defineStore('parcels', () => {
 
   async function getById(id) {
     const requestSequence = ++itemRequestSequence
+    const revision = projectionRevision
     const checkStatusWatermark = liveCheckStatusArrival
     itemLoading.value = true
     itemError.value = null
     try {
       const result = await fetchWrapper.get(`${baseUrl}/a/${id}`)
-      const merged = mergeLiveParcelCheckStatuses(result, checkStatusWatermark)
+      const merged = isProjectionCurrent(result?.registerId, revision) ? mergeLiveParcelCheckStatuses(result, checkStatusWatermark) :
+        pendingWeightProjection(mergeLiveParcelCheckStatuses(result, checkStatusWatermark))
       if (requestSequence === itemRequestSequence) item.value = merged
       return merged
     } catch (err) {
@@ -343,23 +384,33 @@ export const useParcelsStore = defineStore('parcels', () => {
 
   async function update(id, data) {
     const numericId = Number(id)
-    const refreshCategory = Object.hasOwn(data, 'tnVed') &&
-      [item.value, ...items.value].some((parcel) =>
-        Number(parcel?.id) === numericId && Object.hasOwn(parcel, 'matchesExportFeeCategory')
-      )
-    const response = await runParcelMutation(id, () => fetchWrapper.put(`${baseUrl}/${id}`, data))
-    const updatedData = { ...data }
-    // null/omitted flags leave the persisted value unchanged.
+    const payload = rawWeightPayload(data)
+    const originalRegisterId = [item.value, ...items.value].find(p => Number(p?.id) === numericId)?.registerId
+    const registerId = data.registerId ?? originalRegisterId
+    const affectedRegisters = [...new Set([originalRegisterId, registerId].filter(value => Number.isInteger(Number(value)) && Number(value) > 0))]
+    const response = await runParcelMutation(id, () => fetchWrapper.put(`${baseUrl}/${id}`, payload), false)
+    const affectsAllocation = ['weightKg', 'quantity', 'statusId', 'checkStatus', 'registerId', 'boxId', 'shk', 'postingNumber', 'tnVed']
+      .some(key => Object.hasOwn(payload, key))
+    let updatedData = { ...payload }
     if (updatedData.dangerousGoods == null) delete updatedData.dangerousGoods
-
-    if (refreshCategory) {
-      // A successful PUT invalidates this server-derived flag. Hide the old marker
-      // while refreshing, and propagate refresh failures to the action's error UI.
-      for (const parcel of [item.value, ...items.value]) {
-        if (Number(parcel?.id) === numericId) parcel.matchesExportFeeCategory = undefined
+    if (affectsAllocation && [item.value, ...items.value].some(p => Number(p?.id) === numericId)) {
+      affectedRegisters.forEach(invalidateDerived)
+      const revision = projectionRevision
+      if (Object.hasOwn(payload, 'tnVed')) {
+        for (const parcel of [item.value, ...items.value]) {
+          if (Number(parcel?.id) === numericId) parcel.matchesExportFeeCategory = undefined
+        }
       }
+      const detailSequence = ++itemRequestSequence
+      const checkStatusWatermark = liveCheckStatusArrival
+      // Read the final detail after the refreshed list so an earlier pending snapshot cannot replace it.
+      await Promise.all(affectedRegisters.map(refreshDerived))
       const refreshed = await fetchWrapper.get(`${baseUrl}/a/${id}`)
-      updatedData.matchesExportFeeCategory = refreshed?.matchesExportFeeCategory === true
+      updatedData = { ...updatedData, ...(refreshed ?? { adjustedWeightKg: null, derivedTotalsPending: true }) }
+      if (Object.hasOwn(payload, 'tnVed')) updatedData.matchesExportFeeCategory = refreshed?.matchesExportFeeCategory === true
+      updatedData = mergeLiveParcelCheckStatuses({ ...updatedData, id: numericId }, checkStatusWatermark)
+      if (!isProjectionCurrent(updatedData.registerId ?? registerId, revision)) updatedData = pendingWeightProjection(updatedData)
+      if (detailSequence !== itemRequestSequence) return response
     }
 
     if (item.value && Number(item.value.id) === numericId) {
@@ -399,9 +450,15 @@ export const useParcelsStore = defineStore('parcels', () => {
     }
   }
 
-  async function runParcelMutation(id, action) {
+  async function runParcelMutation(id, action, affectsWeights = true) {
     try {
-      return await action()
+      const response = await action()
+      if (affectsWeights) {
+        const registerId = [item.value, ...items.value].find(p => Number(p?.id) === Number(id))?.registerId
+        invalidateDerived(registerId)
+        await refreshDerived(registerId)
+      }
+      return response
     } catch (err) {
       await markCurrentParcelReadOnlyOnConflict(id, err)
       throw err
@@ -435,6 +492,9 @@ export const useParcelsStore = defineStore('parcels', () => {
         ? `${baseUrl}/${id}/validate-sw?withSwMatch=${swMatchMode}`
         : `${baseUrl}/${id}/validate-fc`
       await fetchWrapper.post(url)
+      const registerId = [item.value, ...items.value].find(p => Number(p?.id) === Number(id))?.registerId
+      invalidateDerived(registerId)
+      await refreshDerived(registerId)
       return true
     } catch (err) {
       error.value = err
@@ -542,11 +602,10 @@ export const useParcelsStore = defineStore('parcels', () => {
   }
 
   async function updateStatusSelection(registerId, statusId, parcelIds) {
-    return await fetchWrapper.post(`${baseUrl}/status-selection/update`, {
-      registerId,
-      statusId,
-      parcelIds
-    })
+    const result = await fetchWrapper.post(`${baseUrl}/status-selection/update`, { registerId, statusId, parcelIds })
+    invalidateDerived(registerId)
+    await refreshDerived(registerId)
+    return result
   }
 
   async function deleteImage(id) {
@@ -594,6 +653,9 @@ export const useParcelsStore = defineStore('parcels', () => {
     getById,
     update,
     updateItems,
+    invalidateDerived,
+    refreshVisibleDerived,
+    refreshDerived,
     getByNumber,
     generate,
     validate,

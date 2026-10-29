@@ -14,6 +14,22 @@ export const useBoxesStore = defineStore('boxes', () => {
   const box = ref(null)
   const loading = ref(false)
   const error = ref(null)
+  const revisions = new Map()
+  let requestSequence = 0
+  let detailSequence = 0
+  let visibleRegisterId = null
+
+  function invalidateDerived(registerId) {
+    revisions.set(Number(registerId), (revisions.get(Number(registerId)) ?? 0) + 1)
+    const patch = entry => Number(entry?.registerId) === Number(registerId)
+      ? { ...entry, weightKg: null, derivedTotalsPending: true } : entry
+    boxes.value = boxes.value.map(patch)
+    box.value = patch(box.value)
+  }
+
+  async function refreshDerived(registerId) {
+    if (Number(visibleRegisterId) === Number(registerId)) await getAll(registerId)
+  }
 
   async function run(operation) {
     loading.value = true
@@ -29,19 +45,30 @@ export const useBoxesStore = defineStore('boxes', () => {
   }
 
   async function getAll(registerId) {
+    visibleRegisterId = registerId
+    const sequence = ++requestSequence
+    const snapshot = revisions.get(Number(registerId)) ?? 0
     return run(async () => {
       const response = await fetchWrapper.get(
         `${baseUrl}?registerId=${encodeURIComponent(registerId)}`
       )
-      boxes.value = response || []
-      return boxes.value
+      const result = (response || []).map(entry => snapshot === (revisions.get(Number(registerId)) ?? 0) ? entry : { ...entry, weightKg: null, derivedTotalsPending: true })
+      if (sequence === requestSequence) boxes.value = result
+      return result
     })
   }
 
   async function getById(id) {
+    const sequence = ++detailSequence
+    const snapshot = new Map(revisions)
     return run(async () => {
-      box.value = await fetchWrapper.get(`${baseUrl}/${id}`)
-      return box.value
+      let response = await fetchWrapper.get(`${baseUrl}/${id}`)
+      const registerId = Number(response?.registerId)
+      if ((snapshot.get(registerId) ?? 0) !== (revisions.get(registerId) ?? 0)) {
+        response = { ...response, weightKg: null, derivedTotalsPending: true }
+      }
+      if (sequence === detailSequence) box.value = response
+      return response
     })
   }
 
@@ -78,6 +105,8 @@ export const useBoxesStore = defineStore('boxes', () => {
     loading,
     error,
     getAll,
+    invalidateDerived,
+    refreshDerived,
     getById,
     create,
     update,

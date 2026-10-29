@@ -75,21 +75,32 @@ export async function pollValidation(
   registersStore,
   alertStore,
   stopPollingFn,
-  getAllOptions = {}
+  getAllOptions = {},
+  refreshTotals = (registerId) => registersStore.refreshDerived?.(registerId)
 ) {
   if (!validationState.handleId) return
 
+  const handleId = validationState.handleId
   try {
-    const progress = await registersStore.getValidationProgress(validationState.handleId)
+    const progress = await registersStore.getValidationProgress(handleId)
+    if (validationState.handleId !== handleId) return
     validationState.total = progress.total
     validationState.processed = progress.processed
 
     if (progress.finished || progress.total === -1 || progress.processed === -1) {
-      validationState.show = false
       stopPollingFn()
       await registersStore.getAll(getAllOptions)
+      if (validationState.handleId !== handleId) return
+      await refreshTotals(validationState.registerId)
+      if (validationState.handleId !== handleId) return
+      validationState.show = false
     }
   } catch (err) {
+    if (validationState.handleId !== handleId) {
+      // Cancellation or a newer operation owns the UI now.
+      reportError(err, { context: 'register validation poll after cancellation' })
+      return
+    }
     alertStore.error(err.message || String(err))
     validationState.show = false
     stopPollingFn()
@@ -106,30 +117,39 @@ export async function validateRegister(
   startPollingFn,
   sw,
   swMatchMode,
-  getAllOptions = {}
+  getAllOptions = {},
+  refreshTotals
 ) {
   try {
     stopPollingFn()
     const res = await registersStore.validate(item.id, sw, swMatchMode)
+    validationState.registerId = item.id
     validationState.handleId = res.id
     validationState.total = 0
     validationState.processed = 0
     validationState.show = true
-    await pollValidation(validationState, registersStore, alertStore, stopPollingFn, getAllOptions)
-    startPollingFn()
+    await pollValidation(validationState, registersStore, alertStore, stopPollingFn, getAllOptions, refreshTotals)
+    if (validationState.show) startPollingFn()
   } catch (err) {
     alertStore.error(err.message || String(err))
   }
 }
 
-export function cancelValidation(validationState, registersStore, stopPollingFn) {
-  if (validationState.handleId) {
-    registersStore.cancelValidation(validationState.handleId).catch((error) => {
-      reportError(error, { context: 'register validation cancellation cleanup' })
-    })
-  }
+export async function cancelValidation(
+  validationState,
+  registersStore,
+  stopPollingFn,
+  cancel = (handleId) => registersStore.cancelValidation(handleId)
+) {
+  const handleId = validationState.handleId
+  validationState.handleId = null
   validationState.show = false
   stopPollingFn()
+  if (!handleId) return false
+
+  registersStore.invalidateDerived?.(validationState.registerId)
+  await cancel(handleId)
+  return true
 }
 
 export function createPollingTimer(pollFunction, interval = POLLING_INTERVAL_MS) {
@@ -160,6 +180,67 @@ export function createRegisterActionHandlers(registersStore, alertStore, { mode 
   })
 
   let pollingFunction = null
+  let recoveryScopeActive = true
+  const totalsRecoveries = new Map()
+
+  function createTotalsRecovery(registerId, fallback) {
+    const previous = totalsRecoveries.get(registerId)
+    if (previous) {
+      previous.active = false
+      clearTimeout(previous.timer)
+    }
+    const recovery = { registerId, fallback, active: true, errorReported: false, timer: null }
+    totalsRecoveries.set(registerId, recovery)
+    return recovery
+  }
+
+  function reportRecoveryFailure(error, recovery, fallback) {
+    // After teardown, retain diagnostics without publishing on another page.
+    reportError(error, { context: 'register totals recovery' })
+    if (recovery.active && !recovery.errorReported) {
+      recovery.errorReported = true
+      alertStore.error(error, { fallback })
+    }
+  }
+
+  function scheduleTotalsRefresh(recovery) {
+    recovery.timer = setTimeout(() => {
+      void refreshRegisterTotals(recovery)
+    }, POLLING_INTERVAL_MS)
+  }
+
+  async function refreshRegisterTotals(recovery) {
+    if (!recovery.active) return false
+    if (registersStore.isRefreshingDerived?.(recovery.registerId) === true) {
+      // The initiating operation owns any failure from the request already in flight.
+      scheduleTotalsRefresh(recovery)
+      return false
+    }
+    let succeeded = true
+    try {
+      await registersStore.refreshDerived?.(recovery.registerId)
+    } catch (error) {
+      succeeded = false
+      reportRecoveryFailure(error, recovery, recovery.fallback)
+    }
+    if (!recovery.active) return false
+
+    const register = [unref(registersStore.item), ...unref(registersStore.items ?? [])]
+      .find(item => Number(item?.id) === Number(recovery.registerId))
+    if (!succeeded || register?.derivedTotalsPending === true) {
+      scheduleTotalsRefresh(recovery)
+    } else {
+      totalsRecoveries.delete(recovery.registerId)
+    }
+    return succeeded
+  }
+
+  async function refreshCompletedRegister(registerId) {
+    if (!recoveryScopeActive) return false
+    const recovery = createTotalsRecovery(registerId, 'Не удалось обновить итоги реестра после проверки')
+    registersStore.invalidateDerived?.(registerId)
+    return await refreshRegisterTotals(recovery)
+  }
 
   const pollingTimer = createPollingTimer(async () => {
     if (typeof pollingFunction === 'function') {
@@ -183,17 +264,27 @@ export function createRegisterActionHandlers(registersStore, alertStore, { mode 
   async function pollFeacnLookup() {
     if (!validationState.handleId) return
 
+    const handleId = validationState.handleId
     try {
-      const progress = await registersStore.getLookupFeacnCodesProgress(validationState.handleId)
+      const progress = await registersStore.getLookupFeacnCodesProgress(handleId)
+      if (validationState.handleId !== handleId) return
       validationState.total = progress.total
       validationState.processed = progress.processed
 
       if (progress.finished || progress.total === -1 || progress.processed === -1) {
-        validationState.show = false
         pollingTimer.stop()
         await registersStore.getAll(getAllOptions())
+        if (validationState.handleId !== handleId) return
+        await refreshCompletedRegister(validationState.registerId)
+        if (validationState.handleId !== handleId) return
+        validationState.show = false
       }
     } catch (err) {
+      if (validationState.handleId !== handleId) {
+        // Cancellation or a newer operation owns the UI now.
+        reportError(err, { context: 'FEACN lookup poll after cancellation' })
+        return
+      }
       alertStore.error(err?.message || String(err))
       validationState.show = false
       pollingTimer.stop()
@@ -210,7 +301,8 @@ export function createRegisterActionHandlers(registersStore, alertStore, { mode 
           registersStore,
           alertStore,
           () => pollingTimer.stop(),
-          getAllOptions()
+          getAllOptions(),
+          refreshCompletedRegister
         )
 
       await validateRegister(
@@ -219,10 +311,11 @@ export function createRegisterActionHandlers(registersStore, alertStore, { mode 
         registersStore,
         alertStore,
         () => pollingTimer.stop(),
-        () => pollingTimer.start(),
+        () => recoveryScopeActive && pollingTimer.start(),
         sw,
         extended ? SwValidationMatchMode.SwMatch : SwValidationMatchMode.NoSwMatch,
-        getAllOptions()
+        getAllOptions(),
+        refreshCompletedRegister
       )
     } catch (err) {
       alertStore.error(err?.message || String(err))
@@ -244,6 +337,7 @@ export function createRegisterActionHandlers(registersStore, alertStore, { mode 
   async function performFeacnLookup(item, { extended = false } = {}) {
     try {
       validationState.operation = 'lookup-feacn-codes'
+      validationState.registerId = item.id
       pollingTimer.stop()
       pollingFunction = pollFeacnLookup
       const res = await registersStore.lookupFeacnCodes(
@@ -255,7 +349,7 @@ export function createRegisterActionHandlers(registersStore, alertStore, { mode 
       validationState.processed = 0
       validationState.show = true
       await pollFeacnLookup()
-      pollingTimer.start()
+      if (recoveryScopeActive && validationState.show) pollingTimer.start()
     } catch (err) {
       alertStore.error(err?.message || String(err))
     }
@@ -331,25 +425,34 @@ export function createRegisterActionHandlers(registersStore, alertStore, { mode 
     }
   }
 
-  function cancelValidationWrapper() {
-    const isFeacnLookup = validationState.operation === 'lookup-feacn-codes'
-
-    if (isFeacnLookup) {
-      if (validationState.handleId) {
-        registersStore.cancelLookupFeacnCodes(validationState.handleId).catch((error) => {
-          reportError(error, { context: 'FEACN lookup cancellation cleanup' })
-        })
-      }
-      validationState.show = false
-      pollingTimer.stop()
-      return
+  async function cancelValidationWrapper() {
+    if (!recoveryScopeActive || !validationState.handleId) return false
+    const registerId = validationState.registerId
+    const recovery = createTotalsRecovery(registerId, 'Не удалось обновить итоги реестра после отмены проверки')
+    const cancel = validationState.operation === 'lookup-feacn-codes'
+      ? (handleId) => registersStore.cancelLookupFeacnCodes(handleId)
+      : (handleId) => registersStore.cancelValidation(handleId)
+    let cancelled = true
+    try {
+      await cancelValidation(validationState, registersStore, () => pollingTimer.stop(), cancel)
+    } catch (error) {
+      cancelled = false
+      reportRecoveryFailure(error, recovery, 'Не удалось отменить проверку реестра')
     }
-    // Fallback to regular validation cancellation
-    cancelValidation(validationState, registersStore, () => pollingTimer.stop())
+    const refreshed = await refreshRegisterTotals(recovery)
+    return cancelled && refreshed
   }
 
   function stopPolling() {
     pollingTimer.stop()
+    recoveryScopeActive = false
+    validationState.handleId = null
+    validationState.show = false
+    for (const recovery of totalsRecoveries.values()) {
+      recovery.active = false
+      clearTimeout(recovery.timer)
+    }
+    totalsRecoveries.clear()
   }
 
   return {
@@ -510,7 +613,7 @@ export function useRegisterHeaderActions({
   }
 
   const runXmlActionWithDialog = async (action, operation) => {
-    if (generalActionsDisabled.value) return
+    if (generalActionsDisabled.value || currentRegister.value?.derivedTotalsPending === true) return
 
     let applyWeightCorrection = false
     if (getWeightCorrection(currentRegister.value).canCorrect) {
@@ -529,7 +632,7 @@ export function useRegisterHeaderActions({
   }
 
   const runDownloadActionWithDialog = async (action, operation) => {
-    if (generalActionsDisabled.value) return
+    if (generalActionsDisabled.value || currentRegister.value?.derivedTotalsPending === true) return
 
     let applyWeightCorrection = false
     if (getWeightCorrection(currentRegister.value).canCorrect) {
@@ -560,6 +663,7 @@ export function useRegisterHeaderActions({
   }
 
   const runDownloadRegister = async (format = 'generic') => {
+    if (currentRegister.value?.derivedTotalsPending === true) return false
     const registerType = Number(currentRegister.value?.registerType)
     if (!COMPANY_REGISTER_OUTPUT_TYPES.includes(registerType)) {
       return await runDownloadActionWithDialog(downloadRegister, 'download-register')

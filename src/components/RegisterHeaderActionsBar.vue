@@ -8,6 +8,7 @@ import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import ActionButton from '@/components/ActionButton.vue'
 import ActionButton2L from '@/components/ActionButton2L.vue'
+import RegisterTotalsRefreshButton from '@/components/RegisterTotalsRefreshButton.vue'
 import { InvoiceParcelSelection } from '@/models/invoice.parcel.selection.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import {
@@ -94,6 +95,9 @@ const reconciliationOptions = computed(() => [
   { label: 'Сверить реестр', action: () => run('reconcile-register') },
   { label: 'Разделить реестр', disabled: !splitEligible.value, action: () => run('split-register') }
 ])
+const derivedTotalsPending = computed(() => props.item?.derivedTotalsPending === true)
+const derivedOutputEvents = new Set(['export-ordinary', 'export-excise', 'export-notifications', 'download',
+  'download-packing-list', 'download-tajikistan-manifest', 'download-additional-restrictions'])
 const weightChangesAllowed = computed(() => canChangeParcelWeights(props.item))
 const restrictionCountryMissing = computed(() => props.item?.theOtherCountryCode == null)
 const restrictionValidationTooltip = computed(() =>
@@ -190,13 +194,14 @@ const documentOptions = computed(() => {
     },
     {
       label: 'тех. документация (с акцизом)',
+      requiresDerivedTotals: false,
       icon: 'fa-solid fa-file-image',
       color: 'approved-with-excise',
       action: () => run('download-techdoc')
     }
   )
 
-  return options
+  return options.map(option => ({ ...option, disabled: option.disabled || (option.requiresDerivedTotals !== false && derivedTotalsPending.value) }))
 })
 
 function run(evt, format) {
@@ -205,6 +210,7 @@ function run(evt, format) {
     (['reconcile-register', 'split-register'].includes(evt) && (!reconciliationEligible.value || props.item?.readOnly === true)) ||
     (evt === 'split-register' && !splitEligible.value) ||
     props.disabled ||
+    (derivedTotalsPending.value && derivedOutputEvents.has(evt)) ||
     props.loading ||
     (props.mutationDisabled && mutationEvents.has(evt)) ||
     (isRestrictionValidation && restrictionCountryMissing.value) ||
@@ -215,7 +221,7 @@ function run(evt, format) {
 }
 
 function openInvoiceSettings(selection = InvoiceParcelSelection.All) {
-  if (props.disabled) return
+  if (props.disabled || derivedTotalsPending.value) return
   const registerId = props.item?.id
   if (!registerId) return
   router.push({
@@ -226,7 +232,7 @@ function openInvoiceSettings(selection = InvoiceParcelSelection.All) {
 }
 
 function openDo1Settings() {
-  if (props.disabled || !isImportCustomsProcedure(props.item?.customsProcedureCode)) return
+  if (props.disabled || derivedTotalsPending.value || !isImportCustomsProcedure(props.item?.customsProcedureCode)) return
   const registerId = props.item?.id
   if (!registerId) return
   router.push({
@@ -236,7 +242,7 @@ function openDo1Settings() {
 }
 
 function openCmrSettings() {
-  if (props.disabled || Number(props.item?.transportationTypeCode) !== 1) return
+  if (props.disabled || derivedTotalsPending.value || Number(props.item?.transportationTypeCode) !== 1) return
   const registerId = props.item?.id
   if (!registerId) return
   router.push({
@@ -326,7 +332,7 @@ function openCmrSettings() {
         icon="fa-solid fa-upload"
         tooltip-text="Выгрузить XML накладные"
         :iconSize="iconSize"
-        :disabled="disabled"
+        :disabled="disabled || derivedTotalsPending"
         :options="[
           {
             label: 'С акцизом',
@@ -354,7 +360,7 @@ function openCmrSettings() {
         icon="fa-solid fa-file-export"
         tooltip-text="Экспортировать реестр"
         :iconSize="iconSize"
-        :disabled="disabled"
+        :disabled="disabled || derivedTotalsPending"
         :options="[
           { label: 'Общий формат', action: () => run('download', 'generic') },
           { label: `Формат ${companyFormatName}`, action: () => run('download', 'company') }
@@ -366,7 +372,7 @@ function openCmrSettings() {
         icon="fa-solid fa-file-export"
         tooltip-text="Экспортировать реестр"
         :iconSize="iconSize"
-        :disabled="disabled"
+        :disabled="disabled || derivedTotalsPending"
         @click="run('download')"
       />
       <ActionButton2L
@@ -379,6 +385,7 @@ function openCmrSettings() {
       />
     </div>
     <div class="header-actions header-actions-group">
+      <RegisterTotalsRefreshButton :register="item" :disabled="disabled || loading" :icon-size="iconSize" />
       <ActionButton
         v-if="isSrLogistPlus && showWeightUpdate"
         :item="item"

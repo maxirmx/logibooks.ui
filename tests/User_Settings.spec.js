@@ -132,6 +132,11 @@ vi.mock('@/router', () => ({
   default: { push: routerPush }
 }))
 
+vi.mock('vue-router', async (importOriginal) => ({
+  ...await importOriginal(),
+  useRouter: () => ({ push: routerPush })
+}))
+
 const Parent = {
   components: { UserSettings },
   props: { register: Boolean, id: Number },
@@ -170,6 +175,9 @@ describe('User_Settings.vue real component', () => {
     await resolveAll()
     expect(ownProfile.find('[data-testid="user-parcel-filters"]').exists()).toBe(true)
     expect(ownProfile.find('form fieldset [data-testid="user-parcel-filters"] .user-parcel-filters__table-shell.table-card').exists()).toBe(true)
+    await ownProfile.get('[data-testid="parcel-filter-create"]').trigger('click')
+    await resolveAll()
+    expect(routerPush).toHaveBeenCalledWith('/parcel-filters/create')
 
     isAdmin = true
     const otherProfile = mount(Parent, {

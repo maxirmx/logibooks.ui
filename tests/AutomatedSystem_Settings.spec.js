@@ -78,11 +78,11 @@ const globalStubs = {
 async function mountDialog(props, stubs = {}) {
   const Parent = {
     components: { AutomatedSystemSettings },
+    props: { register: Boolean, id: Number },
     template:
-      '<Suspense><AutomatedSystemSettings :register="register" :id="id" /></Suspense>',
-    data: () => props
+      '<Suspense><AutomatedSystemSettings :register="register" :id="id" /></Suspense>'
   }
-  const wrapper = mount(Parent, { global: { stubs: { ...globalStubs, ...stubs } } })
+  const wrapper = mount(Parent, { props, global: { stubs: { ...globalStubs, ...stubs } } })
   await flushPromises()
   return { wrapper, dialog: wrapper.findComponent(AutomatedSystemSettings) }
 }

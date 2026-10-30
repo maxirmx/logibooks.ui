@@ -82,7 +82,7 @@ export function useRegisterDownloadFlow(registersStore, alertStore) {
 
   function download({ register, format = 'generic', forZone = null, zoneLabel,
     applyWeightCorrection = false, onDownloadStart, onDownloadEnd }) {
-    if (!register?.id) return Promise.resolve(false)
+    if (!register?.id || register.derivedTotalsPending === true) return Promise.resolve(false)
     const supportsCompany = supportsCompanyFormat(register)
     if (format === 'company' && (!supportsCompany || !companyFormatName.value)) {
       return Promise.resolve(false)

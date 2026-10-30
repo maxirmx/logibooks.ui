@@ -504,37 +504,29 @@ describe('registers.list.helpers', () => {
         stopPollingFn = vi.fn()
       })
 
-      it('cancels validation without handleId', () => {
+      it('cancels validation without handleId', async () => {
         validationState.handleId = null
         validationState.show = true
 
-        cancelValidation(validationState, mockRegistersStore, stopPollingFn)
+        await expect(cancelValidation(validationState, mockRegistersStore, stopPollingFn)).resolves.toBe(false)
 
         expect(mockRegistersStore.cancelValidation).not.toHaveBeenCalled()
         expect(validationState.show).toBe(false)
         expect(stopPollingFn).toHaveBeenCalled()
       })
 
-      it('reports cancellation errors without throwing', async () => {
+      it('propagates cancellation errors to the initiating UI', async () => {
         const cancellationError = new Error('Cancellation failed')
-        const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
         validationState.handleId = 'test-handle-123'
         validationState.show = true
         mockRegistersStore.cancelValidation.mockRejectedValueOnce(cancellationError)
 
-        expect(() => {
-          cancelValidation(validationState, mockRegistersStore, stopPollingFn)
-        }).not.toThrow()
-        await Promise.resolve()
+        await expect(cancelValidation(validationState, mockRegistersStore, stopPollingFn))
+          .rejects.toBe(cancellationError)
 
         expect(validationState.show).toBe(false)
+        expect(validationState.handleId).toBe(null)
         expect(stopPollingFn).toHaveBeenCalled()
-        expect(consoleError).toHaveBeenCalledTimes(1)
-        expect(consoleError).toHaveBeenCalledWith(
-          '[register validation cancellation cleanup]',
-          cancellationError
-        )
-        consoleError.mockRestore()
       })
     })
 

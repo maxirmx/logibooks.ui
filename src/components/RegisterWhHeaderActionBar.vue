@@ -7,6 +7,7 @@ import { computed, ref, unref, watch } from 'vue'
 import { useAppConfirm } from '@/composables/useAppConfirm.js'
 import ActionButton from '@/components/ActionButton.vue'
 import ActionButton2L from '@/components/ActionButton2L.vue'
+import RegisterTotalsRefreshButton from '@/components/RegisterTotalsRefreshButton.vue'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
@@ -41,6 +42,7 @@ const exportDisabled = computed(() =>
   props.disabled ||
   props.loading ||
   exportPending.value ||
+  props.register?.derivedTotalsPending === true ||
   !props.register?.id
 )
 const actionDisabled = computed(() =>
@@ -134,6 +136,7 @@ const exportOptions = computed(() => {
         />
     </div>
     <div class="header-actions header-actions-group">
+        <RegisterTotalsRefreshButton :register="register" :disabled="disabled || loading" :icon-size="iconSize" />
         <ActionButton
           v-if="canBulkChangeParcelStatus"
           :item="register"

@@ -11,6 +11,7 @@ import { storeToRefs } from 'pinia'
 import { Form } from 'vee-validate'
 import router from '@/router'
 import ActionButton from '@/components/ActionButton.vue'
+import { useRegisterTotalsRefresh } from '@/composables/useRegisterTotalsRefresh.js'
 import ActionDialog from '@/l2/ActionDialog.vue'
 import { useActionDialog } from '@/composables/useActionDialog.js'
 import { useAlertStore } from '@/stores/alert.store.js'
@@ -24,6 +25,7 @@ const props = defineProps({
 })
 
 const registersStore = useRegistersStore()
+const { refreshingTotals, refreshTotals } = useRegisterTotalsRefresh(() => props.id)
 const companiesStore = useCompaniesStore()
 const warehousesStore = useWarehousesStore()
 const customsStationsStore = useCustomsStationsStore()
@@ -73,7 +75,7 @@ const isReferencesLoading = computed(
 )
 const isFormDisabled = computed(
   () =>
-    isReferencesLoading.value || isSubmitting.value || loadFailed.value || !currentRegister.value
+    isReferencesLoading.value || isSubmitting.value || refreshingTotals.value || loadFailed.value || !currentRegister.value || currentRegister.value.derivedTotalsPending === true
 )
 
 function localToday() {
@@ -209,8 +211,18 @@ onMounted(loadReferences)
   <div class="settings form-3 cmr-settings-dialog form-compact">
     <Form :initial-values="{}" @submit="onSubmit" @invalid-submit="focusFirstInvalidField">
       <div class="header-with-actions">
-        <h1 class="primary-heading">{{ heading }}</h1>
+        <h1 class="primary-heading">{{ heading }} <span v-if="currentRegister?.derivedTotalsPending" role="status">— итоги пересчитываются</span></h1>
         <div class="header-actions">
+          <ActionButton
+            v-if="currentRegister?.derivedTotalsPending"
+            :item="{}"
+            icon="fa-solid fa-arrows-rotate"
+            icon-size="2x"
+            tooltip-text="Обновить итоги"
+            aria-label="Обновить итоги"
+            :disabled="refreshingTotals || isSubmitting"
+            @click="refreshTotals"
+          />
           <ActionButton
             :item="{}"
             icon="fa-solid fa-check-double"

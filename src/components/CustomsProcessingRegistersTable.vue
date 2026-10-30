@@ -252,7 +252,7 @@ function getRegisterStatusTitle(item) {
               <template #default>
                 <div class="data-box">
                   <div>{{ formatIntegerThousands(item.parcelsTotal) }}</div>
-                  <div>{{ formatIntegerThousands(item.placesTotal) }}</div>
+                  <div>{{ item.derivedTotalsPending ? 'Пересчёт' : formatIntegerThousands(item.placesTotal) }}</div>
                 </div>
               </template>
             </ClickableCell>
@@ -270,7 +270,8 @@ function getRegisterStatusTitle(item) {
           @click="(row) => emit('edit-register', row)"
         >
           <template #default>
-            <div class="data-box weight-box" data-testid="register-weight-cell">
+            <div v-if="item.derivedTotalsPending" role="status">Итоги пересчитываются</div>
+            <div v-else class="data-box weight-box" data-testid="register-weight-cell">
               <div class="weight-line">{{ formatWeight(item.totalWeightKg) }}</div>
               <div
                 v-if="hasRealWeightKg(item)"
@@ -293,7 +294,8 @@ function getRegisterStatusTitle(item) {
           @click="(row) => emit('edit-register', row)"
         >
           <template #default>
-            <div class="data-box">
+            <div v-if="item.derivedTotalsPending" role="status">Итоги пересчитываются</div>
+            <div v-else class="data-box">
               <div>{{ formatPrice(item.totalPrice) }}</div>
               <div>{{ formatPrice(item.totalPriceToRelease) }}</div>
             </div>

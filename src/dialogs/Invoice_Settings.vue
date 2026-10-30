@@ -13,6 +13,7 @@ import * as Yup from 'yup'
 import { storeToRefs } from 'pinia'
 import { ref, computed, watch, onMounted } from 'vue'
 import ActionButton from '@/components/ActionButton.vue'
+import { useRegisterTotalsRefresh } from '@/composables/useRegisterTotalsRefresh.js'
 import ActionDialog from '@/l2/ActionDialog.vue'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
@@ -29,6 +30,7 @@ const props = defineProps({
 })
 
 const registersStore = useRegistersStore()
+const { refreshingTotals, refreshTotals } = useRegisterTotalsRefresh(() => props.id)
 const { item, loading } = storeToRefs(registersStore)
 
 function resolveParcelSelection(value) {
@@ -109,15 +111,11 @@ const invoiceWeightCorrectionLabel = computed(() =>
     ? `Применить поправочный коэффициент ${invoiceWeightCorrection.value.coefficientText} к весу посылок.`
     : ''
 )
-const isFormDisabled = computed(() => isSubmitting.value || loading.value || !currentRegister.value)
+const isFormDisabled = computed(() => isSubmitting.value || refreshingTotals.value || loading.value || !currentRegister.value || currentRegister.value.derivedTotalsPending === true)
 
 watch(
-  () => [currentRegister.value?.id, showInvoiceWeightCorrection.value],
-  ([, canCorrect]) => {
-    if (canCorrect) {
-      applyInvoiceWeightCorrection.value = true
-    }
-  },
+  () => currentRegister.value?.id,
+  () => { applyInvoiceWeightCorrection.value = true },
   { immediate: true }
 )
 
@@ -148,7 +146,7 @@ function toggleColumn(column) {
 const schema = Yup.object().shape({}) // no form-bound fields; using external state
 
 async function onSubmit() {
-  if (!currentRegister.value || isSubmitting.value) return
+  if (isFormDisabled.value) return
   isSubmitting.value = true
   try {
     const operation = isDo1.value ? 'download-do1' : 'download-invoice'
@@ -213,8 +211,18 @@ onMounted(() => {
       @invalid-submit="focusFirstInvalidField"
     >
       <div class="header-with-actions">
-        <h1 class="primary-heading">{{ heading }}</h1>
+        <h1 class="primary-heading">{{ heading }} <span v-if="currentRegister?.derivedTotalsPending" role="status">— итоги пересчитываются</span></h1>
         <div class="header-actions">
+          <ActionButton
+            v-if="currentRegister?.derivedTotalsPending"
+            :item="{}"
+            icon="fa-solid fa-arrows-rotate"
+            icon-size="2x"
+            tooltip-text="Обновить итоги"
+            aria-label="Обновить итоги"
+            :disabled="refreshingTotals || isSubmitting"
+            @click="refreshTotals"
+          />
           <ActionButton
             :item="{}"
             icon="fa-solid fa-check-double"

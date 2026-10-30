@@ -342,7 +342,7 @@ function getRegisterStatusTitle(item) {
               <template #default>
                 <div class="data-box">
                   <div>{{ formatIntegerThousands(item.parcelsTotal) }}</div>
-                  <div>{{ formatIntegerThousands(item.placesTotal) }}</div>
+                  <div>{{ item.derivedTotalsPending ? 'Пересчёт' : formatIntegerThousands(item.placesTotal) }}</div>
                 </div>
               </template>
             </ClickableCell>
@@ -353,7 +353,7 @@ function getRegisterStatusTitle(item) {
             >
               <div class="data-box">
                 <div>{{ formatIntegerThousands(item.parcelsTotal) }}</div>
-                <div>{{ formatIntegerThousands(item.placesTotal) }}</div>
+                <div>{{ item.derivedTotalsPending ? 'Пересчёт' : formatIntegerThousands(item.placesTotal) }}</div>
               </div>
             </span>
           </template>

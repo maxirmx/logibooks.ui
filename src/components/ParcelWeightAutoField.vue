@@ -19,7 +19,6 @@ const props = defineProps({
 const registerValue = computed(() => unref(props.register))
 const fieldComponentDefinition = computed(() => toRaw(props.fieldComponent))
 const weightChangesAllowed = computed(() => canChangeParcelWeights(registerValue.value))
-const isWeightCorrectionEligible = computed(() => props.item?.weightCorrectionEligible === true)
 const groupClass = computed(() => props.fullWidth ? 'form-group-1' : 'form-group')
 const labelClass = computed(() => props.fullWidth ? 'label-1' : 'label')
 const inputClass = computed(() => ['form-control', props.fullWidth ? 'input-1' : 'input', 'readonly-field', 'parcel-weight-auto-field'])
@@ -40,8 +39,8 @@ const inputClass = computed(() => ['form-control', props.fullWidth ? 'input-1' :
     <div :class="inputClass" role="textbox" aria-readonly="true">
       <CorrectedWeightDisplay
         :weight="item?.weightKg"
-        :register="registerValue"
-        :use-correction="isWeightCorrectionEligible"
+        :adjusted-weight="item?.adjustedWeightKg"
+        :derived-totals-pending="item?.derivedTotalsPending === true"
       />
       <span class="parcel-weight-auto-note">(Автоматический расчёт)</span>
     </div>

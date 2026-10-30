@@ -54,7 +54,7 @@ function show(component, props = {}, stubs = {}) {
   const wrapper = mount(component, { props, global: { stubs: {
     ...vuetifyStubs, RegisterHeaderActionsBar: true, RegisterActionsDialogs: true,
     RegisterHeadingWithStats: true, ActionDialog: true, ErrorDialog: true, AssignTnvedDialog: true,
-    ParcelStatusBulkChangeDialog: true, 'font-awesome-icon': true, ...stubs
+    ParcelStatusBulkChangeDialog: true, LocalLabelPrinting: true, 'font-awesome-icon': true, ...stubs
   } } })
   wrappers.push(wrapper)
   return wrapper

@@ -340,6 +340,7 @@ describe('Scanjob parcel monitor typed tables', () => {
             shk: 'SHK-41',
             productName: 'Corrected product',
             weightKg: 2.4,
+            adjustedWeightKg: 1.201,
             quantity: 1,
             checkStatusProjection: { kind: 10, title: 'Не проверено', restrictionReason: null }
           },
@@ -358,7 +359,7 @@ describe('Scanjob parcel monitor typed tables', () => {
 
     const corrected = wrapper.get('.corrected-weight-display')
     expect(corrected.text()).toContain('2.400')
-    expect(corrected.text()).toContain('1.200')
+    expect(corrected.text()).toContain('1.201')
     expect(corrected.get('[data-icon="fa-solid fa-arrow-right"]').exists()).toBe(true)
     expect(wrapper.text()).toContain('3.400')
     expect(wrapper.text()).not.toContain('1.700')

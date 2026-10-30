@@ -87,7 +87,7 @@ const summaryCards = computed(() => {
       {
         key: 'boxWeight',
         label: 'Вес',
-        value: formatBoxWeight(box.weightKg)
+        value: props.register?.derivedTotalsPending === true ? 'Пересчёт' : formatBoxWeight(box.weightKg)
       }
     )
   }

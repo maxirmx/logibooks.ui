@@ -2,7 +2,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { validateParcelData, approveParcel, generateXml, runCheckStatusAction } from '@/helpers/parcel.actions.helpers.js'
 import { ParcelApprovalMode } from '@/models/parcel.approval.mode.js'
 
@@ -11,7 +11,8 @@ const alertErrorMock = vi.hoisted(() => vi.fn())
 // Mock the alert store
 vi.mock('@/stores/alert.store.js', () => ({
   useAlertStore: vi.fn(() => ({
-    error: alertErrorMock
+      error: alertErrorMock,
+      warning: vi.fn()
   }))
 }))
 
@@ -138,6 +139,10 @@ describe('parcel actions helpers', () => {
   })
 
   describe('generateXml', () => {
+    beforeEach(() => {
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+    })
+    afterEach(() => vi.restoreAllMocks())
     it('should generate XML with filename generator function', async () => {
       const filenameGenerator = vi.fn().mockReturnValue('generated-filename')
 
@@ -151,7 +156,7 @@ describe('parcel actions helpers', () => {
       const error = {
         response: {
           data: {
-            message: 'XML generation failed'
+              message: 'Не удалось сформировать XML'
           }
         }
       }
@@ -159,15 +164,27 @@ describe('parcel actions helpers', () => {
 
       await generateXml(mockItem, mockParcelsStore, 'test-file')
 
-      expect(mockParcelsStore.error).toBe('XML generation failed')
+      expect(mockParcelsStore.error).toBe('Не удалось сформировать XML')
     })
 
     it('should handle generate XML errors with default message', async () => {
-      mockParcelsStore.generate.mockRejectedValue(new Error('Ошибка подключения к сети'))
+      mockParcelsStore.generate.mockRejectedValue(new Error('Unexpected XML failure'))
 
       await generateXml(mockItem, mockParcelsStore, 'test-file')
 
       expect(mockParcelsStore.error).toBe('Ошибка при генерации XML')
+    })
+
+    it('consumes a rejected correction confirmation and presents one normalized error', async () => {
+      const failure = new Error('Unexpected confirmation failure')
+      await expect(generateXml(mockItem, mockParcelsStore, 'test-file', {
+        confirm: vi.fn().mockRejectedValue(failure),
+        register: { realWeightKg: 5, totalWeightKgToRelease: 10 }
+      })).resolves.toBe(false)
+      expect(mockParcelsStore.generate).not.toHaveBeenCalled()
+      expect(mockParcelsStore.error).toBe('Ошибка при генерации XML')
+      expect(alertErrorMock).toHaveBeenCalledExactlyOnceWith(failure, { fallback: 'Ошибка при генерации XML' })
+      expect(console.error).toHaveBeenCalledWith('[parcel XML generation]', failure)
     })
 
     it('confirms XML generation when weight correction is possible', async () => {

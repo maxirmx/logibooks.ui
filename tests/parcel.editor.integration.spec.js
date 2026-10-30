@@ -23,13 +23,14 @@ import { OZON_COMPANY_ID, WBR_COMPANY_ID, WBRN_REGISTER_ID, GTC_COMPANY_ID } fro
 import { OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 import * as errorHelpers from '@/helpers/error.helpers.js'
 
-const transport = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn(), put: vi.fn() }))
+const transport = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn(), put: vi.fn(), downloadFile: vi.fn() }))
+const confirm = vi.hoisted(() => vi.fn())
 const router = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn() }))
 const signalR = vi.hoisted(() => ({ connections: [] }))
 vi.mock('@/helpers/fetch.wrapper.js', () => ({ fetchWrapper: transport }))
 vi.mock('@/helpers/config.js', () => ({ apiUrl: 'http://test/api' }))
 vi.mock('@/router', () => ({ default: router }))
-vi.mock('vuetify-use-dialog', () => ({ useConfirm: () => vi.fn().mockResolvedValue(true) }))
+vi.mock('vuetify-use-dialog', () => ({ useConfirm: () => confirm }))
 vi.mock('@microsoft/signalr', () => ({
   HubConnectionState: { Connected: 'Connected' },
   HubConnectionBuilder: class {
@@ -87,7 +88,7 @@ function parcel(id = 3, extra = {}) {
     ...extra
   }
 }
-let pinia, registerCountry, registerType, requiredFailure, parcelRequests, historyRequests, neighbors, previous
+let pinia, registerCountry, registerType, registerWeights, requiredFailure, parcelRequests, historyRequests, neighbors, previous
 function mountEditor(component = ParcelEditView, props = {}) {
   const wrapper = mount(component, {
     props: { registerId: 12, id: 3, ...props },
@@ -113,6 +114,8 @@ beforeEach(() => {
   signalR.connections.length = 0
   registerCountry = 156
   registerType = OZON_COMPANY_ID
+  registerWeights = null
+  confirm.mockResolvedValue(true)
   requiredFailure = null
   parcelRequests = []
   historyRequests = []
@@ -134,7 +137,7 @@ beforeEach(() => {
       passportCheckStatuses: [{ value: 0, code: 'NotChecked', name: 'Не проверен' }, { value: 30, code: 'Checked', name: 'Проверен' }]
     }
     if (/\/registers\/nextparcels\//.test(url)) return neighbors
-    if (/\/registers\/\d+$/.test(url)) return { id: Number(url.split('/').at(-1)), registerType, customsProcedureCode: 40, theOtherCountryCode: registerCountry }
+    if (/\/registers\/\d+$/.test(url)) return { id: Number(url.split('/').at(-1)), registerType, customsProcedureCode: 40, theOtherCountryCode: registerCountry, ...registerWeights }
     if (url.endsWith('/hotkeyactionschemes/ops')) return { actions: [] }
     if (url.endsWith('/countries/compact')) return [{ id: 1, isoNumeric: 156, nameRuOfficial: 'Китай' }]
     if (/\/(stopwords|keywords|feacnprefixes|feacnorders\/orders)$/.test(url)) return []
@@ -151,6 +154,69 @@ afterEach(async () => {
 })
 
 describe.each(editors)('%s editor with real forms and stores', (_name, component, type) => {
+
+  it('blocks pending XML export visibly and preserves the draft for a corrected retry', async () => {
+    registerType = type
+    registerWeights = { realWeightKg: 5, totalWeightKgToRelease: 10, derivedTotalsPending: true }
+    const wrapper = mountEditor(component)
+    await settle()
+    await input(wrapper).setValue('Draft for XML')
+    const refresh = vi.spyOn(useParcelsStore(), 'getById')
+    const warning = vi.spyOn(useAlertStore(), 'warning')
+    await action(wrapper, 'Сохранить и выгрузить XML накладную').trigger('click')
+    await settle()
+    expect(transport.downloadFile).not.toHaveBeenCalled()
+    expect(confirm).not.toHaveBeenCalled()
+    expect(refresh).not.toHaveBeenCalled()
+    expect(warning).toHaveBeenCalledTimes(1)
+    expect(wrapper.findAll('[data-testid="page-alert-region"]')).toHaveLength(1)
+    expect(wrapper.get('[role="status"]').text()).toContain('Итоги реестра пересчитываются')
+    expect(input(wrapper).element.value).toBe('Draft for XML')
+    expect(router.push).not.toHaveBeenCalled()
+    expect(router.replace).not.toHaveBeenCalled()
+
+    registerWeights.derivedTotalsPending = false
+    await action(wrapper, 'Сохранить и выгрузить XML накладную').trigger('click')
+    await settle()
+    expect(confirm).toHaveBeenCalledTimes(1)
+    expect(transport.downloadFile).toHaveBeenCalledExactlyOnceWith(
+      'http://test/api/parcels/3/generate?applyWeightCorrection=true', expect.any(String)
+    )
+    expect(refresh).toHaveBeenCalledTimes(1)
+    expect(input(wrapper).element.value).toBe('Draft for XML')
+    expect(router.push).not.toHaveBeenCalled()
+    refresh.mockRestore()
+  })
+
+  it('presents a rejected XML download once without reloading or navigating and permits retry', async () => {
+    registerType = type
+    const wrapper = mountEditor(component)
+    await settle()
+    await input(wrapper).setValue('Draft for retry')
+    const failure = new Error('Unexpected XML export failure')
+    const diagnostics = vi.spyOn(errorHelpers, 'reportError').mockImplementation(() => {})
+    const presentation = vi.spyOn(useAlertStore(), 'error')
+    const refresh = vi.spyOn(useParcelsStore(), 'getById')
+    transport.downloadFile.mockRejectedValueOnce(failure)
+    await action(wrapper, 'Сохранить и выгрузить XML накладную').trigger('click')
+    await settle()
+    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+    expect(wrapper.get('[role="alert"]').text()).toContain('Ошибка при генерации XML')
+    expect(wrapper.text()).not.toContain('Unexpected XML export failure')
+    expect(presentation).toHaveBeenCalledTimes(1)
+    expect(diagnostics).toHaveBeenCalledExactlyOnceWith(failure, { context: 'parcel XML generation' })
+    expect(refresh).not.toHaveBeenCalled()
+    expect(input(wrapper).element.value).toBe('Draft for retry')
+    expect(router.push).not.toHaveBeenCalled()
+    expect(router.replace).not.toHaveBeenCalled()
+    await action(wrapper, 'Сохранить и выгрузить XML накладную').trigger('click')
+    await settle()
+    expect(transport.downloadFile).toHaveBeenCalledTimes(2)
+    expect(refresh).toHaveBeenCalledTimes(1)
+    expect(input(wrapper).element.value).toBe('Draft for retry')
+    diagnostics.mockRestore()
+    refresh.mockRestore()
+  })
 
   it('preserves draft, touched state, and validation through background success and failure', async () => {
     registerType = type
@@ -209,12 +275,39 @@ describe.each(editors)('%s editor with real forms and stores', (_name, component
     expect(router.push).toHaveBeenCalledTimes(1)
   })
 
+  it('presents a final detail refresh failure once, preserves the form and retries the save', async () => {
+    registerType = type
+    const wrapper = mountEditor(component)
+    await settle()
+    await input(wrapper).setValue('Draft after refresh failure')
+    const presentation = vi.spyOn(useAlertStore(), 'error')
+    const detail = deferred()
+    parcelRequests.push(detail)
+    await action(wrapper, 'Сохранить').trigger('click')
+    await settle()
+    const failure = new Error('Не удалось обновить данные посылки после сохранения')
+    detail.reject(failure)
+    await settle()
+    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+    expect(wrapper.get('[role="alert"]').text()).toContain(failure.message)
+    expect(presentation).toHaveBeenCalledTimes(1)
+    expect(input(wrapper).element.value).toBe('Draft after refresh failure')
+    expect(router.push).not.toHaveBeenCalled()
+    expect(router.replace).not.toHaveBeenCalled()
+    await action(wrapper, 'Сохранить').trigger('click')
+    await settle()
+    expect(transport.put).toHaveBeenCalledTimes(2)
+    expect(transport.put.mock.calls.every(([, values]) => values.productName === 'Draft after refresh failure')).toBe(true)
+    expect(router.push).toHaveBeenCalledTimes(1)
+    presentation.mockRestore()
+  })
+
   it('updates only TN VED after an intentional lookup', async () => {
     const wrapper = mountEditor(component)
     await settle()
     await input(wrapper).setValue('Unsaved product')
     const response = deferred()
-    parcelRequests.push(response)
+    parcelRequests.push({ promise: Promise.resolve(parcel(3)) }, response)
     response.resolve(parcel(3, { productName: 'Server product', tnVed: '8471300000' }))
     await action(wrapper, 'Сохранить и подобрать код ТН ВЭД').trigger('click')
     await settle()
@@ -346,7 +439,7 @@ it.each(['next', 'previous'])('loads the %s destination through normal keyed ini
   previous = { id: 4, registerId: 13, productName: 'History preview must not seed the form' }
   await settle()
   const oldEditor = wrapper.findComponent(OzonEditor)
-  parcelRequests.push(destination)
+  parcelRequests.push({ promise: Promise.resolve(parcel(3)) }, destination)
   router.replace.mockImplementation(async (location) => {
     expect(useParcelsStore().item.id).toBe(3)
     expect(input(wrapper).element.value).toBe('Product 3')

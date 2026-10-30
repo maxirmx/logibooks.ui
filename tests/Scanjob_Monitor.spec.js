@@ -1066,7 +1066,7 @@ describe('Scanjob_Monitor.vue', () => {
     await flushPromises()
 
     const table = wrapper.getComponent({ name: 'Scanjob_WbrN_Parcels_Monitor_Table' })
-    expect(table.props('register')).toEqual({
+    expect(table.props('register')).toMatchObject({
       realWeightKg: 5,
       totalWeightKgToRelease: 10
     })

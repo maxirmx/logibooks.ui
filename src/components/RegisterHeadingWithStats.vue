@@ -5,6 +5,7 @@
 
 // Reusable heading component with parcels statistics tooltip
 import { onMounted, ref, watch, computed } from 'vue'
+import { reportError } from '@/helpers/error.helpers.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { formatParcelsByCheckStatusTooltip } from '@/helpers/parcel.stats.helpers.js'
 
@@ -16,11 +17,11 @@ function formatCountsLines(register) {
     return isNaN(n) ? null : n
   }
   const parcels = norm(register.parcelsTotal)
-  const places = norm(register.placesTotal)
+  const places = register.derivedTotalsPending ? null : norm(register.placesTotal)
   if (parcels === null && places === null) return []
   return [
     `Всего товаров: ${parcels ?? 0}`,
-    `Всего посылок: ${places ?? 0}`
+    register.derivedTotalsPending ? 'Итоги пересчитываются' : `Всего посылок: ${places ?? 0}`
   ]
 }
 
@@ -41,8 +42,9 @@ async function refreshRegister() {
     if (registersStore.item?.id === props.registerId) {
       localRegister.value = { ...registersStore.item }
     }
-  } catch {
-    // Silently ignore – tooltip is optional
+  } catch (error) {
+    // The parent owns the primary load; this optional statistics refresh keeps its previous snapshot.
+    reportError(error, { context: 'register heading statistics refresh' })
   }
 }
 
@@ -72,7 +74,7 @@ const tooltipText = computed(() => {
 <template>
   <v-tooltip v-if="tooltipText || heading" open-delay="300">
     <template #activator="{ props: tipProps }">
-      <h1 class="primary-heading" v-bind="tipProps">{{ heading }}</h1>
+      <h1 class="primary-heading" v-bind="tipProps">{{ heading }} <span v-if="localRegister?.derivedTotalsPending" role="status">— итоги пересчитываются</span></h1>
     </template>
     <template #default>
       <div v-if="tooltipText" style="white-space: pre-line">{{ tooltipText }}</div>

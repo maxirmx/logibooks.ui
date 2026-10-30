@@ -8,7 +8,9 @@ import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { reportError } from '@/helpers/error.helpers.js'
-import { buildParcelsFilterParams, buildParcelsWhFilterParams } from '@/stores/parcels.store.js'
+import { rawWeightPayload } from '@/helpers/derived.weights.helpers.js'
+import { useBoxesStore } from '@/stores/boxes.store.js'
+import { buildParcelsFilterParams, buildParcelsWhFilterParams, useParcelsStore } from '@/stores/parcels.store.js'
 import { FeacnMatchMode } from '@/models/feacn.match.mode.js'
 import { SwValidationMatchMode } from '@/models/sw.validation.match.mode.js'
 import { InvoiceOptionalColumns } from '@/models/invoice.optional.columns.js'
@@ -26,6 +28,10 @@ export const useRegistersStore = defineStore('registers', () => {
   const items = ref([])
   const item = ref({})
   let itemRequestSequence = 0
+  let listRequestSequence = 0
+  const projectionRevisions = new Map()
+  const derivedRefreshes = new Map()
+  const refreshingDerivedRegisters = ref(new Set())
   const uploadFile = ref(null)
   const loading = ref(false)
   const error = ref(null)
@@ -240,6 +246,12 @@ export const useRegistersStore = defineStore('registers', () => {
     inProgressOnly = false
   } = {}) {
     const passportCheckStateWatermark = livePassportCheckStateArrival
+    const revisions = new Map(projectionRevisions)
+    const preserveCurrentProjection = register => {
+      const id = Number(register?.id)
+      if ((revisions.get(id) ?? 0) === (projectionRevisions.get(id) ?? 0)) return register
+      return [item.value, ...items.value].find(current => Number(current?.id) === id) ?? { ...register, derivedTotalsPending: true }
+    }
     loading.value = true
     error.value = null
     try {
@@ -277,13 +289,13 @@ export const useRegistersStore = defineStore('registers', () => {
       const response = await fetchWrapper.get(`${baseUrl}?${queryParams.toString()}`)
       if (Array.isArray(response)) {
         response.forEach((register, index) => {
-          const merged = mergeLivePassportCheckState(register, passportCheckStateWatermark)
+          const merged = preserveCurrentProjection(mergeLivePassportCheckState(register, passportCheckStateWatermark))
           setDestinationField(merged)
           response[index] = merged
         })
       } else if (Array.isArray(response?.items)) {
         response.items = response.items.map((register) => {
-          const merged = mergeLivePassportCheckState(register, passportCheckStateWatermark)
+          const merged = preserveCurrentProjection(mergeLivePassportCheckState(register, passportCheckStateWatermark))
           setDestinationField(merged)
           return merged
         })
@@ -298,6 +310,7 @@ export const useRegistersStore = defineStore('registers', () => {
   }
 
   async function getAll({ mode = OP_MODE_PAPERWORK } = {}) {
+    const requestSequence = ++listRequestSequence
     const authStore = useAuthStore()
     const warehouseMode = mode === OP_MODE_WAREHOUSE
     const page = warehouseMode ? authStore.registers_wh_page : authStore.registers_page
@@ -323,6 +336,7 @@ export const useRegistersStore = defineStore('registers', () => {
         ...registerStatusFilterParams
       })
 
+      if (requestSequence !== listRequestSequence) return
       // API format with pagination metadata
       items.value = response.items || []
       totalCount.value = response.pagination?.totalCount || 0
@@ -434,8 +448,57 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
+  function invalidateDerived(id) {
+    projectionRevisions.set(Number(id), (projectionRevisions.get(Number(id)) ?? 0) + 1)
+    if (Number(item.value?.id) === Number(id)) item.value = { ...item.value, derivedTotalsPending: true }
+    items.value = items.value.map(r => Number(r.id) === Number(id) ? { ...r, derivedTotalsPending: true } : r)
+    useBoxesStore().invalidateDerived(id)
+  }
+
+  function isRefreshingDerived(id) {
+    return refreshingDerivedRegisters.value.has(Number(id))
+  }
+
+  function refreshDerived(id) {
+    const key = Number(id)
+    if (!Number.isInteger(key) || key <= 0) return Promise.resolve()
+    const existing = derivedRefreshes.get(key)
+    if (existing) { existing.dirty ||= existing.revision !== (projectionRevisions.get(key) ?? 0); return existing.promise }
+    const state = { dirty: false, promise: null, revision: projectionRevisions.get(key) ?? 0 }
+    state.promise = Promise.resolve().then(async () => {
+      do {
+        state.dirty = false
+        const sequence = itemRequestSequence
+        const revision = projectionRevisions.get(Number(id)) ?? 0
+        state.revision = revision
+        const isCurrent = Number(item.value?.id) === key
+        if (!isCurrent && !items.value.some(r => Number(r.id) === key)) {
+          await useParcelsStore().refreshVisibleDerived(id)
+          continue
+        }
+        const passportCheckStateWatermark = livePassportCheckStateArrival
+        const response = await fetchWrapper.get(`${baseUrl}/${id}`)
+        if (!response || revision !== (projectionRevisions.get(Number(id)) ?? 0)) continue
+        const register = mergeLivePassportCheckState(response, passportCheckStateWatermark)
+        setDestinationField(register)
+        if (isCurrent && sequence === itemRequestSequence && Number(item.value?.id) === key) item.value = register
+        items.value = items.value.map(r => Number(r.id) === key ? register : r)
+        await useBoxesStore().refreshDerived(id)
+        // The visible parcel page must follow the authoritative register/box refresh.
+        await useParcelsStore().refreshVisibleDerived(id)
+      } while (state.dirty)
+    }).finally(() => {
+      derivedRefreshes.delete(key)
+      refreshingDerivedRegisters.value.delete(key)
+    })
+    derivedRefreshes.set(key, state)
+    refreshingDerivedRegisters.value.add(key)
+    return state.promise
+  }
+
   async function getById(id) {
     const requestSequence = ++itemRequestSequence
+    const revision = projectionRevisions.get(Number(id)) ?? 0
     const passportCheckStateWatermark = livePassportCheckStateArrival
     item.value = { loading: true }
     try {
@@ -443,6 +506,7 @@ export const useRegistersStore = defineStore('registers', () => {
       const response = await fetchWrapper.get(`${baseUrl}/${id}`)
       const register = mergeLivePassportCheckState(response, passportCheckStateWatermark)
       setDestinationField(register)
+      if (revision !== (projectionRevisions.get(Number(id)) ?? 0)) register.derivedTotalsPending = true
       if (requestSequence === itemRequestSequence) item.value = register
       return register
     } catch (err) {
@@ -454,7 +518,7 @@ export const useRegistersStore = defineStore('registers', () => {
   async function update(id, data) {
     let res
     try {
-      res = await fetchWrapper.put(`${baseUrl}/${id}`, data)
+      res = await fetchWrapper.put(`${baseUrl}/${id}`, rawWeightPayload(data))
     } catch (err) {
       if (
         err?.status === 409 &&
@@ -483,15 +547,12 @@ export const useRegistersStore = defineStore('registers', () => {
       }
       throw err
     }
-    const registerData = { ...data }
+    const registerData = rawWeightPayload(data)
     delete registerData.restrictionChangeConfirmationToken
-    if (item.value && item.value.id === id) {
-      item.value = { ...item.value, ...registerData }
-    }
-    const idx = items.value.findIndex((r) => r.id === id)
-    if (idx !== -1) {
-      items.value[idx] = { ...items.value[idx], ...registerData }
-    }
+    if (Number(item.value?.id) === Number(id)) item.value = { ...item.value, ...registerData }
+    items.value = items.value.map(r => Number(r.id) === Number(id) ? { ...r, ...registerData } : r)
+    useParcelsStore().invalidateDerived(id)
+    await useParcelsStore().refreshDerived(id)
     return res
   }
 
@@ -1166,6 +1227,9 @@ export const useRegistersStore = defineStore('registers', () => {
     getReconciliation,
     updateWeightsFromFile,
     getById,
+    invalidateDerived,
+    isRefreshingDerived,
+    refreshDerived,
     update,
     getReturnRegisterPairs,
     createReturnRegister,

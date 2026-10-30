@@ -522,12 +522,13 @@ async function generateXml(values) {
     if (!readOnly.value && (await updateParcelWithLifecycleGuard(currentParcelId.value, values)) === false) return
     await registersStore.getById(currentRegisterId.value)
 
-    await generateXmlHelper(
+    const generated = await generateXmlHelper(
       item,
       parcelsStore,
       String(item.value?.postingNumber || '').padStart(20, '0'),
       { confirm, register: registerItem.value }
     )
+    if (!generated) return false
     await parcelsStore.getById(currentParcelId.value)
   } catch (error) {
     alertStore.error(error?.message || String(error))

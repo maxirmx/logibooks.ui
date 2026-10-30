@@ -407,8 +407,8 @@ watch(
       <ClickableCell :item="item" :cell-class="parcelCellClass()" :disabled="isParcelCellDisabled" @click="editParcel(item)">
         <CorrectedWeightDisplay
           :weight="item.weightKg"
-          :register="props.register"
-          :use-correction="item.weightCorrectionEligible === true"
+          :adjusted-weight="item.adjustedWeightKg"
+          :derived-totals-pending="item.derivedTotalsPending === true"
         />
       </ClickableCell>
     </template>

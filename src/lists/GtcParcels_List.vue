@@ -832,8 +832,8 @@ function getGenericTemplateHeaders() {
             <template #default>
               <CorrectedWeightDisplay
                 :weight="item.weightKg"
-                :register="registersStore.item"
-                :use-correction="item.weightCorrectionEligible === true"
+                :adjusted-weight="item.adjustedWeightKg"
+                :derived-totals-pending="item.derivedTotalsPending === true"
               />
             </template>
           </ClickableCell>

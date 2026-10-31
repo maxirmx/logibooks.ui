@@ -6,7 +6,7 @@
 import { getErrorMessage } from '@/helpers/error.helpers.js'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { focusFirstInvalidField } from '@/helpers/form.validation.helpers.js'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { Form } from 'vee-validate'
 import router from '@/router'
@@ -19,6 +19,7 @@ import { useCompaniesStore } from '@/stores/companies.store.js'
 import { useCustomsStationsStore } from '@/stores/customs.stations.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { useWarehousesStore } from '@/stores/warehouses.store.js'
+import { getWeightCorrection } from '@/helpers/weight.correction.helpers.js'
 
 const props = defineProps({
   id: { type: Number, required: true }
@@ -59,8 +60,12 @@ const vehicleRegistrationNumber = ref('')
 const vehicleMakeModel = ref('')
 const customsStationId = ref(null)
 const documentDate = ref('')
+const applyCmrWeightCorrection = ref(true)
 
 const currentRegister = computed(() => (item.value?.id === props.id ? item.value : null))
+const cmrWeightCorrection = computed(() => getWeightCorrection(currentRegister.value))
+const showCmrWeightCorrection = computed(() => cmrWeightCorrection.value.canCorrect)
+watch(() => currentRegister.value?.id, () => { applyCmrWeightCorrection.value = true })
 const heading = computed(() => {
   const number = currentRegister.value?.invoiceNumber
   return number ? `Настройки CMR (${number})` : 'Настройки CMR'
@@ -171,7 +176,8 @@ function buildPayload() {
     loadingDate: loadingDate.value || null,
     vehicleRegistrationNumber: optionalText(vehicleRegistrationNumber.value),
     vehicleMakeModel: optionalText(vehicleMakeModel.value),
-    documentDate: documentDate.value
+    documentDate: documentDate.value,
+    applyWeightCorrection: showCmrWeightCorrection.value ? applyCmrWeightCorrection.value : true
   }
 }
 
@@ -396,6 +402,20 @@ onMounted(loadReferences)
             />
           </div>
         </div>
+        <div v-if="showCmrWeightCorrection" class="form-row-1 weight-correction-row">
+          <div class="form-group weight-correction-group">
+            <label class="custom-checkbox weight-correction-checkbox">
+              <input
+                v-model="applyCmrWeightCorrection"
+                type="checkbox"
+                class="custom-checkbox-input"
+                :disabled="isFormDisabled"
+              />
+              <span class="custom-checkbox-box"></span>
+              <span class="custom-checkbox-label">Применить поправочный коэффициент {{ cmrWeightCorrection.coefficientText }} к весу посылок.</span>
+            </label>
+          </div>
+        </div>
       </div>
     </Form>
 
@@ -415,6 +435,66 @@ onMounted(loadReferences)
 .cmr-settings-dialog .label {
   width: 48%;
   min-width: 190px;
+}
+
+.weight-correction-row {
+  margin-top: 0.5rem;
+}
+
+.weight-correction-group,
+.weight-correction-checkbox {
+  width: 100%;
+}
+
+.custom-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.custom-checkbox-input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.custom-checkbox-box {
+  width: 16px;
+  height: 16px;
+  background-color: #1976d2;
+  border-radius: 3px;
+  position: relative;
+  margin-top: 0.1rem;
+}
+
+.custom-checkbox-box:after {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  width: 12px;
+  height: 12px;
+  background-image: url('@/assets/check-solid.svg');
+  background-size: cover;
+  opacity: 0;
+  transition: opacity 0.3s, transform 0.3s;
+  transform: translateY(-2px);
+}
+
+.custom-checkbox-input:checked ~ .custom-checkbox-box:after {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.custom-checkbox-label {
+  flex: 1;
+  white-space: normal;
+}
+
+.custom-checkbox:hover .custom-checkbox-box {
+  background-color: #1565c0;
 }
 
 @media (max-width: 900px) {

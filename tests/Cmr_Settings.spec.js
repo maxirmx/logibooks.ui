@@ -209,7 +209,8 @@ describe('Cmr_Settings.vue', () => {
       loadingDate: null,
       vehicleRegistrationNumber: 'А123ВС',
       vehicleMakeModel: 'Volvo / Schmitz',
-      documentDate: '2026-06-15'
+      documentDate: '2026-06-15',
+      applyWeightCorrection: true
     })
     expect(router.go).toHaveBeenCalledWith(-1)
     expect(state.isSubmitting).toBe(false)

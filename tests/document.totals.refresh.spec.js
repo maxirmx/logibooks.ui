@@ -13,7 +13,7 @@ import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import router from '@/router'
 
 vi.mock('@/helpers/config.js', () => ({ apiUrl: '/api' }))
-vi.mock('@/helpers/fetch.wrapper.js', () => ({ fetchWrapper: { get: vi.fn() } }))
+vi.mock('@/helpers/fetch.wrapper.js', () => ({ fetchWrapper: { get: vi.fn(), downloadFile: vi.fn() } }))
 vi.mock('@/router', () => ({ default: { go: vi.fn() } }))
 
 const views = [
@@ -72,8 +72,8 @@ async function enterSettings(wrapper, kind) {
     await wrapper.get('#documentDate').setValue('2026-10-30')
   } else {
     await wrapper.get('.optional-columns-group input').setChecked(true)
-    await wrapper.get('.weight-correction-checkbox input').setChecked(false)
   }
+  await wrapper.get('.weight-correction-checkbox input').setChecked(false)
 }
 function assertSettings(wrapper, kind) {
   if (kind === 'cmr') {
@@ -82,8 +82,8 @@ function assertSettings(wrapper, kind) {
     expect(wrapper.get('#documentDate').element.value).toBe('2026-10-30')
   } else {
     expect(wrapper.get('.optional-columns-group input').element.checked).toBe(true)
-    expect(wrapper.get('.weight-correction-checkbox input').element.checked).toBe(false)
   }
+  expect(wrapper.get('.weight-correction-checkbox input').element.checked).toBe(false)
 }
 
 describe.each(views)('%s document totals refresh', (kind, component, props) => {
@@ -135,6 +135,7 @@ describe.each(views)('%s document totals refresh', (kind, component, props) => {
     await generateButton(wrapper).trigger('click')
     await flushPromises()
     expect(download).toHaveBeenCalledOnce()
+    if (kind === 'cmr') expect(download.mock.calls[0][2].applyWeightCorrection).toBe(false)
     expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
     expect(wrapper.get('[role="alert"]').text()).toContain('Ошибка формирования документа')
     expect(report).toHaveBeenCalledOnce()
@@ -170,10 +171,12 @@ describe.each(views)('%s document totals refresh', (kind, component, props) => {
     await flushPromises()
     expect(wrapper.text()).toContain('итоги пересчитываются')
     expect(generateButton(wrapper).element.disabled).toBe(true)
+    expect(wrapper.find('.weight-correction-checkbox').exists()).toBe(false)
     serverRegister.derivedTotalsPending = false
     await refreshButton(wrapper).trigger('click')
     await flushPromises()
     expect(generateButton(wrapper).element.disabled).toBe(false)
+    expect(wrapper.get('.weight-correction-checkbox input').element.checked).toBe(true)
     expect(wrapper.text()).not.toContain('итоги пересчитываются')
     expect(wrapper.find('button[aria-label="Обновить итоги"]').exists()).toBe(false)
     expect(totalsGroup(wrapper).exists()).toBe(false)
@@ -234,6 +237,139 @@ describe.each(views)('%s document totals refresh', (kind, component, props) => {
     assertSettings(wrapper, kind)
     expect(generateButton(wrapper).element.disabled).toBe(false)
     expect(totalsGroup(wrapper).exists()).toBe(false)
+  })
+})
+
+describe('CMR weight correction option', () => {
+  it.each([
+    [5, 10, false, true],
+    [' 5,25 ', ' 10,5 ', false, true],
+    [null, 10, false, false],
+    [0, 10, false, false],
+    [-1, 10, false, false],
+    [5, null, false, false],
+    [5, 0, false, false],
+    [5, -1, false, false],
+    [5, 10, true, false]
+  ])('offers correction for real=%s, released=%s, pending=%s only when available', async (realWeightKg, totalWeightKgToRelease, pending, visible) => {
+    Object.assign(serverRegister, { realWeightKg, totalWeightKgToRelease, derivedTotalsPending: pending })
+    const wrapper = open(CmrSettings, { id: 77 })
+    await flushPromises()
+    const checkbox = wrapper.find('.weight-correction-checkbox')
+    expect(checkbox.exists()).toBe(visible)
+    if (visible) {
+      expect(checkbox.text()).toBe('Применить поправочный коэффициент 0,500 к весу посылок.')
+      expect(checkbox.get('input').element.checked).toBe(true)
+      expect(checkbox.get('input').element.disabled).toBe(false)
+      expect(wrapper.get('[data-testid="cmr-fields"]').element.lastElementChild).toBe(checkbox.element.parentElement.parentElement)
+    }
+  })
+
+  it.each([true, false])('posts correction=%s through the real store and locks the checkbox during download', async applyWeightCorrection => {
+    const wrapper = open(CmrSettings, { id: 77 })
+    await flushPromises()
+    await enterSettings(wrapper, 'cmr')
+    const checkbox = wrapper.get('.weight-correction-checkbox input')
+    await checkbox.setChecked(applyWeightCorrection)
+    let finish
+    fetchWrapper.downloadFile.mockImplementationOnce(() => new Promise(resolve => { finish = resolve }))
+
+    await generateButton(wrapper).trigger('click')
+    await flushPromises()
+    expect(fetchWrapper.downloadFile).toHaveBeenCalledExactlyOnceWith('/api/registers/77/download-cmr', 'CMR_INV-77.docx', {
+      method: 'POST',
+      body: expect.objectContaining({
+        applyWeightCorrection,
+        documentDate: '2026-10-30',
+        vehicleRegistrationNumber: 'А123ВС',
+        vehicleMakeModel: 'Volvo / Schmitz'
+      })
+    })
+    expect(checkbox.element.disabled).toBe(true)
+    expect(generateButton(wrapper).element.disabled).toBe(true)
+    expect(router.go).not.toHaveBeenCalled()
+    finish(true)
+    await flushPromises()
+    expect(router.go).toHaveBeenCalledExactlyOnceWith(-1)
+    expect(useRegistersStore().item.invoiceDate).toBe('2026-10-30')
+    expect(checkbox.element.disabled).toBe(false)
+  })
+
+  it('uses the compatible default when correction becomes unavailable', async () => {
+    const wrapper = open(CmrSettings, { id: 77 })
+    await flushPromises()
+    await wrapper.get('.weight-correction-checkbox input').setChecked(false)
+    useRegistersStore().item.totalWeightKgToRelease = 0
+    await flushPromises()
+    expect(wrapper.find('.weight-correction-checkbox').exists()).toBe(false)
+    fetchWrapper.downloadFile.mockResolvedValueOnce(true)
+
+    await generateButton(wrapper).trigger('click')
+    await flushPromises()
+    expect(fetchWrapper.downloadFile).toHaveBeenCalledWith('/api/registers/77/download-cmr', 'CMR_INV-77.docx', {
+      method: 'POST', body: expect.objectContaining({ applyWeightCorrection: true })
+    })
+    expect(router.go).toHaveBeenCalledExactlyOnceWith(-1)
+  })
+
+  it('disables the option while reference data is loading', async () => {
+    let finish
+    const get = fetchWrapper.get.getMockImplementation()
+    fetchWrapper.get.mockImplementation(url => url.includes('/companies')
+      ? new Promise(resolve => { finish = resolve }) : get(url))
+    const wrapper = open(CmrSettings, { id: 77 })
+    await flushPromises()
+    expect(wrapper.get('.weight-correction-checkbox input').element.disabled).toBe(true)
+    finish([])
+    await flushPromises()
+    expect(wrapper.get('.weight-correction-checkbox input').element.disabled).toBe(false)
+  })
+
+  it('preserves the choice for the same register and resets it for another register', async () => {
+    const wrapper = open(CmrSettings, { id: 77 })
+    await flushPromises()
+    await wrapper.get('.weight-correction-checkbox input').setChecked(false)
+    const registers = useRegistersStore()
+    registers.item = { ...serverRegister, realWeightKg: 4 }
+    await flushPromises()
+    expect(wrapper.get('.weight-correction-checkbox input').element.checked).toBe(false)
+    expect(wrapper.get('.weight-correction-checkbox').text()).toContain('0,400')
+
+    await wrapper.setProps({ id: 78 })
+    expect(wrapper.find('.weight-correction-checkbox').exists()).toBe(false)
+    registers.item = { ...serverRegister, id: 78 }
+    await flushPromises()
+    expect(wrapper.get('.weight-correction-checkbox input').element.checked).toBe(true)
+  })
+
+  it('presents a failed download once and retries the same unchecked request', async () => {
+    const wrapper = open(CmrSettings, { id: 77 })
+    await flushPromises()
+    await enterSettings(wrapper, 'cmr')
+    const failure = new Error('Network Error')
+    fetchWrapper.downloadFile.mockRejectedValueOnce(failure).mockResolvedValueOnce(true)
+    const alerts = useAlertStore()
+    const report = vi.spyOn(alerts, 'error')
+    const storeDownload = vi.spyOn(useRegistersStore(), 'downloadCmrFile')
+
+    await generateButton(wrapper).trigger('click')
+    await flushPromises()
+    await expect(storeDownload.mock.results[0].value).rejects.toBe(failure)
+    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+    expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось соединиться с сервером')
+    expect(wrapper.text()).not.toContain('Network Error')
+    expect(report).toHaveBeenCalledOnce()
+    expect(router.go).not.toHaveBeenCalled()
+    assertSettings(wrapper, 'cmr')
+    expect(useRegistersStore().item.invoiceDate).toBe('2026-06-15')
+
+    await generateButton(wrapper).trigger('click')
+    await flushPromises()
+    expect(fetchWrapper.downloadFile).toHaveBeenCalledTimes(2)
+    expect(fetchWrapper.downloadFile).toHaveBeenNthCalledWith(2, ...fetchWrapper.downloadFile.mock.calls[0])
+    expect(fetchWrapper.downloadFile.mock.calls[1][2].body.applyWeightCorrection).toBe(false)
+    expect(report).toHaveBeenCalledOnce()
+    expect(router.go).toHaveBeenCalledExactlyOnceWith(-1)
   })
 })
 

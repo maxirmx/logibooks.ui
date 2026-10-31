@@ -10,12 +10,15 @@ import { useRegisterTotalsRefresh } from '@/composables/useRegisterTotalsRefresh
 const props = defineProps({
   register: { type: Object, required: true },
   disabled: { type: Boolean, default: false },
+  loading: { type: Boolean, default: false },
   iconSize: { type: String, default: '2x' }
 })
 
 const { refreshingTotals, refreshTotals } = useRegisterTotalsRefresh(() => props.register?.id)
-const unavailable = computed(() => props.disabled || refreshingTotals.value || !props.register?.id)
 const recoveryNeeded = ref(false)
+const showRefreshButton = computed(() => props.register?.derivedTotalsPending === true || recoveryNeeded.value)
+const showSpinner = computed(() => props.loading || refreshingTotals.value)
+const unavailable = computed(() => props.disabled || showSpinner.value || !props.register?.id)
 watch(() => props.register?.id, () => { recoveryNeeded.value = false })
 
 async function refresh() {
@@ -29,14 +32,21 @@ async function refresh() {
 </script>
 
 <template>
-  <ActionButton
-    v-if="register?.derivedTotalsPending === true || recoveryNeeded"
-    :item="register"
-    icon="fa-solid fa-arrows-rotate"
-    :icon-size="iconSize"
-    tooltip-text="Обновить итоги"
-    aria-label="Обновить итоги"
-    :disabled="unavailable"
-    @click="refresh"
-  />
+  <div
+    v-if="showSpinner || showRefreshButton"
+    class="header-actions header-actions-group"
+    data-testid="register-totals-actions"
+  >
+    <span v-if="showSpinner" class="spinner-border spinner-border-m"></span>
+    <ActionButton
+      v-if="showRefreshButton"
+      :item="register"
+      icon="fa-solid fa-arrows-rotate"
+      :icon-size="iconSize"
+      tooltip-text="Обновить итоги"
+      aria-label="Обновить итоги"
+      :disabled="unavailable"
+      @click="refresh"
+    />
+  </div>
 </template>

@@ -28,6 +28,7 @@ const wrappers = []
 let registers, parcels, alerts, serverRegister, serverParcel
 const refreshButton = wrapper => wrapper.get('button[aria-label="Обновить итоги"]')
 const exportButton = wrapper => wrapper.get('button[aria-label="Экспортировать реестр"]')
+const totalsGroup = wrapper => wrapper.find('[data-testid="register-totals-actions"]')
 
 function deferred() {
   let resolve, reject
@@ -92,6 +93,36 @@ afterEach(() => {
 })
 
 describe.each([false, true])('register totals refresh in warehouse mode %s', warehouse => {
+  it.each([
+    [false, false],
+    [true, false],
+    [false, true],
+    [true, true]
+  ])('groups loading=%s and pending totals=%s at the left without an empty group', async (loading, pending) => {
+    registers.item.derivedTotalsPending = pending
+    const wrapper = open(warehouse)
+    wrapper.vm.controls.loading = loading
+    await flushPromises()
+
+    expect(totalsGroup(wrapper).exists()).toBe(loading || pending)
+    expect(wrapper.findAll('.spinner-border')).toHaveLength(loading ? 1 : 0)
+    expect(wrapper.findAll('button[aria-label="Обновить итоги"]')).toHaveLength(pending ? 1 : 0)
+    if (loading || pending) {
+      const group = totalsGroup(wrapper)
+      expect(group.isVisible()).toBe(true)
+      expect(wrapper.get('.header-actions-bar').element.firstElementChild).toBe(group.element)
+      expect(group.classes()).toEqual(expect.arrayContaining(['header-actions', 'header-actions-group']))
+      expect(group.findAll('.spinner-border')).toHaveLength(loading ? 1 : 0)
+      expect(group.findAll('button')).toHaveLength(pending ? 1 : 0)
+      if (pending) expect(refreshButton(wrapper).element.disabled).toBe(loading)
+    }
+
+    wrapper.vm.controls.loading = false
+    registers.item.derivedTotalsPending = false
+    await flushPromises()
+    expect(totalsGroup(wrapper).exists()).toBe(false)
+  })
+
   it.each([0, .625])('recovers exports and visible adjusted weights (%s) after a bulk status change', async adjustedWeightKg => {
     const auth = useAuthStore()
     if (warehouse) auth.parcels_wh_page = 3
@@ -139,16 +170,19 @@ describe.each([false, true])('register totals refresh in warehouse mode %s', war
     await refreshButton(wrapper).trigger('click')
     await flushPromises()
     expect(refreshButton(wrapper).element.disabled).toBe(true)
+    expect(totalsGroup(wrapper).get('.spinner-border').isVisible()).toBe(true)
     expect(await refresh()).toBe(false)
     expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
     pending.resolve({ ...serverRegister, derivedTotalsPending: true })
     await flushPromises()
     expect(refreshButton(wrapper).element.disabled).toBe(false)
+    expect(totalsGroup(wrapper).find('.spinner-border').exists()).toBe(false)
     await refreshButton(wrapper).trigger('click')
     await flushPromises()
     expect(exportButton(wrapper).element.disabled).toBe(false)
     expect(await refresh()).toBe(false)
     expect(fetchWrapper.get).toHaveBeenCalledTimes(2)
+    expect(totalsGroup(wrapper).exists()).toBe(false)
   })
 
   it('shows a refresh failure once in Russian and retries without repeating the mutation', async () => {
@@ -196,6 +230,7 @@ describe.each([false, true])('register totals refresh in warehouse mode %s', war
     expect(registers.item.derivedTotalsPending).toBe(false)
     expect(registers.isRefreshingDerived(12)).toBe(true)
     expect(refreshButton(wrapper).element.disabled).toBe(true)
+    expect(totalsGroup(wrapper).get('.spinner-border').isVisible()).toBe(true)
     expect(await refresh()).toBe(false)
     expect(wrapper.get('.corrected-weight-display').text()).toContain('пересчёт')
     const failure = new Error('Unexpected parcel projection failure')
@@ -210,6 +245,9 @@ describe.each([false, true])('register totals refresh in warehouse mode %s', war
     expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось обновить итоги реестра')
     expect(wrapper.text()).not.toContain(failure.message)
     expect(refreshButton(wrapper).element.disabled).toBe(false)
+    expect(totalsGroup(wrapper).isVisible()).toBe(true)
+    expect(totalsGroup(wrapper).find('.spinner-border').exists()).toBe(false)
+    expect(wrapper.get('.header-actions-bar').element.firstElementChild).toBe(totalsGroup(wrapper).element)
     delayList = false
     serverParcel.adjustedWeightKg = .75
     await refreshButton(wrapper).trigger('click')
@@ -218,6 +256,7 @@ describe.each([false, true])('register totals refresh in warehouse mode %s', war
     expect(wrapper.get('.corrected-weight-display').text()).toContain('0.750')
     expect(wrapper.get('.corrected-weight-display').text()).not.toContain('пересчёт')
     expect(wrapper.find('button[aria-label="Обновить итоги"]').exists()).toBe(false)
+    expect(totalsGroup(wrapper).exists()).toBe(false)
     expect(wrapper.get('input').element.value).toBe('Фильтр при ошибке обновления посылок')
     expect(fetchWrapper.post).toHaveBeenCalledTimes(1)
     expect(router.push).not.toHaveBeenCalled()
@@ -232,6 +271,7 @@ describe.each([false, true])('register totals refresh in warehouse mode %s', war
     registers.item = { id: 99, derivedTotalsPending: false }
     await flushPromises()
     expect(wrapper.find('button[aria-label="Обновить итоги"]').exists()).toBe(false)
+    expect(totalsGroup(wrapper).exists()).toBe(false)
   })
 
   it.each(['disabled', 'loading'])('disables refresh when the header is %s', async flag => {

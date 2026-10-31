@@ -63,6 +63,7 @@ function open(component, props) {
 }
 const refreshButton = wrapper => wrapper.get('button[aria-label="Обновить итоги"]')
 const generateButton = wrapper => wrapper.get('button[aria-label="Сформировать"]')
+const totalsGroup = wrapper => wrapper.find('[data-testid="register-totals-actions"]')
 
 async function enterSettings(wrapper, kind) {
   if (kind === 'cmr') {
@@ -86,6 +87,83 @@ function assertSettings(wrapper, kind) {
 }
 
 describe.each(views)('%s document totals refresh', (kind, component, props) => {
+  it.each([
+    [false, false],
+    [true, false],
+    [false, true],
+    [true, true]
+  ])('groups loading=%s and pending totals=%s at the left without an empty group', async (loading, pending) => {
+    const wrapper = open(component, props)
+    await flushPromises()
+    const registers = useRegistersStore()
+    registers.loading = loading
+    registers.item.derivedTotalsPending = pending
+    await flushPromises()
+
+    expect(totalsGroup(wrapper).exists()).toBe(loading || pending)
+    expect(wrapper.findAll('.spinner-border')).toHaveLength(loading ? 1 : 0)
+    expect(wrapper.findAll('button[aria-label="Обновить итоги"]')).toHaveLength(pending ? 1 : 0)
+    if (loading || pending) {
+      const group = totalsGroup(wrapper)
+      expect(group.isVisible()).toBe(true)
+      expect(group.classes()).toEqual(expect.arrayContaining(['header-actions', 'header-actions-group']))
+      expect(wrapper.get('.header-actions-bar').element.firstElementChild).toBe(group.element)
+      expect(group.findAll('.spinner-border')).toHaveLength(loading ? 1 : 0)
+      expect(group.findAll('button')).toHaveLength(pending ? 1 : 0)
+      expect(group.find('button[aria-label="Сформировать"]').exists()).toBe(false)
+    }
+
+    registers.loading = false
+    registers.item.derivedTotalsPending = false
+    await flushPromises()
+    expect(totalsGroup(wrapper).exists()).toBe(false)
+  })
+
+  it('keeps generation usable without the totals group and preserves settings for a failed-generation retry', async () => {
+    const wrapper = open(component, props)
+    await flushPromises()
+    await enterSettings(wrapper, kind)
+    const registers = useRegistersStore()
+    const operation = kind === 'cmr' ? 'downloadCmrFile' : kind === 'do1' ? 'downloadDo1File' : 'downloadInvoiceFile'
+    const download = vi.spyOn(registers, operation)
+      .mockRejectedValueOnce(new Error('Ошибка формирования документа'))
+      .mockResolvedValueOnce(undefined)
+    const report = vi.spyOn(useAlertStore(), 'error')
+    expect(totalsGroup(wrapper).exists()).toBe(false)
+    expect(generateButton(wrapper).element.parentElement).toBe(wrapper.get('button[aria-label="Отменить"]').element.parentElement)
+
+    await generateButton(wrapper).trigger('click')
+    await flushPromises()
+    expect(download).toHaveBeenCalledOnce()
+    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+    expect(wrapper.get('[role="alert"]').text()).toContain('Ошибка формирования документа')
+    expect(report).toHaveBeenCalledOnce()
+    expect(router.go).not.toHaveBeenCalled()
+    expect(generateButton(wrapper).element.disabled).toBe(false)
+    assertSettings(wrapper, kind)
+
+    await generateButton(wrapper).trigger('click')
+    await flushPromises()
+    expect(download).toHaveBeenCalledTimes(2)
+    expect(download).toHaveBeenNthCalledWith(2, ...download.mock.calls[0])
+    expect(router.go).toHaveBeenCalledExactlyOnceWith(-1)
+    expect(report).toHaveBeenCalledOnce()
+  })
+
+  it('keeps cancel separate from the visible totals group and does not refresh on exit', async () => {
+    serverRegister.derivedTotalsPending = true
+    const wrapper = open(component, props)
+    await flushPromises()
+    const cancel = wrapper.get('button[aria-label="Отменить"]')
+    expect(totalsGroup(wrapper).isVisible()).toBe(true)
+    expect(totalsGroup(wrapper).element.contains(cancel.element)).toBe(false)
+    fetchWrapper.get.mockClear()
+
+    await cancel.trigger('click')
+    expect(router.go).toHaveBeenCalledExactlyOnceWith(-1)
+    expect(fetchWrapper.get).not.toHaveBeenCalled()
+  })
+
   it('recovers an initially pending register without reloading or leaving the page', async () => {
     serverRegister.derivedTotalsPending = true
     const wrapper = open(component, props)
@@ -98,6 +176,7 @@ describe.each(views)('%s document totals refresh', (kind, component, props) => {
     expect(generateButton(wrapper).element.disabled).toBe(false)
     expect(wrapper.text()).not.toContain('итоги пересчитываются')
     expect(wrapper.find('button[aria-label="Обновить итоги"]').exists()).toBe(false)
+    expect(totalsGroup(wrapper).exists()).toBe(false)
     expect(router.go).not.toHaveBeenCalled()
   })
 
@@ -112,16 +191,19 @@ describe.each(views)('%s document totals refresh', (kind, component, props) => {
     await refreshButton(wrapper).trigger('click')
     await flushPromises()
     expect(refreshButton(wrapper).element.disabled).toBe(true)
+    expect(totalsGroup(wrapper).get('.spinner-border').isVisible()).toBe(true)
     expect(generateButton(wrapper).element.disabled).toBe(true)
     expect(await wrapper.vm.$.setupState.refreshTotals()).toBe(false)
     finish({ ...serverRegister, derivedTotalsPending: true })
     await flushPromises()
     expect(refreshButton(wrapper).element.disabled).toBe(false)
+    expect(totalsGroup(wrapper).find('.spinner-border').exists()).toBe(false)
     expect(generateButton(wrapper).element.disabled).toBe(true)
     await refreshButton(wrapper).trigger('click')
     await flushPromises()
     assertSettings(wrapper, kind)
     expect(generateButton(wrapper).element.disabled).toBe(false)
+    expect(totalsGroup(wrapper).exists()).toBe(false)
   })
 
   it('shows one Russian refresh failure, preserves settings and permits retry', async () => {
@@ -144,11 +226,14 @@ describe.each(views)('%s document totals refresh', (kind, component, props) => {
     expect(console.error).toHaveBeenCalledWith('[register totals refresh]', failure)
     expect(generateButton(wrapper).element.disabled).toBe(true)
     expect(refreshButton(wrapper).element.disabled).toBe(false)
+    expect(totalsGroup(wrapper).isVisible()).toBe(true)
+    expect(totalsGroup(wrapper).find('.spinner-border').exists()).toBe(false)
     expect(router.go).not.toHaveBeenCalled()
     await refreshButton(wrapper).trigger('click')
     await flushPromises()
     assertSettings(wrapper, kind)
     expect(generateButton(wrapper).element.disabled).toBe(false)
+    expect(totalsGroup(wrapper).exists()).toBe(false)
   })
 })
 

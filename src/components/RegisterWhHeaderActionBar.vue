@@ -122,9 +122,7 @@ const exportOptions = computed(() => {
 
 <template>
   <div class="header-actions-bar">
-    <div v-if="loading" class="header-actions header-actions-group">
-        <span class="spinner-border spinner-border-m"></span>
-    </div>
+    <RegisterTotalsRefreshButton :register="register" :disabled="disabled" :loading="loading" :icon-size="iconSize" />
     <div v-if="canExport" class="header-actions header-actions-group">
         <ActionButton2L
           :item="register"
@@ -136,7 +134,6 @@ const exportOptions = computed(() => {
         />
     </div>
     <div class="header-actions header-actions-group">
-        <RegisterTotalsRefreshButton :register="register" :disabled="disabled || loading" :icon-size="iconSize" />
         <ActionButton
           v-if="canBulkChangeParcelStatus"
           :item="register"

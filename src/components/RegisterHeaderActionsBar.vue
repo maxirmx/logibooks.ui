@@ -254,9 +254,7 @@ function openCmrSettings() {
 
 <template>
   <div class="header-actions-bar">
-    <div v-if="loading" class="header-actions header-actions-group">
-        <span class="spinner-border spinner-border-m"></span>
-    </div>
+    <RegisterTotalsRefreshButton :register="item" :disabled="disabled" :loading="loading" :icon-size="iconSize" />
     <div v-if="isSrLogistPlus" class="header-actions header-actions-group">
       <ActionButton2L
         :item="item"
@@ -385,7 +383,6 @@ function openCmrSettings() {
       />
     </div>
     <div class="header-actions header-actions-group">
-      <RegisterTotalsRefreshButton :register="item" :disabled="disabled || loading" :icon-size="iconSize" />
       <ActionButton
         v-if="isSrLogistPlus && showWeightUpdate"
         :item="item"

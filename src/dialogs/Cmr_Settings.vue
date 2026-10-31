@@ -212,33 +212,42 @@ onMounted(loadReferences)
     <Form :initial-values="{}" @submit="onSubmit" @invalid-submit="focusFirstInvalidField">
       <div class="header-with-actions">
         <h1 class="primary-heading">{{ heading }} <span v-if="currentRegister?.derivedTotalsPending" role="status">— итоги пересчитываются</span></h1>
-        <div class="header-actions">
-          <ActionButton
-            v-if="currentRegister?.derivedTotalsPending"
-            :item="{}"
-            icon="fa-solid fa-arrows-rotate"
-            icon-size="2x"
-            tooltip-text="Обновить итоги"
-            aria-label="Обновить итоги"
-            :disabled="refreshingTotals || isSubmitting"
-            @click="refreshTotals"
-          />
-          <ActionButton
-            :item="{}"
-            icon="fa-solid fa-check-double"
-            icon-size="2x"
-            tooltip-text="Сформировать"
-            :disabled="isFormDisabled"
-            @click="onSubmit"
-          />
-          <ActionButton
-            :item="{}"
-            icon="fa-solid fa-xmark"
-            icon-size="2x"
-            tooltip-text="Отменить"
-            :disabled="isSubmitting"
-            @click="onCancel"
-          />
+        <div class="header-actions-bar">
+          <div
+            v-if="isReferencesLoading || refreshingTotals || currentRegister?.derivedTotalsPending"
+            class="header-actions header-actions-group"
+            data-testid="register-totals-actions"
+          >
+            <span v-if="isReferencesLoading || refreshingTotals" class="spinner-border spinner-border-m"></span>
+            <ActionButton
+              v-if="currentRegister?.derivedTotalsPending"
+              :item="{}"
+              icon="fa-solid fa-arrows-rotate"
+              icon-size="2x"
+              tooltip-text="Обновить итоги"
+              aria-label="Обновить итоги"
+              :disabled="refreshingTotals || isSubmitting"
+              @click="refreshTotals"
+            />
+          </div>
+          <div class="header-actions header-actions-group">
+            <ActionButton
+              :item="{}"
+              icon="fa-solid fa-check-double"
+              icon-size="2x"
+              tooltip-text="Сформировать"
+              :disabled="isFormDisabled"
+              @click="onSubmit"
+            />
+            <ActionButton
+              :item="{}"
+              icon="fa-solid fa-xmark"
+              icon-size="2x"
+              tooltip-text="Отменить"
+              :disabled="isSubmitting"
+              @click="onCancel"
+            />
+          </div>
         </div>
       </div>
       <hr class="hr" />

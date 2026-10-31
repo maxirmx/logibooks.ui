@@ -1550,12 +1550,13 @@ describe('Register_EditDialog', () => {
 
     it('reveals client validation errors when saving a collapsed section', async () => {
       const { wrapper, dialog } = await mountCargoEditor(false, true)
-      const form = wrapper.findComponent({ name: 'Form' })
+      // Form returns a render function; its public methods are on the exposed instance.
+      const form = wrapper.getComponent({ name: 'Form' }).vm.$.exposed
       await wrapper.get('#cargoPlacesTotal').setValue('-1')
-      await form.vm.validate()
+      await form.validate()
       await wrapper.get('[data-testid="register-additional-info-toggle"]').trigger('click')
       expect(wrapper.get('#register-additional-info-body').isVisible()).toBe(false)
-      await dialog.vm.onInvalidSubmit({ errors: form.vm.errors })
+      await dialog.vm.onInvalidSubmit({ errors: form.getErrors() })
       await nextTick()
       expect(wrapper.get('#register-additional-info-body').isVisible()).toBe(true)
       expect(wrapper.get('#cargoPlacesTotal').element.value).toBe('-1')
@@ -1581,11 +1582,11 @@ describe('Register_EditDialog', () => {
       update.mockRejectedValueOnce(Object.assign(new Error(message), { status: 400, data: {
         msg: message, errors: { cargoPlacesTotal: [message] }
       } }))
-      const form = wrapper.findComponent({ name: 'Form' })
-      await form.vm.validate()
+      const form = wrapper.getComponent({ name: 'Form' }).vm.$.exposed
+      await form.validate()
       await wrapper.get('[data-testid="register-additional-info-toggle"]').trigger('click')
       expect(wrapper.get('#register-additional-info-body').isVisible()).toBe(false)
-      await dialog.vm.onSubmit({ cargoPlacesTotal: '13' }, { setErrors: form.vm.setErrors })
+      await dialog.vm.onSubmit({ cargoPlacesTotal: '13' }, { setErrors: form.setErrors })
       await resolveAll()
       const errors = wrapper.findAll('[role="alert"]').filter(node => node.text() === message)
       expect(errors).toHaveLength(1)
@@ -1594,7 +1595,7 @@ describe('Register_EditDialog', () => {
       expect(input.element.value).toBe('13')
       expect(router.push).not.toHaveBeenCalled()
       expect(useAlertStore().alert).toBeNull()
-      await dialog.vm.onSubmit({ cargoPlacesTotal: '13' }, { setErrors: form.vm.setErrors })
+      await dialog.vm.onSubmit({ cargoPlacesTotal: '13' }, { setErrors: form.setErrors })
       expect(update).toHaveBeenCalledTimes(2)
       expect(update.mock.calls[1][1].cargoPlacesTotal).toBe(13)
       expect(router.push).toHaveBeenCalledTimes(1)

@@ -38,7 +38,13 @@ const boxes = [1, 2, 3].map(id => ({ id, code: `BOX-${id}` }))
 const wrappers = []
 const globals = () => ({
   plugins: [createVuetify({ components: { VDataTable, VDataTableFooter, VDefaultsProvider } })],
-  stubs: { ...vuetifyStubs, 'v-data-table': false, 'v-btn': false }
+  stubs: {
+    ...vuetifyStubs,
+    'v-data-table': false,
+    'v-btn': false,
+    // Printer discovery has its own tests; scan selection uses no local hardware.
+    LocalLabelPrinting: true
+  }
 })
 function harness({ monitor = false, candidate = job, options = {}, actions = false } = {}) {
   let scan

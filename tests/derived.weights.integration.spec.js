@@ -2,7 +2,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { mount, flushPromises } from '@vue/test-utils'
 import { useParcelsStore } from '@/stores/parcels.store.js'
@@ -12,6 +12,11 @@ import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { rawWeightPayload } from '@/helpers/derived.weights.helpers.js'
 import { createValidationState, pollValidation, createRegisterActionHandlers } from '@/helpers/register.actions.js'
 import CorrectedWeightDisplay from '@/components/CorrectedWeightDisplay.vue'
+import * as errorHelpers from '@/helpers/error.helpers.js'
+
+afterEach(() => {
+  vi.restoreAllMocks()
+})
 
 vi.mock('@/helpers/fetch.wrapper.js', () => ({ fetchWrapper: { get: vi.fn(), put: vi.fn(), post: vi.fn() } }))
 vi.mock('@/helpers/config.js', () => ({ apiUrl: '/api' }))
@@ -109,6 +114,7 @@ describe('server-owned derived weight projections', () => {
   })
 
   it('refreshes FEACN completion and presents a refresh failure once', async () => {
+    const diagnostics = vi.spyOn(errorHelpers, 'reportError').mockImplementation(() => {})
     const registers = useRegistersStore()
     registers.item = { ...register, derivedTotalsPending: true }
     registers.lookupFeacnCodes = vi.fn().mockResolvedValue({ id: 'operation' })
@@ -118,10 +124,14 @@ describe('server-owned derived weight projections', () => {
     const handlers = createRegisterActionHandlers(registers, alerts)
     await handlers.lookupFeacnCodes(registers.item)
     expect(registers.item.derivedTotalsPending).toBe(false)
+    expect(diagnostics).not.toHaveBeenCalled()
     fail = new Error('Не удалось обновить итоги')
     await handlers.lookupFeacnCodes(registers.item)
     handlers.stopPolling()
     expect(alerts.error).toHaveBeenCalledTimes(1)
+    expect(diagnostics).toHaveBeenCalledExactlyOnceWith(fail, {
+      context: 'register totals recovery'
+    })
   })
   it('retains the warehouse request context when its DTO omits registerId', async () => {
     const parcels = useParcelsStore(), registers = useRegistersStore()

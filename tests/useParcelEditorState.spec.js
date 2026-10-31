@@ -57,7 +57,10 @@ describe('parcel editor initialization lifecycle', () => {
   it('copies the response into the real form and rejects an unexpected parcel identity', async () => {
     const { wrapper } = harness()
     await flushPromises()
-    wrapper.getComponent(Form).vm.setFieldValue('nested.text', 'Draft')
+    // Form returns a render function; its public methods are on the exposed instance.
+    const form = wrapper.getComponent(Form).vm.$.exposed
+    form.setFieldValue('nested.text', 'Draft')
+    expect(form.getValues().nested.text).toBe('Draft')
     expect(useParcelsStore().item.nested.text).toBe('Original')
     transport.get.mockResolvedValueOnce({ id: 99 })
     await wrapper.vm.initialize()

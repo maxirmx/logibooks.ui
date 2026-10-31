@@ -2,10 +2,15 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref, nextTick } from 'vue'
 import { resolveAll } from './helpers/test-utils'
+import * as errorHelpers from '@/helpers/error.helpers.js'
+
+afterEach(() => {
+  vi.restoreAllMocks()
+})
 
 let confirmMock = null
 vi.mock('vuetify-use-dialog', () => ({
@@ -350,6 +355,7 @@ describe('WbrParcel_EditDialog image overlay', () => {
   })
 
   it('reports next-parcel prefetch failures only while the editor is mounted', async () => {
+    const diagnostics = vi.spyOn(errorHelpers, 'reportError').mockImplementation(() => {})
     const mountDialog = () =>
       mount(
         {
@@ -389,6 +395,7 @@ describe('WbrParcel_EditDialog image overlay', () => {
     expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain(
       'next parcels failed'
     )
+    expect(diagnostics).not.toHaveBeenCalled()
     wrapper.unmount()
 
     alertErrorMock.mockClear()
@@ -405,10 +412,14 @@ describe('WbrParcel_EditDialog image overlay', () => {
     await resolveAll()
 
     wrapper.unmount()
-    rejectPrefetch(new Error('late next parcels failure'))
+    const lateError = new Error('late next parcels failure')
+    rejectPrefetch(lateError)
     await resolveAll()
 
     expect(alertErrorMock).not.toHaveBeenCalled()
     expect(alertRef.value).toBeNull()
+    expect(diagnostics).toHaveBeenCalledExactlyOnceWith(lateError, {
+      context: 'parcel neighbors after editor disposal'
+    })
   })
 })

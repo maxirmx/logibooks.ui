@@ -3,7 +3,7 @@
 // This file is a part of Logibooks ui application
 
 /* @vitest-environment jsdom */
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createRouter, createWebHistory } from 'vue-router'
 import { createPinia, setActivePinia } from 'pinia'
@@ -77,7 +77,8 @@ const router = createRouter({
     { path: '/parcelsevents', component: { template: '<div>Parcel Events</div>' } },
     { path: '/registersevents', component: { template: '<div>Register Events</div>' } },
     { path: '/hotkeyactionschemes', component: { template: '<div>Hotkey Action Schemes</div>' } },
-    { path: '/scanner/wd4', component: { template: '<div>WD4 Scanner</div>' } }
+    { path: '/scanner/wd4', component: { template: '<div>WD4 Scanner</div>' } },
+    { path: '/printing/settings', component: { template: '<div>Printer Settings</div>' } }
   ]
 })
 
@@ -141,6 +142,10 @@ describe('App Logout Functionality', () => {
         }
       }
     })
+  })
+
+  afterEach(() => {
+    wrapper?.unmount()
   })
 
   it('should clear user data after logout', async () => {

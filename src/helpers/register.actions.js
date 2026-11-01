@@ -14,13 +14,34 @@ import {
   getWeightCorrection,
   WEIGHT_CORRECTION_CHOICE
 } from '@/helpers/weight.correction.helpers.js'
-import { reportError } from '@/helpers/error.helpers.js'
+import { getErrorMessage, reportError } from '@/helpers/error.helpers.js'
 import {
   buildFinishPassportCheckWarning,
   buildRestartPassportCheckWarning
 } from '@/helpers/lifecycle.warning.helpers.js'
 
 export const POLLING_INTERVAL_MS = 1000
+
+async function runCustomsChargeOperations(operations) {
+  const failures = []
+  let succeeded = true
+  // The calculation may have saved charges before its detail refresh failed.
+  // Complete the remaining reads before reporting the operation's first failure.
+  for (const operation of operations) {
+    try {
+      if ((await operation()) === false) succeeded = false
+    } catch (error) {
+      failures.push(error)
+    }
+  }
+  for (const error of failures.slice(1)) {
+    reportError(error, { context: 'customs charges follow-up refresh' })
+  }
+  if (failures.length) {
+    throw new Error(getErrorMessage(failures[0], 'Не удалось обновить таможенные платежи'), { cause: failures[0] })
+  }
+  return succeeded
+}
 
 export async function refreshAfterCheckStatusFreeze({
   succeeded,
@@ -418,10 +439,14 @@ export function createRegisterActionHandlers(registersStore, alertStore, { mode 
 
   async function calculateCustomsCharges(item) {
     try {
-      await registersStore.calculateCustomsCharges(item.id)
-      await registersStore.getAll(getAllOptions())
+      return await runCustomsChargeOperations([
+        () => registersStore.calculateCustomsCharges(item.id),
+        () => recoveryScopeActive ? registersStore.getAll(getAllOptions()) : undefined
+      ])
     } catch (err) {
-      alertStore.error(err?.message || String(err))
+      if (recoveryScopeActive) alertStore.error(err)
+      else reportError(err, { context: 'customs charges after register list teardown' })
+      return false
     }
   }
 
@@ -807,16 +832,24 @@ export function useRegisterHeaderActions({
   }
 
   async function calculateCustomsChargesForCurrentRegister(register) {
-    await registersStore.calculateCustomsCharges(register.id)
-    await registersStore.getById(register.id)
-
-    if ((isComponentMounted?.value ?? true) && typeof loadParcels === 'function') {
-      await loadParcels()
+    try {
+      return await runCustomsChargeOperations([
+        () => registersStore.calculateCustomsCharges(register.id),
+        () => (isComponentMounted?.value ?? true) ? registersStore.getById(register.id) : undefined,
+        () => (isComponentMounted?.value ?? true) && typeof loadParcels === 'function' ? loadParcels() : undefined
+      ])
+    } catch (error) {
+      if (isComponentMounted?.value ?? true) alertStore.error(error)
+      else {
+        // The initiating page has gone; do not publish on the destination page.
+        reportError(error, { context: 'customs charges after parcel list teardown' })
+      }
+      return false
     }
   }
 
   const runcalculateCustomsCharges = async () => {
-    await runActionWithDialog(
+    return await runActionWithDialog(
       calculateCustomsChargesForCurrentRegister,
       'calculate-customs-charges'
     )

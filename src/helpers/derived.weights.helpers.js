@@ -5,7 +5,7 @@
 // Calculated response fields never become editable API inputs.
 export function rawWeightPayload(data) {
   const result = { ...data }
-  for (const key of ['adjustedWeightKg', 'reconciliationParcelId', 'derivedTotalsPending', 'weightCorrectionEligible']) {
+  for (const key of ['adjustedWeightKg', 'reconciliationParcelId', 'derivedTotalsPending', 'weightCorrectionEligible', 'customsChargeGroup', 'customsFee', 'customsDuty']) {
     delete result[key]
   }
   return result

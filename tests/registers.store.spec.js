@@ -29,7 +29,7 @@ vi.mock('@/helpers/fetch.wrapper.js', () => ({
 }))
 
 vi.mock('@/stores/parcels.store.js', () => ({
-  useParcelsStore: () => ({ invalidateDerived: vi.fn(), refreshDerived: vi.fn().mockResolvedValue(undefined), refreshVisibleDerived: vi.fn().mockResolvedValue(undefined) }),
+  useParcelsStore: () => ({ invalidateDerived: vi.fn(), invalidateCustomsCharges: vi.fn(), refreshCustomsChargeDetail: vi.fn(), refreshDerived: vi.fn().mockResolvedValue(undefined), refreshVisibleDerived: vi.fn().mockResolvedValue(undefined) }),
   buildParcelsFilterParams: vi.fn((authStore, additionalParams = {}) => {
     const params = new URLSearchParams(additionalParams)
 

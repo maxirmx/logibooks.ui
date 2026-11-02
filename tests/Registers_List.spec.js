@@ -169,6 +169,7 @@ const registersStore = {
   getValidationProgress: getValidationProgressFn,
   cancelValidation: cancelValidationFn,
   calculateCustomsCharges: calculateCustomsChargesFn,
+  refreshCustomsChargeDetails: vi.fn().mockResolvedValue(undefined),
   remove: removeFn,
   generate: generateFn,
   items: mockItems,

@@ -25,7 +25,8 @@ function createWrapper(procedure = 10) {
     components: { Form, Field, ParcelNumberExt, PageAlertRegion },
     setup: () => ({ procedure: ref(procedure), item: { tnVed: code, matchesExportFeeCategory: true } }),
     template: '<div><PageAlertRegion /><Form :initial-values="{ tnVed: item.tnVed }" v-slot="{ values, setFieldValue }"><Field name="tnVed" /><button data-testid="select-code" type="button" @click="setFieldValue(\'tnVed\', \'8471300000\')">Select</button><ParcelNumberExt :item="item" live-category :tn-ved="values.tnVed" :customs-procedure-code="procedure" /></Form></div>'
-  }, { global: { stubs: { ClickableCell: true, ActionButton: true } } })
+  }, { global: { stubs: { ClickableCell: true, ActionButton: true,
+    'v-tooltip': { template: '<div><slot name="activator" :props="{}" /></div>' } } } })
 }
 beforeEach(() => {
   setActivePinia(createPinia())

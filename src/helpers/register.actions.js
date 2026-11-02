@@ -368,6 +368,7 @@ export function createRegisterActionHandlers(registersStore, alertStore, { mode 
     try {
       await registersStore.calculateCustomsCharges(item.id)
       await registersStore.getAll(getAllOptions())
+      await registersStore.refreshCustomsChargeDetails(item.id)
     } catch (err) {
       alertStore.error(err?.message || String(err))
     }
@@ -757,10 +758,10 @@ export function useRegisterHeaderActions({
     await registersStore.getById(register.id)
 
     if ((isComponentMounted?.value ?? true) && typeof loadParcels === 'function') {
-      await loadParcels()
+      const refreshed = await loadParcels()
+      if (refreshed !== false) await registersStore.refreshCustomsChargeDetails(register.id)
     }
   }
-
   const runcalculateCustomsCharges = async () => {
     await runActionWithDialog(
       calculateCustomsChargesForCurrentRegister,

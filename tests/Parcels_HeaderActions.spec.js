@@ -59,6 +59,7 @@ function createRegisterHeaderActionsMock() {
     freezeTnVedOrder: vi.fn().mockResolvedValue(),
     checkPassports: vi.fn().mockResolvedValue(),
     finishPassportCheck: vi.fn().mockResolvedValue(),
+    refreshCustomsChargeDetails: vi.fn().mockResolvedValue(undefined),
     calculateCustomsCharges: vi.fn().mockResolvedValue(),
     downloadRegister: vi.fn(),
     downloadAdditionalRestrictions: vi.fn(),

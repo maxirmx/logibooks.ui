@@ -63,6 +63,10 @@ These instructions apply to the entire repository. Follow them for every new fea
 - Color must not be the only indication of meaning: error and warning dialogs also use a tone indicator, while destructive confirmations use explicit action text.
 - `ParcelStatusBulkChangeDialog.vue` is an explicit legacy exception and must not be restyled without a separate user request.
 
+## Tooltips
+
+- Always implement tooltips with Vuetify `v-tooltip`, directly or through a shared component that uses it. Do not use the HTML `title` attribute as a tooltip; preserve accessible labels and bind the Vuetify activator props.
+
 ## Table styling
 
 - Reuse the shared table styles in `src/assets/main.css`, including the blue header rule, rather than duplicating table appearance in scoped component CSS.

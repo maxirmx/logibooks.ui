@@ -71,13 +71,12 @@ function handleFellowsClick(item) {
       :disabled="disabled"
       @click="handleClick" 
     />
-    <span
-      v-if="showCategory"
-      class="export-fee-category-marker"
-      role="img"
-      title="Код ТН ВЭД входит в справочник экспортных сборов"
-      aria-label="Код ТН ВЭД входит в справочник экспортных сборов"
-    >C</span>
+    <v-tooltip v-if="showCategory" text="Код ТН ВЭД входит в справочник экспортных сборов" open-delay="300" location="top">
+      <template #activator="{ props: tooltipProps }">
+        <span v-bind="tooltipProps" class="export-fee-category-marker" role="img" tabindex="0"
+          aria-label="Код ТН ВЭД входит в справочник экспортных сборов">C</span>
+      </template>
+    </v-tooltip>
     <ActionButton 
       v-if="item?.fellowItems?.length > 0 && !item?.blockedByFellowItem && !item?.excsiseByFellowItem"
       :item="item" 

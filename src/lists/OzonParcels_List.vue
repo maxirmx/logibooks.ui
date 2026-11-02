@@ -1,4 +1,5 @@
 <script setup>
+import CustomsChargeDisplay from '@/components/CustomsChargeDisplay.vue'
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
 // All rights reserved.
 // This file is a part of Logibooks ui application
@@ -188,7 +189,8 @@ async function handleAssignTnvedConfirm(ids, tnVed) {
     selectedParcelIds.value = new Set()
     selectedParcelId.value = null
     lastClickedId.value = null
-    await loadParcelsWrapper()
+    await fetchRegister()
+    if (await loadParcelsWrapper()) await parcelsStore.refreshCachedDetail(registersStore.item.id)
   } catch (error) {
     if (error?.status === 409) await fetchRegister()
     alertStore.error(error?.message || 'Ошибка при назначении кода ТН ВЭД')
@@ -359,6 +361,7 @@ async function fetchRegister() {
 async function loadParcelsWrapper() {
   parcelsLoaded.value = false
   parcelsLoaded.value = await loadParcels(props.registerId, parcelsStore, isComponentMounted, alertStore)
+  return parcelsLoaded.value
 }
 
 // Provide the loadParcels function for child components
@@ -845,7 +848,9 @@ function getGenericTemplateHeaders() {
             :display-value="formatCustomsCharge(item.customsFee)"
             cell-class="truncated-cell clickable-cell numeric-panel"
             @click="editParcel"
-          />
+          >
+            <CustomsChargeDisplay :item="item" field="customsFee" />
+          </ClickableCell>
         </template>
 
         <template #[`item.customsDuty`]="{ item }">
@@ -854,7 +859,9 @@ function getGenericTemplateHeaders() {
             :display-value="formatCustomsCharge(item.customsDuty)"
             cell-class="truncated-cell clickable-cell numeric-panel"
             @click="editParcel"
-          />
+          >
+            <CustomsChargeDisplay :item="item" field="customsDuty" />
+          </ClickableCell>
         </template>
 
         <template #[`item.weightKg`]="{ item }">

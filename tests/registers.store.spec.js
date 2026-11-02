@@ -28,8 +28,10 @@ vi.mock('@/helpers/fetch.wrapper.js', () => ({
   }
 }))
 
+const refreshCachedDetail = vi.fn().mockResolvedValue(undefined)
+
 vi.mock('@/stores/parcels.store.js', () => ({
-  useParcelsStore: () => ({ invalidateDerived: vi.fn(), refreshDerived: vi.fn().mockResolvedValue(undefined), refreshVisibleDerived: vi.fn().mockResolvedValue(undefined) }),
+  useParcelsStore: () => ({ invalidateDerived: vi.fn(), refreshDerived: vi.fn().mockResolvedValue(undefined), refreshVisibleDerived: vi.fn().mockResolvedValue(undefined), refreshCachedDetail }),
   buildParcelsFilterParams: vi.fn((authStore, additionalParams = {}) => {
     const params = new URLSearchParams(additionalParams)
 
@@ -1465,6 +1467,19 @@ describe('registers store', () => {
     })
   })
 
+  describe('refreshCustomsChargeDetails', () => {
+    it('awaits the cached parcel refresh for the affected register', async () => {
+      const store = useRegistersStore()
+      await store.refreshCustomsChargeDetails(77)
+      expect(refreshCachedDetail).toHaveBeenCalledWith(77)
+    })
+
+    it('propagates a cached-detail failure to the initiating action', async () => {
+      const error = new Error('Не удалось обновить посылку')
+      refreshCachedDetail.mockRejectedValueOnce(error)
+      await expect(useRegistersStore().refreshCustomsChargeDetails(77)).rejects.toBe(error)
+    })
+  })
   describe('calculateCustomsCharges', () => {
     it('calls calculate endpoint and patches loaded register charges', async () => {
       fetchWrapper.post.mockResolvedValueOnce({

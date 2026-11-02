@@ -69,6 +69,7 @@ describe('useRegisterHeaderActions', () => {
       freezeTnVedOrder: vi.fn().mockResolvedValue(),
       checkPassports: vi.fn().mockResolvedValue(),
       finishPassportCheck: vi.fn().mockResolvedValue(),
+      refreshCustomsChargeDetails: vi.fn().mockResolvedValue(undefined),
       calculateCustomsCharges: vi.fn().mockResolvedValue(),
       getById: vi.fn().mockResolvedValue(),
       getAll: vi.fn().mockResolvedValue()
@@ -753,4 +754,26 @@ describe('useRegisterHeaderActions', () => {
     expect(actions.actionDialog.title).toBe('')
   })
 
-})
+
+  it('reloads visible register and parcel rows before reporting a cached detail failure', async () => {
+    const error = new Error('Не удалось обновить сохранённую карточку')
+    const order = []
+    registersStore.getById.mockImplementation(async () => { order.push('register') })
+    loadParcels.mockImplementation(async () => { order.push('list') })
+    registersStore.refreshCustomsChargeDetails.mockImplementation(async () => { order.push('detail'); throw error })
+    const actions = useRegisterHeaderActions({ registersStore, alertStore, runningAction, tableLoading,
+      registerLoading, loadParcels, isComponentMounted })
+    await actions.calculateCustomsCharges()
+    expect(order).toEqual(['register', 'list', 'detail'])
+    expect(alertStore.error).toHaveBeenCalledTimes(1)
+    expect(actions.actionDialog.show).toBe(false)
+  })
+  it('does not refresh cached cards after an already handled parcel reload failure', async () => {
+    loadParcels.mockResolvedValueOnce(false)
+    const actions = useRegisterHeaderActions({ registersStore, alertStore, runningAction, tableLoading,
+      registerLoading, loadParcels, isComponentMounted })
+    await actions.calculateCustomsCharges()
+    expect(loadParcels).toHaveBeenCalledTimes(1)
+    expect(registersStore.refreshCustomsChargeDetails).not.toHaveBeenCalled()
+    expect(alertStore.error).not.toHaveBeenCalled()
+  })})

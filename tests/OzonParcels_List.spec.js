@@ -7,6 +7,7 @@ import { ref } from 'vue'
 import { createPinia } from 'pinia'
 import { navigateToEditParcel } from '@/helpers/parcels.list.helpers.js'
 import OzonParcels_List from '@/lists/OzonParcels_List.vue'
+import CustomsChargeDisplay from '@/components/CustomsChargeDisplay.vue'
 import {
   CUSTOMS_PROCEDURE_IMPORT,
   CUSTOMS_PROCEDURE_REEXPORT
@@ -27,6 +28,7 @@ const selectedParcelId = ref(null)
 const mockBulkAssignTnved = vi.fn().mockResolvedValue(true)
 const mockUpdateWeightsFromFile = vi.fn()
 const mockGetRegister = vi.fn().mockResolvedValue()
+const mockRefreshCachedDetail = vi.fn().mockResolvedValue(undefined)
 const alertSuccess = vi.fn()
 const alertError = vi.fn()
 
@@ -60,7 +62,7 @@ vi.mock('@/helpers/parcels.list.helpers.js', async () => {
   const actual = await vi.importActual('@/helpers/parcels.list.helpers.js')
   return {
     ...actual,
-    loadParcels: vi.fn().mockResolvedValue(),
+    loadParcels: vi.fn().mockResolvedValue(true),
     getRowPropsForParcel: vi.fn(() => ({ class: '' })),
     navigateToEditParcel: vi.fn(),
     validateParcelData: vi.fn().mockResolvedValue(),
@@ -89,6 +91,7 @@ vi.mock('@/helpers/register.actions.js', async (importOriginal) => ({
     downloadTechdoc: vi.fn(),
     freezeCheckStatus: vi.fn().mockResolvedValue(true),
     freezeTnVedOrder: vi.fn().mockResolvedValue(),
+    refreshCustomsChargeDetails: vi.fn().mockResolvedValue(undefined),
     calculateCustomsCharges: vi.fn().mockResolvedValue(),
     cancelValidation: vi.fn(),
     stop: vi.fn()
@@ -145,6 +148,7 @@ vi.mock('@/stores/parcels.store.js', () => ({
     loading: mockLoading,
     error: mockError,
     totalCount: mockTotalCount,
+    refreshCachedDetail: mockRefreshCachedDetail,
     bulkAssignTnved: mockBulkAssignTnved
   })
 }))
@@ -297,6 +301,29 @@ describe('OzonParcels_List.vue – multi-select', () => {
     await resolveAll()
   })
 
+  it('shows saved group amounts in both clickable charge cells', async () => {
+    wrapper.unmount()
+    mockRegisterItem.value = { dealNumber: 'D-1', customsFee: 1231, customsDuty: 800 }
+    const item = { id: 10, registerId: 1, postingNumber: 'P-10', customsFee: 0, customsDuty: 0,
+      customsChargeGroup: { customsFee: 1231, customsDuty: 800 } }
+    mockItems.value = [item]
+    wrapper = mount(OzonParcels_List, {
+      props: { registerId: 1 },
+      global: {
+        plugins: [createPinia()],
+        stubs: { ...globalStubs, ClickableCell: false, 'font-awesome-icon': true,
+          'v-tooltip': { template: '<div><slot name="activator" :props="{}" /></div>' } }
+      }
+    })
+    await resolveAll()
+    const displays = wrapper.findAllComponents(CustomsChargeDisplay)
+    expect(displays.map(display => display.props('field'))).toEqual(['customsFee', 'customsDuty'])
+    expect(displays[0].text().replace(/\s/g, '')).toBe('1231')
+    expect(displays[1].text().replace(/\s/g, '')).toBe('800')
+    await displays[0].trigger('click')
+    expect(navigateToEditParcel).toHaveBeenCalledWith(expect.anything(), item, 'Редактирование посылки',
+      expect.objectContaining({ registerId: 1 }))
+  })
   it.each([762, 860])('prefixes only dangerous parcel statuses for country %s', async country => {
     wrapper.unmount()
     mockRegisterItem.value = { dealNumber: 'D-1', theOtherCountryCode: country }
@@ -400,8 +427,18 @@ describe('OzonParcels_List.vue – multi-select', () => {
     expect(loadParcels).toHaveBeenCalled()
     expect(wrapper.vm.showAssignTnvedDialog).toBe(false)
     expect(wrapper.vm.selectedParcelIds.size).toBe(0)
+    expect(mockRefreshCachedDetail).toHaveBeenCalledTimes(1)
   })
 
+  it('returns a handled list failure and skips the cached detail after bulk assignment', async () => {
+    const { loadParcels } = await import('@/helpers/parcels.list.helpers.js')
+    loadParcels.mockResolvedValueOnce(false)
+    expect(await wrapper.vm.loadParcelsWrapper()).toBe(false)
+    loadParcels.mockResolvedValueOnce(false)
+    await wrapper.vm.handleAssignTnvedConfirm([1], '1234567890')
+    expect(mockRefreshCachedDetail).not.toHaveBeenCalled()
+    expect(alertError).not.toHaveBeenCalled()
+  })
   it('reports parcels skipped by a read-only mutation lock', async () => {
     mockBulkAssignTnved.mockResolvedValue({
       updatedCount: 1,

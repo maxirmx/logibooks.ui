@@ -47,6 +47,13 @@ describe('ParcelNumberExt', () => {
         ...props
       },
       global: {
+        stubs: {
+          'v-tooltip': {
+            name: 'VTooltip',
+            props: ['text', 'location', 'openDelay'],
+            template: '<div><slot name="activator" :props="{ \'data-tooltip-activator\': true }" /></div>'
+          }
+        },
         components: {
           ClickableCell,
           ActionButton
@@ -65,7 +72,12 @@ describe('ParcelNumberExt', () => {
       expect(marker.text()).toBe('C')
       expect(marker.attributes('role')).toBe('img')
       expect(marker.attributes('aria-label')).toBe('Код ТН ВЭД входит в справочник экспортных сборов')
-      expect(marker.attributes('title')).toBe(marker.attributes('aria-label'))
+      expect(wrapper.getComponent({ name: 'VTooltip' }).props()).toMatchObject({
+        text: marker.attributes('aria-label'), location: 'top', openDelay: '300'
+      })
+      expect(marker.attributes('data-tooltip-activator')).toBe('true')
+      expect(marker.attributes('title')).toBeUndefined()
+      expect(marker.attributes('tabindex')).toBe('0')
       expect(wrapper.findComponent(ActionButton).exists()).toBe(true)
       await marker.trigger('click')
       expect(wrapper.emitted('click')).toBeUndefined()

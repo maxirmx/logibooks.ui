@@ -10,7 +10,6 @@ import { CheckStatusCode } from '@/helpers/check.status.code.js'
 import { hasPassportCheckIssues } from '@/helpers/passport.check.status.helpers.js'
 import { preloadFeacnInfo, getCachedFeacnInfo } from '@/helpers/feacn.info.helpers.js'
 import { formatDate } from '@/helpers/date.formatters.js'
-import { formatPrice } from '@/helpers/number.formatters.js'
 import { buildParcelEditLocation } from '@/helpers/parcel.navigation.helpers.js'
 import { REMOVED_PARCEL_FILTER_MESSAGE } from '@/helpers/parcel.filters.js'
 
@@ -159,9 +158,7 @@ export function formatPassport(item) {
   return parts.filter(Boolean).join(' ')
 }
 
-export function formatCustomsCharge(value) {
-  return value == null ? '' : formatPrice(value)
-}
+export { formatCustomsCharge } from '@/helpers/customs.charges.helpers.js'
 
 const customsChargeHeaders = [
   { title: 'Сбор, руб', key: 'customsFee', sortable: false, align: 'end', width: '120px' },

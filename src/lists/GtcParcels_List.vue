@@ -263,6 +263,7 @@ async function loadParcelsWrapper() {
   parcelsLoaded.value = await loadParcels(props.registerId, parcelsStore, isComponentMounted, alertStore, {
     ...(props.boxId ? { boxId: props.boxId } : {})
   })
+  return parcelsLoaded.value
 }
 
 // Provide the loadParcels function for child components

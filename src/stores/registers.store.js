@@ -1072,6 +1072,10 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
+  async function refreshCustomsChargeDetails(id) {
+    await useParcelsStore().refreshCachedDetail(id)
+  }
+
   async function calculateCustomsCharges(id) {
     loading.value = true
     error.value = null
@@ -1261,6 +1265,7 @@ export const useRegistersStore = defineStore('registers', () => {
     freezeCheckStatus,
     freezeTnVedOrder,
     calculateCustomsCharges,
+    refreshCustomsChargeDetails,
     nextParcels,
     remove,
     uploadFile,

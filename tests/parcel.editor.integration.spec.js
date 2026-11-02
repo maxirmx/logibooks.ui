@@ -396,6 +396,43 @@ describe.each(editors)('%s editor with real forms and stores', (_name, component
   })
 })
 
+it.each(['resolve', 'reject'])('preserves destination editor ownership during a cached-charge refresh (navigation %ss)', async outcome => {
+  const store = useParcelsStore()
+  const presentation = vi.spyOn(useAlertStore(), 'error')
+  const wrapper = mountEditor()
+  await settle()
+  const destination = deferred()
+  parcelRequests.push(destination)
+  await wrapper.setProps({ id: 4 })
+  await settle()
+  expect(store.itemLoading).toBe(true)
+  await store.refreshCachedDetail(12)
+  expect(parcelGets().map(([url]) => url)).toEqual([
+    'http://test/api/parcels/a/3', 'http://test/api/parcels/a/4'
+  ])
+  if (outcome === 'resolve') destination.resolve(parcel(4, { customsFee: 44, customsDuty: 55 }))
+  else destination.reject(new Error('Не удалось загрузить посылку 4'))
+  await settle()
+  expect(store.itemLoading).toBe(false)
+  if (outcome === 'resolve') {
+    expect(store.item).toMatchObject({ id: 4, customsFee: 44, customsDuty: 55 })
+    expect(input(wrapper).element.value).toBe('Product 4')
+    expect(wrapper.findAll('.customs-charge-display').map(charge => charge.text())).toEqual(['44.00', '55.00'])
+    expect(wrapper.findAll('[role="alert"]')).toHaveLength(0)
+    expect(presentation).not.toHaveBeenCalled()
+  } else {
+    expect(store.itemError?.message).toBe('Не удалось загрузить посылку 4')
+    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+    expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось загрузить посылку 4')
+    expect(presentation).toHaveBeenCalledOnce()
+    expect(wrapper.find('[name="productName"]').exists()).toBe(false)
+    expect(action(wrapper, 'Сохранить').attributes('disabled')).toBeDefined()
+  }
+  expect(router.push).not.toHaveBeenCalled()
+  expect(router.replace).not.toHaveBeenCalled()
+  presentation.mockRestore()
+})
+
 it('presents a SignalR resync failure once while preserving the draft', async () => {
   const wrapper = mountEditor()
   useAuthStore().user = { roles: ['sr-logist'] }

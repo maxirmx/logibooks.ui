@@ -146,9 +146,29 @@ export const useParcelsStore = defineStore('parcels', () => {
     useRegistersStore().invalidateDerived(registerId)
   }
 
+  async function refreshCachedDetail(registerId) {
+    // A pending detail load owns navigation; refreshing the cached parcel must not supersede it.
+    if (itemLoading.value) return
+    if (item.value?.id && Number(item.value.registerId) === Number(registerId)) {
+      await getById(item.value.id)
+    }
+  }
+
+  async function refreshCachedCharges(registerId) {
+    if (Number(item.value?.registerId) === Number(registerId) &&
+        (item.value?.customsFee != null || item.value?.customsDuty != null || item.value?.customsChargeGroup != null)) {
+      await refreshCachedDetail(registerId)
+    }
+  }
+
   async function refreshVisibleDerived(registerId) {
     if (lastListRequest && Number(lastListRequest.registerId) === Number(registerId)) {
       await getAll(registerId, { ...lastListRequest.options, updateStore: true })
+      const current = items.value.find(row => Number(row.id) === Number(item.value?.id))
+      if (current && (Object.hasOwn(current, 'customsFee') || Object.hasOwn(current, 'customsDuty'))) {
+        item.value = { ...item.value, customsFee: current.customsFee, customsDuty: current.customsDuty,
+          customsChargeGroup: current.customsChargeGroup ?? null }
+      }
     }
   }
 
@@ -389,7 +409,7 @@ export const useParcelsStore = defineStore('parcels', () => {
     const registerId = data.registerId ?? originalRegisterId
     const affectedRegisters = [...new Set([originalRegisterId, registerId].filter(value => Number.isInteger(Number(value)) && Number(value) > 0))]
     const response = await runParcelMutation(id, () => fetchWrapper.put(`${baseUrl}/${id}`, payload), false)
-    const affectsAllocation = ['weightKg', 'quantity', 'statusId', 'checkStatus', 'registerId', 'boxId', 'shk', 'postingNumber', 'tnVed']
+    const affectsAllocation = ['weightKg', 'quantity', 'statusId', 'checkStatus', 'registerId', 'boxId', 'shk', 'postingNumber', 'tnVed', 'unitPrice', 'cost', 'currency']
       .some(key => Object.hasOwn(payload, key))
     let updatedData = { ...payload }
     if (updatedData.dangerousGoods == null) delete updatedData.dangerousGoods
@@ -422,6 +442,9 @@ export const useParcelsStore = defineStore('parcels', () => {
       items.value[itemIndex] = { ...items.value[itemIndex], ...updatedData }
     }
 
+    if (Number(item.value?.id) !== numericId && affectedRegisters.some(id => Number(id) === Number(item.value?.registerId))) {
+      await refreshCachedCharges(item.value.registerId)
+    }
     return response
   }
 
@@ -457,6 +480,7 @@ export const useParcelsStore = defineStore('parcels', () => {
         const registerId = [item.value, ...items.value].find(p => Number(p?.id) === Number(id))?.registerId
         invalidateDerived(registerId)
         await refreshDerived(registerId)
+        await refreshCachedCharges(registerId)
       }
       return response
     } catch (err) {
@@ -495,6 +519,7 @@ export const useParcelsStore = defineStore('parcels', () => {
       const registerId = [item.value, ...items.value].find(p => Number(p?.id) === Number(id))?.registerId
       invalidateDerived(registerId)
       await refreshDerived(registerId)
+      await refreshCachedCharges(registerId)
       return true
     } catch (err) {
       error.value = err
@@ -605,6 +630,7 @@ export const useParcelsStore = defineStore('parcels', () => {
     const result = await fetchWrapper.post(`${baseUrl}/status-selection/update`, { registerId, statusId, parcelIds })
     invalidateDerived(registerId)
     await refreshDerived(registerId)
+    await refreshCachedCharges(registerId)
     return result
   }
 
@@ -655,6 +681,7 @@ export const useParcelsStore = defineStore('parcels', () => {
     updateItems,
     invalidateDerived,
     refreshVisibleDerived,
+    refreshCachedDetail,
     refreshDerived,
     getByNumber,
     generate,

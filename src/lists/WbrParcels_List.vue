@@ -257,6 +257,7 @@ async function fetchRegister() {
 async function loadParcelsWrapper() {
   parcelsLoaded.value = false
   parcelsLoaded.value = await loadParcels(props.registerId, parcelsStore, isComponentMounted, alertStore)
+  return parcelsLoaded.value
 }
 
 // Provide the loadParcels function for child components

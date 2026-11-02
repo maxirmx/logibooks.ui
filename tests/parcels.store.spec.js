@@ -490,7 +490,8 @@ describe('parcels store', () => {
         components: { ParcelNumberExt },
         setup: () => ({ store, showList }),
         template: '<ParcelNumberExt :item="showList ? store.items[0] : store.item" />'
-      }, { global: { stubs: { ClickableCell: true, ActionButton: true } } })
+      }, { global: { stubs: { ClickableCell: true, ActionButton: true,
+        'v-tooltip': { template: '<div><slot name="activator" :props="{}" /></div>' } } } })
       expect(wrapper.find('.export-fee-category-marker').exists()).toBe(!flag)
       await store.update(5, { tnVed: 'new', matchesExportFeeCategory: !flag })
       showList.value = true
@@ -539,7 +540,8 @@ describe('parcels store', () => {
         components: { ParcelNumberExt, PageAlertRegion },
         setup: () => ({ store, save, showList }),
         template: '<div><PageAlertRegion /><button @click="save">Save</button><span data-testid="location">{{ showList ? "list" : "form" }}</span><ParcelNumberExt :item="showList ? store.items[0] : store.item" /></div>'
-      }, { global: { stubs: { ClickableCell: true, ActionButton: true } } })
+      }, { global: { stubs: { ClickableCell: true, ActionButton: true,
+        'v-tooltip': { template: '<div><slot name="activator" :props="{}" /></div>' } } } })
       await wrapper.get('button').trigger('click')
       await flushPromises()
       expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
@@ -735,4 +737,139 @@ describe('parcels store', () => {
       await expect(store.getImageBlob(77)).rejects.toThrow('Image not found')
     })
   })
-})
+
+  it('refreshes saved group metadata in the cached detail through the existing detail loader', async () => {
+    const store = useParcelsStore()
+    store.item = { id: 12, registerId: 7, customsFee: 0, customsChargeGroup: null }
+    fetchWrapper.get.mockResolvedValueOnce({ id: 12, registerId: 7, customsFee: 0, customsChargeGroup: { customsFee: 1231, customsDuty: 0 } })
+    await store.refreshCachedDetail(7)
+    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/parcels/a/12`)
+    expect(store.item.customsChargeGroup.customsFee).toBe(1231)
+    await store.refreshCachedDetail(8)
+    expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
+  })
+
+  it('propagates a failed cached-detail refresh without replacing the saved item', async () => {
+    const store = useParcelsStore()
+    store.item = { id: 12, registerId: 7, customsFee: 0 }
+    const error = new Error('Не удалось загрузить посылку')
+    fetchWrapper.get.mockRejectedValueOnce(error)
+    await expect(store.refreshCachedDetail(7)).rejects.toBe(error)
+    expect(store.itemError).toBe(error)
+    expect(store.item.id).toBe(12)
+    expect(store.itemLoading).toBe(false)
+  })
+
+  it.each(['resolve', 'reject'])('leaves pending detail navigation in charge when a cached refresh is requested (navigation %ss)', async outcome => {
+    const store = useParcelsStore()
+    const cached = { id: 1, registerId: 7, customsFee: 10 }
+    const destination = { id: 2, registerId: 7, customsFee: 20 }
+    const failure = new Error('Не удалось загрузить посылку 2')
+    store.item = cached
+    let settleDestination
+    fetchWrapper.get.mockReset().mockReturnValueOnce(new Promise((resolve, reject) => {
+      settleDestination = outcome === 'resolve' ? resolve : reject
+    })).mockResolvedValue({ ...cached, customsFee: 30 })
+    const navigation = store.getById(2)
+    const result = outcome === 'reject' ? expect(navigation).rejects.toBe(failure) : navigation
+    await store.refreshCachedDetail(7)
+    expect(fetchWrapper.get).toHaveBeenCalledExactlyOnceWith(`${apiUrl}/parcels/a/2`)
+    expect(store.itemLoading).toBe(true)
+    expect(store.itemError).toBeNull()
+    settleDestination(outcome === 'resolve' ? destination : failure)
+    await result
+    expect(store.item).toEqual(outcome === 'resolve' ? destination : cached)
+    expect(store.itemError).toBe(outcome === 'resolve' ? null : failure)
+    expect(store.itemLoading).toBe(false)
+  })
+
+  it.each(['resolve', 'reject'])('keeps newer navigation when an earlier cached refresh %ss last', async outcome => {
+    const store = useParcelsStore()
+    const cached = { id: 1, registerId: 7, customsFee: 10 }
+    const destination = { id: 2, registerId: 7, customsFee: 20 }
+    const failure = new Error('Не удалось обновить посылку 1')
+    store.item = cached
+    let settleRefresh
+    fetchWrapper.get.mockReset().mockReturnValueOnce(new Promise((resolve, reject) => {
+      settleRefresh = outcome === 'resolve' ? resolve : reject
+    })).mockResolvedValueOnce(destination)
+    const refresh = store.refreshCachedDetail(7)
+    const result = outcome === 'reject' ? expect(refresh).rejects.toBe(failure) : refresh
+    await store.getById(2)
+    settleRefresh(outcome === 'resolve' ? { ...cached, customsFee: 30 } : failure)
+    await result
+    expect(store.item).toEqual(destination)
+    expect(store.itemError).toBeNull()
+    expect(store.itemLoading).toBe(false)
+    expect(fetchWrapper.get.mock.calls.map(([url]) => url)).toEqual([
+      `${apiUrl}/parcels/a/1`, `${apiUrl}/parcels/a/2`
+    ])
+  })
+
+  it.each(['unitPrice', 'cost', 'currency'])('refreshes invalidated charges after changing %s through the existing single detail request', async field => {
+    const store = useParcelsStore()
+    store.item = { id: 12, registerId: 7, customsFee: 0, customsDuty: 0, customsChargeGroup: { customsFee: 1231, customsDuty: 0 } }
+    fetchWrapper.put.mockResolvedValueOnce(undefined)
+    fetchWrapper.get.mockResolvedValueOnce({ id: 12, registerId: 7, customsFee: null, customsDuty: null, customsChargeGroup: null })
+    await store.update(12, { [field]: field === 'currency' ? 'TJS' : 150 })
+    expect(store.item.customsFee).toBeNull()
+    expect(store.item.customsChargeGroup).toBeNull()
+    expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
+  })
+
+  it('refreshes cached charge presentation after an eligibility mutation', async () => {
+    const store = useParcelsStore()
+    store.item = { id: 12, registerId: 7, customsFee: 0, customsChargeGroup: { customsFee: 1231, customsDuty: 0 } }
+    fetchWrapper.post.mockResolvedValueOnce(undefined)
+    fetchWrapper.get.mockResolvedValueOnce({ id: 12, registerId: 7, customsFee: null, customsDuty: null, customsChargeGroup: null })
+    await store.setDefect(12)
+    expect(store.item.customsChargeGroup).toBeNull()
+    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/parcels/a/12`)
+  })
+
+  it('propagates a cached charge refresh failure after an eligibility mutation', async () => {
+    const store = useParcelsStore()
+    store.item = { id: 12, registerId: 7, customsFee: 1231 }
+    const error = new Error('Не удалось обновить таможенные платежи')
+    fetchWrapper.post.mockResolvedValueOnce(undefined)
+    fetchWrapper.get.mockRejectedValueOnce(error)
+    await expect(store.setDefect(12)).rejects.toBe(error)
+    expect(store.itemError).toBe(error)
+  })
+
+  it.each([false, true])('refreshes a cached sibling after another row changes and propagates failure (%s)', async fail => {
+    const store = useParcelsStore()
+    store.item = { id: 12, registerId: 7, customsFee: 0, customsChargeGroup: { customsFee: 1231, customsDuty: 0 } }
+    store.items = [{ id: 13, registerId: 7, unitPrice: 10 }]
+    const error = new Error('Не удалось обновить таможенные платежи')
+    fetchWrapper.put.mockResolvedValueOnce(undefined)
+    fetchWrapper.get.mockImplementation(async url => {
+      if (url.endsWith('/a/13')) return { id: 13, registerId: 7, unitPrice: 20 }
+      if (url.endsWith('/a/12')) {
+        if (fail) throw error
+        return { id: 12, registerId: 7, customsFee: null, customsDuty: null, customsChargeGroup: null }
+      }
+      throw new Error('Неожиданный запрос в тесте')
+    })
+    const operation = store.update(13, { unitPrice: 20 })
+    if (fail) {
+      await expect(operation).rejects.toBe(error)
+      expect(store.itemError).toBe(error)
+    } else {
+      await operation
+      expect(store.item.customsChargeGroup).toBeNull()
+    }
+    expect(store.item.id).toBe(12)
+    expect(store.items[0].unitPrice).toBe(20)
+    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/parcels/a/12`)
+  })
+  it('merges only refreshed charge fields into a cached item on the current page', async () => {
+    const store = useParcelsStore()
+    store.item = { id: 12, registerId: 7, productName: 'Введённое значение', customsChargeGroup: { customsFee: 1231, customsDuty: 0 } }
+    fetchWrapper.get.mockResolvedValue({ items: [{ id: 12, registerId: 7, productName: 'Сохранённое значение', customsFee: null, customsDuty: null, customsChargeGroup: null }], pagination: { totalCount: 1 } })
+    await store.getAll(7, { updateStore: true })
+    await store.refreshVisibleDerived(7)
+    expect(store.item.productName).toBe('Введённое значение')
+    expect(store.item.customsChargeGroup).toBeNull()
+    expect(store.item.customsFee).toBeNull()
+  })})

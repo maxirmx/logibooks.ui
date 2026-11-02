@@ -113,6 +113,7 @@ const headerActions = {
   downloadTechdoc: vi.fn(),
   freezeCheckStatus: vi.fn().mockResolvedValue(true),
   freezeTnVedOrder: vi.fn().mockResolvedValue(),
+  refreshCustomsChargeDetails: vi.fn().mockResolvedValue(undefined),
   calculateCustomsCharges: vi.fn().mockResolvedValue(),
   checkPassports: vi.fn().mockResolvedValue(),
   finishPassportCheck: vi.fn().mockResolvedValue(),

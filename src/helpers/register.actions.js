@@ -21,6 +21,7 @@ import {
 } from '@/helpers/lifecycle.warning.helpers.js'
 
 export const POLLING_INTERVAL_MS = 1000
+const progressVersions = new WeakMap()
 
 export async function refreshAfterCheckStatusFreeze({
   succeeded,
@@ -81,14 +82,17 @@ export async function pollValidation(
 ) {
   const handleId = validationState.handleId
   if (!handleId) return
+  const progressVersion = progressVersions.get(validationState)
+  let terminalProgress = false
   let operationError = null
   try {
     const progress = await getProgress(handleId)
-    if (validationState.handleId !== handleId) return
+    if (validationState.handleId !== handleId || progressVersions.get(validationState) !== progressVersion) return
     validationState.total = progress.total
     validationState.processed = progress.processed
 
     if (progress.finished || progress.total === -1 || progress.processed === -1) {
+      terminalProgress = true
       stopPollingFn()
       operationError = progress.error
       if (operationError) alertStore.error(operationError, { fallback: 'Не удалось завершить обработку реестра' })
@@ -102,8 +106,10 @@ export async function pollValidation(
     }
   } catch (error) {
     reportError(error, { context: 'register operation progress or reload' })
-    if (validationState.handleId !== handleId) {
-      // A different operation or page owns presentation after cancellation/teardown.
+    if (validationState.handleId !== handleId ||
+        (!terminalProgress && progressVersions.get(validationState) !== progressVersion)) {
+      // Cancellation or teardown superseded this read. Keep diagnostics, but let the
+      // current poll own presentation and cleanup; a confirmed terminal reload still owns failures.
       return
     }
     if (!operationError) alertStore.error(error, { fallback: 'Не удалось обновить данные обработки реестра' })
@@ -130,6 +136,7 @@ export async function validateRegister(
     stopPollingFn()
     const res = await registersStore.validate(item.id, sw, swMatchMode)
     if (!isActive()) return
+    progressVersions.set(validationState, {})
     validationState.registerId = item.id
     validationState.handleId = res.id
     validationState.total = 0
@@ -157,6 +164,8 @@ export async function cancelValidation(
     return false
   }
   if (validationState.cancelling) return false
+  // In-flight reads predate cancellation and must not close its dialog or stop its polling.
+  progressVersions.set(validationState, {})
   validationState.cancelling = true
   stopPollingFn()
   try {
@@ -280,6 +289,7 @@ export function createRegisterActionHandlers(registersStore, alertStore, { mode 
         extended ? FeacnMatchMode.FCMatchAndAssign : FeacnMatchMode.FCMatch
       )
       if (!active) return
+      progressVersions.set(validationState, {})
       validationState.handleId = res.id
       validationState.total = 0
       validationState.processed = 0

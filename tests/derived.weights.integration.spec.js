@@ -71,6 +71,156 @@ describe('server-owned derived weight projections', () => {
     expect(registers.items[0].derivedTotalsPending).toBe(false)
   })
 
+  it('keeps terminal totals and pagination when a pre-operation list arrives last without invalidation', async () => {
+    const registers = useRegistersStore()
+    registers.items = [{ ...register }]
+    registers.item = { ...register }
+    registers.totalCount = 1
+    fetchWrapper.get.mockResolvedValueOnce({ customsProcedures: [1], transportationTypes: [1], incoterms: [1] })
+    await registers.getOps()
+    let finishList
+    fetchWrapper.get.mockReturnValueOnce(new Promise(resolve => { finishList = resolve }))
+    const oldList = registers.getAll()
+    await flushPromises()
+    register = { ...register, realWeightKg: 2 }
+    await registers.refreshDerived(12)
+    const wrapper = mount({ setup: () => ({ registers }), template: '<output>{{ registers.items[0].realWeightKg }}</output>' })
+    expect(wrapper.text()).toBe('2')
+    finishList({ items: [{ ...register, realWeightKg: 1 }], pagination: { totalCount: 999, hasNextPage: true } })
+    await oldList
+    await flushPromises()
+    expect(wrapper.text()).toBe('2')
+    expect(registers.totalCount).toBe(1)
+    expect(registers.hasNextPage).toBe(false)
+    wrapper.unmount()
+  })
+
+  it.each([
+    [false, 'resolve'], [true, 'resolve'], [false, 'reject'], [true, 'reject']
+  ])('supersedes an older detail request with the terminal snapshot (listed=%s, outcome=%s)', async (listed, outcome) => {
+    const registers = useRegistersStore()
+    registers.item = { ...register }
+    registers.items = listed ? [{ ...register }] : []
+    fetchWrapper.get.mockResolvedValueOnce({ customsProcedures: [1], transportationTypes: [1], incoterms: [1] })
+    await registers.getOps()
+    let finishDetail, failDetail
+    fetchWrapper.get.mockReturnValueOnce(new Promise((resolve, reject) => { finishDetail = resolve; failDetail = reject }))
+    const failure = new Error('Не удалось загрузить реестр 12')
+    const oldDetail = registers.getById(12)
+    const result = outcome === 'reject' ? expect(oldDetail).rejects.toBe(failure) : oldDetail
+    await flushPromises()
+    register = { ...register, realWeightKg: 2 }
+    await registers.refreshDerived(12)
+    const wrapper = mount({ setup: () => ({ registers }), template: '<output>{{ registers.item.realWeightKg }}</output>' })
+    expect(wrapper.text()).toBe('2')
+    if (outcome === 'reject') failDetail(failure)
+    else finishDetail({ ...register, realWeightKg: 1 })
+    await result
+    await flushPromises()
+    expect(wrapper.text()).toBe('2')
+    wrapper.unmount()
+  })
+
+  it('recovers the current detail when its older read fails before the terminal reload finishes', async () => {
+    const registers = useRegistersStore()
+    fetchWrapper.get.mockResolvedValueOnce({ customsProcedures: [1], transportationTypes: [1], incoterms: [1] })
+    await registers.getOps()
+    let failDetail, finishRefresh
+    fetchWrapper.get.mockReturnValueOnce(new Promise((resolve, reject) => { failDetail = reject }))
+    const failure = new Error('Не удалось загрузить реестр 12')
+    const oldDetail = expect(registers.getById(12)).rejects.toBe(failure)
+    await flushPromises()
+    fetchWrapper.get.mockReturnValueOnce(new Promise(resolve => { finishRefresh = resolve }))
+    const refresh = registers.refreshDerived(12)
+    await flushPromises()
+    failDetail(failure)
+    await oldDetail
+    expect(registers.item.error).toBe(failure)
+    finishRefresh({ ...register, realWeightKg: 2 })
+    await refresh
+    expect(registers.item).toMatchObject({ id: 12, realWeightKg: 2 })
+    expect(registers.item.error).toBeUndefined()
+  })
+
+  it('does not discard pending page reads when the terminal register reload fails', async () => {
+    const registers = useRegistersStore()
+    fetchWrapper.get.mockResolvedValueOnce({ customsProcedures: [1], transportationTypes: [1], incoterms: [1] })
+    await registers.getOps()
+    let finishList, finishDetail
+    fetchWrapper.get.mockReturnValueOnce(new Promise(resolve => { finishList = resolve }))
+    const list = registers.getAll()
+    await flushPromises()
+    fetchWrapper.get.mockReturnValueOnce(new Promise(resolve => { finishDetail = resolve }))
+    const detail = registers.getById(12)
+    await flushPromises()
+    const failure = new Error('Не удалось обновить данные реестра 12')
+    fetchWrapper.get.mockRejectedValueOnce(failure)
+    await expect(registers.refreshDerived(12)).rejects.toBe(failure)
+    finishList({ items: [{ ...register }], pagination: { totalCount: 1 } })
+    finishDetail({ ...register })
+    await Promise.all([list, detail])
+    expect(registers.item).toMatchObject(register)
+    expect(registers.items[0]).toMatchObject(register)
+    expect(registers.totalCount).toBe(1)
+  })
+
+  it('leaves a newer list load in charge of its filters and pagination', async () => {
+    const registers = useRegistersStore()
+    registers.item = { ...register }
+    registers.items = [{ ...register }]
+    fetchWrapper.get.mockResolvedValueOnce({ customsProcedures: [1], transportationTypes: [1], incoterms: [1] })
+    await registers.getOps()
+    let finishRefresh, finishList
+    fetchWrapper.get.mockReturnValueOnce(new Promise(resolve => { finishRefresh = resolve }))
+    const refresh = registers.refreshDerived(12)
+    await flushPromises()
+    fetchWrapper.get.mockReturnValueOnce(new Promise(resolve => { finishList = resolve }))
+    const newList = registers.getAll({ mode: 'modeWarehouse' })
+    await flushPromises()
+    finishRefresh({ ...register, realWeightKg: 2 })
+    await refresh
+    finishList({ items: [{ id: 99, realWeightKg: 3 }], pagination: { totalCount: 1, hasPreviousPage: true } })
+    await newList
+    expect(registers.items).toEqual([expect.objectContaining({ id: 99, realWeightKg: 3 })])
+    expect(registers.hasPreviousPage).toBe(true)
+  })
+
+  it.each(['resolve', 'reject'])('keeps a newer register detail when a refresh %ss', async outcome => {
+    const registers = useRegistersStore()
+    registers.item = { ...register }
+    registers.items = [{ ...register }]
+    fetchWrapper.get.mockResolvedValueOnce({ customsProcedures: [1], transportationTypes: [1], incoterms: [1] })
+    await registers.getOps()
+    let finishRefresh, failRefresh
+    fetchWrapper.get.mockReturnValueOnce(new Promise((resolve, reject) => { finishRefresh = resolve; failRefresh = reject }))
+    const failure = new Error('Не удалось обновить итоги реестра')
+    const refresh = registers.refreshDerived(12)
+    const result = outcome === 'reject' ? expect(refresh).rejects.toBe(failure) : refresh
+    await flushPromises()
+    fetchWrapper.get.mockResolvedValueOnce({ id: 99, realWeightKg: 3 })
+    await registers.getById(99)
+    if (outcome === 'reject') failRefresh(failure)
+    else finishRefresh({ ...register, realWeightKg: 2 })
+    await result
+    expect(registers.item).toMatchObject({ id: 99, realWeightKg: 3 })
+  })
+
+  it('preserves a new upload draft when a previous register reload finishes', async () => {
+    const registers = useRegistersStore()
+    fetchWrapper.get.mockResolvedValueOnce({ customsProcedures: [1], transportationTypes: [1], incoterms: [1] })
+    await registers.getOps()
+    await registers.getById(12)
+    let finishRefresh
+    fetchWrapper.get.mockReturnValueOnce(new Promise(resolve => { finishRefresh = resolve }))
+    const refresh = registers.refreshDerived(12)
+    await flushPromises()
+    const draft = { fileName: 'Новый реестр.xlsx', registerType: 1, companyId: 1 }
+    registers.item = { ...draft }
+    finishRefresh({ ...register, realWeightKg: 2 })
+    await refresh
+    expect(registers.item).toEqual(draft)
+  })
+
   it('keeps a delayed box detail unavailable after invalidation', async () => {
     const boxes = useBoxesStore()
     let resolve

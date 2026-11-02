@@ -28,6 +28,7 @@ export const useRegistersStore = defineStore('registers', () => {
   const items = ref([])
   const item = ref({})
   let itemRequestSequence = 0
+  let itemRequestRegisterId = null
   let listRequestSequence = 0
   const projectionRevisions = new Map()
   const derivedRefreshes = new Map()
@@ -464,10 +465,12 @@ export const useRegistersStore = defineStore('registers', () => {
       do {
         state.dirty = false
         const sequence = itemRequestSequence
+        const listSequence = listRequestSequence
         const revision = projectionRevisions.get(Number(id)) ?? 0
         state.revision = revision
-        const isCurrent = Number(item.value?.id) === key
-        if (!isCurrent && !items.value.some(r => Number(r.id) === key)) {
+        const isCurrent = () => Number(item.value?.id) === key ||
+          (item.value?.id == null && itemRequestRegisterId === key && (item.value?.loading || item.value?.error))
+        if (!isCurrent() && !items.value.some(r => Number(r.id) === key)) {
           await useParcelsStore().refreshVisibleDerived(id)
           continue
         }
@@ -476,7 +479,13 @@ export const useRegistersStore = defineStore('registers', () => {
         if (!response || revision !== (projectionRevisions.get(Number(id)) ?? 0)) continue
         const register = mergeLivePassportCheckState(response, passportCheckStateWatermark)
         setDestinationField(register)
-        if (isCurrent && sequence === itemRequestSequence && Number(item.value?.id) === key) item.value = register
+        // A successful terminal snapshot supersedes older reads, including loading/error
+        // detail placeholders. A newer list/filter change or detail navigation keeps ownership.
+        if (listSequence === listRequestSequence) ++listRequestSequence
+        if (sequence === itemRequestSequence && isCurrent()) {
+          ++itemRequestSequence
+          item.value = register
+        }
         items.value = items.value.map(r => Number(r.id) === key ? register : r)
         await useBoxesStore().refreshDerived(id)
         // The visible parcel page must follow the authoritative register/box refresh.
@@ -491,6 +500,7 @@ export const useRegistersStore = defineStore('registers', () => {
 
   async function getById(id) {
     const requestSequence = ++itemRequestSequence
+    itemRequestRegisterId = Number(id)
     const revision = projectionRevisions.get(Number(id)) ?? 0
     const passportCheckStateWatermark = livePassportCheckStateArrival
     item.value = { loading: true }

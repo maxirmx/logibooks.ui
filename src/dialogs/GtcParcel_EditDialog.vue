@@ -4,8 +4,9 @@
 // This file is a part of Logibooks ui application
 
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
+import FieldError from '@/components/FieldError.vue'
 import { focusFirstInvalidField } from '@/helpers/form.validation.helpers.js'
-import { reportFormError, reportError } from '@/helpers/error.helpers.js'
+import { reportFormError, reportError, getServerFieldErrors } from '@/helpers/error.helpers.js'
 import router from '@/router'
 import { Form, Field } from 'vee-validate'
 import * as Yup from 'yup'
@@ -135,8 +136,14 @@ async function updateParcelWithLifecycleGuard(id, values) {
     confirm
   })
   if (!confirmed) return false
-  await parcelsStore.update(id, values)
-  return true
+  try {
+    await parcelsStore.update(id, values)
+    return true
+  } catch (error) {
+    if (!getServerFieldErrors(error).postingNumber || !formRef.value?.setErrors) throw error
+    reportFormError(error, { setErrors: formRef.value.setErrors, alertStore })
+    return false
+  }
 }
 
 function confirmPassportRestart(action = 'check') {
@@ -713,6 +720,7 @@ async function onLookup(values, setFieldValue) {
                 "
                 @fellows="handleFellows"
               />
+              <FieldError name="postingNumber" :errors="errors" />
             </div>
             <ProductLinkWithActions
               :label="gtcRegisterColumnTitles.productLink"

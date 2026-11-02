@@ -14,6 +14,7 @@ import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 import { ParcelApprovalMode } from '@/models/parcel.approval.mode.js'
 import { loadParcels } from '@/helpers/parcels.list.helpers.js'
+import { vuetifyStubs } from './helpers/test-utils.js'
 
 vi.mock('@/helpers/fetch.wrapper.js', () => ({
   fetchWrapper: {
@@ -490,7 +491,7 @@ describe('parcels store', () => {
         components: { ParcelNumberExt },
         setup: () => ({ store, showList }),
         template: '<ParcelNumberExt :item="showList ? store.items[0] : store.item" />'
-      }, { global: { stubs: { ClickableCell: true, ActionButton: true } } })
+      }, { global: { stubs: { ClickableCell: true, ActionButton: true, VTooltip: vuetifyStubs['v-tooltip'] } } })
       expect(wrapper.find('.export-fee-category-marker').exists()).toBe(!flag)
       await store.update(5, { tnVed: 'new', matchesExportFeeCategory: !flag })
       showList.value = true
@@ -539,7 +540,7 @@ describe('parcels store', () => {
         components: { ParcelNumberExt, PageAlertRegion },
         setup: () => ({ store, save, showList }),
         template: '<div><PageAlertRegion /><button @click="save">Save</button><span data-testid="location">{{ showList ? "list" : "form" }}</span><ParcelNumberExt :item="showList ? store.items[0] : store.item" /></div>'
-      }, { global: { stubs: { ClickableCell: true, ActionButton: true } } })
+      }, { global: { stubs: { ClickableCell: true, ActionButton: true, VTooltip: vuetifyStubs['v-tooltip'] } } })
       await wrapper.get('button').trigger('click')
       await flushPromises()
       expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)

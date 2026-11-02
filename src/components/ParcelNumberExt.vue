@@ -20,6 +20,7 @@ const props = defineProps({
 })
 
 const draftMatches = ref(false)
+const EXPORT_FEE_CATEGORY_TOOLTIP = 'Код ТН ВЭД входит в справочник экспортных сборов'
 const showCategory = computed(() => props.liveCategory
   ? draftMatches.value
   : props.item.matchesExportFeeCategory === true)
@@ -71,13 +72,22 @@ function handleFellowsClick(item) {
       :disabled="disabled"
       @click="handleClick" 
     />
-    <span
+    <v-tooltip
       v-if="showCategory"
-      class="export-fee-category-marker"
-      role="img"
-      title="Код ТН ВЭД входит в справочник экспортных сборов"
-      aria-label="Код ТН ВЭД входит в справочник экспортных сборов"
-    >C</span>
+      :text="EXPORT_FEE_CATEGORY_TOOLTIP"
+      location="top"
+      open-delay="150"
+    >
+      <template #activator="{ props: tooltipProps }">
+        <span
+          v-bind="tooltipProps"
+          class="export-fee-category-marker"
+          role="img"
+          tabindex="0"
+          :aria-label="EXPORT_FEE_CATEGORY_TOOLTIP"
+        >C</span>
+      </template>
+    </v-tooltip>
     <ActionButton 
       v-if="item?.fellowItems?.length > 0 && !item?.blockedByFellowItem && !item?.excsiseByFellowItem"
       :item="item" 

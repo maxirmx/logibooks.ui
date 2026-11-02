@@ -47,7 +47,6 @@ import {
   getFrozenOrderSortDir,
   loadParcels,
   formatPassport,
-  formatCustomsCharge,
   getCustomsChargeHeaders
 } from '@/helpers/parcels.list.helpers.js'
 import { handleFellowsClick } from '@/helpers/parcel.number.ext.helpers.js'
@@ -66,6 +65,7 @@ import RegisterHeaderActionsBar from '@/components/RegisterHeaderActionsBar.vue'
 import FeacnCodeSelector from '@/components/FeacnCodeSelector.vue'
 import FeacnCodeCurrent from '@/components/FeacnCodeCurrent.vue'
 import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
+import CustomsChargeDisplay from '@/components/CustomsChargeDisplay.vue'
 import RegisterActionsDialogs from '@/l2/RegisterActionsDialogs.vue'
 import ActionDialog from '@/l2/ActionDialog.vue'
 import ErrorDialog from '@/l2/ErrorDialog.vue'
@@ -842,19 +842,21 @@ function getGenericTemplateHeaders() {
         <template #[`item.customsFee`]="{ item }">
           <ClickableCell
             :item="item"
-            :display-value="formatCustomsCharge(item.customsFee)"
             cell-class="truncated-cell clickable-cell numeric-panel"
             @click="editParcel"
-          />
+          >
+            <CustomsChargeDisplay :item="item" field="customsFee" />
+          </ClickableCell>
         </template>
 
         <template #[`item.customsDuty`]="{ item }">
           <ClickableCell
             :item="item"
-            :display-value="formatCustomsCharge(item.customsDuty)"
             cell-class="truncated-cell clickable-cell numeric-panel"
             @click="editParcel"
-          />
+          >
+            <CustomsChargeDisplay :item="item" field="customsDuty" />
+          </ClickableCell>
         </template>
 
         <template #[`item.weightKg`]="{ item }">

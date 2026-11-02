@@ -3,6 +3,9 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
+import CustomsChargeDisplay from '@/components/CustomsChargeDisplay.vue'
+import { hasCustomsCharges } from '@/helpers/customs.charges.helpers.js'
+
 defineProps({
   item: { type: Object, default: null }
 })
@@ -38,19 +41,19 @@ function formatCharge(value) {
       </div>
     </div>
     <div
-      v-if="item?.customsFee != null || item?.customsDuty != null"
+      v-if="hasCustomsCharges(item)"
       class="form-row customs-charges-row"
     >
       <div class="form-group customs-charge-group">
         <span class="label">Сбор:</span>
         <div class="form-control input readonly-field customs-charge-field" id="customsFee" name="customsFee">
-          {{ formatCharge(item?.customsFee) }}
+          <CustomsChargeDisplay :item="item" field="customsFee" :formatter="formatCharge" />
         </div>
       </div>
       <div class="form-group customs-charge-group">
         <span class="label">Пошлина:</span>
         <div class="form-control input readonly-field customs-charge-field" id="customsDuty" name="customsDuty">
-          {{ formatCharge(item?.customsDuty) }}
+          <CustomsChargeDisplay :item="item" field="customsDuty" :formatter="formatCharge" />
         </div>
       </div>
     </div>

@@ -9,6 +9,7 @@ import { apiUrl } from '@/helpers/config.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { reportError } from '@/helpers/error.helpers.js'
 import { rawWeightPayload } from '@/helpers/derived.weights.helpers.js'
+import { clearCustomsCharges } from '@/helpers/customs.charges.helpers.js'
 import { useBoxesStore } from '@/stores/boxes.store.js'
 import { buildParcelsFilterParams, buildParcelsWhFilterParams, useParcelsStore } from '@/stores/parcels.store.js'
 import { FeacnMatchMode } from '@/models/feacn.match.mode.js'
@@ -30,6 +31,7 @@ export const useRegistersStore = defineStore('registers', () => {
   let itemRequestSequence = 0
   let listRequestSequence = 0
   const projectionRevisions = new Map()
+  const derivedProjectionRevisions = new Map()
   const derivedRefreshes = new Map()
   const refreshingDerivedRegisters = ref(new Set())
   const uploadFile = ref(null)
@@ -250,7 +252,7 @@ export const useRegistersStore = defineStore('registers', () => {
     const preserveCurrentProjection = register => {
       const id = Number(register?.id)
       if ((revisions.get(id) ?? 0) === (projectionRevisions.get(id) ?? 0)) return register
-      return [item.value, ...items.value].find(current => Number(current?.id) === id) ?? { ...register, derivedTotalsPending: true }
+      return [item.value, ...items.value].find(current => Number(current?.id) === id) ?? projectRegisterResponse(register, revisions.get(id) ?? 0)
     }
     loading.value = true
     error.value = null
@@ -448,8 +450,25 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
-  function invalidateDerived(id) {
+  function projectRegisterResponse(register, revision) {
+    const id = Number(register?.id)
+    if (revision === (projectionRevisions.get(id) ?? 0)) return register
+    const projection = clearCustomsCharges(register)
+    if ((derivedProjectionRevisions.get(id) ?? 0) > revision) projection.derivedTotalsPending = true
+    return projection
+  }
+
+  function invalidateCustomsCharges(id) {
     projectionRevisions.set(Number(id), (projectionRevisions.get(Number(id)) ?? 0) + 1)
+    const refreshing = derivedRefreshes.get(Number(id))
+    if (refreshing) refreshing.dirty = true
+    if (Number(item.value?.id) === Number(id)) item.value = clearCustomsCharges(item.value)
+    items.value = items.value.map(r => Number(r.id) === Number(id) ? clearCustomsCharges(r) : r)
+  }
+
+  function invalidateDerived(id) {
+    invalidateCustomsCharges(id)
+    derivedProjectionRevisions.set(Number(id), projectionRevisions.get(Number(id)))
     if (Number(item.value?.id) === Number(id)) item.value = { ...item.value, derivedTotalsPending: true }
     items.value = items.value.map(r => Number(r.id) === Number(id) ? { ...r, derivedTotalsPending: true } : r)
     useBoxesStore().invalidateDerived(id)
@@ -504,9 +523,8 @@ export const useRegistersStore = defineStore('registers', () => {
     try {
       await ensureOpsLoaded()
       const response = await fetchWrapper.get(`${baseUrl}/${id}`)
-      const register = mergeLivePassportCheckState(response, passportCheckStateWatermark)
+      const register = projectRegisterResponse(mergeLivePassportCheckState(response, passportCheckStateWatermark), revision)
       setDestinationField(register)
-      if (revision !== (projectionRevisions.get(Number(id)) ?? 0)) register.derivedTotalsPending = true
       if (requestSequence === itemRequestSequence) item.value = register
       return register
     } catch (err) {
@@ -1070,11 +1088,17 @@ export const useRegistersStore = defineStore('registers', () => {
   }
 
   async function calculateCustomsCharges(id) {
+    const revision = projectionRevisions.get(Number(id)) ?? 0
     loading.value = true
     error.value = null
     try {
       const result = await fetchWrapper.post(`${baseUrl}/${id}/calculate-customs-charges`)
-      patchRegisterCharges(result)
+      if (revision === (projectionRevisions.get(Number(id)) ?? 0)) {
+        const parcels = useParcelsStore()
+        parcels.invalidateCustomsCharges(id)
+        patchRegisterCharges(result)
+        await parcels.refreshCustomsChargeDetail(id)
+      }
       return result
     } catch (err) {
       error.value = err
@@ -1228,6 +1252,7 @@ export const useRegistersStore = defineStore('registers', () => {
     updateWeightsFromFile,
     getById,
     invalidateDerived,
+    invalidateCustomsCharges,
     isRefreshingDerived,
     refreshDerived,
     update,

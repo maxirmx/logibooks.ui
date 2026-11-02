@@ -11,6 +11,7 @@ import { useParcelFiltersStore } from '@/stores/parcel.filters.store.js'
 import { rawWeightPayload, pendingWeightProjection } from '@/helpers/derived.weights.helpers.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { reportError } from '@/helpers/error.helpers.js'
+import { clearCustomsCharges } from '@/helpers/customs.charges.helpers.js'
 import { SwValidationMatchMode } from '@/models/sw.validation.match.mode.js'
 import { ParcelApprovalMode } from '@/models/parcel.approval.mode.js'
 import { PassportCheckStatusFilterValue } from '@/helpers/passport.check.status.helpers.js'
@@ -121,8 +122,9 @@ export const useParcelsStore = defineStore('parcels', () => {
   let itemRequestSequence = 0
   let listRequestSequence = 0
   let projectionRevision = 0
-  const invalidatedRegisters = new Map()
-  const isProjectionCurrent = (registerId, revision) => (invalidatedRegisters.get(Number(registerId)) ?? 0) <= revision
+  const invalidatedWeightRegisters = new Map()
+  const invalidatedChargeRegisters = new Map()
+  const isWeightProjectionCurrent = (registerId, revision) => (invalidatedWeightRegisters.get(Number(registerId)) ?? 0) <= revision
   let lastListRequest = null
   const loading = ref(false)
   const error = ref(null)
@@ -135,15 +137,51 @@ export const useParcelsStore = defineStore('parcels', () => {
   const responseProjectionMetadata = new WeakMap()
   let liveCheckStatusArrival = 0
 
+  function pendingParcelProjection(parcel) {
+    return clearCustomsCharges(pendingWeightProjection(parcel))
+  }
+
+  function projectParcelResponse(parcel, registerId, revision) {
+    const projection = isWeightProjectionCurrent(registerId, revision) ? parcel : pendingWeightProjection(parcel)
+    return (invalidatedChargeRegisters.get(Number(registerId)) ?? 0) <= revision
+      ? projection : clearCustomsCharges(projection)
+  }
+
+  function invalidateCustomsCharges(registerId) {
+    if (!Number.isInteger(Number(registerId)) || Number(registerId) <= 0) return
+    invalidatedChargeRegisters.set(Number(registerId), ++projectionRevision)
+    const patch = parcel => Number(parcel?.registerId) === Number(registerId)
+      ? clearCustomsCharges(parcel) : parcel
+    items.value = items.value.map(patch)
+    items_bn.value = items_bn.value.map(patch)
+    item.value = patch(item.value)
+    useRegistersStore().invalidateCustomsCharges(registerId)
+  }
+
   function invalidateDerived(registerId) {
     if (!Number.isInteger(Number(registerId)) || Number(registerId) <= 0) return
-    invalidatedRegisters.set(Number(registerId), ++projectionRevision)
+    invalidatedWeightRegisters.set(Number(registerId), ++projectionRevision)
+    invalidatedChargeRegisters.set(Number(registerId), projectionRevision)
     const patch = parcel => Number(parcel?.registerId) === Number(registerId)
-      ? pendingWeightProjection(parcel) : parcel
+      ? pendingParcelProjection(parcel) : parcel
     items.value = items.value.map(patch)
     items_bn.value = items_bn.value.map(patch)
     item.value = patch(item.value)
     useRegistersStore().invalidateDerived(registerId)
+  }
+
+  async function refreshCustomsChargeDetail(registerId) {
+    const parcelId = Number(item.value?.id)
+    if (Number(item.value?.registerId) === Number(registerId) && parcelId > 0) {
+      const sequence = itemRequestSequence
+      const revision = projectionRevision
+      const checkStatusWatermark = liveCheckStatusArrival
+      const result = await fetchWrapper.get(`${baseUrl}/a/${parcelId}`)
+      if (sequence === itemRequestSequence && Number(item.value?.id) === parcelId &&
+          Number(item.value?.registerId) === Number(registerId)) {
+        item.value = projectParcelResponse(mergeLiveParcelCheckStatuses(result, checkStatusWatermark), result?.registerId, revision)
+      }
+    }
   }
 
   async function refreshVisibleDerived(registerId) {
@@ -280,7 +318,7 @@ export const useParcelsStore = defineStore('parcels', () => {
       const responseItems = (response.items || []).map((parcel) => {
         const contextualParcel = showMarkedByPartner ? { ...parcel, registerId: parcel.registerId ?? Number(registerId) } : parcel
         const projection = mergeLiveParcelCheckStatuses(contextualParcel, checkStatusWatermark)
-        return isProjectionCurrent(registerId, revision) ? projection : pendingWeightProjection(projection)
+        return projectParcelResponse(projection, registerId, revision)
       })
 
       if (updateStore && requestSequence === listRequestSequence) {
@@ -351,10 +389,10 @@ export const useParcelsStore = defineStore('parcels', () => {
       if (metadata && metadata.requestSequence !== listRequestSequence) return
       const checkStatusWatermark =
         responseCheckStatusWatermarks.get(responseData) ?? liveCheckStatusArrival
-      items.value = (responseData.items || []).map((parcel) =>
-        metadata && !isProjectionCurrent(metadata.registerId, metadata.revision) ? pendingWeightProjection(mergeLiveParcelCheckStatuses(parcel, checkStatusWatermark)) :
-          mergeLiveParcelCheckStatuses(parcel, checkStatusWatermark)
-      )
+      items.value = (responseData.items || []).map((parcel) => {
+        const projection = mergeLiveParcelCheckStatuses(parcel, checkStatusWatermark)
+        return metadata ? projectParcelResponse(projection, metadata.registerId, metadata.revision) : projection
+      })
       totalCount.value = responseData.pagination?.totalCount || 0
       hasNextPage.value = responseData.pagination?.hasNextPage || false
       hasPreviousPage.value = responseData.pagination?.hasPreviousPage || false
@@ -370,8 +408,7 @@ export const useParcelsStore = defineStore('parcels', () => {
     itemError.value = null
     try {
       const result = await fetchWrapper.get(`${baseUrl}/a/${id}`)
-      const merged = isProjectionCurrent(result?.registerId, revision) ? mergeLiveParcelCheckStatuses(result, checkStatusWatermark) :
-        pendingWeightProjection(mergeLiveParcelCheckStatuses(result, checkStatusWatermark))
+      const merged = projectParcelResponse(mergeLiveParcelCheckStatuses(result, checkStatusWatermark), result?.registerId, revision)
       if (requestSequence === itemRequestSequence) item.value = merged
       return merged
     } catch (err) {
@@ -389,7 +426,7 @@ export const useParcelsStore = defineStore('parcels', () => {
     const registerId = data.registerId ?? originalRegisterId
     const affectedRegisters = [...new Set([originalRegisterId, registerId].filter(value => Number.isInteger(Number(value)) && Number(value) > 0))]
     const response = await runParcelMutation(id, () => fetchWrapper.put(`${baseUrl}/${id}`, payload), false)
-    const affectsAllocation = ['weightKg', 'quantity', 'statusId', 'checkStatus', 'registerId', 'boxId', 'shk', 'postingNumber', 'tnVed']
+    const affectsAllocation = ['weightKg', 'quantity', 'unitPrice', 'currency', 'statusId', 'checkStatus', 'registerId', 'boxId', 'shk', 'postingNumber', 'tnVed']
       .some(key => Object.hasOwn(payload, key))
     let updatedData = { ...payload }
     if (updatedData.dangerousGoods == null) delete updatedData.dangerousGoods
@@ -409,7 +446,7 @@ export const useParcelsStore = defineStore('parcels', () => {
       updatedData = { ...updatedData, ...(refreshed ?? { adjustedWeightKg: null, derivedTotalsPending: true }) }
       if (Object.hasOwn(payload, 'tnVed')) updatedData.matchesExportFeeCategory = refreshed?.matchesExportFeeCategory === true
       updatedData = mergeLiveParcelCheckStatuses({ ...updatedData, id: numericId }, checkStatusWatermark)
-      if (!isProjectionCurrent(updatedData.registerId ?? registerId, revision)) updatedData = pendingWeightProjection(updatedData)
+      updatedData = projectParcelResponse(updatedData, updatedData.registerId ?? registerId, revision)
       if (detailSequence !== itemRequestSequence) return response
     }
 
@@ -654,6 +691,8 @@ export const useParcelsStore = defineStore('parcels', () => {
     update,
     updateItems,
     invalidateDerived,
+    invalidateCustomsCharges,
+    refreshCustomsChargeDetail,
     refreshVisibleDerived,
     refreshDerived,
     getByNumber,

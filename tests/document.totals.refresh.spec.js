@@ -169,7 +169,12 @@ describe.each(views)('%s document totals refresh', (kind, component, props) => {
     serverRegister.derivedTotalsPending = true
     const wrapper = open(component, props)
     await flushPromises()
-    expect(wrapper.text()).toContain('итоги пересчитываются')
+    const heading = {
+      invoice: 'Настройки инвойса (INV-77)',
+      do1: 'Настройки формы ДО1 (INV-77)',
+      cmr: 'Настройки CMR (INV-77)'
+    }[kind]
+    expect(wrapper.get('h1').text()).toBe(heading)
     expect(generateButton(wrapper).element.disabled).toBe(true)
     expect(wrapper.find('.weight-correction-checkbox').exists()).toBe(false)
     serverRegister.derivedTotalsPending = false
@@ -177,7 +182,7 @@ describe.each(views)('%s document totals refresh', (kind, component, props) => {
     await flushPromises()
     expect(generateButton(wrapper).element.disabled).toBe(false)
     expect(wrapper.get('.weight-correction-checkbox input').element.checked).toBe(true)
-    expect(wrapper.text()).not.toContain('итоги пересчитываются')
+    expect(wrapper.get('h1').text()).toBe(heading)
     expect(wrapper.find('button[aria-label="Обновить итоги"]').exists()).toBe(false)
     expect(totalsGroup(wrapper).exists()).toBe(false)
     expect(router.go).not.toHaveBeenCalled()

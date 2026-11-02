@@ -547,3 +547,27 @@ describe('OzonParcels_List.vue – multi-select', () => {
   })
 
 })
+
+describe('Ozon group customs charge presentation', () => {
+  it('shows the saved group fee with its tooltip when the accounting owner is absent', async () => {
+    mockRegisterItem.value = { id: 1, dealNumber: 'D-1', customsProcedureCode: 60, customsFee: 1231, customsDuty: 0 }
+    mockItems.value = [{
+      id: 2, registerId: 1, postingNumber: 'POST', productName: 'Sibling', checkStatus: 0,
+      customsFee: 0, customsDuty: 0, customsChargeGroup: { customsFee: 1231, customsDuty: 0 }
+    }]
+    const wrapper = mount(OzonParcels_List, {
+      props: { registerId: 1 },
+      global: { plugins: [createPinia()], stubs: {
+        ...globalStubs, ClickableCell: false,
+        'font-awesome-icon': { props: ['icon'], template: '<i :data-icon="icon" />' }
+      } }
+    })
+    try {
+      await resolveAll()
+      const marker = wrapper.get('.customs-charge-group-marker')
+      expect(marker.attributes('aria-label')).toBe('Суммарные таможенные платежи для всех товаров в посылке')
+      expect(wrapper.findAll('.customs-charge-value').map(w => Number(w.text().replace(/\s/g, ''))))
+        .toContain(1231)
+    } finally { wrapper.unmount() }
+  })
+})

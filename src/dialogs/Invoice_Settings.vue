@@ -211,7 +211,7 @@ onMounted(() => {
       @invalid-submit="focusFirstInvalidField"
     >
       <div class="header-with-actions">
-        <h1 class="primary-heading">{{ heading }} <span v-if="currentRegister?.derivedTotalsPending" role="status">— итоги пересчитываются</span></h1>
+        <h1 class="primary-heading">{{ heading }}</h1>
         <div class="header-actions-bar">
           <div
             v-if="loading || refreshingTotals || currentRegister?.derivedTotalsPending"

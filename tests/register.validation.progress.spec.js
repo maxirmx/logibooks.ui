@@ -57,7 +57,7 @@ afterEach(async () => {
   vi.restoreAllMocks()
 })
 
-function open(kind) {
+function open(kind, { retainClosingDialog = false } = {}) {
   let actions
   const wrapper = mount({
     components: { RegisterActionsDialogs, PageAlertRegion },
@@ -75,7 +75,8 @@ function open(kind) {
     </div>`
   }, { global: { stubs: {
     ...vuetifyStubs,
-    'v-dialog': { props: ['modelValue', 'persistent'], template: '<section v-if="modelValue" role="dialog" :data-persistent="String(persistent)"><slot /></section>' },
+    // A dialog remains rendered during its leave transition after modelValue becomes false.
+    'v-dialog': { props: ['modelValue', 'persistent'], template: `<section v-if="modelValue || ${retainClosingDialog}" role="dialog" :data-persistent="String(persistent)"><slot /></section>` },
     'v-progress-circular': { props: ['modelValue', 'indeterminate'], template: '<div role="progressbar" :data-indeterminate="String(indeterminate)" :aria-valuenow="indeterminate ? undefined : modelValue"><slot /></div>' },
     'v-btn': { props: ['disabled'], template: '<button data-cancel :disabled="disabled"><slot /></button>' }
   } } })
@@ -84,13 +85,14 @@ function open(kind) {
 }
 const title = wrapper => wrapper.get('.app-dialog-frame__title-text').text()
 const busy = wrapper => {
-  expect(wrapper.get('[role="progressbar"]').attributes('data-indeterminate')).toBe('true')
+  expect(wrapper.get('[role="progressbar"]').attributes('data-indeterminate')).toBe('disable-shrink')
   expect(wrapper.get('[role="progressbar"]').attributes('aria-valuenow')).toBeUndefined()
   expect(wrapper.get('[role="progressbar"]').text()).not.toContain('%')
+  expect(wrapper.get('[role="progressbar"]').classes()).toContain('register-progress--spinning')
 }
 
 describe.each(['validation', 'lookup'])('%s progress and totals refresh', kind => {
-  it.each([0, -1, 10])('uses indeterminate progress while refreshing completed total=%s', async total => {
+  it.each([0, -1, 10])('uses a constant arc spinner while refreshing completed total=%s', async total => {
     const { wrapper, actions } = open(kind)
     await wrapper.get('[data-start]').trigger('click')
     await flushPromises()
@@ -114,11 +116,11 @@ describe.each(['validation', 'lookup'])('%s progress and totals refresh', kind =
     gates.totals.resolve(register())
     await flushPromises()
     expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
-    expect(actions.validationState.phase).toBe('processing')
+    expect(actions.validationState.phase).toBe('refreshing-totals')
     expect(useAlertStore().alert).toBeNull()
   })
 
-  it.each([0, 10])('shows indeterminate finalization once all total=%s items are processed on the server', async total => {
+  it.each([0, 10])('shows a constant arc spinner once all total=%s items are processed on the server', async total => {
     progress = { total, processed: total, finished: false }
     const { wrapper } = open(kind)
     await wrapper.get('[data-start]').trigger('click')
@@ -127,6 +129,37 @@ describe.each(['validation', 'lookup'])('%s progress and totals refresh', kind =
     busy(wrapper)
     expect(wrapper.get('[data-cancel]').element.disabled).toBe(false)
     expect(listReads()).toHaveLength(0)
+  })
+
+  it.each(['resolve', 'reject'])('keeps the spinner and totals title throughout closing after the final list read ends with %s', async outcome => {
+    const { wrapper, actions } = open(kind, { retainClosingDialog: true })
+    await wrapper.get('[data-start]').trigger('click')
+    await flushPromises()
+    expect(wrapper.get('[role="progressbar"]').classes()).not.toContain('register-progress--spinning')
+    progress = { total: 10, processed: 10, finished: true }
+    gates.list = deferred()
+    await vi.advanceTimersByTimeAsync(1000)
+    await flushPromises()
+    expect(title(wrapper)).toBe('Пересчёт итогов')
+    busy(wrapper)
+    const indicator = wrapper.get('[role="progressbar"]').element
+    gates.list[outcome](outcome === 'resolve'
+      ? { items: [register()], pagination: {} } : new Error('Не удалось обновить список реестров'))
+    await flushPromises()
+    expect(actions.validationState.show).toBe(false)
+    expect(actions.validationState.handleId).toBeNull()
+    expect(wrapper.get('[role="progressbar"]').element).toBe(indicator)
+    expect(title(wrapper)).toBe('Пересчёт итогов')
+    busy(wrapper)
+    if (outcome === 'reject') expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось обновить список реестров')
+    gates.list = null
+    progress = { total: 10, processed: 2, finished: false }
+    await wrapper.get('[data-start]').trigger('click')
+    await flushPromises()
+    expect(actions.validationState.show).toBe(true)
+    expect(title(wrapper)).toBe(kind === 'validation' ? 'Проверка реестра' : 'Подбор кодов ТН ВЭД')
+    expect(wrapper.get('[role="progressbar"]').text()).toBe('20%')
+    expect(wrapper.get('[role="progressbar"]').classes()).not.toContain('register-progress--spinning')
   })
 
   it.each(['resolve', 'reject'])('keeps the totals stage when an older progress request ends with %s', async outcome => {
@@ -192,7 +225,7 @@ describe.each(['validation', 'lookup'])('%s progress and totals refresh', kind =
     await flushPromises()
     await expect(read.mock.results[0].value).rejects.toBe(failure)
     expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
-    expect(actions.validationState.phase).toBe('processing')
+    expect(actions.validationState.phase).toBe('refreshing-totals')
     expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
     expect(wrapper.get('[role="alert"]').text()).toContain(failure.message)
     expect(presentation).toHaveBeenCalledOnce()
@@ -248,7 +281,7 @@ describe.each(['validation', 'lookup'])('%s progress and totals refresh', kind =
   })
 })
 
-it('renders an indeterminate Vuetify indicator without a visible percentage during totals refresh', async () => {
+it('keeps the same constant arc Vuetify spinner throughout totals refresh and the closing transition', async () => {
   vi.stubGlobal('IntersectionObserver', class { observe() {} unobserve() {} disconnect() {} })
   vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} })
   const wrapper = mount(RegisterActionsDialogs, {
@@ -256,15 +289,26 @@ it('renders an indeterminate Vuetify indicator without a visible percentage duri
       cancelValidation: vi.fn(), actionDialog: { show: false } },
     global: { plugins: [createVuetify()], stubs: {
       ...vuetifyStubs, 'v-progress-circular': false,
-      'v-dialog': { props: ['modelValue'], template: '<section v-if="modelValue"><slot /></section>' }
+      'v-dialog': { props: ['modelValue'], template: '<section><slot /></section>' }
     } }
   })
   wrappers.push(wrapper)
   await flushPromises()
   expect(title(wrapper)).toBe('Пересчёт итогов')
   expect(wrapper.get('[role="progressbar"]').classes()).toContain('v-progress-circular--indeterminate')
+  expect(wrapper.get('[role="progressbar"]').classes()).toContain('v-progress-circular--disable-shrink')
+  expect(wrapper.get('[role="progressbar"]').classes()).toContain('register-progress--spinning')
   expect(wrapper.get('[role="progressbar"]').attributes('aria-valuenow')).toBeUndefined()
   expect(wrapper.get('[role="progressbar"]').text()).not.toContain('%')
+  const svg = wrapper.get('svg').element
+  const circle = wrapper.get('.v-progress-circular__overlay').element
+  await wrapper.setProps({ validationState: { show: false, phase: 'refreshing-totals' } })
+  expect(title(wrapper)).toBe('Пересчёт итогов')
+  expect(wrapper.get('[role="progressbar"]').attributes('aria-valuenow')).toBeUndefined()
+  expect(wrapper.get('[role="progressbar"]').classes()).toContain('v-progress-circular--indeterminate')
+  expect(wrapper.get('[role="progressbar"]').classes()).toContain('v-progress-circular--disable-shrink')
+  expect(wrapper.get('svg').element).toBe(svg)
+  expect(wrapper.get('.v-progress-circular__overlay').element).toBe(circle)
 })
 
 it.each([

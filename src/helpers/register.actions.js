@@ -126,9 +126,9 @@ export async function pollValidation(
       if (validationState.handleId !== handleId) return
       await refreshTotals(validationState.registerId)
       if (validationState.handleId !== handleId) return
+      // Keep the final phase throughout the dialog's leave transition.
       validationState.show = false
       validationState.handleId = null
-      validationState.phase = 'processing'
     }
   } catch (err) {
     if (validationState.handleId !== handleId || (!refreshingTotals && validationState.phase === 'refreshing-totals')) {
@@ -139,7 +139,6 @@ export async function pollValidation(
     alertStore.error(err, { fallback: 'Не удалось выполнить проверку реестра' })
     validationState.show = false
     validationState.handleId = null
-    validationState.phase = 'processing'
     stopPollingFn()
     if (!refreshingTotals) await registersStore.getAll(getAllOptions)
   }
@@ -317,9 +316,9 @@ export function createRegisterActionHandlers(registersStore, alertStore, { mode 
         if (validationState.handleId !== handleId) return
         await refreshCompletedRegister(validationState.registerId)
         if (validationState.handleId !== handleId) return
+        // Keep the final phase throughout the dialog's leave transition.
         validationState.show = false
         validationState.handleId = null
-        validationState.phase = 'processing'
       }
     } catch (err) {
       if (validationState.handleId !== handleId || (!refreshingTotals && validationState.phase === 'refreshing-totals')) {
@@ -330,7 +329,6 @@ export function createRegisterActionHandlers(registersStore, alertStore, { mode 
       alertStore.error(err, { fallback: 'Не удалось подобрать коды ТН ВЭД' })
       validationState.show = false
       validationState.handleId = null
-      validationState.phase = 'processing'
       pollingTimer.stop()
       if (!refreshingTotals) await registersStore.getAll(getAllOptions())
     }

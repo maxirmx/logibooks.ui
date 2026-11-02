@@ -50,7 +50,14 @@ const onValidationDialogUpdate = (value) => {
     @update:model-value="onValidationDialogUpdate"
   >
     <AppDialogFrame :title="validationTitle" compact>
-      <v-progress-circular :model-value="progressValue ?? 0" :indeterminate="progressValue === null" :size="70" :width="7" color="primary">
+      <v-progress-circular
+        :class="{ 'register-progress--spinning': progressValue === null }"
+        :model-value="progressValue ?? 0"
+        :indeterminate="progressValue === null ? 'disable-shrink' : false"
+        :size="70"
+        :width="7"
+        color="primary"
+      >
         <span v-if="progressValue !== null">{{ progressValue }}%</span>
       </v-progress-circular>
       <template #actions>
@@ -63,3 +70,9 @@ const onValidationDialogUpdate = (value) => {
 
   <ActionDialog :action-dialog="actionDialog" />
 </template>
+
+<style scoped>
+.register-progress--spinning :deep(svg) {
+  will-change: transform;
+}
+</style>

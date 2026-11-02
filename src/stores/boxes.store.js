@@ -22,13 +22,19 @@ export const useBoxesStore = defineStore('boxes', () => {
   function invalidateDerived(registerId) {
     revisions.set(Number(registerId), (revisions.get(Number(registerId)) ?? 0) + 1)
     const patch = entry => Number(entry?.registerId) === Number(registerId)
-      ? { ...entry, weightKg: null, derivedTotalsPending: true } : entry
+      ? { ...entry, derivedTotalsPending: true } : entry
     boxes.value = boxes.value.map(patch)
     box.value = patch(box.value)
   }
 
   async function refreshDerived(registerId) {
     if (Number(visibleRegisterId) === Number(registerId)) await getAll(registerId)
+  }
+
+  function pendingSnapshot(entry) {
+    // Keep a saved value already on screen, but never install a read superseded by a write.
+    const current = [box.value, ...boxes.value].find(current => Number(current?.id) === Number(entry.id))
+    return { ...entry, weightKg: current?.weightKg ?? null, derivedTotalsPending: true }
   }
 
   async function run(operation) {
@@ -52,7 +58,7 @@ export const useBoxesStore = defineStore('boxes', () => {
       const response = await fetchWrapper.get(
         `${baseUrl}?registerId=${encodeURIComponent(registerId)}`
       )
-      const result = (response || []).map(entry => snapshot === (revisions.get(Number(registerId)) ?? 0) ? entry : { ...entry, weightKg: null, derivedTotalsPending: true })
+      const result = response.map(entry => snapshot === (revisions.get(Number(registerId)) ?? 0) ? entry : pendingSnapshot(entry))
       if (sequence === requestSequence) boxes.value = result
       return result
     })
@@ -65,7 +71,7 @@ export const useBoxesStore = defineStore('boxes', () => {
       let response = await fetchWrapper.get(`${baseUrl}/${id}`)
       const registerId = Number(response?.registerId)
       if ((snapshot.get(registerId) ?? 0) !== (revisions.get(registerId) ?? 0)) {
-        response = { ...response, weightKg: null, derivedTotalsPending: true }
+        response = pendingSnapshot(response)
       }
       if (sequence === detailSequence) box.value = response
       return response

@@ -1,5 +1,13 @@
 # Logibooks UI agent rules
 
+## Totals lifecycle and page reads
+
+- Opening a page or pressing browser F5 displays the current saved snapshot immediately, including during processing. Do not wait for totals or initiate repair from page reads.
+- Core owns totals, adjusted weights, reconciliation, and automatic box calculations. Display saved aggregate and box values; keep pending-state guards for invalid corrected output.
+- Use existing operation-progress polling until terminal completion, including cancellation cleanup, then perform one coordinated reload of register, visible boxes, and the current parcel page. Preserve filters, pagination, and entered values.
+- Do not add totals-refresh controls, totals-retry loops, repair queues, or totals notifications. Retain request coalescing, stale-response protection, and unrelated passport/scanner subscriptions.
+- Register headers keep the pre-refresh standalone, leftmost spinner group: `v-if="loading"`, `header-actions header-actions-group`, and `spinner-border spinner-border-m`. Omit the whole spinner group when idle; its visibility must not depend on totals readiness.
+
 ## Copyright headers
 
 - All new files must include the project's copyright header, using comments appropriate to the file format. Migration files are exempt.

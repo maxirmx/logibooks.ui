@@ -40,6 +40,7 @@ const onValidationDialogUpdate = (value) => {
     :width="APP_DIALOG_SIZES.progress"
     :max-width="APP_DIALOG_MAX_WIDTH"
     :aria-label="validationTitle"
+    :persistent="validationState.cancelling"
     @update:model-value="onValidationDialogUpdate"
   >
     <AppDialogFrame :title="validationTitle" compact>
@@ -47,8 +48,8 @@ const onValidationDialogUpdate = (value) => {
         {{ progressValue }}%
       </v-progress-circular>
       <template #actions>
-        <v-btn v-bind="APP_DIALOG_BUTTON_PROPS.secondary" @click="cancelValidation">
-          Отменить
+        <v-btn v-bind="APP_DIALOG_BUTTON_PROPS.secondary" :disabled="validationState.cancelling" @click="cancelValidation">
+          {{ validationState.cancelling ? 'Отмена…' : 'Отменить' }}
         </v-btn>
       </template>
     </AppDialogFrame>

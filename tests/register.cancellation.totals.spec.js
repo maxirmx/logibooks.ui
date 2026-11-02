@@ -15,7 +15,8 @@ import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { useRegisterHeaderActions, POLLING_INTERVAL_MS } from '@/helpers/register.actions.js'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import RegisterHeaderActionsBar from '@/components/RegisterHeaderActionsBar.vue'
-import RegisterTotalsRefreshButton from '@/components/RegisterTotalsRefreshButton.vue'
+import RegisterActionsDialogs from '@/l2/RegisterActionsDialogs.vue'
+import { vuetifyStubs } from './helpers/test-utils.js'
 
 vi.mock('@/helpers/config.js', () => ({ apiUrl: '/api' }))
 vi.mock('@/helpers/fetch.wrapper.js', () => ({ fetchWrapper: { get: vi.fn(), delete: vi.fn() } }))
@@ -36,20 +37,22 @@ function deferred() {
 }
 function open(operation = 'validation') {
   const wrapper = mount(defineComponent({
-    components: { PageAlertRegion, RegisterHeaderActionsBar },
+    components: { PageAlertRegion, RegisterHeaderActionsBar, RegisterActionsDialogs },
     setup() {
       const actions = useRegisterHeaderActions({ registersStore: registers, alertStore: alerts })
-      Object.assign(actions.validationState, { operation, registerId: 12, handleId: 'handle', show: true })
+      actions.validationState.operation = operation
       onUnmounted(actions.stop)
       return { actions, register: computed(() => registers.item) }
     },
     template: `<div>
       <h1>Реестр</h1><hr class="hr"><PageAlertRegion />
       <RegisterHeaderActionsBar :item="register" :disabled="actions.generalActionsDisabled.value" />
-      <button aria-label="Отменить проверку" @click="actions.cancelValidation">Отменить</button>
+      <RegisterActionsDialogs :validation-state="actions.validationState" :progress-percent="actions.progressPercent.value" :cancel-validation="actions.cancelValidation" :action-dialog="actions.actionDialog" />
     </div>`
   }), {
-    global: { stubs: {
+    global: { stubs: { ...vuetifyStubs,
+      'v-dialog': { props: ['modelValue'], template: '<section v-if="modelValue" role="dialog"><slot /></section>' },
+      'v-btn': { props: ['disabled'], template: '<button :disabled="disabled"><slot /></button>' },
       ActionButton: {
         props: ['tooltipText', 'disabled'], emits: ['click'],
         template: '<button :aria-label="tooltipText" :disabled="disabled" @click="$emit(\'click\')" />'
@@ -77,6 +80,7 @@ beforeEach(() => {
   registers.item = { ...serverRegister }
   registers.items = [{ ...serverRegister }]
   fetchWrapper.get.mockImplementation(async url => {
+    if (url.includes('/parcels?')) return { items: [{ id: 1, registerId: 12, adjustedWeightKg: .625 }], pagination: {} }
     if (url.includes('/boxes?')) return [{ id: 5, registerId: 12, weightKg: 2 }]
     if (url.startsWith('/api/registers?')) return { items: [{ ...serverRegister }], pagination: {} }
     return { ...serverRegister }
@@ -89,298 +93,219 @@ afterEach(() => {
   vi.useRealTimers()
 })
 
-describe.each(operationCases)('%s successful completion totals recovery', (operation, progressMethod) => {
+describe.each(operationCases)('%s operation-owned totals lifecycle', (operation, progressMethod, cancelUrl) => {
   const action = operation === 'validation' ? 'validateRegisterSw' : 'lookupFeacnCodes'
   const startMethod = operation === 'validation' ? 'validate' : 'lookupFeacnCodes'
-
-  async function run(wrapper) {
-    wrapper.vm.actions.validationState.show = false
-    await wrapper.vm.actions[action]()
-    await flushPromises()
-  }
-
   beforeEach(() => {
     registers[startMethod] = vi.fn().mockResolvedValue({ id: 'handle' })
-    registers[progressMethod] = vi.fn().mockResolvedValue({ total: 10, processed: 10, finished: true })
+    registers[progressMethod] = vi.fn().mockResolvedValue({ total: 2, processed: 1, finished: false })
   })
-
-  it.each(['initial', 'polled'])('recovers pending totals after %s completion and re-enables exports and documents', async phase => {
-    serverRegister.derivedTotalsPending = true
-    registers.item = { ...serverRegister }
-    const parcels = useParcelsStore()
-    const get = fetchWrapper.get.getMockImplementation()
-    fetchWrapper.get.mockImplementation(async url => url.includes('/parcels?')
-      ? { items: [{ id: 1, registerId: 12, derivedTotalsPending: serverRegister.derivedTotalsPending, adjustedWeightKg: serverRegister.derivedTotalsPending ? null : .625 }], pagination: {} }
-      : get(url))
-    await parcels.getAll(12)
+  async function begin() {
     const wrapper = open(operation)
-    if (phase === 'polled') {
-      registers[progressMethod].mockResolvedValueOnce({ total: 10, processed: 5, finished: false })
-    }
-    await run(wrapper)
-    if (phase === 'polled') {
-      expect(wrapper.vm.actions.validationState.show).toBe(true)
-      await vi.advanceTimersByTimeAsync(POLLING_INTERVAL_MS)
-    }
-    expect(wrapper.vm.actions.validationState.show).toBe(false)
-    expect(exportButton(wrapper).element.disabled).toBe(true)
-    expect(parcels.items[0].derivedTotalsPending).toBe(true)
-    expect(wrapper.get('button[aria-label="инвойс-манифест (все)"]').element.disabled).toBe(true)
-    const progressRequests = registers[progressMethod].mock.calls.length
-    await vi.advanceTimersByTimeAsync(POLLING_INTERVAL_MS)
-    expect(exportButton(wrapper).element.disabled).toBe(true)
-    serverRegister.derivedTotalsPending = false
-    await vi.advanceTimersByTimeAsync(POLLING_INTERVAL_MS)
-    expect(exportButton(wrapper).element.disabled).toBe(false)
-    expect(wrapper.get('button[aria-label="инвойс-манифест (все)"]').element.disabled).toBe(false)
-    expect(registers.items[0].derivedTotalsPending).toBe(false)
-    expect(parcels.items[0]).toMatchObject({ derivedTotalsPending: false, adjustedWeightKg: .625 })
-    expect(registers[progressMethod]).toHaveBeenCalledTimes(progressRequests)
-    expect(registers[startMethod]).toHaveBeenCalledTimes(1)
-    expect(fetchWrapper.delete).not.toHaveBeenCalled()
-    expect(vi.getTimerCount()).toBe(0)
-  })
-
-  it('shows the initial totals-refresh rejection once and retries without restarting the operation', async () => {
-    const failure = new Error('Unexpected totals failure')
-    const get = fetchWrapper.get.getMockImplementation()
-    let failures = 2
-    fetchWrapper.get.mockImplementation(async url => {
-      if (url === '/api/registers/12' && failures-- > 0) throw failure
-      return get(url)
-    })
-    const report = vi.spyOn(alerts, 'error')
-    const wrapper = open(operation)
-    await run(wrapper)
-    expect(wrapper.vm.actions.validationState.show).toBe(false)
-    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-    expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось обновить итоги реестра после проверки')
-    expect(wrapper.text()).not.toContain('Unexpected totals failure')
-    expect(exportButton(wrapper).element.disabled).toBe(true)
-    await vi.advanceTimersByTimeAsync(POLLING_INTERVAL_MS)
-    expect(report).toHaveBeenCalledTimes(1)
-    expect(console.error).toHaveBeenCalledTimes(2)
-    await vi.advanceTimersByTimeAsync(POLLING_INTERVAL_MS)
-    expect(exportButton(wrapper).element.disabled).toBe(false)
-    expect(registers[startMethod]).toHaveBeenCalledTimes(1)
-    expect(registers[progressMethod]).toHaveBeenCalledTimes(1)
-    expect(fetchWrapper.delete).not.toHaveBeenCalled()
-    expect(vi.getTimerCount()).toBe(0)
-  })
-
-  it('does not schedule recovery when the first totals response is ready', async () => {
-    const wrapper = open(operation)
-    await run(wrapper)
-    expect(exportButton(wrapper).element.disabled).toBe(false)
-    const requests = fetchWrapper.get.mock.calls.length
-    await vi.advanceTimersByTimeAsync(POLLING_INTERVAL_MS * 2)
-    expect(fetchWrapper.get).toHaveBeenCalledTimes(requests)
-    expect(vi.getTimerCount()).toBe(0)
-  })
-
-  it('stops pending totals recovery on page exit', async () => {
-    serverRegister.derivedTotalsPending = true
-    const wrapper = open(operation)
-    await run(wrapper)
-    expect(vi.getTimerCount()).toBe(1)
-    wrapper.unmount()
-    const requests = fetchWrapper.get.mock.calls.length
-    await vi.advanceTimersByTimeAsync(POLLING_INTERVAL_MS * 2)
-    expect(fetchWrapper.get).toHaveBeenCalledTimes(requests)
-    expect(vi.getTimerCount()).toBe(0)
-  })
-
-  it.each([
-    ['progress', 'success'], ['progress', 'failure'],
-    ['list', 'success'], ['list', 'failure'],
-    ['totals', 'success'], ['totals', 'failure']
-  ])('ignores a late %s %s after page exit', async (stage, outcome) => {
-    serverRegister.derivedTotalsPending = true
-    const pending = deferred()
-    const get = fetchWrapper.get.getMockImplementation()
-    if (stage === 'progress') registers[progressMethod].mockReturnValueOnce(pending.promise)
-    else fetchWrapper.get.mockImplementation(url =>
-      (stage === 'list' ? url.startsWith('/api/registers?') : url === '/api/registers/12')
-        ? pending.promise : get(url))
-    const wrapper = open(operation)
-    const running = run(wrapper)
+    await wrapper.vm.actions[action]()
     await flushPromises()
-    wrapper.unmount()
-    alerts.info('Сообщение другой страницы', { timeout: null })
-    const requests = fetchWrapper.get.mock.calls.length
-    if (outcome === 'failure') pending.reject(new Error('Late operation failure'))
-    else if (stage === 'progress') pending.resolve({ total: 10, processed: 10, finished: true })
-    else if (stage === 'list') pending.resolve({ items: [{ ...serverRegister }], pagination: {} })
-    else pending.resolve({ ...serverRegister })
-    await running
-    await vi.advanceTimersByTimeAsync(POLLING_INTERVAL_MS * 2)
-    expect(alerts.alert.message).toBe('Сообщение другой страницы')
-    expect(fetchWrapper.get).toHaveBeenCalledTimes(requests)
-    expect(console.error).toHaveBeenCalledTimes(outcome === 'failure' ? 1 : 0)
-    expect(vi.getTimerCount()).toBe(0)
-  })
-})
-
-describe.each(operationCases)('%s cancellation totals recovery', (operation, progressMethod, cancelUrl) => {
-  it('waits for cancellation, then recovers pending register, documents and boxes', async () => {
-    const cancellation = deferred()
-    fetchWrapper.delete.mockReturnValueOnce(cancellation.promise)
-    const boxes = useBoxesStore()
-    await boxes.getAll(12)
-    const wrapper = open(operation)
-    await wrapper.get('button[aria-label="Отменить проверку"]').trigger('click')
-    expect(fetchWrapper.delete).toHaveBeenCalledExactlyOnceWith(cancelUrl)
-    expect(registers.item.derivedTotalsPending).toBe(true)
-    expect(boxes.boxes[0].derivedTotalsPending).toBe(true)
-    expect(exportButton(wrapper).element.disabled).toBe(true)
-    expect(fetchWrapper.get.mock.calls.some(([url]) => url === '/api/registers/12')).toBe(false)
-    // A second dialog-close event must not issue another cancellation.
-    expect(await wrapper.vm.actions.cancelValidation()).toBe(false)
-    serverRegister.derivedTotalsPending = true
-    cancellation.resolve()
-    await flushPromises()
-    expect(exportButton(wrapper).element.disabled).toBe(true)
-    expect(wrapper.get('button[aria-label="инвойс-манифест (все)"]').element.disabled).toBe(true)
-    await vi.advanceTimersByTimeAsync(POLLING_INTERVAL_MS)
-    expect(exportButton(wrapper).element.disabled).toBe(true)
-    serverRegister.derivedTotalsPending = false
-    await vi.advanceTimersByTimeAsync(POLLING_INTERVAL_MS)
-    expect(exportButton(wrapper).element.disabled).toBe(false)
-    expect(wrapper.get('button[aria-label="инвойс-манифест (все)"]').element.disabled).toBe(false)
-    expect(registers.items[0].derivedTotalsPending).toBe(false)
-    expect(boxes.boxes[0].weightKg).toBe(2)
-    expect(boxes.boxes[0].derivedTotalsPending).not.toBe(true)
-    expect(vi.getTimerCount()).toBe(0)
-  })
-
-  it('shows cancellation rejection once and still reconciles the invalidated totals', async () => {
-    const failure = new Error('Unexpected transport failure')
-    fetchWrapper.delete.mockRejectedValueOnce(failure)
-    const report = vi.spyOn(alerts, 'error')
-    const wrapper = open(operation)
-    expect(await wrapper.vm.actions.cancelValidation()).toBe(false)
-    await flushPromises()
-    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-    expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось отменить проверку реестра')
-    expect(wrapper.text()).not.toContain('Unexpected transport failure')
-    expect(report).toHaveBeenCalledTimes(1)
-    expect(console.error).toHaveBeenCalledWith('[register totals recovery]', failure)
-    expect(registers.item.derivedTotalsPending).toBe(false)
-    expect(exportButton(wrapper).element.disabled).toBe(false)
-  })
-
-  it('shows refresh rejection once and retries totals refresh without repeating cancellation', async () => {
-    const failure = new Error('Unexpected projection failure')
-    fetchWrapper.get.mockRejectedValueOnce(failure).mockRejectedValueOnce(failure)
-    const report = vi.spyOn(alerts, 'error')
-    const wrapper = open(operation)
-    expect(await wrapper.vm.actions.cancelValidation()).toBe(false)
-    await flushPromises()
-    expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось обновить итоги реестра после отмены проверки')
-    expect(exportButton(wrapper).element.disabled).toBe(true)
-    await vi.advanceTimersByTimeAsync(POLLING_INTERVAL_MS)
-    expect(report).toHaveBeenCalledTimes(1)
-    expect(console.error).toHaveBeenCalledTimes(2)
-    await vi.advanceTimersByTimeAsync(POLLING_INTERVAL_MS)
-    expect(exportButton(wrapper).element.disabled).toBe(false)
-    expect(fetchWrapper.delete).toHaveBeenCalledTimes(1)
-    expect(fetchWrapper.get).toHaveBeenCalledTimes(3)
-    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-    expect(vi.getTimerCount()).toBe(0)
-  })
-
-  it.each(['success', 'failure'])('ignores a late %s progress response after cancellation', async outcome => {
-    const progress = deferred()
-    const started = operation === 'validation' ? 'validateRegisterSw' : 'lookupFeacnCodes'
-    const startMethod = operation === 'validation' ? 'validate' : 'lookupFeacnCodes'
-    registers[startMethod] = vi.fn().mockResolvedValue({ id: 'handle' })
-    registers[progressMethod] = vi.fn().mockReturnValue(progress.promise)
-    const getAll = vi.spyOn(registers, 'getAll')
-    const wrapper = open(operation)
-    // The harness starts with a dialog open; close it before starting a real operation.
-    wrapper.vm.actions.validationState.show = false
-    const running = wrapper.vm.actions[started]()
-    await flushPromises()
-    await wrapper.vm.actions.cancelValidation()
-    if (outcome === 'success') progress.resolve({ total: 10, processed: 10, finished: true })
-    else progress.reject(new Error('Late progress failure'))
-    await running
-    expect(getAll).not.toHaveBeenCalled()
-    expect(alerts.alert).toBe(null)
-    expect(vi.getTimerCount()).toBe(0)
-  })
-})
-
-it('stops scheduled recovery on teardown', async () => {
-  serverRegister.derivedTotalsPending = true
-  const wrapper = open()
-  await wrapper.vm.actions.cancelValidation()
-  expect(vi.getTimerCount()).toBe(1)
-  wrapper.unmount()
-  await vi.advanceTimersByTimeAsync(POLLING_INTERVAL_MS * 2)
-  expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
-  expect(vi.getTimerCount()).toBe(0)
-})
-
-it.each(['cancellation', 'refresh'])('consumes an in-flight %s rejection after teardown without a stale alert', async stage => {
-  const pending = deferred()
-  if (stage === 'cancellation') fetchWrapper.delete.mockReturnValueOnce(pending.promise)
-  else fetchWrapper.get.mockReturnValueOnce(pending.promise)
-  const wrapper = open()
-  const cancelling = wrapper.vm.actions.cancelValidation()
-  await flushPromises()
-  wrapper.unmount()
-  alerts.info('Сообщение другой страницы', { timeout: null })
-  pending.reject(new Error('Late failure'))
-  expect(await cancelling).toBe(false)
-  expect(alerts.alert.message).toBe('Сообщение другой страницы')
-  expect(console.error).toHaveBeenCalledTimes(1)
-  expect(vi.getTimerCount()).toBe(0)
-  expect(fetchWrapper.get).toHaveBeenCalledTimes(stage === 'cancellation' ? 0 : 1)
-})
-
-it('replaces an older recovery for the same register without leaving an extra timer', async () => {
-  serverRegister.derivedTotalsPending = true
-  const wrapper = open()
-  await wrapper.vm.actions.cancelValidation()
-  Object.assign(wrapper.vm.actions.validationState, { handleId: 'second-handle', show: true })
-  await wrapper.vm.actions.cancelValidation()
-  expect(vi.getTimerCount()).toBe(1)
-  serverRegister.derivedTotalsPending = false
-  await vi.advanceTimersByTimeAsync(POLLING_INTERVAL_MS)
-  expect(exportButton(wrapper).element.disabled).toBe(false)
-  expect(vi.getTimerCount()).toBe(0)
-})
-
-it.each(['automatic', 'manual'])('presents one failure when %s totals refresh starts first', async first => {
-  serverRegister.derivedTotalsPending = true
-  const wrapper = open()
-  await wrapper.vm.actions.cancelValidation()
-  const pending = deferred()
-  fetchWrapper.get.mockReturnValueOnce(pending.promise)
-  const refresh = wrapper.getComponent(RegisterTotalsRefreshButton).vm.$.setupState.refresh
-  const presentation = vi.spyOn(alerts, 'error')
-  if (first === 'automatic') {
-    await vi.advanceTimersByTimeAsync(POLLING_INTERVAL_MS)
-    expect(wrapper.get('button[aria-label="Обновить итоги"]').element.disabled).toBe(true)
-    expect(await refresh()).toBe(false)
-  } else {
-    await wrapper.get('button[aria-label="Обновить итоги"]').trigger('click')
-    await flushPromises()
-    await vi.advanceTimersByTimeAsync(POLLING_INTERVAL_MS)
+    return wrapper
   }
-  expect(fetchWrapper.get).toHaveBeenCalledTimes(2)
-  const failure = new Error('Unexpected shared refresh failure')
-  pending.reject(failure)
-  await flushPromises()
-  expect(presentation).toHaveBeenCalledTimes(1)
-  expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-  expect(wrapper.get('[role="alert"]').text()).not.toContain(failure.message)
-  expect(console.error).toHaveBeenCalledTimes(1)
-  expect(registers.isRefreshingDerived(12)).toBe(false)
-  serverRegister.derivedTotalsPending = false
-  await vi.advanceTimersByTimeAsync(POLLING_INTERVAL_MS)
-  expect(exportButton(wrapper).element.disabled).toBe(false)
-  expect(presentation).toHaveBeenCalledTimes(1)
-  expect(vi.getTimerCount()).toBe(0)
+
+  it('presents startup rejection once without polling or navigating', async () => {
+    registers[startMethod].mockRejectedValueOnce(new Error('Unexpected startup failure'))
+    const present = vi.spyOn(alerts, 'error')
+    const wrapper = await begin()
+    expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось запустить')
+    expect(wrapper.text()).not.toContain('Unexpected startup failure')
+    expect(present).toHaveBeenCalledOnce()
+    expect(registers[progressMethod]).not.toHaveBeenCalled()
+    expect(wrapper.vm.actions.validationState.show).toBe(false)
+  })
+
+  it('coalesces slow progress reads and ignores a queued tick after teardown', async () => {
+    const scheduled = vi.spyOn(globalThis, 'setInterval')
+    const wrapper = await begin()
+    const pending = deferred()
+    registers[progressMethod].mockReturnValueOnce(pending.promise)
+    await vi.advanceTimersByTimeAsync(POLLING_INTERVAL_MS * 2)
+    expect(registers[progressMethod]).toHaveBeenCalledTimes(2)
+    pending.resolve({ total: 2, processed: 1, finished: false })
+    await flushPromises()
+    const tick = scheduled.mock.calls[0][0]
+    wrapper.unmount()
+    await tick()
+    expect(registers[progressMethod]).toHaveBeenCalledTimes(2)
+    expect(alerts.alert).toBeNull()
+  })
+
+  it.each(['pending', 'accepted', 'rejected'])('retains cancellation ownership when an old poll rejects with acknowledgement %s', async acknowledgement => {
+    const wrapper = await begin()
+    const pendingPoll = deferred()
+    registers[progressMethod].mockReturnValueOnce(pendingPoll.promise)
+    await vi.advanceTimersByTimeAsync(POLLING_INTERVAL_MS)
+    const pendingCancel = deferred()
+    fetchWrapper.delete.mockReturnValueOnce(pendingCancel.promise)
+    const reload = vi.spyOn(registers, 'refreshDerived')
+    const present = vi.spyOn(alerts, 'error')
+    const cancellation = wrapper.vm.actions.cancelValidation()
+    await flushPromises()
+    if (acknowledgement === 'accepted') pendingCancel.resolve()
+    if (acknowledgement === 'rejected') pendingCancel.reject(new Error('Unexpected operation rejection'))
+    if (acknowledgement !== 'pending') await cancellation
+    pendingPoll.reject(new Error('Unexpected delayed progress failure'))
+    await flushPromises()
+    expect(wrapper.vm.actions.validationState.handleId).toBe('handle')
+    expect(wrapper.vm.actions.validationState.show).toBe(true)
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(true)
+    expect(reload).not.toHaveBeenCalled()
+    expect(present).toHaveBeenCalledTimes(acknowledgement === 'rejected' ? 1 : 0)
+    if (acknowledgement === 'pending') {
+      pendingCancel.resolve()
+      await cancellation
+    }
+    registers[progressMethod].mockResolvedValue({ total: 2, processed: 1, finished: true })
+    await vi.advanceTimersByTimeAsync(POLLING_INTERVAL_MS)
+    await flushPromises()
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
+    expect(reload).toHaveBeenCalledExactlyOnceWith(12)
+    expect(registers[startMethod]).toHaveBeenCalledOnce()
+    expect(fetchWrapper.delete).toHaveBeenCalledExactlyOnceWith(cancelUrl)
+    expect(wrapper.text()).not.toContain('Unexpected delayed progress failure')
+    expect(console.error).toHaveBeenCalledWith(expect.stringContaining('register operation progress or reload'), expect.any(Error))
+    expect(wrapper.findAll('[role="alert"]')).toHaveLength(acknowledgement === 'rejected' ? 1 : 0)
+    if (acknowledgement === 'rejected') expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось отменить')
+  })
+
+  it('ignores terminal progress fetched before cancellation until the cancellation owner polls again', async () => {
+    const wrapper = await begin()
+    const pendingPoll = deferred()
+    registers[progressMethod].mockReturnValueOnce(pendingPoll.promise)
+    await vi.advanceTimersByTimeAsync(POLLING_INTERVAL_MS)
+    const reload = vi.spyOn(registers, 'refreshDerived')
+    await wrapper.vm.actions.cancelValidation()
+    pendingPoll.resolve({ total: 2, processed: 2, finished: true })
+    await flushPromises()
+    expect(wrapper.vm.actions.validationState.show).toBe(true)
+    expect(reload).not.toHaveBeenCalled()
+    registers[progressMethod].mockResolvedValue({ total: 2, processed: 2, finished: true })
+    await vi.advanceTimersByTimeAsync(POLLING_INTERVAL_MS)
+    await flushPromises()
+    expect(reload).toHaveBeenCalledOnce()
+    expect(wrapper.vm.actions.validationState.show).toBe(false)
+  })
+
+  it('still presents a confirmed terminal reload failure if cancellation starts during that reload', async () => {
+    const wrapper = await begin()
+    const pendingReload = deferred()
+    const reload = vi.spyOn(registers, 'refreshDerived').mockReturnValueOnce(pendingReload.promise)
+    const present = vi.spyOn(alerts, 'error')
+    registers[progressMethod].mockResolvedValue({ total: 2, processed: 2, finished: true })
+    await vi.advanceTimersByTimeAsync(POLLING_INTERVAL_MS)
+    expect(reload).toHaveBeenCalledOnce()
+    await wrapper.vm.actions.cancelValidation()
+    pendingReload.reject(new Error('Unexpected terminal reload failure'))
+    await flushPromises()
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
+    expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось обновить данные обработки реестра')
+    expect(wrapper.text()).not.toContain('Unexpected terminal reload failure')
+    expect(present).toHaveBeenCalledOnce()
+    await vi.advanceTimersByTimeAsync(POLLING_INTERVAL_MS * 2)
+    expect(reload).toHaveBeenCalledOnce()
+  })
+  it('waits for terminal cancellation then reloads the current register, boxes and parcel page once', async () => {
+    await useBoxesStore().getAll(12)
+    await useParcelsStore().getAll(12, { boxId: 5 })
+    fetchWrapper.get.mockClear()
+    const wrapper = await begin()
+    const reload = vi.spyOn(registers, 'refreshDerived')
+    const button = wrapper.get('[role="dialog"] button')
+    await button.trigger('click'); await flushPromises()
+    expect(fetchWrapper.delete).toHaveBeenCalledExactlyOnceWith(cancelUrl)
+    expect(wrapper.vm.actions.validationState.show).toBe(true)
+    expect(button.text()).toBe('Отмена…')
+    expect(button.element.disabled).toBe(true)
+    expect(await wrapper.vm.actions.cancelValidation()).toBe(false)
+    expect(reload).not.toHaveBeenCalled()
+    registers[progressMethod].mockResolvedValue({ total: 2, processed: 1, finished: true })
+    await vi.advanceTimersByTimeAsync(POLLING_INTERVAL_MS)
+    await flushPromises()
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
+    expect(reload).toHaveBeenCalledExactlyOnceWith(12)
+    expect(fetchWrapper.get.mock.calls.map(([url]) => url).filter(url => url === '/api/registers/12')).toHaveLength(1)
+    expect(useParcelsStore().items[0].adjustedWeightKg).toBe(.625)
+    expect(exportButton(wrapper).element.disabled).toBe(false)
+    const calls = registers[progressMethod].mock.calls.length
+    await vi.advanceTimersByTimeAsync(10000)
+    expect(registers[progressMethod]).toHaveBeenCalledTimes(calls)
+    expect(registers[startMethod]).toHaveBeenCalledOnce()
+  })
+  it.each([false, true])('reloads once after immediate terminal progress with error=%s', async failed => {
+    registers[progressMethod].mockResolvedValue({ total: 2, processed: 2, finished: true,
+      error: failed ? 'Не удалось завершить обработку реестра 12' : null })
+    const reload = vi.spyOn(registers, 'refreshDerived')
+    const wrapper = await begin()
+    expect(reload).toHaveBeenCalledOnce()
+    expect(wrapper.vm.actions.validationState.show).toBe(false)
+    expect(wrapper.findAll('[role="alert"]')).toHaveLength(failed ? 1 : 0)
+    if (failed) expect(wrapper.get('[role="alert"]').text()).toContain('реестра 12')
+    await vi.advanceTimersByTimeAsync(10000)
+    expect(reload).toHaveBeenCalledOnce()
+  })
+  it('reports cancellation rejection once, preserves progress and allows a deliberate retry', async () => {
+    const wrapper = await begin()
+    const present = vi.spyOn(alerts, 'error')
+    fetchWrapper.delete.mockRejectedValueOnce(new Error('Unexpected operation rejection'))
+    expect(await wrapper.vm.actions.cancelValidation()).toBe(false)
+    await flushPromises()
+    expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось отменить обработку реестра')
+    expect(wrapper.text()).not.toContain('Unexpected operation rejection')
+    expect(present).toHaveBeenCalledOnce()
+    expect(wrapper.vm.actions.validationState.show).toBe(true)
+    expect(wrapper.vm.actions.validationState.cancelling).toBe(false)
+    await wrapper.vm.actions.cancelValidation()
+    expect(fetchWrapper.delete).toHaveBeenCalledTimes(2)
+    expect(registers[startMethod]).toHaveBeenCalledOnce()
+  })
+  it('reports a reload failure once without retry loops or repeating the operation', async () => {
+    registers[progressMethod].mockResolvedValue({ total: 2, processed: 2, finished: true })
+    vi.spyOn(registers, 'refreshDerived').mockRejectedValueOnce(new Error('Technical reload failure'))
+    const present = vi.spyOn(alerts, 'error')
+    const wrapper = await begin()
+    expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось обновить данные обработки реестра')
+    expect(present).toHaveBeenCalledOnce()
+    await vi.advanceTimersByTimeAsync(10000)
+    expect(registers.refreshDerived).toHaveBeenCalledOnce()
+    expect(registers[startMethod]).toHaveBeenCalledOnce()
+  })
+  it('does not report a second alert if terminal processing and its reload both fail', async () => {
+    registers[progressMethod].mockResolvedValue({ total: 2, processed: 1, finished: true, error: 'Ошибка обработки реестра 12' })
+    vi.spyOn(registers, 'refreshDerived').mockRejectedValueOnce(new Error('Technical reload failure'))
+    const present = vi.spyOn(alerts, 'error')
+    const wrapper = await begin()
+    expect(wrapper.get('[role="alert"]').text()).toContain('Ошибка обработки реестра 12')
+    expect(present).toHaveBeenCalledOnce()
+  })
+  it('observes late cancellation failure after navigation without replacing another page alert', async () => {
+    const wrapper = await begin()
+    const pending = deferred()
+    fetchWrapper.delete.mockReturnValueOnce(pending.promise)
+    const work = wrapper.vm.actions.cancelValidation()
+    wrapper.unmount()
+    alerts.info('Сообщение другой страницы')
+    pending.reject(new Error('Technical late cancellation failure'))
+    await work
+    expect(alerts.alert.message).toBe('Сообщение другой страницы')
+    expect(console.error).toHaveBeenCalled()
+  })
+
+  it.each(['resolve', 'reject'])('ignores operation startup that %ss after navigation', async outcome => {
+    const pending = deferred()
+    registers[startMethod].mockReturnValueOnce(pending.promise)
+    const wrapper = open(operation)
+    const work = wrapper.vm.actions[action]()
+    await flushPromises()
+    wrapper.unmount()
+    alerts.info('Сообщение другой страницы')
+    if (outcome === 'resolve') pending.resolve({ id: 'late-handle' })
+    else pending.reject(new Error('Unexpected startup failure'))
+    await work
+    expect(alerts.alert.message).toBe('Сообщение другой страницы')
+    expect(registers[progressMethod]).not.toHaveBeenCalled()
+  })
 })

@@ -361,7 +361,9 @@ describe('useRegisterHeaderActions', () => {
     // Assert: correct cancel path used
     expect(registersStore.cancelLookupFeacnCodes).toHaveBeenCalledWith('handle-ex')
     expect(registersStore.cancelValidation).not.toHaveBeenCalled()
-    expect(actions.validationState.show).toBe(false)
+    expect(actions.validationState.show).toBe(true)
+    expect(actions.validationState.cancelling).toBe(true)
+    actions.stop()
   })
 
   it('shows action dialog while freeze tn ved order runs', async () => {

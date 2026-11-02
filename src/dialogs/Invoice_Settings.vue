@@ -13,7 +13,6 @@ import * as Yup from 'yup'
 import { storeToRefs } from 'pinia'
 import { ref, computed, watch, onMounted } from 'vue'
 import ActionButton from '@/components/ActionButton.vue'
-import { useRegisterTotalsRefresh } from '@/composables/useRegisterTotalsRefresh.js'
 import ActionDialog from '@/l2/ActionDialog.vue'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
@@ -30,7 +29,6 @@ const props = defineProps({
 })
 
 const registersStore = useRegistersStore()
-const { refreshingTotals, refreshTotals } = useRegisterTotalsRefresh(() => props.id)
 const { item, loading } = storeToRefs(registersStore)
 
 function resolveParcelSelection(value) {
@@ -66,11 +64,7 @@ const do1OptionalColumnValues = [
   InvoiceOptionalColumns.Url
 ]
 
-const currentRegister = computed(() => {
-  const r = item.value
-  if (!r) return null
-  return r
-})
+const currentRegister = computed(() => item.value?.id === props.id ? item.value : null)
 
 const isDo1 = computed(() => props.documentType === 'do1')
 const heading = computed(() => {
@@ -111,7 +105,7 @@ const invoiceWeightCorrectionLabel = computed(() =>
     ? `Применить поправочный коэффициент ${invoiceWeightCorrection.value.coefficientText} к весу посылок.`
     : ''
 )
-const isFormDisabled = computed(() => isSubmitting.value || refreshingTotals.value || loading.value || !currentRegister.value || currentRegister.value.derivedTotalsPending === true)
+const isFormDisabled = computed(() => isSubmitting.value || loading.value || !currentRegister.value || currentRegister.value.derivedTotalsPending === true)
 
 watch(
   () => currentRegister.value?.id,
@@ -211,25 +205,8 @@ onMounted(() => {
       @invalid-submit="focusFirstInvalidField"
     >
       <div class="header-with-actions">
-        <h1 class="primary-heading">{{ heading }} <span v-if="currentRegister?.derivedTotalsPending" role="status">— итоги пересчитываются</span></h1>
+        <h1 class="primary-heading">{{ heading }}</h1>
         <div class="header-actions-bar">
-          <div
-            v-if="loading || refreshingTotals || currentRegister?.derivedTotalsPending"
-            class="header-actions header-actions-group"
-            data-testid="register-totals-actions"
-          >
-            <span v-if="loading || refreshingTotals" class="spinner-border spinner-border-m"></span>
-            <ActionButton
-              v-if="currentRegister?.derivedTotalsPending"
-              :item="{}"
-              icon="fa-solid fa-arrows-rotate"
-              icon-size="2x"
-              tooltip-text="Обновить итоги"
-              aria-label="Обновить итоги"
-              :disabled="refreshingTotals || isSubmitting"
-              @click="refreshTotals"
-            />
-          </div>
           <div class="header-actions header-actions-group">
             <ActionButton
               :item="{}"

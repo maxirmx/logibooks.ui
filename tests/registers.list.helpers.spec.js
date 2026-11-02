@@ -380,6 +380,7 @@ describe('registers.list.helpers', () => {
         validate: vi.fn(),
         getValidationProgress: vi.fn(),
         cancelValidation: vi.fn(),
+        refreshDerived: vi.fn().mockResolvedValue(),
         getAll: vi.fn()
       }
       mockAlertStore = {
@@ -424,10 +425,10 @@ describe('registers.list.helpers', () => {
 
         await pollValidation(validationState, mockRegistersStore, mockAlertStore, stopPollingFn)
 
-        expect(mockAlertStore.error).toHaveBeenCalledWith(errorMessage)
+        expect(mockAlertStore.error).toHaveBeenCalledWith(expect.any(Error), { fallback: 'Не удалось обновить данные обработки реестра' })
         expect(validationState.show).toBe(false)
         expect(stopPollingFn).toHaveBeenCalled()
-        expect(mockRegistersStore.getAll).toHaveBeenCalled()
+        expect(mockRegistersStore.getAll).not.toHaveBeenCalled()
       })
     })
 
@@ -491,7 +492,7 @@ describe('registers.list.helpers', () => {
         expect(mockRegistersStore.validate).toHaveBeenCalled()
         expect(mockRegistersStore.validate.mock.calls[0][0]).toBe(123)
         expect(mockRegistersStore.validate.mock.calls[0][1]).toBe(false)
-        expect(mockAlertStore.error).toHaveBeenCalledWith(errorMessage)
+        expect(mockAlertStore.error).toHaveBeenCalledWith(expect.any(Error), { fallback: 'Не удалось запустить проверку реестра' })
         expect(validationState.show).toBe(false)
         expect(startPollingFn).not.toHaveBeenCalled()
       })
@@ -502,6 +503,13 @@ describe('registers.list.helpers', () => {
 
       beforeEach(() => {
         stopPollingFn = vi.fn()
+      })
+
+      it('does not send a duplicate cancellation while acknowledgement is pending', async () => {
+        Object.assign(validationState, { handleId: 'handle', show: true, cancelling: true })
+        expect(await cancelValidation(validationState, mockRegistersStore, stopPollingFn)).toBe(false)
+        expect(mockRegistersStore.cancelValidation).not.toHaveBeenCalled()
+        expect(validationState.show).toBe(true)
       })
 
       it('cancels validation without handleId', async () => {
@@ -524,8 +532,9 @@ describe('registers.list.helpers', () => {
         await expect(cancelValidation(validationState, mockRegistersStore, stopPollingFn))
           .rejects.toBe(cancellationError)
 
-        expect(validationState.show).toBe(false)
-        expect(validationState.handleId).toBe(null)
+        expect(validationState.show).toBe(true)
+        expect(validationState.handleId).toBe('test-handle-123')
+        expect(validationState.cancelling).toBe(false)
         expect(stopPollingFn).toHaveBeenCalled()
       })
     })
@@ -594,7 +603,8 @@ describe('registers.list.helpers', () => {
             .mockResolvedValue({ total: 1, processed: 1, finished: true }),
           cancelValidation: vi.fn().mockResolvedValue(),
           cancelLookupFeacnCodes: vi.fn().mockResolvedValue(),
-          getAll: vi.fn().mockResolvedValue()
+          refreshDerived: vi.fn().mockResolvedValue(),
+        getAll: vi.fn().mockResolvedValue()
         }
 
         alertStore = { error: vi.fn() }
@@ -616,7 +626,7 @@ describe('registers.list.helpers', () => {
 
         expect(registersStore.lookupFeacnCodes).toHaveBeenCalledWith(5, 1)
         expect(handlers.validationState.operation).toBe('lookup-feacn-codes')
-        expect(handlers.validationState.handleId).toBe(2)
+        expect(handlers.validationState.handleId).toBeNull()
       })
 
       it('exports XML variants and downloads register files', async () => {

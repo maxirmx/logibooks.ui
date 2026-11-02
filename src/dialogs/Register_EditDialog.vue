@@ -1196,7 +1196,7 @@ function toggleAdditionalInfo() {
 }
 
 function formatNumberValue(value) {
-  if (item.value?.derivedTotalsPending === true) return 'Пересчёт'
+  // Ordinary views show saved snapshot values; source operations own final calculation.
   if (value === null || value === undefined || value === '') {
     return '—'
   }

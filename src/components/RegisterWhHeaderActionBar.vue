@@ -7,7 +7,6 @@ import { computed, ref, unref, watch } from 'vue'
 import { useAppConfirm } from '@/composables/useAppConfirm.js'
 import ActionButton from '@/components/ActionButton.vue'
 import ActionButton2L from '@/components/ActionButton2L.vue'
-import RegisterTotalsRefreshButton from '@/components/RegisterTotalsRefreshButton.vue'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
@@ -122,7 +121,10 @@ const exportOptions = computed(() => {
 
 <template>
   <div class="header-actions-bar">
-    <RegisterTotalsRefreshButton :register="register" :disabled="disabled" :loading="loading" :icon-size="iconSize" />
+    <!-- Loading is independent of totals readiness; preserve the original standalone spinner. -->
+    <div v-if="loading" class="header-actions header-actions-group">
+        <span class="spinner-border spinner-border-m"></span>
+    </div>
     <div v-if="canExport" class="header-actions header-actions-group">
         <ActionButton2L
           :item="register"

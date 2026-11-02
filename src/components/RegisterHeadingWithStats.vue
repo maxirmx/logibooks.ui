@@ -17,11 +17,11 @@ function formatCountsLines(register) {
     return isNaN(n) ? null : n
   }
   const parcels = norm(register.parcelsTotal)
-  const places = register.derivedTotalsPending ? null : norm(register.placesTotal)
+  const places = norm(register.placesTotal)
   if (parcels === null && places === null) return []
   return [
     `Всего товаров: ${parcels ?? 0}`,
-    register.derivedTotalsPending ? 'Итоги пересчитываются' : `Всего посылок: ${places ?? 0}`
+    `Всего посылок: ${places ?? 0}`
   ]
 }
 
@@ -74,7 +74,7 @@ const tooltipText = computed(() => {
 <template>
   <v-tooltip v-if="tooltipText || heading" open-delay="300">
     <template #activator="{ props: tipProps }">
-      <h1 class="primary-heading" v-bind="tipProps">{{ heading }} <span v-if="localRegister?.derivedTotalsPending" role="status">— итоги пересчитываются</span></h1>
+      <h1 class="primary-heading" v-bind="tipProps">{{ heading }}</h1>
     </template>
     <template #default>
       <div v-if="tooltipText" style="white-space: pre-line">{{ tooltipText }}</div>

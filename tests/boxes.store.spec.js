@@ -34,6 +34,22 @@ describe('boxes store', () => {
     vi.clearAllMocks()
   })
 
+  it.each(['detail', 'list'])('preserves the saved weight when a delayed %s read is superseded', async kind => {
+    const store = useBoxesStore()
+    store.box = { ...sampleBox }
+    store.boxes = [{ ...sampleBox }]
+    let complete
+    fetchWrapper.get.mockReturnValueOnce(new Promise(resolve => { complete = resolve }))
+    const read = kind === 'detail' ? store.getById(7) : store.getAll(42)
+    store.invalidateDerived(42)
+    expect(store.box.weightKg).toBe(4.125)
+    expect(store.boxes[0].weightKg).toBe(4.125)
+    complete(kind === 'detail' ? { ...sampleBox, weightKg: 999 } : [{ ...sampleBox, weightKg: 999 }])
+    await read
+    const result = kind === 'detail' ? store.box : store.boxes[0]
+    expect(result).toMatchObject({ weightKg: 4.125, derivedTotalsPending: true })
+  })
+
   it('loads register boxes and a single box', async () => {
     fetchWrapper.get.mockResolvedValueOnce([sampleBox]).mockResolvedValueOnce(sampleBox)
     const store = useBoxesStore()

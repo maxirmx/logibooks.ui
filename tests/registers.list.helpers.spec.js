@@ -390,13 +390,13 @@ describe('registers.list.helpers', () => {
     })
 
     describe('calculateValidationProgress', () => {
-      it('returns 0 when total is 0', () => {
+      it('uses indeterminate progress when total is unknown', () => {
         validationState.total = 0
         validationState.processed = 10
 
         const progress = calculateValidationProgress(validationState)
 
-        expect(progress).toBe(0)
+        expect(progress).toBeNull()
       })
 
     })
@@ -424,7 +424,9 @@ describe('registers.list.helpers', () => {
 
         await pollValidation(validationState, mockRegistersStore, mockAlertStore, stopPollingFn)
 
-        expect(mockAlertStore.error).toHaveBeenCalledWith(errorMessage)
+        expect(mockAlertStore.error).toHaveBeenCalledWith(expect.objectContaining({ message: errorMessage }), {
+          fallback: 'Не удалось выполнить проверку реестра'
+        })
         expect(validationState.show).toBe(false)
         expect(stopPollingFn).toHaveBeenCalled()
         expect(mockRegistersStore.getAll).toHaveBeenCalled()
@@ -611,12 +613,12 @@ describe('registers.list.helpers', () => {
         expect(handlers.validationState.operation).toBe('validation')
       })
 
-      it('looks up FEACN codes and tracks handle id', async () => {
+      it('looks up FEACN codes and clears the completed handle', async () => {
         await handlers.lookupFeacnCodes({ id: 5 })
 
         expect(registersStore.lookupFeacnCodes).toHaveBeenCalledWith(5, 1)
         expect(handlers.validationState.operation).toBe('lookup-feacn-codes')
-        expect(handlers.validationState.handleId).toBe(2)
+        expect(handlers.validationState.handleId).toBeNull()
       })
 
       it('exports XML variants and downloads register files', async () => {

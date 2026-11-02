@@ -82,13 +82,25 @@ export function createValidationState() {
     show: false,
     handleId: null,
     total: 0,
-    processed: 0
+    processed: 0,
+    phase: 'processing'
   }
 }
 
+function applyValidationProgress(state, progress) {
+  state.total = progress.total
+  state.processed = progress.processed
+  const finished = progress.finished || progress.total === -1 || progress.processed === -1
+  state.phase = finished ? 'refreshing-totals'
+    : progress.total >= 0 && progress.processed >= progress.total ? 'finalizing' : 'processing'
+  return finished
+}
+
 export function calculateValidationProgress(validationState) {
-  if (!validationState.total || validationState.total <= 0) return 0
-  return Math.round((validationState.processed / validationState.total) * 100)
+  if (['finalizing', 'refreshing-totals'].includes(validationState.phase) ||
+      !Number.isFinite(validationState.total) || validationState.total <= 0 ||
+      !Number.isFinite(validationState.processed) || validationState.processed < 0) return null
+  return Math.min(100, Math.round((validationState.processed / validationState.total) * 100))
 }
 
 export async function pollValidation(
@@ -99,33 +111,37 @@ export async function pollValidation(
   getAllOptions = {},
   refreshTotals = (registerId) => registersStore.refreshDerived?.(registerId)
 ) {
-  if (!validationState.handleId) return
+  if (!validationState.handleId || validationState.phase === 'refreshing-totals') return
 
   const handleId = validationState.handleId
+  let refreshingTotals = false
   try {
     const progress = await registersStore.getValidationProgress(handleId)
-    if (validationState.handleId !== handleId) return
-    validationState.total = progress.total
-    validationState.processed = progress.processed
+    if (validationState.handleId !== handleId || validationState.phase === 'refreshing-totals') return
 
-    if (progress.finished || progress.total === -1 || progress.processed === -1) {
+    if (applyValidationProgress(validationState, progress)) {
+      refreshingTotals = true
       stopPollingFn()
       await registersStore.getAll(getAllOptions)
       if (validationState.handleId !== handleId) return
       await refreshTotals(validationState.registerId)
       if (validationState.handleId !== handleId) return
       validationState.show = false
+      validationState.handleId = null
+      validationState.phase = 'processing'
     }
   } catch (err) {
-    if (validationState.handleId !== handleId) {
+    if (validationState.handleId !== handleId || (!refreshingTotals && validationState.phase === 'refreshing-totals')) {
       // Cancellation or a newer operation owns the UI now.
       reportError(err, { context: 'register validation poll after cancellation' })
       return
     }
-    alertStore.error(err.message || String(err))
+    alertStore.error(err, { fallback: 'Не удалось выполнить проверку реестра' })
     validationState.show = false
+    validationState.handleId = null
+    validationState.phase = 'processing'
     stopPollingFn()
-    await registersStore.getAll(getAllOptions)
+    if (!refreshingTotals) await registersStore.getAll(getAllOptions)
   }
 }
 
@@ -148,6 +164,7 @@ export async function validateRegister(
     validationState.handleId = res.id
     validationState.total = 0
     validationState.processed = 0
+    validationState.phase = 'processing'
     validationState.show = true
     await pollValidation(validationState, registersStore, alertStore, stopPollingFn, getAllOptions, refreshTotals)
     if (validationState.show) startPollingFn()
@@ -162,9 +179,11 @@ export async function cancelValidation(
   stopPollingFn,
   cancel = (handleId) => registersStore.cancelValidation(handleId)
 ) {
+  if (validationState.phase === 'refreshing-totals') return false
   const handleId = validationState.handleId
   validationState.handleId = null
   validationState.show = false
+  validationState.phase = 'processing'
   stopPollingFn()
   if (!handleId) return false
 
@@ -283,33 +302,37 @@ export function createRegisterActionHandlers(registersStore, alertStore, { mode 
   }
 
   async function pollFeacnLookup() {
-    if (!validationState.handleId) return
+    if (!validationState.handleId || validationState.phase === 'refreshing-totals') return
 
     const handleId = validationState.handleId
+    let refreshingTotals = false
     try {
       const progress = await registersStore.getLookupFeacnCodesProgress(handleId)
-      if (validationState.handleId !== handleId) return
-      validationState.total = progress.total
-      validationState.processed = progress.processed
+      if (validationState.handleId !== handleId || validationState.phase === 'refreshing-totals') return
 
-      if (progress.finished || progress.total === -1 || progress.processed === -1) {
+      if (applyValidationProgress(validationState, progress)) {
+        refreshingTotals = true
         pollingTimer.stop()
         await registersStore.getAll(getAllOptions())
         if (validationState.handleId !== handleId) return
         await refreshCompletedRegister(validationState.registerId)
         if (validationState.handleId !== handleId) return
         validationState.show = false
+        validationState.handleId = null
+        validationState.phase = 'processing'
       }
     } catch (err) {
-      if (validationState.handleId !== handleId) {
+      if (validationState.handleId !== handleId || (!refreshingTotals && validationState.phase === 'refreshing-totals')) {
         // Cancellation or a newer operation owns the UI now.
         reportError(err, { context: 'FEACN lookup poll after cancellation' })
         return
       }
-      alertStore.error(err?.message || String(err))
+      alertStore.error(err, { fallback: 'Не удалось подобрать коды ТН ВЭД' })
       validationState.show = false
+      validationState.handleId = null
+      validationState.phase = 'processing'
       pollingTimer.stop()
-      await registersStore.getAll(getAllOptions())
+      if (!refreshingTotals) await registersStore.getAll(getAllOptions())
     }
   }
 
@@ -368,6 +391,7 @@ export function createRegisterActionHandlers(registersStore, alertStore, { mode 
       validationState.handleId = res.id
       validationState.total = 0
       validationState.processed = 0
+      validationState.phase = 'processing'
       validationState.show = true
       await pollFeacnLookup()
       if (recoveryScopeActive && validationState.show) pollingTimer.start()
@@ -451,7 +475,7 @@ export function createRegisterActionHandlers(registersStore, alertStore, { mode 
   }
 
   async function cancelValidationWrapper() {
-    if (!recoveryScopeActive || !validationState.handleId) return false
+    if (!recoveryScopeActive || !validationState.handleId || validationState.phase === 'refreshing-totals') return false
     const registerId = validationState.registerId
     const recovery = createTotalsRecovery(registerId, 'Не удалось обновить итоги реестра после отмены проверки')
     const cancel = validationState.operation === 'lookup-feacn-codes'
@@ -473,6 +497,7 @@ export function createRegisterActionHandlers(registersStore, alertStore, { mode 
     recoveryScopeActive = false
     validationState.handleId = null
     validationState.show = false
+    validationState.phase = 'processing'
     for (const recovery of totalsRecoveries.values()) {
       recovery.active = false
       clearTimeout(recovery.timer)

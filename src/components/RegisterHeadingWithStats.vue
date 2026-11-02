@@ -74,7 +74,7 @@ const tooltipText = computed(() => {
 <template>
   <v-tooltip v-if="tooltipText || heading" open-delay="300">
     <template #activator="{ props: tipProps }">
-      <h1 class="primary-heading" v-bind="tipProps">{{ heading }} <span v-if="localRegister?.derivedTotalsPending" role="status">— итоги пересчитываются</span></h1>
+      <h1 class="primary-heading" v-bind="tipProps">{{ heading }}</h1>
     </template>
     <template #default>
       <div v-if="tooltipText" style="white-space: pre-line">{{ tooltipText }}</div>

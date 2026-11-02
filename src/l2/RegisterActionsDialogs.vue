@@ -14,18 +14,24 @@ import {
 
 const props = defineProps({
   validationState: { type: Object, required: true },
-  progressPercent: { type: [Number, Object], required: true },
+  progressPercent: { type: [Number, Object], default: null },
   cancelValidation: { type: Function, required: true },
   actionDialog: { type: Object, required: true }
 })
 
-const validationTitle = computed(() =>
-  props.validationState?.operation === 'lookup-feacn-codes'
+const refreshingTotals = computed(() => props.validationState?.phase === 'refreshing-totals')
+const finalizing = computed(() => refreshingTotals.value || props.validationState?.phase === 'finalizing')
+const validationTitle = computed(() => refreshingTotals.value ? 'Пересчёт итогов'
+  : finalizing.value ? 'Завершение обработки'
+  : props.validationState?.operation === 'lookup-feacn-codes'
     ? 'Подбор кодов ТН ВЭД'
     : 'Проверка реестра'
 )
 
-const progressValue = computed(() => unref(props.progressPercent) ?? 0)
+const progressValue = computed(() => {
+  const value = unref(props.progressPercent)
+  return !finalizing.value && Number.isFinite(value) ? value : null
+})
 
 const onValidationDialogUpdate = (value) => {
   if (!value) {
@@ -40,14 +46,15 @@ const onValidationDialogUpdate = (value) => {
     :width="APP_DIALOG_SIZES.progress"
     :max-width="APP_DIALOG_MAX_WIDTH"
     :aria-label="validationTitle"
+    :persistent="refreshingTotals"
     @update:model-value="onValidationDialogUpdate"
   >
     <AppDialogFrame :title="validationTitle" compact>
-      <v-progress-circular :model-value="progressValue" :size="70" :width="7" color="primary">
-        {{ progressValue }}%
+      <v-progress-circular :model-value="progressValue ?? 0" :indeterminate="progressValue === null" :size="70" :width="7" color="primary">
+        <span v-if="progressValue !== null">{{ progressValue }}%</span>
       </v-progress-circular>
       <template #actions>
-        <v-btn v-bind="APP_DIALOG_BUTTON_PROPS.secondary" @click="cancelValidation">
+        <v-btn v-bind="APP_DIALOG_BUTTON_PROPS.secondary" :disabled="refreshingTotals" @click="cancelValidation">
           Отменить
         </v-btn>
       </template>

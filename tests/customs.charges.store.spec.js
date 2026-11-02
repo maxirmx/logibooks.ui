@@ -10,10 +10,7 @@ import { useParcelsStore } from '@/stores/parcels.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
-import DTagSection from '@/components/DTagSection.vue'
-import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import CorrectedWeightDisplay from '@/components/CorrectedWeightDisplay.vue'
-import { vuetifyStubs } from './helpers/test-utils.js'
 
 vi.mock('@/helpers/config.js', () => ({ apiUrl: 'http://localhost/api' }))
 vi.mock('@/helpers/fetch.wrapper.js', () => ({ fetchWrapper: {
@@ -152,33 +149,20 @@ describe('customs charge cache consistency', () => {
     expect(registers.item.customsFee).toBeNull()
   })
 
-  it('preserves the form, hides stale money and displays one error when a price-edit refresh fails', async () => {
+  it('rejects a failed price-edit refresh without restoring stale charges or presenting an alert', async () => {
     const parcels = useParcelsStore()
     const alerts = useAlertStore()
     const error = new Error('Не удалось обновить таможенные платежи')
     fetchWrapper.put.mockResolvedValueOnce()
     fetchWrapper.get.mockRejectedValueOnce(error)
-    const report = vi.spyOn(alerts, 'error')
-    let saved = false
-    const save = async () => {
-      try {
-        await parcels.update(2, { id: 2, registerId: 1, unitPrice: 1, currency: 'RUB' })
-        saved = true
-      } catch (failure) { alerts.error(failure) }
-    }
-    const wrapper = mount({
-      components: { DTagSection, PageAlertRegion },
-      setup: () => ({ parcels, save }),
-      template: '<div><hr><PageAlertRegion /><button @click="save">Сохранить</button><DTagSection :item="parcels.item" /></div>'
-    }, { global: { stubs: { 'font-awesome-icon': true, 'v-tooltip': vuetifyStubs['v-tooltip'] } } })
-    await wrapper.get('button').trigger('click')
-    await flushPromises()
-    expect(saved).toBe(false)
-    expect(report).toHaveBeenCalledOnce()
-    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-    expect(wrapper.get('[role="alert"]').text()).toContain(error.message)
-    expect(wrapper.find('.customs-charges-row').exists()).toBe(false)
+    await expect(parcels.update(2, { id: 2, registerId: 1, unitPrice: 1, currency: 'RUB' })).rejects.toBe(error)
+    expect(fetchWrapper.put).toHaveBeenCalledWith('http://localhost/api/parcels/2', {
+      id: 2, registerId: 1, unitPrice: 1, currency: 'RUB'
+    })
+    expect(parcels.item.customsChargeGroup).toBeNull()
+    expect(parcels.item.customsFee).toBeNull()
+    expect(parcels.items[0].customsChargeGroup).toBeNull()
     expect(useRegistersStore().item.customsFee).toBeNull()
-    wrapper.unmount()
+    expect(alerts.alert).toBeNull()
   })
 })

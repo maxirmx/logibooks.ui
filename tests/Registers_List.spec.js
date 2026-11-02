@@ -943,12 +943,12 @@ describe('Registers_List.vue', () => {
       // Test with zero total
       wrapper.vm.validationState.total = 0
       wrapper.vm.validationState.processed = 0
-      expect(wrapper.vm.progressPercent).toBe(0)
+      expect(wrapper.vm.progressPercent).toBeNull()
 
       // Test with negative total
       wrapper.vm.validationState.total = -1
       wrapper.vm.validationState.processed = 10
-      expect(wrapper.vm.progressPercent).toBe(0)
+      expect(wrapper.vm.progressPercent).toBeNull()
 
       // Test with normal values
       wrapper.vm.validationState.total = 100

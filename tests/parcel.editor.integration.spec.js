@@ -15,6 +15,7 @@ import WbrEditor from '@/dialogs/WbrParcel_EditDialog.vue'
 import WbrNEditor from '@/dialogs/WbrNParcel_EditDialog.vue'
 import GtcEditor from '@/dialogs/GtcParcel_EditDialog.vue'
 import { useParcelsStore } from '@/stores/parcels.store.js'
+import { useRegistersStore } from '@/stores/registers.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
@@ -394,6 +395,72 @@ describe.each(editors)('%s editor with real forms and stores', (_name, component
     expect(report).toHaveBeenCalledTimes(1)
     report.mockRestore()
   })
+})
+
+it.each(['save', 'submit'])('keeps the real Ozon editor open after a price-edit refresh failure via %s and retries the submission', async submitMethod => {
+  const initial = parcel(3, {
+    countryCode: 156, currency: 'RUB', customsFee: 0, customsDuty: 0,
+    customsChargeGroup: { customsFee: 1231, customsDuty: 0 }
+  })
+  parcelRequests.push({ promise: Promise.resolve(initial) })
+  registerWeights = { customsFee: 1231, customsDuty: 0 }
+  const wrapper = mountEditor(ParcelEditView, {
+    mode: OP_MODE_WAREHOUSE, returnUrl: '/scanjobs/42/monitor', boxId: 17
+  })
+  await settle()
+  expect(wrapper.getComponent(OzonEditor).exists()).toBe(true)
+  expect(wrapper.get('#customsFee').text()).toContain('1231')
+  await input(wrapper).setValue('Черновик товара после изменения цены')
+  await wrapper.get('[name="unitPrice"]').setValue('15.5')
+  const failure = new Error('Не удалось обновить таможенные платежи')
+  const originalGet = transport.get.getMockImplementation()
+  transport.get.mockImplementation(url => url.endsWith('/registers/12') ? Promise.reject(failure) : originalGet(url))
+  const update = vi.spyOn(useParcelsStore(), 'update')
+  const presentation = vi.spyOn(useAlertStore(), 'error')
+  const submit = () => submitMethod === 'save'
+    ? action(wrapper, 'Сохранить').trigger('click') : wrapper.get('form').trigger('submit')
+  try {
+    await submit()
+    await vi.waitFor(() => expect(presentation).toHaveBeenCalledOnce())
+    await settle()
+    await expect(update.mock.results[0].value).rejects.toBe(failure)
+    expect(wrapper.getComponent(OzonEditor).exists()).toBe(true)
+    expect(wrapper.getComponent(Form).exists()).toBe(true)
+    expect(wrapper.findAll('[data-testid="page-alert-region"]')).toHaveLength(1)
+    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+    expect(wrapper.get('[role="alert"]').text()).toContain(failure.message)
+    expect(input(wrapper).element.value).toBe('Черновик товара после изменения цены')
+    expect(wrapper.get('[name="unitPrice"]').element.value).toBe('15.5')
+    expect(wrapper.getComponent(Form).vm.$.exposed.getValues().currency).toBe('RUB')
+    expect(wrapper.find('.customs-charges-row').exists()).toBe(false)
+    expect(useParcelsStore().item.customsChargeGroup).toBeNull()
+    expect(useRegistersStore().item.customsFee).toBeNull()
+    expect(router.push).not.toHaveBeenCalled()
+    expect(router.replace).not.toHaveBeenCalled()
+    expect(action(wrapper, 'Сохранить').attributes('disabled')).toBeUndefined()
+    transport.get.mockImplementation(originalGet)
+    registerWeights = { customsFee: 689, customsDuty: 0, derivedTotalsPending: false }
+    parcelRequests.push({ promise: Promise.resolve(parcel(3, {
+      ...initial, productName: 'Черновик товара после изменения цены', unitPrice: 15.5,
+      customsChargeGroup: { customsFee: 689, customsDuty: 0 }
+    })) })
+    await submit()
+    await vi.waitFor(() => expect(router.push).toHaveBeenCalledOnce())
+    await settle()
+    expect(update).toHaveBeenCalledTimes(2)
+    expect(transport.put).toHaveBeenCalledTimes(2)
+    for (const [url, values] of transport.put.mock.calls) {
+      expect(url).toBe('http://test/api/parcels/3')
+      expect(values).toMatchObject({ unitPrice: 15.5, currency: 'RUB', productName: 'Черновик товара после изменения цены' })
+    }
+    expect(wrapper.get('#customsFee').text()).toContain('689')
+    expect(presentation).toHaveBeenCalledOnce()
+    expect(router.push).toHaveBeenCalledWith('/scanjobs/42/monitor')
+    expect(router.replace).not.toHaveBeenCalled()
+  } finally {
+    update.mockRestore()
+    presentation.mockRestore()
+  }
 })
 
 it('presents a SignalR resync failure once while preserving the draft', async () => {

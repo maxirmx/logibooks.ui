@@ -43,6 +43,7 @@ const onValidationDialogUpdate = (value) => {
 <template>
   <v-dialog
     :model-value="validationState.show"
+    :transition="false"
     :width="APP_DIALOG_SIZES.progress"
     :max-width="APP_DIALOG_MAX_WIDTH"
     :aria-label="validationTitle"

@@ -2,7 +2,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { computed, watch, ref, unref, reactive } from 'vue'
+import { computed, watch, ref, unref, reactive, nextTick } from 'vue'
 import { useAppConfirm } from '@/composables/useAppConfirm.js'
 import { useActionDialog } from '@/composables/useActionDialog.js'
 import { useRegisterDownloadFlow } from '@/composables/useRegisterDownloadFlow.js'
@@ -122,12 +122,13 @@ export async function pollValidation(
     if (applyValidationProgress(validationState, progress)) {
       refreshingTotals = true
       stopPollingFn()
+      validationState.show = false
+      await nextTick()
+      if (validationState.handleId !== handleId) return
       await registersStore.getAll(getAllOptions)
       if (validationState.handleId !== handleId) return
       await refreshTotals(validationState.registerId)
       if (validationState.handleId !== handleId) return
-      // Keep the final phase throughout the dialog's leave transition.
-      validationState.show = false
       validationState.handleId = null
     }
   } catch (err) {
@@ -312,12 +313,13 @@ export function createRegisterActionHandlers(registersStore, alertStore, { mode 
       if (applyValidationProgress(validationState, progress)) {
         refreshingTotals = true
         pollingTimer.stop()
+        validationState.show = false
+        await nextTick()
+        if (validationState.handleId !== handleId) return
         await registersStore.getAll(getAllOptions())
         if (validationState.handleId !== handleId) return
         await refreshCompletedRegister(validationState.registerId)
         if (validationState.handleId !== handleId) return
-        // Keep the final phase throughout the dialog's leave transition.
-        validationState.show = false
         validationState.handleId = null
       }
     } catch (err) {

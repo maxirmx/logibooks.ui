@@ -270,7 +270,7 @@ defineExpose({
           {{ formatBoxMetric(item.heightCm, 2) }}
         </template>
         <template #[`item.weightKg`]="{ item }">
-          {{ item.derivedTotalsPending ? 'Пересчёт' : formatBoxMetric(item.weightKg, 3, true) }}
+          {{ formatBoxMetric(item.weightKg, 3, true) }}
         </template>
       </v-data-table>
     </v-card>

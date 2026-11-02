@@ -130,7 +130,7 @@ describe('server-owned derived weight projections', () => {
     handlers.stopPolling()
     expect(alerts.error).toHaveBeenCalledTimes(1)
     expect(diagnostics).toHaveBeenCalledExactlyOnceWith(fail, {
-      context: 'register totals recovery'
+      context: 'register operation progress or reload'
     })
   })
   it('retains the warehouse request context when its DTO omits registerId', async () => {
@@ -310,7 +310,6 @@ describe('server-owned derived weight projections', () => {
     parcels.invalidateDerived(12)
     fail = new Error('Не удалось обновить список посылок')
     await expect(registers.refreshDerived(12)).rejects.toBe(fail)
-    expect(registers.isRefreshingDerived(12)).toBe(false)
     expect(parcels.items[0].derivedTotalsPending).toBe(true)
   })
 
@@ -338,7 +337,6 @@ describe('server-owned derived weight projections', () => {
     finish({ items: [parcel({ adjustedWeightKg: .001 })], pagination: {} })
     await Promise.all([refreshing, repeated])
     expect(parcels.items[0]).toMatchObject({ adjustedWeightKg: .002, derivedTotalsPending: false })
-    expect(registers.isRefreshingDerived(12)).toBe(false)
   })
 
   it('keeps failed submissions unchanged and propagates an adjustment conflict', async () => {

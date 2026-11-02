@@ -61,7 +61,8 @@ export function createValidationState() {
     show: false,
     handleId: null,
     total: 0,
-    processed: 0
+    processed: 0,
+    cancelling: false
   }
 }
 
@@ -75,36 +76,41 @@ export async function pollValidation(
   registersStore,
   alertStore,
   stopPollingFn,
-  getAllOptions = {},
-  refreshTotals = (registerId) => registersStore.refreshDerived?.(registerId)
+  reloadData = (registerId) => registersStore.refreshDerived(registerId),
+  getProgress = (handleId) => registersStore.getValidationProgress(handleId)
 ) {
-  if (!validationState.handleId) return
-
   const handleId = validationState.handleId
+  if (!handleId) return
+  let operationError = null
   try {
-    const progress = await registersStore.getValidationProgress(handleId)
+    const progress = await getProgress(handleId)
     if (validationState.handleId !== handleId) return
     validationState.total = progress.total
     validationState.processed = progress.processed
 
     if (progress.finished || progress.total === -1 || progress.processed === -1) {
       stopPollingFn()
-      await registersStore.getAll(getAllOptions)
+      operationError = progress.error
+      if (operationError) alertStore.error(operationError, { fallback: 'Не удалось завершить обработку реестра' })
+      // Terminal progress means Core has finalized committed changes, including cancellation.
+      // Reload the register, visible boxes, and current parcel page once; do not poll totals.
+      await reloadData(validationState.registerId)
       if (validationState.handleId !== handleId) return
-      await refreshTotals(validationState.registerId)
-      if (validationState.handleId !== handleId) return
+      validationState.handleId = null
+      validationState.cancelling = false
       validationState.show = false
     }
-  } catch (err) {
+  } catch (error) {
+    reportError(error, { context: 'register operation progress or reload' })
     if (validationState.handleId !== handleId) {
-      // Cancellation or a newer operation owns the UI now.
-      reportError(err, { context: 'register validation poll after cancellation' })
+      // A different operation or page owns presentation after cancellation/teardown.
       return
     }
-    alertStore.error(err.message || String(err))
+    if (!operationError) alertStore.error(error, { fallback: 'Не удалось обновить данные обработки реестра' })
+    validationState.handleId = null
+    validationState.cancelling = false
     validationState.show = false
     stopPollingFn()
-    await registersStore.getAll(getAllOptions)
   }
 }
 
@@ -117,21 +123,24 @@ export async function validateRegister(
   startPollingFn,
   sw,
   swMatchMode,
-  getAllOptions = {},
-  refreshTotals
+  reloadData,
+  isActive = () => true
 ) {
   try {
     stopPollingFn()
     const res = await registersStore.validate(item.id, sw, swMatchMode)
+    if (!isActive()) return
     validationState.registerId = item.id
     validationState.handleId = res.id
     validationState.total = 0
     validationState.processed = 0
+    validationState.cancelling = false
     validationState.show = true
-    await pollValidation(validationState, registersStore, alertStore, stopPollingFn, getAllOptions, refreshTotals)
+    await pollValidation(validationState, registersStore, alertStore, stopPollingFn, reloadData)
     if (validationState.show) startPollingFn()
   } catch (err) {
-    alertStore.error(err.message || String(err))
+    reportError(err, { context: 'register validation start' })
+    if (isActive()) alertStore.error(err, { fallback: 'Не удалось запустить проверку реестра' })
   }
 }
 
@@ -142,14 +151,22 @@ export async function cancelValidation(
   cancel = (handleId) => registersStore.cancelValidation(handleId)
 ) {
   const handleId = validationState.handleId
-  validationState.handleId = null
-  validationState.show = false
+  if (!handleId) {
+    validationState.show = false
+    stopPollingFn()
+    return false
+  }
+  if (validationState.cancelling) return false
+  validationState.cancelling = true
   stopPollingFn()
-  if (!handleId) return false
-
-  registersStore.invalidateDerived?.(validationState.registerId)
-  await cancel(handleId)
-  return true
+  try {
+    // DELETE acknowledges the request only. Keep the handle/dialog until terminal progress.
+    await cancel(handleId)
+    return true
+  } catch (error) {
+    if (validationState.handleId === handleId) validationState.cancelling = false
+    throw error
+  }
 }
 
 export function createPollingTimer(pollFunction, interval = POLLING_INTERVAL_MS) {
@@ -180,77 +197,22 @@ export function createRegisterActionHandlers(registersStore, alertStore, { mode 
   })
 
   let pollingFunction = null
-  let recoveryScopeActive = true
-  const totalsRecoveries = new Map()
-
-  function createTotalsRecovery(registerId, fallback) {
-    const previous = totalsRecoveries.get(registerId)
-    if (previous) {
-      previous.active = false
-      clearTimeout(previous.timer)
-    }
-    const recovery = { registerId, fallback, active: true, errorReported: false, timer: null }
-    totalsRecoveries.set(registerId, recovery)
-    return recovery
-  }
-
-  function reportRecoveryFailure(error, recovery, fallback) {
-    // After teardown, retain diagnostics without publishing on another page.
-    reportError(error, { context: 'register totals recovery' })
-    if (recovery.active && !recovery.errorReported) {
-      recovery.errorReported = true
-      alertStore.error(error, { fallback })
-    }
-  }
-
-  function scheduleTotalsRefresh(recovery) {
-    recovery.timer = setTimeout(() => {
-      void refreshRegisterTotals(recovery)
-    }, POLLING_INTERVAL_MS)
-  }
-
-  async function refreshRegisterTotals(recovery) {
-    if (!recovery.active) return false
-    if (registersStore.isRefreshingDerived?.(recovery.registerId) === true) {
-      // The initiating operation owns any failure from the request already in flight.
-      scheduleTotalsRefresh(recovery)
-      return false
-    }
-    let succeeded = true
-    try {
-      await registersStore.refreshDerived?.(recovery.registerId)
-    } catch (error) {
-      succeeded = false
-      reportRecoveryFailure(error, recovery, recovery.fallback)
-    }
-    if (!recovery.active) return false
-
-    const register = [unref(registersStore.item), ...unref(registersStore.items ?? [])]
-      .find(item => Number(item?.id) === Number(recovery.registerId))
-    if (!succeeded || register?.derivedTotalsPending === true) {
-      scheduleTotalsRefresh(recovery)
-    } else {
-      totalsRecoveries.delete(recovery.registerId)
-    }
-    return succeeded
-  }
-
-  async function refreshCompletedRegister(registerId) {
-    if (!recoveryScopeActive) return false
-    const recovery = createTotalsRecovery(registerId, 'Не удалось обновить итоги реестра после проверки')
-    registersStore.invalidateDerived?.(registerId)
-    return await refreshRegisterTotals(recovery)
-  }
-
+  let active = true
+  let pollingPending = false
   const pollingTimer = createPollingTimer(async () => {
-    if (typeof pollingFunction === 'function') {
-      try {
-        await pollingFunction()
-      } catch {
-        pollingTimer.stop()
-      }
+    if (pollingPending || !active) return
+    pollingPending = true
+    try {
+      // pollValidation owns progress/reload failures and always observes their rejection.
+      await pollingFunction()
+    } finally {
+      pollingPending = false
     }
   })
+
+  async function reloadCompletedRegister(registerId) {
+    if (active) await registersStore.refreshDerived(registerId)
+  }
 
   const progressPercent = computed(() => calculateValidationProgress(validationState))
 
@@ -262,34 +224,8 @@ export function createRegisterActionHandlers(registersStore, alertStore, { mode 
   }
 
   async function pollFeacnLookup() {
-    if (!validationState.handleId) return
-
-    const handleId = validationState.handleId
-    try {
-      const progress = await registersStore.getLookupFeacnCodesProgress(handleId)
-      if (validationState.handleId !== handleId) return
-      validationState.total = progress.total
-      validationState.processed = progress.processed
-
-      if (progress.finished || progress.total === -1 || progress.processed === -1) {
-        pollingTimer.stop()
-        await registersStore.getAll(getAllOptions())
-        if (validationState.handleId !== handleId) return
-        await refreshCompletedRegister(validationState.registerId)
-        if (validationState.handleId !== handleId) return
-        validationState.show = false
-      }
-    } catch (err) {
-      if (validationState.handleId !== handleId) {
-        // Cancellation or a newer operation owns the UI now.
-        reportError(err, { context: 'FEACN lookup poll after cancellation' })
-        return
-      }
-      alertStore.error(err?.message || String(err))
-      validationState.show = false
-      pollingTimer.stop()
-      await registersStore.getAll(getAllOptions())
-    }
+    await pollValidation(validationState, registersStore, alertStore, () => pollingTimer.stop(),
+      reloadCompletedRegister, (handleId) => registersStore.getLookupFeacnCodesProgress(handleId))
   }
 
   async function runValidation(item, sw, { extended = false } = {}) {
@@ -301,8 +237,7 @@ export function createRegisterActionHandlers(registersStore, alertStore, { mode 
           registersStore,
           alertStore,
           () => pollingTimer.stop(),
-          getAllOptions(),
-          refreshCompletedRegister
+          reloadCompletedRegister
         )
 
       await validateRegister(
@@ -311,11 +246,11 @@ export function createRegisterActionHandlers(registersStore, alertStore, { mode 
         registersStore,
         alertStore,
         () => pollingTimer.stop(),
-        () => recoveryScopeActive && pollingTimer.start(),
+        () => active && pollingTimer.start(),
         sw,
         extended ? SwValidationMatchMode.SwMatch : SwValidationMatchMode.NoSwMatch,
-        getAllOptions(),
-        refreshCompletedRegister
+        reloadCompletedRegister,
+        () => active
       )
     } catch (err) {
       alertStore.error(err?.message || String(err))
@@ -344,14 +279,17 @@ export function createRegisterActionHandlers(registersStore, alertStore, { mode 
         item.id,
         extended ? FeacnMatchMode.FCMatchAndAssign : FeacnMatchMode.FCMatch
       )
+      if (!active) return
       validationState.handleId = res.id
       validationState.total = 0
       validationState.processed = 0
+      validationState.cancelling = false
       validationState.show = true
       await pollFeacnLookup()
-      if (recoveryScopeActive && validationState.show) pollingTimer.start()
+      if (active && validationState.show) pollingTimer.start()
     } catch (err) {
-      alertStore.error(err?.message || String(err))
+      reportError(err, { context: 'register code lookup start' })
+      if (active) alertStore.error(err, { fallback: 'Не удалось запустить подбор кодов ТН ВЭД' })
     }
   }
 
@@ -426,33 +364,31 @@ export function createRegisterActionHandlers(registersStore, alertStore, { mode 
   }
 
   async function cancelValidationWrapper() {
-    if (!recoveryScopeActive || !validationState.handleId) return false
-    const registerId = validationState.registerId
-    const recovery = createTotalsRecovery(registerId, 'Не удалось обновить итоги реестра после отмены проверки')
+    if (!active || !validationState.handleId || validationState.cancelling) return false
+    const handleId = validationState.handleId
     const cancel = validationState.operation === 'lookup-feacn-codes'
-      ? (handleId) => registersStore.cancelLookupFeacnCodes(handleId)
-      : (handleId) => registersStore.cancelValidation(handleId)
-    let cancelled = true
+      ? (id) => registersStore.cancelLookupFeacnCodes(id)
+      : (id) => registersStore.cancelValidation(id)
     try {
-      await cancelValidation(validationState, registersStore, () => pollingTimer.stop(), cancel)
+      return await cancelValidation(validationState, registersStore, () => pollingTimer.stop(), cancel)
     } catch (error) {
-      cancelled = false
-      reportRecoveryFailure(error, recovery, 'Не удалось отменить проверку реестра')
+      reportError(error, { context: 'register operation cancellation' })
+      if (active && validationState.handleId === handleId) {
+        alertStore.error(error, { fallback: 'Не удалось отменить обработку реестра' })
+      }
+      return false
+    } finally {
+      // Continue observing the same operation even if the cancellation acknowledgement was lost.
+      if (active && validationState.handleId === handleId) pollingTimer.start()
     }
-    const refreshed = await refreshRegisterTotals(recovery)
-    return cancelled && refreshed
   }
 
   function stopPolling() {
+    active = false
     pollingTimer.stop()
-    recoveryScopeActive = false
     validationState.handleId = null
+    validationState.cancelling = false
     validationState.show = false
-    for (const recovery of totalsRecoveries.values()) {
-      recovery.active = false
-      clearTimeout(recovery.timer)
-    }
-    totalsRecoveries.clear()
   }
 
   return {
@@ -822,27 +758,7 @@ export function useRegisterHeaderActions({
     )
   }
 
-  function handleValidationDialogClose(show, previous) {
-    const dialogClosed = previous && !show
-    const componentMounted = isComponentMounted?.value ?? true
-    const canReloadParcels = typeof loadParcels === 'function'
-
-    if (dialogClosed && componentMounted && canReloadParcels) {
-      Promise.resolve(loadParcels()).catch((error) => {
-        reportError(error, { context: 'register action parcel refresh' })
-      })
-    }
-  }
-
-  const stopValidationWatcher = watch(
-    () => validationState.show,
-    (show, previous) => {
-      handleValidationDialogClose(show, previous)
-    }
-  )
-
   function stop() {
-    stopValidationWatcher()
     stopPolling()
     hideActionDialog()
     weightCorrectionChoicePending.value = false

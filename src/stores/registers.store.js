@@ -31,7 +31,6 @@ export const useRegistersStore = defineStore('registers', () => {
   let listRequestSequence = 0
   const projectionRevisions = new Map()
   const derivedRefreshes = new Map()
-  const refreshingDerivedRegisters = ref(new Set())
   const uploadFile = ref(null)
   const loading = ref(false)
   const error = ref(null)
@@ -455,10 +454,6 @@ export const useRegistersStore = defineStore('registers', () => {
     useBoxesStore().invalidateDerived(id)
   }
 
-  function isRefreshingDerived(id) {
-    return refreshingDerivedRegisters.value.has(Number(id))
-  }
-
   function refreshDerived(id) {
     const key = Number(id)
     if (!Number.isInteger(key) || key <= 0) return Promise.resolve()
@@ -489,10 +484,8 @@ export const useRegistersStore = defineStore('registers', () => {
       } while (state.dirty)
     }).finally(() => {
       derivedRefreshes.delete(key)
-      refreshingDerivedRegisters.value.delete(key)
     })
     derivedRefreshes.set(key, state)
-    refreshingDerivedRegisters.value.add(key)
     return state.promise
   }
 
@@ -1228,7 +1221,6 @@ export const useRegistersStore = defineStore('registers', () => {
     updateWeightsFromFile,
     getById,
     invalidateDerived,
-    isRefreshingDerived,
     refreshDerived,
     update,
     getReturnRegisterPairs,

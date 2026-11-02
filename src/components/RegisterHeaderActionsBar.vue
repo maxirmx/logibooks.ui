@@ -8,7 +8,6 @@ import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import ActionButton from '@/components/ActionButton.vue'
 import ActionButton2L from '@/components/ActionButton2L.vue'
-import RegisterTotalsRefreshButton from '@/components/RegisterTotalsRefreshButton.vue'
 import { InvoiceParcelSelection } from '@/models/invoice.parcel.selection.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import {
@@ -254,7 +253,10 @@ function openCmrSettings() {
 
 <template>
   <div class="header-actions-bar">
-    <RegisterTotalsRefreshButton :register="item" :disabled="disabled" :loading="loading" :icon-size="iconSize" />
+    <!-- Loading is independent of totals readiness; preserve the original standalone spinner. -->
+    <div v-if="loading" class="header-actions header-actions-group">
+        <span class="spinner-border spinner-border-m"></span>
+    </div>
     <div v-if="isSrLogistPlus" class="header-actions header-actions-group">
       <ActionButton2L
         :item="item"

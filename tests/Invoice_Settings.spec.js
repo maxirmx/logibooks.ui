@@ -5,7 +5,7 @@
 /* @vitest-environment jsdom */
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { ref, nextTick } from 'vue'
+import { ref, reactive, nextTick } from 'vue'
 // Import component after mocks are registered (see below)
 let InvoiceSettings
 import { InvoiceOptionalColumns } from '@/models/invoice.optional.columns.js'
@@ -87,7 +87,7 @@ function mountDialog(props = { id: 77 }) {
     template: '<Suspense><InvoiceSettings v-bind="props" /></Suspense>',
     components: { InvoiceSettings },
     setup() {
-      return { props }
+      return { props: reactive(props) }
     }
   }
   return mount(Parent, {
@@ -181,6 +181,7 @@ describe('Invoice_Settings.vue', () => {
       realWeightKg: 12,
       totalWeightKgToRelease: 24
     }
+    wrapper.vm.props.id = 88
     await nextTick()
 
     const correctionCheckbox = wrapper.get('.weight-correction-checkbox input')

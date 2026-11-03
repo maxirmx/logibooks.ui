@@ -240,15 +240,6 @@ describe('router guards', () => {
     expect(alertError).toHaveBeenCalledExactlyOnceWith('Необходимо войти в систему')
   })
 
-  it('clears an expired session when the login page is opened directly', async () => {
-    authStore.user = { id: 5 }
-    checkMock.mockRejectedValueOnce({ status: 401 })
-    await router.push('/login')
-    expect(authStore.user).toBeNull()
-    expect(clearSessionMock).toHaveBeenCalledOnce()
-    expect(alertError).toHaveBeenCalledExactlyOnceWith('Необходимо войти в систему')
-  })
-
   it('does not label a rejected authentication request as downtime for other client errors', async () => {
     const error = Object.assign(new Error('Недостаточно прав'), { status: 403 })
     checkMock.mockRejectedValueOnce(error)

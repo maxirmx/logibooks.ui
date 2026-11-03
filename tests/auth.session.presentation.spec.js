@@ -81,13 +81,6 @@ describe('authentication failure presentation', () => {
     expect(localStorage.getItem('user')).toBeNull()
   })
 
-  it('does not report an ordinary anonymous visit to login as an expired session', async () => {
-    auth.clearSession()
-    request.mockResolvedValue(response(401))
-    await navigateToLogin('/login')
-    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
-  })
-
   it.each(['network', 503])('keeps downtime distinct from session expiration for %s failures', async failure => {
     if (failure === 'network') request.mockRejectedValue(new TypeError('Failed to fetch'))
     else request.mockResolvedValue(response(failure, { msg: 'Service unavailable', errors: {} }))

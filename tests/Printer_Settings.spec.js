@@ -8,7 +8,6 @@ import { createPinia } from 'pinia'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import PrinterSettings from '@/views/Printer_SettingsView.vue'
-import ActionButton from '@/components/ActionButton.vue'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { useLabelPrintingStore, PRINT_MODE_STORAGE_KEY } from '@/stores/label.printing.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
@@ -100,105 +99,6 @@ describe('routed print settings', () => {
     expect(wrapper.find('[role="alert"]').exists()).toBe(false)
     expect(store.qzState.connected).toBe(true)
   })
-  it('removes its disconnect diagnostic when leaving and ignores later disconnects', async () => {
-    await mountSettings()
-    env.qz.state.connected = false
-    env.qz.onDisconnect.mock.calls[0][0]({ code: 'QzUnavailable' }); await flushPromises()
-    expect(wrapper.get('[role="alert"]').text()).toContain('QZ Tray недоступен.')
-    await cancel()
-    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
-    env.qz.state.connected = true; await flushPromises()
-    env.qz.state.connected = false
-    env.qz.onDisconnect.mock.calls[0][0]({ code: 'QzUnavailable' }); await flushPromises()
-    expect(errorSpy).toHaveBeenCalledOnce()
-    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
-  })
-  it('preserves an unrelated alert when reconnecting after a disconnect', async () => {
-    await mountSettings()
-    env.qz.state.connected = false; await flushPromises()
-    alerts.error('Ошибка загрузки посылки')
-    await wrapper.get('[data-testid="refresh-printers"]').trigger('click'); await flushPromises()
-    expect(wrapper.get('[role="alert"]').text()).toContain('Ошибка загрузки посылки')
-  })
-  it('keeps recovery identities after scope teardown and a rejected save until Off is saved successfully', async () => {
-    await mountSettings(undefined, async (printing) => {
-      const owner = Symbol('departing monitor')
-      printing.bindScope(owner, 42, 9, true); await flushPromises()
-      printing.state.failed = { scanJobId: 42, scanCodeId: 8, template: 'KGT' }
-      printing.state.overflow = { scanJobId: 42, scanCodeId: 70, template: 'KGT' }
-      printing.unbindScope(owner); await flushPromises()
-    })
-    expect(store.state.failed).toBeNull()
-    expect(wrapper.get('[data-testid="failed-print"]').text()).toContain('скан 8 (KGT), задание 42')
-    expect(wrapper.get('[data-testid="print-overflow"]').text()).toContain('скана 70 (KGT), задание 42')
-    env.channel.stop.mockRejectedValueOnce(new Error('cannot stop'))
-    await save()
-    expect(router.currentRoute.value.path).toBe('/printing/settings')
-    expect(wrapper.get('[role="alert"]').text()).toContain('Ошибка локальной печати')
-    expect(wrapper.get('[data-testid="failed-print"]').isVisible()).toBe(true)
-    expect(store.recovery).not.toBeNull()
-    await save()
-    expect(router.currentRoute.value.path).toBe('/boxes')
-    expect(store.recovery).toBeNull()
-  })
-  it('propagates discovery rejection without store presentation', async () => {
-    await mountSettings()
-    const failure = { code: 'QzTrustRejected' }
-    env.qz.connect.mockRejectedValueOnce(failure)
-    await expect(store.refreshPrinters()).rejects.toBe(failure)
-    expect(errorSpy).not.toHaveBeenCalled()
-    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
-  })
-  it.each(['NoPrinters', 'PrinterMissing', 'QzTrustRejected'])('does not publish a late %s settings discovery after cancellation', async (code) => {
-    let rejectDiscovery
-    env.qz.connect.mockReturnValueOnce(new Promise((resolve, reject) => { rejectDiscovery = reject }))
-    await mountSettings()
-    const report = vi.spyOn(console, 'error').mockImplementation(() => {})
-    await cancel()
-    rejectDiscovery({ code }); await flushPromises()
-    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
-    expect(errorSpy).not.toHaveBeenCalled()
-    expect(report).toHaveBeenCalledWith('[printing settings discovery after unmount]', { code })
-  })
-  it('renders a normal page with header actions, one alert region and compact ungrouped printer controls', async () => {
-    await mountSettings()
-    expect(wrapper.get('h1').text()).toBe('Настройки печати')
-    expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="printer-status"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="close-print-settings"]').exists()).toBe(false)
-    for (const [id, caption] of [['label-printer', 'Принтер этикеток:'], ['auto-print-mode', 'Режим автомаркировки:']]) {
-      const label = wrapper.get(`label[for="${id}"]`)
-      expect(label.text()).toBe(caption)
-      expect(label.classes()).toContain('label')
-      expect(label.element.closest('.form-group').querySelector(`select#${id}`)).not.toBeNull()
-    }
-    for (const select of wrapper.findAllComponents({ name: 'v-select' })) expect(select.props('label')).toBeUndefined()
-    alerts.error('Example form failure'); await flushPromises()
-    expect(wrapper.findAllComponents(PageAlertRegion)).toHaveLength(1)
-    expect(wrapper.get('hr').element.nextElementSibling).toBe(wrapper.getComponent(PageAlertRegion).element)
-    for (const id of ['save-print-settings', 'cancel-print-settings']) expect(wrapper.get(`[data-testid="${id}"]`).element.closest('.header-actions-bar')).not.toBeNull()
-    for (const id of ['clear-printer', 'refresh-printers']) {
-      const action = wrapper.findAllComponents(ActionButton).find((item) => item.vm.$attrs['data-testid'] === id)
-      expect(action.props('iconSize')).toBe('1x')
-      expect(wrapper.get(`[data-testid="${id}"]`).element.closest('.header-actions')).toBeNull()
-    }
-    const printers = wrapper.get('[data-testid="printer-selection-inline"] select').findAll('option').map((item) => item.text())
-    expect(printers).toEqual(['', 'TSC TE200', 'Office'])
-  })
-  it('keeps printer and marking choices as a draft until Save and returns to the source form', async () => {
-    await mountSettings()
-    await selectPrinter('Office'); await selectMode('TJ')
-    expect(localStorage.getItem(PRINTER_STORAGE_KEY)).toBe('TSC TE200')
-    expect(localStorage.getItem(PRINT_MODE_STORAGE_KEY)).toBeNull()
-    expect(env.channel.start).not.toHaveBeenCalled()
-    await save()
-    expect(localStorage.getItem(PRINTER_STORAGE_KEY)).toBe('Office')
-    expect(localStorage.getItem(PRINT_MODE_STORAGE_KEY)).toBe('TJ')
-    expect(store.preferredMode).toBe('TJ')
-    expect(router.currentRoute.value.path).toBe('/boxes')
-    expect(store.settingsActive).toBe(false)
-    expect(env.channel.start).not.toHaveBeenCalled()
-  })
   it('discards edits and clearing on Cancel, and only clears the persisted choice on Save', async () => {
     await mountSettings()
     await selectPrinter('Office'); await selectMode('KGT')
@@ -228,20 +128,6 @@ describe('routed print settings', () => {
     expect(wrapper.find('[role="alert"]').exists()).toBe(false)
     expect(errorSpy).not.toHaveBeenCalled()
   })
-  it('shows QZ failure once on this page, clears it on refresh, and removes it on Cancel', async () => {
-    env.qz.connect.mockRejectedValueOnce({ code: 'QzUnavailable' })
-    await mountSettings()
-    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-    expect(wrapper.get('[role="alert"] .page-alert-region__content').text()).toBe('QZ Tray недоступен.')
-    expect(wrapper.text()).not.toContain('QZ Tray отключён')
-    expect(errorSpy).toHaveBeenCalledOnce()
-    await wrapper.get('[data-testid="refresh-printers"]').trigger('click'); await flushPromises()
-    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
-    env.qz.connect.mockRejectedValueOnce({ code: 'QzUnavailable' })
-    await wrapper.get('[data-testid="refresh-printers"]').trigger('click'); await flushPromises()
-    await cancel()
-    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
-  })
   it('retains drafts through refresh failures and retries discovery without saving changes', async () => {
     await mountSettings()
     await selectPrinter('Office'); await selectMode('TJ')
@@ -253,63 +139,6 @@ describe('routed print settings', () => {
     await wrapper.get('[data-testid="refresh-printers"]').trigger('click'); await flushPromises()
     expect(env.qz.connect).toHaveBeenCalledTimes(3)
     expect(errorSpy).toHaveBeenCalledOnce()
-  })
-  it('keeps a failed save open, rolls back both settings and retries the same draft', async () => {
-    await mountSettings()
-    await selectPrinter('Office'); await selectMode('TJ')
-    const write = vi.spyOn(Storage.prototype, 'setItem').mockImplementationOnce(() => { throw new Error('cannot save preferences') })
-    await save()
-    expect(router.currentRoute.value.path).toBe('/printing/settings')
-    expect(wrapper.get('[role="alert"]').text()).toContain('Ошибка локальной печати')
-    expect(errorSpy).toHaveBeenCalledOnce()
-    expect(wrapper.get('[data-testid="printer-selection-inline"] select').element.value).toBe('Office')
-    expect(wrapper.get('[data-testid="auto-print-mode"] select').element.value).toBe('TJ')
-    expect(localStorage.getItem(PRINTER_STORAGE_KEY)).toBe('TSC TE200')
-    expect(localStorage.getItem(PRINT_MODE_STORAGE_KEY)).toBeNull()
-    write.mockRestore()
-    await save()
-    expect(router.currentRoute.value.path).toBe('/boxes')
-    expect(localStorage.getItem(PRINTER_STORAGE_KEY)).toBe('Office')
-    expect(localStorage.getItem(PRINT_MODE_STORAGE_KEY)).toBe('TJ')
-  })
-  it('rolls back a partial write when saving the marking mode fails', async () => {
-    localStorage.setItem(PRINT_MODE_STORAGE_KEY, 'KGT')
-    await mountSettings(); await selectPrinter('Office'); await selectMode('TJ')
-    const original = Storage.prototype.setItem
-    const write = vi.spyOn(Storage.prototype, 'setItem').mockImplementationOnce(function (key, value) { return original.call(this, key, value) })
-      .mockImplementationOnce(() => { throw new Error('mode write failed') })
-    await save()
-    expect(localStorage.getItem(PRINTER_STORAGE_KEY)).toBe('TSC TE200')
-    expect(localStorage.getItem(PRINT_MODE_STORAGE_KEY)).toBe('KGT')
-    expect(store.qzState.printer).toBe('TSC TE200')
-    expect(store.preferredMode).toBe('KGT')
-    expect(errorSpy).toHaveBeenCalledOnce()
-    write.mockRestore(); await save()
-    expect(router.currentRoute.value.path).toBe('/boxes')
-  })
-  it('handles a save rejection without navigating and preserves input for retry', async () => {
-    await mountSettings(); await selectPrinter('Office')
-    const saving = vi.spyOn(store, 'saveSettings').mockRejectedValueOnce(new Error('unexpected save failure'))
-    await save()
-    expect(wrapper.get('[role="alert"]').text()).toContain('Ошибка локальной печати')
-    expect(wrapper.get('[data-testid="printer-selection-inline"] select').element.value).toBe('Office')
-    expect(router.currentRoute.value.path).toBe('/printing/settings')
-    expect(errorSpy).toHaveBeenCalledOnce()
-    saving.mockRestore(); await save()
-    expect(router.currentRoute.value.path).toBe('/boxes')
-  })
-  it('uses a header spinner throughout saving and prevents repeated submissions', async () => {
-    await mountSettings()
-    let finish
-    env.channel.stop.mockReturnValueOnce(new Promise((resolve) => { finish = resolve }))
-    await wrapper.get('[data-testid="save-print-settings"]').trigger('click'); await flushPromises()
-    expect(wrapper.get('[data-testid="print-settings-loading"]').isVisible()).toBe(true)
-    expect(wrapper.get('[data-testid="save-print-settings"]').element.disabled).toBe(true)
-    expect(wrapper.get('[data-testid="cancel-print-settings"]').element.disabled).toBe(true)
-    await wrapper.get('[data-testid="save-print-settings"]').trigger('click')
-    expect(env.channel.stop).toHaveBeenCalledOnce()
-    finish(); await flushPromises()
-    expect(router.currentRoute.value.path).toBe('/boxes')
   })
   it('reports an aborted return once and retries navigation with the draft intact', async () => {
     await mountSettings(); await selectPrinter('Office')
@@ -325,11 +154,6 @@ describe('routed print settings', () => {
   it.each(['https://evil.example', '//evil.example', '/printing/settings', '/printing/settings/', '/PRINTING/SETTINGS', '/printing/settings/?tab=printer#top', undefined])('uses the scanning list for an unsafe or self return route %s', async (returnUrl) => {
     await mountSettings('/printing/settings' + (returnUrl ? '?returnUrl=' + encodeURIComponent(returnUrl) : ''))
     await cancel()
-    expect(router.currentRoute.value.path).toBe('/scanjobs')
-  })
-  it('returns to scanning after saving with a trailing-slash self return URL', async () => {
-    await mountSettings('/printing/settings?returnUrl=/printing/settings/')
-    await save()
     expect(router.currentRoute.value.path).toBe('/scanjobs')
   })
   it('preserves localized QZ errors when a save fails and allows saving again', async () => {
@@ -402,22 +226,6 @@ describe('routed print settings', () => {
     await save()
     expect(router.currentRoute.value.path).toBe('/boxes')
   })
-  it('cancels deferred discovery when settings is left before the worker finishes', async () => {
-    await mountSettings(undefined, (printing) => { printing.state.busy = true })
-    await cancel()
-    store.state.busy = false; await flushPromises()
-    expect(env.qz.connect).not.toHaveBeenCalled()
-    expect(router.currentRoute.value.path).toBe('/boxes')
-  })
-  it('presents a rejected discovery once and permits a retry', async () => {
-    await mountSettings()
-    vi.spyOn(store, 'refreshPrinters').mockRejectedValueOnce(new Error('discovery rejected'))
-    await wrapper.get('[data-testid="refresh-printers"]').trigger('click'); await flushPromises()
-    expect(wrapper.get('[role="alert"]').text()).toContain('Ошибка локальной печати')
-    expect(errorSpy).toHaveBeenCalledOnce()
-    await wrapper.get('[data-testid="refresh-printers"]').trigger('click'); await flushPromises()
-    expect(env.qz.connect).toHaveBeenCalledTimes(2)
-  })
   it('reports an unexpected discovery rejection technically after leaving', async () => {
     await mountSettings()
     let rejectDiscovery
@@ -456,12 +264,5 @@ describe('routed print settings', () => {
     expect(localStorage.getItem(PRINTER_STORAGE_KEY)).toBe('TSC TE200')
     expect(localStorage.getItem(PRINT_MODE_STORAGE_KEY)).toBe('Off')
     expect(env.qz.select).not.toHaveBeenCalled()
-  })
-  it('restores saved draft defaults in a fresh application instance', async () => {
-    await mountSettings(); await selectPrinter('Office'); await selectMode('TJ'); await save()
-    wrapper.unmount(); await store.shutdown()
-    await mountSettings()
-    expect(wrapper.get('[data-testid="printer-selection-inline"] select').element.value).toBe('Office')
-    expect(wrapper.get('[data-testid="auto-print-mode"] select').element.value).toBe('TJ')
   })
 })

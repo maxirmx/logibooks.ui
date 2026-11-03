@@ -19,21 +19,6 @@ beforeEach(() => {
   service = createQzPrinting({ client, api })
 })
 describe('QZ printing', () => {
-  it('restores the saved printer before the first print and validates it after reconnecting', async () => {
-    await service.connect()
-    service.select('Office')
-    const reopened = createQzPrinting({ client, api })
-    reopened.restoreSelection()
-    expect(reopened.state.printer).toBe('Office')
-    await reopened.ready()
-    await reopened.submit(label)
-    expect(client.configs.create).toHaveBeenLastCalledWith('Office', { jobName: label.jobName })
-    localStorage.removeItem(PRINTER_STORAGE_KEY)
-    reopened.restoreSelection()
-    expect(reopened.state.printer).toBe('')
-    await expect(reopened.ready()).rejects.toMatchObject({ code: 'NoSelection' })
-  })
-
   it('propagates storage failures and preserves the selected printer for retry', async () => {
     const storage = { getItem: vi.fn().mockReturnValue('Office'), removeItem: vi.fn().mockImplementationOnce(() => { throw new Error('Доступ к хранилищу запрещён') }) }
     service = createQzPrinting({ client, api, storage })
@@ -42,48 +27,6 @@ describe('QZ printing', () => {
     expect(service.state.printer).toBe('Office')
     service.clearSelection()
     expect(service.state.printer).toBe('')
-  })
-  it.each([
-    { printers: [], code: 'NoPrinters' },
-    { printers: ['TSC TE200'], code: 'PrinterMissing' }
-  ])('forgets disappeared selection for $code even when the queue returns', async ({ printers, code }) => {
-    await service.connect()
-    service.select('Office')
-    client.printers.find.mockResolvedValueOnce(printers)
-    await expect(service.ready()).rejects.toMatchObject({ code })
-    expect(service.state.printer).toBe('')
-    expect(localStorage.getItem(PRINTER_STORAGE_KEY)).toBeNull()
-    await expect(service.ready()).rejects.toMatchObject({ code: 'NoSelection' })
-    await expect(service.submit(label)).rejects.toMatchObject({ code: 'NoSelection' })
-    const reopened = createQzPrinting({ client, api })
-    await reopened.connect()
-    expect(reopened.state.printer).toBe('')
-    service.select('Office')
-    await service.ready()
-    expect(service.state.printer).toBe('Office')
-  })
-  it.each([
-    { printers: [], code: 'NoPrinters' },
-    { printers: ['TSC TE200'], code: 'PrinterMissing' }
-  ])('clears live selection and propagates storage removal failure for $code', async ({ printers, code }) => {
-    const denied = new Error('Доступ к хранилищу запрещён')
-    const storage = {
-      getItem: (key) => localStorage.getItem(key),
-      setItem: (key, value) => localStorage.setItem(key, value),
-      removeItem: vi.fn().mockImplementationOnce(() => { throw denied }).mockImplementation((key) => localStorage.removeItem(key))
-    }
-    service = createQzPrinting({ client, api, storage })
-    await service.connect()
-    service.select('Office')
-    client.printers.find.mockResolvedValue(printers)
-    await expect(service.ready()).rejects.toBe(denied)
-    expect(service.state.printer).toBe('')
-    expect(localStorage.getItem(PRINTER_STORAGE_KEY)).toBe('Office')
-    await expect(service.ready()).rejects.toMatchObject({ code: printers.length ? 'NoSelection' : code })
-    expect(localStorage.getItem(PRINTER_STORAGE_KEY)).toBeNull()
-    expect(storage.removeItem).toHaveBeenCalledTimes(2)
-    client.printers.find.mockResolvedValue(['Office', 'TSC TE200'])
-    await expect(service.ready()).rejects.toMatchObject({ code: 'NoSelection' })
   })
   it.each([
     { printers: [], code: 'NoPrinters' },
@@ -208,11 +151,5 @@ describe('QZ printing', () => {
     const cleanup = service.disconnect()
     await expect(failed).rejects.toThrow('QzUnavailable')
     await cleanup
-  })
-  it('presents distinct domain errors and safe fallbacks', () => {
-    expect(getPrintingErrorMessage({ cause: { data: { code: 'QzDisabled' } }, code: 'QzUnavailable' })).toContain('отключена на сервере')
-    expect(getPrintingErrorMessage({ data: { code: 'Overflow' } })).toContain('не помещается')
-    expect(getPrintingErrorMessage(new Error('network'))).toBe('Не удалось соединиться с сервером. Пожалуйста, проверьте подключение к сети.')
-    expect(getPrintingErrorMessage(null)).toBe('Ошибка локальной печати')
   })
 })

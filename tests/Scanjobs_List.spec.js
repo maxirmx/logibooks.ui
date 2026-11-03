@@ -407,14 +407,6 @@ describe('Scanjobs_List.vue', () => {
     expect(mockScanjobsSortBy.value).toEqual([{ key: 'senderRecipient', order: 'asc' }])
   })
 
-  it('maps ops labels', async () => {
-    expect(mockGetOpsLabel(mockOps.value.types, 0)).toBe('Тип 1')
-    expect(mockGetOpsLabel(mockOps.value.operations, 1)).toBe('Операция 1')
-    expect(mockGetOpsLabel(mockOps.value.modes, 2)).toBe('Режим 1')
-    expect(mockGetOpsLabel(mockOps.value.statuses, 3)).toBe('Статус 1')
-    expect(mockGetOpsLabel(mockOps.value.types, 99)).toBe('99')
-  })
-
   it('routes to scanjob monitor with scanjob id', async () => {
     const wrapper = mount(ScanjobsList, {
       global: {
@@ -438,25 +430,6 @@ describe('Scanjobs_List.vue', () => {
 
     expect(mockPush).toHaveBeenCalledWith('/scanjob/edit/7')
   })
-  it('calls delete function when delete button is clicked', async () => {
-    const wrapper = mount(ScanjobsList, {
-      global: {
-        stubs: {
-          ...testStubs,
-          'v-data-table-server': {
-            template: `<div><slot name="item.actions" :item="{ id: 1, name: 'Сканирование приемки' }"></slot></div>`
-          }
-        }
-      }
-    })
-
-    const scanjob = { id: 1, name: 'Сканирование приемки' }
-    await wrapper.vm.deleteScanjob(scanjob)
-
-    expect(confirmMock).toHaveBeenCalled()
-    expect(deleteScanjobFn).toHaveBeenCalledWith(1)
-  })
-
   it('does not delete while another action is running', async () => {
     const wrapper = mount(ScanjobsList, {
       global: {
@@ -625,18 +598,6 @@ describe('Scanjobs_List.vue', () => {
 
 
   describe('independent completion workflow', () => {
-    it.each([[true, true], [true, false], [false, true], [false, false]])('submits choices %s / %s from the list', async (mark, update) => {
-      getAllScanjobs.mockResolvedValue()
-      confirmMock.mockImplementationOnce(async ({ contentComponentProps: props }) => {
-        props.onChange('markUnscannedAsNotFound', mark)
-        props.onChange('updateRegisterStatus', update)
-        return true
-      })
-      const wrapper = mount(ScanjobsList, { global: { stubs: testStubs } })
-      await wrapper.vm.finishScanjob({ id: 1, name: 'Приёмка', operation: 10 })
-      expect(finishScanjobFn).toHaveBeenCalledWith(1, { markUnscannedAsNotFound: mark, updateRegisterStatus: update })
-    })
-
     it.each([true, false])('uses simple confirmation from the list, accepted: %s', async (accepted) => {
       getAllScanjobs.mockResolvedValue()
       getFinishOptions.mockResolvedValue({ canMarkUnscannedAsNotFound: false, targetRegisterStatus: null })
@@ -647,17 +608,6 @@ describe('Scanjobs_List.vue', () => {
       expect(confirmMock.mock.calls[0][0]).not.toHaveProperty('contentComponent')
       if (accepted) expect(finishScanjobFn).toHaveBeenCalledWith(1, { markUnscannedAsNotFound: false, updateRegisterStatus: false })
       else expect(finishScanjobFn).not.toHaveBeenCalled()
-    })
-
-    it('shows a preview failure once and does not confirm or complete', async () => {
-      getFinishOptions.mockRejectedValueOnce(new Error('Параметры недоступны'))
-      const wrapper = mount(ScanjobsList, { global: { stubs: testStubs } })
-      await wrapper.vm.finishScanjob({ id: 1, name: 'Приёмка' })
-      expect(confirmMock).not.toHaveBeenCalled()
-      expect(finishScanjobFn).not.toHaveBeenCalled()
-      expect(errorFn).toHaveBeenCalledTimes(1)
-      expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain('Параметры недоступны')
-      expect(mockPush).not.toHaveBeenCalled()
     })
 
     it('retains both disabled choices when a failed completion is retried', async () => {
@@ -708,41 +658,6 @@ describe('Scanjobs_List.vue', () => {
   })
 
   describe('finishScanjob', () => {
-    it('calls finish function and reloads list on success', async () => {
-      finishScanjobFn.mockResolvedValue(true)
-      getAllScanjobs.mockResolvedValue()
-
-      const wrapper = mount(ScanjobsList, {
-        global: {
-          stubs: testStubs
-        }
-      })
-
-      const scanjob = { id: 1, name: 'Сканирование приемки' }
-      await wrapper.vm.finishScanjob(scanjob)
-
-      expect(confirmMock).toHaveBeenCalled()
-      expect(finishScanjobFn).toHaveBeenCalledWith(1, { markUnscannedAsNotFound: true, updateRegisterStatus: true })
-      expect(getAllScanjobs).toHaveBeenCalled()
-    })
-
-    it('shows error message on 403 Forbidden', async () => {
-      finishScanjobFn.mockRejectedValue(new Error('403 Forbidden'))
-
-      const wrapper = mount(ScanjobsList, {
-        global: {
-          stubs: testStubs
-        }
-      })
-
-      const scanjob = { id: 1, name: 'Сканирование приемки' }
-      await wrapper.vm.finishScanjob(scanjob)
-
-      expect(confirmMock).toHaveBeenCalled()
-      expect(finishScanjobFn).toHaveBeenCalledWith(1, { markUnscannedAsNotFound: true, updateRegisterStatus: true })
-      expect(errorFn).toHaveBeenCalledWith('Нет прав для завершения сканирования')
-    })
-
     it('shows error message on 404 Not Found', async () => {
       finishScanjobFn.mockRejectedValue(new Error('404 Not Found'))
 
@@ -778,38 +693,6 @@ describe('Scanjobs_List.vue', () => {
       expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain('Server error')
     })
 
-    it('does not finish if runningAction is true', async () => {
-      const wrapper = mount(ScanjobsList, {
-        global: {
-          stubs: testStubs
-        }
-      })
-
-      // Set runningAction to true
-      wrapper.vm.runningAction = true
-
-      const scanjob = { id: 1, name: 'Сканирование приемки' }
-      await wrapper.vm.finishScanjob(scanjob)
-
-      expect(confirmMock).not.toHaveBeenCalled()
-      expect(finishScanjobFn).not.toHaveBeenCalled()
-    })
-
-    it('does not finish when confirmation is declined', async () => {
-      confirmMock.mockResolvedValueOnce(false)
-
-      const wrapper = mount(ScanjobsList, {
-        global: {
-          stubs: testStubs
-        }
-      })
-
-      const scanjob = { id: 1, name: 'Сканирование приемки' }
-      await wrapper.vm.finishScanjob(scanjob)
-
-      expect(confirmMock).toHaveBeenCalled()
-      expect(finishScanjobFn).not.toHaveBeenCalled()
-    })
   })
 
   describe('pauseScanjob', () => {

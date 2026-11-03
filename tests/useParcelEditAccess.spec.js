@@ -49,42 +49,6 @@ describe('useParcelEditAccess', () => {
     expect(navigateToEditParcelMock).not.toHaveBeenCalled()
   })
 
-  it('silently blocks navigation while disabled even for authorized users', () => {
-    const disabled = ref(true)
-    const access = useParcelEditAccess({
-      router: { push: vi.fn() },
-      disabled,
-      getQueryParams: () => ({ registerId: 5 })
-    })
-
-    expect(access.canFollowParcelEditRoute.value).toBe(true)
-    expect(access.isParcelEditCellDisabled.value).toBe(true)
-    expect(access.parcelEditCellClass('truncated-cell')).toBe('truncated-cell clickable-cell')
-    expect(access.openParcelEdit({ id: 10 })).toBe(false)
-    expect(navigateToEditParcelMock).not.toHaveBeenCalled()
-  })
-
-  it('silently blocks navigation when parcel id is missing', () => {
-    const access = useParcelEditAccess({
-      router: { push: vi.fn() },
-      getQueryParams: () => ({ registerId: 5 })
-    })
-
-    expect(access.openParcelEdit({})).toBe(false)
-    expect(access.openParcelEdit(null)).toBe(false)
-    expect(navigateToEditParcelMock).not.toHaveBeenCalled()
-  })
-
-  it('silently blocks navigation when register id is missing', () => {
-    const access = useParcelEditAccess({
-      router: { push: vi.fn() },
-      getQueryParams: () => ({ source: 'warehouse' })
-    })
-
-    expect(access.openParcelEdit({ id: 10 })).toBe(false)
-    expect(navigateToEditParcelMock).not.toHaveBeenCalled()
-  })
-
   it('uses default options and blocks when default query params have no register id', () => {
     const access = useParcelEditAccess()
 

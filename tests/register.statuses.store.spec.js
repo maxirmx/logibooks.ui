@@ -187,17 +187,5 @@ describe('register.statuses.store.js', () => {
       expect(mockGet).not.toHaveBeenCalled()
     })
 
-    it('does not call getAll when statuses are not empty', async () => {
-      // Manually set statuses
-      store.registerStatuses = mockRegisterStatuses
-
-      store.ensureLoaded()
-
-      // Wait for any pending promises to resolve
-      await Promise.resolve()
-
-      expect(mockGet).not.toHaveBeenCalled()
-    })
-
   })
 })

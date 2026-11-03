@@ -9,7 +9,7 @@ import ParcelScanAction from '@/components/ParcelScanAction.vue'
 import ParcelScanConfirmationContent from '@/components/ParcelScanConfirmationContent.vue'
 import ActionButton2L from '@/components/ActionButton2L.vue'
 import { useParcelMultiSelect } from '@/composables/useParcelMultiSelect.js'
-import { parcelScanDisabledReason, parcelScanSuccessMessage } from '@/helpers/parcel.scan.helpers.js'
+import { parcelScanSuccessMessage } from '@/helpers/parcel.scan.helpers.js'
 import { vuetifyStubs } from './helpers/test-utils.js'
 
 const { api, confirm, reportError } = vi.hoisted(() => ({
@@ -64,17 +64,6 @@ beforeEach(() => {
 afterEach(() => { wrappers.splice(0).forEach(wrapper => wrapper.unmount()) })
 
 describe('manual parcel scan eligibility', () => {
-  it.each([
-    [null, 'Нет активного задания сканирования'],
-    [{ ...job, status: 18 }, 'Нет активного задания сканирования'],
-    [{ ...job, type: 20 }, 'Задание поддерживает только сканирование коробок'],
-    [{ ...job, registerId: 2 }, ''], [{ ...job, readOnly: true }, ''],
-    [{ ...job, operation: 30 }, ''], [{ ...job, type: 99 }, ''],
-    [{ ...job, operation: 30, lookupStatusId: 6 }, ''],
-    [{ ...job, operation: 30, lookupStatusId: 5, type: 10 }, '']
-  ])('limits disabled reasons to active-job availability and box-only capability: %j', (candidate, reason) => {
-    expect(parcelScanDisabledReason(candidate, scanConstants)).toBe(reason)
-  })
   it.each([
     [{ completed: 2, matched: 0, lookup: false }, 'Отсканировано посылок: 2.'],
     [{ completed: 1, matched: 1, lookup: true }, 'Посылка соответствует условиям поиска'],

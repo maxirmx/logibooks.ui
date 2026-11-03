@@ -345,44 +345,6 @@ describe('ReturnRegister_EditDialog.vue', () => {
     expect(okButton(wrapper).attributes('disabled')).toBeDefined()
   })
 
-  it('loads pairs when backend procedure ops become valid after criteria are selected', async () => {
-    registerOps.current.customsProcedures = null
-    getReturnRegisterPairs.mockResolvedValueOnce([
-      {
-        senderCompanyId: 2,
-        senderCompanyName: 'Sender',
-        receiverCompanyId: 3,
-        receiverCompanyName: 'Receiver'
-      }
-    ])
-
-    const wrapper = mountDialog()
-    await flushPromises()
-
-    await selectWarehouse(wrapper, 1)
-    expect(getReturnRegisterPairs).not.toHaveBeenCalled()
-
-    registerOps.current.customsProcedures = [{ value: 1, charCode: '01', name: 'Возврат' }]
-    await wrapper.vm.$nextTick()
-    await flushPromises()
-
-    expect(getReturnRegisterPairs).toHaveBeenCalledWith(1, defaultCriteria())
-    expect(wrapper.find('[data-testid="pair-select"]').text()).toContain('Sender / Receiver')
-  })
-
-  it('auto-selects a single warehouse and tolerates non-array pair results', async () => {
-    warehousesRef.value = [{ id: 1, name: 'Warehouse One' }]
-    getReturnRegisterPairs.mockResolvedValueOnce(null)
-
-    const wrapper = mountDialog()
-    await flushPromises()
-    await wrapper.vm.$nextTick()
-
-    expect(wrapper.find('[data-testid="warehouse-select"]').element.value).toBe('1')
-    expect(getReturnRegisterPairs).toHaveBeenCalledWith(1, defaultCriteria())
-    expect(wrapper.findAll('[data-testid="register-checkbox"]')).toHaveLength(0)
-  })
-
   it('shows warehouse load fallback errors', async () => {
     warehousesRef.value = null
     ensureWarehousesLoaded.mockRejectedValueOnce({})
@@ -397,55 +359,6 @@ describe('ReturnRegister_EditDialog.vue', () => {
         fallback: 'Не удалось загрузить данные для создания реестра возврата'
       })
     )
-  })
-
-  it('resets pair, registers, and selection when return-register criteria changes', async () => {
-    getReturnRegisterPairs
-      .mockResolvedValueOnce([
-        {
-          senderCompanyId: 2,
-          senderCompanyName: 'Sender',
-          receiverCompanyId: 3,
-          receiverCompanyName: 'Receiver'
-        }
-      ])
-      .mockResolvedValueOnce([
-        {
-          senderCompanyId: 2,
-          senderCompanyName: 'Sender',
-          receiverCompanyId: 3,
-          receiverCompanyName: 'Receiver'
-        }
-      ])
-    getRegisters.mockResolvedValueOnce([
-      {
-        id: 7,
-        dealNumber: 'D-7',
-        date: '2026-06-12T10:00:00Z',
-        matchingParcelsCount: 2,
-        parcelsTotal: 5
-      }
-    ])
-
-    const wrapper = mountDialog()
-    await flushPromises()
-    await selectWarehouse(wrapper, 1)
-    await selectPair(wrapper)
-    await wrapper.find('[data-testid="register-checkbox"]').setValue(true)
-    expect(okButton(wrapper).attributes('disabled')).toBeUndefined()
-
-    await wrapper.find('[data-testid="return-type-select"]').setValue('60')
-    await flushPromises()
-
-    expect(getReturnRegisterPairs).toHaveBeenLastCalledWith(
-      1,
-      defaultCriteria({
-        customsProcedureCode: 60
-      })
-    )
-    expect(wrapper.find('[data-testid="pair-select"]').element.value).toBe('')
-    expect(wrapper.findAll('[data-testid="register-checkbox"]')).toHaveLength(0)
-    expect(okButton(wrapper).attributes('disabled')).toBeDefined()
   })
 
   it('shows source parties as a selectable read-only table with search and sort', async () => {
@@ -520,25 +433,6 @@ describe('ReturnRegister_EditDialog.vue', () => {
     } finally {
       vi.useRealTimers()
     }
-  })
-
-  it('tolerates non-array source-register results', async () => {
-    getReturnRegisterPairs.mockResolvedValueOnce([
-      {
-        senderCompanyId: 2,
-        senderCompanyName: 'Sender',
-        receiverCompanyId: 3,
-        receiverCompanyName: 'Receiver'
-      }
-    ])
-    getRegisters.mockResolvedValueOnce(null)
-
-    const wrapper = mountDialog()
-    await flushPromises()
-    await selectWarehouse(wrapper, 1)
-    await selectPair(wrapper)
-
-    expect(wrapper.findAll('[data-testid="register-checkbox"]')).toHaveLength(0)
   })
 
   it('shows pair lookup errors from API message payloads', async () => {

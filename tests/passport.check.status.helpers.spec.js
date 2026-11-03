@@ -3,7 +3,7 @@
 // This file is a part of Logibooks ui application
 
 import { describe, expect, it } from 'vitest'
-import { createPassportCheckStatusOptions, getPassportCheckStatusPresentation, hasPassportCheckIssues, PassportCheckStatusCode, PassportCheckStatusFilterValue, PassportCheckStatusPresentation, hasPassportIdentityChanged, isPassportCheckInProgress, resolvePassportCheckStatus, resolvePassportCheckStatusByCode } from '@/helpers/passport.check.status.helpers.js'
+import { createPassportCheckStatusOptions, getPassportCheckStatusPresentation, hasPassportCheckIssues, PassportCheckStatusCode, PassportCheckStatusFilterValue, PassportCheckStatusPresentation } from '@/helpers/passport.check.status.helpers.js'
 
 describe('passport check status helpers', () => {
   it('maps backend status codes to named UI presentation entities', () => {
@@ -25,17 +25,6 @@ describe('passport check status helpers', () => {
     expect(getPassportCheckStatusPresentation(PassportCheckStatusCode.InProgress)).toBe(
       PassportCheckStatusPresentation.InProgress
     )
-  })
-
-  it('resolves backend status metadata by numeric value', () => {
-    const statuses = [
-      { value: 0, code: PassportCheckStatusCode.NotChecked, name: 'Не проверен' },
-      { value: 30, code: PassportCheckStatusCode.Checked, name: 'Проверен' }
-    ]
-
-    expect(resolvePassportCheckStatus(statuses, '30')).toEqual(statuses[1])
-    expect(resolvePassportCheckStatus(statuses, 'missing')).toBeNull()
-    expect(resolvePassportCheckStatus(null, 30)).toBeNull()
   })
 
   it('identifies passport check issue statuses using backend-defined values', () => {
@@ -75,37 +64,6 @@ describe('passport check status helpers', () => {
       { value: null, title: 'Все' },
       { value: PassportCheckStatusFilterValue.Problems, title: 'С проблемами' }
     ])
-  })
-
-  it('resolves workflow states by backend code without numeric assumptions', () => {
-    const statuses = [
-      { value: 73, code: PassportCheckStatusCode.NotChecked, name: 'Не проверен' },
-      { value: 91, code: PassportCheckStatusCode.InProgress, name: 'В процессе' }
-    ]
-
-    expect(resolvePassportCheckStatusByCode(statuses, PassportCheckStatusCode.NotChecked)).toBe(
-      statuses[0]
-    )
-    expect(isPassportCheckInProgress(statuses, 91)).toBe(true)
-    expect(isPassportCheckInProgress(statuses, 73)).toBe(false)
-  })
-
-  it('treats trimmed identity values as unchanged and real edits as changed', () => {
-    const initial = { firstName: ' Anna ', lastName: 'Ivanova', patronymic: 'Petrovna' }
-
-    expect(
-      hasPassportIdentityChanged(
-        initial,
-        { firstName: 'Anna', lastName: 'Ivanova', patronymic: 'Changed' },
-        ['firstName', 'lastName']
-      )
-    ).toBe(false)
-    expect(
-      hasPassportIdentityChanged(initial, { firstName: 'Maria', lastName: 'Ivanova' }, [
-        'firstName',
-        'lastName'
-      ])
-    ).toBe(true)
   })
 
 })

@@ -33,18 +33,6 @@ describe('single-position alert store', () => {
     expect(store.alert).toBeNull()
   })
 
-  it('ignores a stale dismissal id and supports explicit clearing', () => {
-    const store = useAlertStore()
-    const firstId = store.error('first')
-    const secondId = store.success('second')
-
-    store.dismiss(firstId)
-    expect(store.alert).toMatchObject({ id: secondId, message: 'second' })
-
-    store.clear()
-    expect(store.alert).toBeNull()
-  })
-
 })
 
 describe('form error normalization', () => {

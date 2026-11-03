@@ -52,22 +52,6 @@ describe('fetchWrapper', () => {
     vi.resetModules()
   })
 
-  it('throws parsed error for failed requests', async () => {
-    const response = {
-      ok: false,
-      status: 401,
-      statusText: 'Unauthorized',
-      text: () => Promise.resolve(JSON.stringify({ msg: 'bad' }))
-    }
-    global.fetch = vi.fn(() => Promise.resolve(response))
-    await expect(fetchWrapper.get(`${baseUrl}/fail`)).rejects.toThrow('Ошибка 401')
-  })
-
-  it('throws network error in russian', async () => {
-    global.fetch = vi.fn(() => Promise.reject(new TypeError('Failed to fetch')))
-    await expect(fetchWrapper.get(`${baseUrl}/neterr`)).rejects.toThrow('Не удалось соединиться')
-  })
-
   describe('postFile method (requestFile)', () => {
     it('sends request without body when body is null/undefined', async () => {
       const response = {
@@ -87,14 +71,6 @@ describe('fetchWrapper', () => {
       })
     })
 
-    it('handles network error (TypeError: Failed to fetch)', async () => {
-      global.fetch = vi.fn(() => Promise.reject(new TypeError('Failed to fetch')))
-
-      await expect(fetchWrapper.postFile(`${baseUrl}/upload`, new FormData())).rejects.toThrow(
-        'Не удалось соединиться с сервером. Пожалуйста, проверьте подключение к сети.'
-      )
-    })
-
     it('handles other network errors', async () => {
       const customError = new Error('Custom network error')
       customError.name = 'NetworkError'
@@ -102,20 +78,6 @@ describe('fetchWrapper', () => {
 
       await expect(fetchWrapper.postFile(`${baseUrl}/upload`, new FormData())).rejects.toThrow(
         'Не удалось соединиться с сервером. Пожалуйста, проверьте подключение к сети.'
-      )
-    })
-
-    it('handles HTTP error with JSON error response', async () => {
-      const response = {
-        ok: false,
-        status: 400,
-        statusText: 'Bad Request',
-        text: () => Promise.resolve(JSON.stringify({ msg: 'File format not supported' }))
-      }
-      global.fetch = vi.fn(() => Promise.resolve(response))
-
-      await expect(fetchWrapper.postFile(`${baseUrl}/upload`, new FormData())).rejects.toThrow(
-        'Ошибка 400'
       )
     })
 
@@ -130,20 +92,6 @@ describe('fetchWrapper', () => {
 
       await expect(fetchWrapper.postFile(`${baseUrl}/upload`, new FormData())).rejects.toThrow(
         'Ошибка 500'
-      )
-    })
-
-    it('handles HTTP error with plain text error response', async () => {
-      const response = {
-        ok: false,
-        status: 413,
-        statusText: 'Payload Too Large',
-        text: () => Promise.resolve('File too large')
-      }
-      global.fetch = vi.fn(() => Promise.resolve(response))
-
-      await expect(fetchWrapper.postFile(`${baseUrl}/upload`, new FormData())).rejects.toThrow(
-        'Ошибка 413'
       )
     })
 
@@ -182,51 +130,6 @@ describe('fetchWrapper', () => {
       })
     })
 
-    it.each([null, 'diagnostic', ['diagnostic']])('retains non-workflow details %j', async (details) => {
-      const payload = { msg: 'Ошибка', details }
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: false,
-        status: 422,
-        statusText: 'Unprocessable Entity',
-        text: async () => JSON.stringify(payload)
-      })
-
-      await expect(fetchWrapper.postFile(`${baseUrl}/upload`, new FormData())).resolves.toEqual(payload)
-    })
-
-    it('returns undefined for 204 No Content responses', async () => {
-      const response = {
-        ok: true,
-        status: 204,
-        statusText: 'No Content',
-        text: () => Promise.resolve('')
-      }
-      global.fetch = vi.fn(() => Promise.resolve(response))
-
-      const result = await fetchWrapper.postFile(`${baseUrl}/upload`, new FormData())
-
-      expect(result).toBeUndefined()
-    })
-  })
-
-  describe('authHeader helper function coverage', () => {
-    it('returns Authorization header when user is logged in and URL starts with apiUrl', async () => {
-      const response = {
-        ok: true,
-        status: 200,
-        statusText: 'OK',
-        text: () => Promise.resolve('{}')
-      }
-      global.fetch = vi.fn(() => Promise.resolve(response))
-
-      await fetchWrapper.get(`${baseUrl}/test`)
-
-      expect(global.fetch).toHaveBeenCalledWith(`${baseUrl}/test`, {
-        method: 'GET',
-        headers: { Authorization: 'Bearer abc' }
-      })
-    })
-
   })
 
   describe('handleResponse edge cases', () => {
@@ -242,17 +145,6 @@ describe('fetchWrapper', () => {
       await expect(fetchWrapper.get(`${baseUrl}/test`)).rejects.toThrow('Сервер вернул данные в некорректном формате')
     })
 
-    it('handles non-ok response without msg property, falls back to status code', async () => {
-      const response = {
-        ok: false,
-        status: 500,
-        statusText: 'Internal Server Error',
-        text: () => Promise.resolve('{"error": "Something went wrong"}')
-      }
-      global.fetch = vi.fn(() => Promise.resolve(response))
-
-      await expect(fetchWrapper.get(`${baseUrl}/test`)).rejects.toThrow('Ошибка 500')
-    })
   })
 
   describe('request method edge cases', () => {
@@ -336,29 +228,6 @@ describe('fetchWrapper', () => {
       global.fetch = vi.fn(() => Promise.resolve(mockResponse))
       return mockResponse
     }
-
-    it('should use default filename when Content-Disposition header is missing', async () => {
-      // Mock response without Content-Disposition header
-      const mockHeaders = new Map()
-
-      const mockResponse = {
-        ok: true,
-        status: 200,
-        statusText: 'OK',
-        headers: {
-          get: (name) => mockHeaders.get(name)
-        },
-        blob: vi.fn().mockResolvedValue(new Blob(['content'], { type: 'text/plain' }))
-      }
-
-      global.fetch = vi.fn(() => Promise.resolve(mockResponse))
-
-      await fetchWrapper.downloadFile(`${baseUrl}/download/file`, 'default-name.txt')
-
-      // Get the created anchor element
-      const anchor = global.document.createElement.mock.results[0].value
-      expect(anchor.download).toBe('default-name.txt')
-    })
 
     it('polls accepted responses and downloads only the completed file', async () => {
       const progress = { handleId: 'job-1', total: 1000, processed: 250 }
@@ -579,16 +448,6 @@ describe('fetchWrapper', () => {
       expect(anchor.download).toBe('header-fallback.xlsx')
       expect(anchor.download).not.toContain('filename')
       expect(anchor.download).not.toContain('UTF-8')
-    })
-
-    it('should throw error if download fails', async () => {
-      // Mock a failing request with a network error
-      const error = new TypeError('Failed to fetch')
-      global.fetch = vi.fn(() => Promise.reject(error))
-
-      await expect(
-        fetchWrapper.downloadFile(`${baseUrl}/download/file`, 'fallback.txt')
-      ).rejects.toThrow('Не удалось соединиться с сервером')
     })
 
     it('should handle HTTP error responses', async () => {

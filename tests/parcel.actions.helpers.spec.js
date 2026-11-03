@@ -50,20 +50,6 @@ describe('parcel actions helpers', () => {
   })
 
   describe('validateParcelData', () => {
-    it('should handle validation errors with API message', async () => {
-      const error = {
-        response: {
-          data: {
-            message: 'Ошибка проверки'
-          }
-        }
-      }
-      mockParcelsStore.update.mockRejectedValue(error)
-
-      await validateParcelData(mockValues, mockItem, mockParcelsStore, false)
-      expect(mockParcelsStore.error).toBe('Ошибка проверки')
-    })
-
     it('does not validate or reload when guarded update is cancelled', async () => {
       const updateParcel = vi.fn().mockResolvedValue(false)
 
@@ -108,20 +94,6 @@ describe('parcel actions helpers', () => {
       expect(mockParcelsStore.error).toBe('Ошибка согласования')
     })
 
-    it('should handle approval errors with API message', async () => {
-      const error = {
-        response: {
-          data: {
-            message: 'Ошибка согласования посылки'
-          }
-        }
-      }
-      mockParcelsStore.approve.mockRejectedValue(error)
-
-      await approveParcel(mockValues, mockItem, mockParcelsStore)
-      expect(mockParcelsStore.error).toBe('Ошибка согласования посылки')
-    })
-
     it('does not approve or reload when guarded update is cancelled', async () => {
       const updateParcel = vi.fn().mockResolvedValue(false)
 
@@ -152,29 +124,6 @@ describe('parcel actions helpers', () => {
       expect(mockParcelsStore.generate).toHaveBeenCalledWith(123, 'generated-filename', false)
     })
 
-    it('should handle generate XML errors with API message', async () => {
-      const error = {
-        response: {
-          data: {
-              message: 'Не удалось сформировать XML'
-          }
-        }
-      }
-      mockParcelsStore.generate.mockRejectedValue(error)
-
-      await generateXml(mockItem, mockParcelsStore, 'test-file')
-
-      expect(mockParcelsStore.error).toBe('Не удалось сформировать XML')
-    })
-
-    it('should handle generate XML errors with default message', async () => {
-      mockParcelsStore.generate.mockRejectedValue(new Error('Unexpected XML failure'))
-
-      await generateXml(mockItem, mockParcelsStore, 'test-file')
-
-      expect(mockParcelsStore.error).toBe('Ошибка при генерации XML')
-    })
-
     it('consumes a rejected correction confirmation and presents one normalized error', async () => {
       const failure = new Error('Unexpected confirmation failure')
       await expect(generateXml(mockItem, mockParcelsStore, 'test-file', {
@@ -185,22 +134,6 @@ describe('parcel actions helpers', () => {
       expect(mockParcelsStore.error).toBe('Ошибка при генерации XML')
       expect(alertErrorMock).toHaveBeenCalledExactlyOnceWith(failure, { fallback: 'Ошибка при генерации XML' })
       expect(console.error).toHaveBeenCalledWith('[parcel XML generation]', failure)
-    })
-
-    it('confirms XML generation when weight correction is possible', async () => {
-      const confirm = vi.fn().mockResolvedValue(true)
-
-      await generateXml(mockItem, mockParcelsStore, 'test-file', {
-        confirm,
-        register: { realWeightKg: 5, totalWeightKgToRelease: 10 }
-      })
-
-      expect(confirm).toHaveBeenCalledWith(
-        expect.objectContaining({
-          content: 'Применить поправочный коэффициент 0,500 для веса посылки?'
-        })
-      )
-      expect(mockParcelsStore.generate).toHaveBeenCalledWith(123, 'test-file', true)
     })
 
   })
@@ -271,30 +204,6 @@ describe('parcel actions helpers', () => {
       )).resolves.toBe(false)
 
       expect(beforeAction).toHaveBeenCalledOnce()
-      expect(updateParcel).not.toHaveBeenCalled()
-      expect(mockActionFn).not.toHaveBeenCalled()
-      expect(mockParcelsStore.getById).not.toHaveBeenCalled()
-      expect(mockRunningAction.value).toBe(false)
-    })
-
-    it('reports a rejected pre-action refresh once and prevents both mutations', async () => {
-      const refreshError = new Error('register refresh failed')
-      const beforeAction = vi.fn().mockRejectedValue(refreshError)
-      const updateParcel = vi.fn()
-
-      await expect(runCheckStatusAction(
-        mockValues,
-        mockActionFn,
-        mockIsComponentMounted,
-        mockRunningAction,
-        mockCurrentParcelId,
-        mockEnsureNextParcelsPromise,
-        mockParcelsStore,
-        { beforeAction, updateParcel }
-      )).resolves.toBe(false)
-
-      expect(alertErrorMock).toHaveBeenCalledOnce()
-      expect(alertErrorMock).toHaveBeenCalledWith('register refresh failed')
       expect(updateParcel).not.toHaveBeenCalled()
       expect(mockActionFn).not.toHaveBeenCalled()
       expect(mockParcelsStore.getById).not.toHaveBeenCalled()

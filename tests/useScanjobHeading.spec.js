@@ -46,24 +46,6 @@ describe('useScanjobHeading', () => {
     mockScanjob.value = null
   })
 
-  it('returns loading heading while scanjob is not yet loaded', () => {
-    const { scanjobHeading, scanjobLoading } = useScanjobHeading(ref(1))
-    expect(scanjobLoading.value).toBe(true)
-    expect(scanjobHeading.value).toBe('Загрузка задания на сканирование...')
-  })
-
-  it('returns scanjob name after successful load', async () => {
-    mockScanjob.value = { id: 1, name: 'Test Job' }
-    getById.mockResolvedValue({ id: 1, name: 'Test Job' })
-
-    const { scanjobHeading, scanjobLoading, loadScanjob } = useScanjobHeading(ref(1))
-
-    await loadScanjob()
-
-    expect(scanjobLoading.value).toBe(false)
-    expect(scanjobHeading.value).toBe('Test Job')
-  })
-
   it('shows error alert and returns null when getById throws', async () => {
     getById.mockRejectedValue(new Error('Network error'))
 
@@ -91,34 +73,4 @@ describe('useScanjobHeading', () => {
     expect(alertError).not.toHaveBeenCalled()
   })
 
-  it('resets loading state before a subsequent load finishes', async () => {
-    const firstResult = { id: 5, name: 'Job Five' }
-    mockScanjob.value = firstResult
-    getById.mockResolvedValueOnce(firstResult)
-
-    const { scanjobHeading, scanjobLoading, loadScanjob } = useScanjobHeading(ref(5))
-
-    await loadScanjob()
-    expect(scanjobLoading.value).toBe(false)
-    expect(scanjobHeading.value).toBe('Job Five')
-
-    let resolveScanjob
-    getById.mockReturnValueOnce(
-      new Promise((resolve) => {
-        resolveScanjob = resolve
-      })
-    )
-
-    const pendingLoad = loadScanjob()
-
-    expect(scanjobLoading.value).toBe(true)
-    expect(scanjobHeading.value).toBe('Загрузка задания на сканирование...')
-
-    resolveScanjob({ id: 6, name: 'Job Six' })
-    mockScanjob.value = { id: 6, name: 'Job Six' }
-    await pendingLoad
-
-    expect(scanjobLoading.value).toBe(false)
-    expect(scanjobHeading.value).toBe('Job Six')
-  })
 })

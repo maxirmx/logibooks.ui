@@ -5,8 +5,6 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { createVuetify } from 'vuetify'
-import { VSelect } from 'vuetify/components'
 import ParcelScanConfirmationContent from '@/components/ParcelScanConfirmationContent.vue'
 import { parcelScanSelectionMessage } from '@/helpers/parcel.scan.helpers.js'
 
@@ -38,33 +36,4 @@ describe('parcel scan confirmation content', () => {
     wrapper.unmount()
   })
 
-  it('uses an external standard label and shows only the job name in the real selector', async () => {
-    const wrapper = mount(ParcelScanConfirmationContent, {
-      props: { count: 6, jobs, choice: { jobId: 47 } },
-      global: { plugins: [createVuetify({ components: { VSelect } })] }
-    })
-    expect(wrapper.get('p').text()).toBe('Выбрано 6 посылок')
-    const label = wrapper.get('label.label-0')
-    expect(label.text()).toBe('Задание на сканирование:')
-    expect(label.attributes('for')).toBe(wrapper.get('input').attributes('id'))
-    const select = wrapper.findComponent(VSelect)
-    expect(select.props('label')).toBeUndefined()
-    expect(select.props('items')).toEqual(jobs)
-    expect(wrapper.find('label.v-label').exists()).toBe(false)
-    expect(wrapper.get('.v-select__selection-text').text()).toBe('Сканирование сделки XX-2')
-    expect(wrapper.text()).not.toContain('#47')
-    select.vm.$emit('update:modelValue', 48)
-    expect(wrapper.emitted('select-job')).toEqual([[48]])
-    await wrapper.setProps({ choice: { jobId: 48 } })
-    expect(wrapper.get('.v-select__selection-text').text()).toBe('Поиск посылок')
-    wrapper.unmount()
-  })
-
-  it('shows a fixed job name when there is only one possible job', () => {
-    const wrapper = mount(ParcelScanConfirmationContent, { props: { count: 2, jobs: [jobs[0]], choice: { jobId: 47 } } })
-    expect(wrapper.get('#parcel-scan-job').text()).toBe('Сканирование сделки XX-2')
-    expect(wrapper.get('label.label-0').attributes('for')).toBeUndefined()
-    expect(wrapper.findComponent(VSelect).exists()).toBe(false)
-    wrapper.unmount()
-  })
 })

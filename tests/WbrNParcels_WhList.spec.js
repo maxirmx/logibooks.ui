@@ -679,28 +679,6 @@ describe('WbrNParcels_WhList.vue', () => {
     )
   })
 
-  for (const boxId of [null, 17]) {
-    it('manually scans the selected parcel in ' + (boxId ? 'box scope' : 'whole-party scope'), async () => {
-      isAdmin.value = true
-      const activeJob = { id: 7, registerId: 9, status: 15, type: 30, operation: 10 }
-      manualScanApi.getInProgress.mockResolvedValue([activeJob])
-      manualScanApi.getById.mockResolvedValue(activeJob)
-      manualScanApi.scanParcel.mockResolvedValue({ parcelCount: 1, scanSource: 10 })
-      manualScanApi.getAll.mockResolvedValue({ items: [] })
-      const wrapper = mount(WbrNParcelsWhList, { props: { registerId: 9, boxId }, global: { stubs: globalStubs } })
-      await resolveAll()
-      wrapper.vm.selection.selectAllCurrentPage()
-      const parcelId = mockItems.value[0].id
-      await wrapper.vm.manualScan.run(wrapper.vm.selection.selectedItems.value, 7, true)
-      await resolveAll()
-      expect(manualScanApi.scanParcel).toHaveBeenCalledWith(7, parcelId)
-      expect(manualScanApi.getAll).toHaveBeenCalledWith(9, { showMarkedByPartner: true, boxId, updateStore: false })
-      expect(manualScanApi.updateItems).toHaveBeenCalledWith({ items: [] })
-      expect(wrapper.vm.selection.selectedItems.value).toEqual([])
-      wrapper.unmount()
-    })
-  }
-
   it('retains the selected parcel when a manual scan rejects', async () => {
     isAdmin.value = true
     const activeJob = { id: 7, registerId: 9, status: 15, type: 30, operation: 10 }

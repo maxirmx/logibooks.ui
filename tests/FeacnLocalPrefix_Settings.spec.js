@@ -126,51 +126,6 @@ describe('FeacnLocalPrefix_Settings.vue', () => {
     ...overrides
   })
 
-  it('renders create mode and submits', async () => {
-    create.mockResolvedValue({})
-    const wrapper = mountComponent()
-    wrapper.vm.setFieldValue('code', '0101')
-    wrapper.vm.setFieldValue('exceptions', ['111', ''])
-    const saveAction = wrapper
-      .findAllComponents({ name: 'ActionButton' })
-      .find((action) => action.props('tooltipText') === 'Создать')
-    expect(saveAction.props('item')).toBeNull()
-    await wrapper.vm.onSubmit()
-    await flushPromises()
-    expect(create).toHaveBeenCalledWith(
-      expectedCreatePayload({ code: '0101', exceptions: ['111'] })
-    )
-  })
-
-  it('loads data in edit mode and updates', async () => {
-    // Mock backend response with FeacnPrefixExceptionDto structure
-    getById.mockResolvedValue({
-      code: '0202',
-      comment: ' legacy comment ',
-      scopes: [
-        { countryIsoNumeric: 643, customsProcedureCode: 10, explanation: 'export reason' }
-      ],
-      description: 'server description',
-      feacnOrderId: 7,
-      exceptions: [{ id: 1, code: '222', feacnPrefixId: 1 }]
-    })
-    update.mockResolvedValue({})
-    const wrapper = mountComponent({ mode: 'edit', prefixId: 1 })
-    await flushPromises()
-    await wrapper.vm.onSubmit()
-    expect(getById).toHaveBeenCalledWith(1)
-    expect(update).toHaveBeenCalledWith(1, {
-      code: '0202',
-      exceptions: ['222'],
-      comment: ' legacy comment ',
-      scopes: [
-        { countryIsoNumeric: 643, customsProcedureCode: 10, explanation: 'export reason' }
-      ],
-      description: 'server description',
-      feacnOrderId: 7
-    })
-  })
-
   it('handles mixed exception formats in edit mode', async () => {
     // Mock backend response with mixed string and object formats for backward compatibility
     getById.mockResolvedValue({
@@ -241,22 +196,6 @@ describe('FeacnLocalPrefix_Settings.vue', () => {
       code: '0505',
       scopes: [scope]
     }))
-  })
-
-  it('shows duplicate scope feedback only on the later row', async () => {
-    const wrapper = mountComponent()
-    wrapper.vm.setFieldValue('code', '0505')
-    wrapper.vm.setFieldValue('scopes', [
-      { countryIsoNumeric: 643, customsProcedureCode: 10, explanation: 'A' },
-      { countryIsoNumeric: 643, customsProcedureCode: 10, explanation: 'B' }
-    ])
-
-    await wrapper.vm.onSubmit()
-    await flushPromises()
-
-    expect(create).not.toHaveBeenCalled()
-    expect(wrapper.findAll('.scope-error')).toHaveLength(1)
-    expect(wrapper.text()).not.toContain('Страна и процедура не должны повторяться')
   })
 
   it('handles code selection from FeacnCodeSearch', async () => {

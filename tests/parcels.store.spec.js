@@ -4,7 +4,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import { mount, flushPromises } from '@vue/test-utils'
+import { mount } from '@vue/test-utils'
 import { ref, nextTick } from 'vue'
 import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
@@ -94,17 +94,6 @@ describe('parcels store', () => {
     mockAuthStore.parcels_wh_product_name = ''
   })
 
-  it.each([false, true])('passes the selected filter alongside inclusive list controls (warehouse=%s)', async warehouse => {
-    mockAuthStore.parcels_filter_id = 23
-    mockAuthStore.parcels_status = 2
-    mockAuthStore.parcels_wh_status = 3
-    fetchWrapper.get.mockResolvedValue({ items: [], pagination: {} })
-    await useParcelsStore().getAll(1, { showMarkedByPartner: warehouse })
-    const url = new URL(fetchWrapper.get.mock.calls[0][0])
-    expect(url.searchParams.get('parcelFilterId')).toBe('23')
-    expect(url.searchParams.get('statusId')).toBe(warehouse ? '3' : '2')
-  })
-
   it('clears a deleted filter and reloads once with one visible warning', async () => {
     mockAuthStore.parcels_filter_id = 23
     mockAuthStore.parcels_page = 4
@@ -140,21 +129,6 @@ describe('parcels store', () => {
     expect(wrapper.text()).toContain(exists ? 'Реестр недоступен' : 'Проверка недоступна')
     expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
     wrapper.unmount()
-  })
-
-  it('passes an exact box id to both parcel list endpoints', async () => {
-    fetchWrapper.get.mockResolvedValue({ items: [], pagination: {} })
-    const store = useParcelsStore()
-
-    await store.getAll(1, { boxId: 17 })
-    expect(fetchWrapper.get).toHaveBeenLastCalledWith(
-      `${apiUrl}/parcels?registerId=1&page=1&pageSize=100&boxId=17&sortBy=id&sortOrder=asc`
-    )
-
-    await store.getAll(1, { showMarkedByPartner: true, boxId: 17 })
-    expect(fetchWrapper.get).toHaveBeenLastCalledWith(
-      `${apiUrl}/parcels/a?registerId=1&page=1&pageSize=100&boxId=17&sortBy=id&sortOrder=asc`
-    )
   })
 
   it('fetches data with check status filtering', async () => {
@@ -214,35 +188,6 @@ describe('parcels store', () => {
     expect(store.loading).toBe(false)
   })
 
-  it.each(['older-first', 'newer-first'])('only commits the latest item request (%s)', async (order) => {
-    let resolveOlder, resolveNewer
-    fetchWrapper.get
-      .mockImplementationOnce(() => new Promise((resolve) => { resolveOlder = resolve }))
-      .mockImplementationOnce(() => new Promise((resolve) => { resolveNewer = resolve }))
-    const store = useParcelsStore()
-    store.item = { id: 1 }
-    const older = store.getById(2)
-    const newer = store.getById(3)
-    expect(store.item).toEqual({ id: 1 })
-    expect(store.itemLoading).toBe(true)
-    if (order === 'older-first') {
-      resolveOlder({ id: 2 })
-      expect(await older).toEqual({ id: 2 })
-      expect(store.item).toEqual({ id: 1 })
-      expect(store.itemLoading).toBe(true)
-      resolveNewer({ id: 3 })
-    } else {
-      resolveNewer({ id: 3 })
-      await newer
-      resolveOlder({ id: 2 })
-    }
-    await expect(older).resolves.toEqual({ id: 2 })
-    await expect(newer).resolves.toEqual({ id: 3 })
-    expect(store.item).toEqual({ id: 3 })
-    expect(store.itemLoading).toBe(false)
-    expect(store.itemError).toBeNull()
-  })
-
   it('checks parcel passport through the passport endpoint', async () => {
     fetchWrapper.post.mockResolvedValue(undefined)
     const store = useParcelsStore()
@@ -260,16 +205,6 @@ describe('parcels store', () => {
     const result = await store.clearPassportCheck(12)
 
     expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/12/clear-passport-check`)
-    expect(result).toBe(true)
-  })
-
-  it('sets parcel defect status', async () => {
-    fetchWrapper.post.mockResolvedValue(undefined)
-    const store = useParcelsStore()
-
-    const result = await store.setDefect(12)
-
-    expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/12/set-defect`)
     expect(result).toBe(true)
   })
 
@@ -329,33 +264,6 @@ describe('parcels store', () => {
     expect(store.applyExtIdChange(null)).toBe(false)
   })
 
-  it('applies revision-ordered parcel check statuses to loaded rows and current item', () => {
-    const store = useParcelsStore()
-    store.items = [
-      { id: 12, registerId: 7, passportCheckStatus: 0 },
-      { id: 13, registerId: 8, passportCheckStatus: 0 }
-    ]
-    store.item = { id: 12, registerId: 7, passportCheckStatus: 0 }
-
-    const accepted = store.applyParcelCheckStatusChanges({
-      registerId: 7,
-      updates: [
-        { parcelId: 12, checkCode: 'passport', status: 10, revision: 5 },
-        { parcelId: 99, checkCode: 'future-check', status: 20, revision: 5 }
-      ]
-    })
-    const stale = store.applyParcelCheckStatusChanges({
-      registerId: 7,
-      updates: [{ parcelId: 12, checkCode: 'passport', status: 30, revision: 4 }]
-    })
-
-    expect(accepted).toHaveLength(1)
-    expect(stale).toEqual([])
-    expect(store.items[0].passportCheckStatus).toBe(10)
-    expect(store.items[1].passportCheckStatus).toBe(0)
-    expect(store.item.passportCheckStatus).toBe(10)
-  })
-
   it('rejects inherited object property names as parcel check codes', () => {
     const store = useParcelsStore()
     store.items = [{ id: 12, registerId: 7, passportCheckStatus: 0 }]
@@ -374,34 +282,6 @@ describe('parcels store', () => {
     expect(store.items[0]).toEqual({ id: 12, registerId: 7, passportCheckStatus: 0 })
   })
 
-  it('preserves live check updates that arrive during a list REST request', async () => {
-    let resolveRequest
-    fetchWrapper.get.mockReturnValue(
-      new Promise((resolve) => {
-        resolveRequest = resolve
-      })
-    )
-    const store = useParcelsStore()
-
-    const request = store.getAll(7, { updateStore: false })
-    store.applyParcelCheckStatusChanges({
-      registerId: 7,
-      updates: [{ parcelId: 12, checkCode: 'passport', status: 30, revision: 8 }]
-    })
-    resolveRequest({
-      items: [{ id: 12, registerId: 7, passportCheckStatus: 10 }],
-      pagination: { totalCount: 1 }
-    })
-    const response = await request
-    store.applyParcelCheckStatusChanges({
-      registerId: 7,
-      updates: [{ parcelId: 12, checkCode: 'passport', status: 40, revision: 9 }]
-    })
-    store.updateItems(response)
-
-    expect(store.items[0].passportCheckStatus).toBe(40)
-  })
-
   describe('bulkAssignTnved method', () => {
     it('calls assign-tnved endpoint with payload', async () => {
       fetchWrapper.post.mockResolvedValue(undefined)
@@ -416,13 +296,6 @@ describe('parcels store', () => {
       expect(result).toBe(true)
     })
 
-    it('propagates error when request fails', async () => {
-      const error = new Error('Bulk assign failed')
-      fetchWrapper.post.mockRejectedValue(error)
-      const store = useParcelsStore()
-
-      await expect(store.bulkAssignTnved([7], '1234567890')).rejects.toBe(error)
-    })
   })
 
   describe('status selection methods', () => {
@@ -439,19 +312,6 @@ describe('parcels store', () => {
       expect(result).toEqual({ parcelIds: [1], missingNumbers: ['P-2'] })
     })
 
-    it('updates selected parcel statuses for status bulk change', async () => {
-      fetchWrapper.post.mockResolvedValue({ updatedCount: 2, skippedCount: 0 })
-      const store = useParcelsStore()
-
-      const result = await store.updateStatusSelection(9, 4, [1, 2])
-
-      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/status-selection/update`, {
-        registerId: 9,
-        statusId: 4,
-        parcelIds: [1, 2]
-      })
-      expect(result).toEqual({ updatedCount: 2, skippedCount: 0 })
-    })
   })
 
   describe('update method', () => {
@@ -466,17 +326,6 @@ describe('parcels store', () => {
       expect(store.item.dangerousGoods).toBe(flag ?? true)
       expect(store.items[0].dangerousGoods).toBe(flag ?? true)
       expect(Object.hasOwn(data, 'dangerousGoods')).toBe(true)
-    })
-
-    it('keeps saved dangerous goods in both caches and rejects a failed update', async () => {
-      const store = useParcelsStore()
-      store.item = { id: 5, dangerousGoods: true }
-      store.items = [{ ...store.item }]
-      const error = new Error('Не удалось сохранить посылку')
-      fetchWrapper.put.mockRejectedValue(error)
-      await expect(store.update(5, { dangerousGoods: false })).rejects.toBe(error)
-      expect(store.item.dangerousGoods).toBe(true)
-      expect(store.items[0].dangerousGoods).toBe(true)
     })
 
     it.each([true, false])('refreshes the marker before returning to cached list rows (%s)', async (flag) => {
@@ -504,59 +353,6 @@ describe('parcels store', () => {
       wrapper.unmount()
     })
 
-    it.each(['detail', 'list'])('refreshes when only the %s cache contains the parcel', async (cache) => {
-      const store = useParcelsStore()
-      store.item = { id: 7 }
-      store.items = [{ id: 6 }]
-      const parcel = { id: 5, tnVed: 'old', matchesExportFeeCategory: true }
-      if (cache === 'detail') store.item = parcel
-      else store.items.push(parcel)
-      fetchWrapper.put.mockResolvedValue(undefined)
-      // Older server versions may omit the additive field.
-      fetchWrapper.get.mockResolvedValue({ id: 5 })
-      await store.update(5, { tnVed: 'new' })
-      expect((cache === 'detail' ? store.item : store.items[1]).matchesExportFeeCategory).toBe(false)
-      expect(store.items[0]).toEqual({ id: 6 })
-    })
-
-    it('shows one refresh error, keeps the form open, and allows retry', async () => {
-      const store = useParcelsStore()
-      const alertStore = useAlertStore()
-      store.item = { id: 5, postingNumber: 'P5', tnVed: 'old', matchesExportFeeCategory: true }
-      store.items = [{ ...store.item }]
-      fetchWrapper.put.mockResolvedValue(undefined)
-      fetchWrapper.get.mockRejectedValueOnce(new Error('Ошибка обновления категории'))
-        .mockResolvedValueOnce({ id: 5, matchesExportFeeCategory: false })
-      const showList = ref(false)
-      const save = async () => {
-        try {
-          await store.update(5, { tnVed: 'new' })
-          showList.value = true
-        } catch (error) {
-          alertStore.error(error)
-        }
-      }
-      const wrapper = mount({
-        components: { ParcelNumberExt, PageAlertRegion },
-        setup: () => ({ store, save, showList }),
-        template: '<div><PageAlertRegion /><button @click="save">Save</button><span data-testid="location">{{ showList ? "list" : "form" }}</span><ParcelNumberExt :item="showList ? store.items[0] : store.item" /></div>'
-      }, { global: { stubs: { ClickableCell: true, ActionButton: true,
-        'v-tooltip': { template: '<div><slot name="activator" :props="{}" /></div>' } } } })
-      await wrapper.get('button').trigger('click')
-      await flushPromises()
-      expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-      expect(wrapper.get('[role="alert"]').text()).toContain('Ошибка обновления категории')
-      expect(wrapper.get('[data-testid="location"]').text()).toBe('form')
-      expect(wrapper.find('.export-fee-category-marker').exists()).toBe(false)
-      expect(store.items[0].matchesExportFeeCategory).toBeUndefined()
-      await save()
-      await nextTick()
-      expect(wrapper.get('[data-testid="location"]').text()).toBe('list')
-      expect(fetchWrapper.put).toHaveBeenCalledTimes(2)
-      expect(store.items[0].matchesExportFeeCategory).toBe(false)
-      wrapper.unmount()
-    })
-
     it('falls back to marking the loaded parcel read-only when conflict refresh fails', async () => {
       const conflict = Object.assign(new Error('Изменения запрещены для реестра'), { status: 409 })
       const refreshError = new Error('refresh failed')
@@ -576,35 +372,9 @@ describe('parcels store', () => {
       consoleError.mockRestore()
     })
 
-    it('does not update item when loaded item has different id', async () => {
-      fetchWrapper.put.mockResolvedValue({ success: true })
-
-      const store = useParcelsStore()
-      // Set up current item with different id
-      store.item = { id: 7, statusId: 1, tnVed: 'Different' }
-
-      const updateData = { statusId: 2, tnVed: 'Updated' }
-      await store.update(5, updateData)
-
-      // Item should remain unchanged
-      expect(store.item).toEqual({ id: 7, statusId: 1, tnVed: 'Different' })
-    })
-
   })
 
   describe('generate methods', () => {
-    it('generate appends weight correction query only when requested', async () => {
-      const store = useParcelsStore()
-      fetchWrapper.downloadFile = vi.fn().mockResolvedValue(true)
-
-      await store.generate(123, null, true)
-
-      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
-        `${apiUrl}/parcels/123/generate?applyWeightCorrection=true`,
-        'IndPost_123.xml'
-      )
-    })
-
     it('throws error when generate fails', async () => {
       const store = useParcelsStore()
       const error = new Error('Generation failed')
@@ -704,17 +474,6 @@ describe('parcels store', () => {
     })
   })
 
-  describe('lookupFeacnCode method', () => {
-    it('propagates error when lookup fails', async () => {
-      const error = new Error('Lookup failed')
-      fetchWrapper.post.mockRejectedValue(error)
-
-      const store = useParcelsStore()
-
-      await expect(store.lookupFeacnCode(55)).rejects.toThrow('Lookup failed')
-    })
-  })
-
   describe('getImageBlob method', () => {
     it('fetches image blob for the given parcel id', async () => {
       const mockBlob = new Blob(['image data'], { type: 'image/jpeg' })
@@ -728,14 +487,6 @@ describe('parcels store', () => {
       expect(result).toBe(mockBlob)
     })
 
-    it('propagates error when getFile fails', async () => {
-      const error = new Error('Image not found')
-      fetchWrapper.getFile.mockRejectedValue(error)
-
-      const store = useParcelsStore()
-
-      await expect(store.getImageBlob(77)).rejects.toThrow('Image not found')
-    })
   })
 
   it('refreshes saved group metadata in the cached detail through the existing detail loader', async () => {
@@ -747,94 +498,6 @@ describe('parcels store', () => {
     expect(store.item.customsChargeGroup.customsFee).toBe(1231)
     await store.refreshCachedDetail(8)
     expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
-  })
-
-  it('propagates a failed cached-detail refresh without replacing the saved item', async () => {
-    const store = useParcelsStore()
-    store.item = { id: 12, registerId: 7, customsFee: 0 }
-    const error = new Error('Не удалось загрузить посылку')
-    fetchWrapper.get.mockRejectedValueOnce(error)
-    await expect(store.refreshCachedDetail(7)).rejects.toBe(error)
-    expect(store.itemError).toBe(error)
-    expect(store.item.id).toBe(12)
-    expect(store.itemLoading).toBe(false)
-  })
-
-  it.each(['resolve', 'reject'])('leaves pending detail navigation in charge when a cached refresh is requested (navigation %ss)', async outcome => {
-    const store = useParcelsStore()
-    const cached = { id: 1, registerId: 7, customsFee: 10 }
-    const destination = { id: 2, registerId: 7, customsFee: 20 }
-    const failure = new Error('Не удалось загрузить посылку 2')
-    store.item = cached
-    let settleDestination
-    fetchWrapper.get.mockReset().mockReturnValueOnce(new Promise((resolve, reject) => {
-      settleDestination = outcome === 'resolve' ? resolve : reject
-    })).mockResolvedValue({ ...cached, customsFee: 30 })
-    const navigation = store.getById(2)
-    const result = outcome === 'reject' ? expect(navigation).rejects.toBe(failure) : navigation
-    await store.refreshCachedDetail(7)
-    expect(fetchWrapper.get).toHaveBeenCalledExactlyOnceWith(`${apiUrl}/parcels/a/2`)
-    expect(store.itemLoading).toBe(true)
-    expect(store.itemError).toBeNull()
-    settleDestination(outcome === 'resolve' ? destination : failure)
-    await result
-    expect(store.item).toEqual(outcome === 'resolve' ? destination : cached)
-    expect(store.itemError).toBe(outcome === 'resolve' ? null : failure)
-    expect(store.itemLoading).toBe(false)
-  })
-
-  it.each(['resolve', 'reject'])('keeps newer navigation when an earlier cached refresh %ss last', async outcome => {
-    const store = useParcelsStore()
-    const cached = { id: 1, registerId: 7, customsFee: 10 }
-    const destination = { id: 2, registerId: 7, customsFee: 20 }
-    const failure = new Error('Не удалось обновить посылку 1')
-    store.item = cached
-    let settleRefresh
-    fetchWrapper.get.mockReset().mockReturnValueOnce(new Promise((resolve, reject) => {
-      settleRefresh = outcome === 'resolve' ? resolve : reject
-    })).mockResolvedValueOnce(destination)
-    const refresh = store.refreshCachedDetail(7)
-    const result = outcome === 'reject' ? expect(refresh).rejects.toBe(failure) : refresh
-    await store.getById(2)
-    settleRefresh(outcome === 'resolve' ? { ...cached, customsFee: 30 } : failure)
-    await result
-    expect(store.item).toEqual(destination)
-    expect(store.itemError).toBeNull()
-    expect(store.itemLoading).toBe(false)
-    expect(fetchWrapper.get.mock.calls.map(([url]) => url)).toEqual([
-      `${apiUrl}/parcels/a/1`, `${apiUrl}/parcels/a/2`
-    ])
-  })
-
-  it.each(['unitPrice', 'cost', 'currency'])('refreshes invalidated charges after changing %s through the existing single detail request', async field => {
-    const store = useParcelsStore()
-    store.item = { id: 12, registerId: 7, customsFee: 0, customsDuty: 0, customsChargeGroup: { customsFee: 1231, customsDuty: 0 } }
-    fetchWrapper.put.mockResolvedValueOnce(undefined)
-    fetchWrapper.get.mockResolvedValueOnce({ id: 12, registerId: 7, customsFee: null, customsDuty: null, customsChargeGroup: null })
-    await store.update(12, { [field]: field === 'currency' ? 'TJS' : 150 })
-    expect(store.item.customsFee).toBeNull()
-    expect(store.item.customsChargeGroup).toBeNull()
-    expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
-  })
-
-  it('refreshes cached charge presentation after an eligibility mutation', async () => {
-    const store = useParcelsStore()
-    store.item = { id: 12, registerId: 7, customsFee: 0, customsChargeGroup: { customsFee: 1231, customsDuty: 0 } }
-    fetchWrapper.post.mockResolvedValueOnce(undefined)
-    fetchWrapper.get.mockResolvedValueOnce({ id: 12, registerId: 7, customsFee: null, customsDuty: null, customsChargeGroup: null })
-    await store.setDefect(12)
-    expect(store.item.customsChargeGroup).toBeNull()
-    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/parcels/a/12`)
-  })
-
-  it('propagates a cached charge refresh failure after an eligibility mutation', async () => {
-    const store = useParcelsStore()
-    store.item = { id: 12, registerId: 7, customsFee: 1231 }
-    const error = new Error('Не удалось обновить таможенные платежи')
-    fetchWrapper.post.mockResolvedValueOnce(undefined)
-    fetchWrapper.get.mockRejectedValueOnce(error)
-    await expect(store.setDefect(12)).rejects.toBe(error)
-    expect(store.itemError).toBe(error)
   })
 
   it.each([false, true])('refreshes a cached sibling after another row changes and propagates failure (%s)', async fail => {

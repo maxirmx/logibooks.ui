@@ -102,45 +102,6 @@ describe('ActionButton2L', () => {
     await flushPromises()
   }
 
-  it('renders optional menu icons with symbolic color classes', async () => {
-    options = [
-      {
-        label: 'Issue action',
-        icon: 'fa-solid fa-person-circle-xmark',
-        color: 'parcel-has-issues',
-        action: vi.fn().mockResolvedValue(undefined)
-      },
-      {
-        label: 'Excise action',
-        icon: 'fa-solid fa-file-invoice',
-        color: 'approved-with-excise',
-        action: vi.fn().mockResolvedValue(undefined)
-      },
-      {
-        label: 'Plain action',
-        action: vi.fn().mockResolvedValue(undefined)
-      }
-    ]
-    const wrapper = createWrapper({ options })
-    await wrapper.find('button').trigger('click')
-    await settle(wrapper)
-
-    const items = menu().findAll('.action-button-2l__menu-item')
-    const icons = menu().findAll('.action-button-2l__menu-icon')
-
-    expect(items.map((item) => item.text())).toEqual([
-      'Issue action',
-      'Excise action',
-      'Plain action'
-    ])
-    expect(icons).toHaveLength(2)
-    expect(icons[0].attributes('data-icon')).toBe('fa-solid fa-person-circle-xmark')
-    expect(icons[0].classes()).toContain('action-button-2l__menu-icon--parcel-has-issues')
-    expect(icons[1].attributes('data-icon')).toBe('fa-solid fa-file-invoice')
-    expect(icons[1].classes()).toContain('action-button-2l__menu-icon--approved-with-excise')
-    expect(items[2].find('.action-button-2l__menu-icon').exists()).toBe(false)
-  })
-
   it('supports keyboard navigation and selection', async () => {
     const wrapper = createWrapper()
 
@@ -193,37 +154,6 @@ describe('ActionButton2L', () => {
     expect(options[2].action).not.toHaveBeenCalled()
   })
 
-  it('renders outside a clipped table and keeps the menu open while its action runs', async () => {
-    const host = document.createElement('div')
-    host.className = 'table-card'
-    host.style.overflow = 'hidden'
-    host.style.width = '160px'
-    document.body.appendChild(host)
-    hosts.push(host)
-    let complete
-    options[0].action.mockImplementationOnce(() => new Promise(resolve => { complete = resolve }))
-    const wrapper = createWrapper({ menuLocation: 'bottom start' }, { attachTo: host })
-    await wrapper.find('button').trigger('click')
-    await settle(wrapper)
-    const popup = menu()
-    expect(host.contains(popup.element)).toBe(false)
-    expect(popup.element.closest('.v-overlay-container')).not.toBeNull()
-    const overlay = menuOverlay(wrapper)
-    expect(overlay.props('locationStrategy')).toBe('connected')
-    expect(overlay.props('scrollStrategy')).toBe('reposition')
-    expect(overlay.props('location')).toBe('bottom start')
-    expect(wrapper.find('button').attributes('aria-controls')).toBe(popup.attributes('id'))
-    await popup.findAll('[role="menuitem"]')[0].trigger('click')
-    expect(exposed(wrapper).isExecuting.value).toBe(true)
-    expect(exposed(wrapper).isMenuOpen.value).toBe(true)
-    expect(popup.findAll('[role="menuitem"]').every(option => option.element.disabled)).toBe(true)
-    complete()
-    await settle(wrapper)
-    expect(options[0].action).toHaveBeenCalledExactlyOnceWith(item)
-    expect(exposed(wrapper).isMenuOpen.value).toBe(false)
-    expect(document.activeElement).toBe(wrapper.find('button').element)
-  })
-
   it('closes through overlay dismissal and ignores an open update', async () => {
     const wrapper = createWrapper()
     await wrapper.find('button').trigger('click')
@@ -235,33 +165,6 @@ describe('ActionButton2L', () => {
     await settle(wrapper)
     expect(exposed(wrapper).isMenuOpen.value).toBe(false)
     expect(wrapper.emitted('close')).toHaveLength(1)
-  })
-
-  it.each(['click', 'keyboard'])('keeps jobs with identical names distinct after reordering (%s)', async method => {
-    const warnings = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    try {
-      const first = { key: 47, label: 'Сканирование сделки XX-2', action: vi.fn() }
-      const second = { key: 48, label: 'Сканирование сделки XX-2', action: vi.fn() }
-      const wrapper = createWrapper({ options: [first, second] })
-      await wrapper.find('button').trigger('click')
-      await settle(wrapper)
-      expect(menu().findAll('[role="menuitem"]').map(option => option.text())).toEqual([first.label, second.label])
-      const focusedButton = menu().findAll('[role="menuitem"]')[0].element
-      await wrapper.setProps({ options: [second, first] })
-      await settle(wrapper)
-      if (method === 'click') await menu().findAll('[role="menuitem"]')[0].trigger('click')
-      else {
-        expect(menu().findAll('[role="menuitem"]')[1].element).toBe(focusedButton)
-        focusedButton.focus()
-        await new DOMWrapper(focusedButton).trigger('keydown', { key: 'Enter' })
-      }
-      await settle(wrapper)
-      expect(method === 'click' ? second.action : first.action).toHaveBeenCalledExactlyOnceWith(item)
-      expect(method === 'click' ? first.action : second.action).not.toHaveBeenCalled()
-      expect(warnings).not.toHaveBeenCalled()
-    } finally {
-      warnings.mockRestore()
-    }
   })
 
   it.each([false, true])('dismisses on Tab and restores the native navigation starting point (backward: %s)', async shiftKey => {

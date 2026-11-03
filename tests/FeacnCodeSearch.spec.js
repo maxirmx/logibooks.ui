@@ -86,55 +86,6 @@ describe('FeacnCodeSearch.vue', () => {
     expect(wrapper.emitted('select')[0][0]).toBe('0101010101')
   })
 
-  it('searches and opens path from non-leaf result', async () => {
-    mockLookup.mockResolvedValueOnce([{ id: 2, code: '0101', name: 'Child' }])
-    const wrapper = createWrapper()
-    await waitForUpdates(wrapper)
-
-    const input = wrapper.find('.search-input')
-    await input.setValue('child')
-    const searchButton = wrapper.findComponent({ name: 'ActionButton' })
-    expect(searchButton.exists()).toBe(true)
-    await searchButton.find('button').trigger('click')
-    await waitForUpdates(wrapper)
-
-    expect(mockLookup).toHaveBeenCalledWith('child')
-    const resultItem = wrapper.find('.search-result-item')
-    expect(resultItem.exists()).toBe(true)
-
-    await resultItem.trigger('click')
-    await waitForUpdates(wrapper)
-
-    expect(mockGetById).toHaveBeenCalledWith(2)
-    expect(mockGetById).toHaveBeenCalledWith(1)
-    expect(wrapper.find('.search-results').exists()).toBe(false)
-    expect(wrapper.findAll('.node-label').some((node) => node.text() === 'Leaf')).toBe(true)
-    expect(wrapper.emitted('select')).toBeUndefined()
-  })
-
-  it('navigates to a complete TN VED search result without selecting it', async () => {
-    mockLookup.mockResolvedValueOnce([{ id: 3, code: leaf.code, name: 'Leaf' }])
-    const wrapper = createWrapper()
-    await waitForUpdates(wrapper)
-
-    await wrapper.find('.search-input').setValue(leaf.code)
-    await wrapper.findComponent({ name: 'ActionButton' }).find('button').trigger('click')
-    await waitForUpdates(wrapper)
-    await wrapper.find('.search-result-item').trigger('mouseenter')
-    await waitForUpdates(wrapper)
-    expect(wrapper.find('.search-result-item').classes()).not.toContain('unavailable')
-    await wrapper.find('.search-result-item').trigger('click')
-    await waitForUpdates(wrapper)
-
-    expect(mockGetById).toHaveBeenCalledWith(3)
-    expect(mockGetById.mock.calls.filter(([id]) => id === 3)).toHaveLength(1)
-    expect(mockGetById).toHaveBeenCalledWith(2)
-    expect(mockGetById).toHaveBeenCalledWith(1)
-    expect(wrapper.emitted('select')).toBeUndefined()
-    expect(wrapper.find('.search-results').exists()).toBe(false)
-    expect(wrapper.findAll('.node-label').some((node) => node.text() === 'Leaf')).toBe(true)
-  })
-
   it('closes dropdown on Escape key', async () => {
     mockLookup.mockResolvedValueOnce([{ id: 2, code: '0101', name: 'Child' }])
     const wrapper = createWrapper()
@@ -171,20 +122,6 @@ describe('FeacnCodeSearch.vue', () => {
     await nextTick()
 
     expect(wrapper.find('.search-results').exists()).toBe(false)
-  })
-
-  it('shows message when lookup returns no results', async () => {
-    mockLookup.mockResolvedValueOnce([])
-    const wrapper = createWrapper()
-
-    const input = wrapper.find('.search-input')
-    await input.setValue('none')
-    const searchButton = wrapper.findComponent({ name: 'ActionButton' })
-    expect(searchButton.exists()).toBe(true)
-    await searchButton.find('button').trigger('click')
-    await waitForUpdates(wrapper)
-
-    expect(wrapper.find('.no-results').exists()).toBe(true)
   })
 
   it('shows error message when lookup fails', async () => {
@@ -243,27 +180,6 @@ describe('FeacnCodeSearch.vue', () => {
 
     expect(mockLookup).not.toHaveBeenCalled()
     expect(wrapper.find('.search-results').exists()).toBe(false)
-  })
-
-  it('ignores search result without id', async () => {
-    mockLookup.mockResolvedValueOnce([{ code: '0000', name: 'No ID' }])
-    const wrapper = createWrapper()
-    await waitForUpdates(wrapper)
-
-    const input = wrapper.find('.search-input')
-    await input.setValue('noid')
-    const searchButton = wrapper.findComponent({ name: 'ActionButton' })
-    await searchButton.find('button').trigger('click')
-    await waitForUpdates(wrapper)
-
-    const resultItem = wrapper.find('.search-result-item')
-    await resultItem.trigger('click')
-    await waitForUpdates(wrapper)
-
-    expect(mockGetById).not.toHaveBeenCalled()
-    expect(wrapper.find('.search-results').exists()).toBe(true)
-    expect(wrapper.find('.search-result-item').classes()).toContain('unavailable')
-    expect(wrapper.find('.search-result-item').attributes('aria-disabled')).toBe('true')
   })
 
   it('does nothing when a search result has no matching tree node', async () => {

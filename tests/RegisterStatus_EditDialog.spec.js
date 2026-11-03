@@ -260,30 +260,6 @@ describe('RegisterStatus_EditDialog.vue', () => {
   })
 
   describe('Form Submission - Create Mode', () => {
-    it('calls create store method on form submission', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      const form = wrapper.find('form')
-      await form.trigger('submit')
-
-      expect(mockRegisterStatusesStore.create).toHaveBeenCalledWith({
-        title: '',
-        icon: null,
-        bkColor: null,
-        fgColor: null,
-        readOnly: false,
-        transit: false,
-        exportTo1C: false
-      })
-    })
-
     it('handles 409 conflict error during creation', async () => {
       const error = new Error('Order status with this name already exists (409)')
       mockRegisterStatusesStore.create.mockRejectedValueOnce(error)

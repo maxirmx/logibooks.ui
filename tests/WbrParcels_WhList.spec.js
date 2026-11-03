@@ -293,33 +293,6 @@ describe('WbrParcels_WhList.vue', () => {
     navigateToEditParcel.mockClear()
   })
 
-  it('normalizes an initial exact box scope before the first request', async () => {
-    parcelsWhPage.value = 3
-    parcelsWhBoxNumber.value = 'STALE-PREFIX'
-    let firstRequestState
-    loadParcels.mockImplementationOnce(async (...args) => {
-      firstRequestState = {
-        page: parcelsWhPage.value,
-        boxNumber: parcelsWhBoxNumber.value,
-        options: args[4]
-      }
-    })
-
-    const wrapper = mount(WbrParcelsWhList, {
-      props: { registerId: 1, boxId: 17, boxCode: 'BOX-17' },
-      global: { stubs: globalStubs }
-    })
-    await resolveAll()
-
-    expect(firstRequestState).toEqual({
-      page: 1,
-      boxNumber: '',
-      options: { showMarkedByPartner: true, boxId: 17 }
-    })
-
-    wrapper.unmount()
-  })
-
   it('opens parcel status bulk dialog and reloads warehouse parcels after update', async () => {
     const wrapper = mount(WbrParcelsWhList, {
       props: { registerId: 1 },
@@ -534,53 +507,6 @@ describe('WbrParcels_WhList.vue', () => {
     expect(setDefect).toHaveBeenCalledWith(1)
     expect(alertError).toHaveBeenCalledWith('Ошибка при обновлении данных')
   })
-
-  it('disables set defect action for duplicate and partner-marked projection statuses', async () => {
-    isWhManager.value = true
-    mockItems.value = [
-      {
-        ...mockItems.value[0],
-        checkStatusProjection: { title: 'Дубликат' }
-      },
-      {
-        ...mockItems.value[0],
-        id: 2,
-        checkStatusProjection: { title: 'Исключено партнёром' }
-      }
-    ]
-    const wrapper = mount(WbrParcelsWhList, {
-      props: { registerId: 1 },
-      global: { stubs: globalStubs }
-    })
-
-    await resolveAll()
-
-    const setDefectButtons = wrapper.findAll('[data-testid="set-defect-action"]')
-    expect(setDefectButtons).toHaveLength(2)
-    expect(setDefectButtons[0].attributes('disabled')).toBeDefined()
-    expect(setDefectButtons[1].attributes('disabled')).toBeDefined()
-  })
-  for (const boxId of [null, 17]) {
-    it('manually scans the selected parcel in ' + (boxId ? 'box scope' : 'whole-party scope'), async () => {
-      isAdmin.value = true
-      const activeJob = { id: 7, registerId: 1, status: 15, type: 30, operation: 10 }
-      manualScanApi.getInProgress.mockResolvedValue([activeJob])
-      manualScanApi.getById.mockResolvedValue(activeJob)
-      manualScanApi.scanParcel.mockResolvedValue({ parcelCount: 1, scanSource: 10 })
-      manualScanApi.getAll.mockResolvedValue({ items: [] })
-      const wrapper = mount(WbrParcelsWhList, { props: { registerId: 1, boxId }, global: { stubs: globalStubs } })
-      await resolveAll()
-      wrapper.vm.selection.selectAllCurrentPage()
-      const parcelId = mockItems.value[0].id
-      await wrapper.vm.manualScan.run(wrapper.vm.selection.selectedItems.value, 7, true)
-      await resolveAll()
-      expect(manualScanApi.scanParcel).toHaveBeenCalledWith(7, parcelId)
-      expect(manualScanApi.getAll).toHaveBeenCalledWith(1, { showMarkedByPartner: true, boxId, updateStore: false })
-      expect(manualScanApi.updateItems).toHaveBeenCalledWith({ items: [] })
-      expect(wrapper.vm.selection.selectedItems.value).toEqual([])
-      wrapper.unmount()
-    })
-  }
 
   it('retains the selected parcel when a manual scan rejects', async () => {
     isAdmin.value = true

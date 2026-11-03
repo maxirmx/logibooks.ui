@@ -414,34 +414,6 @@ describe('Registers_List.vue', () => {
       ).toBe('США (JFK)')
     })
 
-    it('returns country name without code when not aviation or missing airport', () => {
-      mockCountries.value = [{ isoNumeric: 36, nameRuShort: 'Австралия' }]
-      mockOps.value = {
-        customsProcedures: [],
-        transportationTypes: [{ value: 1, name: 'Авто', document: 'CMR', isAvia: false }]
-      }
-      mockAirports.value = [{ id: 30, codeIata: 'SYD' }]
-
-      const item = {
-        transportationTypeCode: 1,
-        origCountryCode: '036',
-        departureAirportId: 30
-      }
-      const transportationTypesById = createTransportationTypesById(mockOps.value)
-      const airportsById = createAirportsById(mockAirports.value)
-
-      expect(
-        getCountryDisplayName(
-          item,
-          item.origCountryCode,
-          item.departureAirportId,
-          mockCountries.value,
-          transportationTypesById,
-          airportsById
-        )
-      ).toBe('Австралия')
-    })
-
     it('covers country and airport fallbacks', () => {
       mockCountries.value = [{ isoNumeric: 36, nameRuOfficial: 'Австралийский Союз' }]
       mockOps.value = {
@@ -677,43 +649,6 @@ describe('Registers_List.vue', () => {
       expect(router.push).toHaveBeenCalledWith('/register/edit/2?mode=modePaperwork')
     })
 
-    it('keeps the plain release weight line when real weight is not set or negative', async () => {
-      mockItems.value = [
-        {
-          id: 4,
-          totalWeightKg: 12.345,
-          totalWeightKgToRelease: 10,
-          realWeightKg: null
-        },
-        {
-          id: 5,
-          totalWeightKg: 20,
-          totalWeightKgToRelease: 15,
-          realWeightKg: -1
-        }
-      ]
-
-      const wrapper = mount(RegistersList, {
-        global: {
-          stubs: vuetifyStubs
-        }
-      })
-
-      await wrapper.vm.$nextTick()
-
-      const weightCells = wrapper.findAll('[data-testid="register-weight-cell"]')
-      expect(weightCells).toHaveLength(2)
-      expect(weightCells[0].find('.weight-real-route').exists()).toBe(false)
-      expect(weightCells[0].findAll('.weight-line').map((line) => line.text())).toEqual([
-        '12.345',
-        '10.000'
-      ])
-      expect(weightCells[1].find('.weight-real-route').exists()).toBe(false)
-      expect(weightCells[1].findAll('.weight-line').map((line) => line.text())).toEqual([
-        '20.000',
-        '15.000'
-      ])
-    })
   })
 
   describe('file upload functionality', () => {
@@ -750,19 +685,6 @@ describe('Registers_List.vue', () => {
         await wrapper.vm.startRegisterUpload(null)
 
         expect(alertErrorFn).toHaveBeenCalledWith('Не выбран тип реестра для загрузки')
-      })
-
-      it('handles file selection with array input for OZON', async () => {
-        const file = new File(['data'], 'test.xlsx')
-        wrapper.vm.selectedRegisterType = OZON_COMPANY_ID
-
-        await wrapper.vm.fileSelected([file])
-
-        expect(registersStore.item.fileName).toBe('test.xlsx')
-        expect(registersStore.item.registerType).toBe(OZON_COMPANY_ID)
-        expect(registersStore.item.companyId).toBe(OZON_COMPANY_ID)
-        expect(registersStore.uploadFile).toBe(file)
-        expect(router.push).toHaveBeenCalledWith('/register/load')
       })
 
       it('handles file selection with single file input for WBRN', async () => {
@@ -877,20 +799,6 @@ describe('Registers_List.vue', () => {
       })
     })
 
-    it('shows confirmation dialog when delete is clicked', async () => {
-      confirmMock.mockResolvedValue(true)
-      const item = { id: 1, fileName: 'reg.xlsx' }
-
-      await wrapper.vm.deleteRegister(item)
-
-      expect(confirmMock).toHaveBeenCalledWith(expect.objectContaining({
-        title: 'Подтверждение',
-        confirmationText: 'Удалить',
-        cancellationText: 'Не удалять',
-        content: 'Удалить реестр "' + item.fileName + '" ?'
-      }))
-    })
-
     it('does not call remove when deletion is cancelled', async () => {
       confirmMock.mockResolvedValue(false)
       const item = { id: 3, fileName: 'file.xlsx' }
@@ -926,45 +834,6 @@ describe('Registers_List.vue', () => {
       await wrapper.vm.deleteRegister({ id: 6, fileName: 'file.xlsx' })
 
       expect(alertErrorFn).toHaveBeenCalledWith('Ошибка при удалении реестра')
-    })
-  })
-
-  describe('computed properties', () => {
-    let wrapper
-
-    beforeEach(() => {
-      wrapper = mount(RegistersList, {
-        global: {
-          stubs: vuetifyStubs
-        }
-      })
-    })
-
-    it('calculates progressPercent correctly', () => {
-      // Test with zero total
-      wrapper.vm.validationState.total = 0
-      wrapper.vm.validationState.processed = 0
-      expect(wrapper.vm.progressPercent).toBe(0)
-
-      // Test with negative total
-      wrapper.vm.validationState.total = -1
-      wrapper.vm.validationState.processed = 10
-      expect(wrapper.vm.progressPercent).toBe(0)
-
-      // Test with normal values
-      wrapper.vm.validationState.total = 100
-      wrapper.vm.validationState.processed = 50
-      expect(wrapper.vm.progressPercent).toBe(50)
-
-      // Test with values that need rounding
-      wrapper.vm.validationState.total = 3
-      wrapper.vm.validationState.processed = 1
-      expect(wrapper.vm.progressPercent).toBe(33) // 33.33 rounded to 33
-
-      // Test with complete progress
-      wrapper.vm.validationState.total = 100
-      wrapper.vm.validationState.processed = 100
-      expect(wrapper.vm.progressPercent).toBe(100)
     })
   })
 

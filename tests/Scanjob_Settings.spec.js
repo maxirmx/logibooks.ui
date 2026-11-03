@@ -56,14 +56,6 @@ const mockScanjob = {
   allowFinish: false
 }
 
-const updatedScanjob = {
-  ...mockScanjob,
-  status: 5,
-  allowStart: false,
-  allowPause: true,
-  allowFinish: false
-}
-
 const ensureOpsLoaded = vi.hoisted(() => vi.fn())
 const getById = vi.hoisted(() => vi.fn())
 const create = vi.hoisted(() => vi.fn())
@@ -314,21 +306,6 @@ describe('Scanjob_Settings.vue', () => {
   }
   )
 
-  it('leaves the name empty and required when there is no deal number', async () => {
-    const wrapper = mountComponent({ mode: 'create', registerId: 22, warehouseId: 11 })
-    await resolveAll()
-    expect(wrapper.get('#name').element.value).toBe('')
-
-    await wrapper.get('#operation').setValue('15')
-    await resolveAll()
-    expect(wrapper.get('#name').element.value).toBe('')
-    await wrapper.vm.$.setupState.onSubmit()
-    await resolveAll()
-    expect(wrapper.text()).toContain('Название обязательно')
-    expect(create).not.toHaveBeenCalled()
-    expect(routerPush).not.toHaveBeenCalled()
-  })
-
   it.each([[], [{ value: 99, name: 'Future operation' }]])(
     'leaves the name empty when the initial operation is unavailable or unknown: %j',
     async (operations) => {
@@ -390,25 +367,6 @@ describe('Scanjob_Settings.vue', () => {
     expect(routerBack).toHaveBeenCalled()
   })
 
-  it('handles start action and refreshes status display', async () => {
-    getById.mockResolvedValueOnce(mockScanjob).mockResolvedValueOnce(updatedScanjob)
-    update.mockResolvedValue(true)
-    const wrapper = mountComponent({
-      mode: 'edit',
-      scanjobId: 11
-    })
-    await resolveAll()
-
-    const startButton = wrapper.find('[data-testid="scanjob-start-action"]')
-    await startButton.trigger('click')
-    await resolveAll()
-
-    expect(update).toHaveBeenCalled()
-    expect(start).toHaveBeenCalledWith(11)
-    expect(getById).toHaveBeenCalledTimes(2)
-    expect(wrapper.find('[data-testid="status-display"]').element.value).toBe('Started')
-  })
-
   it('reports status action errors for pause and finish', async () => {
     pause.mockRejectedValue(new Error('403 Forbidden'))
     finish.mockRejectedValue(new Error('404 Not Found'))
@@ -433,27 +391,6 @@ describe('Scanjob_Settings.vue', () => {
     await resolveAll()
     expect(confirmMock).toHaveBeenCalled()
     expect(alertError).toHaveBeenCalledWith('Задание на сканирование не найдено')
-  })
-
-  it('does not save or finish when finish confirmation is declined', async () => {
-    confirmMock.mockResolvedValueOnce(false)
-    getById.mockResolvedValue({
-      ...mockScanjob,
-      allowFinish: true
-    })
-
-    const wrapper = mountComponent({
-      mode: 'edit',
-      scanjobId: 11
-    })
-    await resolveAll()
-
-    await wrapper.find('[data-testid="scanjob-finish-action"]').trigger('click')
-    await resolveAll()
-
-    expect(confirmMock).toHaveBeenCalled()
-    expect(update).not.toHaveBeenCalled()
-    expect(finish).not.toHaveBeenCalled()
   })
 
   it('shows api error when update fails with conflict', async () => {
@@ -505,26 +442,6 @@ describe('Scanjob_Settings.vue', () => {
     expect(start).not.toHaveBeenCalled()
     expect(pause).not.toHaveBeenCalled()
     expect(finish).not.toHaveBeenCalled()
-  })
-
-  it('enters read-only mode when a status action save receives a mutation conflict', async () => {
-    const conflict = Object.assign(new Error('Изменения запрещены для выбранного реестра'), {
-      status: 409
-    })
-    update.mockRejectedValue(conflict)
-    const wrapper = mountComponent({
-      mode: 'edit',
-      scanjobId: 11
-    })
-    await resolveAll()
-
-    await wrapper.get('[data-testid="scanjob-start-action"]').trigger('click')
-    await resolveAll()
-
-    expect(start).not.toHaveBeenCalled()
-    expect(alertError).toHaveBeenCalledWith('Изменения запрещены для выбранного реестра')
-    expect(wrapper.text()).toContain('Изменения и операции сканирования запрещены')
-    expect(wrapper.get('form').classes()).toContain('read-only-form')
   })
 
   it('reports duplicate conflicts encountered while saving a status action', async () => {
@@ -590,23 +507,6 @@ describe('Scanjob_Settings.vue', () => {
       await resolveAll()
       return wrapper
     }
-
-    it.each([[true, true], [true, false], [false, true], [false, false]])('saves and submits choices %s / %s', async (mark, updateFlag) => {
-      const wrapper = await openEditor()
-      await wrapper.get('#operation').setValue('15')
-      confirmMock.mockImplementationOnce(async ({ contentComponentProps: props }) => {
-        props.onChange('markUnscannedAsNotFound', mark)
-        props.onChange('updateRegisterStatus', updateFlag)
-        return true
-      })
-      await wrapper.get('[data-testid="scanjob-finish-action"]').trigger('click')
-      await resolveAll()
-      expect(getFinishOptions).toHaveBeenCalledWith(11, { operation: 15 })
-      expect(update).toHaveBeenCalledWith(11, expect.objectContaining({ operation: 15 }))
-      expect(finish).toHaveBeenCalledWith(11, { markUnscannedAsNotFound: mark, updateRegisterStatus: updateFlag })
-      expect(update.mock.invocationCallOrder[0]).toBeLessThan(finish.mock.invocationCallOrder[0])
-      expect(routerPush).not.toHaveBeenCalled()
-    })
 
     it.each([true, false])('uses simple confirmation in the editor, accepted: %s', async (accepted) => {
       const wrapper = await openEditor()

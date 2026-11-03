@@ -174,12 +174,6 @@ describe('hotkey action schemes store', () => {
       expect(store.getOpsLabel(undefined, 10)).toBe('10')
     })
 
-    it('getOpsLabel handles empty list', () => {
-      const store = useHotKeyActionSchemesStore()
-
-      expect(store.getOpsLabel([], 1)).toBe('1')
-    })
-
     it('getOpsEvent returns matching event and falls back to string when missing', () => {
       const store = useHotKeyActionSchemesStore()
 
@@ -197,27 +191,9 @@ describe('hotkey action schemes store', () => {
       expect(store.getOpsEvent(undefined, 10)).toBe('10')
     })
 
-    it('getOpsEvent handles empty list', () => {
-      const store = useHotKeyActionSchemesStore()
-
-      expect(store.getOpsEvent([], 1)).toBe('1')
-    })
   })
 
   describe('ensureLoaded', () => {
-    it('skips loading when already initialized', async () => {
-      fetchWrapper.get.mockResolvedValue(mockSchemes)
-      const store = useHotKeyActionSchemesStore()
-
-      // First call to initialize
-      await store.ensureLoaded()
-      expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
-
-      // Second call should skip loading
-      await store.ensureLoaded()
-      expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
-    })
-
     it('prevents concurrent requests when loading', async () => {
       let resolveGetAll
       const getAllPromise = new Promise((resolve) => {

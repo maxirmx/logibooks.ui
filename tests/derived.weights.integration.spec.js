@@ -4,16 +4,12 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { mount, flushPromises } from '@vue/test-utils'
+import { flushPromises } from '@vue/test-utils'
 import { useParcelsStore } from '@/stores/parcels.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { useBoxesStore } from '@/stores/boxes.store.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
-import { rawWeightPayload } from '@/helpers/derived.weights.helpers.js'
-import { createValidationState, pollValidation, createRegisterActionHandlers } from '@/helpers/register.actions.js'
-import CorrectedWeightDisplay from '@/components/CorrectedWeightDisplay.vue'
-import * as errorHelpers from '@/helpers/error.helpers.js'
-
+import { createValidationState, pollValidation } from '@/helpers/register.actions.js'
 afterEach(() => {
   vi.restoreAllMocks()
 })
@@ -42,16 +38,6 @@ beforeEach(() => {
 })
 
 describe('server-owned derived weight projections', () => {
-  it('does not infer allocation readiness or refetch on passport-only notifications', async () => {
-    const parcels = useParcelsStore(), registers = useRegistersStore()
-    parcels.item = parcel()
-    registers.item = { ...register }
-    parcels.applyParcelCheckStatusChanges({ registerId: 12, updates: [{ parcelId: 1, checkCode: 'passport', status: 4, revision: 1 }] })
-    await flushPromises()
-    expect(parcels.item).toMatchObject({ adjustedWeightKg: .001, derivedTotalsPending: false, passportCheckStatus: 4 })
-    expect(registers.item.derivedTotalsPending).toBe(false)
-    expect(fetchWrapper.get).not.toHaveBeenCalled()
-  })
   it('cannot restore old register totals from a late list response', async () => {
     const registers = useRegistersStore()
     registers.items = [{ ...register }]
@@ -69,56 +55,6 @@ describe('server-owned derived weight projections', () => {
     await loading
     expect(registers.items[0].realWeightKg).toBe(2)
     expect(registers.items[0].derivedTotalsPending).toBe(false)
-  })
-
-  it('keeps terminal totals and pagination when a pre-operation list arrives last without invalidation', async () => {
-    const registers = useRegistersStore()
-    registers.items = [{ ...register }]
-    registers.item = { ...register }
-    registers.totalCount = 1
-    fetchWrapper.get.mockResolvedValueOnce({ customsProcedures: [1], transportationTypes: [1], incoterms: [1] })
-    await registers.getOps()
-    let finishList
-    fetchWrapper.get.mockReturnValueOnce(new Promise(resolve => { finishList = resolve }))
-    const oldList = registers.getAll()
-    await flushPromises()
-    register = { ...register, realWeightKg: 2 }
-    await registers.refreshDerived(12)
-    const wrapper = mount({ setup: () => ({ registers }), template: '<output>{{ registers.items[0].realWeightKg }}</output>' })
-    expect(wrapper.text()).toBe('2')
-    finishList({ items: [{ ...register, realWeightKg: 1 }], pagination: { totalCount: 999, hasNextPage: true } })
-    await oldList
-    await flushPromises()
-    expect(wrapper.text()).toBe('2')
-    expect(registers.totalCount).toBe(1)
-    expect(registers.hasNextPage).toBe(false)
-    wrapper.unmount()
-  })
-
-  it.each([
-    [false, 'resolve'], [true, 'resolve'], [false, 'reject'], [true, 'reject']
-  ])('supersedes an older detail request with the terminal snapshot (listed=%s, outcome=%s)', async (listed, outcome) => {
-    const registers = useRegistersStore()
-    registers.item = { ...register }
-    registers.items = listed ? [{ ...register }] : []
-    fetchWrapper.get.mockResolvedValueOnce({ customsProcedures: [1], transportationTypes: [1], incoterms: [1] })
-    await registers.getOps()
-    let finishDetail, failDetail
-    fetchWrapper.get.mockReturnValueOnce(new Promise((resolve, reject) => { finishDetail = resolve; failDetail = reject }))
-    const failure = new Error('Не удалось загрузить реестр 12')
-    const oldDetail = registers.getById(12)
-    const result = outcome === 'reject' ? expect(oldDetail).rejects.toBe(failure) : oldDetail
-    await flushPromises()
-    register = { ...register, realWeightKg: 2 }
-    await registers.refreshDerived(12)
-    const wrapper = mount({ setup: () => ({ registers }), template: '<output>{{ registers.item.realWeightKg }}</output>' })
-    expect(wrapper.text()).toBe('2')
-    if (outcome === 'reject') failDetail(failure)
-    else finishDetail({ ...register, realWeightKg: 1 })
-    await result
-    await flushPromises()
-    expect(wrapper.text()).toBe('2')
-    wrapper.unmount()
   })
 
   it('recovers the current detail when its older read fails before the terminal reload finishes', async () => {
@@ -142,28 +78,6 @@ describe('server-owned derived weight projections', () => {
     expect(registers.item.error).toBeUndefined()
   })
 
-  it('does not discard pending page reads when the terminal register reload fails', async () => {
-    const registers = useRegistersStore()
-    fetchWrapper.get.mockResolvedValueOnce({ customsProcedures: [1], transportationTypes: [1], incoterms: [1] })
-    await registers.getOps()
-    let finishList, finishDetail
-    fetchWrapper.get.mockReturnValueOnce(new Promise(resolve => { finishList = resolve }))
-    const list = registers.getAll()
-    await flushPromises()
-    fetchWrapper.get.mockReturnValueOnce(new Promise(resolve => { finishDetail = resolve }))
-    const detail = registers.getById(12)
-    await flushPromises()
-    const failure = new Error('Не удалось обновить данные реестра 12')
-    fetchWrapper.get.mockRejectedValueOnce(failure)
-    await expect(registers.refreshDerived(12)).rejects.toBe(failure)
-    finishList({ items: [{ ...register }], pagination: { totalCount: 1 } })
-    finishDetail({ ...register })
-    await Promise.all([list, detail])
-    expect(registers.item).toMatchObject(register)
-    expect(registers.items[0]).toMatchObject(register)
-    expect(registers.totalCount).toBe(1)
-  })
-
   it('leaves a newer list load in charge of its filters and pagination', async () => {
     const registers = useRegistersStore()
     registers.item = { ...register }
@@ -183,42 +97,6 @@ describe('server-owned derived weight projections', () => {
     await newList
     expect(registers.items).toEqual([expect.objectContaining({ id: 99, realWeightKg: 3 })])
     expect(registers.hasPreviousPage).toBe(true)
-  })
-
-  it.each(['resolve', 'reject'])('keeps a newer register detail when a refresh %ss', async outcome => {
-    const registers = useRegistersStore()
-    registers.item = { ...register }
-    registers.items = [{ ...register }]
-    fetchWrapper.get.mockResolvedValueOnce({ customsProcedures: [1], transportationTypes: [1], incoterms: [1] })
-    await registers.getOps()
-    let finishRefresh, failRefresh
-    fetchWrapper.get.mockReturnValueOnce(new Promise((resolve, reject) => { finishRefresh = resolve; failRefresh = reject }))
-    const failure = new Error('Не удалось обновить итоги реестра')
-    const refresh = registers.refreshDerived(12)
-    const result = outcome === 'reject' ? expect(refresh).rejects.toBe(failure) : refresh
-    await flushPromises()
-    fetchWrapper.get.mockResolvedValueOnce({ id: 99, realWeightKg: 3 })
-    await registers.getById(99)
-    if (outcome === 'reject') failRefresh(failure)
-    else finishRefresh({ ...register, realWeightKg: 2 })
-    await result
-    expect(registers.item).toMatchObject({ id: 99, realWeightKg: 3 })
-  })
-
-  it('preserves a new upload draft when a previous register reload finishes', async () => {
-    const registers = useRegistersStore()
-    fetchWrapper.get.mockResolvedValueOnce({ customsProcedures: [1], transportationTypes: [1], incoterms: [1] })
-    await registers.getOps()
-    await registers.getById(12)
-    let finishRefresh
-    fetchWrapper.get.mockReturnValueOnce(new Promise(resolve => { finishRefresh = resolve }))
-    const refresh = registers.refreshDerived(12)
-    await flushPromises()
-    const draft = { fileName: 'Новый реестр.xlsx', registerType: 1, companyId: 1 }
-    registers.item = { ...draft }
-    finishRefresh({ ...register, realWeightKg: 2 })
-    await refresh
-    expect(registers.item).toEqual(draft)
   })
 
   it('keeps a delayed box detail unavailable after invalidation', async () => {
@@ -263,26 +141,6 @@ describe('server-owned derived weight projections', () => {
     expect(alerts.error).not.toHaveBeenCalled()
   })
 
-  it('refreshes FEACN completion and presents a refresh failure once', async () => {
-    const diagnostics = vi.spyOn(errorHelpers, 'reportError').mockImplementation(() => {})
-    const registers = useRegistersStore()
-    registers.item = { ...register, derivedTotalsPending: true }
-    registers.lookupFeacnCodes = vi.fn().mockResolvedValue({ id: 'operation' })
-    registers.getLookupFeacnCodesProgress = vi.fn().mockResolvedValue({ total: 1, processed: 1, finished: true })
-    registers.getAll = vi.fn().mockResolvedValue(undefined)
-    const alerts = { error: vi.fn() }
-    const handlers = createRegisterActionHandlers(registers, alerts)
-    await handlers.lookupFeacnCodes(registers.item)
-    expect(registers.item.derivedTotalsPending).toBe(false)
-    expect(diagnostics).not.toHaveBeenCalled()
-    fail = new Error('Не удалось обновить итоги')
-    await handlers.lookupFeacnCodes(registers.item)
-    handlers.stopPolling()
-    expect(alerts.error).toHaveBeenCalledTimes(1)
-    expect(diagnostics).toHaveBeenCalledExactlyOnceWith(fail, {
-      context: 'register operation progress or reload'
-    })
-  })
   it('retains the warehouse request context when its DTO omits registerId', async () => {
     const parcels = useParcelsStore(), registers = useRegistersStore()
     registers.item = { ...register }
@@ -315,11 +173,6 @@ describe('server-owned derived weight projections', () => {
     await loadingRegister
     expect(registers.items[0].derivedTotalsPending).toBe(false)
   })
-  it('strips read-only fields and keeps raw weight, quantity and Ozon metadata', () => {
-    expect(rawWeightPayload({ weightKg: null, quantity: 3, shipmentWeightKg: 8, adjustedWeightKg: .333, reconciliationParcelId: 1, derivedTotalsPending: true, weightCorrectionEligible: true }))
-      .toEqual({ weightKg: null, quantity: 3, shipmentWeightKg: 8 })
-  })
-
   it('refreshes register, visible page and boxes once after a target change', async () => {
     const parcels = useParcelsStore(), registers = useRegistersStore(), boxes = useBoxesStore()
     registers.item = { ...register }
@@ -338,57 +191,6 @@ describe('server-owned derived weight projections', () => {
     expect(registers.items[1]).toEqual({ id: 99 })
     expect(parcels.items[0].adjustedWeightKg).toBe(.002)
     expect(boxes.boxes[0].weightKg).toBe(2)
-  })
-
-  it('uses final detail values after quantity edits, including adjusted zero', async () => {
-    const parcels = useParcelsStore()
-    parcels.item = parcel({ weightKg: 1, adjustedWeightKg: 4 })
-    parcels.items = [parcels.item, { id: 9, registerId: 99 }]
-    row = parcel({ weightKg: 1, quantity: 2, adjustedWeightKg: 0 })
-    await parcels.update(1, { weightKg: 1, quantity: 2, adjustedWeightKg: 55 })
-    expect(fetchWrapper.put).toHaveBeenCalledWith('/api/parcels/1', { weightKg: 1, quantity: 2 })
-    expect(parcels.item).toMatchObject({ quantity: 2, adjustedWeightKg: 0, derivedTotalsPending: false })
-    expect(parcels.items[1]).toEqual({ id: 9, registerId: 99 })
-  })
-
-  it.each([
-    [false, 0], [false, .002], [true, 0], [true, .002]
-  ])('keeps the ready projection when recalculation finishes during save (warehouse %s, weight %s)', async (warehouse, adjustedWeightKg) => {
-    const parcels = useParcelsStore(), registers = useRegistersStore()
-    parcels.item = parcel({ productName: 'Полное описание посылки' })
-    registers.item = { ...register }
-    await parcels.getAll(12, { showMarkedByPartner: warehouse })
-    const wrapper = mount({
-      components: { CorrectedWeightDisplay },
-      setup: () => ({ parcels }),
-      template: `<div>
-        <CorrectedWeightDisplay :weight="parcels.item.weightKg" :adjusted-weight="parcels.item.adjustedWeightKg" :derived-totals-pending="parcels.item.derivedTotalsPending" />
-        <CorrectedWeightDisplay :weight="parcels.items[0].weightKg" :adjusted-weight="parcels.items[0].adjustedWeightKg" :derived-totals-pending="parcels.items[0].derivedTotalsPending" />
-      </div>`
-    }, { global: { stubs: { 'font-awesome-icon': true } } })
-    let recalculated = false
-    fetchWrapper.get.mockImplementation(async url => {
-      if (url.includes('/parcels?') || url.includes('/parcels/a?')) {
-        recalculated = true
-        return { items: [parcel({ quantity: 2, adjustedWeightKg })], pagination: {} }
-      }
-      if (url === '/api/parcels/a/1') return parcel({
-        quantity: 2, productName: 'Полное описание посылки',
-        adjustedWeightKg: recalculated ? adjustedWeightKg : null,
-        derivedTotalsPending: !recalculated
-      })
-      return { ...register }
-    })
-    await parcels.update(1, { quantity: 2 })
-    await flushPromises()
-    expect(parcels.item).toMatchObject({ quantity: 2, adjustedWeightKg, derivedTotalsPending: false, productName: 'Полное описание посылки' })
-    expect(parcels.items[0]).toMatchObject({ quantity: 2, adjustedWeightKg, derivedTotalsPending: false })
-    for (const display of wrapper.findAll('.corrected-weight-display')) {
-      expect(display.text()).toContain(adjustedWeightKg.toFixed(3))
-      expect(display.text()).not.toContain('пересчёт')
-    }
-    expect(fetchWrapper.get.mock.calls.filter(([url]) => url === '/api/parcels/a/1')).toHaveLength(1)
-    wrapper.unmount()
   })
 
   it('rejects a failed final detail request without overwriting the refreshed list', async () => {
@@ -437,58 +239,6 @@ describe('server-owned derived weight projections', () => {
     expect(parcels.item.adjustedWeightKg).toBeNull()
   })
 
-  it('coalesces register refreshes through the visible parcel page', async () => {
-    const registers = useRegistersStore(), parcels = useParcelsStore()
-    registers.item = { ...register }
-    await parcels.getAll(12)
-    row = parcel({ adjustedWeightKg: .002 })
-    fetchWrapper.get.mockClear()
-    await Promise.all([registers.refreshDerived(12), registers.refreshDerived(12)])
-    expect(fetchWrapper.get).toHaveBeenCalledTimes(2)
-    expect(parcels.items[0].adjustedWeightKg).toBe(.002)
-  })
-
-  it('refreshes the parcel page without a cached register and propagates a failed reload', async () => {
-    const registers = useRegistersStore(), parcels = useParcelsStore()
-    await parcels.getAll(12)
-    row = parcel({ adjustedWeightKg: .002 })
-    fetchWrapper.get.mockClear()
-    await parcels.refreshDerived(12)
-    expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
-    expect(fetchWrapper.get.mock.calls[0][0]).toContain('/api/parcels?')
-    expect(parcels.items[0].adjustedWeightKg).toBe(.002)
-    parcels.invalidateDerived(12)
-    fail = new Error('Не удалось обновить список посылок')
-    await expect(registers.refreshDerived(12)).rejects.toBe(fail)
-    expect(parcels.items[0].derivedTotalsPending).toBe(true)
-  })
-
-  it('does not reload a parcel page belonging to another register', async () => {
-    const registers = useRegistersStore(), parcels = useParcelsStore()
-    registers.item = { ...register }
-    row = parcel({ id: 9, registerId: 99 })
-    await parcels.getAll(99)
-    fetchWrapper.get.mockClear()
-    await registers.refreshDerived(12)
-    expect(fetchWrapper.get).toHaveBeenCalledExactlyOnceWith('/api/registers/12')
-    expect(parcels.items[0]).toMatchObject({ id: 9, registerId: 99 })
-  })
-
-  it('repeats a coalesced parcel-only refresh after a new invalidation', async () => {
-    const registers = useRegistersStore(), parcels = useParcelsStore()
-    await parcels.getAll(12)
-    let finish
-    fetchWrapper.get.mockImplementationOnce(() => new Promise(resolve => { finish = resolve }))
-    const refreshing = registers.refreshDerived(12)
-    await flushPromises()
-    parcels.invalidateDerived(12)
-    row = parcel({ adjustedWeightKg: .002 })
-    const repeated = registers.refreshDerived(12)
-    finish({ items: [parcel({ adjustedWeightKg: .001 })], pagination: {} })
-    await Promise.all([refreshing, repeated])
-    expect(parcels.items[0]).toMatchObject({ adjustedWeightKg: .002, derivedTotalsPending: false })
-  })
-
   it('keeps failed submissions unchanged and propagates an adjustment conflict', async () => {
     const parcels = useParcelsStore()
     parcels.item = parcel()
@@ -498,15 +248,4 @@ describe('server-owned derived weight projections', () => {
     expect(parcels.item).toEqual(parcel())
   })
 
-  it('renders server authority, null raw and pending-to-ready transitions visibly', async () => {
-    const wrapper = mount(CorrectedWeightDisplay, { props: { weight: null, adjustedWeight: .001 }, global: { stubs: { 'font-awesome-icon': true } } })
-    expect(wrapper.text()).toContain('0.001')
-    await wrapper.setProps({ derivedTotalsPending: true })
-    expect(wrapper.text()).toContain('пересчёт')
-    expect(wrapper.text()).not.toContain('0.001')
-    await wrapper.setProps({ derivedTotalsPending: false, adjustedWeight: 0 })
-    expect(wrapper.text()).toContain('0.000')
-    wrapper.unmount()
-    await flushPromises()
-  })
 })

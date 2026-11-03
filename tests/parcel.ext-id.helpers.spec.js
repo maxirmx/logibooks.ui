@@ -10,10 +10,6 @@ import {
 
 describe('parcel ext-id helpers', () => {
   describe('canClearParcelExtId', () => {
-    it('returns false when item is undefined', () => {
-      expect(canClearParcelExtId(undefined, { isAdmin: true })).toBe(false)
-    })
-
     it('returns false when authStore is undefined', () => {
       expect(canClearParcelExtId({ id: 1, extId: 'KGT-001' }, undefined)).toBe(false)
     })

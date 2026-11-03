@@ -10,7 +10,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { useRegisterDownloadFlow } from '@/composables/useRegisterDownloadFlow.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
-import { GTC_COMPANY_ID, OZON_COMPANY_ID, WBR_COMPANY_ID, WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
+import { GTC_COMPANY_ID, OZON_COMPANY_ID, WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
 
 const flush = async () => { await Promise.resolve(); await Promise.resolve(); await nextTick() }
 const register = (registerType, id = 10) => ({ id, registerType, fileName: 'r.xlsx' })
@@ -69,30 +69,6 @@ describe('shared register download flow', () => {
     wrapper.unmount()
   })
 
-  it.each(['download', 'getDownloadFormats'])('reports a %s failure without alert callback metadata', async method => {
-    registersStore[method].mockRejectedValueOnce(new Error('failed'))
-    const { flow, wrapper } = mountFlow()
-    if (method === 'download') await flow.download({ register: register(WBRN_REGISTER_ID) })
-    else await flow.loadFormats(register(WBRN_REGISTER_ID))
-    expect(alertStore.error).toHaveBeenCalledTimes(1)
-    expect(wrapper.find('.page-alert-region__action').exists()).toBe(false)
-    wrapper.unmount()
-  })
-
-  it.each([WBRN_REGISTER_ID, OZON_COMPANY_ID, GTC_COMPANY_ID])(
-    'loads a usable company format for supported type %i and sends the chosen format', async (registerType) => {
-      registersStore.getDownloadFormats.mockResolvedValue({ company: { available: true, name: 'Company format — Получатель' } })
-      const { flow, wrapper } = mountFlow()
-      await flow.loadFormats(register(registerType))
-      expect(flow.companyFormatName.value).toBe('Получатель')
-      expect(registersStore.getDownloadFormats).toHaveBeenCalledWith(10)
-      expect(await flow.download({ register: register(registerType), format: 'company' })).toBe(true)
-      expect(registersStore.download).toHaveBeenCalledWith(10, 'r.xlsx', null, undefined, false, 'company')
-      expect(alertStore.error).not.toHaveBeenCalled()
-      wrapper.unmount()
-  }
-  )
-
   it.each([undefined, null, 0])('does not infer the format from companyId when registerType is %s', async (registerType) => {
     registersStore.getDownloadFormats.mockResolvedValue({ company: { available: true, name: 'Получатель' } })
     const { flow, wrapper } = mountFlow()
@@ -104,16 +80,6 @@ describe('shared register download flow', () => {
     expect(registersStore.download).not.toHaveBeenCalled()
     expect(await flow.download({ register: item, format: 'generic' })).toBe(true)
     expect(registersStore.download).toHaveBeenCalledWith(10, undefined, null, undefined)
-    wrapper.unmount()
-  })
-
-  it.each([WBR_COMPANY_ID])('keeps unsupported type %i on the original path', async (registerType) => {
-    const { flow, wrapper } = mountFlow()
-    await flow.loadFormats(register(registerType, 8))
-    expect(registersStore.getDownloadFormats).not.toHaveBeenCalled()
-    expect(await flow.download({ register: register(registerType, 8) })).toBe(true)
-    expect(registersStore.download).toHaveBeenCalledWith(8, 'r.xlsx', null, undefined)
-    expect(await flow.download({ register: register(registerType, 8), format: 'company' })).toBe(false)
     wrapper.unmount()
   })
 

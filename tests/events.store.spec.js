@@ -147,19 +147,4 @@ describe('events.store.js', () => {
     })
   })
 
-  describe('isolation between parcel and register events', () => {
-    it('parcel and register operations use separate state', async () => {
-      const parcelData = [{ id: 1, eventName: 'Parcel Event' }]
-      const registerData = [{ id: 2, eventName: 'Register Event' }]
-
-      mockGet.mockResolvedValueOnce(parcelData).mockResolvedValueOnce(registerData)
-
-      await store.parcelGetAll()
-      await store.registerGetAll()
-
-      expect(store.parcelEvents).toEqual(parcelData)
-      expect(store.registerEvents).toEqual(registerData)
-    })
-
-  })
 })

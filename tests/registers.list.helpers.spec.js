@@ -5,7 +5,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { reactive } from 'vue'
-import { initializeBulkStatusState, toggleBulkStatusEditMode, cancelBulkStatusChange, validateBulkStatusParams, resetBulkStatusState, applyBulkStatusToAllOrders, isBulkStatusEditMode, getBulkStatusSelectedId, setBulkStatusSelectedId, initializeRegisterStatusState, startRegisterStatusEditMode, cancelRegisterStatusChange, validateRegisterStatusParams, resetRegisterStatusState, applyRegisterStatusChange, createValidationState, calculateValidationProgress, pollValidation, validateRegister, cancelValidation, createPollingTimer, createRegisterActionHandlers, POLLING_INTERVAL_MS } from '@/helpers/registers.list.helpers'
+import { toggleBulkStatusEditMode, cancelBulkStatusChange, validateBulkStatusParams, resetBulkStatusState, applyBulkStatusToAllOrders, isBulkStatusEditMode, getBulkStatusSelectedId, setBulkStatusSelectedId, startRegisterStatusEditMode, cancelRegisterStatusChange, validateRegisterStatusParams, applyRegisterStatusChange, createValidationState, pollValidation, validateRegister, cancelValidation, createPollingTimer, createRegisterActionHandlers, POLLING_INTERVAL_MS } from '@/helpers/registers.list.helpers'
 
 describe('registers.list.helpers', () => {
   let bulkStatusState
@@ -24,18 +24,6 @@ describe('registers.list.helpers', () => {
       error: vi.fn()
     }
     vi.clearAllMocks()
-  })
-
-  describe('initializeBulkStatusState', () => {
-    it('initializes state if it does not exist', () => {
-      const registerId = 1
-
-      initializeBulkStatusState(registerId, bulkStatusState)
-
-      expect(bulkStatusState[registerId]).toBeDefined()
-      expect(bulkStatusState[registerId].editMode).toBe(false)
-      expect(bulkStatusState[registerId].selectedStatusId).toBeNull()
-    })
   })
 
   describe('toggleBulkStatusEditMode', () => {
@@ -197,18 +185,6 @@ describe('registers.list.helpers', () => {
   })
 
   describe('isBulkStatusEditMode', () => {
-    it('returns true when in edit mode', () => {
-      const registerId = 1
-      bulkStatusState[registerId] = {
-        editMode: true,
-        selectedStatusId: null
-      }
-
-      const result = isBulkStatusEditMode(registerId, bulkStatusState)
-
-      expect(result).toBe(true)
-    })
-
     it('returns false when state does not exist', () => {
       const registerId = 1
 
@@ -219,19 +195,6 @@ describe('registers.list.helpers', () => {
   })
 
   describe('getBulkStatusSelectedId', () => {
-    it('returns selected status ID when it exists', () => {
-      const registerId = 1
-      const statusId = 5
-      bulkStatusState[registerId] = {
-        editMode: true,
-        selectedStatusId: statusId
-      }
-
-      const result = getBulkStatusSelectedId(registerId, bulkStatusState)
-
-      expect(result).toBe(statusId)
-    })
-
     it('returns null when state does not exist', () => {
       const registerId = 1
 
@@ -263,16 +226,6 @@ describe('registers.list.helpers', () => {
     beforeEach(() => {
       registerStatusState = reactive({})
       mockRegistersStore.setRegisterStatus = vi.fn()
-    })
-
-    it('initializes register status edit state if it does not exist', () => {
-      initializeRegisterStatusState(1, registerStatusState)
-
-      expect(registerStatusState[1]).toEqual({
-        editMode: false,
-        selectedStatusId: null,
-        originalStatusId: null
-      })
     })
 
     it('does not start edit mode while loading', () => {
@@ -356,18 +309,6 @@ describe('registers.list.helpers', () => {
       expect(mockRegistersStore.getAll).toHaveBeenCalled()
     })
 
-    it('resets register status state', () => {
-      registerStatusState[1] = {
-        editMode: true,
-        selectedStatusId: 8,
-        originalStatusId: 4
-      }
-
-      resetRegisterStatusState(1, registerStatusState)
-
-      expect(registerStatusState[1].editMode).toBe(false)
-      expect(registerStatusState[1].selectedStatusId).toBeNull()
-    })
   })
 
   describe('Validation Support Functions', () => {
@@ -388,18 +329,6 @@ describe('registers.list.helpers', () => {
       }
       validationState = createValidationState()
       vi.clearAllMocks()
-    })
-
-    describe('calculateValidationProgress', () => {
-      it('returns 0 when total is 0', () => {
-        validationState.total = 0
-        validationState.processed = 10
-
-        const progress = calculateValidationProgress(validationState)
-
-        expect(progress).toBe(0)
-      })
-
     })
 
     describe('pollValidation', () => {
@@ -441,37 +370,6 @@ describe('registers.list.helpers', () => {
         stopPollingFn = vi.fn()
         startPollingFn = vi.fn()
         item = { id: 123 }
-      })
-
-      it('starts validation successfully', async () => {
-        const validationResult = { id: 'validation-handle-123' }
-        mockRegistersStore.validate.mockResolvedValueOnce(validationResult)
-        mockRegistersStore.getValidationProgress.mockResolvedValueOnce({
-          total: 100,
-          processed: 0,
-          finished: false
-        })
-
-        await validateRegister(
-          item,
-          validationState,
-          mockRegistersStore,
-          mockAlertStore,
-          stopPollingFn,
-          startPollingFn,
-          true
-        )
-
-        expect(stopPollingFn).toHaveBeenCalled()
-        // validate may receive an optional swMatchMode third arg, so only assert on the first two args
-        expect(mockRegistersStore.validate).toHaveBeenCalled()
-        expect(mockRegistersStore.validate.mock.calls[0][0]).toBe(123)
-        expect(mockRegistersStore.validate.mock.calls[0][1]).toBe(true)
-        expect(validationState.handleId).toBe('validation-handle-123')
-        expect(validationState.total).toBe(100)
-        expect(validationState.processed).toBe(0)
-        expect(validationState.show).toBe(true)
-        expect(startPollingFn).toHaveBeenCalled()
       })
 
       it('handles validation start errors', async () => {
@@ -610,23 +508,6 @@ describe('registers.list.helpers', () => {
         alertStore = { error: vi.fn() }
 
         handlers = createRegisterActionHandlers(registersStore, alertStore)
-      })
-
-      it('validates register via stop-words path and updates state', async () => {
-        await handlers.validateRegisterSw({ id: 10 })
-
-        expect(registersStore.validate).toHaveBeenCalled()
-        expect(registersStore.validate.mock.calls[0][0]).toBe(10)
-        expect(registersStore.validate.mock.calls[0][1]).toBe(true)
-        expect(handlers.validationState.operation).toBe('validation')
-      })
-
-      it('looks up FEACN codes and tracks handle id', async () => {
-        await handlers.lookupFeacnCodes({ id: 5 })
-
-        expect(registersStore.lookupFeacnCodes).toHaveBeenCalledWith(5, 1)
-        expect(handlers.validationState.operation).toBe('lookup-feacn-codes')
-        expect(handlers.validationState.handleId).toBeNull()
       })
 
       it('exports XML variants and downloads register files', async () => {

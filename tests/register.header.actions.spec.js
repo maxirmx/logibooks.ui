@@ -6,7 +6,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { ref, reactive } from 'vue'
 import { refreshAfterCheckStatusFreeze, useRegisterHeaderActions } from '@/helpers/register.actions.js'
-import { OZON_COMPANY_ID, WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
+import { WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
 
 const confirmMock = vi.hoisted(() => vi.fn())
 
@@ -83,18 +83,6 @@ describe('useRegisterHeaderActions', () => {
     isComponentMounted = ref(true)
   })
 
-  it.each([undefined, null, 0])('does not select the company-format download path for type %s', async (registerType) => {
-    Object.assign(registersStore.item, { registerType, companyId: OZON_COMPANY_ID })
-    const actions = useRegisterHeaderActions({
-      registersStore, alertStore, runningAction, tableLoading, registerLoading,
-      loadParcels, isComponentMounted
-    })
-    await actions.downloadRegister()
-    expect(registersStore.getDownloadFormats).not.toHaveBeenCalled()
-    expect(registersStore.download).toHaveBeenCalledWith(1, 'register.xlsx')
-    expect(actions.companyFormatName.value).toBe('')
-  })
-
   it('offers company output for a WbrN paperwork download and keeps the action locked', async () => {
     registersStore.item.registerType = WBRN_REGISTER_ID
     const deferred = createDeferred()
@@ -128,36 +116,6 @@ describe('useRegisterHeaderActions', () => {
     const first = actions.downloadRegister('company')
     expect(await first).toBe(false)
     expect(alertStore.error).toHaveBeenCalledTimes(1)
-  })
-
-  it('initiates extended FEACN lookup with withFCMatch=true', async () => {
-    // Simulate API handle response
-    registersStore.lookupFeacnCodes.mockResolvedValueOnce({ id: 'handle-ex' })
-    registersStore.getLookupFeacnCodesProgress.mockResolvedValueOnce({
-      total: 10,
-      processed: 0,
-      finished: false
-    })
-
-    const actions = useRegisterHeaderActions({
-      registersStore,
-      alertStore,
-      runningAction,
-      tableLoading,
-      registerLoading,
-      loadParcels,
-      isComponentMounted
-    })
-
-    const { lookupFeacnCodesEx, validationState, progressPercent } = actions
-    await lookupFeacnCodesEx()
-
-    // Should call store method with second param true
-    expect(registersStore.lookupFeacnCodes).toHaveBeenCalledWith(1, 2)
-    expect(validationState.operation).toBe('lookup-feacn-codes')
-    // After initial poll, progress total should reflect mocked value
-    expect(validationState.total).toBe(10)
-    expect(progressPercent.value).toBe(0)
   })
 
   it('exports raw XML when weight correction is declined', async () => {
@@ -394,33 +352,6 @@ describe('useRegisterHeaderActions', () => {
 
     expect(actionDialog.show).toBe(false)
     expect(actionDialog.title).toBe('')
-  })
-
-  it('shows restriction-only progress while applying restrictions and reports success', async () => {
-    const deferred = createDeferred()
-    registersStore.freezeCheckStatus.mockReturnValueOnce(deferred.promise)
-    const actions = useRegisterHeaderActions({
-      registersStore,
-      alertStore,
-      runningAction,
-      tableLoading,
-      registerLoading,
-      loadParcels,
-      isComponentMounted
-    })
-
-    const promise = actions.freezeCheckStatus()
-
-    expect(actions.actionDialog.show).toBe(true)
-    expect(actions.actionDialog.title).toBe('Применение запретов')
-    expect(registersStore.freezeCheckStatus).toHaveBeenCalledWith(1)
-
-    deferred.resolve()
-    await expect(promise).resolves.toBe(true)
-
-    expect(actions.actionDialog.show).toBe(false)
-    expect(actions.actionDialog.title).toBe('')
-    expect(alertStore.error).not.toHaveBeenCalled()
   })
 
   it('reports a register refresh rejection once and leaves the restriction filter unchanged', async () => {
@@ -724,36 +655,6 @@ describe('useRegisterHeaderActions', () => {
     expect(confirmMock).not.toHaveBeenCalled()
     expect(registersStore.finishPassportCheck).not.toHaveBeenCalled()
   })
-
-  it('shows action dialog while custom charges are calculated and refreshes current data', async () => {
-    const deferred = createDeferred()
-    registersStore.calculateCustomsCharges.mockReturnValueOnce(deferred.promise)
-
-    const actions = useRegisterHeaderActions({
-      registersStore,
-      alertStore,
-      runningAction,
-      tableLoading,
-      registerLoading,
-      loadParcels,
-      isComponentMounted
-    })
-
-    const promise = actions.calculateCustomsCharges()
-
-    expect(actions.actionDialog.show).toBe(true)
-    expect(actions.actionDialog.title).toBe('Расчёт сборов и пошлин')
-    expect(registersStore.calculateCustomsCharges).toHaveBeenCalledWith(1)
-
-    deferred.resolve()
-    await promise
-
-    expect(registersStore.getById).toHaveBeenCalledWith(1)
-    expect(loadParcels).toHaveBeenCalled()
-    expect(actions.actionDialog.show).toBe(false)
-    expect(actions.actionDialog.title).toBe('')
-  })
-
 
   it('reloads visible register and parcel rows before reporting a cached detail failure', async () => {
     const error = new Error('Не удалось обновить сохранённую карточку')

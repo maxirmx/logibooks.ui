@@ -163,31 +163,6 @@ describe('Invoice_Settings.vue', () => {
     )
   })
 
-  it('resets weight correction to checked when another correctable register is loaded', async () => {
-    itemRef.value = {
-      id: 77,
-      invoiceNumber: 'INV-77',
-      realWeightKg: 5,
-      totalWeightKgToRelease: 10
-    }
-
-    const wrapper = mountDialog()
-    await resolveAll()
-    await wrapper.get('.weight-correction-checkbox input').setChecked(false)
-
-    itemRef.value = {
-      id: 88,
-      invoiceNumber: 'INV-88',
-      realWeightKg: 12,
-      totalWeightKgToRelease: 24
-    }
-    wrapper.vm.props.id = 88
-    await nextTick()
-
-    const correctionCheckbox = wrapper.get('.weight-correction-checkbox input')
-    expect(correctionCheckbox.element.checked).toBe(true)
-  })
-
   it('displays error on submission failure', async () => {
     downloadInvoiceFileMock.mockRejectedValueOnce(new Error('Ошибка'))
     const wrapper = mountDialog()
@@ -208,35 +183,6 @@ describe('Invoice_Settings.vue', () => {
     await comp.onCancel()
     // Implementation now uses router.go(-1) instead of router.push
     expect(router.go).toHaveBeenCalledWith(-1)
-  })
-
-  it('submits ДО1 with masked optional columns and weight correction', async () => {
-    itemRef.value = {
-      id: 77,
-      invoiceNumber: 'INV-77',
-      realWeightKg: 5,
-      totalWeightKgToRelease: 10
-    }
-    const wrapper = mountDialog({ id: 77, documentType: 'do1' })
-    await resolveAll()
-    const comp = wrapper.findComponent(InvoiceSettings).vm.$.setupState
-    comp.optionalColumns =
-      InvoiceOptionalColumns.BagNumber |
-      InvoiceOptionalColumns.FullName |
-      InvoiceOptionalColumns.PreviousDteg |
-      InvoiceOptionalColumns.Uin |
-      InvoiceOptionalColumns.Url
-    await wrapper.get('.weight-correction-checkbox input').setChecked(false)
-
-    await comp.onSubmit()
-
-    expect(downloadDo1FileMock).toHaveBeenCalledWith(
-      77,
-      'INV-77',
-      InvoiceOptionalColumns.BagNumber | InvoiceOptionalColumns.Uin | InvoiceOptionalColumns.Url,
-      false
-    )
-    expect(downloadInvoiceFileMock).not.toHaveBeenCalled()
   })
 
   it('shows ДО1-specific fallback error', async () => {

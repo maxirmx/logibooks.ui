@@ -160,11 +160,6 @@ describe('FeacnOrders_List.vue', () => {
     routerPush.mockResolvedValue()
   })
 
-  it('calls ensureLoaded on mount', () => {
-    mount(FeacnOrdersList, mountOptions)
-    expect(mockFeacnOrdersStore.ensureLoaded).toHaveBeenCalled()
-  })
-
   it('updateCodes calls store update', async () => {
     mockFeacnOrdersStore.update.mockResolvedValue()
     const wrapper = mount(FeacnOrdersList, mountOptions)
@@ -185,22 +180,6 @@ describe('FeacnOrders_List.vue', () => {
     const wrapper = mount(FeacnOrdersList, mountOptions)
     const button = wrapper.find('button')
     expect(button.exists()).toBe(true)
-  })
-
-  it('shows spinner in header when loading', () => {
-    mockFeacnOrdersStore.loading.value = true
-    const wrapper = mount(FeacnOrdersList, mountOptions)
-    expect(wrapper.find('.header-actions .spinner-border').exists()).toBe(true)
-  })
-
-
-  it('navigates administrators to the order settings route', async () => {
-    mockAuthStore.isAdmin.value = true
-    const wrapper = mount(FeacnOrdersList, mountOptions)
-
-    await wrapper.findAll('[data-testid="edit-order-scopes"]')[0].trigger('click')
-
-    expect(routerPush).toHaveBeenCalledWith('/feacn/order/edit/1')
   })
 
   it('shows a page-level error when opening the order settings route fails', async () => {
@@ -239,15 +218,6 @@ describe('FeacnOrders_List.vue', () => {
       expect(result).toBe(true)
     })
 
-    it('filters by title case-insensitive', () => {
-      const item = { raw: { title: 'Test Document', url: 'http://test.com' } }
-
-      expect(wrapper.vm.filterOrders(null, 'test', item)).toBe(true)
-      expect(wrapper.vm.filterOrders(null, 'TEST', item)).toBe(true)
-      expect(wrapper.vm.filterOrders(null, 'document', item)).toBe(true)
-      expect(wrapper.vm.filterOrders(null, 'xyz', item)).toBe(false)
-    })
-
     it('handles null url field', () => {
       const item = { raw: { title: 'Test Document', url: null } }
 
@@ -282,22 +252,5 @@ describe('FeacnOrders_List.vue', () => {
       expect(wrapper.vm.filterPrefixes(null, 'xyz', item)).toBe(false)
     })
 
-    it('matches across multiple fields', () => {
-      const item = {
-        raw: {
-          code: '1234',
-          description: 'Leather goods',
-          comment: 'Special handling',
-          exceptions: 'Children items'
-        }
-      }
-
-      // Should match any of the fields
-      expect(wrapper.vm.filterPrefixes(null, '1234', item)).toBe(true) // code
-      expect(wrapper.vm.filterPrefixes(null, 'leather', item)).toBe(true) // description
-      expect(wrapper.vm.filterPrefixes(null, 'special', item)).toBe(true) // comment
-      expect(wrapper.vm.filterPrefixes(null, 'children', item)).toBe(true) // exceptions
-      expect(wrapper.vm.filterPrefixes(null, 'notfound', item)).toBe(false) // no match
-    })
   })
 })

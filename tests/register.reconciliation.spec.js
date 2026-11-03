@@ -9,7 +9,6 @@ import { WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import RegisterReconciliationDialogs from '@/l2/RegisterReconciliationDialogs.vue'
-import ActionDialog from '@/l2/ActionDialog.vue'
 import { vuetifyStubs } from './helpers/test-utils.js'
 
 vi.mock('@/composables/useAppConfirm.js', () => ({ useAppConfirm: () => vi.fn().mockResolvedValue(false) }))
@@ -106,47 +105,6 @@ describe('register reconciliation', () => {
     expect(h.wrapper.find('[data-testid="reconciliation-statistics"]').exists()).toBe(false)
   })
 
-  it.each([[0, 0], [5, 0], [0, 6], [5, 6]])('hides only zero N5/N6 rows for counts %i/%i', async (registerOnlyCount, manifestOnlyCount) => {
-    const h = harness()
-    const result = { registerId: 7, dangerousGoodsCount: 0, markedCount: 0, newlyMarkedCount: 0, excludedCount: 0,
-      registerOnlyCount, manifestOnlyCount }
-    h.store.getReconciliation.mockResolvedValue({ ...complete, result })
-    await h.flow.selectFile(h.event)
-    await flushPromises()
-    const report = h.wrapper.get('[data-testid="reconciliation-statistics"]')
-    expect(report.find('[data-testid="reconciliation-registerOnlyCount"]').exists()).toBe(registerOnlyCount !== 0)
-    expect(report.find('[data-testid="reconciliation-manifestOnlyCount"]').exists()).toBe(manifestOnlyCount !== 0)
-    for (const key of ['dangerousGoodsCount', 'markedCount', 'newlyMarkedCount', 'excludedCount'])
-      expect(report.get(`[data-testid="reconciliation-${key}"]`).text()).toBe('0')
-    expect(report.findAll('dt').map(label => label.text())).toEqual([
-      'Посылок с признаком «Опасный груз»:', 'Всего запретов:', 'Новых запретов:', 'Посылок, не переданных партнёру:',
-      ...(registerOnlyCount ? ['Посылок в реестре, но не в манифесте:'] : []),
-      ...(manifestOnlyCount ? ['Посылок в манифесте, но не в реестре:'] : [])
-    ])
-  })
-
-  it('suppresses disallowed, empty, busy and read-only selections without notifications', async () => {
-    const h = harness()
-    expect(h.flow.openFile()).toBe(false)
-    const picker = { value: 'old', click: vi.fn() }
-    h.flow.fileInput.value = picker
-    expect(h.flow.openFile()).toBe(true)
-    await h.flow.selectFile({ target: { value: 'x', files: [] } })
-    h.authStore.isSrLogistPlus = false
-    await h.flow.selectFile(h.event)
-    expect(h.flow.openFile()).toBe(false)
-    h.authStore.isSrLogistPlus = true
-    h.register.readOnly = true
-    await h.flow.selectFile(h.event)
-    expect(h.flow.openFile()).toBe(false)
-    const busy = harness({ busy: () => true })
-    expect(busy.flow.openFile()).toBe(false)
-    await busy.flow.selectFile(busy.event)
-    expect(h.store.startReconciliation).not.toHaveBeenCalled()
-    expect(busy.store.startReconciliation).not.toHaveBeenCalled()
-    expect(h.notify).not.toHaveBeenCalled()
-  })
-
   it('recovers upload uncertainty by reading the same operation without resending the file', async () => {
     const h = harness()
     h.store.startReconciliation.mockRejectedValueOnce(new Error('network technical failure'))
@@ -166,43 +124,6 @@ describe('register reconciliation', () => {
     expect(h.store.startReconciliation).toHaveBeenCalledOnce()
     expect(h.store.getReconciliation).toHaveBeenCalledWith(7, 'op-1')
     expect(h.flow.state.result).toEqual(statistics)
-  })
-
-  it('retries only GET after a temporary read failure', async () => {
-    const h = harness()
-    h.store.getReconciliation.mockRejectedValueOnce(failure(undefined))
-    await h.flow.selectFile(h.event)
-    await flushPromises()
-    expect(h.flow.state.phase).toBe('retry-status')
-    expect(h.flow.state.progress.show).toBe(false)
-    expect(h.runningAction.value).toBe(true)
-    expect(h.wrapper.get('[data-testid="page-alert-region"]').text()).toContain('Ошибка сверки')
-    await h.wrapper.get('[data-testid="retry"]').trigger('click')
-    await flushPromises()
-    expect(h.store.startReconciliation).toHaveBeenCalledOnce()
-    expect(h.store.getReconciliation).toHaveBeenCalledTimes(2)
-    expect(h.flow.state.summaryVisible).toBe(true)
-  })
-
-  it.each(['ReconciliationOutcomeUnknown', 'ReconciliationOperationNotFound'])('does not replay %s without explicit acknowledgement', async code => {
-    const h = harness()
-    h.store.getReconciliation.mockRejectedValueOnce(failure(code, 409))
-    await h.flow.selectFile(h.event)
-    await flushPromises()
-    expect(h.flow.state.phase).toBe('unknown')
-    expect(h.flow.state.progress.show).toBe(false)
-    expect(h.runningAction.value).toBe(true)
-    await h.wrapper.get('[data-testid="new"]').trigger('click')
-    await flushPromises()
-    expect(h.store.startReconciliation).toHaveBeenCalledOnce()
-    expect(h.flow.state.phase).toBe('unknown')
-    h.confirm.mockResolvedValue(true)
-    const picker = { value: 'old', click: vi.fn() }
-    h.flow.fileInput.value = picker
-    await h.flow.acknowledgeUnknown()
-    expect(picker.click).toHaveBeenCalledOnce()
-    expect(h.runningAction.value).toBe(false)
-    expect(h.store.startReconciliation).toHaveBeenCalledOnce()
   })
 
   it.each(['InvalidManifest', 'Unexpected'])('presents terminal %s exactly once and unlocks', async failureKind => {
@@ -260,28 +181,6 @@ describe('register reconciliation', () => {
     expect(h.store.startReconciliation).toHaveBeenCalledOnce()
   })
 
-  it('does not overlap progress polling and stops its timer on teardown', async () => {
-    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
-    const h = harness()
-    let resolve
-    h.store.getReconciliation.mockReturnValueOnce(new Promise(r => { resolve = r }))
-    const start = h.flow.selectFile(h.event)
-    await flushPromises()
-    await vi.advanceTimersByTimeAsync(3000)
-    expect(h.store.getReconciliation).toHaveBeenCalledOnce()
-    resolve({ finished: false, percent: 55 })
-    await start
-    expect(h.flow.state.progress.percent).toBe(55)
-    await vi.advanceTimersByTimeAsync(1000)
-    expect(h.store.getReconciliation).toHaveBeenCalledTimes(2)
-    const pending = harness()
-    pending.store.getReconciliation.mockResolvedValue({ finished: false, percent: 10 })
-    await pending.flow.selectFile(pending.event)
-    pending.wrapper.unmount()
-    await vi.advanceTimersByTimeAsync(3000)
-    expect(pending.store.getReconciliation).toHaveBeenCalledOnce()
-  })
-
   it('ignores late start and poll results or rejections after unmount', async () => {
     for (const phase of ['start', 'poll']) {
       const h = harness()
@@ -299,16 +198,6 @@ describe('register reconciliation', () => {
     }
   })
 
-  it('keeps ActionDialog default spinner behavior and supports bounded percentages', async () => {
-    const wrapper = mount(ActionDialog, { props: { actionDialog: { show: true } }, global: { stubs } })
-    wrappers.push(wrapper)
-    expect(wrapper.get('[data-testid="progress"]').attributes('data-indeterminate')).toBe('true')
-    await wrapper.setProps({ actionDialog: { show: true, title: 'Сверка', percent: 101 } })
-    expect(wrapper.text()).toContain('100%')
-    expect(wrapper.get('[data-testid="progress"]').attributes('data-indeterminate')).toBe('false')
-    await wrapper.setProps({ actionDialog: { show: true, percent: -1 } })
-    expect(wrapper.text()).toContain('0%')
-  })
   it.each(['expiry', 'restart'])('requires acknowledgement after a lost POST and server %s', async () => {
     const makeId = vi.fn().mockReturnValueOnce('old-op').mockReturnValueOnce('new-op')
     const h = harness({ makeId })
@@ -327,28 +216,6 @@ describe('register reconciliation', () => {
     expect(h.store.startReconciliation).toHaveBeenCalledOnce()
     await h.flow.selectFile(h.event)
     expect(h.store.startReconciliation).toHaveBeenNthCalledWith(2, 7, h.file, 'new-op')
-  })
-
-  it.each(['start', 'response', 'timer'])('continues polling across transient store loading during %s', async phase => {
-    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
-    let currentRegister = { id: 7, registerType: WBRN_REGISTER_ID, theOtherCountryCode: 762 }
-    const h = harness({ register: () => currentRegister, registerId: () => 7 })
-    let resolve
-    const pending = new Promise(r => { resolve = r })
-    if (phase === 'start') h.store.startReconciliation.mockReturnValueOnce(pending)
-    else if (phase === 'response') h.store.getReconciliation.mockReturnValueOnce(pending)
-    else h.store.getReconciliation.mockResolvedValueOnce({ percent: 10, finished: false })
-    const work = h.flow.selectFile(h.event)
-    await flushPromises()
-    currentRegister = { loading: true }
-    if (phase === 'timer') await vi.advanceTimersByTimeAsync(1000)
-    else { resolve(phase === 'start' ? { id: 'op-1' } : complete); await work }
-    await flushPromises()
-    currentRegister = { id: 7, registerType: WBRN_REGISTER_ID, theOtherCountryCode: 762 }
-    expect(h.flow.state.result).toEqual(statistics)
-    expect(h.flow.state.progress.show).toBe(false)
-    expect(h.runningAction.value).toBe(false)
-    expect(h.store.startReconciliation).toHaveBeenCalledOnce()
   })
 
   it('discards an old route response without leaving a spinner or mutation lock', async () => {

@@ -5,19 +5,22 @@
 
 import { useListState } from '@/composables/useListState.js'
 import { listField } from '@/helpers/list.state.helpers.js'
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useParcelFiltersStore } from '@/stores/parcel.filters.store.js'
 import { useAppConfirm } from '@/composables/useAppConfirm.js'
 import { reportError } from '@/helpers/error.helpers.js'
 import ActionButton from '@/components/ActionButton.vue'
 
+const props = defineProps({ userId: { type: Number, default: null } })
+const authStore = useAuthStore()
 const router = useRouter()
 const alertStore = useAlertStore()
 const filterStore = useParcelFiltersStore()
 const confirm = useAppConfirm()
-const filters = computed(() => filterStore.filters)
+const filters = ref([])
 const headers = [
   { title: '', key: 'actions', sortable: false, width: '120px' },
   { title: 'Название', key: 'name', sortable: true },
@@ -27,16 +30,24 @@ const { tableSortBy } = useListState('userParcelFilters', { tableSortBy: listFie
 const deletingId = ref(null)
 const loaded = ref(false)
 let active = true
+let loadVersion = 0
+const isCurrent = version => active && version === loadVersion
 onUnmounted(() => { active = false })
 
 async function load() {
+  const version = ++loadVersion
   loaded.value = false
+  filters.value = []
+  deletingId.value = null
   try {
-    await filterStore.getAll()
-    if (active) loaded.value = true
+    const result = await filterStore.getAll(props.userId)
+    if (!isCurrent(version)) return false
+    filters.value = result
+    loaded.value = true
     return true
   } catch (error) {
-    if (!active) {
+    if (!isCurrent(version)) {
+      // A departed or repurposed profile must not replace the current page alert.
       reportError(error, { context: 'parcel filter list load after disposal' })
       return false
     }
@@ -48,13 +59,15 @@ async function load() {
 }
 
 onMounted(() => { void load() })
+watch(() => [props.userId, authStore.user?.id, authStore.isAdmin], () => { void load() }, { flush: 'sync' })
 
 async function openFilter(path) {
   if (!active) return
+  const version = loadVersion
   try {
-    await router.push(path)
+    await router.push(props.userId == null ? path : { path, query: { userId: String(props.userId) } })
   } catch (error) {
-    if (!active) {
+    if (!isCurrent(version)) {
       // Abandoned navigation must not replace the destination page's message.
       reportError(error, { context: 'parcel filter navigation after disposal' })
       return
@@ -65,13 +78,17 @@ async function openFilter(path) {
 
 async function removeConfirmed(id) {
   if (!active || deletingId.value !== null) return false
+  const version = loadVersion
   deletingId.value = id
   try {
-    await filterStore.remove(id)
-    if (active) alertStore.success('Пользовательский фильтр удалён')
+    await filterStore.remove(id, props.userId)
+    if (!isCurrent(version)) return false
+    filters.value = filters.value.filter(filter => filter.id !== id)
+    alertStore.success('Пользовательский фильтр удалён')
     return true
   } catch (error) {
-    if (!active) {
+    if (!isCurrent(version)) {
+      // The initiating profile is no longer visible.
       reportError(error, { context: 'parcel filter deletion after disposal' })
       return false
     }
@@ -80,12 +97,13 @@ async function removeConfirmed(id) {
     })
     return false
   } finally {
-    deletingId.value = null
+    if (isCurrent(version)) deletingId.value = null
   }
 }
 
 async function removeFilter(filter) {
   if (!active || deletingId.value !== null) return false
+  const version = loadVersion
   try {
     const confirmed = await confirm({
       title: 'Удалить пользовательский фильтр?',
@@ -93,10 +111,11 @@ async function removeFilter(filter) {
       confirmationText: 'Удалить',
       cancellationText: 'Отменить'
     })
-    if (!active || !confirmed) return false
+    if (!isCurrent(version) || !confirmed) return false
     return removeConfirmed(filter.id)
   } catch (error) {
-    if (!active) {
+    if (!isCurrent(version)) {
+      // The initiating profile is no longer visible.
       reportError(error, { context: 'parcel filter confirmation after disposal' })
       return false
     }

@@ -16,31 +16,43 @@ export const useParcelFiltersStore = defineStore('parcelFilters', () => {
   let cacheVersion = 0
   let loadVersion = 0
 
-  function cacheContext() {
-    return { version: cacheVersion, userId: authStore.user?.id }
+  function cacheContext(userId) {
+    return {
+      version: cacheVersion,
+      userId: authStore.user?.id,
+      personal: userId == null || userId === authStore.user?.id
+    }
   }
 
   function isCurrent(context) {
-    return context.version === cacheVersion && context.userId === authStore.user?.id
+    return context.personal && context.version === cacheVersion && context.userId === authStore.user?.id
   }
 
   watch(() => authStore.user?.id, reset, { flush: 'sync' })
 
-  async function getAll() {
-    const context = cacheContext()
-    const version = ++loadVersion
-    const result = await fetchWrapper.get(baseUrl) ?? []
+  function ownerUrl(path, userId) {
+    if (userId == null) return path
+    if (!Number.isInteger(userId) || userId <= 0 || userId > 2147483647) {
+      throw new Error('Некорректный идентификатор пользователя')
+    }
+    return `${path}?userId=${userId}`
+  }
+
+  async function getAll(userId) {
+    const context = cacheContext(userId)
+    const version = context.personal ? ++loadVersion : loadVersion
+    const result = await fetchWrapper.get(ownerUrl(baseUrl, userId)) ?? []
     if (isCurrent(context) && version === loadVersion) filters.value = result
     return result
   }
 
-  async function getById(id) {
-    return fetchWrapper.get(`${baseUrl}/${id}`)
+  async function getById(id, userId) {
+    return fetchWrapper.get(ownerUrl(`${baseUrl}/${id}`, userId))
   }
 
-  async function create(data) {
-    const context = cacheContext()
-    const result = await fetchWrapper.post(baseUrl, data)
+  async function create(data, userId) {
+    const context = cacheContext(userId)
+    const result = await fetchWrapper.post(ownerUrl(baseUrl, userId), data)
     if (isCurrent(context)) {
       ++loadVersion
       filters.value = [...filters.value, result]
@@ -48,18 +60,18 @@ export const useParcelFiltersStore = defineStore('parcelFilters', () => {
     return result
   }
 
-  async function update(id, data) {
-    const context = cacheContext()
-    await fetchWrapper.put(`${baseUrl}/${id}`, data)
+  async function update(id, data, userId) {
+    const context = cacheContext(userId)
+    await fetchWrapper.put(ownerUrl(`${baseUrl}/${id}`, userId), data)
     if (isCurrent(context)) {
       ++loadVersion
       filters.value = filters.value.map(filter => filter.id === id ? { ...filter, ...data } : filter)
     }
   }
 
-  async function remove(id) {
-    const context = cacheContext()
-    await fetchWrapper.delete(`${baseUrl}/${id}`)
+  async function remove(id, userId) {
+    const context = cacheContext(userId)
+    await fetchWrapper.delete(ownerUrl(`${baseUrl}/${id}`, userId))
     if (isCurrent(context)) {
       ++loadVersion
       filters.value = filters.value.filter(filter => filter.id !== id)

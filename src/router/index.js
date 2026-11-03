@@ -650,14 +650,25 @@ const router = createRouter({
       path: '/parcel-filters/create',
       name: 'Создание фильтра посылок',
       component: () => import('@/views/ParcelFilter_SettingsView.vue'),
-      props: { mode: 'create' },
+      props: (route) => ({
+        mode: 'create',
+        userId: route.query.userId === undefined
+          ? null
+          : (typeof route.query.userId === 'string' ? Number(route.query.userId) : NaN)
+      }),
       meta: { reqAnyRole: true }
     },
     {
       path: '/parcel-filters/edit/:id',
       name: 'Настройка фильтра посылок',
       component: () => import('@/views/ParcelFilter_SettingsView.vue'),
-      props: (route) => ({ mode: 'edit', id: Number(route.params.id) }),
+      props: (route) => ({
+        mode: 'edit',
+        id: Number(route.params.id),
+        userId: route.query.userId === undefined
+          ? null
+          : (typeof route.query.userId === 'string' ? Number(route.query.userId) : NaN)
+      }),
       meta: { reqAnyRole: true }
     },
     {

@@ -123,8 +123,13 @@ describe('router guards', () => {
 
     expect(createRoute?.meta.reqAnyRole).toBe(true)
     expect(editRoute?.meta.reqAnyRole).toBe(true)
-    expect(createRoute?.props.default).toEqual({ mode: 'create' })
-    expect(editRoute?.props.default({ params: { id: '2' } })).toEqual({ mode: 'edit', id: 2 })
+    expect(createRoute?.props.default({ query: {} })).toEqual({ mode: 'create', userId: null })
+    expect(editRoute?.props.default({ params: { id: '2' }, query: {} })).toEqual({ mode: 'edit', id: 2, userId: null })
+    for (const route of [createRoute, editRoute]) {
+      expect(route.props.default({ params: { id: '2' }, query: { userId: '42' } }).userId).toBe(42)
+      expect(route.props.default({ params: { id: '2' }, query: { userId: ['42', '7'] } }).userId).toBeNaN()
+      expect(route.props.default({ params: { id: '2' }, query: { userId: null } }).userId).toBeNaN()
+    }
   })
 
   it('enforces reqAdmin for automated-system management', async () => {

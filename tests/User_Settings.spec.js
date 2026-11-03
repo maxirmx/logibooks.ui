@@ -165,7 +165,7 @@ beforeEach(() => {
 })
 
 describe('User_Settings.vue real component', () => {
-  it('shows personal parcel filters only on the signed-in user profile', async () => {
+  it('shows filters on own and administrator-managed profiles, but not during registration', async () => {
     const ownProfile = mount(Parent, {
       props: { register: false, id: 2 },
       global: {
@@ -177,7 +177,7 @@ describe('User_Settings.vue real component', () => {
     expect(ownProfile.find('form fieldset [data-testid="user-parcel-filters"] .user-parcel-filters__table-shell.table-card').exists()).toBe(true)
     await ownProfile.get('[data-testid="parcel-filter-create"]').trigger('click')
     await resolveAll()
-    expect(routerPush).toHaveBeenCalledWith('/parcel-filters/create')
+    expect(routerPush).toHaveBeenCalledWith({ path: '/parcel-filters/create', query: { userId: '2' } })
 
     isAdmin = true
     const otherProfile = mount(Parent, {
@@ -187,7 +187,8 @@ describe('User_Settings.vue real component', () => {
       }
     })
     await resolveAll()
-    expect(otherProfile.find('[data-testid="user-parcel-filters"]').exists()).toBe(false)
+    expect(otherProfile.find('[data-testid="user-parcel-filters"]').exists()).toBe(true)
+    expect(otherProfile.findComponent({ name: 'UserParcelFilters' }).props('userId')).toBe(1)
 
     const registration = mount(Parent, {
       props: { register: true },
@@ -197,6 +198,18 @@ describe('User_Settings.vue real component', () => {
     })
     await resolveAll()
     expect(registration.find('[data-testid="user-parcel-filters"]').exists()).toBe(false)
+  })
+
+  it('hides filters on another user profile for a non-administrator and after initialization failure', async () => {
+    const options = { props: { register: false, id: 1 }, global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub } } }
+    const other = mount(Parent, options)
+    await resolveAll()
+    expect(other.find('[data-testid="user-parcel-filters"]').exists()).toBe(false)
+    isAdmin = true
+    getById.mockRejectedValueOnce(new Error('Не удалось загрузить пользователя'))
+    const failed = mount(Parent, options)
+    await resolveAll()
+    expect(failed.find('[data-testid="user-parcel-filters"]').exists()).toBe(false)
   })
 
   it('blocks an automated account opened through the human-user route', async () => {

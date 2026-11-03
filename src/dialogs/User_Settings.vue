@@ -82,7 +82,7 @@ const showPassword2 = ref(false)
 const selectedWarehouseIds = ref([])
 const initializationFailed = ref(false)
 const showPersonalParcelFilters = computed(
-  () => !props.register && !initializationFailed.value && Number(props.id) === Number(authStore.user?.id)
+  () => !props.register && !initializationFailed.value && (authStore.isAdmin || Number(props.id) === Number(authStore.user?.id))
 )
 
 let user = ref({
@@ -508,7 +508,7 @@ function onSubmit(values, { setErrors } = {}) {
           </Field>
         </div>
 
-        <UserParcelFilters v-if="showPersonalParcelFilters" />
+        <UserParcelFilters v-if="showPersonalParcelFilters" :user-id="id" />
 
         <div v-if="showWarehouseAssociations(values)" class="warehouse-associations">
           <h2 class="label">Доступ к складам:</h2>

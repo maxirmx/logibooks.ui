@@ -254,6 +254,30 @@ describe.each(editors)('%s editor with real forms and stores', (_name, component
     expect(store.item.readOnly).toBe(true)
   })
 
+  it.each(['Сохранить', 'Следующая посылка'])('shows a number rejection once and stops %s until retry', async (label) => {
+    registerType = type
+    const field = ['WBR', 'WBRN'].includes(_name) ? 'shk' : 'postingNumber'
+    transport.put.mockRejectedValueOnce({ data: { msg: 'Не задан номер посылки', code: 'ParcelNumberRequired', errors: { [field]: ['Не указан номер посылки'] } } })
+    const wrapper = mountEditor(component)
+    await settle()
+    await input(wrapper).setValue('Черновик')
+    const beforeReads = parcelGets().length
+    await action(wrapper, label).trigger('click')
+    await settle()
+    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+    const error = wrapper.get('[role="alert"]')
+    expect(error.text()).toBe('Не указан номер посылки')
+    expect(error.classes()).toContain('invalid-feedback')
+    expect(input(wrapper).element.value).toBe('Черновик')
+    expect(router.push).not.toHaveBeenCalled()
+    expect(router.replace).not.toHaveBeenCalled()
+    expect(parcelGets()).toHaveLength(beforeReads)
+    await action(wrapper, label).trigger('click')
+    await settle()
+    expect(transport.put).toHaveBeenCalledTimes(2)
+    expect(router.push).toHaveBeenCalledTimes(1)
+  })
+
   it('keeps entered values and the editor open after a failed save and retries the update', async () => {
     registerType = type
     registerCountry = 762

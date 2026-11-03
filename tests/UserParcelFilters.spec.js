@@ -13,6 +13,8 @@ import UserParcelFilters from '@/components/UserParcelFilters.vue'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { useAlertStore } from '@/stores/alert.store.js'
+import { useAuthStore } from '@/stores/auth.store.js'
+import { useParcelFiltersStore } from '@/stores/parcel.filters.store.js'
 import { reportError } from '@/helpers/error.helpers.js'
 
 const push = vi.hoisted(() => vi.fn())
@@ -32,8 +34,9 @@ const ActionButton = {
   template: '<button type="button" :disabled="disabled" :aria-label="tooltipText" @click="$emit(\'click\', item)"></button>'
 }
 const vuetify = createVuetify({ components, directives })
-function mountFilters() {
-  return mount({ components: { UserParcelFilters, PageAlertRegion }, template: '<div><UserParcelFilters /><PageAlertRegion /></div>' }, {
+function mountFilters(userId = null) {
+  return mount({ props: ['userId'], components: { UserParcelFilters, PageAlertRegion }, template: '<div><UserParcelFilters :user-id="userId" /><PageAlertRegion /></div>' }, {
+    props: { userId },
     global: { plugins: [createPinia(), vuetify], stubs: { ActionButton } }
   })
 }
@@ -185,5 +188,75 @@ describe('UserParcelFilters', () => {
     deleting.unmount()
     rejectDelete(new Error('Позднее удаление'))
     await flushPromises()
+  })
+})
+
+
+describe('administrator profile filter context', () => {
+  it('uses the profile owner for loading, create/edit links and deletion', async () => {
+    const wrapper = mountFilters(42)
+    const pinia = wrapper.vm.$pinia
+    const store = useParcelFiltersStore(pinia)
+    store.filters = [{ ...filter, id: 7, name: 'Личный' }]
+    await flushPromises()
+    expect(fetchWrapper.get).toHaveBeenCalledWith(expect.stringMatching(/parcel-filters\?userId=42$/))
+    await wrapper.get('[data-testid="parcel-filter-create"]').trigger('click')
+    expect(push).toHaveBeenLastCalledWith({ path: '/parcel-filters/create', query: { userId: '42' } })
+    await wrapper.get('[data-testid="parcel-filter-edit-1"]').trigger('click')
+    expect(push).toHaveBeenLastCalledWith({ path: '/parcel-filters/edit/1', query: { userId: '42' } })
+    await wrapper.get('[data-testid="parcel-filter-delete-1"]').trigger('click')
+    await flushPromises()
+    expect(fetchWrapper.delete).toHaveBeenCalledWith(expect.stringMatching(/parcel-filters\/1\?userId=42$/))
+    expect(wrapper.text()).not.toContain(filter.name)
+    expect(store.filters[0].name).toBe('Личный')
+    wrapper.unmount()
+  })
+
+  it.each([false, true])('ignores a superseded profile load (rejection: %s)', async reject => {
+    let finish
+    fetchWrapper.get.mockImplementationOnce(() => new Promise((resolve, no) => { finish = reject ? no : resolve }))
+    const wrapper = mountFilters(42)
+    await wrapper.setProps({ userId: 43 })
+    await flushPromises()
+    const alerts = useAlertStore(wrapper.vm.$pinia)
+    alerts.error('Текущая страница')
+    finish(reject ? new Error('Старый запрос') : [{ ...filter, name: 'Старый фильтр' }])
+    await flushPromises()
+    expect(wrapper.text()).toContain(filter.name)
+    expect(wrapper.text()).not.toContain('Старый фильтр')
+    expect(wrapper.get('[role="alert"]').text()).toContain('Текущая страница')
+    wrapper.unmount()
+  })
+
+  it.each(['confirm', 'confirmFailure', 'delete', 'deleteFailure', 'navigation'])('ignores stale %s after a profile change', async operation => {
+    let finish
+    const failure = new Error('Поздняя ошибка')
+    const pending = new Promise((resolve, reject) => { finish = operation.endsWith('Failure') || operation === 'navigation' ? () => reject(failure) : resolve })
+    if (operation.startsWith('confirm')) confirm.mockReturnValueOnce(pending)
+    else if (operation === 'navigation') push.mockReturnValueOnce(pending)
+    else fetchWrapper.delete.mockReturnValueOnce(pending)
+    const wrapper = mountFilters(42)
+    await flushPromises()
+    await wrapper.get(`[data-testid="parcel-filter-${operation === 'navigation' ? 'create' : 'delete-1'}"]`).trigger('click')
+    await flushPromises()
+    await wrapper.setProps({ userId: 43 })
+    await flushPromises()
+    useAlertStore(wrapper.vm.$pinia).error('Текущая страница')
+    finish(true)
+    await flushPromises()
+    expect(wrapper.get('[role="alert"]').text()).toContain('Текущая страница')
+    expect(wrapper.text()).toContain(filter.name)
+    if (operation.startsWith('confirm')) expect(fetchWrapper.delete).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
+  it('reloads locally when the signed-in account changes', async () => {
+    const wrapper = mountFilters(42)
+    await flushPromises()
+    fetchWrapper.get.mockResolvedValueOnce([{ ...filter, name: 'Новая сессия' }])
+    useAuthStore(wrapper.vm.$pinia).user = { id: 8 }
+    await flushPromises()
+    expect(wrapper.text()).toContain('Новая сессия')
+    wrapper.unmount()
   })
 })

@@ -12,7 +12,7 @@ import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { CheckStatusCode, WStatusValues, SWCheckStatusNames, FCCheckStatusNames, createCheckStatusFilterOptions } from '@/helpers/check.status.code.js'
 import { createPassportCheckStatusOptions } from '@/helpers/passport.check.status.helpers.js'
-import { reportError } from '@/helpers/error.helpers.js'
+import { getErrorMessage, reportError } from '@/helpers/error.helpers.js'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import FieldError from '@/components/FieldError.vue'
 import ActionButton from '@/components/ActionButton.vue'
@@ -20,7 +20,8 @@ import { createEmptyParcelFilter, validateParcelFilterName } from '@/helpers/par
 
 const props = defineProps({
   mode: { type: String, required: true, validator: (value) => ['create', 'edit'].includes(value) },
-  id: { type: Number, default: null }
+  id: { type: Number, default: null },
+  userId: { type: Number, default: null }
 })
 
 const router = useRouter()
@@ -54,11 +55,13 @@ const checkStatusGroups = [
   { key: 'sw', label: 'Проверка стоп-слов', options: createCheckStatusFilterOptions(SWCheckStatusNames).filter(isComponentStatusOption) },
   { key: 'fc', label: 'Проверка ТН ВЭД', options: createCheckStatusFilterOptions(FCCheckStatusNames).filter(isComponentStatusOption) }
 ]
+const ownerId = computed(() => props.userId ?? authStore.user?.id)
+const ownerFilters = ref([])
 const draft = ref(createEmptyParcelFilter())
 const errors = ref({})
-const nameError = computed(() => validateParcelFilterName(draft.value.name, filterStore.filters, props.mode === 'edit' ? props.id : null))
+const nameError = computed(() => validateParcelFilterName(draft.value.name, ownerFilters.value, props.mode === 'edit' ? props.id : null))
 const saveDisabled = computed(() => !loaded.value || missingFilter.value || saving.value || saved.value || Boolean(nameError.value))
-const profileUrl = computed(() => `/user/edit/${authStore.user?.id}`)
+const profileUrl = computed(() => `/user/edit/${ownerId.value}`)
 const heading = computed(() =>
   props.mode === 'create' ? 'Создание пользовательского фильтра' : 'Настройка пользовательского фильтра'
 )
@@ -72,13 +75,20 @@ async function load() {
   loaded.value = false
   missingFilter.value = false
   try {
-    const [,, filter] = await Promise.all([
+    if (!Number.isInteger(ownerId.value) || ownerId.value <= 0 || ownerId.value > 2147483647) {
+      throw new Error('Некорректный идентификатор пользователя')
+    }
+    if (ownerId.value !== authStore.user?.id && !authStore.isAdmin) {
+      throw new Error('Недостаточно прав для настройки фильтров другого пользователя')
+    }
+    const [, filters, filter] = await Promise.all([
       parcelStatusesStore.ensureLoaded(),
-      filterStore.getAll(),
-      props.mode === 'edit' ? filterStore.getById(props.id) : Promise.resolve(null),
+      filterStore.getAll(props.userId),
+      props.mode === 'edit' ? filterStore.getById(props.id, props.userId) : Promise.resolve(null),
       registersStore.ensureOpsLoaded()
     ])
     if (!active || version !== loadVersion) return false
+    ownerFilters.value = filters
     draft.value = filter ?? createEmptyParcelFilter()
     errors.value = {}
     loaded.value = true
@@ -91,8 +101,7 @@ async function load() {
     }
     missingFilter.value = props.mode === 'edit' && error.status === 404
     alertStore.error(error, {
-      fallback: 'Не удалось загрузить пользовательский фильтр',
-      action: missingFilter.value ? undefined : { label: 'Повторить', handler: load }
+      fallback: 'Не удалось загрузить пользовательский фильтр'
     })
     return false
   }
@@ -101,12 +110,13 @@ async function load() {
 onMounted(() => { void load() })
 
 watch(
-  () => [props.mode, props.id, authStore.user?.id],
+  () => [props.mode, props.id, props.userId, authStore.user?.id, authStore.isAdmin],
   () => {
     saved.value = false
     saving.value = false
     void load()
-  }
+  },
+  { flush: 'sync' }
 )
 
 async function save() {
@@ -121,8 +131,8 @@ async function save() {
       excludedCheckStatuses: draft.value.excludedCheckStatuses,
       excludedPassportCheckStatuses: draft.value.excludedPassportCheckStatuses
     }
-    if (props.mode === 'create') await filterStore.create(payload)
-    else await filterStore.update(props.id, payload)
+    if (props.mode === 'create') await filterStore.create(payload, props.userId)
+    else await filterStore.update(props.id, payload, props.userId)
     if (!active || version !== loadVersion) return false
     saved.value = true
   } catch (error) {
@@ -131,7 +141,7 @@ async function save() {
       reportError(error, { context: 'parcel filter save after editor change' })
       return false
     }
-    if (error.status === 409) errors.value = { name: error.message }
+    if (error.status === 409) errors.value = { name: getErrorMessage(error, 'Фильтр с таким названием уже есть') }
     else alertStore.error(error, { fallback: 'Не удалось сохранить пользовательский фильтр' })
     return false
   } finally {
@@ -148,6 +158,9 @@ async function returnToProfile() {
   if (!active) return false
   const version = loadVersion
   try {
+    if (!Number.isInteger(ownerId.value) || ownerId.value <= 0 || ownerId.value > 2147483647) {
+      throw new Error('Некорректный идентификатор пользователя')
+    }
     await router.push(profileUrl.value)
     return true
   } catch (error) {

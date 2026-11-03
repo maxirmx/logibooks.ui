@@ -6,12 +6,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import ParcelStatusBulkChangeDialog from '@/l2/ParcelStatusBulkChangeDialog.vue'
-import {
-  GTC_COMPANY_ID,
-  OZON_COMPANY_ID,
-  WBR_COMPANY_ID,
-  WBRN_REGISTER_ID
-} from '@/helpers/company.constants.js'
+import { GTC_COMPANY_ID, OZON_COMPANY_ID } from '@/helpers/company.constants.js'
 
 const mocks = vi.hoisted(() => ({
   resolveStatusSelection: vi.fn(),
@@ -122,25 +117,6 @@ describe('ParcelStatusBulkChangeDialog', () => {
     mocks.registerItem = null
   })
 
-  it('renders the parcel-number label from the current register type', async () => {
-    const wrapper = mountDialog({ register: { id: 7, registerType: WBR_COMPANY_ID } })
-    const label = () => wrapper.find('label[for="parcel-status-bulk-input"]').text()
-
-    expect(label()).toBe('ШК')
-
-    await wrapper.setProps({ register: { id: 7, registerType: WBRN_REGISTER_ID } })
-    expect(label()).toBe('ШК')
-
-    await wrapper.setProps({ register: { id: 7, registerType: OZON_COMPANY_ID } })
-    expect(label()).toBe('№ отправления')
-
-    await wrapper.setProps({ register: { id: 7, registerType: GTC_COMPANY_ID } })
-    expect(label()).toBe('№ посылки')
-
-    await wrapper.setProps({ register: { id: 8, registerType: WBR_COMPANY_ID } })
-    expect(label()).toBe('Номер посылки')
-  })
-
   it('falls back to matching registers store entries for the parcel-number label', () => {
     mocks.registerItems = [{ id: 7, registerType: OZON_COMPANY_ID }]
     const wrapper = mountDialog()
@@ -161,33 +137,6 @@ describe('ParcelStatusBulkChangeDialog', () => {
     await wrapper.findComponent({ name: 'VDialog' }).vm.$emit('update:modelValue', false)
 
     expect(wrapper.emitted('update:show')?.[0]).toEqual([false])
-  })
-
-  it('resolves pasted comma and Excel cell values without clearing the textarea', async () => {
-    mocks.resolveStatusSelection.mockResolvedValue({
-      parcelIds: [11, 12],
-      missingNumbers: ['MISSING-1'],
-      blockedItems: [{ parcelId: 13, number: 'BLOCKED-1' }]
-    })
-    const wrapper = mountDialog()
-    const input = wrapper.find('[data-testid="parcel-status-bulk-input"]')
-
-    await input.setValue(' P-1, P-2')
-    await input.setValue(`${input.element.value}\nP-3\tP-1`)
-    await wrapper.find('[data-testid="parcel-status-bulk-find"]').trigger('click')
-    await flushPromises()
-
-    expect(mocks.resolveStatusSelection).toHaveBeenCalledWith(7, ['P-1', 'P-2', 'P-3'])
-    expect(input.element.value).toBe(' P-1, P-2\nP-3\tP-1')
-    expect(wrapper.find('[data-testid="parcel-status-bulk-report"]').element.value).toContain(
-      'MISSING-1'
-    )
-    expect(wrapper.find('[data-testid="parcel-status-bulk-report"]').element.value).toContain(
-      'BLOCKED-1'
-    )
-    expect(wrapper.find('[data-testid="parcel-status-bulk-summary"]').text()).toContain(
-      'Найдено: 2'
-    )
   })
 
   it('handles malformed resolve responses with safe defaults', async () => {

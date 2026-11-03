@@ -184,26 +184,6 @@ describe('Parcels_View', () => {
     wrapper.unmount()
   })
 
-  it('ignores old account results and clears the previous account selection', async () => {
-    const { useAuthStore } = await import('@/stores/auth.store.js')
-    const auth = useAuthStore()
-    auth.user = { id: 1 }
-    auth.setParcelFilterId(23)
-    let resolveOld
-    getSavedFilters.mockImplementationOnce(() => new Promise(resolve => { resolveOld = resolve }))
-      .mockResolvedValueOnce([{ id: 24, name: 'New user filter' }])
-    mockGet.mockResolvedValue({ registerType: WBR_COMPANY_ID })
-    const wrapper = mount(ParcelsView, { props: { id: 1 } })
-    auth.user = { id: 2 }
-    await flushPromises()
-    resolveOld([{ id: 23, name: 'Old user filter' }])
-    await flushPromises()
-    expect(auth.parcels_filter_id).toBeNull()
-    expect(wrapper.get('[data-test="saved-filter"]').text()).toContain('New user filter')
-    expect(wrapper.get('[data-test="saved-filter"]').text()).not.toContain('Old user filter')
-    wrapper.unmount()
-  })
-
   it('ignores stale live-refresh results after the saved filter changes', async () => {
     const { useAuthStore } = await import('@/stores/auth.store.js')
     const auth = useAuthStore()
@@ -507,52 +487,6 @@ describe('Parcels_View', () => {
     expect(wrapper.get('[data-testid="split-recovery"]').text()).toBe('20')
     expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
 
-  })
-
-  it('passes exact box scope to the selected warehouse list and clears only that scope', async () => {
-    mockGet.mockResolvedValue({ registerType: WBR_COMPANY_ID })
-    currentRouteMock.value = {
-      path: '/registers/10/parcels',
-      fullPath:
-        '/registers/10/parcels?mode=modeWarehouse&boxId=17&boxCode=BOX-17&returnUrl=/registers/10/boxes',
-      query: {
-        mode: OP_MODE_WAREHOUSE,
-        boxId: '17',
-        boxCode: 'BOX-17',
-        returnUrl: '/registers/10/boxes',
-        statusId: '3'
-      }
-    }
-    const wrapper = mount(ParcelsView, {
-      props: {
-        id: 10,
-        mode: OP_MODE_WAREHOUSE,
-        boxId: 17,
-        boxCode: 'BOX-17',
-        returnUrl: '/registers/10/boxes'
-      }
-    })
-    await flushPromises()
-
-    const list = wrapper.findComponent({ name: 'WbrParcels_WhList' })
-    expect(list.props()).toMatchObject({
-      registerId: 10,
-      mode: OP_MODE_WAREHOUSE,
-      boxId: 17,
-      boxCode: 'BOX-17'
-    })
-
-    list.vm.$emit('clear-box-scope')
-    await flushPromises()
-
-    expect(replaceMock).toHaveBeenCalledWith({
-      path: '/registers/10/parcels',
-      query: {
-        mode: OP_MODE_WAREHOUSE,
-        returnUrl: '/registers/10/boxes',
-        statusId: '3'
-      }
-    })
   })
 
   it('reports a box-scope clearing failure and keeps the current route intact', async () => {

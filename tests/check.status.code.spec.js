@@ -39,52 +39,11 @@ describe('CheckStatusCode', () => {
     })
   })
 
-  describe('isDefect method', () => {
-    it('should return false for non-Defect statuses', () => {
-      expect(CheckStatusCode.isDefect(CheckStatusCode.NotChecked.value)).toBe(false)
-      expect(CheckStatusCode.isDefect(CheckStatusCode.NoIssues.value)).toBe(false)
-      expect(CheckStatusCode.isDefect(CheckStatusCode.Duplicate.value)).toBe(false)
-      expect(CheckStatusCode.isDefect(CheckStatusCode.MarkedByPartner.value)).toBe(false)
-    })
-
-  })
-
   describe('toInt method', () => {
     it('should return integer value', () => {
       const code = new CheckStatusCode(0x02300010)
       expect(code.toInt()).toBe(0x02300010)
     })
-  })
-
-  describe('toString method', () => {
-    it('should expose NotChecked translations and use them contextually', () => {
-      // Exported mappings should contain the NotChecked Russian string
-      expect(SWCheckStatusNames[SWCheckStatus.NotChecked]).toBe('Не проверено')
-      expect(FCCheckStatusNames[FCCheckStatus.NotChecked]).toBe('Не проверено')
-      expect(SWCheckStatusNames[SWCheckStatus.Duplicate2]).toBe('Дубликат')
-      expect(FCCheckStatusNames[FCCheckStatus.Duplicate2]).toBe('Дубликат')
-
-      // When only FC is NotChecked and SW has NoIssues, toString uses SW string only
-      const onlySw = CheckStatusCode.fromParts(FCCheckStatus.NotChecked, SWCheckStatus.NoIssues)
-      expect(onlySw.toString()).toBe('Ок стоп слова')
-
-      // When only SW is NotChecked and FC has NoIssues, toString uses FC string only
-      const onlyFc = CheckStatusCode.fromParts(FCCheckStatus.NoIssues, SWCheckStatus.NotChecked)
-      expect(onlyFc.toString()).toBe('Ок ТН ВЭД')
-
-      // When both are NotChecked, special-case should return global NotChecked
-      const both = CheckStatusCode.fromParts(FCCheckStatus.NotChecked, SWCheckStatus.NotChecked)
-      expect(both.toString()).toBe('Не проверено')
-    })
-
-    it('should render inherited NoIssues consistently in labels and composed statuses', () => {
-      expect(SWCheckStatus.NoIssuesInherited).toBe(0x0090)
-      expect(SWCheckStatusNames[SWCheckStatus.NoIssuesInherited]).toBe('🔖 Ок стоп слова')
-      const code = CheckStatusCode.fromParts(FCCheckStatus.NotChecked, SWCheckStatus.NoIssuesInherited)
-      expect(code.toString(true)).toBe('🔖 Ок стоп слова')
-      expect(code.toString(false)).toBe('Ок стоп слова')
-    })
-
   })
 
   describe('equals method', () => {

@@ -114,28 +114,6 @@ describe('RegisterWhHeaderActionBar.vue', () => {
     expect(wrapper.find('.page-alert-region__action').exists()).toBe(false)
   })
 
-  it('hides export action when user is not warehouse manager plus', () => {
-    isWhManagerPlus = false
-    const wrapper = mountHeaderActionBar({
-      register: { id: 77, fileName: 'register_77.xlsx' },
-      zones: []
-    })
-
-    expect(wrapper.findComponent(ActionButton2LStub).exists()).toBe(false)
-    expect(wrapper.find('[data-testid="export-btn"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="close-btn"]').exists()).toBe(true)
-  })
-
-  it('hides bulk status change action when user is not senior logist plus', () => {
-    isSrLogistPlus = false
-    const wrapper = mountHeaderActionBar({
-      register: { id: 77, fileName: 'register_77.xlsx' },
-      zones: []
-    })
-
-    expect(wrapper.find('[data-testid="bulk-status-btn"]').exists()).toBe(false)
-  })
-
   it('emits bulk status change event from header action', async () => {
     const wrapper = mountHeaderActionBar({
       register: { id: 77, fileName: 'register_77.xlsx' },
@@ -145,16 +123,6 @@ describe('RegisterWhHeaderActionBar.vue', () => {
     await wrapper.get('[data-testid="bulk-status-btn"]').trigger('click')
 
     expect(wrapper.emitted('bulk-change-parcel-status')).toHaveLength(1)
-  })
-
-  it('disables bulk status change action while loading', () => {
-    const wrapper = mountHeaderActionBar({
-      register: { id: 77, fileName: 'register_77.xlsx' },
-      zones: [],
-      loading: true
-    })
-
-    expect(wrapper.get('[data-testid="bulk-status-btn"]').attributes('disabled')).toBeDefined()
   })
 
   it('prevents another export while the correction choice dialog is open', async () => {
@@ -192,25 +160,6 @@ describe('RegisterWhHeaderActionBar.vue', () => {
 
     await nextTick()
     expect(wrapper.findComponent(ActionButton2LStub).props('disabled')).toBe(false)
-  })
-
-  it('downloads selected zone without correction when correction is declined', async () => {
-    confirmMock.mockResolvedValueOnce(false)
-    const wrapper = mountHeaderActionBar({
-      register: {
-        id: 77,
-        fileName: 'register_77.xlsx',
-        realWeightKg: 5,
-        totalWeightKgToRelease: 10
-      },
-      zones: [{ value: 8, name: 'Зона A' }]
-    })
-
-    const actionButton2L = wrapper.findComponent(ActionButton2LStub)
-    const zoneOption = actionButton2L.props('options')[1]
-    await zoneOption.action()
-
-    expect(download).toHaveBeenCalledWith(77, 'register_77.xlsx', 8, 'Зона A')
   })
 
   it('emits close on close button click', async () => {

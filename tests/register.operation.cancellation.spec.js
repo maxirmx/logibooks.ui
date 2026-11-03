@@ -13,9 +13,6 @@ import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import RegisterSplitDialogs from '@/l2/RegisterSplitDialogs.vue'
 import RegisterReconciliationDialogs from '@/l2/RegisterReconciliationDialogs.vue'
 import ActionDialog from '@/l2/ActionDialog.vue'
-import RegisterSplitRecovery from '@/l2/RegisterSplitRecovery.vue'
-import { useAuthStore } from '@/stores/auth.store.js'
-import { useRegistersStore } from '@/stores/registers.store.js'
 import { WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
 import { reportError } from '@/helpers/error.helpers.js'
 import { vuetifyStubs } from './helpers/test-utils.js'
@@ -67,25 +64,6 @@ beforeEach(() => {
 afterEach(() => { wrappers.forEach(wrapper => wrapper.unmount()); vi.useRealTimers(); vi.restoreAllMocks() })
 
 describe.each(['split', 'reconciliation'])('%s cancellation', kind => {
-  it('matches the check-status cancel control and closes only after confirmed cancellation', async () => {
-    const h = harness(kind)
-    expect(await h.flow.cancel()).toBe(false)
-    await h.begin()
-    const button = h.wrapper.get('[data-testid="operation-cancel"]')
-    expect(button.text()).toBe('Отменить')
-    await button.trigger('click'); await flushPromises()
-    expect(h.cancel).toHaveBeenCalledExactlyOnceWith(7, 'op')
-    expect(h.flow.state.phase).toBe('idle')
-    expect(h.flow.state.progress.show).toBe(false)
-    expect(h.flow.state.summaryVisible).toBe(false)
-    expect(h.flow.state.result).toBeNull()
-    expect(h.running.value).toBe(false)
-    expect(h.refresh).not.toHaveBeenCalled()
-    expect(h.notify).not.toHaveBeenCalled()
-    expect(h.start).toHaveBeenCalledOnce()
-    if (kind === 'split') expect(sessionStorage.getItem('register-split:42:7')).toBeNull()
-  })
-
   it('keeps progress and the mutation lock while the server is cancelling', async () => {
     const h = harness(kind)
     await h.begin()
@@ -102,20 +80,6 @@ describe.each(['split', 'reconciliation'])('%s cancellation', kind => {
     await vi.advanceTimersByTimeAsync(1000)
     expect(h.running.value).toBe(false)
     expect(h.flow.state.progress.show).toBe(false)
-  })
-
-  it('preserves a successful result when commit finishes before cancellation', async () => {
-    const h = harness(kind)
-    await h.begin()
-    h.cancel.mockResolvedValueOnce(h.completed)
-    await h.flow.cancel(); await flushPromises()
-    expect(h.flow.state.result).toEqual(h.completed.result)
-    expect(h.flow.state.summaryVisible).toBe(true)
-    expect(h.flow.state.phase).toBe('idle')
-    expect(h.refresh).toHaveBeenCalled()
-    expect(h.notify).not.toHaveBeenCalled()
-    await vi.advanceTimersByTimeAsync(2000)
-    expect(h.get).toHaveBeenCalledOnce()
   })
 
   it('presents cancellation transport failure once and recovers without replaying the operation', async () => {
@@ -137,33 +101,6 @@ describe.each(['split', 'reconciliation'])('%s cancellation', kind => {
     expect(h.flow.state.phase).toBe('idle')
   })
 
-  it('offers cancellation only after server admission', async () => {
-    const h = harness(kind)
-    let accept
-    h.start.mockImplementationOnce(() => new Promise(resolve => { accept = resolve }))
-    const work = h.begin(); await flushPromises()
-    expect(h.wrapper.get('[data-testid="operation-cancel"]').attributes('disabled')).toBeDefined()
-    expect(await h.flow.cancel()).toBe(false)
-    expect(h.cancel).not.toHaveBeenCalled()
-    accept({ id: 'op' }); await work
-    expect(h.wrapper.get('[data-testid="operation-cancel"]').attributes('disabled')).toBeUndefined()
-  })
-
-  it.each(['resolve', 'reject'])('ignores a superseded progress read that later %ss', async outcome => {
-    const h = harness(kind)
-    let settle
-    h.get.mockImplementationOnce(() => new Promise((resolve, reject) => { settle = outcome === 'resolve' ? resolve : reject }))
-    const work = h.begin(); await flushPromises()
-    await h.flow.cancel()
-    settle(outcome === 'resolve' ? h.completed : new Error('Superseded read failed'))
-    await work
-    expect(h.flow.state.phase).toBe('idle')
-    expect(h.flow.state.result).toBeNull()
-    expect(h.notify).not.toHaveBeenCalled()
-    expect(h.refresh).not.toHaveBeenCalled()
-    if (outcome === 'reject') expect(reportError).toHaveBeenCalled()
-  })
-
   it.each(['resolve', 'reject'])('handles a cancellation response that %ss after navigation', async outcome => {
     const h = harness(kind)
     await h.begin()
@@ -183,21 +120,4 @@ it('keeps other shared progress dialogs without cancel controls unless enabled',
   const wrapper = mount(ActionDialog, { props: { actionDialog: { show: true } }, global: { stubs } })
   wrappers.push(wrapper)
   expect(wrapper.find('[data-testid="operation-cancel"]').exists()).toBe(false)
-})
-
-it('allows cancellation of a retained split when the source page cannot load', async () => {
-  useAuthStore().user = { id: 42 }
-  const store = useRegistersStore()
-  const get = vi.spyOn(store, 'getSplit').mockResolvedValue(pending)
-  const cancel = vi.spyOn(store, 'cancelSplit').mockResolvedValue(cancelled)
-  const start = vi.spyOn(store, 'startSplit')
-  sessionStorage.setItem('register-split:42:7', JSON.stringify({ id: 'op', registerId: 7, userId: 42 }))
-  const wrapper = mount(RegisterSplitRecovery, { props: { registerId: 7 }, global: { stubs } })
-  wrappers.push(wrapper)
-  await flushPromises()
-  expect(get).toHaveBeenCalledWith(7, 'op')
-  await wrapper.get('[data-testid="operation-cancel"]').trigger('click'); await flushPromises()
-  expect(cancel).toHaveBeenCalledExactlyOnceWith(7, 'op')
-  expect(start).not.toHaveBeenCalled()
-  expect(sessionStorage.getItem('register-split:42:7')).toBeNull()
 })

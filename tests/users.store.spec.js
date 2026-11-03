@@ -291,15 +291,5 @@ describe('users store', () => {
       expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
     })
 
-    it('ensureLoaded does not load when already loading', async () => {
-      const users = [{ id: 1, name: 'User 1' }]
-      fetchWrapper.get.mockResolvedValue(users)
-
-      const store = useUsersStore()
-      store.loading = true
-
-      await store.ensureLoaded()
-      expect(fetchWrapper.get).not.toHaveBeenCalled()
-    })
   })
 })

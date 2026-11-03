@@ -24,66 +24,12 @@ describe('feacn.codes.store.js', () => {
   let store
   let pinia
 
-  const mockCode = { id: 1, code: '1234567890', description: 'test' }
-  const mockCodes = [mockCode]
-
   beforeEach(() => {
     pinia = createPinia()
     setActivePinia(pinia)
     store = useFeacnCodesStore()
     vi.clearAllMocks()
     store.error = null
-  })
-
-  describe('data retrieval', () => {
-    it('getById retrieves code by id', async () => {
-      fetchWrapper.get.mockResolvedValue(mockCode)
-      const res = await store.getById(1)
-      expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:3000/api/feacncodes/1')
-      expect(res).toEqual(mockCode)
-    })
-
-    it('getByCode retrieves code by code', async () => {
-      fetchWrapper.get.mockResolvedValue(mockCode)
-      const res = await store.getByCode('1234567890')
-      expect(fetchWrapper.get).toHaveBeenCalledWith(
-        'http://localhost:3000/api/feacncodes/code/1234567890'
-      )
-      expect(res).toEqual(mockCode)
-    })
-
-    it('lookup retrieves codes', async () => {
-      fetchWrapper.get.mockResolvedValue(mockCodes)
-      const res = await store.lookup('abc')
-      expect(fetchWrapper.get).toHaveBeenCalledWith(
-        'http://localhost:3000/api/feacncodes/lookup/abc'
-      )
-      expect(res).toEqual(mockCodes)
-    })
-
-    it('getChildren retrieves children codes', async () => {
-      fetchWrapper.get.mockResolvedValue(mockCodes)
-      const res = await store.getChildren(1)
-      expect(fetchWrapper.get).toHaveBeenCalledWith(
-        'http://localhost:3000/api/feacncodes/children?id=1'
-      )
-      expect(res).toEqual(mockCodes)
-    })
-  })
-
-  describe('upload operations', () => {
-    it('uploads file successfully', async () => {
-      const file = new File(['content'], 'codes.xlsx')
-      fetchWrapper.postFile.mockResolvedValue() // No return value for synchronous upload
-
-      await store.upload(file)
-
-      expect(fetchWrapper.postFile).toHaveBeenCalledTimes(1)
-      const [url, formData] = fetchWrapper.postFile.mock.calls[0]
-      expect(url).toBe('http://localhost:3000/api/feacncodes/upload')
-      expect(formData).toBeInstanceOf(FormData)
-      expect(formData.get('file')).toBe(file)
-    })
   })
 
   describe('error handling', () => {

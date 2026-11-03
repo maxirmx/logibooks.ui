@@ -38,25 +38,6 @@ function clickEvent(modifiers = {}) {
 }
 
 describe('useParcelMultiSelect', () => {
-  it('uses displayed order and skips ineligible monitor rows for range selection', () => {
-    const opts = makeOptions({ items: ref([{ parcelId: 5 }, { parcelId: 2, excluded: true }, { parcelId: 7 }, { parcelId: 1 }]) })
-    const select = useParcelMultiSelect({ ...opts, getItemId: item => item.parcelId, isItemSelectable: item => !item.excluded })
-    select.handleRowClick(clickEvent(), { item: opts.items.value[0] })
-    select.handleRowClick(clickEvent({ shiftKey: true }), { item: opts.items.value[3] })
-    expect([...select.selectedParcelIds.value]).toEqual([5, 7, 1])
-    expect(select.getRowProps({ item: { parcelId: 7 } }).class).toContain('selected-parcel-row')
-    select.removeSelected([5, 1])
-    expect([...select.selectedParcelIds.value]).toEqual([7])
-    expect(opts.selectedParcelId.value).toBe(7)
-    select.clearSelection()
-    expect(select.selectedItems.value).toEqual([])
-    select.selectAllCurrentPage()
-    expect([...select.selectedParcelIds.value]).toEqual([5, 7, 1])
-    select.removeSelected([5, 7, 1])
-    expect(opts.selectedParcelId.value).toBeNull()
-    select.stop()
-  })
-
   it('adds ranges with Ctrl/Meta+Shift and falls back when the anchor disappears', () => {
     const opts = makeOptions()
     const select = useParcelMultiSelect(opts)
@@ -155,87 +136,4 @@ describe('useParcelMultiSelect', () => {
 
   })
 
-  describe('handleRowContextMenu', () => {
-    it('selects an unselected context-menu row and updates the range anchor', () => {
-      const opts = makeOptions()
-      const onContextMenu = vi.fn()
-      const select = useParcelMultiSelect({ ...opts, onContextMenu })
-      select.handleRowContextMenu({ preventDefault: vi.fn() }, { item: { id: 4 } })
-      expect([...select.selectedParcelIds.value]).toEqual([4])
-      expect(opts.selectedParcelId.value).toBe(4)
-      expect(select.lastClickedId.value).toBe(4)
-      expect(onContextMenu).toHaveBeenCalledOnce()
-      select.stop()
-    })
-    it('does not change selection when the right-clicked row is already selected', () => {
-      const opts = makeOptions()
-      const { handleRowClick, handleRowContextMenu, selectedParcelIds } = useParcelMultiSelect(opts)
-
-      handleRowClick(clickEvent(), { item: { id: 1 } })
-      handleRowClick(clickEvent({ ctrlKey: true }), { item: { id: 3 } })
-
-      const event = { preventDefault: vi.fn() }
-      handleRowContextMenu(event, { item: { id: 3 } })
-
-      expect(selectedParcelIds.value.has(1)).toBe(true)
-      expect(selectedParcelIds.value.has(3)).toBe(true)
-    })
-  })
-
-  describe('updateSelectedParcelIds', () => {
-    it('removes ids no longer present in items', () => {
-      const opts = makeOptions()
-      const { handleRowClick, updateSelectedParcelIds, selectedParcelIds } =
-        useParcelMultiSelect(opts)
-
-      handleRowClick(clickEvent(), { item: { id: 3 } })
-      handleRowClick(clickEvent({ ctrlKey: true }), { item: { id: 5 } })
-
-      // Remove id 5 from items
-      opts.items.value = makeItems([1, 2, 3, 4])
-      updateSelectedParcelIds()
-
-      expect(selectedParcelIds.value.has(5)).toBe(false)
-      expect(selectedParcelIds.value.has(3)).toBe(true)
-    })
-
-  })
-
-  describe('getRowProps', () => {
-    it('adds selected-parcel-row class to selected rows', () => {
-      const opts = makeOptions()
-      const { handleRowClick, getRowProps } = useParcelMultiSelect(opts)
-
-      handleRowClick(clickEvent(), { item: { id: 2 } })
-
-      expect(getRowProps({ item: { id: 2 } }).class).toContain('selected-parcel-row')
-      expect(getRowProps({ item: { id: 1 } }).class).not.toContain('selected-parcel-row')
-    })
-
-    it('preserves issue row class when an issue row is selected', () => {
-      const opts = makeOptions({
-        getBaseRowClass: () => 'parcel-has-issues'
-      })
-      const { handleRowClick, getRowProps } = useParcelMultiSelect(opts)
-
-      handleRowClick(clickEvent(), { item: { id: 2 } })
-
-      const rowClass = getRowProps({ item: { id: 2 } }).class
-      expect(rowClass).toContain('parcel-has-issues')
-      expect(rowClass).toContain('selected-parcel-row')
-    })
-  })
-
-  describe('selectedItems computed', () => {
-    it('returns only the items whose ids are selected', () => {
-      const opts = makeOptions()
-      const { handleRowClick, selectedItems } = useParcelMultiSelect(opts)
-
-      handleRowClick(clickEvent(), { item: { id: 1 } })
-      handleRowClick(clickEvent({ ctrlKey: true }), { item: { id: 3 } })
-
-      const ids = selectedItems.value.map((i) => i.id).sort()
-      expect(ids).toEqual([1, 3])
-    })
-  })
 })

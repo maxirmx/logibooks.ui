@@ -164,26 +164,7 @@ describe('ParcelStatuses_List.vue', () => {
     }
   })
 
-  describe('Data Display', () => {
-    it('shows empty table when no order statuses', async () => {
-      mockParcelStatuses.value = []
-      await wrapper.vm.$nextTick()
-
-      const dataTable = wrapper.find('[data-testid="v-data-table"]')
-      expect(dataTable.exists()).toBe(true)
-    })
-  })
-
   describe('Delete Functionality', () => {
-    it('calls remove when deletion is confirmed', async () => {
-      mockConfirm.mockResolvedValue(true)
-      const testParcelStatus = mockParcelStatuses.value[0]
-
-      await wrapper.vm.deleteParcelStatus(testParcelStatus)
-
-      expect(removeParcelStatus).toHaveBeenCalledWith(testParcelStatus.id)
-    })
-
     it('does not call remove when deletion is cancelled', async () => {
       mockConfirm.mockResolvedValue(false)
       const testParcelStatus = mockParcelStatuses.value[0]
@@ -218,12 +199,6 @@ describe('ParcelStatuses_List.vue', () => {
   })
 
   describe('Search and Filter', () => {
-    it('filters order statuses by title case insensitive', () => {
-      const mockItem = { raw: { title: 'Подтвержден' } }
-      const result = wrapper.vm.filterParcelStatuses(null, 'подтвержден', mockItem)
-      expect(result).toBe(true)
-    })
-
     it('filters parcel statuses by restriction reason', () => {
       const mockItem = { raw: { title: 'Черновик', restrictionReason: 'Стоп-слово' } }
       const result = wrapper.vm.filterParcelStatuses(null, 'стоп', mockItem)

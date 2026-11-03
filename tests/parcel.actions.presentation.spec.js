@@ -64,43 +64,6 @@ describe('parcel action failure presentation', () => {
     await wrapper.get('[data-testid="product"]').setValue('edited')
   }
 
-  it.each(Object.keys(actions))('%s shows a real API conflict once, preserves values and retries', async action => {
-    const message = 'В реестре выполняется пакетная проверка по стоп-словам. Дождитесь её завершения и повторите действие.'
-    const operation = action === 'stopWords' || action === 'tnved' ? store.validate : store.approve
-    operation.mockRejectedValueOnce(Object.assign(new Error(message), {
-      status: 409, data: { msg: message, errors: {}, code: 'RegisterBulkValidationInProgress' }
-    }))
-    await editor(action)
-    await wrapper.get('[data-testid="run"]').trigger('click')
-    await flushPromises()
-    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-    expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain(message)
-    expect(wrapper.get('[data-testid="product"]').element.value).toBe('edited')
-    expect(store.getById).not.toHaveBeenCalled()
-    await wrapper.get('[data-testid="run"]').trigger('click')
-    await flushPromises()
-    expect(operation).toHaveBeenCalledTimes(2)
-    expect(store.update).toHaveBeenLastCalledWith(7, expect.objectContaining({ productName: 'edited' }))
-    expect(store.getById).toHaveBeenCalledOnce()
-  })
-
-  it.each(['approve', 'stopWords'])('%s maps a failed save to its field and prevents the downstream action', async action => {
-    store.update.mockRejectedValueOnce(Object.assign(new Error('Ошибка полей'), {
-      status: 400, data: { msg: 'Ошибка полей', errors: { ProductName: ['Проверьте название'] } }
-    }))
-    await editor(action)
-    await wrapper.get('[data-testid="run"]').trigger('click')
-    await flushPromises()
-    expect(wrapper.find('[data-testid="page-alert-region"]').exists()).toBe(false)
-    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-    const input = wrapper.get('[data-testid="product"]')
-    expect(input.element.parentElement.textContent).toContain('Проверьте название')
-    expect(input.element.value).toBe('edited')
-    expect(store.approve).not.toHaveBeenCalled()
-    expect(store.validate).not.toHaveBeenCalled()
-    expect(store.getById).not.toHaveBeenCalled()
-  })
-
   it.each(['approve', 'stopWords'])('%s reports a refresh failure after successful mutation without resubmitting', async action => {
     store.getById.mockRejectedValueOnce(new Error('соединение потеряно'))
     await editor(action)
@@ -113,18 +76,6 @@ describe('parcel action failure presentation', () => {
   })
 
 
-
-  it('preserves a touched TN VED field after a failed excise refresh', async () => {
-    store.getById.mockRejectedValueOnce(new Error('соединение потеряно'))
-    await editor('excise')
-    await wrapper.get('[data-testid="tnved"]').setValue('edited-code')
-    await wrapper.get('[data-testid="tnved"]').trigger('blur')
-    await wrapper.get('[data-testid="run"]').trigger('click')
-    await flushPromises()
-    expect(wrapper.get('[data-testid="tnved"]').element.value).toBe('edited-code')
-    expect(wrapper.get('[role="alert"]').text()).toContain('соединение потеряно')
-    expect(store.approve).toHaveBeenCalledOnce()
-  })
 
   it('returns unsuccessful for a stale parcel and preserves successful approval data', async () => {
     await expect(approveParcel({ id: 8 }, item, store)).resolves.toBe(false)

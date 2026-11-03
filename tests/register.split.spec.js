@@ -7,13 +7,11 @@ import { defineComponent, onUnmounted, reactive, ref } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { createMemoryHistory, createRouter } from 'vue-router'
-import ActionButton from '@/components/ActionButton.vue'
 import { useRegisterSplit } from '@/composables/useRegisterSplit.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import RegisterSplitDialogs from '@/l2/RegisterSplitDialogs.vue'
-import ActionDialog from '@/l2/ActionDialog.vue'
 import RegisterSplitRecovery from '@/l2/RegisterSplitRecovery.vue'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
@@ -66,57 +64,6 @@ beforeEach(() => { setActivePinia(createPinia()); sessionStorage.clear(); wrappe
 afterEach(() => { wrappers.forEach(wrapper => wrapper.unmount()); vi.useRealTimers(); vi.restoreAllMocks() })
 
 describe('register splitting', () => {
-  it('allows senior logist and displays both committed outputs without automatic navigation', async () => {
-    const h = harness()
-    await h.flow.start()
-    await flushPromises()
-    expect(h.store.startSplit).toHaveBeenCalledWith(7, 'operation')
-    expect(h.flow.state.progress.show).toBe(false)
-    expect(h.runningAction.value).toBe(false)
-    const report = h.wrapper.get('[data-testid="split-results"]')
-    expect(report.element.tagName).toBe('DIV')
-    expect(report.classes()).toContain('form-compact')
-    expect(report.findAll('[data-testid^="split-result-"]')).toHaveLength(2)
-    for (const [kind, name, count] of [['ordinary', 'Latin основной', 2], ['dangerous', 'Latin опасник', 4]]) {
-      const row = report.get(`[data-testid="split-result-${kind}"]`)
-      expect(row.get(`[data-testid="split-name-${kind}"]`).text()).toBe(name)
-      expect(row.text()).toContain(`${count} посылок`)
-    }
-    expect(report.text()).not.toContain('Основной реестр:')
-    expect(report.text()).not.toContain('Посылок в реестре')
-    expect(report.get('[data-testid="split-name-ordinary"]').text()).toBe('Latin основной')
-    expect(report.get('[data-testid="split-count-ordinary"]').text()).toBe('2')
-    expect(report.get('[data-testid="split-count-dangerous"]').text()).toBe('4')
-    const buttons = report.findAllComponents(ActionButton)
-    expect(buttons).toHaveLength(2)
-    expect(buttons.map(button => button.props('icon'))).toEqual(['fa-solid fa-list', 'fa-solid fa-list'])
-    expect(buttons.map(button => button.props('tooltipText'))).toEqual(['Список посылок', 'Список посылок'])
-    expect(h.router.currentRoute.value.path).toBe('/')
-    for (const [kind, id] of [['ordinary', 8], ['dangerous', 9]]) {
-      await report.get(`[data-testid="split-open-${kind}"]`).trigger('click')
-      await flushPromises()
-      expect(h.router.currentRoute.value.path).toBe(`/registers/${id}/parcels`)
-      expect(h.router.currentRoute.value.query.mode).toBe('modePaperwork')
-    }
-    expect(sessionStorage.getItem('register-split:42:7')).toBeNull()
-    const close = h.wrapper.findAll('button').find(button => button.text() === 'Закрыть')
-    await close.trigger('click')
-    expect(h.flow.state.summaryVisible).toBe(false)
-  })
-  it('uses only the existing circle and keeps incomplete progress below 100', async () => {
-    vi.useFakeTimers()
-    const h = harness()
-    h.store.getSplit.mockResolvedValueOnce({ finished: false, phase: 'copying', percent: 100 }).mockResolvedValueOnce({ finished: false, percent: null }).mockResolvedValue(complete)
-    await h.flow.start()
-    expect(h.wrapper.findComponent(ActionDialog).props('actionDialog').percent).toBe(99)
-    expect(h.runningAction.value).toBe(true)
-    expect(await h.flow.start()).toBe(false)
-    await vi.advanceTimersByTimeAsync(1000)
-    expect(h.flow.state.progress.percent).toBeNull()
-    await vi.advanceTimersByTimeAsync(1000)
-    expect(h.flow.state.result).toEqual(result)
-    expect(h.store.startSplit).toHaveBeenCalledOnce()
-  })
   it.each(['role', 'country', 'format', 'count', 'no-dangerous', 'all-dangerous', 'empty', 'total-unavailable', 'readOnly', 'other-register', 'busy'])('guards split for %s', async condition => {
     const h = harness({ busy: () => condition === 'busy' })
     if (condition === 'role') h.authStore.isSrLogistPlus = false

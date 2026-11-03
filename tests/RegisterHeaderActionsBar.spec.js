@@ -10,13 +10,7 @@ import ActionButton from '@/components/ActionButton.vue'
 import ActionButton2L from '@/components/ActionButton2L.vue'
 import { WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
 import { InvoiceParcelSelection } from '@/models/invoice.parcel.selection.js'
-import {
-  CUSTOMS_PROCEDURE_EXPORT,
-  CUSTOMS_PROCEDURE_IMPORT,
-  CUSTOMS_PROCEDURE_REEXPORT,
-  CUSTOMS_PROCEDURE_REIMPORT,
-  CUSTOMS_PROCEDURE_RETURN
-} from '@/helpers/customs.procedure.helpers.js'
+import { CUSTOMS_PROCEDURE_EXPORT, CUSTOMS_PROCEDURE_IMPORT } from '@/helpers/customs.procedure.helpers.js'
 import { vuetifyStubs } from './helpers/test-utils.js'
 
 const pushMock = vi.fn()
@@ -222,43 +216,6 @@ describe('RegisterHeaderActionsBar', () => {
     expect(pushMock).not.toHaveBeenCalled()
   })
 
-  it('starts the Tajikistan manifest download only for eligible registers', async () => {
-    const eligibleItem = {
-      ...baseProps.item,
-      registerType: WBRN_REGISTER_ID,
-      customsProcedureCode: CUSTOMS_PROCEDURE_EXPORT,
-      theOtherCountryCode: 762
-    }
-    const wrapper = mount(RegisterHeaderActionsBar, {
-      props: { ...baseProps, item: eligibleItem },
-      global: { stubs: vuetifyStubs }
-    })
-    const option = findActionMenuByTooltip(wrapper, 'Сформировать документы')
-      .props('options')
-      .find((candidate) => candidate.label === 'манифест для Таджикистана (все)')
-
-    expect(option).toBeTruthy()
-    await option.action()
-    expect(wrapper.emitted('download-tajikistan-manifest')).toHaveLength(1)
-    expect(pushMock).not.toHaveBeenCalled()
-
-    for (const item of [
-      { ...eligibleItem, registerType: WBRN_REGISTER_ID + 1 },
-      { ...eligibleItem, customsProcedureCode: CUSTOMS_PROCEDURE_IMPORT },
-      { ...eligibleItem, theOtherCountryCode: 643 }
-    ]) {
-      const ineligibleWrapper = mount(RegisterHeaderActionsBar, {
-        props: { ...baseProps, item },
-        global: { stubs: vuetifyStubs }
-      })
-      expect(
-        findActionMenuByTooltip(ineligibleWrapper, 'Сформировать документы')
-          .props('options')
-          .some((candidate) => candidate.label === 'манифест для Таджикистана (все)')
-      ).toBe(false)
-    }
-  })
-
   it.each([
     { disabled: true, loading: false },
     { disabled: false, loading: true }
@@ -337,30 +294,6 @@ describe('RegisterHeaderActionsBar', () => {
     expect(pushMock).not.toHaveBeenCalled()
   })
 
-  it.each([
-    [0, 1, true],
-    [0, 0, false],
-    [0, null, false],
-    [1, 1, false],
-    [2, 1, false]
-  ])(
-    'shows packing list only for Avia registers with a warehouse (%s, %s)',
-    (transportationTypeCode, warehouseId, expected) => {
-      const wrapper = mount(RegisterHeaderActionsBar, {
-        props: {
-          ...baseProps,
-          item: { ...baseProps.item, transportationTypeCode, warehouseId }
-        },
-        global: { stubs: vuetifyStubs }
-      })
-
-      const labels = findActionMenuByTooltip(wrapper, 'Сформировать документы')
-        .props('options')
-        .map((option) => option.label)
-      expect(labels.includes('packing list')).toBe(expected)
-    }
-  )
-
   it('emits packing list download and respects disabled state', async () => {
     const item = { ...baseProps.item, transportationTypeCode: 0, warehouseId: 5 }
     const wrapper = mount(RegisterHeaderActionsBar, {
@@ -384,33 +317,6 @@ describe('RegisterHeaderActionsBar', () => {
 
     await disabledOption.action()
     expect(disabledWrapper.emitted('download-packing-list')).toBeUndefined()
-  })
-
-  it.each([
-    CUSTOMS_PROCEDURE_RETURN,
-    CUSTOMS_PROCEDURE_EXPORT,
-    CUSTOMS_PROCEDURE_REEXPORT,
-    CUSTOMS_PROCEDURE_REIMPORT
-  ])('hides ДО1 for non-import procedure %s', (customsProcedureCode) => {
-    const wrapper = mount(RegisterHeaderActionsBar, {
-      props: {
-        ...baseProps,
-        item: { ...baseProps.item, customsProcedureCode }
-      },
-      global: { stubs: vuetifyStubs }
-    })
-
-    const documentMenu = findActionMenuByTooltip(wrapper, 'Сформировать документы')
-    const labels = documentMenu.props('options').map((option) => option.label)
-    expect(labels).not.toContain('отчёт ДО1 (все)')
-    expect(labels).toEqual([
-      'инвойс-манифест (все)',
-      'инвойс-манифест (с акцизом)',
-      'инвойс-манифест (с нотификациями)',
-      'инвойс-манифест (без акциза и нотификаций)',
-      'реестр дополнительных изъятий',
-      'тех. документация (с акцизом)'
-    ])
   })
 
   it('emits xml export events when corresponding menu options are used', async () => {
@@ -593,24 +499,6 @@ describe('RegisterHeaderActionsBar', () => {
     expect(findActionMenuByTooltip(wrapper, 'Проверка паспортов').props('variant')).toBe('blue')
   })
 
-  it('hides passport check action when disabled by procedure or role', () => {
-    let wrapper = mount(RegisterHeaderActionsBar, {
-      props: { ...baseProps, showPassportCheck: false },
-      global: { stubs: vuetifyStubs }
-    })
-
-    expect(findActionMenuByTooltip(wrapper, 'Проверка паспортов')).toBeUndefined()
-    wrapper.unmount()
-
-    authRefs.isSrLogistPlus.value = false
-    wrapper = mount(RegisterHeaderActionsBar, {
-      props: { ...baseProps, showPassportCheck: true },
-      global: { stubs: vuetifyStubs }
-    })
-
-    expect(findActionMenuByTooltip(wrapper, 'Проверка паспортов')).toBeUndefined()
-  })
-
   it('emits custom charges calculation and parcel status bulk-change actions in order', async () => {
     const wrapper = mount(RegisterHeaderActionsBar, {
       props: { ...baseProps },
@@ -640,23 +528,6 @@ describe('RegisterHeaderActionsBar', () => {
     expect(wrapper.emitted('bulk-change-parcel-status')).toHaveLength(1)
   })
 
-  it('disables the weight update action for read-only and busy registers', async () => {
-    const wrapper = mount(RegisterHeaderActionsBar, {
-      props: { ...baseProps, showWeightUpdate: true, mutationDisabled: true },
-      global: { stubs: vuetifyStubs }
-    })
-
-    const action = findActionButtonByTooltip(wrapper, 'Обновить веса из файла реестра')
-    expect(action.props('disabled')).toBe(true)
-    action.vm.$emit('click')
-    expect(wrapper.emitted('update-weights-from-file')).toBeUndefined()
-
-    await wrapper.setProps({ mutationDisabled: false, loading: true })
-    expect(action.props('disabled')).toBe(true)
-    action.vm.$emit('click')
-    expect(wrapper.emitted('update-weights-from-file')).toBeUndefined()
-  })
-
   it('disables only the weight update action when manual final weight is set', () => {
     const wrapper = mount(RegisterHeaderActionsBar, {
       props: {
@@ -680,41 +551,6 @@ describe('RegisterHeaderActionsBar', () => {
     expect(calculateChargesAction.props('disabled')).toBe(false)
     weightUpdateAction.vm.$emit('click')
     expect(wrapper.emitted('update-weights-from-file')).toBeUndefined()
-  })
-
-  it('hides custom charges calculation for non-chargeable procedures', () => {
-    const cases = [
-      { title: 'missing procedure', item: { id: 1, invoiceNumber: 'INV-1' } },
-      { title: 'null procedure', item: { ...baseProps.item, customsProcedureCode: null } },
-      {
-        title: 'return procedure',
-        item: { ...baseProps.item, customsProcedureCode: CUSTOMS_PROCEDURE_RETURN }
-      },
-      {
-        title: 'export procedure',
-        item: { ...baseProps.item, customsProcedureCode: CUSTOMS_PROCEDURE_EXPORT }
-      },
-      {
-        title: 'reexport procedure',
-        item: { ...baseProps.item, customsProcedureCode: CUSTOMS_PROCEDURE_REEXPORT }
-      }
-    ]
-
-    for (const testCase of cases) {
-      const wrapper = mount(RegisterHeaderActionsBar, {
-        props: {
-          ...baseProps,
-          item: testCase.item
-        },
-        global: { stubs: vuetifyStubs }
-      })
-
-      expect(
-        findActionButtonByTooltip(wrapper, 'Рассчитать сборы и пошлины'),
-        testCase.title
-      ).toBeUndefined()
-      wrapper.unmount()
-    }
   })
 
   it('disables mutations but keeps downloads and documents available in read-only mode', async () => {

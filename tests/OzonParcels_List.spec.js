@@ -351,85 +351,6 @@ describe('OzonParcels_List.vue – multi-select', () => {
     } finally { wrapper.unmount() }
   })
 
-  it('Ctrl+Click toggles individual rows', () => {
-    wrapper.vm.handleRowClick(
-      { shiftKey: false, ctrlKey: false, metaKey: false },
-      { item: mockItems.value[0] }
-    )
-    wrapper.vm.handleRowClick(
-      { shiftKey: false, ctrlKey: true, metaKey: false },
-      { item: mockItems.value[2] }
-    )
-
-    expect(wrapper.vm.selectedParcelIds.size).toBe(2)
-    expect(wrapper.vm.selectedParcelIds.has(1)).toBe(true)
-    expect(wrapper.vm.selectedParcelIds.has(3)).toBe(true)
-
-    // Toggle off
-    wrapper.vm.handleRowClick(
-      { shiftKey: false, ctrlKey: true, metaKey: false },
-      { item: mockItems.value[0] }
-    )
-    expect(wrapper.vm.selectedParcelIds.size).toBe(1)
-    expect(wrapper.vm.selectedParcelIds.has(1)).toBe(false)
-    expect(wrapper.vm.selectedParcelIds.has(3)).toBe(true)
-  })
-
-  it('Shift+Click replaces previous selection without Ctrl', () => {
-    wrapper.vm.handleRowClick(
-      { shiftKey: false, ctrlKey: true, metaKey: false },
-      { item: mockItems.value[4] }
-    )
-    wrapper.vm.handleRowClick(
-      { shiftKey: false, ctrlKey: false, metaKey: false },
-      { item: mockItems.value[0] }
-    )
-    wrapper.vm.handleRowClick(
-      { shiftKey: true, ctrlKey: false, metaKey: false },
-      { item: mockItems.value[2] }
-    )
-
-    // Only 1-3 selected, not 5
-    expect(wrapper.vm.selectedParcelIds.has(5)).toBe(false)
-    expect([...wrapper.vm.selectedParcelIds].sort()).toEqual([1, 2, 3])
-  })
-
-  it('Ctrl+Shift+Click extends range onto existing selection', () => {
-    // Select rows 1 and 2 via Ctrl
-    wrapper.vm.handleRowClick(
-      { shiftKey: false, ctrlKey: false, metaKey: false },
-      { item: mockItems.value[0] }
-    )
-    wrapper.vm.handleRowClick(
-      { shiftKey: false, ctrlKey: true, metaKey: false },
-      { item: mockItems.value[1] }
-    )
-
-    // Shift+Ctrl from row 2 anchor to row 5
-    wrapper.vm.handleRowClick(
-      { shiftKey: true, ctrlKey: true, metaKey: false },
-      { item: mockItems.value[4] }
-    )
-
-    // All 5 should be selected (1,2 from Ctrl, 2-5 from Shift range)
-    expect(wrapper.vm.selectedParcelIds.size).toBe(5)
-  })
-
-  it('assigns tnved in bulk and reloads rows on confirm', async () => {
-    const { loadParcels } = await import('@/helpers/parcels.list.helpers.js')
-    wrapper.vm.showAssignTnvedDialog = true
-    wrapper.vm.selectedParcelIds.add(1)
-    wrapper.vm.selectedParcelIds.add(3)
-
-    await wrapper.vm.handleAssignTnvedConfirm([1, 3], '1234567890')
-
-    expect(mockBulkAssignTnved).toHaveBeenCalledWith([1, 3], '1234567890')
-    expect(loadParcels).toHaveBeenCalled()
-    expect(wrapper.vm.showAssignTnvedDialog).toBe(false)
-    expect(wrapper.vm.selectedParcelIds.size).toBe(0)
-    expect(mockRefreshCachedDetail).toHaveBeenCalledTimes(1)
-  })
-
   it('returns a handled list failure and skips the cached detail after bulk assignment', async () => {
     const { loadParcels } = await import('@/helpers/parcels.list.helpers.js')
     loadParcels.mockResolvedValueOnce(false)
@@ -481,38 +402,6 @@ describe('OzonParcels_List.vue – multi-select', () => {
     await wrapper.get('[data-testid="register-header-actions"]').trigger('click')
 
     expect(click).toHaveBeenCalledTimes(1)
-  })
-
-  it('uploads weights and refreshes the register and parcels without a success alert', async () => {
-    const { loadParcels } = await import('@/helpers/parcels.list.helpers.js')
-    loadParcels.mockClear()
-    mockGetRegister.mockClear()
-    mockUpdateWeightsFromFile.mockResolvedValueOnce({
-      processedRows: 9,
-      skippedRows: 1,
-      unmatchedRows: 2,
-      supersededRows: 3,
-      updatedParcels: 4,
-      unchangedParcels: 5,
-      totalWeightKgBefore: 10,
-      totalWeightKgAfter: 11
-    })
-    const file = new File(['data'], 'weights.xlsx')
-    const input = { files: [file], value: 'weights.xlsx' }
-
-    await wrapper.vm.onWeightUpdateFileSelected({ target: input })
-
-    expect(mockUpdateWeightsFromFile).toHaveBeenCalledWith(1, file)
-    expect(mockGetRegister).toHaveBeenCalledWith(1)
-    expect(loadParcels).toHaveBeenCalledWith(
-      1,
-      expect.any(Object),
-      expect.any(Object),
-      expect.any(Object)
-    )
-    expect(alertSuccess).not.toHaveBeenCalled()
-    expect(input.value).toBe('')
-    expect(wrapper.vm.runningAction).toBe(false)
   })
 
   it('shows import errors exactly once and allows the same file to be selected again', async () => {

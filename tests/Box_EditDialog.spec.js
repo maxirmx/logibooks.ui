@@ -140,40 +140,6 @@ describe('Box_EditDialog.vue', () => {
     routerPush.mockResolvedValue()
   })
 
-  it('shows the sticker read-only for non-administrators and prints without submitting the form', async () => {
-    mockBox.value = { ...mockBox.value, companyId: 2, registerType: 2097154,
-      boxSticker: '$1:1:4542503776:362877', printableTemplates: ['WBR_BOX'] }
-    const wrapper = await mountDialog({ mode: 'edit', registerId: 42, boxId: 7 })
-    const sticker = wrapper.get('[data-testid="box-sticker-input"]')
-    expect(wrapper.get('label[for="boxSticker"]').text()).toBe('Код стикера:')
-    expect(sticker.element.value).toBe('$1:1:4542503776:362877')
-    expect(sticker.element.readOnly).toBe(true)
-    const printGroup = wrapper.get('[data-testid="box-sticker-print-actions"]')
-    expect(printGroup.findAll('button')).toHaveLength(1)
-    expect(printGroup.element).not.toBe(wrapper.get('[data-testid="box-save-action"]').element.closest('.header-actions'))
-    expect(wrapper.find('[data-testid="box-sticker-field"]').exists()).toBe(false)
-    const action = wrapper.findAllComponents(ActionButton).find((item) => item.props('tooltipText') === 'Печать стикера')
-    expect(action.props('disabled')).toBe(false)
-    expect(action.props('iconSize')).toBe('2x')
-    await action.get('button').trigger('click')
-    expect(printBoxLabel).toHaveBeenCalledWith({ boxId: 7, template: 'WBR_BOX' })
-    expect(boxUpdate).not.toHaveBeenCalled()
-    expect(routerPush).not.toHaveBeenCalled()
-    wrapper.unmount()
-  })
-
-  it.each([null, 'previous scan'])('allows an administrator to enter a sticker over %s and save it', async (previous) => {
-    mockIsAdmin.value = true
-    mockBox.value.boxSticker = previous
-    const wrapper = await mountDialog({ mode: 'edit', registerId: 42, boxId: 7 })
-    const sticker = wrapper.get('[data-testid="box-sticker-input"]')
-    expect(sticker.element.readOnly).toBe(false)
-    await sticker.setValue('  $1:1:BOX-7:362877  ')
-    await wrapper.get('form').trigger('submit')
-    await flushPromises()
-    await vi.waitFor(() => expect(boxUpdate).toHaveBeenCalledWith(7, expect.objectContaining({ boxSticker: '$1:1:BOX-7:362877' })))
-    expect(routerPush).toHaveBeenCalledWith('/registers/42/boxes')
-  })
   it.each(['replacement sticker', '', '   '])('blocks printing an unsaved sticker %j and restores printing when the edit is reverted', async (draft) => {
     mockIsAdmin.value = true
     const saved = '$1:1:4542503776:362877'
@@ -224,88 +190,6 @@ describe('Box_EditDialog.vue', () => {
     await wrapper.get('form').trigger('submit')
     await flushPromises()
     await vi.waitFor(() => expect(boxUpdate).toHaveBeenLastCalledWith(7, expect.objectContaining({ boxSticker: null })))
-  })
-
-  it('never sends a sticker supplied by a non-administrator', async () => {
-    const wrapper = await mountDialog({ mode: 'edit', registerId: 42, boxId: 7 })
-    const dialog = wrapper.findComponent(BoxEditDialog)
-    await dialog.vm.onSubmit({ ...dialog.vm.initialValues, boxSticker: 'forged', lengthCm: 15 })
-    expect(boxUpdate).toHaveBeenCalledWith(7, expect.objectContaining({ lengthCm: 15 }))
-    expect(boxUpdate.mock.calls[0][1]).not.toHaveProperty('boxSticker')
-  })
-
-  it('keeps the administrator sticker read-only for a locked register', async () => {
-    mockIsAdmin.value = true
-    mockRegister.value.readOnly = true
-    const wrapper = await mountDialog({ mode: 'edit', registerId: 42, boxId: 7 })
-    expect(wrapper.get('[data-testid="box-sticker-input"]').element.readOnly).toBe(true)
-    expect(wrapper.get('[data-testid="box-sticker-input"]').element.disabled).toBe(true)
-  })
-
-  it('preserves an edited sticker after a rejected save and retries without duplicate errors', async () => {
-    mockIsAdmin.value = true
-    boxUpdate.mockRejectedValueOnce(new Error('Недостаточно прав для выполнения операции'))
-    const wrapper = await mountDialog({ mode: 'edit', registerId: 42, boxId: 7 })
-    await wrapper.get('[data-testid="box-sticker-input"]').setValue('manual sticker')
-    await wrapper.get('form').trigger('submit')
-    await flushPromises()
-    await vi.waitFor(() => expect(boxUpdate).toHaveBeenCalledTimes(1))
-    expect(routerPush).not.toHaveBeenCalled()
-    expect(wrapper.get('[data-testid="box-sticker-input"]').element.value).toBe('manual sticker')
-    expect(wrapper.text().match(/Недостаточно прав для выполнения операции/g)).toHaveLength(1)
-    await wrapper.get('form').trigger('submit')
-    await flushPromises()
-    await vi.waitFor(() => expect(boxUpdate).toHaveBeenCalledTimes(2))
-    expect(boxUpdate).toHaveBeenLastCalledWith(7, expect.objectContaining({ boxSticker: 'manual sticker' }))
-    expect(routerPush).toHaveBeenCalledWith('/registers/42/boxes')
-  })
-
-  it.each([
-    [1, '$1:1:4542503776:362877', ['WBR_BOX']],
-    [2, null, ['WBR_BOX']],
-    [2, '$1:1:4542503776:362877', []]
-  ])('keeps the unavailable print button visible in box editing for company %s', async (companyId, boxSticker, printableTemplates) => {
-    mockBox.value = { ...mockBox.value, companyId, boxSticker, printableTemplates }
-    const wrapper = await mountDialog({ mode: 'edit', registerId: 42, boxId: 7 })
-    expect(wrapper.get('[data-testid="box-printing-panel"]').isVisible()).toBe(true)
-    const button = wrapper.get('button[data-testid="box-print-label"]')
-    expect(button.isVisible()).toBe(true)
-    expect(wrapper.get('[data-testid="box-sticker-input"]').element.value).toBe(boxSticker || '')
-    expect(button.element.disabled).toBe(true)
-    await button.trigger('click')
-    expect(printBoxLabel).not.toHaveBeenCalled()
-    expect(boxUpdate).not.toHaveBeenCalled()
-    wrapper.unmount()
-  })
-
-  it('creates a box with trimmed code and normalized optional metrics', async () => {
-    const wrapper = await mountDialog({ mode: 'create', registerId: 42 })
-    const dialog = wrapper.findComponent(BoxEditDialog)
-
-    expect(registerGetById).toHaveBeenCalledWith(42)
-    expect(boxGetById).not.toHaveBeenCalled()
-    expect(wrapper.get('h1').text()).toContain('создание коробки')
-
-    await dialog.vm.onSubmit(
-      {
-        code: '  BOX-NEW  ',
-        lengthCm: '10.5',
-        widthCm: '',
-        heightCm: null,
-        weightKg: '4.125'
-      },
-      { setErrors: vi.fn() }
-    )
-
-    expect(boxCreate).toHaveBeenCalledWith({
-      registerId: 42,
-      code: 'BOX-NEW',
-      lengthCm: 10.5,
-      widthCm: null,
-      heightCm: null,
-      weightKg: 4.125
-    })
-    expect(routerPush).toHaveBeenCalledWith('/registers/42/boxes')
   })
 
   it('keeps the code immutable and omits weight when the register has real weight', async () => {

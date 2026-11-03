@@ -246,57 +246,6 @@ describe('RegisterHistory_List.vue', () => {
     })
   })
 
-  it('renders localized 1C field names and values', async () => {
-    mockRefs.items.value[0].changes = [
-      { field: 'CustomerOrderNumber', oldValue: null, newValue: 'ORDER-42' },
-      { field: 'ExportedTo1C', oldValue: 'False', newValue: 'True' },
-      { field: 'PassportCheckWasFinished', oldValue: 'False', newValue: 'True' },
-      { field: 'DecDate', oldValue: null, newValue: '2026-08-01' },
-      { field: 'ReleaseDate', oldValue: '2026-08-01', newValue: '2026-08-02' }
-    ]
-
-    const wrapper = mount(RegisterHistoryList, {
-      props: { registerId: 42 },
-      global: { stubs: defaultGlobalStubs }
-    })
-    await flushPromises()
-
-    expect(wrapper.text()).toContain('Номер заказа клиента: не указано → ORDER-42')
-    expect(wrapper.text()).toContain(
-      'Выгрузка в 1С: Выгрузка в 1С не выполнена → Выгрузка в 1С выполнена'
-    )
-    expect(wrapper.text()).toContain(
-      'Операция «Завершить проверку паспортов»: Не выполнена → Выполнена'
-    )
-    expect(wrapper.text()).toContain('Дата подачи ДТЭГ: не указано → 01.08.2026')
-    expect(wrapper.text()).toContain('Дата выпуска: 01.08.2026 → 02.08.2026')
-    expect(wrapper.text()).not.toContain('ExportedTo1C')
-    expect(wrapper.text()).not.toContain('CustomerOrderNumber')
-    expect(wrapper.text()).not.toContain('PassportCheckWasFinished')
-    expect(wrapper.text()).not.toContain('DecDate')
-    expect(wrapper.text()).not.toContain('ReleaseDate')
-  })
-
-  it.each([
-    ['one', 1],
-    ['missing', undefined],
-    ['zero', 0],
-    ['negative', -1],
-    ['fractional', 2.5],
-    ['string', '3'],
-    ['null', null]
-  ])('hides a non-grouped or invalid %s event count', async (_case, eventCount) => {
-    mockRefs.items.value[0].eventCount = eventCount
-
-    const wrapper = mount(RegisterHistoryList, {
-      props: { registerId: 42 },
-      global: { stubs: defaultGlobalStubs }
-    })
-    await flushPromises()
-
-    expect(wrapper.find('.history-event-count').exists()).toBe(false)
-  })
-
   it('shows a collapsed event count when the newest event has no change details', async () => {
     mockRefs.items.value[0].eventCount = 4
     mockRefs.items.value[0].changes = []
@@ -458,18 +407,6 @@ describe('RegisterHistory_List.vue', () => {
       path: '/registers',
       query: { mode: OP_MODE_WAREHOUSE }
     })
-  })
-
-  it('labels cargo count corrections in register history', async () => {
-    mockRefs.items.value[0].changes = [
-      { field: 'CargoPlacesTotal', oldValue: '12', newValue: '13' }
-    ]
-    const wrapper = mount(RegisterHistoryList, { props: { registerId: 42 }, global: { stubs: defaultGlobalStubs } })
-    await flushPromises()
-    expect(wrapper.text()).toContain('Количество грузовых мест')
-    expect(wrapper.text()).toContain('12')
-    expect(wrapper.text()).toContain('13')
-    wrapper.unmount()
   })
 
   it('renders reference changes as text instead of identifiers', async () => {

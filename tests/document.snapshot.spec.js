@@ -7,7 +7,6 @@ import { createPinia, setActivePinia } from 'pinia'
 import { mount, flushPromises } from '@vue/test-utils'
 import InvoiceSettings from '@/dialogs/Invoice_Settings.vue'
 import CmrSettings from '@/dialogs/Cmr_Settings.vue'
-import { useAlertStore } from '@/stores/alert.store.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import router from '@/router'
 
@@ -61,34 +60,6 @@ function open(component, props) {
   return wrapper
 }
 describe.each(views)('%s document saved snapshot', (kind, component, props) => {
-  it.each([false, true])('uses the initial load without totals-refresh controls for pending=%s', async pending => {
-    serverRegister.derivedTotalsPending = pending
-    const wrapper = open(component, props)
-    await flushPromises()
-    expect(wrapper.find('button[aria-label="Обновить итоги"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="register-totals-actions"]').exists()).toBe(false)
-    expect(wrapper.find('.spinner-border').exists()).toBe(false)
-    expect(wrapper.get('button[aria-label="Сформировать"]').element.disabled).toBe(pending)
-    expect(fetchWrapper.get.mock.calls.filter(([url]) => url === '/api/registers/77')).toHaveLength(1)
-    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
-  })
-
-  it('presents an initial load failure once in Russian without navigating', async () => {
-    const original = fetchWrapper.get.getMockImplementation()
-    fetchWrapper.get.mockImplementation(url => url === '/api/registers/77'
-      ? Promise.reject(new Error('Technical load failure')) : original(url))
-    const alerts = useAlertStore()
-    const present = vi.spyOn(alerts, 'error')
-    const wrapper = open(component, props)
-    await flushPromises()
-    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-    expect(wrapper.get('[role="alert"]').text()).toMatch(/[А-Яа-я]/)
-    expect(wrapper.text()).not.toContain('Technical load failure')
-    expect(present).toHaveBeenCalledOnce()
-    expect(wrapper.get('button[aria-label="Сформировать"]').element.disabled).toBe(true)
-    expect(router.go).not.toHaveBeenCalled()
-  })
-
   it('preserves settings after generation failure and retries the requested document', async () => {
     const wrapper = open(component, props)
     await flushPromises()

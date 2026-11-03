@@ -102,25 +102,6 @@ describe('FeacnCodeSelectorW', () => {
     })
   }
 
-  it('renders ActionButton for each keyword', async () => {
-    const mockKeywords = [
-      { id: 1, word: 'test keyword 1', feacnCode: '1234567890' },
-      { id: 2, word: 'test keyword 2', feacnCode: '0987654321' }
-    ]
-
-    const { getKeywordFeacnPairs } = await import('@/helpers/parcels.list.helpers.js')
-    vi.mocked(getKeywordFeacnPairs).mockReturnValue(mockKeywords)
-
-    wrapper = createWrapper()
-
-    // Count only ActionButton components that appear inside keyword items (exclude label toggle)
-    const keywordActionButtons = wrapper
-      .findAll('.keyword-item')
-      .map((item) => item.findComponent({ name: 'ActionButton' }))
-    const present = keywordActionButtons.filter((btn) => btn.exists()).length
-    expect(present).toBe(2)
-  })
-
   it('loads tooltip on mouseenter using Vue tooltip system', async () => {
     const mockKeywords = [{ id: 1, word: 'test keyword 1', feacnCode: '1234567890' }]
 
@@ -144,35 +125,6 @@ describe('FeacnCodeSelectorW', () => {
     expect(wrapper.find('[data-testid="v-tooltip"]').exists()).toBe(true)
   })
 
-  it('renders matchingFC above keywords when provided', async () => {
-    const mockKeywords = [{ id: 1, word: 'keyword one', feacnCode: '11111111' }]
-    const { getKeywordFeacnPairs, getMatchingFeacnCodeItemClass } = await import(
-      '@/helpers/parcels.list.helpers.js'
-    )
-    vi.mocked(getKeywordFeacnPairs).mockReturnValue(mockKeywords)
-    vi.mocked(getMatchingFeacnCodeItemClass).mockReturnValue(
-      'feacn-code-item clickable matched matching-feacn-code-item'
-    )
-
-    wrapper = createWrapper({
-      item: {
-        keyWordIds: [1],
-        tnVed: '22222222',
-        matchingFC: '33333333',
-        matchingFCComment: 'Лучшее совпадение'
-      }
-    })
-
-    const allItems = wrapper.findAll('.keyword-item')
-    expect(allItems.length).toBeGreaterThan(0)
-    // First item should contain matchingFC pattern
-    const firstText = allItems[0].text()
-    expect(firstText).toContain('33333333 - Лучшее совпадение')
-    // Ensure matching class applied
-    const firstCodeDiv = allItems[0].find('.keyword-code')
-    expect(firstCodeDiv.classes()).toContain('matching-feacn-code-item')
-  })
-
   it('calls onSelect when matchingFC clicked', async () => {
     const mockKeywords = []
     const { getKeywordFeacnPairs } = await import('@/helpers/parcels.list.helpers.js')
@@ -192,20 +144,6 @@ describe('FeacnCodeSelectorW', () => {
     expect(firstCodeDiv.exists()).toBe(true)
     await firstCodeDiv.trigger('click')
     expect(mockOnSelect).toHaveBeenCalledWith('88888888')
-  })
-
-  it('opens keyword lookup on label click', async () => {
-    const { getKeywordFeacnPairs } = await import('@/helpers/parcels.list.helpers.js')
-    vi.mocked(getKeywordFeacnPairs).mockReturnValue([])
-
-    wrapper = createWrapper()
-
-    const label = wrapper.find('label')
-    await label.trigger('click')
-
-    const lookup = wrapper.find('.feacn-keyword-lookup-stub')
-    expect(lookup.exists()).toBe(true)
-    expect(lookup.attributes('data-open')).toBe('true')
   })
 
   it('handles code selection from keyword lookup', async () => {

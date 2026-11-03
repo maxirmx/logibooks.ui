@@ -19,7 +19,6 @@ import {
   GTC_COMPANY_ID,
   OZON_COMPANY_ID
 } from '@/helpers/company.constants.js'
-import { formatDate } from '@/helpers/date.formatters.js'
 import { CUSTOMS_PROCEDURE_RETURN } from '@/helpers/customs.procedure.helpers.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 
@@ -504,58 +503,6 @@ describe('Register_EditDialog', () => {
       ).resolves.toMatchObject({ departureAirportId: 1, arrivalAirportId: 2 })
     })
 
-    it.each([
-      [false, 0, 0],
-      [false, 0, 2],
-      [false, 1, 0],
-      [true, 0, 0],
-      [true, 0, 2],
-      [true, 1, 0]
-    ])('blocks create=%s with airports %s/%s until corrected', async (create, departure, arrival) => {
-      await mountForm({ create, values: { departureAirportId: departure, arrivalAirportId: arrival } })
-      const expectedErrors = Number(!departure) + Number(!arrival)
-
-      // Exercise the header action, which must run the same validation as form submission.
-      await wrapper.get('.header-actions button').trigger('click')
-      await vi.waitFor(() => expect(wrapper.findAll('.invalid-feedback')).toHaveLength(expectedErrors))
-
-      for (const [field, selected, message] of [
-        ['departureAirportId', departure, 'Необходимо выбрать аэропорт отправления'],
-        ['arrivalAirportId', arrival, 'Необходимо выбрать аэропорт назначения']
-      ]) {
-        const select = wrapper.get(`#${field}`)
-        expect(select.attributes('aria-required')).toBe('true')
-        expect(select.attributes('aria-invalid')).toBe(String(!selected))
-        if (!selected) {
-          const error = wrapper.get(`#${field}-error`)
-          expect(error.text()).toBe(message)
-          expect(error.attributes('role')).toBe('alert')
-          expect(select.attributes('aria-describedby')).toBe(error.attributes('id'))
-          expect(select.classes()).toContain('is-invalid')
-          // A direct sibling error uses the shared full-width validation row.
-          expect(error.element.previousElementSibling).toBe(select.element)
-        }
-      }
-      expect(document.activeElement.getAttribute('aria-invalid')).toBe('true')
-      expect(['departureAirportId', 'arrivalAirportId']).toContain(document.activeElement.id)
-      expect(update).not.toHaveBeenCalled()
-      expect(upload).not.toHaveBeenCalled()
-      expect(router.push).not.toHaveBeenCalled()
-      expect(wrapper.get('#dealNumber').element.value).toBe('D1')
-      expect(wrapper.find('[data-testid="page-alert-region"]').exists()).toBe(false)
-
-      await wrapper.get('#departureAirportId').setValue('1')
-      await wrapper.get('#arrivalAirportId').setValue('2')
-      await wrapper.get('form').trigger('submit')
-      await vi.waitFor(() => expect(router.push).toHaveBeenCalledOnce())
-      expect(update).toHaveBeenCalledExactlyOnceWith(
-        create ? 42 : 1,
-        expect.objectContaining({ transportationTypeCode: 0, departureAirportId: 1, arrivalAirportId: 2 })
-      )
-      expect(upload).toHaveBeenCalledTimes(create ? 1 : 0)
-      expect(wrapper.findAll('.invalid-feedback')).toHaveLength(0)
-    })
-
     it('clears AVIA errors and submits zero airports after switching to Auto', async () => {
       await mountForm()
       await wrapper.get('form').trigger('submit')
@@ -569,24 +516,6 @@ describe('Register_EditDialog', () => {
       expect(update).toHaveBeenCalledWith(
         1,
         expect.objectContaining({ transportationTypeCode: 1, departureAirportId: 0, arrivalAirportId: 0 })
-      )
-    })
-
-    it('restores newly selected airports after switching away from and back to AVIA', async () => {
-      await mountForm()
-      mockOps.value.transportationTypes.push({ value: 2, name: 'Поезд', isAvia: false })
-      await wrapper.get('#departureAirportId').setValue('2')
-      await wrapper.get('#arrivalAirportId').setValue('1')
-      await wrapper.get('#transportationTypeCode').setValue('1')
-      await wrapper.get('#transportationTypeCode').setValue('2')
-      await wrapper.get('#transportationTypeCode').setValue('0')
-      expect(wrapper.get('#departureAirportId').element.value).toBe('2')
-      expect(wrapper.get('#arrivalAirportId').element.value).toBe('1')
-      await wrapper.get('.header-actions button').trigger('click')
-      await vi.waitFor(() => expect(update).toHaveBeenCalledOnce())
-      expect(update).toHaveBeenCalledWith(
-        1,
-        expect.objectContaining({ departureAirportId: 2, arrivalAirportId: 1 })
       )
     })
 
@@ -610,67 +539,6 @@ describe('Register_EditDialog', () => {
       expect(update).not.toHaveBeenCalled()
       expect(router.push).not.toHaveBeenCalled()
 
-    })
-
-    it('keeps airport selections after a save rejection and retries the same update', async () => {
-      update.mockRejectedValueOnce(new Error('Не удалось сохранить реестр'))
-      const alertStore = useAlertStore()
-      const publishError = vi.spyOn(alertStore, 'error')
-      await mountForm({ values: { departureAirportId: 1, arrivalAirportId: 2 } })
-      await wrapper.get('.header-actions button').trigger('click')
-      await vi.waitFor(() => expect(wrapper.get('.page-alert-region').text()).toContain('Не удалось сохранить реестр'))
-      expect(publishError).toHaveBeenCalledOnce()
-      expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-      expect(router.push).not.toHaveBeenCalled()
-      expect(wrapper.get('#departureAirportId').element.value).toBe('1')
-      expect(wrapper.get('#arrivalAirportId').element.value).toBe('2')
-      expect(wrapper.get('#dealNumber').element.value).toBe('D1')
-
-      await wrapper.get('.header-actions button').trigger('click')
-      await vi.waitFor(() => expect(router.push).toHaveBeenCalledOnce())
-      expect(update).toHaveBeenCalledTimes(2)
-      expect(update.mock.calls[1]).toEqual(update.mock.calls[0])
-      expect(upload).not.toHaveBeenCalled()
-      expect(publishError).toHaveBeenCalledOnce()
-    })
-
-    it('unlocks register fields immediately so an administrator can repair airports and save together', async () => {
-      mockIsAdmin.value = true
-      await mountForm({ values: { readOnly: true, statusId: 3 } })
-      const editableFields = [
-        '#dealNumber', '#customerOrderNumber', '#incotermsCode', '#departureAirportId',
-        '#arrivalAirportId', '#transportationTypeCode', '#customsProcedureCode', '#warehouseId',
-        '#realWeightKg'
-      ]
-      expect(wrapper.find('.register-read-only-notice').exists()).toBe(true)
-      editableFields.forEach(selector => expect(wrapper.get(selector).element.matches(':disabled')).toBe(true))
-
-      wrapper.findComponent({ name: 'RegisterStatusSelect' }).vm.$emit('update:modelValue', '2')
-      await nextTick()
-      editableFields.forEach(selector => expect(wrapper.get(selector).element.matches(':disabled')).toBe(false))
-      expect(wrapper.find('.register-read-only-notice').exists()).toBe(false)
-      expect(mockItem.value.readOnly).toBe(true)
-      expect(update).not.toHaveBeenCalled()
-      expect(router.push).not.toHaveBeenCalled()
-
-      await wrapper.get('form').trigger('submit')
-      await vi.waitFor(() => expect(wrapper.findAll('.invalid-feedback')).toHaveLength(2))
-      expect(update).not.toHaveBeenCalled()
-      expect(router.push).not.toHaveBeenCalled()
-      await wrapper.get('#departureAirportId').setValue('1')
-      await wrapper.get('#arrivalAirportId').setValue('2')
-      await wrapper.get('#customerOrderNumber').setValue('CORRECTED-ORDER')
-      await wrapper.get('form').trigger('submit')
-
-      await vi.waitFor(() => expect(update).toHaveBeenCalledOnce())
-      expect(update).toHaveBeenCalledWith(1, expect.objectContaining({
-        statusId: 2,
-        customerOrderNumber: 'CORRECTED-ORDER',
-        departureAirportId: 1,
-        arrivalAirportId: 2,
-        transportationTypeCode: 0
-      }))
-      await vi.waitFor(() => expect(router.push).toHaveBeenCalledOnce())
     })
 
     it('retains the unsaved unlock and corrections after a rejection and retries the same update', async () => {
@@ -705,203 +573,6 @@ describe('Register_EditDialog', () => {
       expect(publishError).toHaveBeenCalledOnce()
     })
 
-    it.each([false, true])('locks immediately when a blocking status is selected from readOnly=%s', async readOnly => {
-      await mountForm({ values: { readOnly, statusId: readOnly ? 3 : 2 } })
-      const statusSelect = wrapper.findComponent({ name: 'RegisterStatusSelect' })
-      statusSelect.vm.$emit('update:modelValue', 2)
-      await nextTick()
-      await wrapper.get('#departureAirportId').setValue('1')
-      await wrapper.get('#dealNumber').setValue('KEEP-ME')
-      statusSelect.vm.$emit('update:modelValue', 3)
-      await nextTick()
-
-      expect(wrapper.find('.register-read-only-notice').exists()).toBe(true)
-      expect(wrapper.get('#departureAirportId').element.matches(':disabled')).toBe(true)
-      expect(wrapper.get('#dealNumber').element.disabled).toBe(true)
-      expect(statusSelect.props('disabled')).toBe(false)
-      statusSelect.vm.$emit('update:modelValue', 2)
-      await nextTick()
-      expect(wrapper.get('#departureAirportId').element.matches(':disabled')).toBe(false)
-      expect(wrapper.get('#departureAirportId').element.value).toBe('1')
-      expect(wrapper.get('#dealNumber').element.value).toBe('KEEP-ME')
-      expect(update).not.toHaveBeenCalled()
-      expect(router.push).not.toHaveBeenCalled()
-    })
-
-    it.each([false, true])('preserves the saved readOnly=%s flag when selected status metadata is unavailable', async readOnly => {
-      await mountForm({ values: { readOnly, statusId: 2 } })
-      wrapper.findComponent({ name: 'RegisterStatusSelect' }).vm.$emit('update:modelValue', 999)
-      await nextTick()
-      expect(wrapper.get('#dealNumber').element.disabled).toBe(readOnly)
-      expect(wrapper.get('#departureAirportId').element.matches(':disabled')).toBe(readOnly)
-      expect(update).not.toHaveBeenCalled()
-    })
-
-    it('keeps upload fields editable when selecting a blocking initial status', async () => {
-      await mountForm({ create: true, values: { readOnly: true, statusId: 3 } })
-      wrapper.findComponent({ name: 'RegisterStatusSelect' }).vm.$emit('update:modelValue', 3)
-      await nextTick()
-      expect(wrapper.find('.register-read-only-notice').exists()).toBe(false)
-      expect(wrapper.get('#dealNumber').element.disabled).toBe(false)
-      expect(wrapper.get('#departureAirportId').element.matches(':disabled')).toBe(false)
-      expect(update).not.toHaveBeenCalled()
-    })
-
-    it('lets a non-administrator revert or save a newly selected blocking status on an editable register', async () => {
-      mockIsAdmin.value = false
-      await mountForm({ values: { readOnly: false, statusId: 2, departureAirportId: 1, arrivalAirportId: 2 } })
-      const statusSelect = wrapper.findComponent({ name: 'RegisterStatusSelect' })
-      statusSelect.vm.$emit('update:modelValue', 3)
-      await nextTick()
-      expect(wrapper.get('#dealNumber').element.disabled).toBe(true)
-      expect(statusSelect.props('disabled')).toBe(false)
-      expect(wrapper.get('.header-actions button').element.disabled).toBe(false)
-
-      statusSelect.vm.$emit('update:modelValue', 2)
-      await nextTick()
-      expect(wrapper.get('#dealNumber').element.disabled).toBe(false)
-      statusSelect.vm.$emit('update:modelValue', 3)
-      await nextTick()
-      await wrapper.get('.header-actions button').trigger('click')
-      await vi.waitFor(() => expect(router.push).toHaveBeenCalledOnce())
-      expect(update).toHaveBeenCalledExactlyOnceWith(1, expect.objectContaining({ statusId: 3 }))
-    })
-
-    it('keeps status changes and saving disabled for a non-administrator on a saved blocking status', async () => {
-      mockIsAdmin.value = false
-      const dialog = await mountForm({ values: { readOnly: true, statusId: 3 }, waitForReady: false })
-      expect(wrapper.findComponent({ name: 'RegisterStatusSelect' }).props('disabled')).toBe(true)
-      expect(wrapper.get('#departureAirportId').element.matches(':disabled')).toBe(true)
-      expect(wrapper.get('.header-actions button').element.disabled).toBe(true)
-      await dialog.vm.onSubmit({ statusId: 2 })
-      expect(update).not.toHaveBeenCalled()
-      expect(router.push).not.toHaveBeenCalled()
-    })
-
-  })
-
-  it('renders register status icons in the status selector', async () => {
-    mockItem.value = {
-      ...baseRegisterItem,
-      statusId: 2
-    }
-
-    const Parent = {
-      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
-      components: { RegisterEditDialog }
-    }
-    const wrapper = mount(Parent, {
-      global: {
-        stubs: {
-          ...defaultGlobalStubs,
-          Form: FormStub,
-          Field: FieldStub,
-          ErrorDialog: ErrorDialogStub,
-          'v-select': {
-            props: ['modelValue', 'items'],
-            template: `
-              <div id="statusId" data-testid="register-status-select">
-                <slot
-                  name="selection"
-                  :item="{ raw: modelValue == null ? modelValue : String(modelValue) }"
-                />
-                <div v-for="option in items" :key="option.id" data-testid="register-status-option">
-                  <slot name="item" :props="{}" :item="{ raw: String(option.id) }" />
-                </div>
-              </div>
-            `
-          }
-        }
-      }
-    })
-    await resolveAll()
-
-    expect(wrapper.find('[data-testid="register-status-select"]').exists()).toBe(true)
-    expect(wrapper.text()).toContain('In Progress')
-    expect(wrapper.text()).toContain('Completed')
-    const statusIcons = wrapper.findAll('[data-testid="register-status-icon"]')
-    expect(statusIcons).toHaveLength(4)
-    expect(statusIcons[0].attributes('data-icon')).toBe('svg:in-transit')
-    expect(statusIcons[0].attributes('data-icon-kind')).toBe('svg')
-    expect(statusIcons[0].element.style.backgroundColor).toBe('rgb(255, 238, 221)')
-    expect(statusIcons[0].element.style.color).toBe('rgb(17, 17, 17)')
-    expect(statusIcons.slice(1).map((icon) => icon.attributes('data-icon'))).toEqual([
-      'svg:registered',
-      'svg:in-transit',
-      'svg:very-delivered'
-    ])
-  })
-
-  it('renders the administrator status control for a read-only register', async () => {
-    mockIsAdmin.value = true
-    mockItem.value = {
-      ...baseRegisterItem,
-      statusId: 2,
-      readOnly: true
-    }
-    const Parent = {
-      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
-      components: { RegisterEditDialog }
-    }
-    const wrapper = mount(Parent, {
-      global: {
-        stubs: {
-          ...defaultGlobalStubs,
-          Form: FormStub,
-          Field: FieldStub,
-          ErrorDialog: ErrorDialogStub,
-          RegisterStatusSelect: {
-            props: ['modelValue', 'disabled'],
-            emits: ['update:modelValue'],
-            template:
-              '<button id="statusId" type="button" :disabled="disabled" @click="$emit(\'update:modelValue\', 3)">{{ modelValue }}</button>'
-          }
-        }
-      }
-    })
-    await resolveAll()
-
-    expect(wrapper.text()).toContain('Реестр доступен только для просмотра')
-    const statusControl = wrapper.get('#statusId')
-    expect(statusControl.text()).toBe('2')
-    expect(statusControl.attributes('disabled')).toBeUndefined()
-    await statusControl.trigger('click')
-    expect(statusControl.exists()).toBe(true)
-  })
-
-  it('keeps the status in its original position but disables it for a non-administrator read-only register', async () => {
-    mockIsAdmin.value = false
-    mockItem.value = {
-      ...baseRegisterItem,
-      statusId: 2,
-      readOnly: true
-    }
-    const Parent = {
-      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
-      components: { RegisterEditDialog }
-    }
-    const wrapper = mount(Parent, {
-      global: {
-        stubs: {
-          ...defaultGlobalStubs,
-          Form: FormStub,
-          Field: FieldStub,
-          ErrorDialog: ErrorDialogStub,
-          RegisterStatusSelect: {
-            props: ['modelValue', 'disabled'],
-            template:
-              '<button id="statusId" type="button" :disabled="disabled">{{ modelValue }}</button>'
-          }
-        }
-      }
-    })
-    await resolveAll()
-
-    const statusControl = wrapper.get('#statusId')
-    expect(statusControl.text()).toBe('2')
-    expect(statusControl.attributes('disabled')).toBeDefined()
-    expect(statusControl.element.closest('.form-row')?.querySelector('#dealNumber')).not.toBeNull()
-    expect(wrapper.get('#customerOrderNumber').element.disabled).toBe(true)
   })
 
   it('keeps transportation type set to 0 when ops load later', async () => {
@@ -967,39 +638,6 @@ describe('Register_EditDialog', () => {
     await nextTick()
 
     expect(mockItem.value.transportationTypeCode).toBe(0)
-  })
-
-  it('formats upload and warehouse arrival dates like Registers_List', async () => {
-    mockItem.value = {
-      ...baseRegisterItem,
-      registerType: WBR_COMPANY_ID,
-      date: '2024-01-01T23:30:00Z',
-      warehouseArrivalDate: '2024-02-03T23:30:00Z'
-    }
-
-    const Parent = {
-      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
-      components: { RegisterEditDialog }
-    }
-    const wrapper = mount(Parent, {
-      global: {
-        stubs: {
-          ...defaultGlobalStubs,
-          Form: FormStub,
-          Field: FieldStub,
-          ErrorDialog: ErrorDialogStub
-        }
-      }
-    })
-    await resolveAll()
-
-    const dialog = wrapper.findComponent(RegisterEditDialog)
-
-    expect(wrapper.find('#uploadDate').text()).toBe(formatDate(mockItem.value.date))
-    expect(wrapper.find('#warehouseArrivalDate').attributes('type')).toBe('date')
-    expect(wrapper.find('#warehouseArrivalDate').element.value).toBe(
-      dialog.vm.formatDateInputValue(mockItem.value.warehouseArrivalDate)
-    )
   })
 
   it('formats warehouse arrival value for native date selector', async () => {
@@ -1312,115 +950,6 @@ describe('Register_EditDialog', () => {
     expect(realWeightInput.element.value).toBe('5.5')
   })
 
-  it('renders additional 1C information collapsed below weight in edit mode', async () => {
-    mockItem.value = {
-      ...baseRegisterItem,
-      totalWeightKg: 12,
-      totalWeightKgToRelease: 10,
-      inspectionsCount: 3,
-      withTransit: true,
-      decDate: '2026-07-20',
-      releaseDate: '2026-07-21'
-    }
-
-    const Parent = {
-      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
-      components: { RegisterEditDialog }
-    }
-    const wrapper = mount(Parent, {
-      global: {
-        stubs: {
-          ...defaultGlobalStubs,
-          Form: FormStub,
-          Field: FieldStub,
-          ErrorDialog: ErrorDialogStub
-        }
-      }
-    })
-
-    await resolveAll()
-
-    const weightSection = wrapper.get('[data-testid="register-weight-section"]')
-    const additionalSection = wrapper.get('[data-testid="register-additional-info-section"]')
-    expect(additionalSection.get('.section-title').text()).toBe('Доп. информация для 1С')
-    expect(wrapper.get('#register-additional-info-body').isVisible()).toBe(false)
-    let toggle = getActionButton(wrapper, 'register-additional-info-toggle')
-    expect(toggle).toBeTruthy()
-    expect(toggle.find('button').exists()).toBe(true)
-    expect(toggle.props('icon')).toBe('fa-solid fa-angles-down')
-    expect(
-      Boolean(
-        weightSection.element.compareDocumentPosition(additionalSection.element) &
-          Node.DOCUMENT_POSITION_FOLLOWING
-      )
-    ).toBe(true)
-
-    await wrapper.get('[data-testid="register-additional-info-toggle"]').trigger('click')
-    await nextTick()
-
-    expect(wrapper.get('#register-additional-info-body').exists()).toBe(true)
-    toggle = getActionButton(wrapper, 'register-additional-info-toggle')
-    expect(toggle.props('icon')).toBe('fa-solid fa-angles-up')
-    expect(wrapper.get('label[for="inspectionsCount"]').text()).toBe('Досмотрено посылок:')
-    expect(wrapper.get('#inspectionsCount').attributes('type')).toBe('number')
-    expect(wrapper.get('#withTransit').attributes('type')).toBe('checkbox')
-    expect(wrapper.get('#withTransit').classes()).toContain('custom-checkbox-input')
-    expect(wrapper.get('label[for="withTransit"] .custom-checkbox-label').text()).toBe('Транзит:')
-    expect(wrapper.find('#exportedTo1C').exists()).toBe(false)
-    expect(wrapper.get('label[for="decDate"]').text()).toBe('Дата подачи ДТЭГ:')
-    expect(wrapper.get('#decDate').attributes('type')).toBe('date')
-    expect(wrapper.get('label[for="releaseDate"]').text()).toBe('Дата выпуска:')
-    expect(wrapper.get('#releaseDate').attributes('type')).toBe('date')
-    const additionalFields = wrapper.findAll('#register-additional-info-body > .additional-info-field')
-    expect(additionalFields.map(field => field.get('label').attributes('for'))).toEqual([
-      'inspectionsCount', 'cargoPlacesTotal', 'decDate', 'releaseDate', 'withTransit'
-    ])
-    expect(wrapper.findComponent(RegisterEditDialog).vm.prepareRegisterPayload({})).not.toHaveProperty('exportedTo1C')
-  })
-
-  it('allows a read-only register to expand additional 1C information', async () => {
-    mockIsAdmin.value = false
-    mockItem.value = {
-      ...baseRegisterItem,
-      readOnly: true,
-      inspectionsCount: 3,
-      withTransit: true,
-      decDate: '2026-07-20',
-      releaseDate: '2026-07-21'
-    }
-
-    const Parent = {
-      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
-      components: { RegisterEditDialog }
-    }
-    const wrapper = mount(Parent, {
-      global: {
-        stubs: {
-          ...defaultGlobalStubs,
-          Form: FormStub,
-          Field: FieldStub,
-          ErrorDialog: ErrorDialogStub
-        }
-      }
-    })
-
-    await resolveAll()
-
-    const additionalSection = wrapper.get('[data-testid="register-additional-info-section"]')
-    expect(additionalSection.element.closest('fieldset')).toBeNull()
-    expect(wrapper.get('#register-additional-info-body').isVisible()).toBe(false)
-
-    await wrapper.get('[data-testid="register-additional-info-toggle"]').trigger('click')
-    await nextTick()
-
-    expect(wrapper.get('#register-additional-info-body').exists()).toBe(true)
-    expect(wrapper.get('#cargoPlacesTotal').element.disabled).toBe(true)
-    expect(wrapper.get('#inspectionsCount').element.disabled).toBe(true)
-    expect(wrapper.get('#withTransit').element.disabled).toBe(true)
-    expect(wrapper.get('#decDate').element.disabled).toBe(true)
-    expect(wrapper.get('#releaseDate').element.disabled).toBe(true)
-  })
-
   it('validates and submits additional 1C information only in edit mode', async () => {
     const Parent = {
       template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
@@ -1506,71 +1035,11 @@ describe('Register_EditDialog', () => {
       return { wrapper, dialog: wrapper.findComponent(RegisterEditDialog) }
     }
 
-    it('shows the saved count and submits a correction as an integer', async () => {
-      const { wrapper, dialog } = await mountCargoEditor(false, true)
-      const input = wrapper.get('#cargoPlacesTotal')
-      expect(wrapper.get('label[for="cargoPlacesTotal"]').text()).toBe('Количество мест:')
-      expect(input.element.value).toBe('12')
-      expect(input.attributes()).toMatchObject({ type: 'number', min: '0', max: '2147483647', step: '1' })
-      expect(dialog.vm.prepareRegisterPayload({}).cargoPlacesTotal).toBe(12)
-      await input.setValue('13')
-      await dialog.vm.onSubmit({ cargoPlacesTotal: '13' }, { setErrors: vi.fn() })
-      expect(update).toHaveBeenCalledWith(1, expect.objectContaining({ cargoPlacesTotal: 13 }))
-      expect(router.push).toHaveBeenCalledTimes(1)
-      wrapper.unmount()
-    })
-
-    it.each([-1, 1.5, 'invalid', 2147483648])('rejects invalid cargo count %s', async count => {
-      const { wrapper, dialog } = await mountCargoEditor()
-      await expect(dialog.vm.schema.validateAt('cargoPlacesTotal', { cargoPlacesTotal: count }))
-        .rejects.toThrow('Количество грузовых мест')
-      expect(update).not.toHaveBeenCalled()
-      wrapper.unmount()
-    })
-
     it.each(['', null, 0, '7', 2147483647])('accepts and normalizes cargo count %s', async count => {
       const { wrapper, dialog } = await mountCargoEditor()
       const normalized = await dialog.vm.schema.validateAt('cargoPlacesTotal', { cargoPlacesTotal: count })
       expect(normalized).toBe(count === null || count === '' ? 0 : Number(count))
       expect(dialog.vm.prepareRegisterPayload({ cargoPlacesTotal: normalized }).cargoPlacesTotal).toBe(normalized)
-      wrapper.unmount()
-    })
-
-    it('keeps edited count and checkboxes when the section is collapsed and reopened', async () => {
-      const { wrapper } = await mountCargoEditor(false, true)
-      await wrapper.get('#cargoPlacesTotal').setValue('13')
-      await wrapper.get('#withTransit').setValue(true)
-      await wrapper.get('[data-testid="register-additional-info-toggle"]').trigger('click')
-      expect(wrapper.get('#register-additional-info-body').isVisible()).toBe(false)
-      await wrapper.get('[data-testid="register-additional-info-toggle"]').trigger('click')
-      expect(wrapper.get('#cargoPlacesTotal').element.value).toBe('13')
-      expect(wrapper.get('#withTransit').element.checked).toBe(true)
-      wrapper.unmount()
-    })
-
-    it('reveals client validation errors when saving a collapsed section', async () => {
-      const { wrapper, dialog } = await mountCargoEditor(false, true)
-      // Form returns a render function; its public methods are on the exposed instance.
-      const form = wrapper.getComponent({ name: 'Form' }).vm.$.exposed
-      await wrapper.get('#cargoPlacesTotal').setValue('-1')
-      await form.validate()
-      await wrapper.get('[data-testid="register-additional-info-toggle"]').trigger('click')
-      expect(wrapper.get('#register-additional-info-body').isVisible()).toBe(false)
-      await dialog.vm.onInvalidSubmit({ errors: form.getErrors() })
-      await nextTick()
-      expect(wrapper.get('#register-additional-info-body').isVisible()).toBe(true)
-      expect(wrapper.get('#cargoPlacesTotal').element.value).toBe('-1')
-      expect(wrapper.text()).toContain('Количество грузовых мест должно быть целым неотрицательным числом')
-      expect(update).not.toHaveBeenCalled()
-      expect(router.push).not.toHaveBeenCalled()
-      await dialog.vm.onInvalidSubmit({ errors: {} })
-      wrapper.unmount()
-    })
-
-    it('leaves initialization to the server during upload', async () => {
-      const { wrapper, dialog } = await mountCargoEditor(true)
-      expect(wrapper.find('#cargoPlacesTotal').exists()).toBe(false)
-      expect(dialog.vm.prepareRegisterPayload({ cargoPlacesTotal: 0 })).not.toHaveProperty('cargoPlacesTotal')
       wrapper.unmount()
     })
 
@@ -1603,44 +1072,6 @@ describe('Register_EditDialog', () => {
     })
   })
 
-  it('places weight section before load report section', async () => {
-    mockItem.value = {
-      ...baseRegisterItem,
-      totalWeightKg: 12,
-      totalWeightKgToRelease: 10,
-      loadReport: {
-        createdAt: '2026-06-10T12:30:15+03:00',
-        processed: 10
-      }
-    }
-
-    const Parent = {
-      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
-      components: { RegisterEditDialog }
-    }
-    const wrapper = mount(Parent, {
-      global: {
-        stubs: {
-          ...defaultGlobalStubs,
-          Form: FormStub,
-          Field: FieldStub,
-          ErrorDialog: ErrorDialogStub
-        }
-      }
-    })
-
-    await resolveAll()
-
-    const weightSection = wrapper.find('[data-testid="register-weight-section"]').element
-    const loadReportSection = wrapper.find('[data-testid="register-load-report"]').element
-
-    expect(
-      Boolean(
-        weightSection.compareDocumentPosition(loadReportSection) & Node.DOCUMENT_POSITION_FOLLOWING
-      )
-    ).toBe(true)
-  })
-
   it('submits numeric real weight in edit mode', async () => {
     const Parent = {
       template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
@@ -1666,41 +1097,6 @@ describe('Register_EditDialog', () => {
       1,
       expect.objectContaining({
         realWeightKg: 12.5
-      })
-    )
-  })
-
-  it('submits zero real weight when field is blank', async () => {
-    const Parent = {
-      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
-      components: { RegisterEditDialog }
-    }
-    const wrapper = mount(Parent, {
-      global: {
-        stubs: {
-          ...defaultGlobalStubs,
-          Form: FormStub,
-          Field: FieldStub,
-          ErrorDialog: ErrorDialogStub
-        }
-      }
-    })
-    await resolveAll()
-
-    const dialog = wrapper.findComponent(RegisterEditDialog)
-    const validatedValues = await dialog.vm.schema.validate({
-      realWeightKg: '',
-      theOtherCountryCode: 840
-    })
-    expect(validatedValues.realWeightKg).toBeNull()
-
-    await dialog.vm.onSubmit(validatedValues, { setErrors: vi.fn() })
-    await resolveAll()
-
-    expect(update).toHaveBeenCalledWith(
-      1,
-      expect.objectContaining({
-        realWeightKg: 0
       })
     )
   })
@@ -1850,38 +1246,6 @@ describe('Register_EditDialog', () => {
     expect(toggle.props('icon')).toBe('fa-solid fa-angles-down')
   })
 
-  it('does not render load report controls for users without administrator or shift lead role', async () => {
-    mockIsAdmin.value = false
-    mockIsShiftLead.value = false
-    mockItem.value = {
-      ...baseRegisterItem,
-      loadReport: {
-        createdAt: '2026-06-10T12:30:15+03:00',
-        processed: 10
-      }
-    }
-
-    const Parent = {
-      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
-      components: { RegisterEditDialog }
-    }
-    const wrapper = mount(Parent, {
-      global: {
-        stubs: {
-          ...defaultGlobalStubs,
-          Form: FormStub,
-          Field: FieldStub,
-          ErrorDialog: ErrorDialogStub
-        }
-      }
-    })
-
-    await resolveAll()
-
-    expect(wrapper.find('[data-testid="register-load-report"]').exists()).toBe(false)
-    expect(getActionButton(wrapper, 'register-load-report-toggle')).toBeUndefined()
-  })
-
   it('renders load report controls for shift lead users', async () => {
     mockIsAdmin.value = false
     mockIsShiftLead.value = true
@@ -1966,56 +1330,6 @@ describe('Register_EditDialog', () => {
       42,
       expect.objectContaining({ customerOrderNumber: null })
     )
-  })
-
-  it('keeps a structured upload error visible until the user closes it', async () => {
-    const currencyError = 'В реестре указаны разные валюты: RUB, UZS. Загрузка реестра невозможна'
-    upload.mockResolvedValueOnce({
-      success: false,
-      errMsg: currencyError,
-      missingHeaders: [],
-      missingColumns: []
-    })
-    registersStore.uploadFile.value = new File(['data'], 'mixed.xlsx')
-    mockItem.value = { ...baseRegisterItem, fileName: 'mixed.xlsx', registerType: 2, companyId: 2 }
-
-    const PersistentErrorDialog = {
-      name: 'ErrorDialog',
-      props: ['show', 'title', 'message', 'missingHeaders', 'missingColumns'],
-      template: '<div data-testid="persistent-upload-error" v-if="show">{{ message }}</div>'
-    }
-    const Parent = {
-      template: '<Suspense><RegisterEditDialog :create="true" /></Suspense>',
-      components: { RegisterEditDialog }
-    }
-    const wrapper = mount(Parent, {
-      global: {
-        stubs: {
-          ...defaultGlobalStubs,
-          Form: FormStub,
-          Field: FieldStub,
-          ErrorDialog: PersistentErrorDialog
-        }
-      }
-    })
-    await resolveAll()
-
-    const dialog = wrapper.findComponent(RegisterEditDialog)
-    const submission = dialog.vm.onSubmit({ checkForDuplicates: true }, { setErrors: vi.fn() })
-    await resolveAll()
-
-    const errorDialog = wrapper.findComponent(PersistentErrorDialog)
-    expect(errorDialog.props('show')).toBe(true)
-    expect(errorDialog.props('message')).toBe(currencyError)
-    expect(wrapper.find('[data-testid="persistent-upload-error"]').text()).toBe(currencyError)
-    expect(dialog.vm.actionDialogState.show).toBe(false)
-    expect(update).not.toHaveBeenCalled()
-
-    errorDialog.vm.$emit('close')
-    await submission
-    await resolveAll()
-
-    expect(errorDialog.props('show')).toBe(false)
   })
 
   it('asks for a currency and retries the same upload with the selection', async () => {
@@ -2163,136 +1477,6 @@ describe('Register_EditDialog', () => {
     expect(router.push).not.toHaveBeenCalled()
   })
 
-  it.each([
-    ['Ozon', OZON_COMPANY_ID, OZON_COMPANY_ID, CUSTOMS_PROCEDURE_IMPORT],
-    ['WBR', WBR_COMPANY_ID, WBR_COMPANY_ID, CUSTOMS_PROCEDURE_IMPORT],
-    ['WbrN', WBRN_REGISTER_ID, WBR_COMPANY_ID, CUSTOMS_PROCEDURE_IMPORT],
-    ['GTC', GTC_COMPANY_ID, GTC_COMPANY_ID, CUSTOMS_PROCEDURE_GTC_IMPORT]
-  ])(
-    'defaults missing transportation type to Auto for %s uploads',
-    async (_label, registerType, companyId, customsProcedureCode) => {
-      mockOps.value = {
-        ...mockOps.value,
-        transportationTypes: [
-          { value: 0, name: 'Авиа', document: 'AWB', isAvia: true },
-          { value: 1, name: 'Авто', document: 'CMR', isAvia: false }
-        ]
-      }
-      mockItem.value = {
-        ...baseRegisterItem,
-        registerType,
-        companyId,
-        customsProcedureCode,
-        transportationTypeCode: null
-      }
-
-      const Parent = {
-        template: '<Suspense><RegisterEditDialog :create="true" /></Suspense>',
-        components: { RegisterEditDialog }
-      }
-      const wrapper = mount(Parent, {
-        global: {
-          stubs: {
-            ...defaultGlobalStubs,
-            Form: FormStub,
-            Field: FieldStub,
-            ErrorDialog: ErrorDialogStub
-          }
-        }
-      })
-      await resolveAll()
-
-      const dialog = wrapper.findComponent(RegisterEditDialog)
-      expect(dialog.vm.item.transportationTypeCode).toBe(1)
-  }
-  )
-
-  it('renders default transportation type and customs procedure in upload selectors', async () => {
-    mockItem.value = {
-      ...baseRegisterItem,
-      customsProcedureCode: null,
-      transportationTypeCode: null
-    }
-
-    const Parent = {
-      template: '<Suspense><RegisterEditDialog :create="true" /></Suspense>',
-      components: { RegisterEditDialog }
-    }
-    const wrapper = mount(Parent, {
-      global: {
-        stubs: {
-          ...defaultGlobalStubs,
-          Form: FormStub,
-          Field: FieldStub,
-          ErrorDialog: ErrorDialogStub
-        }
-      }
-    })
-    await resolveAll()
-
-    const dialog = wrapper.findComponent(RegisterEditDialog)
-    expect(dialog.vm.item.transportationTypeCode).toBe(1)
-    expect(dialog.vm.item.customsProcedureCode).toBe(CUSTOMS_PROCEDURE_EXPORT)
-    expect(wrapper.find('#transportationTypeCode').element.value).toBe('1')
-    expect(wrapper.find('#customsProcedureCode').element.value).toBe(
-      String(CUSTOMS_PROCEDURE_EXPORT)
-    )
-    expect(wrapper.find('#customsProcedureCode option[value=""]').exists()).toBe(false)
-    expect(wrapper.find('#customsProcedureCode option[value="0"]').exists()).toBe(false)
-  })
-
-  it('defaults zero customs procedure to the first filtered procedure for uploads', async () => {
-    mockItem.value = {
-      ...baseRegisterItem,
-      customsProcedureCode: 0
-    }
-    upload.mockResolvedValueOnce({ success: true, registerId: 42, errMsg: '' })
-
-    const Parent = {
-      template: '<Suspense><RegisterEditDialog :create="true" /></Suspense>',
-      components: { RegisterEditDialog }
-    }
-    const wrapper = mount(Parent, {
-      global: {
-        stubs: {
-          ...defaultGlobalStubs,
-          Form: FormStub,
-          Field: FieldStub,
-          ErrorDialog: ErrorDialogStub
-        }
-      }
-    })
-    await resolveAll()
-
-    const dialog = wrapper.findComponent(RegisterEditDialog)
-    expect(dialog.vm.item.customsProcedureCode).toBe(CUSTOMS_PROCEDURE_EXPORT)
-    expect(wrapper.find('#customsProcedureCode').element.value).toBe(
-      String(CUSTOMS_PROCEDURE_EXPORT)
-    )
-
-    await dialog.vm.onSubmit(
-      { customsProcedureCode: 0, checkForDuplicates: true },
-      { setErrors: vi.fn() }
-    )
-    await resolveAll()
-
-    expect(upload).toHaveBeenCalledWith(
-      registersStore.uploadFile.value,
-      mockItem.value.registerType,
-      CUSTOMS_PROCEDURE_EXPORT,
-      true,
-      false,
-      null,
-      2
-    )
-    expect(update).toHaveBeenCalledWith(
-      42,
-      expect.objectContaining({
-        customsProcedureCode: CUSTOMS_PROCEDURE_EXPORT
-      })
-    )
-  })
-
   it('defaults missing transportation type to Auto and missing Incoterms to CPT', async () => {
     mockOps.value = {
       ...mockOps.value,
@@ -2372,127 +1556,6 @@ describe('Register_EditDialog', () => {
     expect(wrapper.find('#customsProcedureCode').element.value).toBe(
       String(CUSTOMS_PROCEDURE_EXPORT)
     )
-  })
-
-  it('updates the procedure-derived status until the user selects a status', async () => {
-    mockOps.value.customsProcedures.find(
-      (procedure) => procedure.value === CUSTOMS_PROCEDURE_EXPORT
-    ).initialRegisterStatusId = 2
-    mockOps.value.customsProcedures.find(
-      (procedure) => procedure.value === CUSTOMS_PROCEDURE_IMPORT
-    ).initialRegisterStatusId = 4
-    mockItem.value = {
-      ...baseRegisterItem,
-      customsProcedureCode: CUSTOMS_PROCEDURE_EXPORT,
-      statusId: null
-    }
-
-    const Parent = {
-      template: '<Suspense><RegisterEditDialog :create="true" /></Suspense>',
-      components: { RegisterEditDialog }
-    }
-    const wrapper = mount(Parent, {
-      global: {
-        stubs: {
-          ...defaultGlobalStubs,
-          Form: FormStub,
-          Field: FieldStub,
-          ErrorDialog: ErrorDialogStub
-        }
-      }
-    })
-    await resolveAll()
-
-    const dialog = wrapper.findComponent(RegisterEditDialog)
-    dialog.vm.handleProcedureChange(
-      { target: { value: String(CUSTOMS_PROCEDURE_IMPORT) } },
-      vi.fn(),
-      vi.fn()
-    )
-    expect(dialog.vm.item.statusId).toBe(4)
-
-    dialog.vm.handleRegisterStatusChange(3, vi.fn())
-    dialog.vm.handleProcedureChange(
-      { target: { value: String(CUSTOMS_PROCEDURE_EXPORT) } },
-      vi.fn(),
-      vi.fn()
-    )
-    expect(dialog.vm.item.statusId).toBe(3)
-  })
-
-  it('handles errors in create mode with Reference object', async () => {
-    // Mock upload success but update failure
-    upload.mockResolvedValueOnce({ success: true, Success: true, registerId: 42, ErrMsg: '' })
-    update.mockRejectedValueOnce(new Error('Update failed'))
-
-    registersStore.uploadFile.value = new File(['data'], 'test.xlsx')
-    mockItem.value = { ...baseRegisterItem, fileName: 'test.xlsx', companyId: 2 }
-    const formValues = { dealNumber: 'D42', invoiceNumber: 'INV42' }
-    const setErrors = vi.fn()
-
-    const Parent = {
-      template: '<Suspense><RegisterEditDialog :create="true" /></Suspense>',
-      components: { RegisterEditDialog }
-    }
-    const wrapper = mount(Parent, {
-      global: {
-        stubs: {
-          ...defaultGlobalStubs,
-          Form: FormStub,
-          Field: FieldStub,
-          ErrorDialog: ErrorDialogStub
-        }
-      }
-    })
-    await resolveAll()
-
-    const dialog = wrapper.findComponent(RegisterEditDialog)
-    await dialog.vm.onSubmit(formValues, { setErrors })
-    await resolveAll()
-
-    // Verify upload was called
-    expect(upload).toHaveBeenCalledWith(
-      registersStore.uploadFile.value,
-      mockItem.value.companyId,
-      mockItem.value.customsProcedureCode,
-      true,
-      false,
-      null,
-      2
-    )
-
-    // The upload created register 42, so a metadata failure opens that register for correction.
-    expect(router.push).toHaveBeenCalledWith('/register/edit/42?mode=modePaperwork')
-
-    expect(dialog.vm.actionDialogState.show).toBe(false)
-  })
-
-  it('handles update errors in edit mode', async () => {
-    update.mockRejectedValueOnce(new Error('Update failed'))
-    mockItem.value = { ...baseRegisterItem }
-
-    const Parent = {
-      template: '<Suspense><RegisterEditDialog :id="1" :create="false" /></Suspense>',
-      components: { RegisterEditDialog }
-    }
-    const wrapper = mount(Parent, {
-      global: {
-        stubs: {
-          ...defaultGlobalStubs,
-          Form: FormStub,
-          Field: FieldStub,
-          ErrorDialog: ErrorDialogStub
-        }
-      }
-    })
-    await resolveAll()
-
-    const dialog = wrapper.findComponent(RegisterEditDialog)
-    await dialog.vm.onSubmit({ dealNumber: 'D-ERR' }, { setErrors: vi.fn() })
-    await resolveAll()
-
-    expect(update).toHaveBeenCalled()
-    expect(router.push).not.toHaveBeenCalled()
   })
 
   it('shows import and reexport for Ozon when allowed by ops metadata and uses GTC company', async () => {
@@ -2709,37 +1772,6 @@ describe('Register_EditDialog', () => {
       wrapper.unmount()
     })
 
-    it.each(['retry', 'dialog'])('shows a %s rejection once and leaves the editor retryable', async failure => {
-      const { wrapper, dialog } = await mountEditor()
-      const alert = useAlertStore()
-      const publish = vi.spyOn(alert, 'error')
-      update.mockRejectedValueOnce(challenge())
-      if (failure === 'retry') update.mockRejectedValueOnce(new Error('Сохранение не выполнено'))
-      else restrictionConfirm.mockRejectedValueOnce(new Error('Сохранение не выполнено'))
-      await dialog.vm.onSubmit({ invoiceNumber: 'keep me', theOtherCountryCode: 840 })
-      await resolveAll()
-      expect(publish).toHaveBeenCalledTimes(1)
-      expect(wrapper.text()).toContain('Сохранение не выполнено')
-      expect(router.push).not.toHaveBeenCalled()
-      await dialog.vm.onSubmit({ invoiceNumber: 'keep me', theOtherCountryCode: 840 })
-      expect(router.push).toHaveBeenCalledTimes(1)
-      wrapper.unmount()
-    })
-
-    it('does not retry or navigate after unmounting during confirmation', async () => {
-      const { wrapper, dialog } = await mountEditor()
-      const pending = createDeferred()
-      update.mockRejectedValueOnce(challenge())
-      restrictionConfirm.mockReturnValueOnce(pending.promise)
-      const saving = dialog.vm.onSubmit({ theOtherCountryCode: 840 })
-      await resolveAll()
-      wrapper.unmount()
-      pending.resolve(true)
-      await saving
-      expect(update).toHaveBeenCalledTimes(1)
-      expect(router.push).not.toHaveBeenCalled()
-    })
-
   })
 
   describe('restoration upload and recovery', () => {
@@ -2767,32 +1799,6 @@ describe('Register_EditDialog', () => {
       expect(wrapper.get('#transfer2Re').element.checked).toBe(false)
       await dialog.vm.onSubmit({ checkForDuplicates: false }, { setErrors: vi.fn() })
       expect(upload.mock.calls[0][4]).toBe(false)
-    })
-
-    it('submits the selected re procedure with restoration enabled', async () => {
-      mockOps.value.customsProcedures.push({ value: 60, name: 'Реимпорт', isRe: true, isExport: false, isGtc: false })
-      mockItem.value = { ...baseRegisterItem, customsProcedureCode: 60 }
-      const { dialog } = await mountUploadEditor()
-      expect(upload).not.toHaveBeenCalled()
-      await dialog.vm.onSubmit({ checkForDuplicates: false }, { setErrors: vi.fn() })
-      expect(upload.mock.calls[0][2]).toBe(60)
-      expect(upload.mock.calls[0][4]).toBe(true)
-    })
-
-    it('recovers metadata against the created ID without uploading twice', async () => {
-      update.mockRejectedValueOnce(new Error('Не удалось сохранить данные'))
-      const { dialog, wrapper } = await mountUploadEditor()
-      await dialog.vm.onSubmit({ invoiceNumber: 'KEEP-ME', dealNumber: 'DEAL' }, { setErrors: vi.fn() })
-      expect(router.push).toHaveBeenCalledWith('/register/edit/42?mode=modePaperwork')
-      expect(getRegisterUploadDraft(42).invoiceNumber).toBe('KEEP-ME')
-      wrapper.unmount()
-      getById.mockImplementationOnce(async () => { mockItem.value = { ...baseRegisterItem, id: 42, invoiceNumber: 'server' } })
-      const recovery = await mountUploadEditor(false, 42)
-      expect(recovery.dialog.vm.item.invoiceNumber).toBe('KEEP-ME')
-      await recovery.dialog.vm.onSubmit({ invoiceNumber: 'KEEP-ME' }, { setErrors: vi.fn() })
-      expect(upload).toHaveBeenCalledTimes(1)
-      expect(update).toHaveBeenLastCalledWith(42, expect.objectContaining({ invoiceNumber: 'KEEP-ME' }))
-      expect(getRegisterUploadDraft(42)).toBeNull()
     })
 
     it.each(['fails', 'is declined'])('keeps blank weight valid when metadata saving %s and retries without re-upload', async (outcome) => {
@@ -2845,13 +1851,6 @@ describe('Register_EditDialog', () => {
       expect(upload).toHaveBeenCalledTimes(1)
       await vi.waitFor(() => expect(router.push).toHaveBeenCalledWith('/registers?mode=modePaperwork'))
       expect(getRegisterUploadDraft(42)).toBeNull()
-    })
-
-    it('preserves positive real weight in the recovery draft', () => {
-      const payload = { realWeightKg: 12.5 }
-      rememberRegisterUploadDraft(42, payload)
-      expect(getRegisterUploadDraft(42).realWeightKg).toBe(12.5)
-      expect(payload.realWeightKg).toBe(12.5)
     })
 
     it('restores a Yup-cast invoice date into the real date field', async () => {

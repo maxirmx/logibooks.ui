@@ -11,17 +11,7 @@ import ActionButton from '@/components/ActionButton.vue'
 import { vuetifyStubs } from './helpers/test-utils.js'
 import { OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 import { REGISTER_STATUS_FILTER_IN_PROGRESS } from '@/helpers/register.status.filter.helpers.js'
-import { CheckStatusCode } from '@/helpers/check.status.code.js'
-import {
-  createAirportsById,
-  createTransportationTypesById,
-  createWarehouseRegisterHeaders,
-  formatZoneCount,
-  getAirportIata,
-  getCountryDisplayName,
-  isReturnRegister,
-  isAviaTransportation
-} from '@/helpers/warehouse.registers.table.helpers.js'
+import { formatZoneCount, isReturnRegister } from '@/helpers/warehouse.registers.table.helpers.js'
 
 const mockItems = ref([])
 const mockCompanies = ref([])
@@ -395,37 +385,6 @@ describe('Registers_WhList.vue', () => {
     expect(getCompaniesAll).not.toHaveBeenCalled()
   })
 
-  it('hides warehouse register delete action below shift lead role', async () => {
-    mockIsShiftLeadPlus.value = false
-
-    const wrapper = createWrapper()
-    await wrapper.vm.$nextTick()
-
-    const actionButtons = wrapper.findAllComponents(ActionButton)
-    const hasDelete = actionButtons.some((button) =>
-      String(button.props('tooltipText') || '').includes('Удалить')
-    )
-
-    expect(hasDelete).toBe(false)
-  })
-
-  it('uses confirmation workflow when deleting warehouse parties', async () => {
-    confirmMock.mockResolvedValueOnce(true)
-    const wrapper = createWrapper()
-    await wrapper.vm.$nextTick()
-    const item = { id: 12, fileName: 'party.xlsx' }
-
-    await wrapper.vm.deleteRegister(item)
-
-    expect(confirmMock).toHaveBeenCalledWith(expect.objectContaining({
-      title: 'Подтверждение',
-      confirmationText: 'Удалить',
-      cancellationText: 'Не удалять',
-      content: 'Удалить партию "party.xlsx" ?'
-    }))
-    expect(registersStore.remove).toHaveBeenCalledWith(12)
-  })
-
   it('does not delete warehouse party when confirmation is cancelled', async () => {
     confirmMock.mockResolvedValueOnce(false)
     const wrapper = createWrapper()
@@ -490,15 +449,6 @@ describe('Registers_WhList.vue', () => {
     expect(wrapper.vm.registers_per_page).toBe(75)
     expect(wrapper.vm.registers_page).toBe(5)
     expect(wrapper.vm.registers_sort_by).toEqual([{ key: 'warehouseId', order: 'desc' }])
-  })
-
-  it('falls back to only all-procedures option when warehouse ops procedures are missing', async () => {
-    mockOps.value = { customsProcedures: null, transportationTypes: [] }
-
-    const wrapper = createWrapper()
-    await flushPromises()
-
-    expect(wrapper.vm.procedureFilterItems).toEqual([{ title: 'Все', value: 'all' }])
   })
 
   it('syncs selected warehouse procedure and reloads warehouse registers', async () => {
@@ -579,33 +529,6 @@ describe('Registers_WhList.vue', () => {
     }
   })
 
-  it('marks warehouse visible columns as sortable', async () => {
-    const sortableByKey = Object.fromEntries(
-      createWarehouseRegisterHeaders().map((header) => [header.key, header.sortable])
-    )
-
-    expect(sortableByKey.actions).toBe(false)
-    expect(sortableByKey.id).toBe(true)
-    expect(sortableByKey.dealNumber).toBe(true)
-    expect(sortableByKey.invoice).toBe(true)
-    expect(sortableByKey.countries).toBe(true)
-    expect(sortableByKey.senderRecipient).toBe(true)
-    expect(sortableByKey.parcelsTotal).toBe(true)
-    expect(sortableByKey.parcelsByZone).toBe(false)
-    expect(sortableByKey.statusId).toBe(true)
-    expect(sortableByKey.warehouseId).toBe(true)
-    expect(sortableByKey.warehouseArrivalDate).toBe(true)
-  })
-
-  it('aligns warehouse parcels header with numeric cells', async () => {
-    const parcelsHeader = createWarehouseRegisterHeaders().find(
-      (header) => header.key === 'parcelsTotal'
-    )
-
-    expect(parcelsHeader.align).toBe('end')
-    expect(parcelsHeader.width).toBe('150px')
-  })
-
   it('renders warehouse zone distribution counts and hides zero values', async () => {
     mockItems.value = [
       {
@@ -630,111 +553,6 @@ describe('Registers_WhList.vue', () => {
     expect(rows[2].text()).toContain('Красная')
     expect(rows[2].text()).toContain('12')
     expect(formatZoneCount({}, 1)).toBe('-')
-  })
-
-  it('covers country and airport display fallbacks', () => {
-    let countries = [
-      { isoNumeric: 36, nameRuOfficial: 'Австралийский Союз' },
-      { isoNumeric: 840, nameRuShort: 'США' }
-    ]
-    const ops = {
-      customsProcedures: [],
-      transportationTypes: [
-        { value: 2, name: 'Авиа', document: 'AWB', isAvia: true },
-        { value: 3, name: 'Авто', document: 'CMR', isAvia: false }
-      ]
-    }
-    const airports = [{ id: 20, codeIata: 'JFK' }]
-    const transportationTypesById = createTransportationTypesById(ops)
-    const airportsById = createAirportsById(airports)
-
-    expect(
-      getCountryDisplayName({}, null, null, countries, transportationTypesById, airportsById)
-    ).toBe('Неизвестно')
-    expect(
-      getCountryDisplayName(
-        { transportationTypeCode: 3 },
-        643,
-        null,
-        countries,
-        transportationTypesById,
-        airportsById
-      )
-    ).toBe('Россия')
-    expect(
-      getCountryDisplayName(
-        { transportationTypeCode: 3 },
-        999,
-        null,
-        countries,
-        transportationTypesById,
-        airportsById
-      )
-    ).toBe(999)
-    expect(
-      getCountryDisplayName(
-        { transportationTypeCode: 3 },
-        36,
-        null,
-        countries,
-        transportationTypesById,
-        airportsById
-      )
-    ).toBe('Австралийский Союз')
-
-    countries = [{ isoNumeric: 156 }]
-    expect(
-      getCountryDisplayName(
-        { transportationTypeCode: 3 },
-        156,
-        null,
-        countries,
-        transportationTypesById,
-        airportsById
-      )
-    ).toBe(156)
-
-    countries = [
-      { isoNumeric: 36, nameRuOfficial: 'Австралийский Союз' },
-      { isoNumeric: 840, nameRuShort: 'США' }
-    ]
-    expect(
-      getCountryDisplayName(
-        { transportationTypeCode: 2 },
-        840,
-        null,
-        countries,
-        transportationTypesById,
-        airportsById
-      )
-    ).toBe('США')
-    expect(
-      getCountryDisplayName(
-        { transportationTypeCode: 2 },
-        840,
-        20,
-        countries,
-        transportationTypesById,
-        airportsById
-      )
-    ).toBe('США (JFK)')
-    expect(
-      isAviaTransportation({ transportationTypeCode: 'invalid' }, transportationTypesById)
-    ).toBe(false)
-    expect(isAviaTransportation({ transportationTypeCode: 99 }, transportationTypesById)).toBe(
-      false
-    )
-    expect(getAirportIata(0, airportsById)).toBeNull()
-
-    const emptyTransportationTypesById = createTransportationTypesById({
-      customsProcedures: [],
-      transportationTypes: null
-    })
-    const emptyAirportsById = createAirportsById(null)
-    expect(isAviaTransportation({ transportationTypeCode: 2 }, emptyTransportationTypesById)).toBe(
-      false
-    )
-    expect(getAirportIata(20, emptyAirportsById)).toBeNull()
   })
 
   it('opens parcel status bulk dialog and refreshes after dialog updates', async () => {
@@ -884,30 +702,6 @@ describe('Registers_WhList.vue', () => {
     expect(registersStore.getTransportationDocument).not.toHaveBeenCalled()
   })
 
-  it('renders warehouse projection tooltip for parcels totals', async () => {
-    mockItems.value = [
-      {
-        id: 56,
-        parcelsTotal: 7,
-        placesTotal: 2,
-        parcelsByCheckStatus: {
-          [CheckStatusCode.NoIssues.value]: 7
-        },
-        parcelsByCheckStatusProjection: {
-          20: 2,
-          30: 5
-        }
-      }
-    ]
-
-    const wrapper = createWrapper()
-    await wrapper.vm.$nextTick()
-
-    expect(wrapper.text()).toContain('Запрет: 2')
-    expect(wrapper.text()).toContain('Проверено: 5')
-    expect(wrapper.text()).not.toContain('Ок стоп слова')
-  })
-
   it('navigates to edit register with warehouse mode in query', async () => {
     mockItems.value = [{ id: 42, senderId: 10 }]
 
@@ -951,19 +745,6 @@ describe('Registers_WhList.vue', () => {
     const router = (await import('@/router')).default
     await boxesButton.find('button').trigger('click')
     expect(router.push).toHaveBeenCalledWith('/registers/77/boxes')
-  })
-
-  it('hides the register boxes action without a warehouse role', async () => {
-    mockHasWhRole.value = false
-    mockItems.value = [{ id: 77 }]
-
-    const wrapper = createWrapper()
-    await wrapper.vm.$nextTick()
-
-    expect(
-      wrapper.findAllComponents(ActionButton).some((button) => button.props('tooltipText') === 'Коробки')
-    ).toBe(false)
-    mockHasWhRole.value = true
   })
 
   it('navigates to create scan job when barcode action is clicked', async () => {

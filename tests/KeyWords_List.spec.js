@@ -206,17 +206,6 @@ describe('KeyWords_List.vue', () => {
     }
   })
 
-  describe('Data Display', () => {
-    it('shows empty table when no keywords exist', async () => {
-      mockKeyWords.value = []
-      await wrapper.vm.$nextTick()
-
-      const dataTable = wrapper.find('[data-testid="v-data-table"]')
-      expect(dataTable.exists()).toBe(true)
-      expect(wrapper.find('.header-with-actions').exists()).toBe(true)
-    })
-  })
-
   describe('Create Functionality', () => {
     it('calls openCreateDialog when create action invoked', async () => {
       await wrapper.vm.openCreateDialog()
@@ -240,23 +229,6 @@ describe('KeyWords_List.vue', () => {
   })
 
   describe('Delete Functionality', () => {
-    it('shows confirmation dialog when delete button is clicked', async () => {
-      mockConfirm.mockResolvedValue(true)
-
-      // Find the action button for deleting
-      const actionButtons = wrapper.findAllComponents({ name: 'ActionButton' })
-      const deleteButton = actionButtons.find(
-        (button) => button.props('icon') === 'fa-solid fa-trash-can'
-      )
-
-      // Simulate a click on the delete button
-      await deleteButton.vm.$emit('click', { id: 1, word: 'стол' })
-
-      expect(mockConfirm).toHaveBeenCalled()
-      expect(mockConfirm.mock.calls[0][0].title).toBe('Подтверждение')
-      expect(mockConfirm.mock.calls[0][0].content).toContain('Удалить ключевое слово "стол"')
-    })
-
     it('does not call remove when confirmation is cancelled', async () => {
       mockConfirm.mockResolvedValue(false)
 

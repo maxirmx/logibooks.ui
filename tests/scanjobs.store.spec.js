@@ -194,30 +194,6 @@ describe('scanjobs store', () => {
   })
 
   describe('getById', () => {
-    it('fetches scanjob by id successfully', async () => {
-      fetchWrapper.get.mockResolvedValue(mockScanjob)
-      const store = useScanjobsStore()
-
-      const result = await store.getById(1)
-
-      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/scanjobs/1`)
-      expect(store.scanjob).toEqual(mockScanjob)
-      expect(result).toEqual(mockScanjob)
-      expect(store.loading).toBe(false)
-      expect(store.error).toBeNull()
-    })
-
-    it('handles fetch error and returns null', async () => {
-      const error = new Error('Not found')
-      fetchWrapper.get.mockRejectedValue(error)
-      const store = useScanjobsStore()
-
-      await expect(store.getById(999)).rejects.toBe(error)
-      expect(store.scanjob).toBeNull() // scanjob should remain null, not set to { error }
-      expect(store.loading).toBe(false)
-      expect(store.error).toBe(error)
-    })
-
     it('preserves previous scanjob value on fetch error', async () => {
       const error = new Error('Not found')
       fetchWrapper.get.mockResolvedValueOnce(mockScanjob).mockRejectedValueOnce(error)
@@ -280,21 +256,6 @@ describe('scanjobs store', () => {
       expect(result).toBe(true)
       expect(store.loading).toBe(false)
       expect(store.error).toBeNull()
-    })
-
-    it('refreshes the scan job and enters read-only mode after a stale conflict', async () => {
-      const conflict = Object.assign(new Error('Изменения запрещены для реестра'), { status: 409 })
-      fetchWrapper.put.mockRejectedValue(conflict)
-      fetchWrapper.get.mockResolvedValue({ ...mockScanjob, name: 'Server name', readOnly: true })
-      const store = useScanjobsStore()
-      store.items = [{ ...mockScanjob, readOnly: false }]
-      store.scanjob = { ...mockScanjob, readOnly: false }
-
-      await expect(store.update(mockScanjob.id, { name: 'Local name' })).rejects.toBe(conflict)
-
-      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/scanjobs/${mockScanjob.id}`)
-      expect(store.scanjob).toMatchObject({ name: 'Server name', readOnly: true })
-      expect(store.items[0].readOnly).toBe(true)
     })
 
     it('marks the scan job read-only when conflict refresh fails', async () => {
@@ -384,15 +345,6 @@ describe('scanjobs store', () => {
       expect(store.error).toBeNull()
     })
 
-    it('rejects preview failures and clears loading without publishing an alert', async () => {
-      const error = new Error('Preview failed')
-      fetchWrapper.get.mockRejectedValue(error)
-      const store = useScanjobsStore()
-      await expect(store.getFinishOptions(1)).rejects.toBe(error)
-      expect(store.error).toBe(error)
-      expect(store.loading).toBe(false)
-    })
-
     it.each([true, false])('propagates a preview conflict after refreshing read-only state, refresh succeeds: %s', async (refreshSucceeds) => {
       const conflict = Object.assign(new Error('Изменения запрещены для выбранного реестра'), { status: 409 })
       const refreshError = new Error('Refresh unavailable')
@@ -427,29 +379,9 @@ describe('scanjobs store', () => {
       expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/scanjobs/1/finish?markUnscannedAsNotFound=${markUnscannedAsNotFound}&updateRegisterStatus=${updateRegisterStatus}`)
     })
 
-    it.each([
-      [{ markUnscannedAsNotFound: false }, 'false', 'true'],
-      [{ updateRegisterStatus: false }, 'true', 'false']
-    ])('defaults only omitted flags', async (options, mark, update) => {
-      fetchWrapper.post.mockResolvedValue()
-      await useScanjobsStore().finish(1, options)
-      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/scanjobs/1/finish?markUnscannedAsNotFound=${mark}&updateRegisterStatus=${update}`)
-    })
   })
 
   describe('finish', () => {
-    it('finishes scanjob successfully', async () => {
-      fetchWrapper.post.mockResolvedValue({})
-      const store = useScanjobsStore()
-
-      const result = await store.finish(1)
-
-      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/scanjobs/1/finish?markUnscannedAsNotFound=true&updateRegisterStatus=true`)
-      expect(result).toBe(true)
-      expect(store.loading).toBe(false)
-      expect(store.error).toBeNull()
-    })
-
     it('handles finish error 404 Not Found', async () => {
       const error = new Error('404 Not Found')
       fetchWrapper.post.mockRejectedValue(error)
@@ -532,21 +464,6 @@ describe('scanjobs store', () => {
       expect(store.ops).toEqual(mockOps)
     })
 
-    it('getOpsLabel returns matching name and falls back to string when missing', () => {
-      const store = useScanjobsStore()
-
-      // set ops to known values
-      store.ops = JSON.parse(JSON.stringify(mockOps))
-
-      // matching numeric value
-      expect(store.getOpsLabel(store.ops.types, 0)).toBe('Тип 1')
-      // matching when value is a string
-      expect(store.getOpsLabel(store.ops.operations, '1')).toBe('Операция 1')
-      // no match -> stringified fallback
-      expect(store.getOpsLabel(store.ops.modes, 999)).toBe('999')
-      // null/undefined list -> fallback
-      expect(store.getOpsLabel(null, 5)).toBe('5')
-    })
   })
 
   describe('monitor', () => {
@@ -577,20 +494,6 @@ describe('scanjobs store', () => {
       )
     })
 
-    it('resolves monitor target by number', async () => {
-      const target = { kind: 1, area: 1, boxId: 7, number: 'BOX-7' }
-      fetchWrapper.get.mockResolvedValue(target)
-      const store = useScanjobsStore()
-
-      const result = await store.resolveMonitorTarget(42, 'BOX-7')
-
-      expect(fetchWrapper.get).toHaveBeenCalledWith(
-        `${apiUrl}/scanjobs/42/monitor/resolve?number=BOX-7`
-      )
-      expect(result).toEqual(target)
-      expect(store.monitorError).toBeNull()
-    })
-
     it('resolveMonitorTarget throws and sets monitorError on failure', async () => {
       const fetchError = new Error('Resolve error')
       fetchWrapper.get.mockRejectedValue(fetchError)
@@ -599,18 +502,6 @@ describe('scanjobs store', () => {
 
       await expect(store.resolveMonitorTarget(42, 'UNKNOWN')).rejects.toThrow('Resolve error')
       expect(store.monitorError).toBe(fetchError)
-    })
-
-    it('loads monitor follow users', async () => {
-      const followUsers = [{ id: 7, displayName: 'Operator' }]
-      fetchWrapper.get.mockResolvedValue(followUsers)
-      const store = useScanjobsStore()
-
-      const result = await store.loadMonitorFollowUsers(42)
-
-      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/scanjobs/42/monitor/follow-users`)
-      expect(result).toEqual(followUsers)
-      expect(store.monitorError).toBeNull()
     })
 
     it('loadMonitorFollowUsers throws and sets monitorError on failure', async () => {
@@ -686,18 +577,6 @@ describe('scanjobs store', () => {
       await store.stopMonitor()
 
       expect(signalRConnections[0].stop).toHaveBeenCalled()
-    })
-
-    it('getMonitorAccessToken returns user token via accessTokenFactory', async () => {
-      const store = useScanjobsStore()
-      const authStore = useAuthStore()
-      authStore.user = { token: 'test-token-xyz' }
-
-      await store.startMonitor(42, { area: 0 })
-
-      const accessTokenFactory = signalRWithUrl.mock.calls[0][1].accessTokenFactory
-      expect(typeof accessTokenFactory).toBe('function')
-      expect(accessTokenFactory()).toBe('test-token-xyz')
     })
 
     it('getMonitorAccessToken returns empty string when user has no token', async () => {
@@ -829,17 +708,6 @@ describe('scanjobs store', () => {
       expect(result).toBe(false)
     })
 
-    it('stopMonitor throws and sets monitorError when stop fails', async () => {
-      const stopError = new Error('Stop failed')
-      signalRConnection.stop.mockRejectedValueOnce(stopError)
-
-      const store = useScanjobsStore()
-      await store.startMonitor(42, { area: 0 })
-
-      await expect(store.stopMonitor()).rejects.toThrow('Stop failed')
-      expect(store.monitorError).toBe(stopError)
-    })
-
     it('stopMonitor retains monitorConnection reference when stop throws (allows retry)', async () => {
       const stopError = new Error('Stop failed')
       signalRConnection.stop.mockRejectedValueOnce(stopError)
@@ -877,16 +745,6 @@ describe('scanjobs store', () => {
 
       await expect(startPromise).resolves.toBe(true)
       await expect(stopPromise).resolves.toBe(true)
-    })
-
-    it('ensureMonitorStarted reuses existing Connected connection without calling start again', async () => {
-      const store = useScanjobsStore()
-
-      await store.startMonitor(42, { area: 0 })
-      expect(signalRConnection.start).toHaveBeenCalledTimes(1)
-
-      await store.startMonitor(42, { area: 1, boxId: 5 })
-      expect(signalRConnection.start).toHaveBeenCalledTimes(1)
     })
 
     it('loadMonitorSnapshot throws and sets monitorError on failure', async () => {

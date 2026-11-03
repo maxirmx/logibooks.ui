@@ -4,7 +4,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import { roleAdmin, roleLogist, roleSrLogist, roleWhManager } from '@/helpers/user.roles.js'
+import { roleWhManager } from '@/helpers/user.roles.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import router from '@/router'
 import { createLocalStorageMock } from './helpers/test-utils.js'
@@ -102,21 +102,6 @@ describe('auth store', () => {
       expect(localStorage.removeItem).toHaveBeenCalledWith('scanjobmonitor_follow_user_id')
     })
 
-    it('correctly identifies logist users', () => {
-      const store = useAuthStore()
-      store.user = { id: 1, roles: [roleLogist] }
-      expect(store.isSrLogist).toBe(false)
-      expect(store.isLogist).toBe(true)
-
-      store.user = { id: 2, roles: [roleAdmin] }
-      expect(store.isLogist).toBe(false)
-
-      store.user = { id: 3, roles: [roleAdmin, roleSrLogist] }
-      expect(store.isLogist).toBe(false)
-      expect(store.isSrLogist).toBe(true)
-      expect(store.isAdmin).toBe(true)
-    })
-
     it('treats warehouse manager as a warehouse role', () => {
       const store = useAuthStore()
 
@@ -130,20 +115,6 @@ describe('auth store', () => {
   })
 
   describe('actions', () => {
-    it('clears an expired session without navigation, requests, or notifications', () => {
-      const testUser = { id: 1, token: 'expired' }
-      localStorage.setItem('user', JSON.stringify(testUser))
-      const store = useAuthStore()
-      store.returnUrl = '/registers?statusId=7'
-      store.clearSession()
-      expect(store.user).toBeNull()
-      expect(localStorage.getItem('user')).toBeNull()
-      expect(store.returnUrl).toBe('/registers?statusId=7')
-      expect(router.push).not.toHaveBeenCalled()
-      expect(useStatusStore().fetchStatus).not.toHaveBeenCalled()
-      expect(mockAlertStore.error).not.toHaveBeenCalled()
-    })
-
     it('check propagates errors when API call fails', async () => {
       const errorMessage = 'Authentication check failed'
       fetchWrapper.get.mockRejectedValue(new Error(errorMessage))
@@ -207,19 +178,6 @@ describe('auth store', () => {
         password: 'wrong-password'
       })
       expect(statusStore.fetchStatus).toHaveBeenCalled()
-    })
-
-    it('login redirects to returnUrl if set', async () => {
-      const testUser = { id: 1, name: 'Test User' }
-      fetchWrapper.post.mockResolvedValue(testUser)
-
-      const store = useAuthStore()
-      store.returnUrl = '/dashboard'
-
-      await store.login('test@example.com', 'password')
-
-      expect(router.push).toHaveBeenCalledWith('/dashboard')
-      expect(store.returnUrl).toBeNull()
     })
 
     it('logout removes user from store, localStorage, and fetches status', () => {

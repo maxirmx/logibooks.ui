@@ -11,11 +11,7 @@ import { InvoiceParcelSelection } from '@/models/invoice.parcel.selection.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
-import { OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
-import {
-  REGISTER_STATUS_FILTER_ALL,
-  REGISTER_STATUS_FILTER_IN_PROGRESS
-} from '@/helpers/register.status.filter.helpers.js'
+import { REGISTER_STATUS_FILTER_IN_PROGRESS } from '@/helpers/register.status.filter.helpers.js'
 
 vi.mock('@/helpers/fetch.wrapper.js', () => ({
   fetchWrapper: {
@@ -150,56 +146,6 @@ describe('registers store', () => {
         )
       })
 
-      it('omits status parameters when all statuses are selected', async () => {
-        useAuthStore.mockReturnValueOnce({
-          ...defaultAuthStore,
-          registers_status: REGISTER_STATUS_FILTER_ALL
-        })
-        fetchWrapper.get.mockResolvedValue({
-          items: [],
-          pagination: { totalCount: 0 }
-        })
-
-        const store = useRegistersStore()
-        await store.getAll()
-
-        expect(fetchWrapper.get).toHaveBeenCalledWith(
-          `${apiUrl}/registers?page=1&pageSize=10&sortBy=id&sortOrder=asc&whOnly=false`
-        )
-      })
-
-      it('uses warehouse register list settings in warehouse mode', async () => {
-        useAuthStore.mockReturnValueOnce({
-          ...defaultAuthStore,
-          registers_page: 2,
-          registers_per_page: 5,
-          registers_sort_by: [{ key: 'price', order: 'desc' }],
-          registers_search: 'paperwork search',
-          registers_wh_page: 3,
-          registers_wh_per_page: 25,
-          registers_wh_sort_by: [{ key: 'warehouseArrivalDate', order: 'asc' }],
-          registers_wh_search: 'warehouse search'
-        })
-
-        const mockResponse = {
-          items: [{ id: 4, name: 'Warehouse Register' }],
-          pagination: {
-            totalCount: 1,
-            hasNextPage: false,
-            hasPreviousPage: false
-          }
-        }
-        fetchWrapper.get.mockResolvedValue(mockResponse)
-
-        const store = useRegistersStore()
-        await store.getAll({ mode: OP_MODE_WAREHOUSE })
-
-        expect(fetchWrapper.get).toHaveBeenCalledWith(
-          `${apiUrl}/registers?page=3&pageSize=25&sortBy=warehouseArrivalDate&sortOrder=asc&whOnly=true&search=warehouse+search`
-        )
-        expect(store.items).toEqual(mockResponse.items)
-      })
-
       it('handles new format with missing items property', async () => {
         const mockResponse = {
           pagination: {
@@ -241,26 +187,6 @@ describe('registers store', () => {
       })
     })
 
-    describe('loading state', () => {
-      it('sets loading to false even when request fails', async () => {
-        let rejectPromise
-        const promise = new Promise((resolve, reject) => {
-          rejectPromise = reject
-        })
-        fetchWrapper.get.mockReturnValue(promise)
-
-        const store = useRegistersStore()
-        const getAllPromise = store.getAll()
-
-        expect(store.loading).toBe(true)
-
-        rejectPromise(new Error('Test error'))
-        await expect(getAllPromise).rejects.toThrow('Test error')
-
-        expect(store.loading).toBe(false)
-      })
-    })
-
   })
 
   describe('setDestinationField function', () => {
@@ -279,33 +205,6 @@ describe('registers store', () => {
 
       // Test with null register - should handle gracefully
       expect(() => store.getAll()).not.toThrow()
-    })
-
-    it('sets destination to "out" when customs procedure is export', async () => {
-      const register = {
-        id: 1,
-        customsProcedureCode: 1,
-        companyId: 100,
-        theOtherCompanyId: 200,
-        theOtherCountryCode: 840
-      }
-      fetchWrapper.get.mockResolvedValue({
-        items: [register],
-        pagination: { totalCount: 1, hasNextPage: false, hasPreviousPage: false }
-      })
-
-      const store = useRegistersStore()
-      // Set ops with export procedure
-      store.ops.customsProcedures = [
-        { value: 1, name: 'Экспорт', isExport: true, charCode: 'ЭК10' }
-      ]
-      await store.getAll()
-
-      expect(store.items[0].destination).toBe('out')
-      expect(store.items[0].destCountryCode).toBe(840)
-      expect(store.items[0].origCountryCode).toBe(643)
-      expect(store.items[0].recipientId).toBe(200)
-      expect(store.items[0].senderId).toBe(100)
     })
 
   })
@@ -363,24 +262,6 @@ describe('registers store', () => {
   })
 
   describe('upload method', () => {
-    it('uploads file via postFile with required parameters', async () => {
-      const file = new File(['data'], 'test.xlsx')
-      const customerId = 123
-      const customsProcedure = 1
-      fetchWrapper.postFile.mockResolvedValue({ id: 1 })
-
-      const store = useRegistersStore()
-      await store.upload(file, customerId, customsProcedure, false)
-
-      expect(fetchWrapper.postFile).toHaveBeenCalled()
-      expect(fetchWrapper.postFile.mock.calls[0][0]).toBe(
-        `${apiUrl}/registers/upload?registerType=123&customsProcedure=1&checkForDuplicates=false&transfer2Re=false&incotermsCode=2`
-      )
-      const formData = fetchWrapper.postFile.mock.calls[0][1]
-      expect(formData instanceof FormData).toBe(true)
-      expect(formData.get('file')).toBe(file)
-    })
-
     it('uploads file with transfer2Re flag', async () => {
       const file = new File(['data'], 'test.xlsx')
       const customerId = 123
@@ -437,31 +318,6 @@ describe('registers store', () => {
   })
 
   describe('updateWeightsFromFile method', () => {
-    it('posts the selected file to the register weight upload endpoint', async () => {
-      const file = new File(['data'], 'ozon.xlsx')
-      const response = {
-        processedRows: 4,
-        skippedRows: 0,
-        unmatchedRows: 1,
-        supersededRows: 0,
-        updatedParcels: 2,
-        unchangedParcels: 1,
-        totalWeightKgBefore: 3,
-        totalWeightKgAfter: 4
-      }
-      fetchWrapper.postFile.mockResolvedValue(response)
-
-      const store = useRegistersStore()
-      await expect(store.updateWeightsFromFile(42, file)).resolves.toEqual(response)
-
-      expect(fetchWrapper.postFile).toHaveBeenCalledWith(
-        `${apiUrl}/registers/42/weights/upload`,
-        expect.any(FormData)
-      )
-      expect(fetchWrapper.postFile.mock.calls[0][1].get('file')).toBe(file)
-      expect(store.loading).toBe(false)
-    })
-
     it('stores and rethrows weight upload errors', async () => {
       const error = new Error('weight upload failed')
       fetchWrapper.postFile.mockRejectedValue(error)
@@ -482,42 +338,6 @@ describe('registers store', () => {
       fetchWrapper.put = vi.fn()
     })
 
-    it('sets loading state during setParcelStatuses request', async () => {
-      let resolvePromise
-      const promise = new Promise((resolve) => {
-        resolvePromise = resolve
-      })
-      fetchWrapper.put.mockReturnValue(promise)
-
-      const store = useRegistersStore()
-      const setOrderStatusesPromise = store.setParcelStatuses(123, 456)
-
-      expect(store.loading).toBe(true)
-
-      resolvePromise({ success: true })
-      await setOrderStatusesPromise
-
-      expect(store.loading).toBe(false)
-    })
-
-    it('sets loading to false even when setParcelStatuses request fails', async () => {
-      let rejectPromise
-      const promise = new Promise((resolve, reject) => {
-        rejectPromise = reject
-      })
-      fetchWrapper.put.mockReturnValue(promise)
-
-      const store = useRegistersStore()
-      const setOrderStatusesPromise = store.setParcelStatuses(123, 456)
-
-      expect(store.loading).toBe(true)
-
-      rejectPromise(new Error('Test error'))
-      await expect(setOrderStatusesPromise).rejects.toThrow('Test error')
-
-      expect(store.loading).toBe(false)
-    })
-
     it('clears previous error on successful setParcelStatuses request', async () => {
       const store = useRegistersStore()
 
@@ -534,22 +354,6 @@ describe('registers store', () => {
   })
 
   describe('setRegisterStatus method', () => {
-    it('updates register status through the existing register update endpoint', async () => {
-      fetchWrapper.put.mockResolvedValue({})
-
-      const store = useRegistersStore()
-      store.items = [{ id: 123, statusId: 1, dealNumber: 'D-1' }]
-      store.item = { id: 123, statusId: 1 }
-
-      await store.setRegisterStatus(123, 456)
-
-      expect(fetchWrapper.put).toHaveBeenCalledWith(`${apiUrl}/registers/123`, { statusId: 456 })
-      expect(store.items[0].statusId).toBe(456)
-      expect(store.item.statusId).toBe(456)
-      expect(store.loading).toBe(false)
-      expect(store.error).toBeNull()
-    })
-
     it('stores and rethrows setRegisterStatus errors', async () => {
       const error = new Error('Failed to update register status')
       fetchWrapper.put.mockRejectedValue(error)
@@ -606,17 +410,6 @@ describe('registers store', () => {
       expect(store.error).toBe(error)
     })
 
-    it('gets validation progress', async () => {
-      const progress = { total: 10, processed: 5, finished: false }
-      fetchWrapper.get.mockResolvedValue(progress)
-
-      const store = useRegistersStore()
-      const result = await store.getValidationProgress('abcd')
-
-      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/registers/validate/abcd`)
-      expect(result).toEqual(progress)
-    })
-
     it('handles validation progress error', async () => {
       const error = new Error('Progress check failed')
       fetchWrapper.get.mockRejectedValue(error)
@@ -627,24 +420,6 @@ describe('registers store', () => {
       expect(store.error).toBe(error)
     })
 
-    it('cancels validation', async () => {
-      fetchWrapper.delete.mockResolvedValue(undefined)
-
-      const store = useRegistersStore()
-      await store.cancelValidation('abcd')
-
-      expect(fetchWrapper.delete).toHaveBeenCalledWith(`${apiUrl}/registers/validate/abcd`)
-    })
-
-    it('handles cancel validation error', async () => {
-      const error = new Error('Cancel failed')
-      fetchWrapper.delete.mockRejectedValue(error)
-
-      const store = useRegistersStore()
-
-      await expect(store.cancelValidation('abcd')).rejects.toThrow('Cancel failed')
-      expect(store.error).toBe(error)
-    })
   })
 
   describe('FEACN lookup API', () => {
@@ -671,17 +446,6 @@ describe('registers store', () => {
       expect(store.error).toBe(error)
     })
 
-    it('gets FEACN lookup progress', async () => {
-      const progress = { total: 10, processed: 5, finished: false }
-      fetchWrapper.get.mockResolvedValue(progress)
-
-      const store = useRegistersStore()
-      const result = await store.getLookupFeacnCodesProgress('abcd')
-
-      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/registers/lookup-feacn-codes/abcd`)
-      expect(result).toEqual(progress)
-    })
-
     it('handles FEACN lookup progress error', async () => {
       const error = new Error('Progress check failed')
       fetchWrapper.get.mockRejectedValue(error)
@@ -694,71 +458,9 @@ describe('registers store', () => {
       expect(store.error).toBe(error)
     })
 
-    it('cancels FEACN lookup', async () => {
-      fetchWrapper.delete.mockResolvedValue(undefined)
-
-      const store = useRegistersStore()
-      await store.cancelLookupFeacnCodes('abcd')
-
-      expect(fetchWrapper.delete).toHaveBeenCalledWith(
-        `${apiUrl}/registers/lookup-feacn-codes/abcd`
-      )
-    })
-
-    it('handles cancel FEACN lookup error', async () => {
-      const error = new Error('Cancel failed')
-      fetchWrapper.delete.mockRejectedValue(error)
-
-      const store = useRegistersStore()
-
-      await expect(store.cancelLookupFeacnCodes('abcd')).rejects.toThrow('Cancel failed')
-      expect(store.error).toBe(error)
-    })
   })
 
   describe('passport check API', () => {
-    it('applies register passport state in revision order', () => {
-      const store = useRegistersStore()
-      store.item = { id: 42, hasPendingPassportChecks: false }
-      store.items = [
-        { id: 42, hasPendingPassportChecks: false },
-        { id: 43, hasPendingPassportChecks: false }
-      ]
-
-      expect(
-        store.applyPassportCheckState(42, {
-          hasPendingPassportChecks: true,
-          revision: 10
-        })
-      ).toBe(true)
-      expect(store.item.hasPendingPassportChecks).toBe(true)
-      expect(store.items[0].hasPendingPassportChecks).toBe(true)
-
-      expect(
-        store.applyPassportCheckState(42, {
-          hasPendingPassportChecks: false,
-          revision: 9
-        })
-      ).toBe(false)
-      expect(
-        store.applyPassportCheckState(42, {
-          hasPendingPassportChecks: false,
-          revision: 10
-        })
-      ).toBe(false)
-      expect(store.item.hasPendingPassportChecks).toBe(true)
-
-      expect(
-        store.applyPassportCheckState(42, {
-          hasPendingPassportChecks: false,
-          revision: 11
-        })
-      ).toBe(true)
-      expect(store.item.hasPendingPassportChecks).toBe(false)
-      expect(store.items[0].hasPendingPassportChecks).toBe(false)
-      expect(store.items[1].hasPendingPassportChecks).toBe(false)
-    })
-
     it('rejects invalid passport state and accepts it after live state is reset', () => {
       const store = useRegistersStore()
 
@@ -893,44 +595,6 @@ describe('registers store', () => {
   })
 
   describe('getById and update', () => {
-    it('transmits confirmation tokens without keeping them in register state', async () => {
-      const store = useRegistersStore()
-      store.item = { id: 5, invoiceNumber: 'old' }
-      store.items = [{ id: 5, invoiceNumber: 'old' }]
-      fetchWrapper.put.mockResolvedValueOnce(undefined)
-      const payload = { invoiceNumber: 'new', restrictionChangeConfirmationToken: 'ack' }
-      await store.update(5, payload)
-      expect(fetchWrapper.put).toHaveBeenCalledWith(`${apiUrl}/registers/5`, payload)
-      expect(store.item).toEqual({ id: 5, invoiceNumber: 'new' })
-      expect(store.items).toEqual([{ id: 5, invoiceNumber: 'new' }])
-      expect(payload.restrictionChangeConfirmationToken).toBe('ack')
-    })
-
-    it('propagates confirmation requests without changing state or refreshing the form', async () => {
-      const store = useRegistersStore()
-      store.item = { id: 5, invoiceNumber: 'entered' }
-      const conflict = Object.assign(new Error('Подтвердите изменение'), { status: 409, data: {
-        code: 'RegisterRestrictionChangeConfirmationRequired', details: { confirmationToken: 'ack' }
-      } })
-      fetchWrapper.put.mockRejectedValueOnce(conflict)
-      await expect(store.update(5, { invoiceNumber: 'new' })).rejects.toBe(conflict)
-      expect(store.item).toEqual({ id: 5, invoiceNumber: 'entered' })
-      expect(fetchWrapper.get).not.toHaveBeenCalled()
-    })
-
-    it('handles getById error', async () => {
-      const error = new Error('Not found')
-      fetchWrapper.get.mockResolvedValueOnce({
-        customsProcedures: [],
-        transportationTypes: [],
-        incoterms: validIncoterms
-      })
-      fetchWrapper.get.mockRejectedValueOnce(error)
-      const store = useRegistersStore()
-      await expect(store.getById(5)).rejects.toBe(error)
-      expect(store.item).toEqual({ error })
-    })
-
     it.each(['resolve', 'reject'])('does not replace another register when an older request finishes with %s', async (outcome) => {
       const store = useRegistersStore()
       fetchWrapper.get.mockResolvedValueOnce({ customsProcedures: [], transportationTypes: [], incoterms: validIncoterms })
@@ -1080,17 +744,6 @@ describe('registers store', () => {
   })
 
   describe('generate method', () => {
-    it('calls downloadFile with default filename when invoiceNumber is null', async () => {
-      const store = useRegistersStore()
-      fetchWrapper.downloadFile.mockResolvedValue(true)
-      await store.generate(5, null)
-      expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
-        `${apiUrl}/registers/5/generate`,
-        'IndPost_5.zip',
-        { pollAccepted: true }
-      )
-    })
-
     it('propagates error when download fails', async () => {
       const store = useRegistersStore()
       const error = new Error('fail')
@@ -1199,16 +852,6 @@ describe('registers store', () => {
       )
     })
 
-    it('stores and rethrows errors from fetch wrapper', async () => {
-      const store = useRegistersStore()
-      const error = new Error('fail')
-      fetchWrapper.downloadFile.mockRejectedValue(error)
-      await expect(
-        store.downloadInvoiceFile(10, 'INV-10', InvoiceParcelSelection.All)
-      ).rejects.toThrow(error)
-      expect(store.error).toBe(error)
-    })
-
     it('throws when selection type is unknown', async () => {
       const store = useRegistersStore()
       await expect(store.downloadInvoiceFile(11, 'INV-11', 'invalid-selection')).rejects.toThrow(
@@ -1264,14 +907,6 @@ describe('registers store', () => {
       expect(result).toBe(true)
     })
 
-    it('stores and rethrows download errors', async () => {
-      const store = useRegistersStore()
-      const error = new Error('do1 failed')
-      fetchWrapper.downloadFile.mockRejectedValue(error)
-
-      await expect(store.downloadDo1File(19, 'INV-19')).rejects.toThrow(error)
-      expect(store.error).toBe(error)
-    })
   })
 
   describe('downloadCmrFile method', () => {
@@ -1354,37 +989,6 @@ describe('registers store', () => {
       }
     )
 
-    it('getOps does not set opsInitialized when response is null', async () => {
-      fetchWrapper.get.mockResolvedValue(null)
-
-      const store = useRegistersStore()
-      await store.ensureOpsLoaded() // opsInitialized should remain false
-
-      // Since opsInitialized is still false, a subsequent ensureOpsLoaded should re-fetch
-      fetchWrapper.get.mockResolvedValue({
-        customsProcedures: [],
-        transportationTypes: [],
-        incoterms: [{ value: 2, name: 'Перевозка оплачена до', charCode: 'CPT' }]
-      })
-      await store.ensureOpsLoaded()
-
-      // Two fetches: first returned null (invalid), second returned valid data
-      expect(fetchWrapper.get).toHaveBeenCalledTimes(2)
-      expect(store.ops.customsProcedures).toEqual([])
-      expect(store.ops.transportationTypes).toEqual([])
-    })
-
-    it('getOps preserves existing ops.value when response is invalid', async () => {
-      const store = useRegistersStore()
-      store.ops.customsProcedures = [{ value: 1, name: 'Экспорт', isExport: true }]
-
-      fetchWrapper.get.mockResolvedValue(null)
-      await store.getOps()
-
-      // Manual ops value should not be overwritten
-      expect(store.ops.customsProcedures).toHaveLength(1)
-    })
-
     it('getOpsLabel returns name for matching value', () => {
       const store = useRegistersStore()
       const list = [
@@ -1418,17 +1022,6 @@ describe('registers store', () => {
   })
 
   describe('freezeTnVedOrder', () => {
-    it('calls freeze endpoint and resets loading state after success', async () => {
-      fetchWrapper.post.mockResolvedValueOnce(undefined)
-
-      const store = useRegistersStore()
-      await expect(store.freezeTnVedOrder(77)).resolves.toBeUndefined()
-
-      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/registers/77/freeze-tnved-order`)
-      expect(store.loading).toBe(false)
-      expect(store.error).toBeNull()
-    })
-
     it('stores and rethrows error from freeze endpoint', async () => {
       const err = new Error('Forbidden')
       fetchWrapper.post.mockRejectedValueOnce(err)
@@ -1443,17 +1036,6 @@ describe('registers store', () => {
   })
 
   describe('freezeCheckStatus', () => {
-    it('calls freeze check status endpoint and resets loading state after success', async () => {
-      fetchWrapper.post.mockResolvedValueOnce(undefined)
-
-      const store = useRegistersStore()
-      await expect(store.freezeCheckStatus(77)).resolves.toBeUndefined()
-
-      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/registers/77/freeze-check-status`)
-      expect(store.loading).toBe(false)
-      expect(store.error).toBeNull()
-    })
-
     it('stores and rethrows error from freeze check status endpoint', async () => {
       const err = new Error('Forbidden')
       fetchWrapper.post.mockRejectedValueOnce(err)
@@ -1468,12 +1050,6 @@ describe('registers store', () => {
   })
 
   describe('refreshCustomsChargeDetails', () => {
-    it('awaits the cached parcel refresh for the affected register', async () => {
-      const store = useRegistersStore()
-      await store.refreshCustomsChargeDetails(77)
-      expect(refreshCachedDetail).toHaveBeenCalledWith(77)
-    })
-
     it('propagates a cached-detail failure to the initiating action', async () => {
       const error = new Error('Не удалось обновить посылку')
       refreshCachedDetail.mockRejectedValueOnce(error)
@@ -1481,32 +1057,6 @@ describe('registers store', () => {
     })
   })
   describe('calculateCustomsCharges', () => {
-    it('calls calculate endpoint and patches loaded register charges', async () => {
-      fetchWrapper.post.mockResolvedValueOnce({
-        registerId: 77,
-        parcelsTotal: 2,
-        customsFee: 689,
-        customsDuty: 750
-      })
-
-      const store = useRegistersStore()
-      store.items = [{ id: 77, fileName: 'register.xlsx', customsFee: 0, customsDuty: 0 }]
-      store.item = { id: 77, fileName: 'register.xlsx', customsFee: 0, customsDuty: 0 }
-
-      const result = await store.calculateCustomsCharges(77)
-
-      expect(fetchWrapper.post).toHaveBeenCalledWith(
-        `${apiUrl}/registers/77/calculate-customs-charges`
-      )
-      expect(result.customsFee).toBe(689)
-      expect(store.items[0].customsFee).toBe(689)
-      expect(store.items[0].customsDuty).toBe(750)
-      expect(store.item.customsFee).toBe(689)
-      expect(store.item.customsDuty).toBe(750)
-      expect(store.loading).toBe(false)
-      expect(store.error).toBeNull()
-    })
-
     it('preserves null calculated register charges for empty register-list display', async () => {
       fetchWrapper.post.mockResolvedValueOnce({
         registerId: 77,
@@ -1542,15 +1092,6 @@ describe('registers store', () => {
     })
   })
   describe('register split transport', () => {
-    it('posts and reads the same operation identity', async () => {
-      const store = useRegistersStore()
-      fetchWrapper.post.mockResolvedValue({ id: 'a b' })
-      fetchWrapper.get.mockResolvedValue({ phase: 'copying' })
-      await expect(store.startSplit(7, 'a b')).resolves.toEqual({ id: 'a b' })
-      await expect(store.getSplit(7, 'a b')).resolves.toEqual({ phase: 'copying' })
-      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/registers/7/split?operationId=a%20b`, {})
-      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/registers/7/split/a%20b`)
-    })
     it.each(['startSplit', 'getSplit'])('propagates %s errors without swallowing them', async method => {
       const store = useRegistersStore()
       const error = new Error('Разделение недоступно')

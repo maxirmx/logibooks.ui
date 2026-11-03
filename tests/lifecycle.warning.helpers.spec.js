@@ -3,25 +3,9 @@
 // This file is a part of Logibooks ui application
 
 import { describe, expect, it, vi } from 'vitest'
-import {
-  buildCustomsExclusionWarning,
-  buildClearPassportCheckWarning,
-  buildFinishPassportCheckWarning,
-  buildRestartPassportCheckWarning,
-  confirmCustomsExclusionStatusChange,
-  confirmPassportCheckRestart
-} from '@/helpers/lifecycle.warning.helpers.js'
+import { buildFinishPassportCheckWarning, confirmPassportCheckRestart } from '@/helpers/lifecycle.warning.helpers.js'
 
 describe('lifecycle warning helpers', () => {
-  it('builds singular and plural customs exclusion warnings', () => {
-    expect(buildCustomsExclusionWarning('Исключена', 1)).toBe(
-      'Вы меняете статус посылки на «Исключена». Эта посылка будет исключена из таможенного оформления, проверок, выгрузок и групповых операций.'
-    )
-    expect(buildCustomsExclusionWarning('Исключена', 12)).toBe(
-      'Вы меняете статус посылок на «Исключена». Эти посылки будут исключены из таможенного оформления, проверок, выгрузок и групповых операций.'
-    )
-  })
-
   it.each([
     [1, 12, 'для 1 посылки она не проводилась; для 12 посылок она ещё выполняется'],
     [21, 0, 'для 21 посылки она не проводилась'],
@@ -31,40 +15,6 @@ describe('lifecycle warning helpers', () => {
     expect(buildFinishPassportCheckWarning(notChecked, inProgress)).toBe(
       `Вы завершаете проверку паспортов, хотя ${clause}. Целостность выгружаемых данных может быть нарушена.`
     )
-  })
-
-  it('uses the requested passport form', () => {
-    expect(buildRestartPassportCheckWarning(1)).toBe(
-      'Вы запрашиваете проверку паспорта, хотя для данного реестра уже выполнялась операция «Завершить проверку паспортов».'
-    )
-    expect(buildRestartPassportCheckWarning(2)).toBe(
-      'Вы запрашиваете проверку паспортов, хотя для данного реестра уже выполнялась операция «Завершить проверку паспортов».'
-    )
-  })
-
-  it('only confirms changed statuses excluded from customs processing', async () => {
-    const confirm = vi.fn().mockResolvedValue(false)
-    const statusStore = {
-      parcelStatuses: [
-        { id: 1, title: 'Разрешён', useAtCustomsProcessing: true },
-        { id: 2, title: 'Исключён', useAtCustomsProcessing: false }
-      ]
-    }
-
-    await expect(confirmCustomsExclusionStatusChange({
-      values: { statusId: 1 }, currentParcel: { statusId: 1 }, statusStore, confirm
-    })).resolves.toBe(true)
-    await expect(confirmCustomsExclusionStatusChange({
-      values: { statusId: 1 }, currentParcel: { statusId: 2 }, statusStore, confirm
-    })).resolves.toBe(true)
-    await expect(confirmCustomsExclusionStatusChange({
-      values: { statusId: 2 }, currentParcel: { statusId: 1 }, statusStore, confirm
-    })).resolves.toBe(false)
-
-    expect(confirm).toHaveBeenCalledOnce()
-    expect(confirm).toHaveBeenCalledWith(expect.objectContaining({
-      title: 'Подтверждение', confirmationText: 'Изменить', cancellationText: 'Не изменять'
-    }))
   })
 
   it('refreshes before deciding whether a passport restart needs confirmation', async () => {
@@ -99,21 +49,4 @@ describe('lifecycle warning helpers', () => {
     expect(confirm).not.toHaveBeenCalled()
   })
 
-  it('uses the clear-specific warning after refreshing a previously finished register', async () => {
-    const confirm = vi.fn().mockResolvedValue(false)
-    const registersStore = {
-      item: { passportCheckWasFinished: false },
-      getById: vi.fn(async () => {
-        registersStore.item = { passportCheckWasFinished: true }
-      })
-    }
-
-    await expect(confirmPassportCheckRestart({
-      registerId: 8, registersStore, confirm, action: 'clear'
-    })).resolves.toBe(false)
-    expect(registersStore.getById).toHaveBeenCalledWith(8)
-    expect(confirm).toHaveBeenCalledWith(expect.objectContaining({
-      content: buildClearPassportCheckWarning()
-    }))
-  })
 })

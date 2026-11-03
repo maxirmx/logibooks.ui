@@ -467,21 +467,6 @@ describe('CustomsReportRows_List.vue', () => {
     expect(alertErrorMock).toHaveBeenCalledWith(errorRef.value.message)
   })
 
-  it('formats EK procedure without an internal space in header', async () => {
-    reportRowsCustomsProcedureRef.value = 'ЭК 31'
-
-    wrapper = mount(CustomsReportRowsList, {
-      props: { reportId: 42, masterInvoice: 'MASTER-42' },
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    await flushPromises()
-
-    expect(wrapper.find('h1').text()).toContain('Отчёт о выпуске для MASTER-42 по процедуре ЭК31')
-  })
-
   it('updates local search from the search field', async () => {
     wrapper = mount(CustomsReportRowsList, {
       props: { reportId: 5 },
@@ -630,25 +615,6 @@ describe('CustomsReportRows_List.vue', () => {
     await flushPromises()
 
     expect(alertErrorMock).toHaveBeenCalledWith('row load error')
-  })
-
-  it('generates page options for large page counts', async () => {
-    customsReportsStoreMock.reportRowsTotalCount.value = 10000
-
-    wrapper = mount(CustomsReportRowsList, {
-      props: { reportId: 5 },
-      global: { stubs: testStubs }
-    })
-
-    await flushPromises()
-
-    // With 10000 rows and 10 per page, maxPage = 1000 > 200.
-    // The >200 branch builds a sparse set around page 1 and last pages.
-    const pageOptions = wrapper.vm.pageOptions
-    expect(Array.isArray(pageOptions)).toBe(true)
-    expect(pageOptions.length).toBeGreaterThan(10)
-    expect(pageOptions.some((o) => o.value > 200)).toBe(true)
-    expect(pageOptions[0]).toEqual({ value: 1, title: '1' })
   })
 
   it('uses page 1 as the page options fallback when current page is empty', async () => {

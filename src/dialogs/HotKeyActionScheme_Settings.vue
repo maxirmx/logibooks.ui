@@ -9,16 +9,18 @@ import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { focusFirstInvalidField } from '@/helpers/form.validation.helpers.js'
 import { runWithAlert } from '@/helpers/notification.helpers.js'
 import { reportFormError } from '@/helpers/error.helpers.js'
-import { ref, computed } from 'vue'
+import { ref, computed, getCurrentScope } from 'vue'
 import router from '@/router'
 import { storeToRefs } from 'pinia'
 import { Form, Field } from 'vee-validate'
 import * as Yup from 'yup'
 import { useHotKeyActionSchemesStore } from '@/stores/hotkey.action.schemes.store.js'
+import { useAuthStore } from '@/stores/auth.store.js'
 import ActionButton from '@/components/ActionButton.vue'
 import KeyCaptureInput from '@/components/KeyCaptureInput.vue'
 
 const alertStore = useAlertStore()
+const authStore = useAuthStore()
 
 const props = defineProps({
   mode: {
@@ -35,29 +37,31 @@ const props = defineProps({
 const hotKeyActionSchemesStore = useHotKeyActionSchemesStore()
 const { ops } = storeToRefs(hotKeyActionSchemesStore)
 const isCreate = computed(() => props.mode === 'create')
+const scope = getCurrentScope()
 const isSubmitting = ref(false)
 
-let hotKeyActionScheme = ref({
+const hotKeyActionScheme = ref({
   name: '',
   actions: []
 })
 
 // Load ops data
-await runWithAlert(() => hotKeyActionSchemesStore.ensureOpsLoaded(), {
-  fallback: 'Не удалось загрузить список действий'
+const savedOps = await runWithAlert(() => hotKeyActionSchemesStore.ensureOpsLoaded(), {
+  fallback: 'Не удалось загрузить список действий',
+  scope
 })
+let loaded = scope.active && savedOps !== null
 
-if (!isCreate.value) {
-  ;({ hotKeyActionScheme } = storeToRefs(hotKeyActionSchemesStore))
-  await runWithAlert(() => hotKeyActionSchemesStore.getById(props.hotKeyActionSchemeId), {
-    fallback: 'Не удалось загрузить схему настройки клавиатуры'
+if (loaded && !isCreate.value) {
+  const saved = await runWithAlert(() => hotKeyActionSchemesStore.getById(props.hotKeyActionSchemeId), {
+    fallback: 'Не удалось загрузить схему настройки клавиатуры',
+    scope
   })
-
-  // Ensure actions array exists
-  if (!hotKeyActionScheme.value.actions) {
-    hotKeyActionScheme.value.actions = []
+  loaded = Boolean(saved)
+  if (saved) {
+    hotKeyActionScheme.value = { ...saved, actions: (saved.actions ?? []).map(action => ({ ...action })) }
   }
-} else {
+} else if (loaded) {
   // In create mode, initialize with all actions from ops
   hotKeyActionScheme.value.actions = ops.value.actions.map((action) => ({
     id: 0,
@@ -69,8 +73,10 @@ if (!isCreate.value) {
     schemeId: 0
   }))
 }
+const canEdit = computed(() => loaded && authStore.canWriteSettings)
 
 function getTitle() {
+  if (!authStore.canWriteSettings) return 'Просмотр схемы настройки клавиатуры'
   return isCreate.value
     ? 'Создание схемы настройки клавиатуры'
     : 'Изменение схемы настройки клавиатуры'
@@ -89,7 +95,7 @@ const schema = Yup.object({
 })
 
 function onSubmit(values, { setErrors } = {}) {
-  if (isSubmitting.value) return
+  if (!canEdit.value || isSubmitting.value) return
 
   isSubmitting.value = true
   const submitData = {
@@ -101,9 +107,7 @@ function onSubmit(values, { setErrors } = {}) {
   if (isCreate.value) {
     return hotKeyActionSchemesStore
       .create(submitData)
-      .then(() => {
-        router.push('/hotkeyactionschemes')
-      })
+      .then(close)
       .catch((error) => {
         if (error.message?.includes('409')) {
           alertStore.error('Схема настройки клавиатуры с таким названием уже существует')
@@ -122,9 +126,7 @@ function onSubmit(values, { setErrors } = {}) {
 
   return hotKeyActionSchemesStore
     .update(props.hotKeyActionSchemeId, submitData)
-    .then(() => {
-      router.push('/hotkeyactionschemes')
-    })
+    .then(close)
     .catch((error) => {
       reportFormError(error, {
         setErrors,
@@ -137,8 +139,10 @@ function onSubmit(values, { setErrors } = {}) {
     })
 }
 
-function onCancel() {
-  router.push('/hotkeyactionschemes')
+function close() {
+  return runWithAlert(() => router.push('/hotkeyactionschemes'), {
+    fallback: 'Не удалось открыть список'
+  })
 }
 </script>
 
@@ -155,135 +159,103 @@ function onCancel() {
         <h1 class="primary-heading">{{ getTitle() }}</h1>
         <div class="header-actions">
           <ActionButton
+            v-if="canEdit"
             :item="{}"
             icon="fa-solid fa-check-double"
             icon-size="2x"
             :tooltip-text="getButtonText()"
             :disabled="isSubmitting"
-            @click="handleSubmit(onSubmit)()"
+            @click="handleSubmit(onSubmit)"
           />
           <ActionButton
             :item="{}"
             icon="fa-solid fa-xmark"
             icon-size="2x"
-            tooltip-text="Отменить"
+            :tooltip-text="canEdit ? 'Отменить' : 'Закрыть'"
             :disabled="isSubmitting"
-            @click="onCancel"
+            @click="close"
           />
         </div>
       </div>
       <hr class="hr" />
 
       <PageAlertRegion />
-      <div class="form-group">
-        <label for="name" class="label">Название:</label>
-        <Field
-          name="name"
-          id="name"
-          type="text"
-          class="form-control input"
-          :class="{ 'is-invalid': errors.name }"
-          placeholder="Название"
-        />
-        <FieldError name="name" :errors="errors" />
-      </div>
 
-      <div class="form-group mt-4">
-        <label class="label">Действия:</label>
-        <div class="actions-table">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Действие</th>
-                <th>Клавиша</th>
-                <th class="checkbox-col">Shift</th>
-                <th class="checkbox-col">Ctrl</th>
-                <th class="checkbox-col">Alt</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(action, index) in hotKeyActionScheme.actions" :key="action.action">
-                <td>{{ getActionName(action.action) }}</td>
-                <td>
-                  <KeyCaptureInput v-model="action.keyCode" class="key-input-full" />
-                </td>
-                <td class="checkbox-col">
-                  <input
-                    type="checkbox"
-                    v-model="action.shift"
-                    class="checkbox checkbox-styled"
-                    :id="`shift-${index}`"
-                  />
-                  <label :for="`shift-${index}`"></label>
-                </td>
-                <td class="checkbox-col">
-                  <input
-                    type="checkbox"
-                    v-model="action.ctrl"
-                    class="checkbox checkbox-styled"
-                    :id="`ctrl-${index}`"
-                  />
-                  <label :for="`ctrl-${index}`"></label>
-                </td>
-                <td class="checkbox-col">
-                  <input
-                    type="checkbox"
-                    v-model="action.alt"
-                    class="checkbox checkbox-styled"
-                    :id="`alt-${index}`"
-                  />
-                  <label :for="`alt-${index}`"></label>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+      <fieldset v-if="loaded" :disabled="!canEdit" class="settings-fields">
+        <div class="form-group">
+          <label for="name" class="label">Название:</label>
+          <Field
+            name="name"
+            id="name"
+            type="text"
+            class="form-control input"
+            :class="{ 'is-invalid': errors.name }"
+            placeholder="Название"
+          />
+          <FieldError name="name" :errors="errors" />
         </div>
-      </div>
+
+        <div class="form-group mt-4">
+          <label class="label">Действия:</label>
+          <div class="table-card app-table-card app-table-scroll mt-4">
+            <table class="app-table interlaced-table">
+              <thead>
+                <tr>
+                  <th>Действие</th>
+                  <th>Клавиша</th>
+                  <th class="checkbox-col">Shift</th>
+                  <th class="checkbox-col">Ctrl</th>
+                  <th class="checkbox-col">Alt</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(action, index) in hotKeyActionScheme.actions" :key="action.action">
+                  <td>{{ getActionName(action.action) }}</td>
+                  <td>
+                    <KeyCaptureInput
+                      v-model="action.keyCode"
+                      :disabled="!canEdit"
+                      class="key-input-full"
+                    />
+                  </td>
+                  <td class="checkbox-col">
+                    <input
+                      type="checkbox"
+                      v-model="action.shift"
+                      class="checkbox checkbox-styled"
+                      :id="`shift-${index}`"
+                    />
+                    <label :for="`shift-${index}`"></label>
+                  </td>
+                  <td class="checkbox-col">
+                    <input
+                      type="checkbox"
+                      v-model="action.ctrl"
+                      class="checkbox checkbox-styled"
+                      :id="`ctrl-${index}`"
+                    />
+                    <label :for="`ctrl-${index}`"></label>
+                  </td>
+                  <td class="checkbox-col">
+                    <input
+                      type="checkbox"
+                      v-model="action.alt"
+                      class="checkbox checkbox-styled"
+                      :id="`alt-${index}`"
+                    />
+                    <label :for="`alt-${index}`"></label>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </fieldset>
     </Form>
   </div>
 </template>
 
 <style scoped>
-.actions-table {
-  width: 100%;
-  margin-top: 1rem;
-  overflow-x: auto;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
-}
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  background-color: white;
-}
-
-.table thead {
-  background-color: #f5f5f5;
-}
-
-.table th,
-.table td {
-  padding: 0.75rem;
-  text-align: left;
-  border-bottom: 1px solid #e0e0e0;
-  vertical-align: middle;
-}
-
-.table th {
-  font-weight: 600;
-  color: #424242;
-  font-size: 0.875rem;
-}
-
-.table tbody tr:hover {
-  background-color: #f9f9f9;
-}
-
-.table tbody tr:last-child td {
-  border-bottom: none;
-}
-
 .checkbox-col {
   text-align: center;
   width: 80px;

@@ -9,15 +9,16 @@ import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { focusFirstInvalidField } from '@/helpers/form.validation.helpers.js'
 import { runWithAlert } from '@/helpers/notification.helpers.js'
 import { reportFormError } from '@/helpers/error.helpers.js'
-import { ref, computed } from 'vue'
+import { ref, computed, getCurrentScope } from 'vue'
 import router from '@/router'
-import { storeToRefs } from 'pinia'
 import { Form, Field } from 'vee-validate'
 import * as Yup from 'yup'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
+import { useAuthStore } from '@/stores/auth.store.js'
 import ActionButton from '@/components/ActionButton.vue'
 
 const alertStore = useAlertStore()
+const authStore = useAuthStore()
 
 const props = defineProps({
   mode: {
@@ -36,23 +37,26 @@ const parcelStatusesStore = useParcelStatusesStore()
 // Check if we're in create mode
 const isCreate = computed(() => props.mode === 'create')
 
-let parcelStatus = ref({
+const parcelStatus = ref({
   title: '',
   useAtCustomsProcessing: false,
   bkColor: null,
   restrictionReason: '',
   inspection: false
 })
+const canEdit = computed(() => Boolean(parcelStatus.value) && authStore.canWriteSettings)
 
 if (!isCreate.value) {
-  ;({ parcelStatus } = storeToRefs(parcelStatusesStore))
-  await runWithAlert(() => parcelStatusesStore.getById(props.orderStatusId), {
-    fallback: 'Не удалось загрузить статус посылки'
+  const saved = await runWithAlert(() => parcelStatusesStore.getById(props.orderStatusId), {
+    fallback: 'Не удалось загрузить статус посылки',
+    scope: getCurrentScope()
   })
+  parcelStatus.value = saved && { ...saved }
 }
 
 // Get page title
 function getTitle() {
+  if (!authStore.canWriteSettings) return 'Просмотр статуса посылки'
   return isCreate.value ? 'Создание статуса посылки' : 'Редактирование статуса посылки'
 }
 
@@ -90,6 +94,7 @@ function hasBackgroundColor(fieldValue) {
 }
 
 function handleBackgroundColorInput(event, handleChange) {
+  if (!canEdit.value) return
   const value = event.target.value || null
   if (parcelStatus.value) {
     parcelStatus.value.bkColor = value
@@ -98,6 +103,7 @@ function handleBackgroundColorInput(event, handleChange) {
 }
 
 function handleBackgroundColorClear(handleChange) {
+  if (!canEdit.value) return
   if (parcelStatus.value) {
     parcelStatus.value.bkColor = null
   }
@@ -106,12 +112,11 @@ function handleBackgroundColorClear(handleChange) {
 
 // Form submission
 function onSubmit(values, { setErrors } = {}) {
+  if (!canEdit.value) return
   if (isCreate.value) {
     return parcelStatusesStore
       .create(values)
-      .then(() => {
-        router.push('/parcelstatuses')
-      })
+      .then(close)
       .catch((error) => {
         if (error.message?.includes('409')) {
           alertStore.error('Такой статус посылки уже существует')
@@ -126,9 +131,7 @@ function onSubmit(values, { setErrors } = {}) {
   } else {
     return parcelStatusesStore
       .update(props.orderStatusId, values)
-      .then(() => {
-        router.push('/parcelstatuses')
-      })
+      .then(close)
       .catch((error) => {
         reportFormError(error, {
           setErrors,
@@ -137,6 +140,11 @@ function onSubmit(values, { setErrors } = {}) {
         })
       })
   }
+}
+function close() {
+  return runWithAlert(() => router.push('/parcelstatuses'), {
+    fallback: 'Не удалось открыть список'
+  })
 }
 </script>
 
@@ -154,6 +162,7 @@ function onSubmit(values, { setErrors } = {}) {
         <h1 class="primary-heading">{{ getTitle() }}</h1>
         <div class="header-actions" data-testid="parcel-status-header-actions">
           <ActionButton
+            v-if="canEdit"
             :item="{}"
             icon="fa-solid fa-check-double"
             :iconSize="'2x'"
@@ -166,10 +175,10 @@ function onSubmit(values, { setErrors } = {}) {
             :item="{}"
             icon="fa-solid fa-xmark"
             :iconSize="'2x'"
-            tooltip-text="Отменить"
+            :tooltip-text="canEdit ? 'Отменить' : 'Закрыть'"
             :disabled="isSubmitting"
             data-testid="parcel-status-cancel-action"
-            @click="router.push('/parcelstatuses')"
+            @click="close"
           />
         </div>
       </div>
@@ -177,104 +186,106 @@ function onSubmit(values, { setErrors } = {}) {
 
       <PageAlertRegion />
 
-      <div class="form-group">
-        <label for="title" class="label">Название статуса:</label>
-        <Field
-          name="title"
-          id="title"
-          type="text"
-          class="form-control input"
-          :class="{ 'is-invalid': errors.title }"
-          placeholder="Название статуса"
-        />
-        <FieldError name="title" :errors="errors" />
-      </div>
-
-      <div class="form-group">
-        <label for="useAtCustomsProcessing" class="label">Таможенное оформление:</label>
-        <div class="checkbox-item">
-          <Field
-            id="useAtCustomsProcessing"
-            type="checkbox"
-            name="useAtCustomsProcessing"
-            class="checkbox checkbox-styled"
-            :value="true"
-            :unchecked-value="false"
-          />
-          <label for="useAtCustomsProcessing" aria-hidden="true"></label>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label for="inspection" class="label">Досмотр:</label>
-        <div class="checkbox-item">
-          <Field
-            id="inspection"
-            type="checkbox"
-            name="inspection"
-            class="checkbox checkbox-styled"
-            :value="true"
-            :unchecked-value="false"
-          />
-          <label for="inspection" aria-hidden="true"></label>
-        </div>
-      </div>
-
-      <Field name="bkColor" v-slot="{ field, handleChange }">
+      <fieldset v-if="parcelStatus" :disabled="!canEdit" class="settings-fields">
         <div class="form-group">
-          <label for="bkColor" class="label">Цвет при выгрузке:</label>
-          <div class="status-color-actions">
-            <label
-              class="status-color-control"
-              :class="{ 'status-color-control--empty': !hasBackgroundColor(field?.value) }"
-              for="bkColor"
-            >
-              <span
-                class="status-color-swatch"
-                :class="{ 'status-color-swatch--empty': !hasBackgroundColor(field?.value) }"
-                :style="{ backgroundColor: getBackgroundColorValue(field?.value) || 'transparent' }"
-                data-testid="bk-color-swatch"
-              ></span>
-              <span class="status-color-value">{{ getBackgroundColorDisplay(field?.value) }}</span>
-              <input
-                id="bkColor"
-                type="color"
-                class="status-color-native"
-                :class="{ 'is-invalid': errors.bkColor }"
-                aria-label="Цвет при выгрузке"
-                :value="getBackgroundColorPickerValue(field?.value)"
-                @input="(event) => handleBackgroundColorInput(event, handleChange)"
-              />
-            </label>
-            <div class="status-color-control status-color-control-brush">
-              <ActionButton
-                :item="{}"
-                icon="fa-solid fa-broom"
-                tooltip-text="Очистить"
-                :disabled="!hasBackgroundColor(field?.value)"
-                data-testid="bk-color-clear-action"
-                @click="handleBackgroundColorClear(handleChange)"
-              />
-            </div>
-          </div>
-          <FieldError name="bkColor" :errors="errors" />
+          <label for="title" class="label">Название статуса:</label>
+          <Field
+            name="title"
+            id="title"
+            type="text"
+            class="form-control input"
+            :class="{ 'is-invalid': errors.title }"
+            placeholder="Название статуса"
+          />
+          <FieldError name="title" :errors="errors" />
         </div>
-      </Field>
 
-      <div
-        v-if="!values.useAtCustomsProcessing"
-        class="form-group"
-        data-testid="restriction-reason-group"
-      >
-        <label for="restrictionReason" class="label">Причина запрета:</label>
-        <Field
-          id="restrictionReason"
-          name="restrictionReason"
-          type="text"
-          class="form-control input"
-          placeholder="Причина запрета"
-        />
-      </div>
+        <div class="form-group">
+          <label for="useAtCustomsProcessing" class="label">Таможенное оформление:</label>
+          <div class="checkbox-item">
+            <Field
+              id="useAtCustomsProcessing"
+              type="checkbox"
+              name="useAtCustomsProcessing"
+              class="checkbox checkbox-styled"
+              :value="true"
+              :unchecked-value="false"
+            />
+            <label for="useAtCustomsProcessing" aria-hidden="true"></label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="inspection" class="label">Досмотр:</label>
+          <div class="checkbox-item">
+            <Field
+              id="inspection"
+              type="checkbox"
+              name="inspection"
+              class="checkbox checkbox-styled"
+              :value="true"
+              :unchecked-value="false"
+            />
+            <label for="inspection" aria-hidden="true"></label>
+          </div>
+        </div>
+
+        <Field name="bkColor" v-slot="{ field, handleChange }">
+          <div class="form-group">
+            <label for="bkColor" class="label">Цвет при выгрузке:</label>
+            <div class="status-color-actions">
+              <label
+                class="status-color-control"
+                :class="{ 'status-color-control--empty': !hasBackgroundColor(field?.value) }"
+                for="bkColor"
+              >
+                <span
+                  class="status-color-swatch"
+                  :class="{ 'status-color-swatch--empty': !hasBackgroundColor(field?.value) }"
+                  :style="{ backgroundColor: getBackgroundColorValue(field?.value) || 'transparent' }"
+                  data-testid="bk-color-swatch"
+                ></span>
+                <span class="status-color-value">{{ getBackgroundColorDisplay(field?.value) }}</span>
+                <input
+                  id="bkColor"
+                  type="color"
+                  class="status-color-native"
+                  :class="{ 'is-invalid': errors.bkColor }"
+                  aria-label="Цвет при выгрузке"
+                  :value="getBackgroundColorPickerValue(field?.value)"
+                  @input="(event) => handleBackgroundColorInput(event, handleChange)"
+                />
+              </label>
+              <div v-if="canEdit" class="status-color-control status-color-control-brush">
+                <ActionButton
+                  :item="{}"
+                  icon="fa-solid fa-broom"
+                  tooltip-text="Очистить"
+                  :disabled="!hasBackgroundColor(field?.value)"
+                  data-testid="bk-color-clear-action"
+                  @click="handleBackgroundColorClear(handleChange)"
+                />
+              </div>
+            </div>
+            <FieldError name="bkColor" :errors="errors" />
+          </div>
+        </Field>
+
+        <div
+          v-if="!authStore.canWriteSettings || !values.useAtCustomsProcessing"
+          class="form-group"
+          data-testid="restriction-reason-group"
+        >
+          <label for="restrictionReason" class="label">Причина запрета:</label>
+          <Field
+            id="restrictionReason"
+            name="restrictionReason"
+            type="text"
+            class="form-control input"
+            placeholder="Причина запрета"
+          />
+        </div>
+      </fieldset>
     </Form>
   </div>
 </template>

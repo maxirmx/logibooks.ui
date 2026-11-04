@@ -4,6 +4,7 @@
 
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useNotificationsStore } from '@/stores/notifications.store.js'
+import { reportError } from '@/helpers/error.helpers.js'
 
 export function formatNotificationDate(value) {
   if (!value) return ''
@@ -60,21 +61,22 @@ export async function buildNotificationTooltip(item) {
 
 /**
  * Runs a page load and reports a rejection as one persistent message.
- * The rejection is handled here, so callers may safely use this from lifecycle hooks.
+ * Pass the originating effect scope to keep failures from disposed pages in diagnostics.
  */
 export async function runWithAlert(
   operation,
-  { fallback = 'Не удалось загрузить данные', title = '' } = {}
+  { fallback = 'Не удалось загрузить данные', title = '', scope } = {}
 ) {
   const alertStore = useAlertStore()
 
   try {
     return await operation()
   } catch (error) {
-    alertStore.error(error, {
-      fallback,
-      title
-    })
+    if (scope?.active === false) {
+      reportError(error, { context: fallback })
+    } else {
+      alertStore.error(error, { fallback, title })
+    }
     return null
   }
 }

@@ -40,32 +40,36 @@ function filterHotKeyActionSchemes(value, query, item) {
 }
 
 const headers = [
-  ...(authStore.isSrLogistPlus
-    ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '120px' }]
-    : []),
+  { title: '', align: 'center', key: 'actions', sortable: false, width: '120px' },
   { title: 'Название', key: 'name', sortable: true }
 ]
 
 function openEditDialog(hotKeyActionScheme) {
-  router.push(`/hotkeyactionscheme/edit/${hotKeyActionScheme.id}`)
+  if (!authStore.canReadSettings) return
+  return runWithAlert(() => router.push(`/hotkeyactionscheme/edit/${hotKeyActionScheme.id}`), {
+    fallback: 'Не удалось открыть схему настройки клавиатуры'
+  })
 }
 
 function openCreateDialog() {
-  router.push('/hotkeyactionscheme/create')
+  if (!authStore.canWriteSettings) return
+  return runWithAlert(() => router.push('/hotkeyactionscheme/create'), {
+    fallback: 'Не удалось открыть форму создания'
+  })
 }
 
 async function deleteHotKeyActionScheme(hotKeyActionScheme) {
-  if (runningAction.value) return
+  if (!authStore.canWriteSettings || runningAction.value) return
   runningAction.value = true
   try {
-    const confirmed = await confirm({
+    const confirmed = await runWithAlert(() => confirm({
       title: 'Подтверждение',
       confirmationText: 'Удалить',
       cancellationText: 'Не удалять',
       content: `Удалить схему "${hotKeyActionScheme.name}"?`
-    })
+    }), { fallback: 'Не удалось открыть подтверждение удаления' })
 
-    if (confirmed) {
+    if (confirmed && authStore.canWriteSettings) {
       try {
         await hotKeyActionSchemesStore.remove(hotKeyActionScheme.id)
       } catch (error) {
@@ -98,11 +102,11 @@ defineExpose({
   <div class="settings table-2 list-with-filters">
     <div class="header-with-actions">
       <h1 class="primary-heading">Схемы настройки клавиатуры</h1>
-      <div class="header-actions-bar" v-if="authStore.isSrLogistPlus">
+      <div class="header-actions-bar">
         <div v-if="loading" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
         </div>
-        <div class="header-actions header-actions-group">
+        <div v-if="authStore.canWriteSettings" class="header-actions header-actions-group">
           <ActionButton
             :item="{}"
             icon="fa-solid fa-plus"
@@ -149,15 +153,17 @@ defineExpose({
         fixed-header
       >
         <template v-slot:[`item.actions`]="{ item }">
-          <div v-if="authStore.isSrLogistPlus" class="actions-container">
+          <div class="actions-container">
             <ActionButton
               :item="item"
-              icon="fa-solid fa-pen"
-              tooltip-text="Редактировать схему"
+              :icon="authStore.canWriteSettings ? 'fa-solid fa-pen' : 'fa-solid fa-eye'"
+              :tooltip-text="authStore.canWriteSettings ? 'Редактировать схему' : 'Просмотреть'"
+              :aria-label="authStore.canWriteSettings ? 'Редактировать схему' : 'Просмотреть'"
               @click="openEditDialog"
               :disabled="runningAction || loading"
             />
             <ActionButton
+              v-if="authStore.canWriteSettings"
               :item="item"
               icon="fa-solid fa-trash-can"
               tooltip-text="Удалить схему настройки клавиатуры"

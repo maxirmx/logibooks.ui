@@ -602,35 +602,50 @@ describe('router guards', () => {
     })
   })
 
-  describe('register status mutation routes', () => {
-    it('allows a shift lead to open register status mutation routes', async () => {
-      authStore.user = { id: 9 }
-      authStore.isShiftLead = true
-      authStore.isShiftLeadPlus = true
-      authStore.isSrLogist = false
-      authStore.isSrLogistPlus = true
-      authStore.hasAnyRole = true
+  describe('settings routes', () => {
+    const readPaths = [
+      '/parcelstatuses', '/registerstatuses', '/parcelsevents', '/registersevents',
+      '/hotkeyactionschemes', '/parcelstatus/edit/42', '/registerstatus/edit/42',
+      '/hotkeyactionscheme/edit/42'
+    ]
+    const createPaths = [
+      ['/parcelstatus/create', '/parcelstatuses'],
+      ['/registerstatus/create', '/registerstatuses'],
+      ['/hotkeyactionscheme/create', '/hotkeyactionschemes']
+    ]
 
-      await router.push('/registerstatus/create')
-      await router.isReady()
-
-      expect(router.currentRoute.value.fullPath).toBe('/registerstatus/create')
+    it.each(readPaths)('lets a roleless human open %s', async (path) => {
+      authStore.user = { id: 1, roles: [] }
+      authStore.canReadSettings = true
+      await router.push(path)
+      expect(router.currentRoute.value.path).toBe(path)
     })
 
-    it('redirects a senior logist away from register status mutation routes', async () => {
-      authStore.user = { id: 10 }
-      authStore.isShiftLead = false
-      authStore.isShiftLeadPlus = false
-      authStore.isSrLogist = true
-      authStore.isSrLogistPlus = true
-      authStore.hasAnyRole = true
-
-      await router.push('/registerstatus/create')
-      await router.isReady()
-
-      expect(router.currentRoute.value.fullPath).toBe('/login')
-      expect(authStore.returnUrl).toBe('/registerstatus/create')
+    it.each(createPaths)('redirects a reader from %s to %s', async (create, list) => {
+      authStore.user = { id: 1 }
+      authStore.canReadSettings = true
+      await router.push(create)
+      expect(router.currentRoute.value.path).toBe(list)
+      expect(authStore.returnUrl).toBeNull()
     })
+
+    it.each(createPaths)('allows a writer to open %s', async (create) => {
+      authStore.user = { id: 1 }
+      authStore.canReadSettings = true
+      authStore.canWriteSettings = true
+      await router.push(create)
+      expect(router.currentRoute.value.path).toBe(create)
+    })
+
+    it.each([null, { id: 9, roles: ['adapter-1c'] }])(
+      'redirects a visitor without settings access to sign-in',
+      async (user) => {
+        authStore.user = user
+        await router.push('/parcelsevents')
+        expect(router.currentRoute.value.path).toBe('/login')
+        expect(authStore.returnUrl).toBe('/parcelsevents')
+      }
+    )
   })
 
   describe('register history route', () => {

@@ -15,6 +15,6 @@ const props = defineProps({
 
 <template>
   <Suspense>
-    <RegisterStatusEditDialog :mode="'edit'" :register-status-id="props.id" />
+    <RegisterStatusEditDialog :key="props.id" :mode="'edit'" :register-status-id="props.id" />
   </Suspense>
 </template>

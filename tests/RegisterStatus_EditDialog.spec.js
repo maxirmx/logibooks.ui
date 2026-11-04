@@ -37,7 +37,7 @@ const mockAlertStore = createMockStore({
 })
 
 const mockAuthStore = {
-  isAdmin: true
+  canWriteSettings: true
 }
 
 // Mock all external dependencies
@@ -166,7 +166,7 @@ beforeEach(async () => {
   mockRegisterStatusesStore.loading = false
   mockRegisterStatusesStore.error = null
   mockAlertStore.loading = false
-  mockAuthStore.isAdmin = true
+  mockAuthStore.canWriteSettings = true
 })
 
 describe('RegisterStatus_EditDialog.vue', () => {
@@ -202,8 +202,8 @@ describe('RegisterStatus_EditDialog.vue', () => {
       await wrapper.find('#bkColor').setValue('#123456')
       await wrapper.find('#fgColor').setValue('#abcdef')
 
-      expect(mockRegisterStatusesStore.registerStatus.bkColor).toBe('#123456')
-      expect(mockRegisterStatusesStore.registerStatus.fgColor).toBe('#abcdef')
+      expect(mockRegisterStatusesStore.registerStatus.bkColor).toBe('#FFFFFF')
+      expect(mockRegisterStatusesStore.registerStatus.fgColor).toBe('#000000')
       expect(wrapper.find('[data-testid="bk-color-swatch"]').attributes('style')).toContain(
         'background-color: rgb(18, 52, 86)'
       )
@@ -283,8 +283,8 @@ describe('RegisterStatus_EditDialog.vue', () => {
   })
 
   describe('Form Submission - Edit Mode', () => {
-    it('preserves the persisted read-only flag for a non-administrator update', async () => {
-      mockAuthStore.isAdmin = false
+    it('blocks a read-only session from submitting the editor', async () => {
+      mockAuthStore.canWriteSettings = false
       const wrapper = mount(AsyncWrapper, {
         props: { mode: 'edit', registerStatusId: 1 },
         global: {
@@ -295,10 +295,9 @@ describe('RegisterStatus_EditDialog.vue', () => {
       await resolveAll()
       await wrapper.find('form').trigger('submit')
 
-      expect(mockRegisterStatusesStore.update).toHaveBeenCalledWith(
-        1,
-        expect.objectContaining({ readOnly: true })
-      )
+      expect(wrapper.get('fieldset').attributes('disabled')).toBeDefined()
+      expect(wrapper.find('[data-testid="register-status-save-action"]').exists()).toBe(false)
+      expect(mockRegisterStatusesStore.update).not.toHaveBeenCalled()
     })
 
     it('handles error during update', async () => {

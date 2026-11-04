@@ -48,6 +48,10 @@ const { selectedCustomsProcedureCode } = useListState('parcelEvents', {
 })
 
 const hasEvents = computed(() => events.value?.length > 0)
+const canSave = computed(() =>
+  authStore.canWriteSettings && hasEvents.value &&
+  !saving.value && !initializing.value && !loading.value && !initialLoadFailed.value
+)
 const procedureOptions = computed(() => {
   const customsProcedures = Array.isArray(registerOps.value?.customsProcedures)
     ? registerOps.value.customsProcedures
@@ -120,6 +124,7 @@ function onCustomsProcedureChange(value) {
 }
 
 function onStatusChange(eventId, value) {
+  if (!canSave.value) return
   const newValue = value === '' ? 0 : Number(value)
   statusSelections.value = {
     ...statusSelections.value,
@@ -128,6 +133,7 @@ function onStatusChange(eventId, value) {
 }
 
 function onZoneChange(eventId, value) {
+  if (!canSave.value) return
   const newValue = value === '' ? 0 : Number(value)
   zoneSelections.value = {
     ...zoneSelections.value,
@@ -136,6 +142,7 @@ function onZoneChange(eventId, value) {
 }
 
 function onExtDataChange(eventId, value) {
+  if (!canSave.value) return
   extDataSelections.value = {
     ...extDataSelections.value,
     [eventId]: value
@@ -175,6 +182,7 @@ async function loadData() {
 }
 
 async function saveSettings() {
+  if (!canSave.value) return
   saving.value = true
   try {
     const payload = events.value.map((item) => ({
@@ -208,11 +216,12 @@ onMounted(async () => {
       <h1 class="primary-heading">Обработка событий посылок</h1>
       <div class="header-actions">
         <ActionButton
+          v-if="authStore.canWriteSettings"
           :item="{}"
           icon="fa-solid fa-check-double"
           :iconSize="'2x'"
           tooltip-text="Сохранить"
-          :disabled="saving || initializing"
+          :disabled="!canSave"
           data-testid="save-button"
           @click="saveSettings"
         />
@@ -220,7 +229,7 @@ onMounted(async () => {
           :item="{}"
           icon="fa-solid fa-xmark"
           :iconSize="'2x'"
-          tooltip-text="Отменить"
+          :tooltip-text="authStore.canWriteSettings ? 'Отменить' : 'Закрыть'"
           :disabled="saving"
           data-testid="cancel-button"
           @click="cancel"
@@ -256,62 +265,67 @@ onMounted(async () => {
           />
         </div>
 
-        <v-data-table
-          v-model:items-per-page="parcelevents_per_page"
-          v-model:page="parcelevents_page"
-          :items-per-page-options="itemsPerPageOptions"
-          :headers="headers"
-          :items="filteredEvents"
-          item-value="id"
-          class="interlaced-table single-line-table parcel-events-table"
-          density="compact"
-          :loading="loading"
-        >
-          <template #[`item.eventTitle`]="{ item }">
-            <span :data-testid="`parcel-event-row-${item.id}`">{{ getEventTitle(item) }}</span>
-          </template>
-          <template #[`item.parcelStatus`]="{ item }">
-            <select
-              class="form-control input-0"
-              :id="`status-select-${item.id}`"
-              :value="statusSelections[item.id] ?? '0'"
-              @change="onStatusChange(item.id, $event.target.value)"
-              :data-testid="`status-select-${item.id}`"
-            >
-              <option value="0">Не менять</option>
-              <option v-for="status in parcelStatuses" :key="status.id" :value="status.id">
-                {{ status.title }}
-              </option>
-            </select>
-          </template>
-          <template #[`item.zone`]="{ item }">
-            <select
-              class="form-control input-0"
-              :id="`zone-select-${item.id}`"
-              :value="zoneSelections[item.id] ?? '0'"
-              @change="onZoneChange(item.id, $event.target.value)"
-              :data-testid="`zone-select-${item.id}`"
-            >
-              <option value="0">Не менять</option>
-              <option v-for="zone in warehouseOps.zones" :key="zone.value" :value="zone.value">
-                {{ zone.name }}
-              </option>
-            </select>
-          </template>
-          <template #[`item.extData`]="{ item }">
-            <input
-              type="text"
-              class="form-control input-0"
-              :id="`extdata-input-${item.id}`"
-              :value="extDataSelections[item.id] ?? ''"
-              @input="onExtDataChange(item.id, $event.target.value)"
-              :data-testid="`extdata-input-${item.id}`"
-            />
-          </template>
-          <template #no-data>
-            <div class="text-center m-5">Список событий пуст</div>
-          </template>
-        </v-data-table>
+        <v-card class="table-card">
+          <v-data-table
+            v-model:items-per-page="parcelevents_per_page"
+            v-model:page="parcelevents_page"
+            :items-per-page-options="itemsPerPageOptions"
+            :headers="headers"
+            :items="filteredEvents"
+            item-value="id"
+            class="interlaced-table single-line-table parcel-events-table"
+            density="compact"
+            :loading="loading"
+          >
+            <template #[`item.eventTitle`]="{ item }">
+              <span :data-testid="`parcel-event-row-${item.id}`">{{ getEventTitle(item) }}</span>
+            </template>
+            <template #[`item.parcelStatus`]="{ item }">
+              <select
+                class="form-control input-0"
+                :id="`status-select-${item.id}`"
+                :value="statusSelections[item.id] ?? '0'"
+                :disabled="!canSave"
+                @change="onStatusChange(item.id, $event.target.value)"
+                :data-testid="`status-select-${item.id}`"
+              >
+                <option value="0">Не менять</option>
+                <option v-for="status in parcelStatuses" :key="status.id" :value="status.id">
+                  {{ status.title }}
+                </option>
+              </select>
+            </template>
+            <template #[`item.zone`]="{ item }">
+              <select
+                class="form-control input-0"
+                :id="`zone-select-${item.id}`"
+                :value="zoneSelections[item.id] ?? '0'"
+                :disabled="!canSave"
+                @change="onZoneChange(item.id, $event.target.value)"
+                :data-testid="`zone-select-${item.id}`"
+              >
+                <option value="0">Не менять</option>
+                <option v-for="zone in warehouseOps.zones" :key="zone.value" :value="zone.value">
+                  {{ zone.name }}
+                </option>
+              </select>
+            </template>
+            <template #[`item.extData`]="{ item }">
+              <input
+                type="text"
+                class="form-control input-0"
+                :id="`extdata-input-${item.id}`"
+                :value="extDataSelections[item.id] ?? ''"
+                :disabled="!canSave"
+                @input="onExtDataChange(item.id, $event.target.value)"
+                :data-testid="`extdata-input-${item.id}`"
+              />
+            </template>
+            <template #no-data>
+              <div class="text-center m-5">Список событий пуст</div>
+            </template>
+          </v-data-table>
+        </v-card>
       </div>
 
       <div v-else class="text-center m-5">Список событий пуст</div>

@@ -53,6 +53,13 @@ This file is a part of Logibooks ui application
   min-width: 0;
 }
 
+.settings-fields {
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
 .header-with-actions {
   display: flex;
   align-items: flex-start;

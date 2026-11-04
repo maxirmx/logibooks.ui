@@ -36,6 +36,7 @@ const FieldStub = {
 }
 
 let isAdmin
+let isRoleless
 const mockUser = ref({
   id: 1,
   firstName: 'John',
@@ -93,6 +94,8 @@ vi.mock('@/stores/users.store.js', () => ({
 vi.mock('@/stores/auth.store.js', () => ({
   useAuthStore: () => ({
     isAdmin,
+    canReadSettings: true,
+    hasAnyRole: !isRoleless,
     user: { id: 2 },
     register: registerUser
   })
@@ -147,6 +150,7 @@ beforeEach(() => {
     setActivePinia(createPinia())
   vi.clearAllMocks()
   isAdmin = false
+  isRoleless = false
   mockUser.value = {
     id: 1,
     firstName: 'John',
@@ -165,6 +169,22 @@ beforeEach(() => {
 })
 
 describe('User_Settings.vue real component', () => {
+  it('loads a roleless user’s profile without warehouse and filter requests', async () => {
+    isRoleless = true
+    mockUser.value.roles = []
+    const wrapper = mount(Parent, {
+      props: { register: false, id: 2 },
+      global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub } }
+    })
+    await resolveAll()
+    expect(getById).toHaveBeenCalledWith(2, true)
+    expect(ensureLoaded).toHaveBeenCalled()
+    expect(ensureWarehousesLoaded).not.toHaveBeenCalled()
+    expect(wrapper.find('[data-testid="user-parcel-filters"]').exists()).toBe(false)
+    expect(wrapper.get('#schemeId').exists()).toBe(true)
+    expect(errorAlert).not.toHaveBeenCalled()
+  })
+
   it('shows filters on own and administrator-managed profiles, but not during registration', async () => {
     const ownProfile = mount(Parent, {
       props: { register: false, id: 2 },

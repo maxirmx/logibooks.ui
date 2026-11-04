@@ -18,7 +18,8 @@ import {
   roleLogist,
   roleWhManager,
   roleWhOperator,
-  roleAdmin
+  roleAdmin,
+  isAutomatedSystem
 } from '@/helpers/user.roles.js'
 
 const baseUrl = `${apiUrl}/auth`
@@ -64,6 +65,8 @@ export const useAuthStore = defineStore('auth', () => {
   const isWhOperator = computed(() => user.value?.roles?.includes(roleWhOperator))
   const isWhManager = computed(() => user.value?.roles?.includes(roleWhManager))
   const isShiftLeadPlus = computed(() => isAdmin.value || isShiftLead.value)
+  const canReadSettings = computed(() => Boolean(user.value) && !isAutomatedSystem(user.value))
+  const canWriteSettings = computed(() => canReadSettings.value && isShiftLeadPlus.value)
   const isSrLogistPlus = computed(() => isAdmin.value || isShiftLead.value || isSrLogist.value)
   const isWhManagerPlus = computed(() => isAdmin.value || isShiftLead.value || isWhManager.value)
   const hasLogistRole = computed(() => isLogist.value || isSrLogist.value || isShiftLead.value)
@@ -218,6 +221,8 @@ export const useAuthStore = defineStore('auth', () => {
     isWhManager,
     isWhOperator,
     isShiftLeadPlus,
+    canReadSettings,
+    canWriteSettings,
     isSrLogistPlus,
     isWhManagerPlus,
     hasLogistRole,

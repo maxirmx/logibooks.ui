@@ -55,7 +55,8 @@ describe('HotKeyActionSchemes_List.vue', () => {
       remove: removeMock
     }
     authStoreMock = {
-      isSrLogistPlus: true,
+      canReadSettings: true,
+      canWriteSettings: true,
       hotkeyactionschemes_per_page: ref(10),
       hotkeyactionschemes_search: ref(''),
       hotkeyactionschemes_sort_by: ref(['id']),

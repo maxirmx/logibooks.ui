@@ -130,7 +130,7 @@ const router = createRouter({
       path: '/hotkeyactionschemes',
       name: 'Схемы действий горячих клавиш',
       component: () => import('@/views/HotKeyActionSchemes_View.vue'),
-      meta: { reqAnyRole: true }
+      meta: { settingsRead: true }
     },
     {
       path: '/company/create',
@@ -281,7 +281,7 @@ const router = createRouter({
       path: '/hotkeyactionscheme/create',
       name: 'Регистрация схемы действий горячих клавиш',
       component: () => import('@/views/HotKeyActionScheme_CreateView.vue'),
-      meta: { reqAdminOrSrLogist: true }
+      meta: { settingsList: '/hotkeyactionschemes' }
     },
     {
       path: '/hotkeyactionscheme/edit/:id',
@@ -290,43 +290,43 @@ const router = createRouter({
       props: (route) => ({
         id: Number(route.params.id)
       }),
-      meta: { reqAdminOrSrLogist: true }
+      meta: { settingsRead: true }
     },
     {
       path: '/parcelstatuses',
       name: 'Статусы посылок',
       component: () => import('@/views/ParcelStatuses_View.vue'),
-      meta: { reqAnyRole: true }
+      meta: { settingsRead: true }
     },
     {
       path: '/registerstatuses',
       name: 'Статусы реестров',
       component: () => import('@/views/RegisterStatuses_View.vue'),
-      meta: { reqAnyRole: true }
+      meta: { settingsRead: true }
     },
     {
       path: '/parcelsevents',
       name: 'Обработка событий посылок',
       component: () => import('@/views/ParcelEvents_View.vue'),
-      meta: { reqAdmin: true }
+      meta: { settingsRead: true }
     },
     {
       path: '/registersevents',
       name: 'Обработка событий реестров/партий',
       component: () => import('@/views/RegisterEvents_View.vue'),
-      meta: { reqAdmin: true }
+      meta: { settingsRead: true }
     },
     {
       path: '/parcelstatus/create',
       name: 'Регистрация статуса посылки',
       component: () => import('@/views/ParcelStatus_CreateView.vue'),
-      meta: { reqAdminOrSrLogist: true }
+      meta: { settingsList: '/parcelstatuses' }
     },
     {
       path: '/registerstatus/create',
       name: 'Регистрация статуса реестра',
       component: () => import('@/views/RegisterStatus_CreateView.vue'),
-      meta: { reqShiftLeadPlus: true }
+      meta: { settingsList: '/registerstatuses' }
     },
     {
       path: '/parcelstatus/edit/:id',
@@ -335,7 +335,7 @@ const router = createRouter({
       props: (route) => ({
         id: Number(route.params.id)
       }),
-      meta: { reqAdminOrSrLogist: true }
+      meta: { settingsRead: true }
     },
     {
       path: '/registerstatus/edit/:id',
@@ -344,7 +344,7 @@ const router = createRouter({
       props: (route) => ({
         id: Number(route.params.id)
       }),
-      meta: { reqShiftLeadPlus: true }
+      meta: { settingsRead: true }
     },
     {
       path: '/keywords',
@@ -760,6 +760,12 @@ router.beforeEach(async (to) => {
     // If no user after check, route to login
     if (!auth.user) {
       return routeToLogin(to, auth)
+    }
+
+    if (to.meta.settingsRead || to.meta.settingsList) {
+      if (!auth.canReadSettings) return routeToLogin(to, auth)
+      if (to.meta.settingsList && !auth.canWriteSettings) return to.meta.settingsList
+      return true
     }
 
     // Check role-specific permissions

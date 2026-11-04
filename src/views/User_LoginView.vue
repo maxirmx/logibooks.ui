@@ -36,20 +36,25 @@ const schema = Yup.object().shape({
 
 const showPassword = ref(false)
 
-function onSubmit(values) {
+async function onSubmit(values) {
   const authStore = useAuthStore()
   const { login_email, login_password } = values
 
-  return authStore
-    .login(login_email, login_password)
-    .then(async () => {
+  try {
+    await authStore.login(login_email, login_password)
+    // The auth store restores a saved destination before resolving.
+    if (router.currentRoute.value.path !== '/login') return
+
+    if (authStore.hasAnyRole) {
       await parcelStatusesStore.ensureLoaded()
       await countriesStore.ensureLoaded()
       await registersStore.ensureOpsLoaded()
       await companiesStore.getAll()
-      router.push(getHomeRoute())
-    })
-    .catch((error) => alertStore.error(error.message || String(error)))
+    }
+    await router.push(getHomeRoute())
+  } catch (error) {
+    alertStore.error(error, { fallback: 'Не удалось войти в систему' })
+  }
 }
 </script>
 

@@ -15,6 +15,6 @@ const props = defineProps({
 
 <template>
   <Suspense>
-    <HotKeysActionSchemeSettings :mode="'edit'" :hot-key-action-scheme-id="props.id" />
+    <HotKeysActionSchemeSettings :key="props.id" :mode="'edit'" :hot-key-action-scheme-id="props.id" />
   </Suspense>
 </template>

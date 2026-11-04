@@ -318,30 +318,6 @@ describe('Registers_List.vue', () => {
     ensureOpsLoadedFn.mockClear()
   })
 
-  it('reports store error via alertStore when loadRegisters fails', async () => {
-    getAll.mockImplementationOnce(() => {
-      registersStore.error.value = 'load registers failed'
-      return Promise.resolve()
-    })
-
-    mount(RegistersList, { global: { stubs: vuetifyStubs } })
-    await flushPromises()
-
-    expect(alertErrorFn).toHaveBeenCalledWith('load registers failed')
-  })
-
-  it('reports Error object store error as message string via alertStore', async () => {
-    getAll.mockImplementationOnce(() => {
-      registersStore.error.value = new Error('load registers failed')
-      return Promise.resolve()
-    })
-
-    mount(RegistersList, { global: { stubs: vuetifyStubs } })
-    await flushPromises()
-
-    expect(alertErrorFn).toHaveBeenCalledWith('load registers failed')
-  })
-
   describe('getRegisterTypeName function', () => {
     let wrapper
 

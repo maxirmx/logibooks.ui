@@ -6,6 +6,7 @@
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { watch, ref, onMounted, onUnmounted, reactive, computed, unref } from 'vue'
 import {
+  loadRegisterList,
   startRegisterStatusEditMode,
   cancelRegisterStatusChange,
   applyRegisterStatusChange,
@@ -201,12 +202,8 @@ onUnmounted(() => {
   stopPolling()
 })
 
-async function loadRegisters() {
-  await registersStore.getAll({ mode: OP_MODE_WAREHOUSE })
-  const storeError = unref(registersStore.error)
-  if (storeError) {
-    alertStore.error(storeError instanceof Error ? storeError.message : String(storeError))
-  }
+function loadRegisters() {
+  return loadRegisterList({ registersStore, authStore, alertStore, mode: OP_MODE_WAREHOUSE, isComponentMounted })
 }
 
 function openParcelStatusBulkDialog(registerId) {

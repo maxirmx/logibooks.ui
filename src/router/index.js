@@ -5,7 +5,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
-import { getHomeRoute } from '@/helpers/login.navigation.js'
+import { getHomeRoute, LOGIN_REQUIRED_MESSAGE } from '@/helpers/login.navigation.js'
 import { OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 import {
   normalizeParcelBoxCode,
@@ -25,7 +25,7 @@ function authenticationStatus(error) {
 
 function requireLogin(auth, alert) {
   auth.clearSession()
-  alert.error('Необходимо войти в систему')
+  alert.error(LOGIN_REQUIRED_MESSAGE)
 }
 
 function routeToLogin(to, auth) {

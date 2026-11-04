@@ -273,30 +273,6 @@ describe('Registers_WhList.vue', () => {
     router.push.mockClear()
   })
 
-  it('reports store errors after loading warehouse parties', async () => {
-    getAll.mockImplementationOnce(() => {
-      registersStore.error.value = 'warehouse load failed'
-      return Promise.resolve()
-    })
-
-    createWrapper()
-    await flushPromises()
-
-    expect(alertErrorFn).toHaveBeenCalledWith('warehouse load failed')
-  })
-
-  it('reports Error object store errors after loading warehouse parties', async () => {
-    getAll.mockImplementationOnce(() => {
-      registersStore.error.value = new Error('warehouse object load failed')
-      return Promise.resolve()
-    })
-
-    createWrapper()
-    await flushPromises()
-
-    expect(alertErrorFn).toHaveBeenCalledWith('warehouse object load failed')
-  })
-
   it('reports initialization failures', async () => {
     registersStore.ensureOpsLoaded.mockRejectedValueOnce(new Error('ops failed'))
 

@@ -13,7 +13,7 @@ import { defaultGlobalStubs, resolveAll } from './helpers/test-utils.js'
 const transport = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn(), put: vi.fn() }))
 const push = vi.hoisted(() => vi.fn())
 vi.mock('@/helpers/fetch.wrapper.js', () => ({ fetchWrapper: transport }))
-vi.mock('@/stores/auth.store.js', () => ({ useAuthStore: () => ({ isAdmin: true }) }))
+vi.mock('@/stores/auth.store.js', () => ({ useAuthStore: () => ({ canWriteSettings: true }) }))
 vi.mock('@/router', () => ({ default: { push } }))
 
 async function openEditor(mode) {

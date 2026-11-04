@@ -44,6 +44,10 @@ const { selectedCustomsProcedureCode } = useListState('registerEvents', {
 })
 
 const hasEvents = computed(() => events.value?.length > 0)
+const canSave = computed(() =>
+  authStore.canWriteSettings && hasEvents.value &&
+  !saving.value && !initializing.value && !loading.value && !initialLoadFailed.value
+)
 const procedureOptions = computed(() => {
   const customsProcedures = Array.isArray(registerOps.value?.customsProcedures)
     ? registerOps.value.customsProcedures
@@ -115,6 +119,7 @@ function onCustomsProcedureChange(value) {
 }
 
 function onStatusChange(eventId, value) {
+  if (!canSave.value) return
   const newValue = value === '' ? 0 : Number(value)
   statusSelections.value = {
     ...statusSelections.value,
@@ -146,6 +151,7 @@ async function loadData() {
 }
 
 async function saveSettings() {
+  if (!canSave.value) return
   saving.value = true
   try {
     const payload = events.value.map((item) => ({
@@ -177,11 +183,12 @@ onMounted(async () => {
       <h1 class="primary-heading">Обработка событий реестров/партий</h1>
       <div class="header-actions">
         <ActionButton
+          v-if="authStore.canWriteSettings"
           :item="{}"
           icon="fa-solid fa-check-double"
           :iconSize="'2x'"
           tooltip-text="Сохранить"
-          :disabled="saving || initializing"
+          :disabled="!canSave"
           data-testid="save-button"
           @click="saveSettings"
         />
@@ -189,7 +196,7 @@ onMounted(async () => {
           :item="{}"
           icon="fa-solid fa-xmark"
           :iconSize="'2x'"
-          tooltip-text="Отменить"
+          :tooltip-text="authStore.canWriteSettings ? 'Отменить' : 'Закрыть'"
           :disabled="saving"
           data-testid="cancel-button"
           @click="cancel"
@@ -225,40 +232,42 @@ onMounted(async () => {
           />
         </div>
 
-        <v-data-table
-          v-model:items-per-page="registerevents_per_page"
-          v-model:page="registerevents_page"
-          :items-per-page-options="itemsPerPageOptions"
-          :headers="headers"
-          :items="filteredEvents"
-          item-value="id"
-          class="interlaced-table single-line-table register-events-table"
-          density="compact"
-          :loading="loading"
-        >
-          <template #[`item.eventTitle`]="{ item }">
-            <span :data-testid="`register-event-row-${item.id}`">{{ getEventTitle(item) }}</span>
-          </template>
-          <template #[`item.status`]="{ item }">
-            <RegisterStatusSelect
-              :id="`status-select-${item.id}`"
-              class="register-event-status-select"
-              :model-value="statusSelections[item.id] ?? 0"
-              :items="registerStatusOptions"
-              variant="outlined"
-              density="compact"
-              hide-details
-              hide-no-data
-              :disabled="saving || loading"
-              :menu-props="{ minWidth: 260 }"
-              @update:model-value="onStatusChange(item.id, $event)"
-              :data-testid="`status-select-${item.id}`"
-            />
-          </template>
-          <template #no-data>
-            <div class="text-center m-5">Список событий пуст</div>
-          </template>
-        </v-data-table>
+        <v-card class="table-card">
+          <v-data-table
+            v-model:items-per-page="registerevents_per_page"
+            v-model:page="registerevents_page"
+            :items-per-page-options="itemsPerPageOptions"
+            :headers="headers"
+            :items="filteredEvents"
+            item-value="id"
+            class="interlaced-table single-line-table register-events-table"
+            density="compact"
+            :loading="loading"
+          >
+            <template #[`item.eventTitle`]="{ item }">
+              <span :data-testid="`register-event-row-${item.id}`">{{ getEventTitle(item) }}</span>
+            </template>
+            <template #[`item.status`]="{ item }">
+              <RegisterStatusSelect
+                :id="`status-select-${item.id}`"
+                class="register-event-status-select"
+                :model-value="statusSelections[item.id] ?? 0"
+                :items="registerStatusOptions"
+                variant="outlined"
+                density="compact"
+                hide-details
+                hide-no-data
+                :disabled="!canSave"
+                :menu-props="{ minWidth: 260 }"
+                @update:model-value="onStatusChange(item.id, $event)"
+                :data-testid="`status-select-${item.id}`"
+              />
+            </template>
+            <template #no-data>
+              <div class="text-center m-5">Список событий пуст</div>
+            </template>
+          </v-data-table>
+        </v-card>
       </div>
 
       <div v-else class="text-center m-5">Список событий пуст</div>

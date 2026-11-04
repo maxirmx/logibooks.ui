@@ -81,8 +81,10 @@ const showPassword = ref(false)
 const showPassword2 = ref(false)
 const selectedWarehouseIds = ref([])
 const initializationFailed = ref(false)
+const isRolelessHuman = computed(() => authStore.canReadSettings && !authStore.hasAnyRole)
 const showPersonalParcelFilters = computed(
-  () => !props.register && !initializationFailed.value && (authStore.isAdmin || Number(props.id) === Number(authStore.user?.id))
+  () => !props.register && !initializationFailed.value && !isRolelessHuman.value &&
+    (authStore.isAdmin || Number(props.id) === Number(authStore.user?.id))
 )
 
 let user = ref({
@@ -97,7 +99,9 @@ if (!isRegister()) {
 async function initialize() {
   initializationFailed.value = false
   try {
-    await Promise.all([hotKeyActionSchemesStore.ensureLoaded(), warehousesStore.ensureLoaded()])
+    const lookups = [hotKeyActionSchemesStore.ensureLoaded()]
+    if (!isRolelessHuman.value) lookups.push(warehousesStore.ensureLoaded())
+    await Promise.all(lookups)
     if (!isRegister()) {
       await usersStore.getById(props.id, true)
       if (isAutomatedSystem(user.value)) {

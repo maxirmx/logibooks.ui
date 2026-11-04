@@ -41,9 +41,7 @@ function filterRegisterStatuses(value, query, item) {
 
 // Table headers
 const headers = [
-  ...(authStore.isShiftLeadPlus
-    ? [{ title: '', align: 'center', key: 'actions', sortable: false, width: '10%' }]
-    : []),
+  { title: '', align: 'center', key: 'actions', sortable: false, width: '10%' },
   { title: '', align: 'center', key: 'registerStatusIcon', sortable: false, width: '56px' },
   { title: 'Название статуса', key: 'title', sortable: true },
   { title: 'Транзит', align: 'center', key: 'transit', sortable: true },
@@ -52,28 +50,32 @@ const headers = [
 ]
 
 function openEditDialog(item) {
-  if (!authStore.isShiftLeadPlus) return
-  router.push(`/registerstatus/edit/${item.id}`)
+  if (!authStore.canReadSettings) return
+  return runWithAlert(() => router.push(`/registerstatus/edit/${item.id}`), {
+    fallback: 'Не удалось открыть статус партии'
+  })
 }
 
 function openCreateDialog() {
-  if (!authStore.isShiftLeadPlus) return
-  router.push('/registerstatus/create')
+  if (!authStore.canWriteSettings) return
+  return runWithAlert(() => router.push('/registerstatus/create'), {
+    fallback: 'Не удалось открыть форму создания'
+  })
 }
 
 async function deleteRegisterStatus(registerStatus) {
-  if (!authStore.isShiftLeadPlus || runningAction.value) return
+  if (!authStore.canWriteSettings || runningAction.value) return
   runningAction.value = true
   try {
     const content = 'Удалить статус партии "' + registerStatus.title + '" ?'
-    const confirmed = await confirm({
+    const confirmed = await runWithAlert(() => confirm({
       title: 'Подтверждение',
       confirmationText: 'Удалить',
       cancellationText: 'Не удалять',
       content: content
-    })
+    }), { fallback: 'Не удалось открыть подтверждение удаления' })
 
-    if (confirmed) {
+    if (confirmed && authStore.canWriteSettings) {
       try {
         await registerStatusesStore.remove(registerStatus.id)
       } catch (error) {
@@ -108,11 +110,11 @@ defineExpose({
   <div class="settings table-2 list-with-filters" data-testid="register-statuses-list">
     <div class="header-with-actions">
       <h1 class="primary-heading">Статусы партий</h1>
-      <div class="header-actions-bar" v-if="authStore.isShiftLeadPlus">
+      <div class="header-actions-bar">
         <div v-if="runningAction || loading" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
         </div>
-        <div class="header-actions header-actions-group">
+        <div v-if="authStore.canWriteSettings" class="header-actions header-actions-group">
           <ActionButton
             :item="{}"
             icon="fa-solid fa-plus"
@@ -159,15 +161,17 @@ defineExpose({
         fixed-header
       >
         <template v-slot:[`item.actions`]="{ item }">
-          <div v-if="authStore.isShiftLeadPlus" class="actions-container">
+          <div class="actions-container">
             <ActionButton
               :item="item"
-              icon="fa-solid fa-pen"
-              tooltip-text="Редактировать статус партии"
+              :icon="authStore.canWriteSettings ? 'fa-solid fa-pen' : 'fa-solid fa-eye'"
+              :tooltip-text="authStore.canWriteSettings ? 'Редактировать статус партии' : 'Просмотреть'"
+              :aria-label="authStore.canWriteSettings ? 'Редактировать статус партии' : 'Просмотреть'"
               @click="openEditDialog"
               :disabled="runningAction || loading"
             />
             <ActionButton
+              v-if="authStore.canWriteSettings"
               :item="item"
               icon="fa-solid fa-trash-can"
               tooltip-text="Удалить статус партии"
@@ -181,8 +185,8 @@ defineExpose({
           <button
             type="button"
             class="status-icon-button"
-            aria-label="Редактировать статус партии"
-            :disabled="!authStore.isShiftLeadPlus || runningAction || loading"
+            :aria-label="authStore.canWriteSettings ? 'Редактировать статус партии' : 'Просмотреть статус партии'"
+            :disabled="runningAction || loading"
             @click="openEditDialog(item)"
           >
             <RegisterStatusIcon :status="item" />

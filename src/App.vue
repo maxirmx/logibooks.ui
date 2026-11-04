@@ -373,24 +373,23 @@ function getUserName() {
           </v-list-item>
         </v-list-group>
 
-        <!-- Meta -->
-        <v-list-group v-if="authStore.isShiftLeadPlus">
+        <v-list-group v-if="authStore.canReadSettings">
           <template v-slot:activator="{ props }">
             <v-list-item v-bind="props" title="Настройки"></v-list-item>
           </template>
-          <v-list-item v-if="authStore.isAdmin">
+          <v-list-item>
             <RouterLink to="/parcelstatuses" class="link">Статусы посылок</RouterLink>
           </v-list-item>
           <v-list-item>
             <RouterLink to="/registerstatuses" class="link">Статусы партий</RouterLink>
           </v-list-item>
-          <v-list-item v-if="authStore.isAdmin">
+          <v-list-item>
             <RouterLink to="/parcelsevents" class="link">События/посылки</RouterLink>
           </v-list-item>
-          <v-list-item v-if="authStore.isAdmin">
+          <v-list-item>
             <RouterLink to="/registersevents" class="link">События/партии</RouterLink>
           </v-list-item>
-          <v-list-item v-if="authStore.isAdmin">
+          <v-list-item>
             <RouterLink to="/hotkeyactionschemes" class="link">Клавиатура</RouterLink>
           </v-list-item>
         </v-list-group>

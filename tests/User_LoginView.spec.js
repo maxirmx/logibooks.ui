@@ -7,6 +7,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 import UserLoginView from '@/views/User_LoginView.vue'
+import { useAlertStore } from '@/stores/alert.store.js'
 import { resolveAll } from './helpers/test-utils'
 
 const routerPush = vi.hoisted(() => vi.fn())
@@ -14,6 +15,7 @@ const loginMock = vi.hoisted(() => vi.fn().mockResolvedValue())
 const ensureLoadedMock = vi.hoisted(() => vi.fn().mockResolvedValue())
 const getAllMock = vi.hoisted(() => vi.fn().mockResolvedValue())
 let authStore
+const currentRoute = vi.hoisted(() => ({ value: { path: '/login' } }))
 
 vi.mock('pinia', async () => {
   const actual = await vi.importActual('pinia')
@@ -21,15 +23,11 @@ vi.mock('pinia', async () => {
 })
 
 vi.mock('@/router', () => ({
-  default: { push: routerPush }
+  default: { push: routerPush, currentRoute }
 }))
 
 vi.mock('@/stores/auth.store.js', () => ({
   useAuthStore: () => authStore
-}))
-
-vi.mock('@/stores/alert.store.js', () => ({
-  useAlertStore: () => ({ alert: null, clear: vi.fn() })
 }))
 
 vi.mock('@/stores/parcel.statuses.store.js', () => ({
@@ -69,6 +67,7 @@ describe('User_LoginView.vue', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    currentRoute.value = { path: '/login' }
     authStore = {
       login: loginMock,
       isAdmin: false,
@@ -112,7 +111,7 @@ describe('User_LoginView.vue', () => {
     const { getHomeRoute } = await import('@/helpers/login.navigation.js')
     getHomeRoute.mockReturnValue('/users')
 
-    authStore.isAdmin = true
+    authStore.hasAnyRole = true
     const wrapper = mount(UserLoginView, {
       global: { stubs: { Form: FormStub, Field: FieldStub, 'font-awesome-icon': true } }
     })
@@ -125,4 +124,41 @@ describe('User_LoginView.vue', () => {
     expect(routerPush).toHaveBeenCalledWith('/users')
   })
 
+  it('opens a roleless user’s profile without operational lookups', async () => {
+    const { getHomeRoute } = await import('@/helpers/login.navigation.js')
+    getHomeRoute.mockReturnValue('/user/edit/1')
+    const wrapper = mount(UserLoginView, {
+      global: { stubs: { Form: FormStub, Field: FieldStub, 'font-awesome-icon': true } }
+    })
+    await wrapper.vm.onSubmit({ login_email: 'a', login_password: 'b' })
+    expect(ensureLoadedMock).not.toHaveBeenCalled()
+    expect(getAllMock).not.toHaveBeenCalled()
+    expect(routerPush).toHaveBeenCalledExactlyOnceWith('/user/edit/1')
+  })
+
+  it('honors the saved settings destination restored by login', async () => {
+    loginMock.mockImplementationOnce(async () => {
+      currentRoute.value = { path: '/parcelsevents' }
+    })
+    const wrapper = mount(UserLoginView, {
+      global: { stubs: { Form: FormStub, Field: FieldStub, 'font-awesome-icon': true } }
+    })
+    await wrapper.vm.onSubmit({ login_email: 'a', login_password: 'b' })
+    expect(currentRoute.value.path).toBe('/parcelsevents')
+    expect(ensureLoadedMock).not.toHaveBeenCalled()
+    expect(routerPush).not.toHaveBeenCalled()
+  })
+
+  it('renders one Russian alert if login rejects', async () => {
+    loginMock.mockRejectedValueOnce(new Error('Network error'))
+    const alert = vi.spyOn(useAlertStore(), 'error')
+    const wrapper = mount(UserLoginView, {
+      global: { stubs: { Form: FormStub, Field: FieldStub, 'font-awesome-icon': true } }
+    })
+    await wrapper.vm.onSubmit({ login_email: 'a', login_password: 'b' })
+    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+    expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось соединиться с сервером')
+    expect(alert).toHaveBeenCalledTimes(1)
+    expect(routerPush).not.toHaveBeenCalled()
+  })
 })

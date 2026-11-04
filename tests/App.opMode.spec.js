@@ -13,7 +13,7 @@ import { useStatusStore } from '@/stores/status.store.js'
 import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
-import { roleAdmin, roleLogist, roleShiftLead, roleSrLogist } from '@/helpers/user.roles.js'
+import { roleAdapterAlta, roleAdmin, roleLogist, roleShiftLead, roleSrLogist, roleWhOperator } from '@/helpers/user.roles.js'
 
 global.ResizeObserver = vi.fn().mockImplementation(function MockResizeObserver() {
   return {
@@ -144,35 +144,33 @@ describe('App navigation for registers', () => {
     wrapper.unmount()
   })
 
-  it('shows register-status settings to shift leads without exposing administrator-only settings', async () => {
-    authStore.user = {
-      id: 2,
-      firstName: 'Shift',
-      lastName: 'Lead',
-      patronymic: '',
-      email: 'shift-lead@example.com',
-      roles: [roleShiftLead]
+  const settingsPaths = [
+    '/parcelstatuses', '/registerstatuses', '/parcelsevents', '/registersevents', '/hotkeyactionschemes'
+  ]
+
+  it.each([[roleAdmin], [roleShiftLead], [roleSrLogist], [roleWhOperator], []].map(roles => ({ roles })))(
+    'shows all settings links for human accounts with roles $roles',
+    async ({ roles }) => {
+      authStore.user = { id: 2, roles }
+      const wrapper = mountApp()
+      await wrapper.vm.$nextTick()
+      for (const path of settingsPaths) {
+        expect(wrapper.find(`a[href="${path}"]`).exists()).toBe(true)
+      }
+      wrapper.unmount()
     }
-    const wrapper = mountApp()
-    await wrapper.vm.$nextTick()
-    const links = wrapper.findAll('a')
+  )
 
-    expect(links.some((item) => item.text().includes('Статусы партий'))).toBe(true)
-    expect(links.some((item) => item.text().includes('События/партии'))).toBe(false)
-  })
-
-  it('does not show register-status settings to senior logist users', async () => {
-    authStore.user = {
-      id: 3,
-      firstName: 'Senior',
-      lastName: 'Logist',
-      patronymic: '',
-      email: 'senior-logist@example.com',
-      roles: [roleSrLogist]
+  it.each([null, { id: 3, roles: [roleAdapterAlta] }])(
+    'omits settings links for anonymous visitors and adapters',
+    async (user) => {
+      authStore.user = user
+      const wrapper = mountApp()
+      await wrapper.vm.$nextTick()
+      for (const path of settingsPaths) {
+        expect(wrapper.find(`a[href="${path}"]`).exists()).toBe(false)
+      }
+      wrapper.unmount()
     }
-    const wrapper = mountApp()
-    await wrapper.vm.$nextTick()
-
-    expect(wrapper.findAll('a').some((item) => item.text().includes('Статусы партий'))).toBe(false)
-  })
+  )
 })

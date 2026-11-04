@@ -18,8 +18,7 @@ const removeRegisterStatus = vi.hoisted(() => vi.fn())
 const getRegisterStatusById = vi.hoisted(() => vi.fn())
 const mockPush = vi.hoisted(() => vi.fn())
 const mockConfirm = vi.hoisted(() => vi.fn())
-const mockIsShiftLeadPlus = ref(true)
-const mockIsSrLogistPlus = ref(false)
+const mockCanWriteSettings = ref(true)
 
 // Mock router
 vi.mock('@/router', () => ({
@@ -83,11 +82,9 @@ vi.mock('@/stores/auth.store.js', () => ({
     isAdmin: ref(true),
     isSrLogist: ref(false),
     isLogist: ref(false),
-    get isShiftLeadPlus() {
-      return mockIsShiftLeadPlus.value
-    },
-    get isSrLogistPlus() {
-      return mockIsSrLogistPlus.value
+    canReadSettings: true,
+    get canWriteSettings() {
+      return mockCanWriteSettings.value
     },
     hasLogistRole: ref(false),
     user: ref({ id: 1, roles: [roleAdmin] }),
@@ -163,8 +160,7 @@ describe('RegisterStatuses_List.vue', () => {
         transit: false, exportTo1C: false
       }
     ]
-    mockIsShiftLeadPlus.value = true
-    mockIsSrLogistPlus.value = false
+    mockCanWriteSettings.value = true
 
     wrapper = mount(RegisterStatusesList, {
       global: {
@@ -204,23 +200,22 @@ describe('RegisterStatuses_List.vue', () => {
 
     it('hides mutation actions from senior logist users', async () => {
       wrapper.unmount()
-      mockIsShiftLeadPlus.value = false
-      mockIsSrLogistPlus.value = true
+      mockCanWriteSettings.value = false
       wrapper = mount(RegisterStatusesList, {
         global: {
           stubs: extendedStubs
         }
       })
 
-      expect(wrapper.find('.header-actions-bar').exists()).toBe(false)
-      expect(wrapper.find('.actions-container').exists()).toBe(false)
-      expect(wrapper.get('.status-icon-button').attributes('disabled')).toBeDefined()
+      expect(wrapper.find('.header-actions-bar action-button-stub').exists()).toBe(false)
+      expect(wrapper.get('.actions-container [aria-label="Просмотреть"]').exists()).toBe(true)
+      expect(wrapper.get('.status-icon-button').attributes('disabled')).toBeUndefined()
 
       await wrapper.vm.openCreateDialog()
       await wrapper.vm.openEditDialog(mockRegisterStatuses.value[0])
       await wrapper.vm.deleteRegisterStatus(mockRegisterStatuses.value[0])
 
-      expect(mockPush).not.toHaveBeenCalled()
+      expect(mockPush).toHaveBeenCalledExactlyOnceWith('/registerstatus/edit/1')
       expect(mockConfirm).not.toHaveBeenCalled()
       expect(removeRegisterStatus).not.toHaveBeenCalled()
     })

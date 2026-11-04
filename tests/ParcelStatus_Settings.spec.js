@@ -39,6 +39,10 @@ vi.mock('@/stores/parcel.statuses.store.js', () => ({
   useParcelStatusesStore: () => mockParcelStatusesStore
 }))
 
+vi.mock('@/stores/auth.store.js', () => ({
+  useAuthStore: () => ({ canWriteSettings: true })
+}))
+
 vi.mock('@/stores/alert.store.js', () => ({
   useAlertStore: () => mockAlertStore
 }))
@@ -229,7 +233,7 @@ describe('ParcelStatus_Settings.vue', () => {
       await findActionButton(wrapper, 'fa-solid fa-broom').find('button').trigger('click')
       await resolveAll()
 
-      expect(mockParcelStatusesStore.parcelStatus.bkColor).toBeNull()
+      expect(mockParcelStatusesStore.parcelStatus.bkColor).toBe('#112233')
       expect(wrapper.find('.status-color-value').text()).toBe('Не задан')
       expect(wrapper.find('[data-testid="bk-color-swatch"]').classes()).toContain(
         'status-color-swatch--empty'

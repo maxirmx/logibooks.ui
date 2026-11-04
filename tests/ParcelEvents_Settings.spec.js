@@ -102,6 +102,7 @@ const routerBack = vi.hoisted(() => vi.fn())
 const alertError = vi.hoisted(() => vi.fn())
 
 const mockAuthStore = {
+  canWriteSettings: true,
   parcelevents_per_page: ref(50),
   parcelevents_page: ref(1)
 }

@@ -51,6 +51,10 @@ vi.mock('@/stores/hotkey.action.schemes.store.js', () => ({
   useHotKeyActionSchemesStore: () => storeMock
 }))
 
+vi.mock('@/stores/auth.store.js', () => ({
+  useAuthStore: () => ({ canWriteSettings: true })
+}))
+
 vi.mock('@/stores/alert.store.js', () => ({
   useAlertStore: () => ({ alert: null, error: alertError })
 }))

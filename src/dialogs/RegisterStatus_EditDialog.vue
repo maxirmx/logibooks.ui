@@ -9,9 +9,8 @@ import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { focusFirstInvalidField } from '@/helpers/form.validation.helpers.js'
 import { runWithAlert } from '@/helpers/notification.helpers.js'
 import { reportFormError } from '@/helpers/error.helpers.js'
-import { ref, computed } from 'vue'
+import { ref, computed, getCurrentScope } from 'vue'
 import router from '@/router'
-import { storeToRefs } from 'pinia'
 import { Form, Field } from 'vee-validate'
 import * as Yup from 'yup'
 import { useRegisterStatusesStore } from '@/stores/register.statuses.store.js'
@@ -45,29 +44,28 @@ const authStore = useAuthStore()
 
 // Check if we're in create mode
 const isCreate = computed(() => props.mode === 'create')
+const registerStatus = ref({
+  title: '',
+  icon: null,
+  bkColor: null,
+  fgColor: null,
+  readOnly: false,
+  transit: false,
+  exportTo1C: false
+})
+const canEdit = computed(() => Boolean(registerStatus.value) && authStore.canWriteSettings)
 
-let registerStatus
-
-if (isCreate.value) {
-  registerStatus = ref({
-    title: '',
-    icon: null,
-    bkColor: null,
-    fgColor: null,
-    readOnly: false,
-    transit: false,
-    exportTo1C: false
+if (!isCreate.value) {
+  const saved = await runWithAlert(() => registerStatusesStore.getById(props.registerStatusId), {
+    fallback: 'Не удалось загрузить статус партии',
+    scope: getCurrentScope()
   })
-} else {
-  const refs = storeToRefs(registerStatusesStore)
-  registerStatus = refs.registerStatus
-  await runWithAlert(() => registerStatusesStore.getById(props.registerStatusId), {
-    fallback: 'Не удалось загрузить статус партии'
-  })
+  registerStatus.value = saved && { ...saved }
 }
 
 // Get page title
 function getTitle() {
+  if (!authStore.canWriteSettings) return 'Просмотр статуса партии'
   return isCreate.value ? 'Создание статуса партии' : 'Редактирование статуса партии'
 }
 
@@ -116,6 +114,7 @@ function getIconFieldValue(fieldValue) {
 }
 
 function handleColorInput(event, handleChange, fieldName) {
+  if (!canEdit.value) return
   const value = event.target.value || null
   if (registerStatus.value) {
     registerStatus.value[fieldName] = value
@@ -125,16 +124,12 @@ function handleColorInput(event, handleChange, fieldName) {
 
 // Form submission
 function onSubmit(values, { setErrors } = {}) {
+  if (!canEdit.value) return
   const payload = normalizeRegisterStatusPresentationPayload(values)
-  if (!authStore.isAdmin) {
-    payload.readOnly = isCreate.value ? false : registerStatus.value?.readOnly === true
-  }
   if (isCreate.value) {
     return registerStatusesStore
       .create(payload)
-      .then(() => {
-        router.push('/registerstatuses')
-      })
+      .then(close)
       .catch((error) => {
         if (error.message?.includes('409')) {
           alertStore.error('Такой статус партии уже существует')
@@ -149,9 +144,7 @@ function onSubmit(values, { setErrors } = {}) {
   } else {
     return registerStatusesStore
       .update(props.registerStatusId, payload)
-      .then(() => {
-        router.push('/registerstatuses')
-      })
+      .then(close)
       .catch((error) => {
         reportFormError(error, {
           setErrors,
@@ -160,6 +153,11 @@ function onSubmit(values, { setErrors } = {}) {
         })
       })
   }
+}
+function close() {
+  return runWithAlert(() => router.push('/registerstatuses'), {
+    fallback: 'Не удалось открыть список'
+  })
 }
 </script>
 
@@ -177,6 +175,7 @@ function onSubmit(values, { setErrors } = {}) {
         <h1 class="primary-heading">{{ getTitle() }}</h1>
         <div class="header-actions" data-testid="register-status-header-actions">
           <ActionButton
+            v-if="canEdit"
             :item="{}"
             icon="fa-solid fa-check-double"
             :iconSize="'2x'"
@@ -189,10 +188,10 @@ function onSubmit(values, { setErrors } = {}) {
             :item="{}"
             icon="fa-solid fa-xmark"
             :iconSize="'2x'"
-            tooltip-text="Отменить"
+            :tooltip-text="canEdit ? 'Отменить' : 'Закрыть'"
             :disabled="isSubmitting"
             data-testid="register-status-cancel-action"
-            @click="router.push('/registerstatuses')"
+            @click="close"
           />
         </div>
       </div>
@@ -200,144 +199,145 @@ function onSubmit(values, { setErrors } = {}) {
 
       <PageAlertRegion />
 
-      <div class="status-settings-row">
-        <label for="title" class="label status-settings-label">Название статуса:</label>
-        <Field
-          name="title"
-          id="title"
-          type="text"
-          class="form-control input status-title-input"
-          :class="{ 'is-invalid': errors.title }"
-          placeholder="Название статуса"
-        />
-        <FieldError name="title" :errors="errors" />
-      </div>
-
-      <div class="status-settings-row">
-        <label for="readOnly" class="label status-settings-label">Изменения запрещены:</label>
-        <div class="checkbox-item">
-          <Field
-            id="readOnly"
-            name="readOnly"
-            type="checkbox"
-            class="checkbox checkbox-styled"
-            :value="true"
-            :unchecked-value="false"
-            :disabled="!authStore.isAdmin"
-          />
-          <label for="readOnly" aria-hidden="true"></label>
-        </div>
-      </div>
-
-      <div class="status-settings-row">
-        <label for="transit" class="label status-settings-label">Транзит:</label>
-        <div class="checkbox-item">
-          <Field
-            id="transit"
-            name="transit"
-            type="checkbox"
-            class="checkbox checkbox-styled"
-            :value="true"
-            :unchecked-value="false"
-          />
-          <label for="transit" aria-hidden="true"></label>
-        </div>
-      </div>
-
-      <div class="status-settings-row">
-        <label for="exportTo1C" class="label status-settings-label">Выгружать в 1C:</label>
-        <div class="checkbox-item">
-          <Field
-            id="exportTo1C"
-            name="exportTo1C"
-            type="checkbox"
-            class="checkbox checkbox-styled"
-            :value="true"
-            :unchecked-value="false"
-          />
-          <label for="exportTo1C" aria-hidden="true"></label>
-        </div>
-        <FieldError name="exportTo1C" :errors="errors" />
-      </div>
-
-      <Field name="bkColor" v-slot="{ field, handleChange }">
+      <fieldset v-if="registerStatus" :disabled="!canEdit" class="settings-fields">
         <div class="status-settings-row">
-          <label for="bkColor" class="label status-settings-label">Цвет фона:</label>
-          <label class="status-color-control" for="bkColor">
-            <span
-              class="status-color-swatch"
-              :style="{ backgroundColor: getColorFieldValue(field?.value, 'bkColor') }"
-              data-testid="bk-color-swatch"
-            ></span>
-            <span class="status-color-value">{{
-              getColorFieldValue(field?.value, 'bkColor')
-            }}</span>
-            <input
-              id="bkColor"
-              type="color"
-              class="status-color-native"
-              :class="{ 'is-invalid': errors.bkColor }"
-              aria-label="Цвет фона"
-              :value="getColorFieldValue(field?.value, 'bkColor')"
-              @input="(event) => handleColorInput(event, handleChange, 'bkColor')"
-            />
-          </label>
-          <FieldError name="bkColor" :errors="errors" />
+          <label for="title" class="label status-settings-label">Название статуса:</label>
+          <Field
+            name="title"
+            id="title"
+            type="text"
+            class="form-control input status-title-input"
+            :class="{ 'is-invalid': errors.title }"
+            placeholder="Название статуса"
+          />
+          <FieldError name="title" :errors="errors" />
         </div>
-      </Field>
-      <Field name="fgColor" v-slot="{ field, handleChange }">
-        <div class="status-settings-row">
-          <label for="fgColor" class="label status-settings-label">Цвет иконки:</label>
-          <label class="status-color-control" for="fgColor">
-            <span
-              class="status-color-swatch"
-              :style="{ backgroundColor: getColorFieldValue(field?.value, 'fgColor') }"
-              data-testid="fg-color-swatch"
-            ></span>
-            <span class="status-color-value">{{
-              getColorFieldValue(field?.value, 'fgColor')
-            }}</span>
-            <input
-              id="fgColor"
-              type="color"
-              class="status-color-native"
-              :class="{ 'is-invalid': errors.fgColor }"
-              aria-label="Цвет иконки"
-              :value="getColorFieldValue(field?.value, 'fgColor')"
-              @input="(event) => handleColorInput(event, handleChange, 'fgColor')"
-            />
-          </label>
-          <FieldError name="fgColor" :errors="errors" />
-        </div>
-      </Field>
 
-      <Field name="icon" v-slot="{ field, handleChange }">
-        <div class="status-settings-row status-settings-row--icons">
-          <span class="label status-settings-label">Иконка:</span>
-          <div class="status-icon-column">
-            <div class="status-icon-selector" :class="{ 'is-invalid': errors.icon }">
-              <button
-                v-for="option in registerStatusIconOptions"
-                :key="option.value"
-                type="button"
-                class="status-icon-option"
-                :class="{ selected: getIconFieldValue(field?.value) === option.value }"
-                :aria-label="option.value"
-                @click="handleChange(option.value)"
-              >
-                <RegisterStatusIcon
-                  :status="{
-                    icon: option.value,
-                    bkColor: getColorFieldValue(undefined, 'bkColor'),
-                    fgColor: getColorFieldValue(undefined, 'fgColor')
-                  }"
-                />
-              </button>
-            </div>
+        <div class="status-settings-row">
+          <label for="readOnly" class="label status-settings-label">Изменения запрещены:</label>
+          <div class="checkbox-item">
+            <Field
+              id="readOnly"
+              name="readOnly"
+              type="checkbox"
+              class="checkbox checkbox-styled"
+              :value="true"
+              :unchecked-value="false"
+            />
+            <label for="readOnly" aria-hidden="true"></label>
           </div>
-          <FieldError name="icon" :errors="errors" />
         </div>
-      </Field>
+
+        <div class="status-settings-row">
+          <label for="transit" class="label status-settings-label">Транзит:</label>
+          <div class="checkbox-item">
+            <Field
+              id="transit"
+              name="transit"
+              type="checkbox"
+              class="checkbox checkbox-styled"
+              :value="true"
+              :unchecked-value="false"
+            />
+            <label for="transit" aria-hidden="true"></label>
+          </div>
+        </div>
+
+        <div class="status-settings-row">
+          <label for="exportTo1C" class="label status-settings-label">Выгружать в 1C:</label>
+          <div class="checkbox-item">
+            <Field
+              id="exportTo1C"
+              name="exportTo1C"
+              type="checkbox"
+              class="checkbox checkbox-styled"
+              :value="true"
+              :unchecked-value="false"
+            />
+            <label for="exportTo1C" aria-hidden="true"></label>
+          </div>
+          <FieldError name="exportTo1C" :errors="errors" />
+        </div>
+
+        <Field name="bkColor" v-slot="{ field, handleChange }">
+          <div class="status-settings-row">
+            <label for="bkColor" class="label status-settings-label">Цвет фона:</label>
+            <label class="status-color-control" for="bkColor">
+              <span
+                class="status-color-swatch"
+                :style="{ backgroundColor: getColorFieldValue(field?.value, 'bkColor') }"
+                data-testid="bk-color-swatch"
+              ></span>
+              <span class="status-color-value">{{
+                getColorFieldValue(field?.value, 'bkColor')
+              }}</span>
+              <input
+                id="bkColor"
+                type="color"
+                class="status-color-native"
+                :class="{ 'is-invalid': errors.bkColor }"
+                aria-label="Цвет фона"
+                :value="getColorFieldValue(field?.value, 'bkColor')"
+                @input="(event) => handleColorInput(event, handleChange, 'bkColor')"
+              />
+            </label>
+            <FieldError name="bkColor" :errors="errors" />
+          </div>
+        </Field>
+        <Field name="fgColor" v-slot="{ field, handleChange }">
+          <div class="status-settings-row">
+            <label for="fgColor" class="label status-settings-label">Цвет иконки:</label>
+            <label class="status-color-control" for="fgColor">
+              <span
+                class="status-color-swatch"
+                :style="{ backgroundColor: getColorFieldValue(field?.value, 'fgColor') }"
+                data-testid="fg-color-swatch"
+              ></span>
+              <span class="status-color-value">{{
+                getColorFieldValue(field?.value, 'fgColor')
+              }}</span>
+              <input
+                id="fgColor"
+                type="color"
+                class="status-color-native"
+                :class="{ 'is-invalid': errors.fgColor }"
+                aria-label="Цвет иконки"
+                :value="getColorFieldValue(field?.value, 'fgColor')"
+                @input="(event) => handleColorInput(event, handleChange, 'fgColor')"
+              />
+            </label>
+            <FieldError name="fgColor" :errors="errors" />
+          </div>
+        </Field>
+
+        <Field name="icon" v-slot="{ field, handleChange }">
+          <div class="status-settings-row status-settings-row--icons">
+            <span class="label status-settings-label">Иконка:</span>
+            <div class="status-icon-column">
+              <div class="status-icon-selector" :class="{ 'is-invalid': errors.icon }">
+                <button
+                  v-for="option in registerStatusIconOptions"
+                  :key="option.value"
+                  type="button"
+                  class="status-icon-option"
+                  :class="{ selected: getIconFieldValue(field?.value) === option.value }"
+                  :aria-label="option.value"
+                  @click="handleChange(option.value)"
+                >
+                  <RegisterStatusIcon
+                    :status="{
+                      icon: option.value,
+                      bkColor: getColorFieldValue(undefined, 'bkColor'),
+                      fgColor: getColorFieldValue(undefined, 'fgColor')
+                    }"
+                  />
+                </button>
+              </div>
+            </div>
+            <FieldError name="icon" :errors="errors" />
+          </div>
+        </Field>
+      </fieldset>
     </Form>
   </div>
 </template>

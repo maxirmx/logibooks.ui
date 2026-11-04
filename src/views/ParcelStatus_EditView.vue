@@ -15,6 +15,6 @@ const props = defineProps({
 
 <template>
   <Suspense>
-    <ParcelStatusSettings :mode="'edit'" :order-status-id="props.id" />
+    <ParcelStatusSettings :key="props.id" :mode="'edit'" :order-status-id="props.id" />
   </Suspense>
 </template>

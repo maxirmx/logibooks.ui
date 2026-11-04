@@ -21,7 +21,7 @@ const showMarker = computed(() => props.item?.customsChargeGroup != null && Numb
     <v-tooltip v-if="showMarker" text="Общая сумма таможенных платежей для всех товаров в посылке" open-delay="300" location="top">
       <template #activator="{ props: tooltipProps }">
         <span v-bind="tooltipProps" role="img" tabindex="0" aria-label="Общая сумма таможенных платежей для всех товаров в посылке">
-          <font-awesome-icon icon="fa-solid fa-comment-dots" aria-hidden="true" />
+          <font-awesome-icon icon="fa-solid fa-comment-dots" size="1x" class="button-o-c" aria-hidden="true" />
         </span>
       </template>
     </v-tooltip>

@@ -301,7 +301,7 @@ describe('OzonParcels_List.vue – multi-select', () => {
     await resolveAll()
   })
 
-  it('shows saved group amounts in both clickable charge cells', async () => {
+  it('shows saved group amounts with the shared action icon style in both clickable charge cells', async () => {
     wrapper.unmount()
     mockRegisterItem.value = { dealNumber: 'D-1', customsFee: 1231, customsDuty: 800 }
     const item = { id: 10, registerId: 1, postingNumber: 'P-10', customsFee: 0, customsDuty: 0,
@@ -320,6 +320,11 @@ describe('OzonParcels_List.vue – multi-select', () => {
     expect(displays.map(display => display.props('field'))).toEqual(['customsFee', 'customsDuty'])
     expect(displays[0].text().replace(/\s/g, '')).toBe('1231')
     expect(displays[1].text().replace(/\s/g, '')).toBe('800')
+    for (const display of displays) {
+      const icon = display.get('[role="img"] .button-o-c')
+      expect(icon.attributes('icon')).toBe('fa-solid fa-comment-dots')
+      expect(icon.attributes('size')).toBe('1x')
+    }
     await displays[0].trigger('click')
     expect(navigateToEditParcel).toHaveBeenCalledWith(expect.anything(), item, 'Редактирование посылки',
       expect.objectContaining({ registerId: 1 }))

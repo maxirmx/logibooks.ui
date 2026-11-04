@@ -4,16 +4,21 @@
 
 /* @vitest-environment jsdom */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
-import { createRouter, createWebHistory } from 'vue-router'
+import { flushPromises, mount } from '@vue/test-utils'
+import router from '@/router'
 import { createPinia, setActivePinia } from 'pinia'
 import App from '@/App.vue'
 import { useAuthStore } from '@/stores/auth.store.js'
-import { useStatusStore } from '@/stores/status.store.js'
+import { useRegistersStore } from '@/stores/registers.store.js'
+import { useAlertStore } from '@/stores/alert.store.js'
+import { OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
 import { roleAdmin } from '@/helpers/user.roles.js'
+
+vi.mock('@/helpers/config.js', () => ({ apiUrl: 'http://localhost/api', enableLog: false }))
+vi.mock('vuetify-use-dialog', () => ({ useConfirm: () => vi.fn() }))
 
 // Mock ResizeObserver
 global.ResizeObserver = vi.fn().mockImplementation(function MockResizeObserver() {
@@ -41,84 +46,57 @@ const vuetify = createVuetify({
   directives
 })
 
-// Mock the router with all necessary routes
-const router = createRouter({
-  history: createWebHistory(),
-  routes: [
-    { path: '/', component: { template: '<div>Home</div>' } },
-    { path: '/login', component: { template: '<div>Login</div>' } },
-    { path: '/users', component: { template: '<div>Users</div>' } },
-    { path: '/companies', component: { template: '<div>Companies</div>' } },
-    { path: '/company/create', component: { template: '<div>Create Company</div>' } },
-    { path: '/company/edit/:id', component: { template: '<div>Edit Company</div>' } },
-    { path: '/registers', component: { template: '<div>Registers</div>' } },
-    { path: '/user/edit/:id', component: { template: '<div>Edit User</div>' } },
-    { path: '/recover', component: { template: '<div>Recover</div>' } },
-    { path: '/register', component: { template: '<div>Register</div>' } },
-    { path: '/countries', component: { template: '<div>Countries</div>' } },
-    { path: '/parcelstatuses', component: { template: '<div>Parcel Statuses</div>' } },
-    { path: '/stopwords', component: { template: '<div>Stop Words</div>' } },
-    { path: '/stopword/create', component: { template: '<div>Create Stop Word</div>' } },
-    { path: '/stopword/edit/:id', component: { template: '<div>Edit Stop Word</div>' } },
-    { path: '/keywords', component: { template: '<div>Keywords</div>' } },
-    { path: '/keyword/create', component: { template: '<div>Create Keyword</div>' } },
-    { path: '/keyword/edit/:id', component: { template: '<div>Edit Keyword</div>' } },
-    { path: '/feacn/codes', component: { template: '<div>Feacn Codes</div>' } },
-    { path: '/feacn/orders', component: { template: '<div>Feacn Orders</div>' } },
-    { path: '/export-fees', component: { template: '<div>Export Duties</div>' } },
-    { path: '/feacn/prefixes', component: { template: '<div>Feacn Prefixes</div>' } },
-    { path: '/feacn/insertitems', component: { template: '<div>Feacn Insert Items</div>' } },
-    { path: '/customs-reports', component: { template: '<div>Customs Reports</div>' } },
-    { path: '/airports', component: { template: '<div>Airports</div>' } },
-    { path: '/notifications', component: { template: '<div>Notifications</div>' } },
-    { path: '/scanjobs', component: { template: '<div>Scanjobs</div>' } },
-    { path: '/warehouses', component: { template: '<div>Warehouses</div>' } },
-    { path: '/registerstatuses', component: { template: '<div>Register Statuses</div>' } },
-    { path: '/parcelsevents', component: { template: '<div>Parcel Events</div>' } },
-    { path: '/registersevents', component: { template: '<div>Register Events</div>' } },
-    { path: '/hotkeyactionschemes', component: { template: '<div>Hotkey Action Schemes</div>' } },
-    { path: '/scanner/wd4', component: { template: '<div>WD4 Scanner</div>' } },
-    { path: '/printing/settings', component: { template: '<div>Printer Settings</div>' } }
-  ]
-})
+function response(status, data) {
+  return { ok: status < 400, status, text: async () => JSON.stringify(data) }
+}
 
-describe('App Logout Functionality', () => {
+describe('App logout', () => {
   let authStore
-  let statusStore
+  let pinia
   let wrapper
+  let fetchMock
+  let loadRegisterPage
 
   beforeEach(async () => {
-    setActivePinia(createPinia())
+    localStorage.clear()
+    pinia = createPinia()
+    setActivePinia(pinia)
     authStore = useAuthStore()
-    statusStore = useStatusStore()
-
-    // Mock the status store fetchStatus method
-    statusStore.fetchStatus = vi.fn().mockResolvedValue({})
-
-    // Set up a logged-in user
     authStore.user = {
       id: 1,
       firstName: 'John',
       lastName: 'Doe',
       patronymic: 'Smith',
       email: 'john@example.com',
+      token: 'token',
       roles: [roleAdmin]
     }
-
-    // Mock the logout method to properly clear user data
-    authStore.logout = vi.fn(() => {
-      authStore.user = null
-      localStorage.removeItem('user')
+    localStorage.setItem('user', JSON.stringify(authStore.user))
+    loadRegisterPage = vi.fn().mockResolvedValue(response(200, { items: [] }))
+    fetchMock = vi.fn(async (url, options) => {
+      if (url.includes('/registers?')) return loadRegisterPage()
+      if (url.endsWith('/auth/check')) {
+        return options.headers.Authorization ? response(204) : response(401, {})
+      }
+      if (url.endsWith('/registers/ops')) {
+        return response(200, { customsProcedures: [], transportationTypes: [], incoterms: [{ value: 2 }] })
+      }
+      if (url.endsWith('/status')) return response(200, {})
+      return response(200, [])
     })
+    vi.stubGlobal('fetch', fetchMock)
+    await router.replace('/registers')
+  })
 
-    await router.push('/')
-    await router.isReady()
-
+  function mountApp() {
     wrapper = mount(App, {
       global: {
-        plugins: [router, vuetify], // <-- add vuetify here
+        plugins: [pinia, router, vuetify],
         stubs: {
-          RouterView: true,
+          CustomsProcessingRegistersTable: true,
+          WarehouseRegistersTable: true,
+          ParcelStatusBulkChangeDialog: true,
+          ResponsiveFilterBar: true,
           'v-app': { template: '<div class="v-app"><slot /></div>' },
           'v-app-bar': { template: '<div class="v-app-bar"><slot name="prepend" /><slot /></div>' },
           'v-app-bar-nav-icon': { template: '<button class="nav-icon" />' },
@@ -142,28 +120,139 @@ describe('App Logout Functionality', () => {
         }
       }
     })
-  })
+  }
 
   afterEach(() => {
     wrapper?.unmount()
+    wrapper = undefined
+    vi.restoreAllMocks()
+    vi.unstubAllGlobals()
+    localStorage.clear()
+    sessionStorage.clear()
   })
 
-  it('should clear user data after logout', async () => {
-    // Verify user is initially logged in
-    expect(authStore.user).toBeTruthy()
-    expect(authStore.isAdmin).toBe(true)
+  async function clickLogout() {
+    await wrapper.findAll('a.link').find(link => link.text() === 'Выход').trigger('click')
+    await flushPromises()
+  }
 
-    // Find and click logout link
-    const logoutLinks = wrapper.findAll('a[class="link"]')
-    const logoutLink = logoutLinks.find((link) => link.text() === 'Выход')
-    await logoutLink.trigger('click')
+  const alertSelector = '[data-testid="page-alert-region"] [role="alert"]'
 
-    // Verify user data is cleared
+  it.each([OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE])(
+    'shows one sign-in message when a %s register request rejects after logout',
+    async mode => {
+      let finishRequest
+      loadRegisterPage.mockReturnValueOnce(new Promise(resolve => { finishRequest = resolve }))
+      await router.replace({ path: '/registers', query: { mode } })
+      const getAll = vi.spyOn(useRegistersStore(), 'getAll')
+      const publish = vi.spyOn(useAlertStore(), 'error')
+      const diagnostic = vi.spyOn(console, 'error').mockImplementation(() => {})
+      mountApp()
+      await flushPromises()
+      expect(loadRegisterPage).toHaveBeenCalledTimes(1)
+
+      await clickLogout()
+      await vi.waitFor(() => expect(wrapper.find('#login_email').exists()).toBe(true))
+      expect(router.currentRoute.value.path).toBe('/login')
+      expect(authStore.user).toBeNull()
+      expect(localStorage.getItem('user')).toBeNull()
+
+      finishRequest(response(401, { msg: 'Необходимо войти в систему' }))
+      await expect(getAll.mock.results[0].value).rejects.toMatchObject({ status: 401 })
+      await flushPromises()
+      expect(wrapper.findAll(alertSelector)).toHaveLength(1)
+      expect(wrapper.get(alertSelector).text()).toContain('Необходимо войти в систему')
+      expect(publish).toHaveBeenCalledExactlyOnceWith('Необходимо войти в систему')
+      expect(diagnostic).not.toHaveBeenCalled()
+    }
+  )
+
+  it('shows register load failures on the current page and reloads on the next page change', async () => {
+    const error = new TypeError('private diagnostic')
+    const diagnostic = vi.spyOn(console, 'error').mockImplementation(() => {})
+    loadRegisterPage.mockRejectedValueOnce(error)
+    mountApp()
+    await flushPromises()
+
+    expect(wrapper.get(alertSelector).text()).toContain('Не удалось выполнить запрос к серверу')
+    expect(wrapper.text()).not.toContain(error.message)
+    expect(diagnostic).toHaveBeenCalledExactlyOnceWith('[register list load]', expect.objectContaining({ cause: error }))
+    expect(router.currentRoute.value.path).toBe('/registers')
+
+    authStore.registers_page = 2
+    await flushPromises()
+    expect(loadRegisterPage).toHaveBeenCalledTimes(2)
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('/registers?page=2&'), expect.anything())
+  })
+
+  it('reports an unexpected late register failure without replacing the login alert', async () => {
+    let rejectRequest
+    loadRegisterPage.mockReturnValueOnce(new Promise((_, reject) => { rejectRequest = reject }))
+    const diagnostic = vi.spyOn(console, 'error').mockImplementation(() => {})
+    mountApp()
+    await flushPromises()
+    expect(loadRegisterPage).toHaveBeenCalledTimes(1)
+
+    await clickLogout()
+    await vi.waitFor(() => expect(router.currentRoute.value.path).toBe('/login'))
+    const error = new TypeError('private diagnostic')
+    rejectRequest(error)
+    await flushPromises()
+
+    expect(diagnostic).toHaveBeenCalledExactlyOnceWith('[register list load]', expect.objectContaining({ cause: error }))
+    expect(wrapper.get(alertSelector).text()).toContain('Необходимо войти в систему')
+  })
+
+  it('does not load a new register page once logout has cleared the session', async () => {
+    let finishLoginCheck
+    const originalFetch = fetchMock.getMockImplementation()
+    fetchMock.mockImplementation((url, options) => {
+      if (url.endsWith('/auth/check')) {
+        return new Promise(resolve => { finishLoginCheck = resolve })
+      }
+      return originalFetch(url, options)
+    })
+    mountApp()
+    await flushPromises()
+    expect(loadRegisterPage).toHaveBeenCalledTimes(1)
+
+    await clickLogout()
+    expect(router.currentRoute.value.path).toBe('/registers')
     expect(authStore.user).toBeNull()
-    // Since these are computed properties based on user.roles, they become falsy when user is null
-    expect(authStore.isAdmin).toBeFalsy()
-    expect(authStore.isSrLogist).toBeFalsy()
-    expect(authStore.isLogist).toBeFalsy()
+    authStore.registers_page = 2
+    await flushPromises()
+    expect(loadRegisterPage).toHaveBeenCalledTimes(1)
+
+    finishLoginCheck(response(401, {}))
+    await vi.waitFor(() => expect(wrapper.get(alertSelector).text()).toContain('Необходимо войти в систему'))
   })
 
+  it('shows a localized error if navigation during logout rejects', async () => {
+    const error = new Error('private navigation failure')
+    const diagnostic = vi.spyOn(console, 'error').mockImplementation(() => {})
+    mountApp()
+    await flushPromises()
+    const push = vi.spyOn(router, 'push').mockRejectedValueOnce(error)
+
+    await clickLogout()
+
+    expect(push).toHaveBeenCalledExactlyOnceWith('/login')
+    expect(router.currentRoute.value.path).toBe('/registers')
+    expect(wrapper.get(alertSelector).text()).toContain('Не удалось завершить выход из системы')
+    expect(wrapper.text()).not.toContain(error.message)
+    expect(diagnostic).toHaveBeenCalledExactlyOnceWith('[auth.logout navigation]', error)
+  })
+
+  it('leaves the sign-in alert unpublished if login navigation is cancelled', async () => {
+    mountApp()
+    await flushPromises()
+    const removeGuard = router.beforeEach(to => to.path !== '/login')
+    try {
+      await clickLogout()
+      expect(router.currentRoute.value.path).toBe('/registers')
+      expect(wrapper.find(alertSelector).exists()).toBe(false)
+    } finally {
+      removeGuard()
+    }
+  })
 })

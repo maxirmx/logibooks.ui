@@ -2,6 +2,28 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
+import { reportError } from '@/helpers/error.helpers.js'
+
+export async function loadRegisterList({ registersStore, authStore, alertStore, mode, isComponentMounted }) {
+  const user = authStore.user
+  if (user === null) return false
+
+  try {
+    await registersStore.getAll({ mode })
+    return true
+  } catch (error) {
+    // Logout can clear credentials before a queued request reaches the server.
+    // The logout action owns the sign-in message for this expected rejection.
+    if (authStore.user === null && error?.status === 401) return false
+
+    reportError(error, { context: 'register list load' })
+    if (isComponentMounted.value && authStore.user === user) {
+      alertStore.error(error, { fallback: 'Не удалось загрузить реестры' })
+    }
+    return false
+  }
+}
+
 /**
  * Helper functions for bulk status change functionality in Registers List
  */

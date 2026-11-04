@@ -5,6 +5,8 @@
 import { useAuthStore } from '@/stores/auth.store.js'
 import { OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 
+export const LOGIN_REQUIRED_MESSAGE = 'Необходимо войти в систему'
+
 /**
  * Determines the route to navigate to after successful login
  * based on user roles and permissions

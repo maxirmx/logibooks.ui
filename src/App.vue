@@ -11,6 +11,7 @@ import { useStatusStore } from '@/stores/status.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE, getRegisterNouns } from '@/helpers/op.mode.js'
 import { reportError } from '@/helpers/error.helpers.js'
+import { LOGIN_REQUIRED_MESSAGE } from '@/helpers/login.navigation.js'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { useLabelPrintingStore } from '@/stores/label.printing.store.js'
 
@@ -201,8 +202,13 @@ onBeforeUnmount(() => {
 
 import { drawer, toggleDrawer } from '@/helpers/drawer.js'
 
-function deauth() {
-  authStore.logout()
+async function deauth() {
+  try {
+    await authStore.logout()
+    if (route.path === '/login') alertStore.error(LOGIN_REQUIRED_MESSAGE)
+  } catch (error) {
+    alertStore.error(error, { fallback: 'Не удалось завершить выход из системы' })
+  }
 }
 
 function getUserName() {
@@ -439,7 +445,9 @@ function getUserName() {
         </v-list-group>
 
         <v-list-item>
-          <RouterLink to="/login" @click="deauth()" class="link">Выход</RouterLink>
+          <RouterLink to="/login" custom v-slot="{ href }">
+            <a :href="href" @click.prevent="deauth" class="link">Выход</a>
+          </RouterLink>
         </v-list-item>
       </v-list>
       <v-list v-if="!authStore.user">

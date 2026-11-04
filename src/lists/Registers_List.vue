@@ -12,6 +12,7 @@ import {
 } from '@/helpers/company.constants.js'
 import { getRegisterTypeDisplayName } from '@/helpers/register.display.helpers.js'
 import {
+  loadRegisterList,
   startRegisterStatusEditMode,
   cancelRegisterStatusChange,
   applyRegisterStatusChange,
@@ -268,12 +269,8 @@ function startRegisterUpload(registerType) {
   }
 }
 
-async function loadRegisters() {
-  await registersStore.getAll({ mode: OP_MODE_PAPERWORK })
-  const storeError = unref(registersStore.error)
-  if (storeError) {
-    alertStore.error(storeError instanceof Error ? storeError.message : String(storeError))
-  }
+function loadRegisters() {
+  return loadRegisterList({ registersStore, authStore, alertStore, mode: OP_MODE_PAPERWORK, isComponentMounted })
 }
 
 function openParcelStatusBulkDialog(registerId) {

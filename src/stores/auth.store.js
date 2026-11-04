@@ -167,19 +167,16 @@ export const useAuthStore = defineStore('auth', () => {
 
     try {
       clearSession()
-      router.push('/login')
-    } catch (error) {
-      // Ensure status is fetched before re-throwing the error
-      statusStore.fetchStatus().catch((statusError) => {
-        reportError(statusError, { context: 'auth.logout status refresh after failure' })
+      const navigation = router.push('/login')
+      navigation.catch((error) => {
+        reportError(error, { context: 'auth.logout navigation' })
       })
-      throw error
+      return navigation
+    } finally {
+      statusStore.fetchStatus().catch((statusError) => {
+        reportError(statusError, { context: 'auth.logout status refresh' })
+      })
     }
-
-    // Fetch status after successful logout as well
-    statusStore.fetchStatus().catch((statusError) => {
-      reportError(statusError, { context: 'auth.logout status refresh' })
-    })
   }
 
   function setScanjobMonitorFollowUserId(userId) {

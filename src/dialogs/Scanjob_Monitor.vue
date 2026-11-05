@@ -4,7 +4,7 @@
 // This file is a part of Logibooks ui application
 
 import ScanjobLookupProgress from '@/components/ScanjobLookupProgress.vue'
-import { isScopedLookup, lookupPresetLabel, scopedLookupFeedback } from '@/helpers/scoped.lookup.helpers.js'
+import { isScopedLookup, lookupPresetLabel, scopedLookupFeedback, withLookupReport } from '@/helpers/scoped.lookup.helpers.js'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { computed, nextTick, onMounted, onUnmounted, provide, ref, watch } from 'vue'
 import { isNavigationFailure, NavigationFailureType } from 'vue-router'
@@ -144,15 +144,17 @@ const activeRegisterItem = computed(() => {
 
   return storeRegister
 })
-const lookupFeedback = ref(null)
-watch(() => props.scanjobId, () => { lookupFeedback.value = null })
+const localScanCodeIds = new Set()
+watch(() => props.scanjobId, () => localScanCodeIds.clear())
 const manualScan = useManualScan({
-  onResult: result => { lookupFeedback.value = scopedLookupFeedback(result) },
+  onScanned: (_, result) => {
+    if (isScopedLookup(scanjob.value?.lookupTargetMode) && result?.scanCodeId != null) localScanCodeIds.add(result.scanCodeId)
+  },
   target: computed(() => isRegisterMode.value ? BOX_SCAN : PARCEL_SCAN),
   registerId, job: scanjob,
   disabled: () => isLoading.value || defectActionRunning.value || Boolean(closedInfo.value),
   scopeKey: () => `${props.scanjobId}:${monitorScopeKey(props.monitorScope)}`,
-  refresh: refreshCurrentScopeSnapshot
+  refresh: () => refreshCurrentScopeSnapshot(!isScopedLookup(scanjob.value?.lookupTargetMode))
 })
 const controlsBusy = computed(() => isLoading.value || manualScan.locked.value)
 let deferredFollowEvent = null
@@ -403,9 +405,33 @@ function getCurrentScope() {
   return buildScope(selectedArea.value, selectedBoxId.value, selectedBucketIndex.value)
 }
 
-async function refreshCurrentScopeSnapshot() {
-  const snapshot = await scanJobsStore.loadMonitorSnapshot(props.scanjobId, getCurrentScope())
-  applySnapshot(snapshot, { immediate: true, source: 'manual' })
+async function refreshCurrentScopeSnapshot(includeLookupReport = true) {
+  const version = scopeVersion.value
+  const scope = getCurrentScope()
+  const snapshot = await scanJobsStore.loadMonitorSnapshot(props.scanjobId, includeLookupReport
+    ? scope : { ...scope, includeLookupReport })
+  applySnapshot(snapshot, { version, immediate: true, source: 'manual' })
+}
+
+const lookupReportLoading = ref(false)
+async function loadLookupReport() {
+  if (lookupReportLoading.value) return
+  lookupReportLoading.value = true
+  const version = scopeVersion.value
+  const jobId = props.scanjobId
+  try {
+    const snapshot = await scanJobsStore.loadMonitorSnapshot(jobId, { area: scanjobMonitorArea.Boxes, boxId: null })
+    if (version === scopeVersion.value && isComponentMounted.value && visibleSnapshot.value) {
+      const current = visibleSnapshot.value
+      visibleSnapshot.value = { ...current, lookupProgress: withLookupReport(current.lookupProgress, snapshot.lookupProgress) }
+    }
+  } catch (error) {
+    if (version === scopeVersion.value && isComponentMounted.value) {
+      alertStore.error(error, { fallback: 'Не удалось загрузить списки посылок задания' })
+    } else reportError(error, { context: 'lookup report load after monitor scope change' })
+  } finally {
+    lookupReportLoading.value = false
+  }
 }
 
 async function runParcelAction(item, action, getErrorMessage) {
@@ -760,34 +786,27 @@ async function handleFollowEvent(followEvent, version = scopeVersion.value) {
     version !== scopeVersion.value ||
     switchingScope.value ||
     Number(followEvent?.scanJobId) !== Number(props.scanjobId) ||
+    localScanCodeIds.has(followEvent.scanCodeId) ||
     selectedUserId == null ||
     Number(followEvent?.userId) !== selectedUserId
   ) {
     return
   }
 
-  lookupFeedback.value = scopedLookupFeedback(followEvent)
   const targetScope = normalizeFollowTarget(followEvent?.followTarget)
   const targetParcelId = toNumberOrNull(followEvent?.followTarget?.parcelId)
 
-  if (targetScope.area === scanjobMonitorArea.Boxes) {
-    selectedParcelId.value = null
-    if (isRegisterMode.value) {
-      await refreshCurrentScopeSnapshot()
-      return
-    }
-
-    await navigateToRegisterMonitor({ replace: true })
-    return
-  }
-
-  selectedParcelId.value = targetParcelId
+  selectedParcelId.value = targetScope.area === scanjobMonitorArea.Boxes ? null : targetParcelId
   if (scopesAreEqual(targetScope, getCurrentScope())) {
-    await refreshCurrentScopeSnapshot()
-    return
+    await refreshCurrentScopeSnapshot(!isScopedLookup(scanjob.value?.lookupTargetMode))
+  } else {
+    await updateMonitorRoute(targetScope, { replace: true })
   }
 
-  await updateMonitorRoute(targetScope, { replace: true })
+  const feedback = scopedLookupFeedback(followEvent)
+  if (feedback && isComponentMounted.value && Number(followEvent.scanJobId) === Number(props.scanjobId)) {
+    alertStore.info([feedback.text, ...feedback.numbers].join(' · '))
+  }
 }
 
 function applySnapshot(
@@ -804,7 +823,9 @@ function applySnapshot(
 
   if (immediate) {
     clearPendingSnapshot()
-    visibleSnapshot.value = snapshot
+    visibleSnapshot.value = snapshot.lookupProgress
+      ? { ...snapshot, lookupProgress: withLookupReport(snapshot.lookupProgress, visibleSnapshot.value?.lookupProgress) }
+      : snapshot
     return
   }
 
@@ -1109,16 +1130,12 @@ defineExpose({
     <ScanjobLookupProgress
       v-if="isRegisterMode && visibleSnapshot?.lookupProgress"
       :snapshot="visibleSnapshot"
-      :completed="Number(closedStatus?.status ?? visibleSnapshot.status) === 20"
+      :completed="Number(closedStatus?.status ?? visibleSnapshot.status ?? scanjob?.status) === 20"
       :can-create-search="authStore.isWhManagerPlus && !readOnly"
+      :report-loading="lookupReportLoading"
+      @load-report="loadLookupReport"
     />
     <strong v-else-if="isScopedLookup(visibleSnapshot?.lookupTargetMode)">{{ lookupPresetLabel(visibleSnapshot.lookupTargetMode) }}</strong>
-    <div v-if="lookupFeedback" role="status" class="mb-3">
-      <strong>{{ lookupFeedback.text }}</strong>
-      <ul v-if="lookupFeedback.numbers.length">
-        <li v-for="(number, index) in lookupFeedback.numbers" :key="index">{{ number }}</li>
-      </ul>
-    </div>
 
     <div class="scanjob-monitor-panel">
       <div

@@ -9,9 +9,12 @@ import { ref } from 'vue'
 import { createVuetify } from 'vuetify'
 import { createPinia, setActivePinia } from 'pinia'
 import ScanjobSettings from '@/dialogs/Scanjob_Settings.vue'
+import { reportError } from '@/helpers/error.helpers.js'
 import ActionButton from '@/components/ActionButton.vue'
 import { resolveAll, vuetifyStubs } from './helpers/test-utils'
 import { GTC_COMPANY_ID } from '@/helpers/company.constants.js'
+
+vi.mock('@/helpers/error.helpers.js', async importOriginal => ({ ...await importOriginal(), reportError: vi.fn() }))
 
 const vuetify = createVuetify()
 enableAutoUnmount(afterEach)
@@ -307,6 +310,29 @@ describe('Scanjob_Settings.vue', () => {
     await wrapper.get('#lookupTargetMode').setValue('2')
     await resolveAll()
     expect(wrapper.get('#sourceScanJobId').text()).toContain('Проверка №77')
+  })
+
+  it('records a failed verification source request after the preset changes', async () => {
+    let failRequest
+    getVerificationSources.mockImplementationOnce(() => new Promise((_, reject) => { failRequest = reject }))
+    const wrapper = mountComponent({ mode: 'create', registerId: 22, warehouseId: 11, dealNumber: 'ABC-1' })
+    await resolveAll()
+    await wrapper.get('#operation').setValue('30')
+    await wrapper.get('#lookupTargetMode').setValue('2')
+    await wrapper.get('#lookupTargetMode').setValue('0')
+    const error = new Error('Network failure')
+    failRequest(error)
+    await resolveAll()
+    expect(alertError).not.toHaveBeenCalled()
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(error, { context: 'verification source load after editor change' })
+  })
+
+  it('locks the preset on a started ordinary job while preserving its status selector', async () => {
+    getById.mockResolvedValue({ ...mockScanjob, status: 18, allowFinish: true })
+    const wrapper = mountComponent({ mode: 'edit', scanjobId: 11 })
+    await resolveAll()
+    expect(wrapper.get('#lookupTargetMode').element.disabled).toBe(true)
+    expect(wrapper.get('#lookupStatusId').element.disabled).toBe(false)
   })
 
   it('locks the saved target definition while paused and explains scoped completion', async () => {

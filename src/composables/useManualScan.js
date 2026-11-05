@@ -13,7 +13,7 @@ import { getErrorMessage, reportError } from '@/helpers/error.helpers.js'
 import { isScopedLookup, scopedLookupFeedback } from '@/helpers/scoped.lookup.helpers.js'
 
 export function useManualScan({ registerId, job = null, disabled = false, target = PARCEL_SCAN,
-  scopeKey = null, refresh, onScanned = () => {}, onResult }) {
+  scopeKey = null, refresh, onScanned = () => {} }) {
   const scanTarget = computed(() => toValue(target))
   const store = useScanjobsStore()
   const auth = useAuthStore()
@@ -140,7 +140,7 @@ export function useManualScan({ registerId, job = null, disabled = false, target
         if (lookup && result?.count > 0) { matched++; matchedParcels += result.count }
         if (adapter.isEmpty(result)) empty++
         completed++
-        onScanned(id)
+        onScanned(id, result)
         if (result?.lookupOutcome === 1) batchConfirmedCount++
         if (result?.candidateParcelNumbers?.length) {
           for (const number of result.candidateParcelNumbers) candidateNumbers.add(number)
@@ -148,7 +148,6 @@ export function useManualScan({ registerId, job = null, disabled = false, target
         } else if (!candidateNumbers.size && (result?.lookupOutcome === 1 || !scopedResult?.lookupOutcome)) {
           scopedResult = result
         }
-        onResult?.({ ...scopedResult, batchConfirmedCount })
         completedIds.value = [...completedIds.value, id]
         pendingBatch.value.parcels = frozenParcels.slice(completed)
         progress.value.completed = completed

@@ -59,20 +59,18 @@ afterEach(() => { wrapper?.unmount(); vi.unstubAllGlobals() })
 it('retains candidate advice when a later box in the batch has no matches', async () => {
   scanBox.mockResolvedValueOnce({ count: 2, boxCount: 1, lookupOutcome: 2, candidateParcelNumbers: ['P-1', 'P-2'] })
     .mockResolvedValueOnce({ count: 0, boxCount: 1, lookupOutcome: 0 })
-  const onResult = vi.fn()
   wrapper = mount(defineComponent({
     components: { PageAlertRegion },
     setup() {
       scan = useManualScan({
         target: BOX_SCAN, registerId: ref(1), job: ref({ ...job, operation: 30, lookupTargetMode: 2 }),
-        refresh: vi.fn().mockResolvedValue(true), onResult
+        refresh: vi.fn().mockResolvedValue(true)
       })
     },
     template: '<PageAlertRegion/>'
   }))
   await flushPromises()
   expect(await scan.run([{ boxId: 1 }, { boxId: 2 }], 7, true)).toBe(true)
-  expect(onResult).toHaveBeenLastCalledWith(expect.objectContaining({ candidateParcelNumbers: ['P-1', 'P-2'] }))
   expect(wrapper.text()).toContain('Откройте коробку и проверьте посылки')
   expect(wrapper.text()).toContain('P-2')
 })

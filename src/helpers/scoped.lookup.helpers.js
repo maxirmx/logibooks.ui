@@ -18,6 +18,12 @@ export function lookupPresetLabel(mode) {
   return lookupPresets.find(preset => preset.value === Number(mode ?? 0))?.label
 }
 
+export function withLookupReport(progress, report) {
+  if (!progress || progress.missingParcels != null || report?.missingParcels == null
+    || report.expectedCount !== progress.expectedCount || report.confirmedCount !== progress.confirmedCount) return progress
+  return { ...progress, missingParcels: report.missingParcels, confirmedParcels: report.confirmedParcels }
+}
+
 export function scopedLookupFeedback(result) {
   switch (result?.lookupOutcome) {
     case 1: return {

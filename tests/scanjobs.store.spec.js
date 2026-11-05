@@ -499,6 +499,13 @@ describe('scanjobs store', () => {
       expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/scanjobs/42/monitor?area=1&boxId=7`)
     })
 
+    it('requests only lookup counts for a scoped monitor refresh', async () => {
+      fetchWrapper.get.mockResolvedValue(monitorSnapshot)
+      const store = useScanjobsStore()
+      await store.loadMonitorSnapshot(42, { area: 0, includeLookupReport: false })
+      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/scanjobs/42/monitor?area=0&includeLookupReport=false`)
+    })
+
     it('loads unassigned monitor snapshot with bucket index', async () => {
       fetchWrapper.get.mockResolvedValue({ ...monitorSnapshot, area: 2 })
       const store = useScanjobsStore()

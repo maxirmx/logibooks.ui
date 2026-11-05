@@ -359,7 +359,7 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
 
   async function loadMonitorSnapshot(
     scanJobId,
-    { area = scanjobMonitorArea.Boxes, boxId = null, bucketIndex = null } = {}
+    { area = scanjobMonitorArea.Boxes, boxId = null, bucketIndex = null, includeLookupReport = true } = {}
   ) {
     monitorLoading.value = true
     monitorError.value = null
@@ -367,6 +367,7 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
 
     try {
       const params = new URLSearchParams({ area: String(area) })
+      if (!includeLookupReport) params.append('includeLookupReport', 'false')
       if (Number(area) === scanjobMonitorArea.Box && boxId != null) {
         params.append('boxId', String(boxId))
       }

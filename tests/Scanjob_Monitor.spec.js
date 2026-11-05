@@ -1165,6 +1165,54 @@ describe('Scanjob_Monitor.vue', () => {
     expect(wrapper.find('.monitor-followed-parcel-row').exists()).toBe(true)
   })
 
+  it('presents scoped follow advice once through the page alert', async () => {
+    persistedFollowUserId.value = 17
+    mockScanjob.value = { ...mockScanjob.value, lookupTargetMode: 2 }
+    getById.mockResolvedValue(mockScanjob.value)
+    alertInfo.mockImplementationOnce(message => {
+      mockAlert.value = { id: 72, severity: 'info', message }
+    })
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 }, global: { stubs: monitorGlobalStubs }
+    })
+    await flushPromises()
+    await getFollowEventHandler()({
+      scanJobId: 42, userId: 17, followTarget: { area: 0 },
+      lookupOutcome: 2, candidateParcelNumbers: ['P-7']
+    })
+    await flushPromises()
+    const message = 'Откройте коробку и проверьте посылки · P-7'
+    expect(alertInfo).toHaveBeenCalledExactlyOnceWith(message)
+    expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain(message)
+    expect(wrapper.text().split(message)).toHaveLength(2)
+    expect(loadMonitorSnapshot).toHaveBeenLastCalledWith(42, { area: 0, boxId: null, includeLookupReport: false })
+  })
+
+  it('loads an available scoped report and presents report read failures', async () => {
+    const counts = { expectedCount: 2, confirmedCount: 1, missingCount: 1 }
+    const snapshot = { ...registerSnapshot, lookupTargetMode: 1, lookupProgress: counts }
+    loadMonitorSnapshot.mockResolvedValue(snapshot)
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42 },
+      global: { stubs: { ...monitorGlobalStubs, 'v-btn': { template: '<button><slot /></button>' } } }
+    })
+    await flushPromises()
+    const reportButton = wrapper.findAll('button').find(button => button.text() === 'Показать списки посылок')
+    expect(reportButton).toBeDefined()
+    loadMonitorSnapshot.mockRejectedValueOnce(new Error('Ошибка отчёта'))
+    await reportButton.trigger('click')
+    await flushPromises()
+    expect(alertError).toHaveBeenCalledOnce()
+    loadMonitorSnapshot.mockResolvedValueOnce({
+      ...snapshot, lookupProgress: {
+        ...counts, missingParcels: [{ parcelId: 1, parcelNumber: 'EXPECTED-PARCEL' }], confirmedParcels: []
+      }
+    })
+    await reportButton.trigger('click')
+    await flushPromises()
+    expect(wrapper.text()).toContain('EXPECTED-PARCEL')
+  })
+
   it('follows selected user event back to register for not-in-register target', async () => {
     persistedFollowUserId.value = 17
     loadMonitorSnapshot.mockResolvedValueOnce(boxSnapshot)
@@ -1396,6 +1444,32 @@ describe('Scanjob_Monitor.vue', () => {
     expect(wrapper.find('[data-testid="scanjob-monitor-closed"]').exists()).toBe(true)
     expect(wrapper.get('button[data-testid="scanjob-monitor-follow-user-open"]').classes()).not.toContain('anti-btn-green')
   })
+  it('keeps local scoped scan feedback when the followed scanner reports the same scan', async () => {
+    persistedFollowUserId.value = 17
+    isAdmin.value = true
+    const job = { id: 42, name: 'Scanjob A', type: 30, operation: 30, lookupTargetMode: 2, status: 15, registerId: 101 }
+    mockScanjob.value = job
+    getById.mockResolvedValue(job)
+    loadMonitorSnapshot.mockResolvedValue(boxSnapshot)
+    let finishScan
+    manualScanParcel.mockImplementationOnce(() => new Promise(resolve => { finishScan = resolve }))
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42, monitorScope: box7MonitorScope }, global: { stubs: monitorGlobalStubs }
+    })
+    await flushPromises()
+    const rowAction = wrapper.findAll('button[data-testid="manual-parcel-scan"]').find(button => button.attributes('disabled') === undefined)
+    await rowAction.trigger('click')
+    await flushPromises()
+    const result = { scanCodeId: 789, lookupOutcome: 1, parcelCount: 1, count: 1, scanSource: 10 }
+    await getFollowEventHandler()({
+      ...result, scanJobId: 42, userId: 17, followTarget: { area: 2, bucketIndex: 1, parcelId: 71 }
+    })
+    finishScan(result)
+    await flushPromises()
+    expect(alertInfo).toHaveBeenCalledExactlyOnceWith('Посылка подтверждена')
+    expect(mockReplace).not.toHaveBeenCalled()
+  })
+
   for (const navigationFails of [false, true]) {
     it('defers followed-scanner navigation during manual scanning' + (navigationFails ? ' and presents a replay failure' : ''), async () => {
       persistedFollowUserId.value = 17

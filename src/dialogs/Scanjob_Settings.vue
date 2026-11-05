@@ -5,7 +5,7 @@
 
 import FieldError from '@/components/FieldError.vue'
 import { focusFirstInvalidField } from '@/helpers/form.validation.helpers.js'
-import { getErrorMessage, reportFormError } from '@/helpers/error.helpers.js'
+import { getErrorMessage, reportError, reportFormError } from '@/helpers/error.helpers.js'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import router from '@/router'
@@ -245,8 +245,8 @@ const readOnly = computed(
 
 const isRedVerification = computed(() => isLookupOperation.value && lookupTargetMode.value === lookupTargetModes.RedZoneAtStart)
 const isMissingSearch = computed(() => isLookupOperation.value && lookupTargetMode.value === lookupTargetModes.MissingFromJob)
-const definitionLocked = computed(() => isScopedLookup(currentScanjob.value?.lookupTargetMode)
-  && Number(currentScanjob.value?.status) !== 10)
+const lookupPresetLocked = computed(() => !isCreate.value && Number(currentScanjob.value?.status) !== 10)
+const definitionLocked = computed(() => lookupPresetLocked.value && isScopedLookup(currentScanjob.value?.lookupTargetMode))
 const availableTypes = computed(() => (ops.value?.types ?? []).filter(option => !isMissingSearch.value || option.value !== 20))
 
 watch([isRedVerification, isMissingSearch], ([verification, search]) => {
@@ -265,6 +265,7 @@ watch([isMissingSearch, fieldRegisterId], async ([search, registerId], _, onClea
     if (active) verificationSources.value = sources
   } catch (error) {
     if (active) alertStore.error(error, { fallback: 'Не удалось загрузить задания контроля красной зоны' })
+    else reportError(error, { context: 'verification source load after editor change' })
   } finally {
     if (active) verificationSourcesLoading.value = false
   }
@@ -841,10 +842,10 @@ defineExpose({ onSubmit, cancel })
       </div>
       <fieldset v-if="isLookupOperation" class="mt-3">
         <legend>Настройки поиска</legend>
-        <div class="form-group">
-          <label for="lookupTargetMode" class="label">Вид поиска:</label>
-          <select id="lookupTargetMode" v-model="lookupTargetMode" class="form-control input"
-            :disabled="readOnly || definitionLocked">
+        <div class="form-group-0">
+          <label for="lookupTargetMode" class="label-0">Вид поиска:</label>
+          <select id="lookupTargetMode" v-model="lookupTargetMode" class="form-control input-0"
+            :disabled="readOnly || lookupPresetLocked">
             <option v-for="preset in lookupPresets" :key="preset.value" :value="preset.value">{{ preset.label }}</option>
           </select>
           <FieldError name="lookupTargetMode" :errors="errors" />
@@ -852,9 +853,9 @@ defineExpose({ onSubmit, cancel })
         <p v-if="isRedVerification">
           Только посылки. При первом запуске в список попадут все посылки, которые числятся в красной зоне.
         </p>
-        <div v-if="isMissingSearch" class="form-group">
-          <label for="sourceScanJobId" class="label">Задание контроля красной зоны:</label>
-          <select id="sourceScanJobId" v-model="sourceScanJobId" class="form-control input"
+        <div v-if="isMissingSearch" class="form-group-0">
+          <label for="sourceScanJobId" class="label-0">Задание контроля красной зоны:</label>
+          <select id="sourceScanJobId" v-model="sourceScanJobId" class="form-control input-0"
             :disabled="readOnly || definitionLocked || verificationSourcesLoading">
             <option :value="null">Не выбрано</option>
             <option v-for="job in verificationSources" :key="job.id" :value="job.id">
@@ -862,13 +863,13 @@ defineExpose({ onSubmit, cancel })
             </option>
           </select>
           <FieldError name="sourceScanJobId" :errors="errors" />
-          <p>При первом запуске список поиска будет взят из ненайденных посылок выбранного задания.</p>
         </div>
-        <div v-if="!isScopedLookup(lookupTargetMode)" class="form-group">
-          <label for="lookupStatusId" class="label">Статус для поиска:</label>
+        <p v-if="isMissingSearch">При первом запуске список поиска будет взят из ненайденных посылок выбранного задания.</p>
+        <div v-if="!isScopedLookup(lookupTargetMode)" class="form-group-0">
+          <label for="lookupStatusId" class="label-0">Статус для поиска:</label>
           <select
             id="lookupStatusId"
-            class="form-control input"
+            class="form-control input-0"
             :class="{ 'is-invalid': errors.lookupStatusId }"
             :disabled="readOnly || !isLookupOperation"
             v-model="lookupStatusId"
@@ -884,8 +885,8 @@ defineExpose({ onSubmit, cancel })
             </option>
           </select>
           <FieldError name="lookupStatusId" :errors="errors" />
-          <p>Ищем посылки с выбранным статусом.</p>
         </div>
+        <p v-if="!isScopedLookup(lookupTargetMode)">Ищем посылки с выбранным статусом.</p>
         <strong>Влияние на статусы</strong>
         <p v-if="isScopedLookup(lookupTargetMode)">
           Без изменения статусов. Статусы посылок и реестра, причины отказа, зоны и привязка к коробкам сохраняются.

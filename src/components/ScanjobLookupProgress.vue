@@ -9,8 +9,10 @@ import { lookupPresetLabel, lookupTargetModes } from '@/helpers/scoped.lookup.he
 const props = defineProps({
   snapshot: { type: Object, required: true },
   canCreateSearch: { type: Boolean, default: false },
-  completed: { type: Boolean, default: false }
+  completed: { type: Boolean, default: false },
+  reportLoading: { type: Boolean, default: false }
 })
+defineEmits(['load-report'])
 const verification = computed(() => Number(props.snapshot.lookupTargetMode) === lookupTargetModes.RedZoneAtStart)
 const searchRoute = computed(() => ({
   path: '/scanjob/create',
@@ -33,14 +35,20 @@ const searchRoute = computed(() => ({
     <div v-else>
       Найдено: {{ snapshot.lookupProgress.confirmedCount }} · Осталось найти: {{ snapshot.lookupProgress.missingCount }}
     </div>
-    <details v-if="snapshot.lookupProgress.missingCount">
+    <v-btn
+      v-if="snapshot.lookupProgress.expectedCount > 0 && snapshot.lookupProgress.missingParcels == null"
+      variant="text"
+      :loading="reportLoading"
+      @click="$emit('load-report')"
+    >Показать списки посылок</v-btn>
+    <details v-if="snapshot.lookupProgress.missingCount && snapshot.lookupProgress.missingParcels">
       <summary>Ненайденные посылки</summary>
       <ul>
         <li v-for="parcel in snapshot.lookupProgress.missingParcels" :key="parcel.parcelId">{{ parcel.parcelNumber }}</li>
       </ul>
     </details>
-    <div v-else-if="completed && verification">Ненайденных посылок нет</div>
-    <details v-if="snapshot.lookupProgress.confirmedCount">
+    <div v-else-if="completed && verification && !snapshot.lookupProgress.missingCount">Ненайденных посылок нет</div>
+    <details v-if="snapshot.lookupProgress.confirmedCount && snapshot.lookupProgress.confirmedParcels">
       <summary>{{ verification ? 'Подтверждённые посылки' : 'Найденные посылки' }}</summary>
       <ul>
         <li v-for="parcel in snapshot.lookupProgress.confirmedParcels" :key="parcel.parcelId">{{ parcel.parcelNumber }}</li>

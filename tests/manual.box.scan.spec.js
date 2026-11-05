@@ -51,7 +51,7 @@ const globals = () => ({
     LocalLabelPrinting: true
   }
 })
-function harness({ monitor = false, candidate = job, options = {}, actions = false } = {}) {
+function harness({ monitor = false, candidate = job, options = {}, actions = false, readOnly = false } = {}) {
   let scan
   const opts = { registerId: ref(1), job: monitor ? ref(candidate) : null,
     refresh: vi.fn().mockResolvedValue(true), scopeKey: ref('boxes'), ...options }
@@ -60,9 +60,9 @@ function harness({ monitor = false, candidate = job, options = {}, actions = fal
     components: { BoxesMonitor, BoxScanAction, PageAlertRegion },
     setup() {
       scan = useManualBoxScan(opts)
-      return { rows, snapshot, actions, busy: computed(() => scan.busy.value) }
+      return { rows, snapshot, actions, readOnly, busy: computed(() => scan.busy.value) }
     },
-    template: '<div><PageAlertRegion/><BoxScanAction v-if="actions" :boxes="rows"/><BoxesMonitor v-else :register-id="1" :snapshot="snapshot" :boxes="rows" :loading="busy"/></div>'
+    template: '<div><PageAlertRegion/><BoxScanAction v-if="actions" :boxes="rows"/><BoxesMonitor v-else :register-id="1" :snapshot="snapshot" :boxes="rows" :loading="busy" :read-only="readOnly"/></div>'
   }), { attachTo: document.body, global: globals() })
   wrappers.push(wrapper)
   return { wrapper, scan, opts, snapshot }
@@ -264,6 +264,18 @@ describe.each(['party', 'monitor'])('box selection in %s', location => {
     await flushPromises()
     expect(action('selected-boxes-export-stickers')).toBeNull()
     expect(api.scanBox).toHaveBeenCalledExactlyOnceWith(7, 3)
+  })
+
+  it('keeps CSV available in a read-only party and omits scanning', async () => {
+    register.value.readOnly = true
+    const wrapper = location === 'party' ? renderList() : harness({ monitor: true, readOnly: true }).wrapper
+    await flushPromises()
+    await wrapper.findAll('tbody tr')[0].trigger('contextmenu')
+    await flushPromises()
+    expect(action('selected-boxes-scan')).toBeNull()
+    action('selected-boxes-export-stickers').click()
+    await flushPromises()
+    expect(downloadSelectedStickers).toHaveBeenCalledExactlyOnceWith(1, [3])
   })
 })
 

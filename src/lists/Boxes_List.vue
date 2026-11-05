@@ -207,6 +207,7 @@ defineExpose({
       ref="contextMenu"
       :register-id="props.registerId"
       :scope-key="scopeKey"
+      :read-only="readOnly"
       :disabled="controlsBusy"
     />
 

@@ -1139,6 +1139,7 @@ defineExpose({
         <ScanjobBoxesMonitor
           v-if="isRegisterMode"
           :register-id="registerId"
+          :read-only="readOnly"
           :snapshot="visibleSnapshot"
           :boxes="boxes"
           :loading="isLoading"

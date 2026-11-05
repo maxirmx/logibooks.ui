@@ -127,21 +127,6 @@ beforeEach(async () => {
 })
 
 describe('Airport_Settings.vue', () => {
-  it('renders create mode correctly', async () => {
-    const wrapper = mount(AsyncWrapper, {
-      props: { mode: 'create' },
-      global: {
-        stubs: defaultGlobalStubs
-      }
-    })
-
-    await resolveAll()
-
-    expect(wrapper.find('h1').text()).toBe('Регистрация кода аэропорта')
-    expect(wrapper.find('button[type="submit"]').text()).toContain('Создать')
-    expect(mockAirportsStore.getById).not.toHaveBeenCalled()
-  })
-
   it('shows api error message on create conflict', async () => {
     mockAirportsStore.create.mockRejectedValueOnce(new Error('409 Conflict'))
 

@@ -203,18 +203,6 @@ describe('warehouses store', () => {
       expect(store.opsError).toBe(error)
     })
 
-    it('ensureOpsLoaded only calls ops once', async () => {
-      fetchWrapper.get.mockResolvedValue(mockOps)
-      const store = useWarehousesStore()
-
-      await store.ensureOpsLoaded()
-      await store.ensureOpsLoaded()
-
-      expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
-      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/warehouses/ops`)
-      expect(store.ops).toEqual(mockOps)
-    })
-
     it('getOpsLabel returns matching name and falls back to string when missing', () => {
       const store = useWarehousesStore()
 

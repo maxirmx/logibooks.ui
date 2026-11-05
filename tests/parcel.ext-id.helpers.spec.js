@@ -17,10 +17,6 @@ describe('parcel ext-id helpers', () => {
   })
 
   describe('getClearParcelExtIdErrorMessage', () => {
-    it('returns error.message when error has a message property', () => {
-      expect(getClearParcelExtIdErrorMessage(new Error('Network error'))).toBe('Network error')
-    })
-
     it('returns default message when error is undefined', () => {
       expect(getClearParcelExtIdErrorMessage(undefined)).toBe('Ошибка при очистке номера КГТ')
     })

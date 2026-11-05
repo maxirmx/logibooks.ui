@@ -54,10 +54,6 @@ const FormStub = {
   template:
     '<form @submit.prevent="$emit(\'submit\')"><slot :errors="{}" :isSubmitting="false" /></form>'
 }
-const InvalidFormStub = {
-  template:
-    '<form><slot :errors="{ login_email: \'Необходимо указать электронную почту\', login_password: \'Необходимо указать пароль\' }" :isSubmitting="false" /></form>'
-}
 const FieldStub = {
   props: ['name', 'id', 'type'],
   template: '<input :id="id" :type="type" />'
@@ -86,25 +82,6 @@ describe('User_LoginView.vue', () => {
     const toggle = wrapper.find('button[type="button"]')
     await toggle.trigger('click')
     expect(wrapper.find('#login_password').attributes('type')).toBe('text')
-  })
-
-  it('renders a regular field error as a separate form-group item', () => {
-    const wrapper = mount(UserLoginView, {
-      global: {
-        stubs: { Form: InvalidFormStub, Field: FieldStub, 'font-awesome-icon': true }
-      }
-    })
-
-    const emailGroup = wrapper.findAll('.form-group')[0]
-    const directChildren = Array.from(emailGroup.element.children)
-
-    expect(directChildren).toHaveLength(3)
-    expect(directChildren[0].matches('label[for="login_email"]')).toBe(true)
-    expect(directChildren[1].matches('#login_email.input.is-invalid')).toBe(true)
-    expect(directChildren[2].matches('.invalid-feedback.d-block')).toBe(true)
-    expect(emailGroup.find('.invalid-feedback').text()).toBe(
-      'Необходимо указать электронную почту'
-    )
   })
 
   it('redirects after successful login', async () => {

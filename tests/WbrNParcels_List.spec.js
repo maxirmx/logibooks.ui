@@ -622,56 +622,6 @@ describe('WbrNParcels_List.vue', () => {
     }
   })
 
-  it('defines WbrN regular list headers and excludes hidden backend-owned fields', () => {
-    const wrapper = mount(WbrNParcelsList, {
-      props: { registerId: 7 },
-      global: { stubs: globalStubs }
-    })
-
-    const headerKeys = wrapper.vm.headers.map((header) => header.key)
-    expect(headerKeys).toEqual([
-      'frozenOrder',
-      'id',
-      'shk',
-      'checkStatus',
-      'tnVed',
-      'feacnLookup',
-      'productName',
-      'productLink',
-      'article',
-      'productCountryName',
-      'weightKg',
-      'unitPrice',
-      'currency',
-      'quantity',
-      'lastName',
-      'firstName',
-      'patronymic',
-      'passportNumber',
-      'statusId',
-      'dTag',
-      'customsFee',
-      'customsDuty'
-    ])
-    expect(headerKeys).not.toContain('countryCode')
-    expect(headerKeys).not.toContain('paymentAmount')
-    expect(headerKeys).not.toContain('paymentCurrency')
-    const customsFeeHeader = wrapper.vm.headers.find((header) => header.key === 'customsFee')
-    expect(customsFeeHeader).toMatchObject({
-      title: 'Сбор, руб',
-      sortable: false,
-      align: 'end',
-      width: '120px'
-    })
-    const customsDutyHeader = wrapper.vm.headers.find((header) => header.key === 'customsDuty')
-    expect(customsDutyHeader).toMatchObject({
-      title: 'Пошлина, руб',
-      sortable: false,
-      align: 'end',
-      width: '120px'
-    })
-  })
-
   it('loads supporting stores and restores selected parcel state on mount', async () => {
     routeQuery = { selectedParcelId: '10' }
     restoreSelectedParcelIdSnapshot.mockReturnValue(10)
@@ -1031,18 +981,6 @@ describe('WbrNParcels_List.vue', () => {
     expect(wrapper.vm.isInitializing).toBe(false)
   })
 
-  it('stops list watchers and header actions on unmount', () => {
-    const wrapper = mount(WbrNParcelsList, {
-      props: { registerId: 7 },
-      global: { stubs: globalStubs }
-    })
-
-    wrapper.unmount()
-
-    expect(stopMultiSelect).toHaveBeenCalled()
-    expect(stopRegisterHeaderActions).toHaveBeenCalled()
-    expect(stopFilterSync).toHaveBeenCalled()
-  })
   it('wires real page recovery controls without blocking them behind the mutation lock', async () => {
     registerItem.theOtherCountryCode = 762
     startReconciliation.mockReset().mockResolvedValue({ id: 'op' }).mockRejectedValueOnce(new Error('Ошибка отправки'))

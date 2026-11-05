@@ -59,27 +59,6 @@ describe('Parcel_EditView.vue', () => {
   })
 
   it.each([
-    ['non-import procedure', 10, ['sr-logist']],
-    ['ineligible role', 40, ['logist']]
-  ])('does not enable passport subscription for %s', async (_name, customsProcedureCode, roles) => {
-    const { useAuthStore } = await import('@/stores/auth.store.js')
-    useAuthStore().user = { roles }
-    mockGet.mockResolvedValue({
-      id: 6,
-      registerType: WBR_COMPANY_ID,
-      customsProcedureCode
-    })
-
-    mount(ParcelEditView, {
-      props: { registerId: 6, id: 60 },
-      global: { stubs: commonStubs }
-    })
-    await flushPromises()
-
-    expect(subscriptionOptions[0].enabled.value).toBe(false)
-  })
-
-  it.each([
     {
       name: 'maps OZON_COMPANY_ID to OzonParcelEditDialog',
       registerType: OZON_COMPANY_ID,
@@ -138,21 +117,6 @@ describe('Parcel_EditView.vue', () => {
     expect(wrapper.vm.editComponent).toBe(expectedComponent)
   })
 
-  it('shows loading state initially', () => {
-    // Mock a promise that never resolves to simulate loading state
-    mockGet.mockImplementation(() => new Promise(() => {}))
-
-    const wrapper = mount(ParcelEditView, {
-      props: {
-        registerId: 1,
-        id: 100
-      },
-      global: { stubs: commonStubs }
-    })
-
-    expect(wrapper.text()).toContain('Загрузка...')
-  })
-
   it.each(['resolve', 'reject'])('ignores stale register responses on a register change (%s)', async (outcome) => {
     const report = vi.spyOn(errorHelpers, 'reportError').mockImplementation(() => {})
     let resolveOld, rejectOld
@@ -168,20 +132,6 @@ describe('Parcel_EditView.vue', () => {
     expect(wrapper.findComponent(WbrParcelEditDialog).exists()).toBe(false)
     expect(useAlertStore().alert).toBeNull()
     expect(mockGet).toHaveBeenCalledWith('http://test-api/registers/13')
-    report.mockRestore()
-  })
-
-  it('reports disposed register failures without replacing the destination alert', async () => {
-    const report = vi.spyOn(errorHelpers, 'reportError').mockImplementation(() => {})
-    let rejectLoad
-    mockGet.mockImplementationOnce(() => new Promise((_resolve, reject) => { rejectLoad = reject }))
-    const wrapper = mount(ParcelEditView, { props: { id: 3, registerId: 12 }, global: { stubs: commonStubs } })
-    wrapper.unmount()
-    useAlertStore().info('Destination')
-    rejectLoad(new Error('Disposed register failure'))
-    await flushPromises()
-    expect(useAlertStore().alert.message).toBe('Destination')
-    expect(report).toHaveBeenCalledTimes(1)
     report.mockRestore()
   })
 

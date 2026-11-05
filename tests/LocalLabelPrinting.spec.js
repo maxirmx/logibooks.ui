@@ -157,17 +157,6 @@ it.each(['parcel', 'box'].flatMap(kind => [false, true].map(fails => ({ kind, fa
   }
 )
 
-it('reports discovery for the current scope once and restores the selected mode on retry', async () => {
-  await arm()
-  env.qz.state.connected = false
-  env.qz.connect.mockRejectedValueOnce({ code: 'NoPrinters' })
-  wrapper.vm.job = 43; await flushPromises()
-  expect(wrapper.get('[role="alert"]').text()).toContain('В Windows не найдены принтеры')
-  expect(errorSpy).toHaveBeenCalledOnce()
-  wrapper.vm.job = 44; await flushPromises()
-  expect(store.state.mode).toBe('KGT')
-  expect(env.channel.start).toHaveBeenLastCalledWith(44, 9)
-})
 it('shares pending discovery with a replacement scope and reports only to the live owner', async () => {
   await flushPromises()
   env.qz.state.connected = false

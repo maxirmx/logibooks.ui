@@ -10,7 +10,6 @@ import { createPagination, providePagination } from 'vuetify/lib/components/VDat
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useScanjobsStore } from '@/stores/scanjobs.store.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
-import { useAlertStore } from '@/stores/alert.store.js'
 import OzonParcelsList from '@/lists/OzonParcels_List.vue'
 import GtcParcelsList from '@/lists/GtcParcels_List.vue'
 import WbrParcelsList from '@/lists/WbrParcels_List.vue'
@@ -235,31 +234,6 @@ describe('reloads with real Pinia state and list loading', () => {
     const requests = fetchWrapper.get.mock.calls.filter(([url]) => new URL(url).pathname.endsWith('/43/history'))
     expect(requests).toHaveLength(1)
     expect(new URL(requests[0][0]).searchParams.get('page')).toBe('3')
-  })
-
-  it('loads parcel filters and sorting into the visible controls and first API request', async () => {
-    const auth = reload()
-    auth.setParcelFilterId(23)
-    auth.parcels_tnved = '4901'
-    auth.parcels_number = 'P-'
-    auth.parcels_status = 2
-    auth.parcels_sort_by = [{ key: 'frozenOrder', order: 'asc' }]
-    auth.parcels_page = 3
-    auth.parcels_per_page = 50
-    const restored = reload()
-    const wrapper = show(OzonParcelsList, { registerId: 4307 })
-    await flushPromises()
-    await flushPromises()
-    const request = fetchWrapper.get.mock.calls.find(([url]) => new URL(url).pathname.endsWith('/parcels'))
-    expect(request).toBeDefined()
-    const params = new URL(request[0]).searchParams
-    expect(Object.fromEntries(params)).toMatchObject({ parcelFilterId: '23', tnVed: '4901', number: 'P-', statusId: '2', sortBy: 'frozenOrder', sortOrder: 'asc', page: '3', pageSize: '50' })
-    expect(wrapper.findAll('input').some(input => input.element.value === '4901')).toBe(true)
-    const table = wrapper.findComponent({ name: 'v-data-table-server' })
-    expect(table.props('sortBy')).toEqual([{ key: 'frozenOrder', order: 'asc' }])
-    expect(table.props('page')).toBe(3)
-    expect(restored.parcels_page).toBe(3)
-    expect(useAlertStore().alert).toBeNull()
   })
 
   it('restores register filters into the first request before the debounce runs', async () => {

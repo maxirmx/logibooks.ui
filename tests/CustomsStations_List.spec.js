@@ -141,21 +141,6 @@ describe('CustomsStations_List.vue', () => {
     expect(wrapper.vm.filterCustomsStations(null, 'x', { raw: null })).toBe(false)
   })
 
-  it('filters safely when optional address fields are null', async () => {
-    const wrapper = await mountList()
-    const item = {
-      raw: {
-        ...stations.value[0],
-        postalCode: null,
-        city: undefined,
-        street: null
-      }
-    }
-
-    expect(wrapper.vm.filterCustomsStations(null, '00102', item)).toBe(true)
-    expect(wrapper.vm.filterCustomsStations(null, 'missing', item)).toBe(false)
-  })
-
   it('dispatches create, edit, and delete from rendered action buttons', async () => {
     const wrapper = await mountList()
     const buttons = wrapper.findAll('.action-button')

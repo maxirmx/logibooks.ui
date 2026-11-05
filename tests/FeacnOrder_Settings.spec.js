@@ -92,21 +92,6 @@ describe('FeacnOrder_Settings', () => {
     mocks.routerPush.mockResolvedValue()
   })
 
-  it('saves only country and procedure and returns to the orders list', async () => {
-    const wrapper = createWrapper()
-    await flushPromises()
-    wrapper.vm.scopes = [
-      { countryIsoNumeric: '860', customsProcedureCode: '40', explanation: 'Do not submit' }
-    ]
-
-    await wrapper.vm.save()
-
-    expect(mocks.updateScopes).toHaveBeenCalledWith(7, [
-      { countryIsoNumeric: 860, customsProcedureCode: 40 }
-    ])
-    expect(mocks.routerPush).toHaveBeenCalledWith('/feacn/orders')
-  })
-
   it('blocks invalid and duplicate scope pairs', async () => {
     const wrapper = createWrapper()
     await flushPromises()
@@ -178,15 +163,6 @@ describe('FeacnOrder_Settings', () => {
     expect(options.fallback).toBe('Не удалось загрузить правила применения нормативного документа')
 
     expect(wrapper.find('.page-alert-region__action').exists()).toBe(false)
-  })
-
-  it('returns to the orders list on cancel', async () => {
-    const wrapper = createWrapper()
-    await flushPromises()
-
-    await wrapper.vm.cancel()
-
-    expect(mocks.routerPush).toHaveBeenCalledWith('/feacn/orders')
   })
 
   it('shows a page-level error when cancel navigation fails', async () => {

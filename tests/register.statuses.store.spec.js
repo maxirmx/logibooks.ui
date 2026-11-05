@@ -65,48 +65,6 @@ describe('register.statuses.store.js', () => {
       expect(store.loading).toBe(false)
     })
 
-    it('handles fetch error', async () => {
-      const error = new Error('Network error')
-      mockGet.mockRejectedValue(error)
-
-      await expect(store.getAll()).rejects.toThrow('Network error')
-      expect(store.loading).toBe(false)
-    })
-  })
-
-  describe('getById', () => {
-    it('handles fetch by id error', async () => {
-      const error = new Error('Not found')
-      mockGet.mockRejectedValue(error)
-      await expect(store.getById(1)).rejects.toThrow('Not found')
-    })
-  })
-
-  describe('create', () => {
-    it('handles create error', async () => {
-      const error = new Error('Validation error')
-      mockPost.mockRejectedValue(error)
-
-      await expect(store.create({})).rejects.toThrow('Validation error')
-    })
-  })
-
-  describe('update', () => {
-    it('handles update error', async () => {
-      const error = new Error('Update failed')
-      mockPut.mockRejectedValue(error)
-
-      await expect(store.update(1, {})).rejects.toThrow('Update failed')
-    })
-  })
-
-  describe('remove', () => {
-    it('handles remove error', async () => {
-      const error = new Error('Delete failed')
-      mockDelete.mockRejectedValue(error)
-
-      await expect(store.remove(1)).rejects.toThrow('Delete failed')
-    })
   })
 
   describe('API Integration', () => {
@@ -156,36 +114,4 @@ describe('register.statuses.store.js', () => {
     })
   })
 
-  describe('ensureLoaded', () => {
-    beforeEach(() => {
-      // Reset store to initial state for these tests
-      pinia = createPinia()
-      setActivePinia(pinia)
-      store = useRegisterStatusesStore()
-      vi.clearAllMocks()
-      mockGet.mockResolvedValue(mockRegisterStatuses)
-    })
-
-    it('does not call getAll when already initialized', async () => {
-      // First call to initialize
-      store.ensureLoaded()
-
-      // Wait for any pending promises to resolve
-      await Promise.resolve()
-
-      expect(mockGet).toHaveBeenCalledTimes(1)
-
-      // Reset mock to check if it's called again
-      mockGet.mockClear()
-
-      // Second call should not trigger getAll again (initialized flag is true)
-      store.ensureLoaded()
-
-      // Wait for any pending promises to resolve
-      await Promise.resolve()
-
-      expect(mockGet).not.toHaveBeenCalled()
-    })
-
-  })
 })

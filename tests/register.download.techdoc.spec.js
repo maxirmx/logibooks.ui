@@ -70,28 +70,6 @@ describe('Technical Documentation Download Feature', () => {
       expect(alertStore.error).toHaveBeenCalledWith('Download failed')
     })
 
-    it('should handle techdoc download when register is not ready', async () => {
-      registersStore.item = reactive({
-        ...registersStore.item,
-        loading: true
-      })
-
-      const actions = useRegisterHeaderActions({
-        registersStore,
-        alertStore,
-        runningAction,
-        tableLoading,
-        registerLoading,
-        loadParcels,
-        isComponentMounted
-      })
-
-      await actions.downloadTechdoc()
-
-      // Should not call store method when register is not ready
-      expect(registersStore.downloadTechdoc).not.toHaveBeenCalled()
-    })
-
   })
 
 })

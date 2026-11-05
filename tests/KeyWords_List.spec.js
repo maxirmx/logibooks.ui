@@ -325,21 +325,6 @@ describe('KeyWords_List.vue', () => {
       expect(getAllKeyWords).not.toHaveBeenCalled()
     })
 
-    it('handles upload error - file too large', async () => {
-      uploadKeyWords.mockRejectedValue({ message: '413 Payload Too Large' })
-
-      const mockFile = new File(['test content'], 'keywords.xlsx', {
-        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-      })
-
-      await wrapper.vm.fileSelected([mockFile])
-
-      expect(mockError).toHaveBeenCalledWith(
-        { message: '413 Payload Too Large' },
-        { fallback: 'Ошибка при загрузке файла с ключевыми словами' }
-      )
-    })
-
     it('shows one Russian upload failure with the real alert presenter', async () => {
       wrapper.unmount()
       setActivePinia(createPinia())

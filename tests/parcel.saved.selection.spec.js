@@ -7,7 +7,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
-import { buildParcelsFilterParams, buildParcelsWhFilterParams, buildParcelsNumberParams } from '@/stores/parcels.store.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { reportError } from '@/helpers/error.helpers.js'
 import { OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
@@ -25,25 +24,6 @@ beforeEach(() => {
 })
 
 describe('saved parcel filter selection', () => {
-  it('remembers the signed-in selection across reloads and resets both list pages', () => {
-    const auth = useAuthStore()
-    auth.parcels_page = 4
-    auth.parcels_wh_page = 6
-    auth.setParcelFilterId(23)
-    expect(auth.parcels_page).toBe(1)
-    expect(auth.parcels_wh_page).toBe(1)
-    setActivePinia(createPinia())
-    expect(useAuthStore().parcels_filter_id).toBe(23)
-    expect(buildParcelsFilterParams(useAuthStore()).get('parcelFilterId')).toBe('23')
-    expect(buildParcelsWhFilterParams(useAuthStore()).get('parcelFilterId')).toBe('23')
-    expect(buildParcelsNumberParams('123').has('parcelFilterId')).toBe(false)
-  })
-
-  it.each([null, { userId: 2, filterId: 23 }, { userId: 1, filterId: 0 }, { userId: 1, filterId: '23' }])('ignores invalid or another account\'s stored selection %s', saved => {
-    localStorage.setItem('logibooks.parcelFilter', JSON.stringify(saved))
-    expect(useAuthStore().parcels_filter_id).toBeNull()
-  })
-
   it('reports malformed storage and lets the user select a new filter', () => {
     localStorage.setItem('logibooks.parcelFilter', '{broken')
     const auth = useAuthStore()

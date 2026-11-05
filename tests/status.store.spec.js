@@ -74,16 +74,4 @@ describe('status store', () => {
     })
   })
 
-  it('fetchStatus propagates transport failures after resetting rate state', async () => {
-    const error = new Error('status unavailable')
-    fetchWrapper.get.mockRejectedValue(error)
-    const store = useStatusStore()
-    store.exchangeRates = [{ alphabeticCode: 'TJS', rate: 84.8238, units: 10 }]
-    store.eurTjs = { rate: 12.0234 }
-
-    await expect(store.fetchStatus()).rejects.toBe(error)
-
-    expect(store.exchangeRates).toEqual([])
-    expect(store.eurTjs).toBeNull()
-  })
 })

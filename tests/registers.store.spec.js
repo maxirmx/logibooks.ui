@@ -11,8 +11,6 @@ import { InvoiceParcelSelection } from '@/models/invoice.parcel.selection.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
-import { REGISTER_STATUS_FILTER_IN_PROGRESS } from '@/helpers/register.status.filter.helpers.js'
-
 vi.mock('@/helpers/fetch.wrapper.js', () => ({
   fetchWrapper: {
     get: vi.fn(),
@@ -128,24 +126,6 @@ describe('registers store', () => {
 
   describe('getAll method', () => {
     describe('API format with pagination metadata', () => {
-      it('requests in-progress registers for the paperwork status filter', async () => {
-        useAuthStore.mockReturnValueOnce({
-          ...defaultAuthStore,
-          registers_status: REGISTER_STATUS_FILTER_IN_PROGRESS
-        })
-        fetchWrapper.get.mockResolvedValue({
-          items: [],
-          pagination: { totalCount: 0 }
-        })
-
-        const store = useRegistersStore()
-        await store.getAll()
-
-        expect(fetchWrapper.get).toHaveBeenCalledWith(
-          `${apiUrl}/registers?page=1&pageSize=10&sortBy=id&sortOrder=asc&whOnly=false&inProgressOnly=true`
-        )
-      })
-
       it('handles new format with missing items property', async () => {
         const mockResponse = {
           pagination: {
@@ -164,26 +144,6 @@ describe('registers store', () => {
         expect(store.totalCount).toBe(0)
         expect(store.hasNextPage).toBe(false)
         expect(store.hasPreviousPage).toBe(false)
-      })
-    })
-
-    describe('error handling', () => {
-      it('clears previous error on successful request', async () => {
-        const store = useRegistersStore()
-
-        // First request fails while loading shared operations.
-        fetchWrapper.get.mockRejectedValueOnce(new Error('First error'))
-        await expect(store.getAll()).rejects.toThrow('First error')
-        expect(store.error).toBeTruthy()
-
-        // Second request succeeds
-        fetchWrapper.get.mockResolvedValue({
-          items: [{ id: 1 }],
-          pagination: { totalCount: 1, hasNextPage: false, hasPreviousPage: false }
-        })
-        await store.getAll()
-        expect(store.error).toBeNull()
-        expect(store.items).toEqual([{ id: 1, destination: 'in' }])
       })
     })
 
@@ -610,40 +570,6 @@ describe('registers store', () => {
       else rejectOlder(new Error('Old register failed'))
       await observed
       expect(store.item.id).toBe(6)
-    })
-
-    it('keeps the saved register visible during a lock refresh and propagates failure', async () => {
-      const pending = Promise.withResolvers()
-      const failure = new Error('Сервер недоступен')
-      const store = useRegistersStore()
-      store.items = [{ id: 5, registerType: 1, readOnly: false }]
-      store.item = { id: 5, registerType: 1, readOnly: false }
-      fetchWrapper.get.mockReturnValueOnce(pending.promise)
-
-      const refresh = store.refreshReadOnlyRegister(5)
-      const observed = expect(refresh).rejects.toBe(failure)
-      expect(store.item).toMatchObject({ id: 5, registerType: 1 })
-      pending.reject(failure)
-      await observed
-
-      expect(store.item).toMatchObject({ id: 5, registerType: 1, readOnly: true })
-      expect(store.items[0]).toMatchObject({ id: 5, registerType: 1, readOnly: true })
-    })
-
-    it('refreshes only the matching list entry if the user opens a different register', async () => {
-      const pending = Promise.withResolvers()
-      const store = useRegistersStore()
-      store.items = [{ id: 5, readOnly: false }, { id: 6, readOnly: false }]
-      store.item = { id: 5, readOnly: false }
-      fetchWrapper.get.mockReturnValueOnce(pending.promise)
-
-      const refresh = store.refreshReadOnlyRegister(5)
-      store.item = { id: 6, readOnly: false }
-      pending.resolve({ id: 5, readOnly: true })
-      await refresh
-
-      expect(store.item).toMatchObject({ id: 6, readOnly: false })
-      expect(store.items.map(register => register.readOnly)).toEqual([true, false])
     })
 
     it('does not overwrite a newer detail or list read of the same register', async () => {

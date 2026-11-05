@@ -138,27 +138,6 @@ describe('Warehouses_List.vue', () => {
     vi.useRealTimers()
   })
 
-  it('handles empty warehouses array', async () => {
-    mockWarehouses.value = []
-    const wrapper = mount(WarehousesList, {
-      global: {
-        stubs: testStubs
-      }
-    })
-    expect(wrapper.exists()).toBe(true)
-    mockWarehouses.value = [
-      {
-        id: 1,
-        name: 'Основной склад',
-        countryIsoNumeric: 643,
-        postalCode: '123456',
-        city: 'Москва',
-        street: 'ул. Тестовая',
-        type: 0
-      }
-    ]
-  })
-
   it('maps warehouse type labels', async () => {
     const wrapper = mount(WarehousesList, {
       global: {

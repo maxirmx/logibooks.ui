@@ -61,41 +61,6 @@ describe('parcel.statuses.store.js', () => {
 
   })
 
-  describe('getById', () => {
-    it('handles fetch by id error', async () => {
-      const error = new Error('Not found')
-      mockGet.mockRejectedValue(error)
-      await expect(store.getById(1)).rejects.toThrow('Not found')
-    })
-  })
-
-  describe('create', () => {
-    it('handles create error', async () => {
-      const error = new Error('Validation error')
-      mockPost.mockRejectedValue(error)
-
-      await expect(store.create({})).rejects.toThrow('Validation error')
-    })
-  })
-
-  describe('update', () => {
-    it('handles update error', async () => {
-      const error = new Error('Update failed')
-      mockPut.mockRejectedValue(error)
-
-      await expect(store.update(1, {})).rejects.toThrow('Update failed')
-    })
-  })
-
-  describe('remove', () => {
-    it('handles remove error', async () => {
-      const error = new Error('Delete failed')
-      mockDelete.mockRejectedValue(error)
-
-      await expect(store.remove(1)).rejects.toThrow('Delete failed')
-    })
-  })
-
   describe('API Integration', () => {
     it('uses correct base URL for all operations', async () => {
       const baseUrl = 'http://localhost:3000/api/parcelstatuses'

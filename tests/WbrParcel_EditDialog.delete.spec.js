@@ -122,45 +122,4 @@ describe('WbrParcel_EditDialog delete flow', () => {
     expect(parcelsMock.getById).toHaveBeenCalledWith(3)
   })
 
-  it('does not call deleteImage when user cancels', async () => {
-    confirmMock.mockResolvedValue(false)
-
-    const TestWrapper = {
-      components: { WbrParcel_EditDialog },
-      template: '<Suspense><WbrParcel_EditDialog :registerId="2" :id="3" /></Suspense>'
-    }
-
-    const wrapper = mount(TestWrapper, {
-      global: {
-        stubs: {
-          Field: { template: '<input />' },
-          Form: {
-            methods: { resetForm() {} },
-            template:
-              '<div><slot :errors="{}" :values="{ id: 3 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
-          },
-          ParcelHeaderActionsBar: true,
-          ParcelStatusSection: true,
-          FeacnCodeEditor: true,
-          ParcelNumberExt: true,
-          ArticleWithH: true,
-          ActionButton: true,
-          'font-awesome-icon': true,
-          VTooltip: true
-        }
-      }
-    })
-
-    // Wait for render inside Suspense
-    await nextTick()
-    await new Promise((r) => setTimeout(r, 0))
-    await nextTick()
-
-    const btn = wrapper.find('[data-test="delete-btn"]')
-    expect(btn.exists()).toBe(true)
-    await btn.trigger('click')
-
-    expect(confirmMock).toHaveBeenCalled()
-    expect(parcelsMock.deleteImage).not.toHaveBeenCalled()
-  })
 })

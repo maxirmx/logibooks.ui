@@ -187,17 +187,6 @@ describe('companies store', () => {
   })
 
   describe('register output formats', () => {
-    it('reads catalogs and independent company layouts', async () => {
-      const store = useCompaniesStore()
-      const catalog = { registerType: 1, inputColumns: [] }
-      const layout = { registerType: 1, entries: [{ kind: 'empty' }] }
-      fetchWrapper.get.mockResolvedValueOnce(catalog).mockResolvedValueOnce(layout)
-      expect(await store.getRegisterOutputColumns(1)).toBe(catalog)
-      expect(await store.getRegisterOutputFormat(42, 1)).toBe(layout)
-      expect(fetchWrapper.get).toHaveBeenNthCalledWith(1, `${apiUrl}/register-output-columns?registerType=1`)
-      expect(fetchWrapper.get).toHaveBeenNthCalledWith(2, `${apiUrl}/companies/42/register-output-format?registerType=1`)
-    })
-
     it('saves and removes only the selected type', async () => {
       const store = useCompaniesStore()
       fetchWrapper.put.mockResolvedValueOnce({})

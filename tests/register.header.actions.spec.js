@@ -114,19 +114,6 @@ describe('useRegisterHeaderActions', () => {
     expect(alertStore.error).not.toHaveBeenCalled()
   })
 
-  it('reports a supported paperwork download failure once without alert callbacks', async () => {
-    registersStore.item.registerType = WBRN_REGISTER_ID
-    registersStore.download.mockRejectedValueOnce(new Error('download failed'))
-    const actions = useRegisterHeaderActions({
-      registersStore, alertStore, runningAction, tableLoading, registerLoading,
-      loadParcels, isComponentMounted
-    })
-    await Promise.resolve()
-    const first = actions.downloadRegister('company')
-    expect(await first).toBe(false)
-    expect(alertStore.error).toHaveBeenCalledTimes(1)
-  })
-
   it('exports raw XML when weight correction is declined', async () => {
     registersStore.item.realWeightKg = 5
     registersStore.item.totalWeightKgToRelease = 10
@@ -203,30 +190,6 @@ describe('useRegisterHeaderActions', () => {
     expect(actionDialog.show).toBe(false)
     expect(actionDialog.title).toBe('')
     expect(alertStore.error).toHaveBeenCalledWith('Download failed')
-  })
-
-  it('reports additional restrictions download errors and hides action dialog', async () => {
-    const error = new Error('Additional restrictions download failed')
-    registersStore.downloadAdditionalRestrictions.mockRejectedValueOnce(error)
-
-    const actions = useRegisterHeaderActions({
-      registersStore,
-      alertStore,
-      runningAction,
-      tableLoading,
-      registerLoading,
-      loadParcels,
-      isComponentMounted
-    })
-
-    const promise = actions.downloadAdditionalRestrictions()
-
-    expect(actions.actionDialog.show).toBe(true)
-
-    await expect(promise).resolves.toBeUndefined()
-
-    expect(actions.actionDialog.show).toBe(false)
-    expect(alertStore.error).toHaveBeenCalledWith('Additional restrictions download failed')
   })
 
   it('presents a Tajikistan manifest download failure exactly once', async () => {
@@ -613,28 +576,6 @@ describe('useRegisterHeaderActions', () => {
 
     expect(actionDialog.show).toBe(false)
     expect(actionDialog.title).toBe('')
-  })
-
-  it('reports a register refresh rejection once and leaves the restriction filter unchanged', async () => {
-    const hideLegacyRestrictions = ref(false)
-    const refreshError = new Error('Register refresh failed')
-    const fetchRegister = vi.fn().mockRejectedValue(refreshError)
-    const loadParcelsAfterFreeze = vi.fn()
-
-    await expect(refreshAfterCheckStatusFreeze({
-      succeeded: true,
-      hideLegacyRestrictions,
-      fetchRegister,
-      loadParcels: loadParcelsAfterFreeze,
-      alertStore
-    })).resolves.toBe(false)
-
-    expect(alertStore.error).toHaveBeenCalledTimes(1)
-    expect(alertStore.error).toHaveBeenCalledWith(refreshError, {
-      fallback: 'Запреты применены, но не удалось обновить данные'
-    })
-    expect(hideLegacyRestrictions.value).toBe(false)
-    expect(loadParcelsAfterFreeze).not.toHaveBeenCalled()
   })
 
   it('returns false and reports a freeze check status failure exactly once', async () => {

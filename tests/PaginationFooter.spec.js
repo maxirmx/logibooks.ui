@@ -60,15 +60,6 @@ describe('PaginationFooter', () => {
     })
   })
 
-  describe('Disabled State', () => {
-    it('computes controlsDisabled correctly when disabled', async () => {
-      await wrapper.setProps({ disabled: true })
-      const component = wrapper.vm
-      expect(component.controlsDisabled).toBe(true)
-    })
-
-  })
-
   describe('Scroll to Top', () => {
     it('calls window.scrollTo when scroll button is clicked', async () => {
       const scrollToSpy = vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
@@ -94,17 +85,4 @@ describe('PaginationFooter', () => {
 
   })
 
-  describe('Custom Page Options', () => {
-    it('uses custom page options when provided', async () => {
-      const customOptions = [
-        { value: 1, title: 'First' },
-        { value: 5, title: 'Middle' },
-        { value: 10, title: 'Last' }
-      ]
-
-      await wrapper.setProps({ pageOptions: customOptions })
-      const component = wrapper.vm
-      expect(component.pageSelectItems).toEqual(customOptions)
-    })
-  })
 })

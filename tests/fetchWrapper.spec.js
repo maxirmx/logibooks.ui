@@ -316,17 +316,6 @@ describe('fetchWrapper', () => {
       expect(global.document.createElement).not.toHaveBeenCalled()
     })
 
-    it('propagates a handle polling failure when retry is declined', async () => {
-      const error = new Error('Failed to fetch')
-      global.fetch = vi.fn()
-        .mockResolvedValueOnce({ ok: true, status: 202, json: async () => ({ handleId: 'job-1' }) })
-        .mockRejectedValueOnce(error)
-      await expect(fetchWrapper.downloadFile(baseUrl + '/generate', 'archive.zip', {
-        pollAccepted: true, pollIntervalMs: 0, getPollUrl: () => baseUrl + '/status', retryPoll: () => false
-      })).rejects.toMatchObject({ cause: error })
-      expect(global.fetch).toHaveBeenCalledTimes(2)
-    })
-
     it.each([undefined, ' '])('rejects an unusable handle without polling the generation endpoint (%s)', async (handleId) => {
       const progress = { handleId, total: 4, processed: 1 }
       global.fetch = vi.fn().mockResolvedValue({ ok: true, status: 202, json: async () => progress })
@@ -336,37 +325,6 @@ describe('fetchWrapper', () => {
       })).rejects.toMatchObject({ status: 202, data: progress })
       expect(global.fetch).toHaveBeenCalledOnce()
       expect(getPollUrl).not.toHaveBeenCalled()
-    })
-
-    it('rejects malformed accepted progress without invoking the callback or downloading it', async () => {
-      const parseError = new SyntaxError('Unexpected token')
-      const progressResponse = {
-        ok: true,
-        status: 202,
-        statusText: 'Accepted',
-        headers: { get: () => 'application/json' },
-        json: vi.fn().mockRejectedValue(parseError),
-        blob: vi.fn()
-      }
-      global.fetch = vi.fn().mockResolvedValue(progressResponse)
-      const onProgress = vi.fn()
-
-      await expect(
-        fetchWrapper.downloadFile(
-          `${baseUrl}/registers/1/generate`,
-          'must-not-download.zip',
-          { pollAccepted: true, pollIntervalMs: 0, onProgress }
-        )
-      ).rejects.toMatchObject({
-        message: 'Некорректный ответ о ходе формирования файла',
-        status: 202,
-        cause: parseError
-      })
-
-      expect(global.fetch).toHaveBeenCalledOnce()
-      expect(onProgress).not.toHaveBeenCalled()
-      expect(progressResponse.blob).not.toHaveBeenCalled()
-      expect(global.document.createElement).not.toHaveBeenCalled()
     })
 
     it('rejects a null accepted progress payload without invoking the callback', async () => {

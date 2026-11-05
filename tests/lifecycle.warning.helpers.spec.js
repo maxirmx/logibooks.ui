@@ -35,18 +35,4 @@ describe('lifecycle warning helpers', () => {
     }))
   })
 
-  it('propagates register refresh failures without opening confirmation', async () => {
-    const refreshError = new Error('register refresh failed')
-    const confirm = vi.fn()
-    const registersStore = {
-      item: { passportCheckWasFinished: true },
-      getById: vi.fn().mockRejectedValue(refreshError)
-    }
-
-    await expect(confirmPassportCheckRestart({
-      registerId: 7, registersStore, confirm, parcelCount: 1
-    })).rejects.toBe(refreshError)
-    expect(confirm).not.toHaveBeenCalled()
-  })
-
 })

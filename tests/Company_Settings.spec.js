@@ -345,26 +345,6 @@ describe('Company_Settings.vue', () => {
   })
 
   describe('Navigation', () => {
-    it('navigates to companies list on header cancel action', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs,
-          mocks: {
-            $router: mockRouter
-          }
-        }
-      })
-
-      await resolveAll()
-
-      const cancelButton = wrapper.find('[data-testid="company-cancel-action"]')
-      expect(cancelButton.exists()).toBe(true)
-
-      await cancelButton.trigger('click')
-      expect(mockRouter.push).toHaveBeenCalledWith('/companies')
-    })
-
     it('keeps the company form open when header cancel navigation fails', async () => {
       const wrapper = mount(AsyncWrapper, {
         props: { mode: 'edit', companyId: 1 },

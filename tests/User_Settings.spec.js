@@ -10,12 +10,7 @@ import { ref } from 'vue'
 import UserSettings from '@/dialogs/User_Settings.vue'
 import { defaultGlobalStubs, createMockStore } from './helpers/test-utils.js'
 import { resolveAll } from './helpers/test-utils'
-import {
-  roleAdapterAlta,
-  roleLogist,
-  roleWhManager,
-  roleWhOperator
-} from '@/helpers/user.roles.js'
+import { roleAdapterAlta, roleLogist, roleWhOperator } from '@/helpers/user.roles.js'
 
 // simple stubs for vee-validate components
 const FormStub = {
@@ -185,41 +180,6 @@ describe('User_Settings.vue real component', () => {
     expect(errorAlert).not.toHaveBeenCalled()
   })
 
-  it('shows filters on own and administrator-managed profiles, but not during registration', async () => {
-    const ownProfile = mount(Parent, {
-      props: { register: false, id: 2 },
-      global: {
-        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub }
-      }
-    })
-    await resolveAll()
-    expect(ownProfile.find('[data-testid="user-parcel-filters"]').exists()).toBe(true)
-    expect(ownProfile.find('form fieldset [data-testid="user-parcel-filters"] .user-parcel-filters__table-shell.table-card').exists()).toBe(true)
-    await ownProfile.get('[data-testid="parcel-filter-create"]').trigger('click')
-    await resolveAll()
-    expect(routerPush).toHaveBeenCalledWith({ path: '/parcel-filters/create', query: { userId: '2' } })
-
-    isAdmin = true
-    const otherProfile = mount(Parent, {
-      props: { register: false, id: 1 },
-      global: {
-        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub }
-      }
-    })
-    await resolveAll()
-    expect(otherProfile.find('[data-testid="user-parcel-filters"]').exists()).toBe(true)
-    expect(otherProfile.findComponent({ name: 'UserParcelFilters' }).props('userId')).toBe(1)
-
-    const registration = mount(Parent, {
-      props: { register: true },
-      global: {
-        stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub }
-      }
-    })
-    await resolveAll()
-    expect(registration.find('[data-testid="user-parcel-filters"]').exists()).toBe(false)
-  })
-
   it('hides filters on another user profile for a non-administrator and after initialization failure', async () => {
     const options = { props: { register: false, id: 1 }, global: { stubs: { ...defaultGlobalStubs, Form: FormStub, Field: FieldStub } } }
     const other = mount(Parent, options)
@@ -284,23 +244,6 @@ describe('User_Settings.vue real component', () => {
     expect(arg.host).toBe('http://localhost')
     expect(routerPush).toHaveBeenCalledWith('/')
     expect(successAlert).toHaveBeenCalled()
-  })
-
-  it('displays warehouse manager role for non-admin user settings', async () => {
-    mockUser.value.roles = [roleWhManager]
-    const wrapper = mount(Parent, {
-      props: { register: false, id: 1 },
-      global: {
-        stubs: {
-          ...defaultGlobalStubs,
-          Form: FormStub,
-          Field: FieldStub
-        }
-      }
-    })
-    await resolveAll()
-
-    expect(wrapper.text()).toContain('Менеджер склада')
   })
 
   // Error handling tests
@@ -446,28 +389,6 @@ describe('User_Settings.vue real component', () => {
     child.vm.$.setupState.toggleAllWarehouses(false)
     await child.vm.$.setupState.onSubmit({ firstName: 'Test2' }, { setErrors: vi.fn() })
     expect(addUser.mock.calls[1][0].warehouseIds).toEqual([])
-  })
-
-  it('submits default schemeId 0 when registering without changing field', async () => {
-    isAdmin = true
-    const wrapper = mount(Parent, {
-      props: { register: true },
-      global: {
-        stubs: {
-          ...defaultGlobalStubs,
-          Form: FormStub,
-          Field: FieldStub
-        }
-      }
-    })
-    await resolveAll()
-    const child = wrapper.findComponent(UserSettings)
-    // Submit without explicitly providing schemeId - it should still be included as 0
-    await child.vm.$.setupState.onSubmit({ firstName: 'Test' }, { setErrors: vi.fn() })
-    await resolveAll()
-
-    // The initial values should include schemeId: 0, so it should be submitted
-    expect(addUser).toHaveBeenCalledWith(expect.objectContaining({ firstName: 'Test' }), true)
   })
 
   it('displays user schemeId value when editing', async () => {

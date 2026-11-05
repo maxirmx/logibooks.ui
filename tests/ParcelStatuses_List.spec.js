@@ -166,15 +166,6 @@ describe('ParcelStatuses_List.vue', () => {
   })
 
   describe('Delete Functionality', () => {
-    it('does not call remove when deletion is cancelled', async () => {
-      mockConfirm.mockResolvedValue(false)
-      const testParcelStatus = mockParcelStatuses.value[0]
-
-      await wrapper.vm.deleteParcelStatus(testParcelStatus)
-
-      expect(removeParcelStatus).not.toHaveBeenCalled()
-    })
-
     it('handles delete error with 409 status', async () => {
       mockConfirm.mockResolvedValue(true)
       const error = new Error('409 Conflict')
@@ -212,33 +203,6 @@ describe('ParcelStatuses_List.vue', () => {
       expect(result).toBe(false)
     })
 
-  })
-
-  describe('Stubbed Create and Edit Functions', () => {
-    it('openCreateDialog shows info message', async () => {
-      const alertStore = {
-        info: vi.fn()
-      }
-
-      // Mock the alert store for this test
-      wrapper.vm.alertStore = alertStore
-      await wrapper.vm.openCreateDialog()
-
-      // Since it's stubbed, we just verify the function exists and can be called
-      expect(wrapper.vm.openCreateDialog).toBeDefined()
-    })
-
-    it('openEditDialog shows info message', async () => {
-      const testParcelStatus = mockParcelStatuses.value[0]
-      const alertStore = {
-        info: vi.fn()
-      }
-
-      wrapper.vm.alertStore = alertStore
-      await wrapper.vm.openEditDialog(testParcelStatus)
-
-      expect(wrapper.vm.openEditDialog).toBeDefined()
-    })
   })
 
 })

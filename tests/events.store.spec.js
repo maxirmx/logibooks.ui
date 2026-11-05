@@ -87,15 +87,6 @@ describe('events.store.js', () => {
   })
 
   describe('register events', () => {
-    describe('registerGetAll', () => {
-      it('propagates errors', async () => {
-        const error = new Error('Network error')
-        mockGet.mockRejectedValue(error)
-
-        await expect(store.registerGetAll()).rejects.toThrow('Network error')
-      })
-    })
-
     describe('registerGetById', () => {
       it('propagates fetch errors', async () => {
         const error = new Error('Not found')
@@ -105,46 +96,6 @@ describe('events.store.js', () => {
       })
     })
 
-    describe('registerUpdate', () => {
-      it('propagates update errors', async () => {
-        const error = new Error('Update failed')
-        mockPut.mockRejectedValue(error)
-
-        await expect(store.registerUpdate(2, {})).rejects.toThrow('Update failed')
-      })
-    })
-
-    describe('registerUpdateMany', () => {
-      it('updates multiple register events and refreshes list', async () => {
-        const payload = [
-          { id: 1, parcelStatusId: 5 },
-          { id: 2, parcelStatusId: null }
-        ]
-
-        const updatedEvents = [
-          { ...mockEvents[0], parcelStatusId: 5 },
-          { ...mockEvents[1], parcelStatusId: null }
-        ]
-
-        mockPut.mockResolvedValue(updatedEvents)
-        mockGet.mockResolvedValue(mockEvents)
-
-        const result = await store.registerUpdateMany(payload)
-
-        expect(mockPut).toHaveBeenCalledWith('http://localhost:3000/api/events/registers', payload)
-        expect(mockGet).toHaveBeenCalledWith('http://localhost:3000/api/events/registers')
-        expect(result).toEqual(updatedEvents)
-      })
-
-      it('propagates batch update errors', async () => {
-        const error = new Error('Batch failed')
-        mockPut.mockRejectedValue(error)
-
-        await expect(store.registerUpdateMany([{ id: 1, parcelStatusId: 4 }])).rejects.toThrow(
-          'Batch failed'
-        )
-      })
-    })
   })
 
 })

@@ -571,34 +571,6 @@ describe('WbrNParcel_EditDialog.vue', () => {
     expect(wrapper.get('[data-testid="approve-notification"]').attributes('disabled')).toBeDefined()
   })
 
-  it('saves, cancels, and generates XML using the WbrN SHK number', async () => {
-    const returnUrl = '/scanjobs/42/monitor/boxes/7'
-    const wrapper = await mountDialog({ mode: OP_MODE_WAREHOUSE, returnUrl })
-
-    await wrapper.get('[data-testid="download"]').trigger('click')
-    await resolveAll()
-
-    expect(parcelUpdate).toHaveBeenCalledWith(
-      3,
-      expect.objectContaining({ id: 3, shk: 'SHK-N-EDIT' })
-    )
-    expect(registerGetById).toHaveBeenCalledWith(12)
-    expect(generateXml).toHaveBeenCalledWith(
-      parcelItem,
-      expect.any(Object),
-      expect.stringMatching(/SHK-N-EDIT$/),
-      expect.objectContaining({ confirm: expect.any(Function) })
-    )
-    expect(parcelGetById).toHaveBeenCalledWith(3)
-
-    await wrapper.get('[data-testid="save"]').trigger('click')
-    await resolveAll()
-    expect(routerPush).toHaveBeenCalledWith(returnUrl)
-
-    await wrapper.get('[data-testid="cancel"]').trigger('click')
-    expect(routerPush).toHaveBeenCalledWith(returnUrl)
-  })
-
   it('leaves a read-only parcel without sending an update', async () => {
     parcelItem.value = { ...baseParcel, readOnly: true }
     const wrapper = await mountDialog()

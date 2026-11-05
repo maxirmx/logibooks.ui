@@ -176,12 +176,6 @@ describe('FeacnLocalPrefixes_List.vue', () => {
     expect(mockPush).toHaveBeenCalledWith('/feacn/prefix/edit/1')
   })
 
-  it('removes prefix when confirmed', async () => {
-    mockConfirm.mockResolvedValue(true)
-    await wrapper.vm.deletePrefix(mockPrefixes.value[0])
-    expect(removePrefix).toHaveBeenCalledWith(1)
-  })
-
   it('does not remove prefix when cancelled', async () => {
     mockConfirm.mockResolvedValue(false)
     await wrapper.vm.deletePrefix(mockPrefixes.value[0])

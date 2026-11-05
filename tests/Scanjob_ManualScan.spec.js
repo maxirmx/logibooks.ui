@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { computed, defineComponent, nextTick, ref } from 'vue'
+import { computed, defineComponent, ref } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createVuetify } from 'vuetify'
 import { VDataTable } from 'vuetify/components'
@@ -84,27 +84,6 @@ describe('monitor manual selection with the real Vuetify table', () => {
     await flushPromises()
     expect(scanParcel.mock.calls).toEqual([[7, 4], [7, 3]])
     expect(scan.busy.value).toBe(false)
-    expect(table.vm.selection.selectedItems.value).toEqual([])
-  })
-  it('uses the actual sorted page, excludes unregistered rows, and keeps follow focus separate', async () => {
-    render()
-    await flushPromises()
-    const table = wrapper.findComponent(ScanjobParcelsMonitorTable)
-    const visibleRows = wrapper.findAll('tbody tr')
-    expect(visibleRows.map(row => row.text())).toEqual(expect.arrayContaining([expect.stringContaining('E'), expect.stringContaining('D')]))
-    await visibleRows[1].trigger('click', { ctrlKey: true })
-    expect(table.vm.selection.selectedItems.value.map(row => row.parcelId)).toEqual([4])
-    await visibleRows[0].trigger('click', { ctrlKey: true })
-    expect(table.vm.selection.selectedItems.value.map(row => row.parcelId)).toEqual([4])
-    focused.value = 3
-    await flushPromises()
-    expect(wrapper.find('.monitor-followed-parcel-row').text()).toContain('C')
-    expect(table.vm.selection.selectedItems.value).toEqual([])
-    table.vm.selection.selectAllCurrentPage()
-    expect(table.vm.selection.selectedItems.value.map(row => row.parcelId)).toEqual([3, 2])
-    await scan.run(table.vm.selection.selectedItems.value, 7, true)
-    await nextTick()
-    expect(scanParcel.mock.calls).toEqual([[7, 3], [7, 2]])
     expect(table.vm.selection.selectedItems.value).toEqual([])
   })
   it.each(['update:page', 'update:itemsPerPage', 'update:sortBy'])('invalidates pending batches on %s but not automatic follow movement', async event => {

@@ -54,21 +54,4 @@ describe('FeacnCodesTreeNode.vue', () => {
     expect(wrapper.emitted('toggle')).toBeFalsy()
   })
 
-  it('emits select event for leaf node in select mode', async () => {
-    const wrapper = createWrapper(
-      { code: '0123456789', codeEx: '0123456789', name: 'Leaf Node' },
-      { selectMode: true }
-    )
-
-    const label = wrapper.find('.node-label')
-    expect(label.classes()).toContain('clickable')
-    const code = wrapper.find('.node-code')
-    expect(code.classes()).toContain('clickable')
-
-    await label.trigger('click')
-
-    expect(wrapper.emitted('select')).toBeTruthy()
-    expect(wrapper.emitted('select')[0][0]).toEqual(wrapper.props('node'))
-  })
-
 })

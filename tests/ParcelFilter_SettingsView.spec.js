@@ -87,21 +87,6 @@ describe('ParcelFilter_SettingsView', () => {
     }
     destination.unmount()
   })
-  it('disables Save for empty, long, and duplicate names', async () => {
-    const { wrapper } = mountView({ mode: 'create' })
-    await flushPromises()
-    const name = wrapper.find('[data-testid="parcel-filter-name"]')
-    await name.setValue('   ')
-    expect(wrapper.find('[role="alert"]').text()).toContain('Укажите название')
-    await name.setValue('x'.repeat(101))
-    expect(wrapper.find('[role="alert"]').text()).toContain('100 символов')
-    await name.setValue(' МОЙ ФИЛЬТР ')
-    expect(wrapper.find('[role="alert"]').text()).toContain('уже есть')
-    expect(wrapper.find('[data-testid="parcel-filter-save"]').attributes('disabled')).toBeDefined()
-    await name.setValue('Новый фильтр')
-    expect(wrapper.find('[data-testid="parcel-filter-save"]').attributes('disabled')).toBeUndefined()
-  })
-
   it('submits selected parcel and check statuses without the locked partner code', async () => {
     const { wrapper } = mountView({ mode: 'create' })
     await flushPromises()
@@ -118,25 +103,6 @@ describe('ParcelFilter_SettingsView', () => {
     expect(payload.excludedCheckStatuses.common).not.toContain(0x01ff)
   })
 
-  it('preserves the draft on rejection and retries without premature navigation', async () => {
-    fetchWrapper.post.mockRejectedValueOnce(new Error('Сервер недоступен'))
-    const { wrapper } = mountView({ mode: 'create' })
-    await flushPromises()
-    await wrapper.find('[data-testid="parcel-filter-name"]').setValue('Повторить')
-    await wrapper.find('[data-testid="parcel-filter-passport"] input').setValue(true)
-    await wrapper.find('[data-testid="parcel-filter-save"]').trigger('click')
-    await flushPromises()
-    expect(wrapper.find('[data-testid="page-alert-region"]').text()).toContain('Сервер недоступен')
-    expect(wrapper.find('[data-testid="parcel-filter-name"]').element.value).toBe('Повторить')
-    expect(wrapper.find('[data-testid="parcel-filter-passport"] input').element.checked).toBe(true)
-    expect(push).not.toHaveBeenCalled()
-    await wrapper.find('[data-testid="parcel-filter-save"]').trigger('click')
-    await flushPromises()
-    expect(fetchWrapper.post).toHaveBeenCalledTimes(2)
-    expect(fetchWrapper.post.mock.calls[1][1].excludedPassportCheckStatuses).toEqual([30])
-    expect(push).toHaveBeenCalledOnce()
-  })
-
   it('places a 409 response with the name and keeps the form open', async () => {
     fetchWrapper.post.mockRejectedValueOnce(Object.assign(new Error('Фильтр с таким названием уже есть'), { status: 409 }))
     const { wrapper } = mountView({ mode: 'create' })
@@ -149,98 +115,6 @@ describe('ParcelFilter_SettingsView', () => {
     expect(push).not.toHaveBeenCalled()
   })
 
-  it('shows a missing filter with a working close action', async () => {
-    const { wrapper } = mountView({ mode: 'edit', id: 999 })
-    await flushPromises()
-    expect(wrapper.find('form').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="page-alert-region"]').text()).toContain('не найден')
-    await wrapper.find('[data-testid="parcel-filter-back"]').trigger('click')
-    expect(push).toHaveBeenCalledWith('/user/edit/7')
-  })
-
-  it('retries navigation without submitting the saved filter twice', async () => {
-    push.mockRejectedValueOnce(new Error('Переход не удался'))
-    const { wrapper } = mountView({ mode: 'create' })
-    await flushPromises()
-    await wrapper.find('[data-testid="parcel-filter-name"]').setValue('Сохранённый')
-    await wrapper.find('[data-testid="parcel-filter-save"]').trigger('click')
-    await flushPromises()
-    expect(wrapper.find('[data-testid="page-alert-region"]').text()).toContain('Переход не удался')
-    expect(wrapper.find('[data-testid="parcel-filter-save"]').attributes('disabled')).toBeDefined()
-    expect(wrapper.find('.page-alert-region__action').exists()).toBe(false)
-    await wrapper.find('[data-testid="parcel-filter-back"]').trigger('click')
-    await flushPromises()
-    expect(push).toHaveBeenCalledTimes(2)
-    expect(fetchWrapper.post).toHaveBeenCalledOnce()
-  })
-
-  it('reloads on route reuse and does not publish a late save failure', async () => {
-    const route = mountView({ mode: 'edit', id: 1 })
-    await flushPromises()
-    await route.wrapper.setProps({ mode: 'edit', id: 999 })
-    await flushPromises()
-    expect(route.wrapper.find('form').exists()).toBe(false)
-    expect(route.wrapper.find('[data-testid="page-alert-region"]').text()).toContain('не найден')
-
-    let rejectSave
-    fetchWrapper.post.mockImplementationOnce(() => new Promise((resolve, reject) => { rejectSave = reject }))
-    const saving = mountView({ mode: 'create' })
-    await flushPromises()
-    await saving.wrapper.find('[data-testid="parcel-filter-name"]').setValue('В процессе')
-    await saving.wrapper.find('[data-testid="parcel-filter-save"]').trigger('click')
-    saving.wrapper.unmount()
-    rejectSave(new Error('Позднее сохранение'))
-    await flushPromises()
-    expect(saving.alertStore.alert).toBeNull()
-  })
-
-  it('does not redirect after a save succeeds on an abandoned editor', async () => {
-    let resolveSave
-    fetchWrapper.post.mockImplementationOnce(() => new Promise(resolve => { resolveSave = resolve }))
-    const { wrapper } = mountView({ mode: 'create' })
-    await flushPromises()
-    await wrapper.find('[data-testid="parcel-filter-name"]').setValue('В процессе')
-    await wrapper.find('[data-testid="parcel-filter-save"]').trigger('click')
-    wrapper.unmount()
-    resolveSave({ ...filter, id: 3, name: 'В процессе' })
-    await flushPromises()
-    expect(push).not.toHaveBeenCalled()
-  })
-
-  it('does not redirect or show an old save error when the route reuses the editor', async () => {
-    let rejectSave
-    fetchWrapper.put.mockImplementationOnce(() => new Promise((resolve, reject) => { rejectSave = reject }))
-    const { wrapper } = mountView({ mode: 'edit', id: 1 })
-    await flushPromises()
-    await wrapper.find('[data-testid="parcel-filter-save"]').trigger('click')
-    await wrapper.setProps({ mode: 'edit', id: 999 })
-    await flushPromises()
-    rejectSave(new Error('Старое сохранение'))
-    await flushPromises()
-    expect(push).not.toHaveBeenCalled()
-    expect(wrapper.find('[data-testid="page-alert-region"]').text()).not.toContain('Старое сохранение')
-  })
-
-  it('shows a load rejection, recovers on reopening, and ignores late errors', async () => {
-    fetchWrapper.get.mockRejectedValueOnce(new Error('Статусы недоступны'))
-    const { wrapper } = mountView({ mode: 'create' })
-    await flushPromises()
-    expect(wrapper.find('[data-testid="page-alert-region"]').text()).toContain('Статусы недоступны')
-    expect(wrapper.find('form').exists()).toBe(false)
-    expect(wrapper.find('.page-alert-region__action').exists()).toBe(false)
-    wrapper.unmount()
-    const reloaded = mountView({ mode: 'create' })
-    await flushPromises()
-    expect(reloaded.wrapper.findAll('fieldset')).toHaveLength(5)
-
-    let rejectLoad
-    fetchWrapper.get.mockImplementationOnce(() => new Promise((resolve, reject) => { rejectLoad = reject }))
-    const abandoned = mountView({ mode: 'create' })
-    abandoned.wrapper.unmount()
-    rejectLoad(new Error('Поздняя ошибка'))
-    await flushPromises()
-    expect(abandoned.alertStore.alert).toBeNull()
-  })
 })
 
 

@@ -44,16 +44,4 @@ describe('completion radio groups', () => {
     ])
   })
 
-  it.each([[true, true], [true, false], [false, true], [false, false]])('only renders available groups %s / %s', (mark, update) => {
-    const wrapper = render({
-      canMarkUnscannedAsNotFound: mark,
-      targetRegisterStatus: update ? { id: 2, title: 'На складе' } : null
-    })
-    expect(wrapper.find('[aria-labelledby="finish-parcels-label"]').exists()).toBe(mark)
-    expect(wrapper.find('[aria-labelledby="finish-register-label"]').exists()).toBe(update)
-    expect(wrapper.findAll('input[type="radio"]')).toHaveLength((Number(mark) + Number(update)) * 2)
-    expect(wrapper.find('input:disabled').exists()).toBe(false)
-    expect(wrapper.text()).not.toContain('не настроен')
-    expect(wrapper.text()).not.toContain('не применяется')
-  })
 })

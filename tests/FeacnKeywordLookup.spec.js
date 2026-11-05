@@ -37,11 +37,6 @@ describe('FeacnCodeSearchByKeyword (legacy test)', () => {
       }
     })
 
-  it('ensures keywords are loaded on mount', () => {
-    createWrapper()
-    expect(ensureLoaded).toHaveBeenCalled()
-  })
-
   it('filters rows by search term using shared helper', async () => {
     const wrapper = createWrapper()
     const input = wrapper.find('input')

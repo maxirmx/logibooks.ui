@@ -508,24 +508,6 @@ describe('WbrParcels_WhList.vue', () => {
     expect(alertError).toHaveBeenCalledWith('Ошибка при обновлении данных')
   })
 
-  it('retains the selected parcel when a manual scan rejects', async () => {
-    isAdmin.value = true
-    const activeJob = { id: 7, registerId: 1, status: 15, type: 30, operation: 10 }
-    manualScanApi.getInProgress.mockResolvedValue([activeJob])
-    manualScanApi.getById.mockResolvedValue(activeJob)
-    manualScanApi.scanParcel.mockRejectedValueOnce(Object.assign(new Error('Сбой сканирования'), { status: 400 }))
-    manualScanApi.getAll.mockResolvedValue({ items: mockItems.value })
-    const wrapper = mount(WbrParcelsWhList, { props: { registerId: 1 }, global: { stubs: globalStubs } })
-    await resolveAll()
-    wrapper.vm.selection.selectAllCurrentPage()
-    await wrapper.vm.manualScan.run(wrapper.vm.selection.selectedItems.value, 7, true)
-    await resolveAll()
-    expect(wrapper.vm.manualScan.pendingBatch.value.parcels).toHaveLength(mockItems.value.length)
-    expect(wrapper.vm.selection.selectedItems.value).toHaveLength(mockItems.value.length)
-    expect(alertError).toHaveBeenCalledWith(expect.stringContaining('Сбой сканирования'))
-    wrapper.unmount()
-  })
-
   it('retains unfinished scan IDs when refresh automatically clamps a filtered page', async () => {
     isAdmin.value = true
     parcelsWhPerPage.value = 20

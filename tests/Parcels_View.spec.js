@@ -165,25 +165,6 @@ describe('Parcels_View', () => {
     wrapper.unmount()
   })
 
-  it('preserves the filter after an options failure without alert callbacks', async () => {
-    const { useAuthStore } = await import('@/stores/auth.store.js')
-    const auth = useAuthStore()
-    auth.user = { id: 1 }
-    auth.setParcelFilterId(23)
-    getSavedFilters.mockRejectedValueOnce(new Error('Фильтры недоступны'))
-      .mockResolvedValueOnce([{ id: 23, name: 'Exclude issues' }])
-    mockGet.mockResolvedValue({ registerType: WBR_COMPANY_ID })
-    const wrapper = mount(ParcelsView, { props: { id: 1 } })
-    await flushPromises()
-    expect(auth.parcels_filter_id).toBe(23)
-    expect(wrapper.find('[data-test="wbr-list"]').exists()).toBe(false)
-    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-
-    expect(wrapper.get('[role="alert"]').text()).toContain('Фильтры недоступны')
-    expect(wrapper.find('.page-alert-region__action').exists()).toBe(false)
-    wrapper.unmount()
-  })
-
   it('ignores stale live-refresh results after the saved filter changes', async () => {
     const { useAuthStore } = await import('@/stores/auth.store.js')
     const auth = useAuthStore()

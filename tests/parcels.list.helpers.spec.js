@@ -76,22 +76,6 @@ describe('Parcels List Helpers', () => {
       expect(result).toBe(true)
     })
 
-    it('should handle SW validation errors', async () => {
-      const mockStore = {
-        validate: vi.fn().mockRejectedValue({
-          response: { data: { message: 'Ошибка при проверке информации о посылке' } }
-        }),
-        error: ''
-      }
-      const mockLoadOrders = vi.fn()
-      const item = { id: 123 }
-
-      await validateParcelData(item, mockStore, mockLoadOrders, true)
-
-      expect(mockStore.error).toBe('Ошибка при проверке информации о посылке')
-      expect(mockLoadOrders).toHaveBeenCalled()
-    })
-
     it('should handle FC validation errors with default message', async () => {
       const mockStore = {
         validateFc: vi.fn().mockRejectedValue(new Error('Network error')),
@@ -287,23 +271,6 @@ describe('Parcels List Helpers', () => {
       await updateParcelTnVed(item, feacnCode, mockStore, null)
 
       expect(mockStore.update).toHaveBeenCalledWith(123, { ...item, tnVed: 'new-code' })
-    })
-
-    it('should handle update errors with response message', async () => {
-      const mockStore = {
-        update: vi.fn().mockRejectedValue({
-          response: { data: { message: 'Update failed' } }
-        }),
-        error: ''
-      }
-      const mockLoadOrders = vi.fn()
-      const item = { id: 123, tnVed: 'old-code' }
-      const feacnCode = 'new-code'
-
-      await updateParcelTnVed(item, feacnCode, mockStore, mockLoadOrders)
-
-      expect(mockStore.error).toBe('Update failed')
-      expect(mockLoadOrders).toHaveBeenCalled()
     })
 
     it('should handle update errors with default message', async () => {

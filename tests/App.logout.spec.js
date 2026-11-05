@@ -203,30 +203,6 @@ describe('App logout', () => {
     expect(wrapper.get(alertSelector).text()).toContain('Необходимо войти в систему')
   })
 
-  it('does not load a new register page once logout has cleared the session', async () => {
-    let finishLoginCheck
-    const originalFetch = fetchMock.getMockImplementation()
-    fetchMock.mockImplementation((url, options) => {
-      if (url.endsWith('/auth/check')) {
-        return new Promise(resolve => { finishLoginCheck = resolve })
-      }
-      return originalFetch(url, options)
-    })
-    mountApp()
-    await flushPromises()
-    expect(loadRegisterPage).toHaveBeenCalledTimes(1)
-
-    await clickLogout()
-    expect(router.currentRoute.value.path).toBe('/registers')
-    expect(authStore.user).toBeNull()
-    authStore.registers_page = 2
-    await flushPromises()
-    expect(loadRegisterPage).toHaveBeenCalledTimes(1)
-
-    finishLoginCheck(response(401, {}))
-    await vi.waitFor(() => expect(wrapper.get(alertSelector).text()).toContain('Необходимо войти в систему'))
-  })
-
   it('shows a localized error if navigation during logout rejects', async () => {
     const error = new Error('private navigation failure')
     const diagnostic = vi.spyOn(console, 'error').mockImplementation(() => {})

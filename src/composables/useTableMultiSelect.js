@@ -24,6 +24,7 @@ export function useTableMultiSelect({
   dataTableRef,
   getBaseRowClass = () => '',
   onContextMenu = null,
+  keyboardContextMenu = false,
   getItemId = item => item.id,
   isItemSelectable = () => true,
   disabled = false,
@@ -121,7 +122,18 @@ export function useTableMultiSelect({
   function getRowProps(data) {
     const baseClass = getBaseRowClass(data)
     const selectedClass = selectedIds.value.has(getItemId(data.item)) ? 'selected-parcel-row' : ''
-    return { class: `${baseClass} ${selectedClass}`.trim() }
+    const props = { class: `${baseClass} ${selectedClass}`.trim() }
+    if (toValue(keyboardContextMenu) && !isDisabled() && isItemSelectable(data.item) && getItemId(data.item) != null) {
+      props.tabindex = 0
+      props['aria-haspopup'] = 'menu'
+      props.onKeydown = (event) => {
+        if (event.target === event.currentTarget &&
+            (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10'))) {
+          handleRowContextMenu(event, data)
+        }
+      }
+    }
+    return props
   }
 
   // ------- computed helpers -------
@@ -142,7 +154,7 @@ export function useTableMultiSelect({
       lastClickedId.value = getItemId(item)
     }
 
-    onContextMenu?.()
+    onContextMenu?.(event)
   }
 
   // ------- watchers -------

@@ -3,7 +3,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { computed, defineComponent, reactive, ref } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createVuetify } from 'vuetify'
-import { VDataTable, VDataTableFooter, VDefaultsProvider } from 'vuetify/components'
+import { VDataTable, VDataTableFooter, VDefaultsProvider, VList, VListItem, VMenu } from 'vuetify/components'
 import BoxesList from '@/lists/Boxes_List.vue'
 import BoxesMonitor from '@/dialogs/Scanjob_Boxes_Monitor.vue'
 import BoxScanAction from '@/components/BoxScanAction.vue'
@@ -24,7 +24,9 @@ const { api, confirm, getBoxes, getRegister, push } = vi.hoisted(() => ({
 const rows = ref([])
 const register = ref({})
 const loading = ref(false)
-const boxesStore = reactive({ boxes: rows, loading, getAll: getBoxes })
+const downloadSelectedStickers = vi.fn()
+const downloadRegisterStickers = vi.fn()
+const boxesStore = reactive({ boxes: rows, loading, getAll: getBoxes, downloadSelectedStickers, downloadRegisterStickers })
 const registersStore = reactive({ item: register, loading: ref(false), getById: getRegister,
   ensureOpsLoaded: vi.fn().mockResolvedValue(true), getTransportationDocument: () => 'AWB' })
 vi.mock('@/stores/scanjobs.store.js', () => ({ useScanjobsStore: () => api }))
@@ -37,11 +39,14 @@ const job = { id: 7, name: 'Поиск коробок', registerId: 1, status: 1
 const boxes = [1, 2, 3].map(id => ({ id, code: `BOX-${id}` }))
 const wrappers = []
 const globals = () => ({
-  plugins: [createVuetify({ components: { VDataTable, VDataTableFooter, VDefaultsProvider } })],
+  plugins: [createVuetify({ components: { VDataTable, VDataTableFooter, VDefaultsProvider, VList, VListItem, VMenu } })],
   stubs: {
     ...vuetifyStubs,
     'v-data-table': false,
     'v-btn': false,
+    'v-list': false,
+    'v-list-item': false,
+    'v-overlay': false,
     // Printer discovery has its own tests; scan selection uses no local hardware.
     LocalLabelPrinting: true
   }
@@ -57,7 +62,7 @@ function harness({ monitor = false, candidate = job, options = {}, actions = fal
       scan = useManualBoxScan(opts)
       return { rows, snapshot, actions, busy: computed(() => scan.busy.value) }
     },
-    template: '<div><PageAlertRegion/><BoxScanAction v-if="actions" :boxes="rows"/><BoxesMonitor v-else :snapshot="snapshot" :boxes="rows" :loading="busy"/></div>'
+    template: '<div><PageAlertRegion/><BoxScanAction v-if="actions" :boxes="rows"/><BoxesMonitor v-else :register-id="1" :snapshot="snapshot" :boxes="rows" :loading="busy"/></div>'
   }), { attachTo: document.body, global: globals() })
   wrappers.push(wrapper)
   return { wrapper, scan, opts, snapshot }
@@ -68,6 +73,8 @@ function renderList() {
   return wrapper
 }
 beforeEach(() => {
+  vi.stubGlobal('visualViewport', null)
+  document.elementsFromPoint = () => [document.body]
   vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} })
   vi.clearAllMocks()
   setActivePinia(createPinia())
@@ -88,9 +95,16 @@ beforeEach(() => {
   api.scanBox.mockResolvedValue({ count: 2, boxCount: 1, parcelCount: 2 })
   getBoxes.mockResolvedValue(true)
   getRegister.mockResolvedValue(register.value)
-  confirm.mockResolvedValue(true)
+  downloadSelectedStickers.mockResolvedValue(true)
+  downloadRegisterStickers.mockResolvedValue(true)
+  confirm.mockReset().mockResolvedValue(true)
 })
-afterEach(() => { wrappers.splice(0).forEach(wrapper => wrapper.unmount()); vi.unstubAllGlobals() })
+afterEach(() => {
+  wrappers.splice(0).forEach(wrapper => wrapper.unmount())
+  delete document.elementsFromPoint
+  vi.restoreAllMocks()
+  vi.unstubAllGlobals()
+})
 
 describe('manual box adapters', () => {
   it.each([[null, null], [{ id: 0 }, null], [{ id: 1.5 }, null], [{ id: '2' }, 2],
@@ -157,6 +171,10 @@ describe('manual box workflow', () => {
 
 describe.each(['party', 'monitor'])('box selection in %s', location => {
   function render() { return location === 'party' ? renderList() : harness({ monitor: true }).wrapper }
+  function action(name) {
+    return document.body.querySelector(`[data-testid="${name}"]`)
+  }
+
   it('uses sorted page selection, confirmation and disables controls until completion', async () => {
     let accept, finish
     confirm.mockImplementationOnce(() => new Promise(resolve => { accept = resolve }))
@@ -167,6 +185,9 @@ describe.each(['party', 'monitor'])('box selection in %s', location => {
     await visible[0].trigger('click')
     await visible[1].trigger('click', { shiftKey: true })
     await visible[0].trigger('contextmenu')
+    await flushPromises()
+    expect(action('selected-boxes-export-stickers')).not.toBeNull()
+    action('selected-boxes-scan').click()
     await flushPromises()
     expect(confirm.mock.calls[0][0].title).toBe('Сканирование коробок')
     expect(confirm.mock.calls[0][0].contentComponentProps.count).toBe(2)
@@ -187,6 +208,80 @@ describe.each(['party', 'monitor'])('box selection in %s', location => {
     await flushPromises()
     await wrapper.findAll('tbody tr')[0].trigger('contextmenu')
     await flushPromises()
+    action('selected-boxes-scan').click()
+    await flushPromises()
     expect(api.scanBox).not.toHaveBeenCalled()
   })
+
+  it('exports the selected boxes, preserves selection on failure, and retries by keyboard', async () => {
+    const getClientRects = HTMLElement.prototype.getClientRects
+    vi.spyOn(HTMLElement.prototype, 'getClientRects').mockImplementation(function () {
+      return this.matches('[role="menuitem"]') ? [this.getBoundingClientRect()] : getClientRects.call(this)
+    })
+    downloadSelectedStickers.mockRejectedValueOnce(new Error('У коробки отсутствует код стикера'))
+    const wrapper = render()
+    await flushPromises()
+    const [first, second, third] = wrapper.findAll('tbody tr')
+    await first.trigger('click')
+    await second.trigger('click', { ctrlKey: true })
+    await first.trigger('contextmenu', { clientX: 45, clientY: 72 })
+    await flushPromises()
+    action('selected-boxes-export-stickers').click()
+    await flushPromises()
+    expect(downloadSelectedStickers).toHaveBeenCalledExactlyOnceWith(1, [3, 2])
+    expect(wrapper.get('[role="alert"]').text()).toContain('У коробки отсутствует код стикера')
+    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+    expect(wrapper.findAll('.selected-parcel-row')).toHaveLength(2)
+
+    first.element.focus()
+    await first.trigger('keydown', { shiftKey: true, key: 'F10' })
+    await vi.waitFor(() => expect(document.activeElement).toBe(action('selected-boxes-export-stickers')))
+    document.activeElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await flushPromises()
+    expect(document.activeElement).toBe(first.element)
+    expect(first.attributes('aria-haspopup')).toBe('menu')
+    await first.trigger('keydown', { key: 'ContextMenu' })
+    await vi.waitFor(() => expect(document.activeElement).toBe(action('selected-boxes-export-stickers')))
+    document.activeElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    await flushPromises()
+    expect(downloadSelectedStickers).toHaveBeenNthCalledWith(2, 1, [3, 2])
+
+    await third.trigger('contextmenu')
+    await flushPromises()
+    action('selected-boxes-export-stickers').click()
+    await flushPromises()
+    expect(downloadSelectedStickers).toHaveBeenNthCalledWith(3, 1, [1])
+    expect(api.scanBox).not.toHaveBeenCalled()
+  })
+
+  it('keeps direct context-menu scanning for operators without CSV permission', async () => {
+    useAuthStore().user = { id: 1, roles: ['wh-operator'] }
+    const wrapper = render()
+    await flushPromises()
+    const first = wrapper.findAll('tbody tr')[0]
+    expect(first.attributes('tabindex')).toBeUndefined()
+    await first.trigger('contextmenu')
+    await flushPromises()
+    expect(action('selected-boxes-export-stickers')).toBeNull()
+    expect(api.scanBox).toHaveBeenCalledExactlyOnceWith(7, 3)
+  })
+})
+
+it('exports the entire party with a filter active and allows retry after one visible failure', async () => {
+  useAuthStore().boxes_search = 'BOX-1'
+  downloadRegisterStickers.mockRejectedValueOnce(new Error('В партии нет коробок для выгрузки'))
+  const wrapper = renderList()
+  await flushPromises()
+  expect(wrapper.findAll('tbody tr')).toHaveLength(1)
+  const button = wrapper.get('[data-testid="register-export-stickers"]')
+  const headerButtons = [...button.element.closest('.header-actions-group').querySelectorAll('button')]
+  expect(headerButtons.at(-2)).toBe(button.element)
+  await button.trigger('click')
+  await flushPromises()
+  expect(wrapper.get('[role="alert"]').text()).toContain('В партии нет коробок для выгрузки')
+  expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+  await button.trigger('click')
+  await flushPromises()
+  expect(downloadRegisterStickers.mock.calls).toEqual([[1], [1]])
+  expect(useAuthStore().boxes_search).toBe('BOX-1')
 })

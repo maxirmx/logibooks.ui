@@ -48,7 +48,11 @@ const getById = vi.hoisted(() =>
 const manualScanParcel = vi.hoisted(() => vi.fn())
 const manualScanBox = vi.hoisted(() => vi.fn())
 const exportStickers = vi.hoisted(() => vi.fn())
-vi.mock('@/stores/boxes.store.js', () => ({ useBoxesStore: () => ({ downloadStickers: exportStickers }) }))
+const exportRegisterStickers = vi.hoisted(() => vi.fn())
+vi.mock('@/stores/boxes.store.js', () => ({ useBoxesStore: () => ({
+  downloadStickers: exportStickers,
+  downloadRegisterStickers: exportRegisterStickers
+}) }))
 const mockRegisterItem = vi.hoisted(() => ({
   id: 101,
   dealNumber: 'DEAL-101',
@@ -423,6 +427,7 @@ vi.mock('pinia', async () => {
 
 const monitorGlobalStubs = {
   ...defaultGlobalStubs,
+  'v-menu': true,
   'font-awesome-icon': {
     props: ['icon'],
     template: '<i :data-icon="icon" class="fa-stub"></i>'
@@ -549,6 +554,28 @@ describe('Scanjob_Monitor.vue', () => {
       const parsed = Number(userId)
       persistedFollowUserId.value = Number.isInteger(parsed) && parsed > 0 ? parsed : null
     })
+  })
+
+  it('exports the party from its boxes monitor header, with retry after one visible failure', async () => {
+    isWhManager.value = true
+    exportRegisterStickers.mockRejectedValueOnce(new Error('У коробки отсутствует код стикера')).mockResolvedValueOnce(true)
+    loadMonitorSnapshot.mockResolvedValueOnce(registerSnapshot).mockResolvedValueOnce(boxSnapshot)
+    const wrapper = mount(ScanjobMonitor, { props: { scanjobId: 42 }, global: { stubs: monitorGlobalStubs } })
+    await flushPromises()
+    const button = wrapper.get('button[data-testid="register-export-stickers"]')
+    const headerButtons = [...button.element.closest('.header-actions-group').querySelectorAll('button')]
+    expect(headerButtons.at(-2)).toBe(button.element)
+    await button.trigger('click')
+    await flushPromises()
+    expect(wrapper.get('[role="alert"]').text()).toContain('У коробки отсутствует код стикера')
+    expect(alertError).toHaveBeenCalledOnce()
+    await button.trigger('click')
+    await flushPromises()
+    expect(exportRegisterStickers.mock.calls).toEqual([[101], [101]])
+    await wrapper.setProps({ monitorScope: box7MonitorScope })
+    await flushPromises()
+    expect(wrapper.find('[data-testid="register-export-stickers"]').exists()).toBe(false)
+    wrapper.unmount()
   })
 
   it('preserves jump input on a resolved navigation failure and allows retry', async () => {

@@ -125,8 +125,9 @@ watchPostEffect(() => {
   if (props.show) inputRef.value?.focus()
 })
 watch(() => props.show, (visible) => {
-  if (!visible) resetState()
-}, { flush: 'sync' })
+  if (visible) alertStore.clear()
+  else resetState()
+}, { immediate: true, flush: 'sync' })
 watch(() => props.registerId, resetState, { flush: 'sync' })
 watch(registerType, () => {
   if (!supportsStickerLookup.value) bySticker.value = false
@@ -362,7 +363,7 @@ defineExpose({
 
         <div>
           <div class="parcel-status-bulk-lookup">
-            <span :class="{ 'parcel-status-bulk-mode-active': !bySticker }">По номерам</span>
+            <span :class="{ 'parcel-status-bulk-mode-active': !bySticker }">По номерам отправлений</span>
             <v-switch
               v-model="bySticker"
               role="switch"
@@ -443,14 +444,14 @@ defineExpose({
 }
 
 .parcel-status-bulk-lookup {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, max-content) max-content max-content;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
+  column-gap: clamp(16px, 3vw, 24px);
 }
 
-.parcel-status-bulk-lookup .v-switch {
-  flex: 0 0 auto;
+.parcel-status-bulk-lookup > span:first-child {
+  overflow-wrap: anywhere;
 }
 
 .parcel-status-bulk-mode-active {

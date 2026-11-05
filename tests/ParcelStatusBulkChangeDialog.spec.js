@@ -8,6 +8,7 @@ import { mount, flushPromises, enableAutoUnmount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
 import ParcelStatusBulkChangeDialog from '@/l2/ParcelStatusBulkChangeDialog.vue'
 import { GTC_COMPANY_ID, OZON_COMPANY_ID, WBR_COMPANY_ID } from '@/helpers/company.constants.js'
+import { useAlertStore } from '@/stores/alert.store.js'
 
 enableAutoUnmount(afterEach)
 
@@ -58,7 +59,7 @@ const statusOptions = [
   { id: 5, title: 'Excluded', useAtCustomsProcessing: false }
 ]
 
-function mountDialog(props = {}) {
+function mountDialog(props = {}, pinia = createPinia()) {
   return mount(ParcelStatusBulkChangeDialog, {
     props: {
       show: true,
@@ -67,7 +68,7 @@ function mountDialog(props = {}) {
       ...props
     },
     global: {
-      plugins: [createPinia()],
+      plugins: [pinia],
       stubs: {
         'v-dialog': {
           name: 'VDialog',
@@ -129,6 +130,25 @@ describe('ParcelStatusBulkChangeDialog', () => {
   })
 
   afterEach(() => vi.restoreAllMocks())
+
+  it.each([true, false])('clears the previous page alert before showing the dialog (initially open: %s)', async (show) => {
+    const pinia = createPinia()
+    const alertStore = useAlertStore(pinia)
+    alertStore.error('Нет активного задания сканирования')
+    const wrapper = mountDialog({ show }, pinia)
+    if (!show) {
+      expect(alertStore.alert?.message).toBe('Нет активного задания сканирования')
+      await wrapper.setProps({ show: true })
+    }
+    expect(alertStore.alert).toBeNull()
+    expect(wrapper.find('[data-testid="page-alert-region"]').exists()).toBe(false)
+
+    mocks.resolveStatusSelection.mockRejectedValueOnce(new Error('Сервер недоступен'))
+    await control(wrapper, 'input').setValue('P-1')
+    await control(wrapper, 'find').trigger('click')
+    await flushPromises()
+    expect(wrapper.get('[role="alert"]').text()).toContain('Сервер недоступен')
+  })
 
   it('falls back to matching registers store entries for the parcel-number label', () => {
     mocks.registerItems = [{ id: 7, registerType: OZON_COMPANY_ID }]
@@ -336,6 +356,10 @@ describe('ParcelStatusBulkChangeDialog', () => {
     const apply = control(wrapper, 'update-found')
     const input = control(wrapper, 'input')
     const find = control(wrapper, 'find')
+    expect(wrapper.get('.parcel-status-bulk-lookup').findAll('span').map(label => label.text())).toEqual([
+      'По номерам отправлений',
+      'По стикерам'
+    ])
     expect(mode.element.checked).toBe(false)
     mocks.resolveStatusSelection.mockResolvedValueOnce({ parcelIds: [81], missingNumbers: ['A'], blockedItems: [] })
 

@@ -6,7 +6,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { ref, reactive, nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
+import { createPinia } from 'pinia'
 import ActionDialog from '@/l2/ActionDialog.vue'
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
+import { useAlertStore } from '@/stores/alert.store.js'
 import { vuetifyStubs } from './helpers/test-utils.js'
 import { refreshAfterCheckStatusFreeze, useRegisterHeaderActions } from '@/helpers/register.actions.js'
 import { WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
@@ -275,26 +278,39 @@ describe('useRegisterHeaderActions', () => {
     expect(alertStore.error).toHaveBeenCalledWith('Box metrics are missing')
   })
 
-  it('reports export errors through alertStore without rejecting', async () => {
-    const error = new Error('Export failed')
+  it('shows one localized XML error and releases the lock for a fresh export', async () => {
+    const error = new Error('TypeError: archive stream failed')
     registersStore.generateOrdinary.mockRejectedValueOnce(error)
-
+    const pinia = createPinia()
+    const alerts = useAlertStore(pinia)
+    const notify = vi.spyOn(alerts, 'error')
+    const wrapper = mount(PageAlertRegion, { global: { plugins: [pinia] } })
     const actions = useRegisterHeaderActions({
-      registersStore,
-      alertStore,
-      runningAction,
-      tableLoading,
-      registerLoading,
-      loadParcels,
-      isComponentMounted
+      registersStore, alertStore: alerts, runningAction, tableLoading, registerLoading,
+      loadParcels, isComponentMounted
     })
 
-    await expect(actions.exportAllXmlOrdinary()).resolves.toBeUndefined()
+    try {
+      await actions.exportAllXmlOrdinary()
+      await nextTick()
+      expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+      expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось сформировать XML архив')
+      expect(wrapper.text()).not.toContain(error.message)
+      expect(notify).toHaveBeenCalledOnce()
+      expect(actions.actionDialog.show).toBe(false)
+      expect(runningAction.value).toBe(false)
 
-    expect(registersStore.generateOrdinary).toHaveBeenCalledWith(1, 'INV-1', false, expect.any(Function))
-    expect(alertStore.error).toHaveBeenCalledWith(error, { fallback: 'Не удалось сформировать XML архив' })
-    expect(actions.actionDialog.show).toBe(false)
-    expect(runningAction.value).toBe(false)
+      await wrapper.get('[aria-label="Закрыть сообщение"]').trigger('click')
+      await actions.exportAllXmlOrdinary()
+      expect(registersStore.generateOrdinary).toHaveBeenCalledTimes(2)
+      expect(registersStore.generateOrdinary).toHaveBeenLastCalledWith(1, 'INV-1', false, expect.any(Function))
+      expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+      expect(actions.actionDialog.show).toBe(false)
+      expect(runningAction.value).toBe(false)
+    } finally {
+      actions.stop()
+      wrapper.unmount()
+    }
   })
 
   it('renders XML progress from accepted responses and resets for the next dialog', async () => {

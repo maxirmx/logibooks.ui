@@ -21,7 +21,7 @@ const props = defineProps({
   selectedIds: { type: Array, required: true }
 })
 
-const emit = defineEmits(['update:show', 'confirm'])
+const emit = defineEmits(['update:show', 'confirm', 'progress-visible'])
 
 const inputRef = ref(null)
 
@@ -63,6 +63,9 @@ const validationMessage = computed(() => {
   if (tnvedExists.value === false) return notFoundMessage
   return ''
 })
+
+watch(() => props.show && tnvedChecking.value && Boolean(validationMessage.value || tnvedName.value),
+  visible => emit('progress-visible', visible))
 
 const validationMessageClass = computed(() => {
   if (tnvedName.value) return 'validation-success'

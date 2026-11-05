@@ -730,7 +730,7 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
-  async function generateExcise(id, invoiceNumber, applyWeightCorrection = false) {
+  async function generateExcise(id, invoiceNumber, applyWeightCorrection = false, onProgress) {
     loading.value = true
     error.value = null
     try {
@@ -743,7 +743,7 @@ export const useRegistersStore = defineStore('registers', () => {
       return await fetchWrapper.downloadFile(
         buildXmlRequestUrl(id, 'generate-excise', applyWeightCorrection),
         filename,
-        { pollAccepted: true }
+        { pollAccepted: true, ...(onProgress ? { onProgress } : {}) }
       )
     } catch (err) {
       error.value = err
@@ -753,7 +753,7 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
-  async function generateNotifications(id, invoiceNumber, applyWeightCorrection = false) {
+  async function generateNotifications(id, invoiceNumber, applyWeightCorrection = false, onProgress) {
     loading.value = true
     error.value = null
     try {
@@ -766,7 +766,7 @@ export const useRegistersStore = defineStore('registers', () => {
       return await fetchWrapper.downloadFile(
         buildXmlRequestUrl(id, 'generate-notifications', applyWeightCorrection),
         filename,
-        { pollAccepted: true }
+        { pollAccepted: true, ...(onProgress ? { onProgress } : {}) }
       )
     } catch (err) {
       error.value = err
@@ -776,7 +776,7 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
-  async function generateOrdinary(id, invoiceNumber, applyWeightCorrection = false) {
+  async function generateOrdinary(id, invoiceNumber, applyWeightCorrection = false, onProgress) {
     loading.value = true
     error.value = null
     try {
@@ -789,7 +789,7 @@ export const useRegistersStore = defineStore('registers', () => {
       return await fetchWrapper.downloadFile(
         buildXmlRequestUrl(id, 'generate-ordinary', applyWeightCorrection),
         filename,
-        { pollAccepted: true }
+        { pollAccepted: true, ...(onProgress ? { onProgress } : {}) }
       )
     } catch (err) {
       error.value = err

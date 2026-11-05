@@ -28,7 +28,7 @@ const props = defineProps({
   disabled: { type: Boolean, default: false }
 })
 
-const emit = defineEmits(['update:show', 'updated'])
+const emit = defineEmits(['update:show', 'updated', 'progress-visible'])
 
 const parcelsStore = useParcelsStore()
 const registersStore = useRegistersStore()
@@ -83,6 +83,8 @@ const busy = computed(() =>
   updateFoundInProgress.value ||
   updateAllInProgress.value
 )
+
+watch(() => props.show && busy.value, visible => emit('progress-visible', visible))
 const foundCount = computed(() => foundParcelIds.value.length)
 const missingCount = computed(() => missingNumbers.value.length)
 const blockedCount = computed(() => blockedItems.value.length)

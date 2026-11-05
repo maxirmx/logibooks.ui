@@ -4,7 +4,10 @@
 // This file is a part of Logibooks ui application
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { ref, reactive } from 'vue'
+import { ref, reactive, nextTick } from 'vue'
+import { mount } from '@vue/test-utils'
+import ActionDialog from '@/l2/ActionDialog.vue'
+import { vuetifyStubs } from './helpers/test-utils.js'
 import { refreshAfterCheckStatusFreeze, useRegisterHeaderActions } from '@/helpers/register.actions.js'
 import { WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
 
@@ -60,6 +63,7 @@ describe('useRegisterHeaderActions', () => {
       generate: vi.fn().mockResolvedValue(),
       generateOrdinary: vi.fn().mockResolvedValue(),
       generateExcise: vi.fn().mockResolvedValue(),
+      generateNotifications: vi.fn().mockResolvedValue(),
       download: vi.fn().mockResolvedValue(),
       getDownloadFormats: vi.fn().mockResolvedValue({ company: { available: true, name: 'Receiver' } }),
       downloadAdditionalRestrictions: vi.fn().mockResolvedValue(),
@@ -140,7 +144,7 @@ describe('useRegisterHeaderActions', () => {
         content: 'Применить поправочный коэффициент 0,500 для веса посылок?'
       })
     )
-    expect(registersStore.generateOrdinary).toHaveBeenCalledWith(1, 'INV-1', false)
+    expect(registersStore.generateOrdinary).toHaveBeenCalledWith(1, 'INV-1', false, expect.any(Function))
     expect(actions.actionDialog.show).toBe(false)
   })
 
@@ -287,10 +291,99 @@ describe('useRegisterHeaderActions', () => {
 
     await expect(actions.exportAllXmlOrdinary()).resolves.toBeUndefined()
 
-    expect(registersStore.generateOrdinary).toHaveBeenCalledWith(1, 'INV-1', false)
-    expect(alertStore.error).toHaveBeenCalledWith('Export failed')
+    expect(registersStore.generateOrdinary).toHaveBeenCalledWith(1, 'INV-1', false, expect.any(Function))
+    expect(alertStore.error).toHaveBeenCalledWith(error, { fallback: 'Не удалось сформировать XML архив' })
     expect(actions.actionDialog.show).toBe(false)
     expect(runningAction.value).toBe(false)
+  })
+
+  it('renders XML progress from accepted responses and resets for the next dialog', async () => {
+    const download = createDeferred()
+    registersStore.generateNotifications.mockReturnValueOnce(download.promise)
+    const actions = useRegisterHeaderActions({ registersStore, alertStore, runningAction, isComponentMounted })
+    const wrapper = mount(ActionDialog, {
+      props: { actionDialog: actions.actionDialog },
+      global: { stubs: { ...vuetifyStubs,
+        'v-dialog': { props: ['modelValue'], template: '<section v-if="modelValue" role="dialog"><slot /></section>' },
+        'v-progress-circular': { props: ['indeterminate'], template: '<div :data-indeterminate="indeterminate"><slot /></div>' }
+      } }
+    })
+    try {
+      const work = actions.exportAllXmlNotifications()
+      await nextTick()
+      const update = registersStore.generateNotifications.mock.calls[0][3]
+      expect(wrapper.find('[data-indeterminate="true"]').exists()).toBe(true)
+      update({ total: 0, processed: 1 })
+      expect(actions.actionDialog.percent).toBeNull()
+      update({ handleId: 'archive', total: 3, processed: 2 })
+      await nextTick()
+      expect(wrapper.get('[role="dialog"]').text()).toContain('66%')
+      update({ handleId: 'archive', total: 3, processed: 1 })
+      expect(actions.actionDialog.percent).toBe(66)
+      update({ handleId: 'archive', total: 3, processed: 3 })
+      await nextTick()
+      expect(wrapper.get('[role="dialog"]').text()).toContain('99%')
+      download.resolve(true)
+      await work
+      await nextTick()
+      expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
+      expect(actions.actionDialog.percent).toBeNull()
+
+      const report = createDeferred()
+      registersStore.downloadAdditionalRestrictions.mockReturnValueOnce(report.promise)
+      const next = actions.downloadAdditionalRestrictions()
+      await nextTick()
+      expect(wrapper.find('[data-indeterminate="true"]').exists()).toBe(true)
+      report.resolve(true)
+      await next
+    } finally {
+      actions.stop()
+      wrapper.unmount()
+    }
+  })
+
+  it('discards a stale XML weight choice and stale progress after navigation', async () => {
+    const registerId = ref(1)
+    const choice = createDeferred()
+    registersStore.item.realWeightKg = 5
+    registersStore.item.totalWeightKgToRelease = 10
+    confirmMock.mockReturnValueOnce(choice.promise)
+    const actions = useRegisterHeaderActions({
+      registersStore, alertStore, runningAction, isComponentMounted, registerId: () => registerId.value
+    })
+    const preparing = actions.exportAllXmlOrdinary()
+    registerId.value = 2
+    choice.resolve(true)
+    await preparing
+    expect(registersStore.generateOrdinary).not.toHaveBeenCalled()
+
+    registersStore.item.id = 2
+    registersStore.item.realWeightKg = 0
+    const old = createDeferred()
+    registersStore.generateOrdinary.mockReturnValueOnce(old.promise)
+    const oldWork = actions.exportAllXmlOrdinary()
+    const oldProgress = registersStore.generateOrdinary.mock.calls[0][3]
+    registerId.value = 3
+    registersStore.item.id = 3
+    const current = createDeferred()
+    registersStore.generateOrdinary.mockReturnValueOnce(current.promise)
+    const currentWork = actions.exportAllXmlOrdinary()
+    oldProgress({ total: 5, processed: 4 })
+    const diagnostics = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      old.reject(new Error('Previous download failed'))
+      await oldWork
+      expect(alertStore.error).not.toHaveBeenCalled()
+    } finally {
+      diagnostics.mockRestore()
+    }
+    expect(actions.actionDialog.percent).toBeNull()
+    expect(actions.actionDialog.show).toBe(true)
+    expect(runningAction.value).toBe(true)
+    current.resolve(true)
+    await currentWork
+    expect(runningAction.value).toBe(false)
+    actions.stop()
   })
 
   it('cancels extended FEACN lookup via cancelLookupFeacnCodes', async () => {

@@ -2,7 +2,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { computed, watch, ref, unref, reactive } from 'vue'
+import { computed, watch, ref, unref, reactive, shallowRef, toValue } from 'vue'
 import { useAppConfirm } from '@/composables/useAppConfirm.js'
 import { useActionDialog } from '@/composables/useActionDialog.js'
 import { useRegisterDownloadFlow } from '@/composables/useRegisterDownloadFlow.js'
@@ -311,16 +311,16 @@ export function createRegisterActionHandlers(registersStore, alertStore, { mode 
     await performFeacnLookup(item, { extended: true })
   }
 
-  async function exportAllXmlOrdinary(item, applyWeightCorrection = false) {
-    await registersStore.generateOrdinary(item.id, item.invoiceNumber, applyWeightCorrection)
+  async function exportAllXmlOrdinary(item, applyWeightCorrection = false, onProgress) {
+    await registersStore.generateOrdinary(item.id, item.invoiceNumber, applyWeightCorrection, ...(onProgress ? [onProgress] : []))
   }
 
-  async function exportAllXmlExcise(item, applyWeightCorrection = false) {
-    await registersStore.generateExcise(item.id, item.invoiceNumber, applyWeightCorrection)
+  async function exportAllXmlExcise(item, applyWeightCorrection = false, onProgress) {
+    await registersStore.generateExcise(item.id, item.invoiceNumber, applyWeightCorrection, ...(onProgress ? [onProgress] : []))
   }
 
-  async function exportAllXmlNotifications(item, applyWeightCorrection = false) {
-    await registersStore.generateNotifications(item.id, item.invoiceNumber, applyWeightCorrection)
+  async function exportAllXmlNotifications(item, applyWeightCorrection = false, onProgress) {
+    await registersStore.generateNotifications(item.id, item.invoiceNumber, applyWeightCorrection, ...(onProgress ? [onProgress] : []))
   }
 
   async function downloadRegister(item, applyWeightCorrection = false) {
@@ -434,6 +434,7 @@ export function useRegisterHeaderActions({
   runningAction,
   tableLoading,
   registerLoading,
+  registerId,
   loadParcels,
   isComponentMounted
 }) {
@@ -470,6 +471,7 @@ export function useRegisterHeaderActions({
   const confirm = useAppConfirm()
   const weightCorrectionChoicePending = ref(false)
   const passportConfirmationPending = ref(false)
+  const xmlRun = shallowRef(null)
 
   const currentRegister = computed(() => {
     const register = unref(registersStore?.item)
@@ -493,7 +495,8 @@ export function useRegisterHeaderActions({
       validationState.show ||
       actionDialogState.show ||
       weightCorrectionChoicePending.value ||
-      passportConfirmationPending.value
+      passportConfirmationPending.value ||
+      xmlRun.value !== null
   )
 
   async function runWithLock(action, { lock = true, checkDisabled = true } = {}) {
@@ -559,22 +562,52 @@ export function useRegisterHeaderActions({
     }
   }
 
-  const runXmlActionWithDialog = async (action, operation) => {
-    if (generalActionsDisabled.value || currentRegister.value?.derivedTotalsPending === true) return
-
-    let applyWeightCorrection = false
-    if (getWeightCorrection(currentRegister.value).canCorrect) {
-      applyWeightCorrection = await chooseWeightCorrectionForCurrentRegister()
-    }
-
-    showActionDialog(operation)
-    try {
-      await runWithLock((register) => action(register, applyWeightCorrection), {
-        lock: true,
-        checkDisabled: false
-      })
-    } finally {
+  function releaseXmlRun(run) {
+    if (xmlRun.value !== run) return
+    xmlRun.value = null
+    if (run.started) {
       hideActionDialog()
+      runningActionRef.value = false
+    }
+  }
+
+  watch(() => toValue(registerId), id => {
+    if (xmlRun.value && id !== xmlRun.value.registerId) releaseXmlRun(xmlRun.value)
+  }, { flush: 'sync' })
+
+  const runXmlActionWithDialog = async (action, operation) => {
+    const register = currentRegister.value
+    if (generalActionsDisabled.value || !register || register.derivedTotalsPending === true) return
+
+    const run = { registerId: register.id, started: false, handleId: null }
+    xmlRun.value = run
+    const ownsRun = () => xmlRun.value === run && (unref(isComponentMounted) ?? true) &&
+      (toValue(registerId) ?? register.id) === run.registerId
+
+    try {
+      if (!ownsRun()) return
+      const applyWeightCorrection = getWeightCorrection(register).canCorrect &&
+        await chooseOutputWeightCorrection(confirm, register) === WEIGHT_CORRECTION_CHOICE.Apply
+      if (!ownsRun()) return
+
+      run.started = true
+      runningActionRef.value = true
+      showActionDialog(operation)
+      await action(register, applyWeightCorrection, ({ handleId, total, processed }) => {
+        if (!ownsRun() || !Number.isFinite(total) || total <= 0 ||
+            !Number.isFinite(processed) || processed < 0) return
+        const percent = Math.min(99, Math.floor(processed / total * 100))
+        actionDialogState.percent = handleId === run.handleId
+          ? Math.max(actionDialogState.percent ?? 0, percent)
+          : percent
+        run.handleId = handleId
+      })
+      if (ownsRun() && actionDialogState.percent !== null) actionDialogState.percent = 100
+    } catch (error) {
+      if (ownsRun()) alertStore.error(error, { fallback: 'Не удалось сформировать XML архив' })
+      else reportError(error, { context: 'XML archive download after navigation' })
+    } finally {
+      releaseXmlRun(run)
     }
   }
 
@@ -771,6 +804,7 @@ export function useRegisterHeaderActions({
 
   function stop() {
     stopPolling()
+    if (xmlRun.value) releaseXmlRun(xmlRun.value)
     hideActionDialog()
     weightCorrectionChoicePending.value = false
     passportConfirmationPending.value = false

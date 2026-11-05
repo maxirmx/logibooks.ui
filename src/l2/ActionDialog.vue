@@ -39,7 +39,7 @@ const actionDialogVisible = computed(
         <span v-if="progressPercent !== null">{{ progressPercent }}%</span>
       </v-progress-circular>
       <template v-if="cancellable" #actions>
-        <v-btn v-bind="APP_DIALOG_BUTTON_PROPS.secondary" :disabled="cancelDisabled || cancelling" data-testid="operation-cancel" @click="emit('cancel')">
+        <v-btn v-bind="APP_DIALOG_BUTTON_PROPS.progressCancel" :disabled="cancelDisabled || cancelling" data-testid="operation-cancel" @click="emit('cancel')">
           {{ cancelling ? 'Отмена…' : 'Отменить' }}
         </v-btn>
       </template>

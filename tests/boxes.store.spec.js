@@ -12,7 +12,8 @@ vi.mock('@/helpers/fetch.wrapper.js', () => ({
   fetchWrapper: {
     get: vi.fn(),
     post: vi.fn(),
-    put: vi.fn()
+    put: vi.fn(),
+    downloadFile: vi.fn()
   }
 }))
 
@@ -32,6 +33,23 @@ describe('boxes store', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+  })
+
+  it.each([
+    ['downloadSelectedStickers', [42, [7, 9]], 'register-42-selected-boxes-stickers.csv', {
+      method: 'POST', body: { boxIds: [7, 9] }
+    }],
+    ['downloadRegisterStickers', [42], 'register-42-stickers.csv']
+  ])('authenticates %s through the download helper and propagates a rejection', async (method, args, filename, options) => {
+    const store = useBoxesStore()
+    const error = new Error('Не удалось выгрузить файл')
+    fetchWrapper.downloadFile.mockRejectedValueOnce(error)
+    await expect(store[method](...args)).rejects.toBe(error)
+    const request = [`${apiUrl}/registers/42/boxes/stickers.csv`, filename]
+    if (options) request.push(options)
+    expect(fetchWrapper.downloadFile).toHaveBeenCalledExactlyOnceWith(...request)
+    expect(store.loading).toBe(false)
+    expect(store.error).toBeNull()
   })
 
   it.each(['detail', 'list'])('preserves the saved weight when a delayed %s read is superseded', async kind => {

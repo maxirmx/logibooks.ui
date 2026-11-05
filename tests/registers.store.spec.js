@@ -612,6 +612,78 @@ describe('registers store', () => {
       expect(store.item.id).toBe(6)
     })
 
+    it('keeps the saved register visible during a lock refresh and propagates failure', async () => {
+      const pending = Promise.withResolvers()
+      const failure = new Error('Сервер недоступен')
+      const store = useRegistersStore()
+      store.items = [{ id: 5, registerType: 1, readOnly: false }]
+      store.item = { id: 5, registerType: 1, readOnly: false }
+      fetchWrapper.get.mockReturnValueOnce(pending.promise)
+
+      const refresh = store.refreshReadOnlyRegister(5)
+      const observed = expect(refresh).rejects.toBe(failure)
+      expect(store.item).toMatchObject({ id: 5, registerType: 1 })
+      pending.reject(failure)
+      await observed
+
+      expect(store.item).toMatchObject({ id: 5, registerType: 1, readOnly: true })
+      expect(store.items[0]).toMatchObject({ id: 5, registerType: 1, readOnly: true })
+    })
+
+    it('refreshes only the matching list entry if the user opens a different register', async () => {
+      const pending = Promise.withResolvers()
+      const store = useRegistersStore()
+      store.items = [{ id: 5, readOnly: false }, { id: 6, readOnly: false }]
+      store.item = { id: 5, readOnly: false }
+      fetchWrapper.get.mockReturnValueOnce(pending.promise)
+
+      const refresh = store.refreshReadOnlyRegister(5)
+      store.item = { id: 6, readOnly: false }
+      pending.resolve({ id: 5, readOnly: true })
+      await refresh
+
+      expect(store.item).toMatchObject({ id: 6, readOnly: false })
+      expect(store.items.map(register => register.readOnly)).toEqual([true, false])
+    })
+
+    it('does not overwrite a newer detail or list read of the same register', async () => {
+      const pending = Promise.withResolvers()
+      const store = useRegistersStore()
+      fetchWrapper.get.mockResolvedValueOnce({ customsProcedures: [], transportationTypes: [], incoterms: validIncoterms })
+      await store.ensureOpsLoaded()
+      store.item = { id: 5, invoiceNumber: 'initial' }
+      store.items = [store.item]
+      fetchWrapper.get.mockReturnValueOnce(pending.promise)
+      const refresh = store.refreshReadOnlyRegister(5)
+
+      fetchWrapper.get
+        .mockResolvedValueOnce({ id: 5, invoiceNumber: 'new detail' })
+        .mockResolvedValueOnce({ items: [{ id: 5, invoiceNumber: 'new list' }] })
+      await store.getById(5)
+      await store.getAll()
+      pending.resolve({ id: 5, invoiceNumber: 'old lock snapshot', readOnly: true })
+      await refresh
+
+      expect(store.item.invoiceNumber).toBe('new detail')
+      expect(store.items[0].invoiceNumber).toBe('new list')
+    })
+
+    it('keeps a new derived snapshot invalidation when an older lock refresh completes', async () => {
+      const pending = Promise.withResolvers()
+      const store = useRegistersStore()
+      store.item = { id: 5 }
+      store.items = [store.item]
+      fetchWrapper.get.mockReturnValueOnce(pending.promise)
+      const refresh = store.refreshReadOnlyRegister(5)
+
+      store.invalidateDerived(5)
+      pending.resolve({ id: 5, readOnly: true })
+      await refresh
+
+      expect(store.item.derivedTotalsPending).toBe(true)
+      expect(store.items[0].derivedTotalsPending).toBe(true)
+    })
+
     it('refreshes the register and enters read-only mode after a stale conflict', async () => {
       const conflict = Object.assign(new Error('Изменения запрещены для реестра'), { status: 409 })
       fetchWrapper.put.mockRejectedValue(conflict)

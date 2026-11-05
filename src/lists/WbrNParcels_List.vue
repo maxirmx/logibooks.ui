@@ -662,7 +662,7 @@ function getGenericTemplateHeaders() {
     </div>
     <hr class="hr" />
 
-    <PageAlertRegion />
+    <PageAlertRegion v-if="!showParcelStatusBulkDialog" />
     <RegisterSplitDialogs :state="splitState" @cancel="split.cancel" @retry="split.retry" @acknowledge="split.acknowledgeUnknown" @refresh="split.refresh" @close="splitState.summaryVisible = false" />
     <input ref="reconciliationFileInput" type="file" :accept="reconciliation.accept" hidden data-testid="reconciliation-file-input" @change="reconciliation.selectFile" />
     <div v-if="['retry-start', 'retry-status', 'unknown'].includes(reconciliationState.phase) || reconciliationState.refreshFailed" class="header-actions-bar">

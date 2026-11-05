@@ -3,8 +3,11 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, shallowRef, watch, watchPostEffect } from 'vue'
 import ActionButton from '@/components/ActionButton.vue'
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
+import { GTC_COMPANY_ID, OZON_COMPANY_ID, WBR_COMPANY_ID, WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
+import { getErrorMessage, reportError } from '@/helpers/error.helpers.js'
 import { useAppConfirm } from '@/composables/useAppConfirm.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useParcelsStore } from '@/stores/parcels.store.js'
@@ -37,16 +40,15 @@ const confirm = useAppConfirm()
 
 const inputRef = ref(null)
 const selectedStatusId = ref(null)
-const parcelNumbersInput = ref('')
+const bySticker = ref(false)
+const identifiersInput = ref('')
 const foundParcelIds = ref([])
 const missingNumbers = ref([])
 const blockedItems = ref([])
-const findInProgress = ref(false)
-const updateFoundInProgress = ref(false)
-const updateAllInProgress = ref(false)
+const activeOperation = shallowRef(null)
 const lastSearchCount = ref(0)
 
-const parsedNumbers = computed(() => parseParcelStatusBulkInput(parcelNumbersInput.value))
+const parsedIdentifiers = computed(() => parseParcelStatusBulkInput(identifiersInput.value))
 const statusId = computed(() => Number(selectedStatusId.value))
 const hasStatus = computed(() => Number.isInteger(statusId.value) && statusId.value > 0)
 const hasRegister = computed(() => Number.isInteger(Number(props.registerId)) && Number(props.registerId) > 0)
@@ -77,42 +79,59 @@ const currentRegister = computed(() => {
 
   return props.register || null
 })
-const busy = computed(() =>
-  props.disabled ||
-  findInProgress.value ||
-  updateFoundInProgress.value ||
-  updateAllInProgress.value
+const registerType = computed(() => Number(currentRegister.value?.registerType))
+const isGtc = computed(() => registerType.value === GTC_COMPANY_ID)
+const supportsStickerLookup = computed(() =>
+  [WBR_COMPANY_ID, WBRN_REGISTER_ID, OZON_COMPANY_ID].includes(registerType.value)
 )
-
-watch(() => props.show && busy.value, visible => emit('progress-visible', visible))
+const busy = computed(() => activeOperation.value !== null)
+const canOperate = computed(() => props.show && hasRegister.value && !props.disabled && !busy.value)
 const foundCount = computed(() => foundParcelIds.value.length)
 const missingCount = computed(() => missingNumbers.value.length)
 const blockedCount = computed(() => blockedItems.value.length)
-const canFind = computed(() => hasRegister.value && parsedNumbers.value.length > 0 && !busy.value)
-const canUpdateFound = computed(() => hasRegister.value && hasStatus.value && foundCount.value > 0 && !busy.value)
-const canUpdateAll = computed(() => hasRegister.value && hasStatus.value && !busy.value)
-const parcelNumberLabel = computed(() => getParcelStatusBulkNumberLabel(currentRegister.value))
-const notFoundReport = computed(() => buildParcelStatusBulkReport(missingNumbers.value, blockedItems.value))
+const canFind = computed(() => canOperate.value && parsedIdentifiers.value.length > 0)
+const canUpdateFound = computed(() => canOperate.value && hasStatus.value && foundCount.value > 0)
+const canUpdateAll = computed(() => canOperate.value && hasStatus.value)
+const identifierLabel = computed(() => {
+  if (!bySticker.value) return getParcelStatusBulkNumberLabel(currentRegister.value)
+  return registerType.value === OZON_COMPANY_ID ? 'Штрихкоды' : 'Стикеры'
+})
+const identifierPlaceholder = computed(() => {
+  const values = bySticker.value ? 'коды со стикеров' : 'номера'
+  return `Введите или вставьте ${values} через запятую, табуляцию или с новой строки. Можно скопировать диапазон из таблицы Excel.`
+})
+const reportPlaceholder = computed(() => bySticker.value
+  ? 'После поиска здесь появятся ненайденные коды и коды посылок, недоступных для изменения статуса.'
+  : 'После поиска здесь появятся номера посылок, которые не удалось найти или которые недоступны для изменения статуса.'
+)
+const notFoundReport = computed(() => buildParcelStatusBulkReport(
+  missingNumbers.value, blockedItems.value, bySticker.value
+))
 const searchSummary = computed(() => {
   if (lastSearchCount.value <= 0) {
-    return 'Введите номера посылок и нажмите "Найти". Либо выберите статус и нажмите "Изменить статус всех посылок" для применения статуса ко всем посылкам в реестре.'
+    const values = bySticker.value ? 'коды со стикеров' : 'номера посылок'
+    return `Введите ${values} и нажмите «Найти». Либо выберите статус и нажмите «Изменить статус всех посылок» для применения статуса ко всем посылкам в реестре.`
   }
 
-  return `Обработано: ${lastSearchCount.value}. Найдено: ${foundCount.value}. Не найдено: ${missingCount.value}. Недоступно: ${blockedCount.value}.`
+  return bySticker.value
+    ? `Обработано кодов: ${lastSearchCount.value}. Найдено посылок: ${foundCount.value}. Не найдено кодов: ${missingCount.value}. Недоступных совпадений: ${blockedCount.value}.`
+    : `Обработано: ${lastSearchCount.value}. Найдено: ${foundCount.value}. Не найдено: ${missingCount.value}. Недоступно: ${blockedCount.value}.`
 })
 
-watch(() => props.show, async (visible) => {
-  if (visible) {
-    await nextTick()
-    inputRef.value?.focus()
-  } else {
-    resetState()
-  }
+watch(() => props.show && busy.value, visible => emit('progress-visible', visible))
+watchPostEffect(() => {
+  if (props.show) inputRef.value?.focus()
 })
-
-watch(parcelNumbersInput, () => {
-  resetResolution()
-})
+watch(() => props.show, (visible) => {
+  if (!visible) resetState()
+}, { flush: 'sync' })
+watch(() => props.registerId, resetState, { flush: 'sync' })
+watch(registerType, () => {
+  if (!supportsStickerLookup.value) bySticker.value = false
+  invalidateResolution()
+}, { flush: 'sync' })
+watch([identifiersInput, bySticker], invalidateResolution, { flush: 'sync' })
+onBeforeUnmount(() => { activeOperation.value = null })
 
 function resetResolution() {
   foundParcelIds.value = []
@@ -121,13 +140,30 @@ function resetResolution() {
   lastSearchCount.value = 0
 }
 
+function invalidateResolution() {
+  activeOperation.value = null
+  resetResolution()
+}
+
 function resetState() {
   selectedStatusId.value = null
-  parcelNumbersInput.value = ''
-  resetResolution()
-  findInProgress.value = false
-  updateFoundInProgress.value = false
-  updateAllInProgress.value = false
+  bySticker.value = false
+  identifiersInput.value = ''
+  invalidateResolution()
+}
+
+function beginOperation() {
+  const operation = { registerId: Number(props.registerId), statusId: statusId.value }
+  activeOperation.value = operation
+  return operation
+}
+
+function isCurrent(operation) {
+  return activeOperation.value === operation
+}
+
+function finishOperation(operation) {
+  if (isCurrent(operation)) activeOperation.value = null
 }
 
 function close() {
@@ -135,120 +171,102 @@ function close() {
 }
 
 function onDialogUpdate(value) {
-  if (!value) {
-    close()
-  }
+  if (!value) close()
 }
 
-function getErrorMessage(error, fallback) {
-  return error?.message || error?.msg || error?.reason || fallback
+function showOperationError(operation, error, fallback) {
+  if (!(error?.status >= 400 && error?.status < 500)) {
+    reportError(error, { context: 'parcel bulk status operation' })
+  }
+  if (isCurrent(operation)) alertStore.error(error, { fallback })
 }
 
-async function handleMutationError(error, fallback) {
-  if (
-    error?.status === 409 &&
-    String(error?.message || error?.data?.msg || '').includes('Изменения запрещены') &&
-    hasRegister.value
-  ) {
-    await registersStore.getById(Number(props.registerId))
+async function handleMutationError(operation, error, fallback) {
+  if (isCurrent(operation) && error?.status === 409 && getErrorMessage(error).includes('Изменения запрещены')) {
+    try {
+      await registersStore.refreshReadOnlyRegister(operation.registerId)
+    } catch (refreshError) {
+      reportError(refreshError, { context: 'parcel bulk status register refresh after conflict' })
+    }
   }
-  alertStore.error(getErrorMessage(error, fallback))
+  showOperationError(operation, error, fallback)
 }
 
 async function findParcels() {
-  if (!canFind.value) {
-    return
-  }
+  if (!canFind.value) return
 
-  const numbers = parsedNumbers.value
-  findInProgress.value = true
+  const identifiers = parsedIdentifiers.value
+  const lookupBy = bySticker.value ? 'sticker' : 'number'
+  resetResolution()
+  const operation = beginOperation()
   try {
-    const result = await parcelsStore.resolveStatusSelection(Number(props.registerId), numbers)
+    const result = await parcelsStore.resolveStatusSelection(operation.registerId, identifiers, lookupBy)
+    if (!isCurrent(operation)) return
+    if (lookupBy === 'sticker' && result?.lookupBy !== 'sticker') {
+      throw new Error('Сервер не поддерживает поиск по стикерам. Повторите попытку после обновления сервера.')
+    }
     foundParcelIds.value = normalizeParcelStatusBulkIds(result?.parcelIds)
     missingNumbers.value = Array.isArray(result?.missingNumbers) ? result.missingNumbers : []
     blockedItems.value = Array.isArray(result?.blockedItems) ? result.blockedItems : []
-    lastSearchCount.value = numbers.length
+    lastSearchCount.value = identifiers.length
   } catch (error) {
-    alertStore.error(getErrorMessage(error, 'Ошибка при поиске посылок'))
+    showOperationError(operation, error, 'Ошибка при поиске посылок')
   } finally {
-    findInProgress.value = false
+    finishOperation(operation)
   }
 }
 
-async function updateFound() {
-  if (!canUpdateFound.value) {
-    return
-  }
+function updateFound() {
+  return updateStatus(false)
+}
 
-  updateFoundInProgress.value = true
+function updateAll() {
+  return updateStatus(true)
+}
+
+async function updateStatus(all) {
+  if (!(all ? canUpdateAll.value : canUpdateFound.value)) return
+
+  const operation = beginOperation()
+  const { registerId, statusId } = operation
+  const parcelIds = foundParcelIds.value
   try {
-    const selectedStatus = getStatusById(statusId.value, { parcelStatuses: props.statusOptions })
-    if (selectedStatus?.useAtCustomsProcessing === false) {
+    const selectedStatus = getStatusById(statusId, { parcelStatuses: props.statusOptions })
+    const excluded = selectedStatus?.useAtCustomsProcessing === false
+    if (all || excluded) {
+      const statusTitle = selectedStatus?.title || ''
+      const statusDescription = statusTitle ? ` на "${statusTitle}"` : ''
+      const content = excluded
+        ? buildCustomsExclusionWarning(statusTitle, all ? Number(currentRegister.value?.parcelsTotal || 0) : parcelIds.length)
+        : `Изменить статус всех посылок в реестре${statusDescription}?`
       const confirmed = await confirm({
         title: 'Подтверждение',
         confirmationText: 'Изменить',
         cancellationText: 'Не изменять',
-        content: buildCustomsExclusionWarning(selectedStatus.title || '', foundCount.value)
+        content
       })
-      if (!confirmed) return
+      if (!confirmed || !isCurrent(operation) || props.disabled) return
     }
 
-    const result = await parcelsStore.updateStatusSelection(
-      Number(props.registerId),
-      statusId.value,
-      foundParcelIds.value
-    )
-    const updatedCount = Number(result?.updatedCount ?? foundCount.value)
-    const skippedCount = Number(result?.skippedCount ?? 0)
-    alertStore.success(`Статус изменен для ${updatedCount} посылок${skippedCount > 0 ? `. Пропущено: ${skippedCount}` : ''}`)
-    emit('updated')
-  } catch (error) {
-    await handleMutationError(error, 'Ошибка при изменении статусов найденных посылок')
-  } finally {
-    updateFoundInProgress.value = false
-  }
-}
-
-async function updateAll() {
-  if (!canUpdateAll.value) {
-    return
-  }
-
-  updateAllInProgress.value = true
-  try {
-    const selectedStatus = getStatusById(statusId.value, { parcelStatuses: props.statusOptions })
-    const statusDescription = selectedStatus?.title
-      ? ` на "${selectedStatus.title}"`
-      : ''
-    const excluded = selectedStatus?.useAtCustomsProcessing === false
-    const confirmed = await confirm(excluded
-      ? {
-          title: 'Подтверждение',
-          confirmationText: 'Изменить',
-          cancellationText: 'Не изменять',
-          content: buildCustomsExclusionWarning(
-            selectedStatus?.title || '',
-            Number(currentRegister.value?.parcelsTotal || 0)
-          )
-        }
-      : {
-          title: 'Подтверждение',
-          confirmationText: 'Изменить',
-          cancellationText: 'Не изменять',
-          content: `Изменить статус всех посылок в реестре${statusDescription}?`
-        })
-
-    if (!confirmed) {
-      return
+    if (all) {
+      await registersStore.setParcelStatuses(registerId, statusId)
+      if (!isCurrent(operation)) return
+      alertStore.success('Статус успешно применен ко всем посылкам в реестре')
+    } else {
+      const result = await parcelsStore.updateStatusSelection(registerId, statusId, parcelIds)
+      if (!isCurrent(operation)) return
+      const updatedCount = Number(result?.updatedCount ?? parcelIds.length)
+      const skippedCount = Number(result?.skippedCount ?? 0)
+      alertStore.success(`Статус изменен для ${updatedCount} посылок${skippedCount > 0 ? `. Пропущено: ${skippedCount}` : ''}`)
     }
-
-    await registersStore.setParcelStatuses(Number(props.registerId), statusId.value)
-    alertStore.success('Статус успешно применен ко всем посылкам в реестре')
     emit('updated')
   } catch (error) {
-    await handleMutationError(error, 'Ошибка при изменении статусов всех посылок')
+    const fallback = all
+      ? 'Ошибка при изменении статусов всех посылок'
+      : 'Ошибка при изменении статусов найденных посылок'
+    await handleMutationError(operation, error, fallback)
   } finally {
-    updateAllInProgress.value = false
+    finishOperation(operation)
   }
 }
 
@@ -322,6 +340,7 @@ defineExpose({
           </div>
         </div>
         <hr class="hr" />
+        <PageAlertRegion v-if="show" />
       </div>
 
       <v-card-text class="parcel-status-bulk-content">
@@ -334,21 +353,42 @@ defineExpose({
           variant="outlined"
           density="compact"
           hide-details
-          :disabled="busy"
+          :disabled="busy || disabled"
           data-testid="parcel-status-bulk-status"
         />
 
+        <div>
+          <div class="parcel-status-bulk-lookup">
+            <span :class="{ 'parcel-status-bulk-mode-active': !bySticker }">По номерам</span>
+            <v-switch
+              v-model="bySticker"
+              role="switch"
+              aria-label="Поиск по стикерам"
+              :aria-describedby="isGtc ? 'parcel-status-bulk-gtc-hint' : undefined"
+              :disabled="busy || disabled || !supportsStickerLookup"
+              color="primary"
+              density="compact"
+              hide-details
+              data-testid="parcel-status-bulk-lookup"
+            />
+            <span :class="{ 'parcel-status-bulk-mode-active': bySticker }">По стикерам</span>
+          </div>
+          <div v-if="isGtc" id="parcel-status-bulk-gtc-hint" class="parcel-status-bulk-summary">
+            В реестрах GTC поиск доступен только по номеру посылки.
+          </div>
+        </div>
+
         <label for="parcel-status-bulk-input" class="parcel-status-bulk-label">
-          {{ parcelNumberLabel }}
+          {{ identifierLabel }}
         </label>
         <textarea
           id="parcel-status-bulk-input"
           ref="inputRef"
-          v-model="parcelNumbersInput"
+          v-model="identifiersInput"
           class="input parcel-status-bulk-textarea"
-          placeholder="Введите или вставьте номера через запятую, табуляцию или с новой строки. Можно скопировать диапазон из таблицы Excel."
+          :placeholder="identifierPlaceholder"
           spellcheck="false"
-          :disabled="busy"
+          :disabled="busy || disabled"
           data-testid="parcel-status-bulk-input"
         ></textarea>
 
@@ -360,11 +400,11 @@ defineExpose({
           class="input parcel-status-bulk-report"
           :value="notFoundReport"
           readonly
-          placeholder="После поиска здесь появятся номера посылок, которые не удалось найти или которые недоступны для изменения статуса."
+          :placeholder="reportPlaceholder"
           data-testid="parcel-status-bulk-report"
         ></textarea>
 
-        <div class="parcel-status-bulk-summary" data-testid="parcel-status-bulk-summary">
+        <div class="parcel-status-bulk-summary" data-testid="parcel-status-bulk-summary" aria-live="polite">
           {{ searchSummary }}
         </div>
       </v-card-text>
@@ -397,6 +437,21 @@ defineExpose({
   flex-direction: column;
   gap: 10px;
   padding-top: 0;
+}
+
+.parcel-status-bulk-lookup {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.parcel-status-bulk-lookup .v-switch {
+  flex: 0 0 auto;
+}
+
+.parcel-status-bulk-mode-active {
+  font-weight: 600;
 }
 
 .parcel-status-bulk-label {

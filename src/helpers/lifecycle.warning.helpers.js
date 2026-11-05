@@ -5,8 +5,9 @@
 import { isCustomsProcessingDisabled } from '@/helpers/parcel.statuses.helpers.js'
 import { unref } from 'vue'
 
-function parcelCountForm(count) {
-  return count % 10 === 1 && count % 100 !== 11 ? 'посылки' : 'посылок'
+export function formatParcelCountGenitive(count) {
+  const noun = count % 10 === 1 && count % 100 !== 11 ? 'посылки' : 'посылок'
+  return `${count} ${noun}`
 }
 
 export function buildCustomsExclusionWarning(statusTitle, count = 1) {
@@ -18,10 +19,10 @@ export function buildCustomsExclusionWarning(statusTitle, count = 1) {
 export function buildFinishPassportCheckWarning(notCheckedCount, inProgressCount) {
   const clauses = []
   if (Number(notCheckedCount) > 0) {
-    clauses.push(`для ${notCheckedCount} ${parcelCountForm(notCheckedCount)} она не проводилась`)
+    clauses.push(`для ${formatParcelCountGenitive(notCheckedCount)} она не проводилась`)
   }
   if (Number(inProgressCount) > 0) {
-    clauses.push(`для ${inProgressCount} ${parcelCountForm(inProgressCount)} она ещё выполняется`)
+    clauses.push(`для ${formatParcelCountGenitive(inProgressCount)} она ещё выполняется`)
   }
   if (clauses.length === 0) return null
 

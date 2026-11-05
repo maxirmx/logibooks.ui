@@ -331,7 +331,7 @@ describe('useRegisterHeaderActions', () => {
       await nextTick()
       const update = registersStore.generateNotifications.mock.calls[0][3].onProgress
       expect(wrapper.find('[data-indeterminate="true"]').exists()).toBe(true)
-      update({ total: 0, processed: 1 })
+      update({ handleId: 'archive', total: 0, processed: 1 })
       expect(actions.actionDialog.percent).toBeNull()
       update({ handleId: 'archive', total: 3, processed: 2 })
       await nextTick()
@@ -479,6 +479,35 @@ describe('useRegisterHeaderActions', () => {
       diagnostics.mockRestore()
       actions.stop()
     }
+  })
+
+  it('releases an active XML dialog when the page stops before progress completes', async () => {
+    const download = createDeferred()
+    registersStore.generateOrdinary.mockReturnValueOnce(download.promise)
+    const actions = useRegisterHeaderActions({ registersStore, alertStore, runningAction })
+    const work = actions.exportAllXmlOrdinary()
+    const tracking = registersStore.generateOrdinary.mock.calls[0][3]
+    tracking.onProgress({ handleId: 'archive', total: 10, processed: 1, cancelling: true })
+    expect(tracking.isCancelling()).toBe(true)
+
+    actions.stop()
+    expect(tracking.isCancelling()).toBe(false)
+    expect(actions.actionDialog.show).toBe(false)
+    expect(runningAction.value).toBe(false)
+    download.resolve(false)
+    await work
+  })
+
+  it('blocks XML export for pending totals or an outdated register view', async () => {
+    const registerId = ref(2)
+    const actions = useRegisterHeaderActions({ registersStore, alertStore, runningAction, registerId })
+    await actions.exportAllXmlOrdinary()
+    registerId.value = 1
+    registersStore.item.derivedTotalsPending = true
+    await actions.exportAllXmlOrdinary()
+    expect(registersStore.generateOrdinary).not.toHaveBeenCalled()
+    expect(actions.actionDialog.show).toBe(false)
+    actions.stop()
   })
 
   it('discards a stale XML weight choice and stale progress after navigation', async () => {

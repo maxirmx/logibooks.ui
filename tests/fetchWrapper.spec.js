@@ -279,7 +279,7 @@ describe('fetchWrapper', () => {
       const onProgress = vi.fn()
 
       await expect(fetchWrapper.downloadFile(initialUrl, 'archive.zip', {
-        pollAccepted: true, pollIntervalMs: 0, getPollUrl, onProgress
+        pollAccepted: true, pollIntervalMs: 1, getPollUrl, onProgress
       })).resolves.toBe(status === 200)
       expect(global.fetch.mock.calls.map(([url]) => url)).toEqual([initialUrl, pollUrl, pollUrl])
       expect(getPollUrl).toHaveBeenCalledExactlyOnceWith('job-1')

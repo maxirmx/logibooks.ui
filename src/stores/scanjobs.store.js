@@ -793,6 +793,10 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
       loading.value = false
     }
   }
+  async function getVerificationSources(registerId) {
+    return await fetchWrapper.get(`${baseUrl}/verification-sources?${new URLSearchParams({ registerId })}`)
+  }
+
   async function getFinishOptions(id, { operation } = {}) {
     loading.value = true
     error.value = null
@@ -877,6 +881,7 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     pause,
     finish,
     getFinishOptions,
+    getVerificationSources,
     getOps,
     ensureOpsLoaded,
     getOpsLabel,

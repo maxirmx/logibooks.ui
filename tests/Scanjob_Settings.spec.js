@@ -64,6 +64,7 @@ const start = vi.hoisted(() => vi.fn())
 const pause = vi.hoisted(() => vi.fn())
 const finish = vi.hoisted(() => vi.fn())
 const getFinishOptions = vi.hoisted(() => vi.fn())
+const getVerificationSources = vi.hoisted(() => vi.fn())
 const ensureLoaded = vi.hoisted(() => vi.fn())
 const getRegisterById = vi.hoisted(() => vi.fn())
 const ensureRegisterOpsLoaded = vi.hoisted(() => vi.fn())
@@ -103,6 +104,7 @@ vi.mock('@/stores/scanjobs.store.js', () => ({
     pause,
     finish,
     getFinishOptions,
+    getVerificationSources,
     getOpsLabel: (list, value) => {
       const match = list?.find((item) => Number(item.value) === Number(value))
       return match ? match.name : String(value)
@@ -215,6 +217,7 @@ describe('Scanjob_Settings.vue', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    mockOps.value.types = [{ value: 1, name: 'Type 1' }]
     mockOps.value.operations = [...scanjobOperations]
     ensureOpsLoaded.mockResolvedValue(mockOps.value)
     ensureLoaded.mockResolvedValue()
@@ -244,6 +247,82 @@ describe('Scanjob_Settings.vue', () => {
 
   afterEach(() => {
     vi.resetAllMocks()
+  })
+
+  it('switches between status and scoped presets and submits only the verification fields', async () => {
+    mockOps.value.types = [{ value: 10, name: 'Посылка' }, { value: 30, name: 'Коробка/Посылка' }]
+    const wrapper = mountComponent({ mode: 'create', registerId: 22, warehouseId: 11, dealNumber: 'ABC-1' })
+    await resolveAll()
+    await wrapper.get('#operation').setValue('30')
+    expect(wrapper.get('#lookupStatusId').exists()).toBe(true)
+    await wrapper.get('#lookupStatusId').setValue('101')
+    await wrapper.get('#lookupTargetMode').setValue('1')
+    expect(wrapper.find('#lookupStatusId').exists()).toBe(false)
+    expect(wrapper.get('#type').element.disabled).toBe(true)
+    expect(wrapper.text()).toContain('Без изменения статусов')
+    await wrapper.vm.$.setupState.onSubmit()
+    await resolveAll()
+    expect(create).toHaveBeenCalledWith(expect.objectContaining({ type: 10, lookupTargetMode: 1 }))
+    expect(create.mock.calls[0][0]).not.toHaveProperty('lookupStatusId')
+    expect(create.mock.calls[0][0]).not.toHaveProperty('sourceScanJobId')
+  })
+
+  it('prefills the recovery source and displays server-confirmed choices', async () => {
+    mockOps.value.types = [{ value: 30, name: 'Коробка/Посылка' }]
+    getVerificationSources.mockResolvedValue([{ id: 77, name: 'Проверка', missingCount: 3 }])
+    const wrapper = mountComponent({
+      mode: 'create', registerId: 22, warehouseId: 11, dealNumber: 'ABC-1', initialSourceScanJobId: 77
+    })
+    await resolveAll()
+    expect(getVerificationSources).toHaveBeenCalledWith(22)
+    expect(wrapper.get('#sourceScanJobId').element.value).toBe('77')
+    expect(wrapper.text()).toContain('Проверка №77 (не найдено: 3)')
+    await wrapper.get('#sourceScanJobId').setValue('')
+    expect(await wrapper.vm.$.setupState.saveScanjobQuiet()).toBe(false)
+    expect(wrapper.text()).toContain('Выберите задание контроля красной зоны')
+    await wrapper.get('#sourceScanJobId').setValue('77')
+    await wrapper.vm.$.setupState.onSubmit()
+    await resolveAll()
+    expect(create).toHaveBeenCalledWith(expect.objectContaining({ lookupTargetMode: 2, sourceScanJobId: 77 }))
+    routerPush.mockClear()
+    const sourceConflict = 'Укажите завершённое задание контроля красной зоны для реестра №22.'
+    create.mockRejectedValueOnce(Object.assign(new Error(sourceConflict), { status: 409 }))
+    await wrapper.vm.$.setupState.onSubmit()
+    await resolveAll()
+    expect(wrapper.text()).toContain(sourceConflict)
+    expect(routerPush).not.toHaveBeenCalled()
+  })
+
+  it('presents a verification source load failure and allows a retry by switching presets', async () => {
+    getVerificationSources.mockRejectedValueOnce(new Error('Не удалось загрузить задания контроля красной зоны'))
+      .mockResolvedValueOnce([{ id: 77, name: 'Проверка', missingCount: 1 }])
+    const wrapper = mountComponent({ mode: 'create', registerId: 22, warehouseId: 11, dealNumber: 'ABC-1' })
+    await resolveAll()
+    await wrapper.get('#operation').setValue('30')
+    await wrapper.get('#lookupTargetMode').setValue('2')
+    await resolveAll()
+    expect(wrapper.text()).toContain('Не удалось загрузить задания контроля красной зоны')
+    expect(create).not.toHaveBeenCalled()
+    await wrapper.get('#lookupTargetMode').setValue('0')
+    await wrapper.get('#lookupTargetMode').setValue('2')
+    await resolveAll()
+    expect(wrapper.get('#sourceScanJobId').text()).toContain('Проверка №77')
+  })
+
+  it('locks the saved target definition while paused and explains scoped completion', async () => {
+    getById.mockResolvedValue({ ...mockScanjob, lookupTargetMode: 1, type: 10, status: 18, allowFinish: true })
+    mockOps.value.types = [{ value: 10, name: 'Посылка' }]
+    getFinishOptions.mockResolvedValue({ canMarkUnscannedAsNotFound: false, targetRegisterStatus: null })
+    const wrapper = mountComponent({ mode: 'edit', scanjobId: 11 })
+    await resolveAll()
+    expect(wrapper.get('#lookupTargetMode').element.disabled).toBe(true)
+    expect(wrapper.get('#operation').element.disabled).toBe(true)
+    expect(wrapper.text()).toContain('Список зафиксирован при первом запуске.')
+    await wrapper.vm.$.setupState.finishScanjob()
+    expect(confirmMock).toHaveBeenCalledWith(expect.objectContaining({
+      content: 'Завершится только задание. Статусы посылок и реестра не изменятся.'
+    }))
+    expect(finish).toHaveBeenCalledWith(11, { markUnscannedAsNotFound: false, updateRegisterStatus: false })
   })
 
   it('throws when edit mode is missing scanjobId', () => {

@@ -306,6 +306,22 @@ describe('scanjobs store', () => {
     })
   })
 
+  describe('verification source lookup', () => {
+    it('requests completed sources for the selected register', async () => {
+      const sources = [{ id: 7, name: 'Проверка', missingCount: 2 }]
+      fetchWrapper.get.mockResolvedValueOnce(sources)
+      const store = useScanjobsStore()
+      await expect(store.getVerificationSources(12)).resolves.toEqual(sources)
+      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/scanjobs/verification-sources?registerId=12`)
+    })
+
+    it('propagates a source-list failure to the form', async () => {
+      const error = new Error('Не удалось загрузить задания контроля красной зоны')
+      fetchWrapper.get.mockRejectedValueOnce(error)
+      await expect(useScanjobsStore().getVerificationSources(12)).rejects.toBe(error)
+    })
+  })
+
   describe('start', () => {
     it('starts scanjob successfully', async () => {
       fetchWrapper.post.mockResolvedValue({})

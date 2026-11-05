@@ -33,6 +33,7 @@ const dealNumber = computed(() => (route.query.dealNumber ? String(route.query.d
       :register-id="registerId"
       :warehouse-id="warehouseId"
       :deal-number="dealNumber"
+      :initial-source-scan-job-id="parseQueryNumber(route.query.sourceScanJobId)"
     />
   </Suspense>
 </template>

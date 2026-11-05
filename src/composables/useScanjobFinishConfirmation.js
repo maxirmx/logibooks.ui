@@ -5,6 +5,8 @@
 import { markRaw, reactive } from 'vue'
 import ScanjobFinishConfirmationContent from '@/components/ScanjobFinishConfirmationContent.vue'
 
+import { isScopedLookup } from '@/helpers/scoped.lookup.helpers.js'
+
 export function useScanjobFinishConfirmation(getFinishOptions, confirm) {
   let pending = null
 
@@ -12,7 +14,7 @@ export function useScanjobFinishConfirmation(getFinishOptions, confirm) {
     pending = null
   }
 
-  async function request({ id, name, operation }) {
+  async function request({ id, name, operation, lookupTargetMode }) {
     const options = await getFinishOptions(id, { operation })
     if (!pending || pending.id !== id || pending.operation !== operation) {
       pending = { id, operation, choices: reactive({
@@ -37,7 +39,9 @@ export function useScanjobFinishConfirmation(getFinishOptions, confirm) {
           choices,
           onChange: (field, value) => { choices[field] = value }
         }
-      } : { content: 'Завершить задание?' })
+      } : { content: isScopedLookup(lookupTargetMode)
+        ? 'Завершится только задание. Статусы посылок и реестра не изменятся.'
+        : 'Завершить задание?' })
     })
     if (!accepted) {
       reset()

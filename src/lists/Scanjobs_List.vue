@@ -15,6 +15,7 @@ import ActionButton from '@/components/ActionButton.vue'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useAppConfirm } from '@/composables/useAppConfirm.js'
+import { lookupPresetLabel } from '@/helpers/scoped.lookup.helpers.js'
 import { useScanjobFinishConfirmation } from '@/composables/useScanjobFinishConfirmation.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync.js'
@@ -313,7 +314,7 @@ defineExpose({
         </template>
 
         <template v-slot:[`item.operation`]="{ item }">
-          {{ scanJobsStore.getOpsLabel(ops?.operations, item.operation) }}
+          {{ Number(item.operation) === 30 ? lookupPresetLabel(item.lookupTargetMode) : scanJobsStore.getOpsLabel(ops?.operations, item.operation) }}
         </template>
 
         <template v-slot:[`item.mode`]="{ item }">

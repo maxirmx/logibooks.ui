@@ -27,7 +27,10 @@ import ActionButton from '@/components/ActionButton.vue'
 import { useAppConfirm } from '@/composables/useAppConfirm.js'
 import { useScanjobFinishConfirmation } from '@/composables/useScanjobFinishConfirmation.js'
 
+import { isScopedLookup, lookupPresets, lookupTargetModes } from '@/helpers/scoped.lookup.helpers.js'
+
 const props = defineProps({
+  initialSourceScanJobId: { type: Number, default: null },
   mode: {
     type: String,
     required: true,
@@ -117,10 +120,15 @@ const schema = toTypedSchema(
     status: Yup.number().required('Статус обязателен'),
     warehouseId: Yup.number().nullable().required('Склад обязателен'),
     registerId: Yup.number().nullable().required('Реестр обязателен'),
+    lookupTargetMode: Yup.number().oneOf(lookupPresets.map(preset => preset.value), 'Выберите вид поиска'),
+    sourceScanJobId: Yup.number().nullable().when(['operation', 'lookupTargetMode'], {
+      is: (op, targetMode) => Number(op) === resolveLookupOperationValue() && targetMode === lookupTargetModes.MissingFromJob,
+      then: field => field.required('Выберите задание контроля красной зоны')
+    }),
     lookupStatusId: Yup.number()
       .nullable()
-      .when('operation', {
-        is: (operationValue) => Number(operationValue) === Number(resolveLookupOperationValue()),
+      .when(['operation', 'lookupTargetMode'], {
+        is: (op, targetMode) => Number(op) === resolveLookupOperationValue() && !isScopedLookup(targetMode),
         then: (fieldSchema) => fieldSchema.required('Статус для поиска обязателен'),
         otherwise: (fieldSchema) => fieldSchema.nullable()
       })
@@ -138,7 +146,9 @@ const { errors, handleSubmit, resetForm, setErrors } = useForm({
     status: null,
     warehouseId: props.warehouseId ?? null,
     registerId: props.registerId ?? null,
-    lookupStatusId: null
+    lookupStatusId: null,
+    lookupTargetMode: lookupTargetModes.Status,
+    sourceScanJobId: null
   }
 })
 
@@ -150,6 +160,11 @@ const { value: status } = useField('status')
 const { value: fieldWarehouseId } = useField('warehouseId')
 const { value: fieldRegisterId } = useField('registerId')
 const { value: lookupStatusId } = useField('lookupStatusId')
+
+const { value: lookupTargetMode } = useField('lookupTargetMode')
+const { value: sourceScanJobId } = useField('sourceScanJobId')
+const verificationSources = ref([])
+const verificationSourcesLoading = ref(false)
 
 const currentRegister = ref(null)
 
@@ -228,6 +243,33 @@ const readOnly = computed(
   () => currentScanjob.value?.readOnly === true || currentRegister.value?.readOnly === true
 )
 
+const isRedVerification = computed(() => isLookupOperation.value && lookupTargetMode.value === lookupTargetModes.RedZoneAtStart)
+const isMissingSearch = computed(() => isLookupOperation.value && lookupTargetMode.value === lookupTargetModes.MissingFromJob)
+const definitionLocked = computed(() => isScopedLookup(currentScanjob.value?.lookupTargetMode)
+  && Number(currentScanjob.value?.status) !== 10)
+const availableTypes = computed(() => (ops.value?.types ?? []).filter(option => !isMissingSearch.value || option.value !== 20))
+
+watch([isRedVerification, isMissingSearch], ([verification, search]) => {
+  if (verification) type.value = 10
+  else if (search && type.value !== 10 && type.value !== 30) type.value = 30
+})
+
+watch([isMissingSearch, fieldRegisterId], async ([search, registerId], _, onCleanup) => {
+  let active = true
+  onCleanup(() => { active = false })
+  verificationSources.value = []
+  verificationSourcesLoading.value = Boolean(search && registerId)
+  if (!verificationSourcesLoading.value) return
+  try {
+    const sources = await scanJobsStore.getVerificationSources(registerId)
+    if (active) verificationSources.value = sources
+  } catch (error) {
+    if (active) alertStore.error(error, { fallback: 'Не удалось загрузить задания контроля красной зоны' })
+  } finally {
+    if (active) verificationSourcesLoading.value = false
+  }
+})
+
 watch(operation, (value) => {
   if (isCreate.value && !nameManuallyEdited.value) {
     name.value = formatDefaultScanjobName(value)
@@ -237,6 +279,8 @@ watch(operation, (value) => {
 watch(isLookupOperation, (lookup) => {
   if (!lookup) {
     lookupStatusId.value = null
+    lookupTargetMode.value = lookupTargetModes.Status
+    sourceScanJobId.value = null
   }
 })
 
@@ -279,19 +323,21 @@ async function initialize() {
     if (isCreate.value) {
       await resolveRegister(props.registerId)
 
-      const initialOperation = isLookupOnlyRegisterType.value
+      const initialOperation = props.initialSourceScanJobId || isLookupOnlyRegisterType.value
         ? lookupOperationValue.value
         : ops.value?.operations?.[0]?.value ?? null
       const defaults = {
         id: 0,
         name: formatDefaultScanjobName(initialOperation),
-        type: ops.value?.types?.[0]?.value ?? null,
+        type: props.initialSourceScanJobId ? 30 : ops.value?.types?.[0]?.value ?? null,
         operation: initialOperation,
         mode: ops.value?.modes?.[0]?.value ?? null,
         status: ops.value?.statuses?.[0]?.value ?? null,
         warehouseId: props.warehouseId ?? null,
         registerId: props.registerId ?? null,
-        lookupStatusId: null
+        lookupStatusId: null,
+        lookupTargetMode: props.initialSourceScanJobId ? lookupTargetModes.MissingFromJob : lookupTargetModes.Status,
+        sourceScanJobId: props.initialSourceScanJobId
       }
       nameManuallyEdited.value = false
       resetForm({ values: defaults })
@@ -314,7 +360,9 @@ async function initialize() {
           status: loaded.status,
           warehouseId: loaded.warehouseId ?? props.warehouseId ?? null,
           registerId: loaded.registerId ?? props.registerId ?? null,
-          lookupStatusId: loaded.lookupStatusId ?? null
+          lookupStatusId: loaded.lookupStatusId ?? null,
+          lookupTargetMode: loaded.lookupTargetMode ?? lookupTargetModes.Status,
+          sourceScanJobId: loaded.sourceScanJobId ?? null
         }
       })
       await nextTick()
@@ -337,15 +385,20 @@ function toNumberOrNull(value) {
 }
 
 function buildPayload(values) {
+  const { lookupStatusId, lookupTargetMode, sourceScanJobId, ...settings } = values
+  const scoped = isLookupOperation.value && isScopedLookup(lookupTargetMode)
   return {
-    ...values,
+    ...settings,
     type: toNumberOrNull(values.type),
     operation: toNumberOrNull(values.operation),
     mode: toNumberOrNull(values.mode),
     status: toNumberOrNull(values.status),
     warehouseId: toNumberOrNull(values.warehouseId ?? props.warehouseId),
     registerId: toNumberOrNull(values.registerId ?? props.registerId),
-    lookupStatusId: toNumberOrNull(values.lookupStatusId)
+    ...(scoped ? {
+      lookupTargetMode,
+      ...(lookupTargetMode === lookupTargetModes.MissingFromJob ? { sourceScanJobId: toNumberOrNull(sourceScanJobId) } : {})
+    } : { lookupStatusId: isLookupOperation.value ? toNumberOrNull(lookupStatusId) : null })
   }
 }
 
@@ -398,12 +451,17 @@ async function saveScanjobQuiet() {
     return false
   }
   if (
-    isLookupOperation.value &&
+    isLookupOperation.value && !isScopedLookup(lookupTargetMode.value) &&
     (lookupStatusId.value === null ||
       lookupStatusId.value === undefined ||
       lookupStatusId.value === '')
   ) {
     alertStore.error('Статус для поиска обязателен')
+    return false
+  }
+
+  if (isMissingSearch.value && !sourceScanJobId.value) {
+    setErrors({ sourceScanJobId: 'Выберите задание контроля красной зоны' })
     return false
   }
 
@@ -416,7 +474,9 @@ async function saveScanjobQuiet() {
     status: status.value,
     warehouseId: fieldWarehouseId.value,
     registerId: fieldRegisterId.value,
-    lookupStatusId: lookupStatusId.value
+    lookupStatusId: lookupStatusId.value,
+    lookupTargetMode: lookupTargetMode.value,
+    sourceScanJobId: sourceScanJobId.value
   }
   const payload = buildPayload(values)
   try {
@@ -428,7 +488,7 @@ async function saveScanjobQuiet() {
     return true
   } catch (error) {
     if (handleReadOnlyConflict(error)) return false
-    if (error?.status === 409 || String(error?.message || '').includes('409')) {
+    if (!isScopedLookup(lookupTargetMode.value) && (error?.status === 409 || String(error?.message || '').includes('409'))) {
       alertStore.error('Такое задание на сканирование уже существует')
     } else {
       reportFormError(error, {
@@ -467,7 +527,7 @@ const onSubmit = handleSubmit(async (values) => {
     }
   } catch (error) {
     if (handleReadOnlyConflict(error)) return
-    if (error?.status === 409 || String(error?.message || '').includes('409')) {
+    if (!isScopedLookup(lookupTargetMode.value) && (error?.status === 409 || String(error?.message || '').includes('409'))) {
       alertStore.error('Такое задание на сканирование уже существует')
     } else {
       alertStore.error(error.message || 'Ошибка при сохранении задания на сканирование')
@@ -544,7 +604,8 @@ async function finishScanjob() {
     const choices = await finishConfirmation.request({
       id: props.scanjobId,
       name: name.value || currentScanjob.value?.name || props.scanjobId,
-      operation: Number(operation.value)
+      operation: Number(operation.value),
+      lookupTargetMode: lookupTargetMode.value
     })
     if (!choices) return
     const saved = await saveScanjobQuiet()
@@ -719,10 +780,10 @@ defineExpose({ onSubmit, cancel })
             id="type"
             class="form-control input"
             :class="{ 'is-invalid': errors.type }"
-            :disabled="readOnly"
+            :disabled="readOnly || definitionLocked || isRedVerification"
             v-model="type"
           >
-            <option v-for="item in ops?.types" :key="item.value" :value="item.value">
+            <option v-for="item in availableTypes" :key="item.value" :value="item.value">
               {{ item.name }}
             </option>
           </select>
@@ -768,7 +829,7 @@ defineExpose({ onSubmit, cancel })
             id="operation"
             class="form-control input"
             :class="{ 'is-invalid': errors.operation }"
-            :disabled="readOnly"
+            :disabled="readOnly || definitionLocked"
             v-model="operation"
           >
             <option v-for="item in operationOptions" :key="item.value" :value="item.value">
@@ -777,7 +838,33 @@ defineExpose({ onSubmit, cancel })
           </select>
           <FieldError name="operation" :errors="errors" />
         </div>
-        <div class="form-group" :hidden="!isLookupOperation">
+      </div>
+      <fieldset v-if="isLookupOperation" class="mt-3">
+        <legend>Настройки поиска</legend>
+        <div class="form-group">
+          <label for="lookupTargetMode" class="label">Вид поиска:</label>
+          <select id="lookupTargetMode" v-model="lookupTargetMode" class="form-control input"
+            :disabled="readOnly || definitionLocked">
+            <option v-for="preset in lookupPresets" :key="preset.value" :value="preset.value">{{ preset.label }}</option>
+          </select>
+          <FieldError name="lookupTargetMode" :errors="errors" />
+        </div>
+        <p v-if="isRedVerification">
+          Только посылки. При первом запуске в список попадут все посылки, которые числятся в красной зоне.
+        </p>
+        <div v-if="isMissingSearch" class="form-group">
+          <label for="sourceScanJobId" class="label">Задание контроля красной зоны:</label>
+          <select id="sourceScanJobId" v-model="sourceScanJobId" class="form-control input"
+            :disabled="readOnly || definitionLocked || verificationSourcesLoading">
+            <option :value="null">Не выбрано</option>
+            <option v-for="job in verificationSources" :key="job.id" :value="job.id">
+              {{ job.name }} №{{ job.id }} (не найдено: {{ job.missingCount }})
+            </option>
+          </select>
+          <FieldError name="sourceScanJobId" :errors="errors" />
+          <p>При первом запуске список поиска будет взят из ненайденных посылок выбранного задания.</p>
+        </div>
+        <div v-if="!isScopedLookup(lookupTargetMode)" class="form-group">
           <label for="lookupStatusId" class="label">Статус для поиска:</label>
           <select
             id="lookupStatusId"
@@ -797,8 +884,16 @@ defineExpose({ onSubmit, cancel })
             </option>
           </select>
           <FieldError name="lookupStatusId" :errors="errors" />
+          <p>Ищем посылки с выбранным статусом.</p>
         </div>
-      </div>
+        <strong>Влияние на статусы</strong>
+        <p v-if="isScopedLookup(lookupTargetMode)">
+          Без изменения статусов. Статусы посылок и реестра, причины отказа, зоны и привязка к коробкам сохраняются.
+          Меняются только результаты и состояние задания.
+        </p>
+        <p v-else>По правилам обработки. Настроенные правила могут изменить статус или зону посылки при сканировании.</p>
+        <p v-if="definitionLocked">Список зафиксирован при первом запуске.</p>
+      </fieldset>
     </form>
   </div>
 </template>

@@ -3,6 +3,8 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
+import ScanjobLookupProgress from '@/components/ScanjobLookupProgress.vue'
+import { isScopedLookup, lookupPresetLabel, scopedLookupFeedback } from '@/helpers/scoped.lookup.helpers.js'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { computed, nextTick, onMounted, onUnmounted, provide, ref, watch } from 'vue'
 import { isNavigationFailure, NavigationFailureType } from 'vue-router'
@@ -142,7 +144,10 @@ const activeRegisterItem = computed(() => {
 
   return storeRegister
 })
+const lookupFeedback = ref(null)
+watch(() => props.scanjobId, () => { lookupFeedback.value = null })
 const manualScan = useManualScan({
+  onResult: result => { lookupFeedback.value = scopedLookupFeedback(result) },
   target: computed(() => isRegisterMode.value ? BOX_SCAN : PARCEL_SCAN),
   registerId, job: scanjob,
   disabled: () => isLoading.value || defectActionRunning.value || Boolean(closedInfo.value),
@@ -761,6 +766,7 @@ async function handleFollowEvent(followEvent, version = scopeVersion.value) {
     return
   }
 
+  lookupFeedback.value = scopedLookupFeedback(followEvent)
   const targetScope = normalizeFollowTarget(followEvent?.followTarget)
   const targetParcelId = toNumberOrNull(followEvent?.followTarget?.parcelId)
 
@@ -831,7 +837,12 @@ function handleMonitorClosed(scanJobId, status, version) {
   }
 
   closedStatus.value = { scanJobId, status }
-  clearPendingSnapshot()
+  const latest = pendingSnapshot?.snapshot
+  if (isScopedLookup(latest?.lookupTargetMode)) {
+    applySnapshot(latest, { version, immediate: true, source: 'live' })
+  } else {
+    clearPendingSnapshot()
+  }
   clearFollowUserSubscription().catch((error) => {
     reportError(error, { context: 'scan job route follow-user cleanup' })
   })
@@ -1093,6 +1104,20 @@ defineExpose({
     <PageAlertRegion />
     <div v-if="readOnly" class="alert alert-warning read-only-notice">
       Изменения и операции сканирования запрещены. Мониторинг и просмотр посылок доступны.
+    </div>
+
+    <ScanjobLookupProgress
+      v-if="isRegisterMode && visibleSnapshot?.lookupProgress"
+      :snapshot="visibleSnapshot"
+      :completed="Number(closedStatus?.status ?? visibleSnapshot.status) === 20"
+      :can-create-search="authStore.isWhManagerPlus && !readOnly"
+    />
+    <strong v-else-if="isScopedLookup(visibleSnapshot?.lookupTargetMode)">{{ lookupPresetLabel(visibleSnapshot.lookupTargetMode) }}</strong>
+    <div v-if="lookupFeedback" role="status" class="mb-3">
+      <strong>{{ lookupFeedback.text }}</strong>
+      <ul v-if="lookupFeedback.numbers.length">
+        <li v-for="(number, index) in lookupFeedback.numbers" :key="index">{{ number }}</li>
+      </ul>
     </div>
 
     <div class="scanjob-monitor-panel">

@@ -6,12 +6,14 @@ import { createVuetify } from 'vuetify'
 import { VDataTable } from 'vuetify/components'
 import ScanjobParcelsMonitorTable from '@/dialogs/Scanjob_Parcels_Monitor_Table.vue'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
+import { useManualScan } from '@/composables/useManualScan.js'
+import { BOX_SCAN } from '@/helpers/manual.scan.helpers.js'
 import { useManualParcelScan } from '@/composables/useManualParcelScan.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { vuetifyStubs } from './helpers/test-utils.js'
 
-const { scanParcel, getById, confirm } = vi.hoisted(() => ({ scanParcel: vi.fn(), getById: vi.fn(), confirm: vi.fn() }))
-vi.mock('@/stores/scanjobs.store.js', () => ({ useScanjobsStore: () => ({ ops: { constants: { inProgressStatus: 15, boxOnlyType: 20, parcelScanSource: 10, lookupOperation: 30 } }, scanParcel, getById, ensureOpsLoaded: vi.fn().mockResolvedValue(true), getScanJobLabel: job => `#${job.id}` }) }))
+const { scanParcel, scanBox, getById, confirm } = vi.hoisted(() => ({ scanParcel: vi.fn(), scanBox: vi.fn(), getById: vi.fn(), confirm: vi.fn() }))
+vi.mock('@/stores/scanjobs.store.js', () => ({ useScanjobsStore: () => ({ ops: { constants: { inProgressStatus: 15, boxOnlyType: 20, parcelOnlyType: 10, parcelScanSource: 10, lookupOperation: 30 } }, scanParcel, scanBox, getById, ensureOpsLoaded: vi.fn().mockResolvedValue(true), getScanJobLabel: job => `#${job.id}` }) }))
 vi.mock('@/composables/useAppConfirm.js', () => ({ useAppConfirm: () => confirm }))
 const job = { id: 7, registerId: 1, status: 15, type: 30, operation: 10 }
 const rows = [
@@ -53,6 +55,46 @@ beforeEach(() => {
   confirm.mockResolvedValue(true)
 })
 afterEach(() => { wrapper?.unmount(); vi.unstubAllGlobals() })
+
+it('retains candidate advice when a later box in the batch has no matches', async () => {
+  scanBox.mockResolvedValueOnce({ count: 2, boxCount: 1, lookupOutcome: 2, candidateParcelNumbers: ['P-1', 'P-2'] })
+    .mockResolvedValueOnce({ count: 0, boxCount: 1, lookupOutcome: 0 })
+  const onResult = vi.fn()
+  wrapper = mount(defineComponent({
+    components: { PageAlertRegion },
+    setup() {
+      scan = useManualScan({
+        target: BOX_SCAN, registerId: ref(1), job: ref({ ...job, operation: 30, lookupTargetMode: 2 }),
+        refresh: vi.fn().mockResolvedValue(true), onResult
+      })
+    },
+    template: '<PageAlertRegion/>'
+  }))
+  await flushPromises()
+  expect(await scan.run([{ boxId: 1 }, { boxId: 2 }], 7, true)).toBe(true)
+  expect(onResult).toHaveBeenLastCalledWith(expect.objectContaining({ candidateParcelNumbers: ['P-1', 'P-2'] }))
+  expect(wrapper.text()).toContain('Откройте коробку и проверьте посылки')
+  expect(wrapper.text()).toContain('P-2')
+})
+
+it('retains individual confirmations when later scans have no match', async () => {
+  scanParcel.mockResolvedValueOnce({ count: 1, lookupOutcome: 1 })
+    .mockResolvedValueOnce({ count: 1, lookupOutcome: 1 })
+    .mockResolvedValueOnce({ count: 0, lookupOutcome: 0 })
+  wrapper = mount(defineComponent({
+    components: { PageAlertRegion },
+    setup() {
+      scan = useManualScan({
+        registerId: ref(1), job: ref({ ...job, operation: 30, lookupTargetMode: 1 }),
+        refresh: vi.fn().mockResolvedValue(true)
+      })
+    },
+    template: '<PageAlertRegion/>'
+  }))
+  await flushPromises()
+  expect(await scan.run(rows.slice(0, 3), 7, true)).toBe(true)
+  expect(wrapper.text()).toContain('Подтверждено посылок: 2')
+})
 
 describe('monitor manual selection with the real Vuetify table', () => {
   it('right-clicks a multi-selection and disables row and footer actions until scanning completes', async () => {

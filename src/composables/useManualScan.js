@@ -10,8 +10,10 @@ import { useAppConfirm } from '@/composables/useAppConfirm.js'
 import { APP_DIALOG_BUTTON_PROPS } from '@/helpers/dialog.helpers.js'
 import { getErrorMessage, reportError } from '@/helpers/error.helpers.js'
 
+import { isScopedLookup, scopedLookupFeedback } from '@/helpers/scoped.lookup.helpers.js'
+
 export function useManualScan({ registerId, job = null, disabled = false, target = PARCEL_SCAN,
-  scopeKey = null, refresh, onScanned = () => {} }) {
+  scopeKey = null, refresh, onScanned = () => {}, onResult }) {
   const scanTarget = computed(() => toValue(target))
   const store = useScanjobsStore()
   const auth = useAuthStore()
@@ -98,6 +100,9 @@ export function useManualScan({ registerId, job = null, disabled = false, target
     let empty = 0
     let matchedParcels = 0
     let lookup = false
+    let scopedResult
+    let batchConfirmedCount = 0
+    const candidateNumbers = new Set()
     let failure = null
     let failureMessage = null
     let refreshNeeded = false
@@ -136,6 +141,14 @@ export function useManualScan({ registerId, job = null, disabled = false, target
         if (adapter.isEmpty(result)) empty++
         completed++
         onScanned(id)
+        if (result?.lookupOutcome === 1) batchConfirmedCount++
+        if (result?.candidateParcelNumbers?.length) {
+          for (const number of result.candidateParcelNumbers) candidateNumbers.add(number)
+          scopedResult = { ...result, candidateParcelNumbers: [...candidateNumbers] }
+        } else if (!candidateNumbers.size && (result?.lookupOutcome === 1 || !scopedResult?.lookupOutcome)) {
+          scopedResult = result
+        }
+        onResult?.({ ...scopedResult, batchConfirmedCount })
         completedIds.value = [...completedIds.value, id]
         pendingBatch.value.parcels = frozenParcels.slice(completed)
         progress.value.completed = completed
@@ -157,7 +170,12 @@ export function useManualScan({ registerId, job = null, disabled = false, target
         try {
           await refresh()
           if (!failure && current()) {
-            alerts[empty ? 'warning' : matched > 0 ? 'info' : 'success'](adapter.successMessage({ completed, matched, lookup, empty, matchedParcels }))
+            if (isScopedLookup(targetJob.lookupTargetMode)) {
+              const feedback = scopedLookupFeedback({ ...scopedResult, batchConfirmedCount })
+              alerts.info(feedback ? [feedback.text, ...feedback.numbers].join(' · ') : 'Совпадений в списке задания нет')
+            } else {
+              alerts[empty ? 'warning' : matched > 0 ? 'info' : 'success'](adapter.successMessage({ completed, matched, lookup, empty, matchedParcels }))
+            }
           }
         }
         catch (error) {

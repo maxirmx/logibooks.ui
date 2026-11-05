@@ -6,7 +6,7 @@
 import { useParcelBoxScope } from '@/composables/useParcelBoxScope.js'
 import { useListPageBounds } from '@/composables/useListPageBounds.js'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
-import { watch, ref, computed, onMounted, onUnmounted, provide, nextTick, unref } from 'vue'
+import { watch, ref, computed, onMounted, onUnmounted, provide, nextTick, unref, toRef } from 'vue'
 import { useParcelsStore } from '@/stores/parcels.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
@@ -153,6 +153,8 @@ const {
 
 const showAssignTnvedDialog = ref(false)
 const showParcelStatusBulkDialog = ref(false)
+const bulkStatusProgressVisible = ref(false)
+const assignTnvedProgressVisible = ref(false)
 
 async function handleAssignTnvedConfirm(ids, tnVed) {
   if (registersStore.item?.readOnly === true || runningAction.value) return
@@ -291,6 +293,8 @@ const {
   checkPassports: checkPassportsHeader,
   finishPassportCheck: finishPassportCheckHeader,
   cancelValidation: cancelRegisterValidation,
+  xmlDialog,
+  cancelXmlArchive,
   stop: stopRegisterHeaderActions
 } = useRegisterHeaderActions({
   registersStore,
@@ -298,6 +302,7 @@ const {
   runningAction,
   tableLoading: loading,
   registerLoading,
+  registerId: toRef(props, 'registerId'),
   loadParcels: loadParcelsWrapper,
   isComponentMounted
 })
@@ -629,6 +634,7 @@ function getGenericTemplateHeaders() {
         :disabled="generalActionsDisabled"
         :mutation-disabled="registersStore.item?.readOnly === true"
         :loading="runningAction || loading || isInitializing"
+        :progress-dialog-visible="validationState?.show || actionDialogState?.show || bulkStatusProgressVisible || assignTnvedProgressVisible || splitState.progress.show || reconciliationState.progress.show"
         :show-passport-check="showPassportVerification"
         @validate-sw="validateRegisterSwHeader"
         @validate-sw-ex="validateRegisterSwHeaderEx"
@@ -932,12 +938,15 @@ function getGenericTemplateHeaders() {
       :progress-percent="progressPercent"
       :cancel-validation="cancelRegisterValidation"
       :action-dialog="actionDialogState"
+      :xml-dialog="xmlDialog"
+      :cancel-xml-archive="cancelXmlArchive"
     />
 
     <AssignTnvedDialog
       :show="showAssignTnvedDialog"
       :selected-ids="[...selectedParcelIds]"
       @update:show="showAssignTnvedDialog = $event"
+      @progress-visible="assignTnvedProgressVisible = $event"
       @confirm="handleAssignTnvedConfirm"
     />
     <ParcelStatusBulkChangeDialog
@@ -949,6 +958,7 @@ function getGenericTemplateHeaders() {
         registersStore.item?.readOnly === true || runningAction || loading || isInitializing
       "
       @update:show="showParcelStatusBulkDialog = $event"
+      @progress-visible="bulkStatusProgressVisible = $event"
       @updated="handleParcelStatusBulkUpdated"
     />
   </div>

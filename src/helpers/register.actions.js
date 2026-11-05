@@ -2,7 +2,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { computed, watch, ref, unref, reactive } from 'vue'
+import { computed, watch, ref, unref, reactive, shallowRef, toValue } from 'vue'
 import { useAppConfirm } from '@/composables/useAppConfirm.js'
 import { useActionDialog } from '@/composables/useActionDialog.js'
 import { useRegisterDownloadFlow } from '@/composables/useRegisterDownloadFlow.js'
@@ -311,16 +311,16 @@ export function createRegisterActionHandlers(registersStore, alertStore, { mode 
     await performFeacnLookup(item, { extended: true })
   }
 
-  async function exportAllXmlOrdinary(item, applyWeightCorrection = false) {
-    await registersStore.generateOrdinary(item.id, item.invoiceNumber, applyWeightCorrection)
+  async function exportAllXmlOrdinary(item, applyWeightCorrection = false, tracking) {
+    return registersStore.generateOrdinary(item.id, item.invoiceNumber, applyWeightCorrection, ...(tracking ? [tracking] : []))
   }
 
-  async function exportAllXmlExcise(item, applyWeightCorrection = false) {
-    await registersStore.generateExcise(item.id, item.invoiceNumber, applyWeightCorrection)
+  async function exportAllXmlExcise(item, applyWeightCorrection = false, tracking) {
+    return registersStore.generateExcise(item.id, item.invoiceNumber, applyWeightCorrection, ...(tracking ? [tracking] : []))
   }
 
-  async function exportAllXmlNotifications(item, applyWeightCorrection = false) {
-    await registersStore.generateNotifications(item.id, item.invoiceNumber, applyWeightCorrection)
+  async function exportAllXmlNotifications(item, applyWeightCorrection = false, tracking) {
+    return registersStore.generateNotifications(item.id, item.invoiceNumber, applyWeightCorrection, ...(tracking ? [tracking] : []))
   }
 
   async function downloadRegister(item, applyWeightCorrection = false) {
@@ -434,6 +434,7 @@ export function useRegisterHeaderActions({
   runningAction,
   tableLoading,
   registerLoading,
+  registerId,
   loadParcels,
   isComponentMounted
 }) {
@@ -470,6 +471,8 @@ export function useRegisterHeaderActions({
   const confirm = useAppConfirm()
   const weightCorrectionChoicePending = ref(false)
   const passportConfirmationPending = ref(false)
+  const xmlRun = shallowRef(null)
+  const xmlDialog = reactive({ cancellable: false, cancelDisabled: true, cancelling: false })
 
   const currentRegister = computed(() => {
     const register = unref(registersStore?.item)
@@ -493,7 +496,8 @@ export function useRegisterHeaderActions({
       validationState.show ||
       actionDialogState.show ||
       weightCorrectionChoicePending.value ||
-      passportConfirmationPending.value
+      passportConfirmationPending.value ||
+      xmlRun.value !== null
   )
 
   async function runWithLock(action, { lock = true, checkDisabled = true } = {}) {
@@ -559,22 +563,84 @@ export function useRegisterHeaderActions({
     }
   }
 
-  const runXmlActionWithDialog = async (action, operation) => {
-    if (generalActionsDisabled.value || currentRegister.value?.derivedTotalsPending === true) return
+  function ownsXmlRun(run) {
+    return xmlRun.value === run && (unref(isComponentMounted) ?? true) &&
+      (toValue(registerId) ?? run.registerId) === run.registerId
+  }
 
-    let applyWeightCorrection = false
-    if (getWeightCorrection(currentRegister.value).canCorrect) {
-      applyWeightCorrection = await chooseWeightCorrectionForCurrentRegister()
-    }
+  async function cancelXmlArchive() {
+    const run = xmlRun.value
+    if (!run?.handleId || !ownsXmlRun(run) || xmlDialog.cancelling) return
 
-    showActionDialog(operation)
+    xmlDialog.cancelling = true
     try {
-      await runWithLock((register) => action(register, applyWeightCorrection), {
-        lock: true,
-        checkDisabled: false
-      })
-    } finally {
+      await registersStore.cancelXmlArchive(run.handleId)
+    } catch (error) {
+      if (ownsXmlRun(run)) {
+        xmlDialog.cancelling = run.serverCancelling
+        alertStore.error(error, { fallback: 'Не удалось отменить формирование XML архива' })
+      } else {
+        reportError(error, { context: 'XML archive cancellation after navigation' })
+      }
+    }
+  }
+
+  function releaseXmlRun(run) {
+    if (xmlRun.value !== run) return
+    xmlRun.value = null
+    Object.assign(xmlDialog, { cancellable: false, cancelDisabled: true, cancelling: false })
+    if (run.started) {
       hideActionDialog()
+      runningActionRef.value = false
+    }
+  }
+
+  watch(() => toValue(registerId), id => {
+    if (xmlRun.value && id !== xmlRun.value.registerId) releaseXmlRun(xmlRun.value)
+  }, { flush: 'sync' })
+
+  const runXmlActionWithDialog = async (action, operation) => {
+    const register = currentRegister.value
+    if (generalActionsDisabled.value || !register || register.derivedTotalsPending === true) return
+
+    const run = { registerId: register.id, started: false, handleId: null, serverCancelling: false }
+    xmlRun.value = run
+    const ownsRun = () => ownsXmlRun(run)
+
+    try {
+      if (!ownsRun()) return
+      const applyWeightCorrection = getWeightCorrection(register).canCorrect &&
+        await chooseOutputWeightCorrection(confirm, register) === WEIGHT_CORRECTION_CHOICE.Apply
+      if (!ownsRun()) return
+
+      run.started = true
+      runningActionRef.value = true
+      xmlDialog.cancellable = true
+      showActionDialog(operation)
+      const downloaded = await action(register, applyWeightCorrection, {
+        isCancelling: () => ownsRun() && xmlDialog.cancelling,
+        onProgress: ({ handleId, total, processed, cancelling }) => {
+          if (!ownsRun()) return
+          if (cancelling === true) {
+            run.serverCancelling = true
+            xmlDialog.cancelling = true
+          }
+          const previousHandle = run.handleId
+          run.handleId = handleId
+          xmlDialog.cancelDisabled = !handleId
+          if (!Number.isFinite(total) || total <= 0 || !Number.isFinite(processed) || processed < 0) return
+          const percent = Math.min(99, Math.floor(processed / total * 100))
+          actionDialogState.percent = handleId === previousHandle
+            ? Math.max(actionDialogState.percent ?? 0, percent)
+            : percent
+        }
+      })
+      if (downloaded !== false && ownsRun() && actionDialogState.percent !== null) actionDialogState.percent = 100
+    } catch (error) {
+      if (ownsRun()) alertStore.error(error, { fallback: 'Не удалось сформировать XML архив' })
+      else reportError(error, { context: 'XML archive download after navigation' })
+    } finally {
+      releaseXmlRun(run)
     }
   }
 
@@ -771,6 +837,7 @@ export function useRegisterHeaderActions({
 
   function stop() {
     stopPolling()
+    if (xmlRun.value) releaseXmlRun(xmlRun.value)
     hideActionDialog()
     weightCorrectionChoicePending.value = false
     passportConfirmationPending.value = false
@@ -780,6 +847,8 @@ export function useRegisterHeaderActions({
     validationState,
     progressPercent,
     actionDialog: actionDialogState,
+    xmlDialog,
+    cancelXmlArchive,
     companyFormatName: downloadFlow.companyFormatName,
     generalActionsDisabled,
     validateRegisterSw: runValidateRegisterSw,

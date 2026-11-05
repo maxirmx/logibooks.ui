@@ -6,7 +6,7 @@
 - Core owns totals, adjusted weights, reconciliation, and automatic box calculations. Display saved aggregate and box values; keep pending-state guards for invalid corrected output.
 - Use existing operation-progress polling until terminal completion, including cancellation cleanup, then perform one coordinated reload of register, visible boxes, and the current parcel page. Preserve filters, pagination, and entered values.
 - Do not add totals-refresh controls, totals-retry loops, repair queues, or totals notifications. Retain request coalescing, stale-response protection, and unrelated passport/scanner subscriptions.
-- Register headers keep the pre-refresh standalone, leftmost spinner group: `v-if="loading"`, `header-actions header-actions-group`, and `spinner-border spinner-border-m`. Omit the whole spinner group when idle; its visibility must not depend on totals readiness.
+- Register headers keep the standalone, leftmost spinner group with `header-actions header-actions-group` and `spinner-border spinner-border-m`. Show it during loading except while a visible operation dialog shows progress. Keep loading flags for action guards and keep spinner visibility independent of totals readiness.
 
 ## Copyright headers
 
@@ -58,7 +58,8 @@ These instructions apply to the entire repository. Follow them for every new fea
   - Amber header and warning indicator: warning that is not itself a failure.
   - Blue flat button: primary non-destructive action or acknowledgement.
   - Orange flat button: destructive, irreversible, or explicitly high-risk confirmation.
-  - Text button: cancellation or secondary action.
+  - Text button: form cancellation or secondary action.
+  - Dark-orange flat button with white text: cancelling an active operation from its progress dialog.
 - Use `APP_DIALOG_BUTTON_PROPS` for dialog buttons. Do not hardcode dialog button colors or variants at call sites.
 - Color must not be the only indication of meaning: error and warning dialogs also use a tone indicator, while destructive confirmations use explicit action text.
 - `ParcelStatusBulkChangeDialog.vue` is an explicit legacy exception and must not be restyled without a separate user request.

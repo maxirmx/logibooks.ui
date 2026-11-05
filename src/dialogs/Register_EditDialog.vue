@@ -1822,7 +1822,7 @@ const loadReportFields = computed(() => {
       <!-- actions moved to header -->
       <div class="form-actions" style="display: none">
         <button class="button primary" type="submit" :disabled="isSubmitting || !canSubmit">
-          <span v-show="isSubmitting" class="spinner-border spinner-border-sm mr-1"></span>
+          <span v-show="isSubmitting && !actionDialogState.show" class="spinner-border spinner-border-sm mr-1"></span>
           <font-awesome-icon size="1x" icon="fa-solid fa-check-double" class="mr-1" />
           {{ getButton() }}
         </button>
@@ -1837,7 +1837,7 @@ const loadReportFields = computed(() => {
         </button>
       </div>
     </Form>
-    <div v-if="item?.loading" class="text-center m-5">
+    <div v-if="item?.loading && !actionDialogState.show" class="text-center m-5">
       <span class="spinner-border spinner-border-lg align-center"></span>
     </div>
     <ActionDialog :action-dialog="actionDialogState" />

@@ -7,6 +7,7 @@ import { reactive } from 'vue'
 export const ACTION_DIALOG_TITLES = {
   'export-all-xml-without-excise': 'Подготовка файлов',
   'export-all-xml-excise': 'Подготовка файлов',
+  'export-all-xml-notifications': 'Подготовка файлов',
   'download-register': 'Подготовка файла реестра',
   'download-additional-restrictions': 'Подготовка файла реестра',
   'download-packing-list': 'Подготовка файла packing list',
@@ -29,7 +30,8 @@ export function createActionDialogState() {
   return reactive({
     show: false,
     operation: null,
-    title: ''
+    title: '',
+    percent: null
   })
 }
 
@@ -42,6 +44,7 @@ export function useActionDialog({
   function showActionDialog(operation, customTitle) {
     actionDialogState.operation = operation ?? null
     actionDialogState.title = customTitle ?? titles?.[operation] ?? DEFAULT_TITLE
+    actionDialogState.percent = null
     actionDialogState.show = true
   }
 
@@ -49,6 +52,7 @@ export function useActionDialog({
     actionDialogState.show = false
     actionDialogState.operation = null
     actionDialogState.title = ''
+    actionDialogState.percent = null
   }
 
   return {

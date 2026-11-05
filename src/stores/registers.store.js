@@ -730,7 +730,25 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
-  async function generateExcise(id, invoiceNumber, applyWeightCorrection = false) {
+  function xmlArchiveDownloadOptions(id, { onProgress, isCancelling } = {}) {
+    return {
+      pollAccepted: true,
+      getPollUrl: handleId => `${baseUrl}/${id}/xml-archives/${encodeURIComponent(handleId)}`,
+      ...(onProgress ? { onProgress } : {}),
+      ...(isCancelling ? {
+        retryPoll: error => isCancelling() && (
+          !error.status || [408, 429, 502, 503, 504].includes(error.status) ||
+          (error.status === 202 && error.cause instanceof TypeError)
+        )
+      } : {})
+    }
+  }
+
+  function cancelXmlArchive(handleId) {
+    return fetchWrapper.delete(`${baseUrl}/xml-archives/${encodeURIComponent(handleId)}`)
+  }
+
+  async function generateExcise(id, invoiceNumber, applyWeightCorrection = false, tracking) {
     loading.value = true
     error.value = null
     try {
@@ -743,7 +761,7 @@ export const useRegistersStore = defineStore('registers', () => {
       return await fetchWrapper.downloadFile(
         buildXmlRequestUrl(id, 'generate-excise', applyWeightCorrection),
         filename,
-        { pollAccepted: true }
+        xmlArchiveDownloadOptions(id, tracking)
       )
     } catch (err) {
       error.value = err
@@ -753,7 +771,7 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
-  async function generateNotifications(id, invoiceNumber, applyWeightCorrection = false) {
+  async function generateNotifications(id, invoiceNumber, applyWeightCorrection = false, tracking) {
     loading.value = true
     error.value = null
     try {
@@ -766,7 +784,7 @@ export const useRegistersStore = defineStore('registers', () => {
       return await fetchWrapper.downloadFile(
         buildXmlRequestUrl(id, 'generate-notifications', applyWeightCorrection),
         filename,
-        { pollAccepted: true }
+        xmlArchiveDownloadOptions(id, tracking)
       )
     } catch (err) {
       error.value = err
@@ -776,7 +794,7 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
-  async function generateOrdinary(id, invoiceNumber, applyWeightCorrection = false) {
+  async function generateOrdinary(id, invoiceNumber, applyWeightCorrection = false, tracking) {
     loading.value = true
     error.value = null
     try {
@@ -789,7 +807,7 @@ export const useRegistersStore = defineStore('registers', () => {
       return await fetchWrapper.downloadFile(
         buildXmlRequestUrl(id, 'generate-ordinary', applyWeightCorrection),
         filename,
-        { pollAccepted: true }
+        xmlArchiveDownloadOptions(id, tracking)
       )
     } catch (err) {
       error.value = err
@@ -1253,6 +1271,7 @@ export const useRegistersStore = defineStore('registers', () => {
     generateExcise,
     generateNotifications,
     generateOrdinary,
+    cancelXmlArchive,
     downloadInvoiceFile,
     downloadTajikistanManifestFile,
     downloadDo1File,

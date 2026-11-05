@@ -490,6 +490,7 @@ describe('registers.list.helpers', () => {
           generate: vi.fn().mockResolvedValue(),
           generateExcise: vi.fn().mockResolvedValue(),
           generateOrdinary: vi.fn().mockResolvedValue(),
+          generateNotifications: vi.fn().mockResolvedValue(),
           download: vi.fn().mockResolvedValue(),
           validate: vi.fn().mockResolvedValue({ id: 1 }),
           lookupFeacnCodes: vi.fn().mockResolvedValue({ id: 2 }),
@@ -516,6 +517,9 @@ describe('registers.list.helpers', () => {
 
         await handlers.exportAllXmlExcise({ id: 9, invoiceNumber: 'INV-9' })
         expect(registersStore.generateExcise).toHaveBeenCalledWith(9, 'INV-9', false)
+
+        await handlers.exportAllXmlNotifications({ id: 10, invoiceNumber: 'INV-10' })
+        expect(registersStore.generateNotifications).toHaveBeenCalledWith(10, 'INV-10', false)
 
         await handlers.downloadRegister({ id: 4, fileName: 'file.xlsx' })
         expect(registersStore.download).toHaveBeenCalledWith(4, 'file.xlsx')

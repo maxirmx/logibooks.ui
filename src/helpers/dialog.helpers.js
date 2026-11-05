@@ -15,7 +15,8 @@ export const APP_DIALOG_SIZES = Object.freeze({
 export const APP_DIALOG_BUTTON_PROPS = Object.freeze({
   primary: Object.freeze({ color: 'primary', variant: 'flat' }),
   destructive: Object.freeze({ color: 'orange-darken-3', variant: 'flat' }),
-  secondary: Object.freeze({ variant: 'text' })
+  secondary: Object.freeze({ variant: 'text' }),
+  progressCancel: Object.freeze({ color: 'orange-darken-3', variant: 'flat', class: 'text-white' })
 })
 
 export function getAppDialogWidth(size = 'medium') {

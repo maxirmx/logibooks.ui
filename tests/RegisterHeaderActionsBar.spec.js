@@ -82,6 +82,20 @@ describe('RegisterHeaderActionsBar', () => {
     authRefs.isShiftLeadPlus.value = true
   })
 
+  it('hides only the spinner while a progress dialog owns the indicator', async () => {
+    const wrapper = mount(RegisterHeaderActionsBar, {
+      props: { ...baseProps, loading: true },
+      global: { stubs: vuetifyStubs }
+    })
+    expect(wrapper.find('.spinner-border-m').exists()).toBe(true)
+    await wrapper.setProps({ progressDialogVisible: true })
+    expect(wrapper.find('.spinner-border-m').exists()).toBe(false)
+    expect(wrapper.props('loading')).toBe(true)
+    await wrapper.setProps({ progressDialogVisible: false })
+    expect(wrapper.find('.spinner-border-m').exists()).toBe(true)
+    wrapper.unmount()
+  })
+
   it('shows two export choices only when the company format is applicable', async () => {
     const wrapper = mount(RegisterHeaderActionsBar, {
       props: { ...baseProps, companyFormatName: 'ООО РВБ' },

@@ -293,6 +293,8 @@ const {
   checkPassports: checkPassportsHeader,
   finishPassportCheck: finishPassportCheckHeader,
   cancelValidation: cancelRegisterValidation,
+  xmlDialog,
+  cancelXmlArchive,
   stop: stopRegisterHeaderActions
 } = useRegisterHeaderActions({
   registersStore,
@@ -936,6 +938,8 @@ function getGenericTemplateHeaders() {
       :progress-percent="progressPercent"
       :cancel-validation="cancelRegisterValidation"
       :action-dialog="actionDialogState"
+      :xml-dialog="xmlDialog"
+      :cancel-xml-archive="cancelXmlArchive"
     />
 
     <AssignTnvedDialog

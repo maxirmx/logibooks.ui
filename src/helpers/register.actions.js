@@ -311,16 +311,16 @@ export function createRegisterActionHandlers(registersStore, alertStore, { mode 
     await performFeacnLookup(item, { extended: true })
   }
 
-  async function exportAllXmlOrdinary(item, applyWeightCorrection = false, onProgress) {
-    await registersStore.generateOrdinary(item.id, item.invoiceNumber, applyWeightCorrection, ...(onProgress ? [onProgress] : []))
+  async function exportAllXmlOrdinary(item, applyWeightCorrection = false, tracking) {
+    return registersStore.generateOrdinary(item.id, item.invoiceNumber, applyWeightCorrection, ...(tracking ? [tracking] : []))
   }
 
-  async function exportAllXmlExcise(item, applyWeightCorrection = false, onProgress) {
-    await registersStore.generateExcise(item.id, item.invoiceNumber, applyWeightCorrection, ...(onProgress ? [onProgress] : []))
+  async function exportAllXmlExcise(item, applyWeightCorrection = false, tracking) {
+    return registersStore.generateExcise(item.id, item.invoiceNumber, applyWeightCorrection, ...(tracking ? [tracking] : []))
   }
 
-  async function exportAllXmlNotifications(item, applyWeightCorrection = false, onProgress) {
-    await registersStore.generateNotifications(item.id, item.invoiceNumber, applyWeightCorrection, ...(onProgress ? [onProgress] : []))
+  async function exportAllXmlNotifications(item, applyWeightCorrection = false, tracking) {
+    return registersStore.generateNotifications(item.id, item.invoiceNumber, applyWeightCorrection, ...(tracking ? [tracking] : []))
   }
 
   async function downloadRegister(item, applyWeightCorrection = false) {
@@ -472,6 +472,7 @@ export function useRegisterHeaderActions({
   const weightCorrectionChoicePending = ref(false)
   const passportConfirmationPending = ref(false)
   const xmlRun = shallowRef(null)
+  const xmlDialog = reactive({ cancellable: false, cancelDisabled: true, cancelling: false })
 
   const currentRegister = computed(() => {
     const register = unref(registersStore?.item)
@@ -562,9 +563,32 @@ export function useRegisterHeaderActions({
     }
   }
 
+  function ownsXmlRun(run) {
+    return xmlRun.value === run && (unref(isComponentMounted) ?? true) &&
+      (toValue(registerId) ?? run.registerId) === run.registerId
+  }
+
+  async function cancelXmlArchive() {
+    const run = xmlRun.value
+    if (!run?.handleId || !ownsXmlRun(run) || xmlDialog.cancelling) return
+
+    xmlDialog.cancelling = true
+    try {
+      await registersStore.cancelXmlArchive(run.handleId)
+    } catch (error) {
+      if (ownsXmlRun(run)) {
+        xmlDialog.cancelling = run.serverCancelling
+        alertStore.error(error, { fallback: 'Не удалось отменить формирование XML архива' })
+      } else {
+        reportError(error, { context: 'XML archive cancellation after navigation' })
+      }
+    }
+  }
+
   function releaseXmlRun(run) {
     if (xmlRun.value !== run) return
     xmlRun.value = null
+    Object.assign(xmlDialog, { cancellable: false, cancelDisabled: true, cancelling: false })
     if (run.started) {
       hideActionDialog()
       runningActionRef.value = false
@@ -579,10 +603,9 @@ export function useRegisterHeaderActions({
     const register = currentRegister.value
     if (generalActionsDisabled.value || !register || register.derivedTotalsPending === true) return
 
-    const run = { registerId: register.id, started: false, handleId: null }
+    const run = { registerId: register.id, started: false, handleId: null, serverCancelling: false }
     xmlRun.value = run
-    const ownsRun = () => xmlRun.value === run && (unref(isComponentMounted) ?? true) &&
-      (toValue(registerId) ?? register.id) === run.registerId
+    const ownsRun = () => ownsXmlRun(run)
 
     try {
       if (!ownsRun()) return
@@ -592,17 +615,27 @@ export function useRegisterHeaderActions({
 
       run.started = true
       runningActionRef.value = true
+      xmlDialog.cancellable = true
       showActionDialog(operation)
-      await action(register, applyWeightCorrection, ({ handleId, total, processed }) => {
-        if (!ownsRun() || !Number.isFinite(total) || total <= 0 ||
-            !Number.isFinite(processed) || processed < 0) return
-        const percent = Math.min(99, Math.floor(processed / total * 100))
-        actionDialogState.percent = handleId === run.handleId
-          ? Math.max(actionDialogState.percent ?? 0, percent)
-          : percent
-        run.handleId = handleId
+      const downloaded = await action(register, applyWeightCorrection, {
+        isCancelling: () => ownsRun() && xmlDialog.cancelling,
+        onProgress: ({ handleId, total, processed, cancelling }) => {
+          if (!ownsRun()) return
+          if (cancelling === true) {
+            run.serverCancelling = true
+            xmlDialog.cancelling = true
+          }
+          const previousHandle = run.handleId
+          run.handleId = handleId
+          xmlDialog.cancelDisabled = !handleId
+          if (!Number.isFinite(total) || total <= 0 || !Number.isFinite(processed) || processed < 0) return
+          const percent = Math.min(99, Math.floor(processed / total * 100))
+          actionDialogState.percent = handleId === previousHandle
+            ? Math.max(actionDialogState.percent ?? 0, percent)
+            : percent
+        }
       })
-      if (ownsRun() && actionDialogState.percent !== null) actionDialogState.percent = 100
+      if (downloaded !== false && ownsRun() && actionDialogState.percent !== null) actionDialogState.percent = 100
     } catch (error) {
       if (ownsRun()) alertStore.error(error, { fallback: 'Не удалось сформировать XML архив' })
       else reportError(error, { context: 'XML archive download after navigation' })
@@ -814,6 +847,8 @@ export function useRegisterHeaderActions({
     validationState,
     progressPercent,
     actionDialog: actionDialogState,
+    xmlDialog,
+    cancelXmlArchive,
     companyFormatName: downloadFlow.companyFormatName,
     generalActionsDisabled,
     validateRegisterSw: runValidateRegisterSw,

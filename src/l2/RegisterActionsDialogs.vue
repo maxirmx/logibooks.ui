@@ -16,7 +16,9 @@ const props = defineProps({
   validationState: { type: Object, required: true },
   progressPercent: { type: [Number, Object], required: true },
   cancelValidation: { type: Function, required: true },
-  actionDialog: { type: Object, required: true }
+  actionDialog: { type: Object, required: true },
+  xmlDialog: { type: Object, default: null },
+  cancelXmlArchive: { type: Function, default: undefined }
 })
 
 const validationTitle = computed(() =>
@@ -55,5 +57,11 @@ const onValidationDialogUpdate = (value) => {
     </AppDialogFrame>
   </v-dialog>
 
-  <ActionDialog :action-dialog="actionDialog" />
+  <ActionDialog
+    :action-dialog="actionDialog"
+    :cancellable="xmlDialog?.cancellable"
+    :cancel-disabled="xmlDialog?.cancelDisabled"
+    :cancelling="xmlDialog?.cancelling"
+    @cancel="cancelXmlArchive"
+  />
 </template>

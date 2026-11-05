@@ -11,6 +11,7 @@ import { useBoxesStore } from '@/stores/boxes.store.js'
 const props = defineProps({
   registerId: { type: Number, required: true },
   scopeKey: { type: String, required: true },
+  readOnly: Boolean,
   disabled: Boolean
 })
 
@@ -22,7 +23,7 @@ const menuList = ref(null)
 const activator = shallowRef(null)
 const target = shallowRef(null)
 const selected = shallowRef([])
-const canScan = computed(() => scan.canScan.value && !scan.disabled.value && !scan.jobsLoading.value &&
+const canScan = computed(() => !props.readOnly && scan.canScan.value && !scan.disabled.value && !scan.jobsLoading.value &&
   scan.compatibleJobs().length > 0)
 
 function open(event, items) {

@@ -33,6 +33,7 @@ defineOptions({ name: 'Scanjob_Boxes_Monitor' })
 
 const props = defineProps({
   registerId: { type: Number, default: null },
+  readOnly: Boolean,
   snapshot: { type: Object, default: null },
   boxes: { type: Array, default: () => [] },
   loading: { type: Boolean, default: false },
@@ -97,6 +98,7 @@ function openBox(item) {
       ref="contextMenu"
       :register-id="props.registerId"
       :scope-key="scopeKey"
+      :read-only="props.readOnly"
       :disabled="controlsBusy"
     />
 

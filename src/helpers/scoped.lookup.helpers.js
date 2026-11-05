@@ -18,10 +18,13 @@ export function lookupPresetLabel(mode) {
   return lookupPresets.find(preset => preset.value === Number(mode ?? 0))?.label
 }
 
-export function withLookupReport(progress, report) {
-  if (!progress || progress.missingParcels != null || report?.missingParcels == null
-    || report.expectedCount !== progress.expectedCount || report.confirmedCount !== progress.confirmedCount) return progress
-  return { ...progress, missingParcels: report.missingParcels, confirmedParcels: report.confirmedParcels }
+// Target membership is frozen at start and confirmations can only increase.
+export function mergeLookupProgress(current, incoming) {
+  if (!incoming) return current
+  if (!current || incoming.expectedCount > current.expectedCount) return incoming
+  if (incoming.expectedCount < current.expectedCount || incoming.confirmedCount < current.confirmedCount) return current
+  if (incoming.confirmedCount === current.confirmedCount && incoming.missingParcels == null) return current
+  return incoming
 }
 
 export function scopedLookupFeedback(result) {

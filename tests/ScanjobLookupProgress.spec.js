@@ -6,7 +6,7 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import ScanjobLookupProgress from '@/components/ScanjobLookupProgress.vue'
-import { lookupPresetLabel, scopedLookupFeedback, withLookupReport } from '@/helpers/scoped.lookup.helpers.js'
+import { lookupPresetLabel, scopedLookupFeedback, mergeLookupProgress } from '@/helpers/scoped.lookup.helpers.js'
 
 const snapshot = {
   lookupTargetMode: 1, scanJobId: 7, registerId: 12, warehouseId: 2, dealNumber: 'ABC-1',
@@ -58,12 +58,19 @@ describe('Scoped Lookup monitor', () => {
   it('offers an on-demand report and reuses parcel lists only at the same counts', async () => {
     const report = snapshot.lookupProgress
     const counts = { expectedCount: 2, confirmedCount: 1, missingCount: 1 }
-    expect(withLookupReport(counts, report)).toEqual(report)
-    expect(withLookupReport(report, report)).toBe(report)
-    expect(withLookupReport(null, report)).toBeNull()
-    expect(withLookupReport(counts, null)).toBe(counts)
-    expect(withLookupReport(counts, { ...report, expectedCount: 3 })).toBe(counts)
-    expect(withLookupReport(counts, { ...report, confirmedCount: 2 })).toBe(counts)
+    const newer = { ...report, confirmedCount: 2, missingCount: 0, missingParcels: [] }
+    const newerCounts = { expectedCount: 2, confirmedCount: 2, missingCount: 0 }
+    const draft = { expectedCount: 0, confirmedCount: 0, missingCount: 0 }
+    expect(mergeLookupProgress(counts, report)).toBe(report)
+    expect(mergeLookupProgress(report, counts)).toBe(report)
+    expect(mergeLookupProgress(report, newer)).toBe(newer)
+    expect(mergeLookupProgress(report, newerCounts)).toBe(newerCounts)
+    expect(mergeLookupProgress(newer, counts)).toBe(newer)
+    expect(mergeLookupProgress(newerCounts, report)).toBe(newerCounts)
+    expect(mergeLookupProgress(null, report)).toBe(report)
+    expect(mergeLookupProgress(report, null)).toBe(report)
+    expect(mergeLookupProgress(draft, report)).toBe(report)
+    expect(mergeLookupProgress(report, draft)).toBe(report)
     const wrapper = render({ snapshot: { ...snapshot, lookupProgress: counts } })
     expect(wrapper.text()).toContain('Не найдено: 1')
     expect(wrapper.text()).not.toContain('P-1')

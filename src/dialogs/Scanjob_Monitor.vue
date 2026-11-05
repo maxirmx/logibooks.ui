@@ -4,7 +4,7 @@
 // This file is a part of Logibooks ui application
 
 import ScanjobLookupProgress from '@/components/ScanjobLookupProgress.vue'
-import { isScopedLookup, lookupPresetLabel, scopedLookupFeedback, withLookupReport } from '@/helpers/scoped.lookup.helpers.js'
+import { isScopedLookup, lookupPresetLabel, scopedLookupFeedback, mergeLookupProgress } from '@/helpers/scoped.lookup.helpers.js'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { computed, nextTick, onMounted, onUnmounted, provide, ref, watch } from 'vue'
 import { isNavigationFailure, NavigationFailureType } from 'vue-router'
@@ -423,7 +423,7 @@ async function loadLookupReport() {
     const snapshot = await scanJobsStore.loadMonitorSnapshot(jobId, { area: scanjobMonitorArea.Boxes, boxId: null })
     if (version === scopeVersion.value && isComponentMounted.value && visibleSnapshot.value) {
       const current = visibleSnapshot.value
-      visibleSnapshot.value = { ...current, lookupProgress: withLookupReport(current.lookupProgress, snapshot.lookupProgress) }
+      visibleSnapshot.value = { ...current, lookupProgress: mergeLookupProgress(current.lookupProgress, snapshot.lookupProgress) }
     }
   } catch (error) {
     if (version === scopeVersion.value && isComponentMounted.value) {
@@ -824,7 +824,7 @@ function applySnapshot(
   if (immediate) {
     clearPendingSnapshot()
     visibleSnapshot.value = snapshot.lookupProgress
-      ? { ...snapshot, lookupProgress: withLookupReport(snapshot.lookupProgress, visibleSnapshot.value?.lookupProgress) }
+      ? { ...snapshot, lookupProgress: mergeLookupProgress(visibleSnapshot.value?.lookupProgress, snapshot.lookupProgress) }
       : snapshot
     return
   }

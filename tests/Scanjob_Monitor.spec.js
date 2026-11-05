@@ -1205,12 +1205,14 @@ describe('Scanjob_Monitor.vue', () => {
     expect(alertError).toHaveBeenCalledOnce()
     loadMonitorSnapshot.mockResolvedValueOnce({
       ...snapshot, lookupProgress: {
-        ...counts, missingParcels: [{ parcelId: 1, parcelNumber: 'EXPECTED-PARCEL' }], confirmedParcels: []
+        ...counts, confirmedCount: 2, missingCount: 0, missingParcels: [],
+        confirmedParcels: [{ parcelId: 1, parcelNumber: 'EXPECTED-PARCEL' }]
       }
     })
     await reportButton.trigger('click')
     await flushPromises()
     expect(wrapper.text()).toContain('EXPECTED-PARCEL')
+    expect(wrapper.text()).toContain('Подтверждено: 2')
   })
 
   it('follows selected user event back to register for not-in-register target', async () => {

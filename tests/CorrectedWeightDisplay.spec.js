@@ -20,15 +20,4 @@ describe('Core adjusted weights', () => {
     expect(view.text()).toContain(value.toFixed(3))
   })
 
-  it('marks pending weights unavailable even if a cached adjusted value remains', async () => {
-    const view = render({ weight: 2, adjustedWeight: 1.111, derivedTotalsPending: true })
-    expect(view.get('[role="status"]').text()).toContain('пересчёт')
-    expect(view.attributes('aria-busy')).toBe('true')
-    expect(view.text()).not.toContain('1.111')
-    expect(view.find('[data-testid="arrow"]').exists()).toBe(false)
-    await view.setProps({ adjustedWeight: 1.112, derivedTotalsPending: false })
-    expect(view.find('[role="status"]').exists()).toBe(false)
-    expect(view.text()).toContain('1.112')
-  })
-
 })

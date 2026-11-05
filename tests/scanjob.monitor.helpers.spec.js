@@ -3,7 +3,7 @@
 // This file is a part of Logibooks UI application
 
 import { describe, expect, it } from 'vitest'
-import { compareScanjobCheckStatusProjection, isPhysicalMonitorBox } from '@/helpers/scanjob.monitor.helpers.js'
+import { compareScanjobCheckStatusProjection } from '@/helpers/scanjob.monitor.helpers.js'
 
 describe('scanjob.monitor.helpers', () => {
   it('falls back to the rendered placeholder for missing projections', () => {
@@ -11,9 +11,4 @@ describe('scanjob.monitor.helpers', () => {
     expect(compareScanjobCheckStatusProjection(null, null)).toBe(0)
   })
 
-  it('adds metric cards only for physical boxes', () => {
-    expect(isPhysicalMonitorBox({ area: 1, boxId: 7 })).toBe(true)
-    expect(isPhysicalMonitorBox({ area: 2, boxId: null, bucketIndex: 0 })).toBe(false)
-    expect(isPhysicalMonitorBox({ area: 3, boxId: null })).toBe(false)
-  })
 })

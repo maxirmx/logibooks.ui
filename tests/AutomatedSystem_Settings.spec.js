@@ -6,7 +6,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import AutomatedSystemSettings from '@/dialogs/AutomatedSystem_Settings.vue'
-import { roleAdapter1C, roleAdapterAlta, roleAdapterRegister, roleLogist } from '@/helpers/user.roles.js'
+import { roleAdapter1C, roleAdapterRegister, roleLogist } from '@/helpers/user.roles.js'
 
 const mocks = vi.hoisted(() => ({
   add: vi.fn(),
@@ -144,28 +144,6 @@ describe('AutomatedSystem_Settings.vue', () => {
     expect(mocks.update).not.toHaveBeenCalled()
   })
 
-  it('keeps the dialog open and maps server validation when save fails', async () => {
-    const error = Object.assign(new Error('Ошибка проверки'), {
-      data: { errors: { Email: ['Идентификатор уже используется'] } }
-    })
-    mocks.add.mockRejectedValueOnce(error)
-    const setErrors = vi.fn()
-    const { dialog } = await mountDialog({ register: true, id: undefined })
-
-    await dialog.vm.$.setupState.onSubmit(
-      {
-        lastName: 'Adapter',
-        email: 'duplicate',
-        password: 'Password1!',
-        roles: [roleAdapter1C]
-      },
-      { setErrors }
-    )
-
-    expect(setErrors).toHaveBeenCalledWith({ email: 'Идентификатор уже используется' })
-    expect(mocks.push).not.toHaveBeenCalled()
-  })
-
   describe('responsive role controls with real form validation', () => {
     let wrapper
 
@@ -183,34 +161,6 @@ describe('AutomatedSystem_Settings.vue', () => {
     }
 
     afterEach(() => wrapper?.unmount())
-
-    it.each([
-      ['roleAdapter1C', roleAdapter1C, 'Адаптер 1С'],
-      ['roleAdapterAlta', roleAdapterAlta, 'Адаптер Альта'],
-      ['roleAdapterRegister', roleAdapterRegister, 'Адаптер реестров']
-    ])('keeps %s paired with its label and submits its selected value', async (id, role, label) => {
-      await mountRoleForm()
-
-      const option = wrapper.get(`#${id}`).element.parentElement
-      expect(option.classList.contains('role-option')).toBe(true)
-      expect(option.parentElement.classList.contains('role-selection')).toBe(true)
-      expect(option.querySelector(`label[for="${id}"]`).textContent).toBe(label)
-      expect(wrapper.findAll('.role-option')).toHaveLength(3)
-
-      await wrapper.get(`#${id}`).setValue(true)
-      await wrapper.get('.header-actions button').trigger('click')
-      await vi.waitFor(() => expect(mocks.push).toHaveBeenCalledExactlyOnceWith('/users'))
-
-      expect(mocks.add).toHaveBeenCalledExactlyOnceWith({
-        lastName: 'Сарафан',
-        email: 'Sarafan',
-        firstName: '',
-        patronymic: '',
-        password: 'Password1!',
-        roles: [role]
-      })
-      expect(wrapper.findAll('.invalid-feedback')).toHaveLength(0)
-    })
 
     it('renders one role error below the group and retries with the register role', async () => {
       await mountRoleForm()

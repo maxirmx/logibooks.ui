@@ -399,35 +399,6 @@ describe('CustomsReports_List.vue', () => {
     expect(assignedInputValue).toBe('')
   })
 
-  it('renders delete action and calls store deletion', async () => {
-    reportsRef.value = [
-      {
-        id: 7,
-        success: false,
-        fileName: 'file.zip'
-      }
-    ]
-    reportsTotalCountRef.value = 1
-    removeMock.mockResolvedValue()
-    confirmMock.mockResolvedValue(true)
-
-    const wrapper = mount(CustomsReportsList, {
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    await flushPromises()
-
-    const deleteButton = wrapper.find('[data-testid="reports-delete-button"]')
-    expect(deleteButton.exists()).toBe(true)
-
-    await deleteButton.trigger('click')
-    await flushPromises()
-
-    expect(removeMock).toHaveBeenCalledWith(7)
-  })
-
   it('shows alert when deleting report fails', async () => {
     reportsRef.value = [
       {

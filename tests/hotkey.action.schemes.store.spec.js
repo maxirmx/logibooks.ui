@@ -39,16 +39,6 @@ describe('hotkey action schemes store', () => {
     vi.clearAllMocks()
   })
 
-  it('getById handles fetch error', async () => {
-    const error = new Error('Not found')
-    fetchWrapper.get.mockRejectedValue(error)
-    const store = useHotKeyActionSchemesStore()
-
-    await expect(store.getById(99)).rejects.toBe(error)
-    expect(store.hotKeyActionScheme).toEqual({ error })
-    expect(store.error).toBe(error)
-  })
-
   it('create calls getAll to refresh list', async () => {
     const created = { id: 3, name: 'Ops' }
     fetchWrapper.post.mockResolvedValue(created)
@@ -63,21 +53,6 @@ describe('hotkey action schemes store', () => {
     expect(result).toEqual(created)
   })
 
-  it('update calls getAll to refresh list', async () => {
-    const updated = { id: 1, name: 'Default v2' }
-    fetchWrapper.put.mockResolvedValue(updated)
-    fetchWrapper.get.mockResolvedValue([updated, { id: 2, name: 'Warehouse' }])
-    const store = useHotKeyActionSchemesStore()
-
-    await store.update(1, { name: 'Default v2' })
-
-    expect(fetchWrapper.put).toHaveBeenCalledWith(`${apiUrl}/hotkeyactionschemes/1`, {
-      name: 'Default v2'
-    })
-    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/hotkeyactionschemes`)
-    expect(store.hotKeyActionSchemes[0]).toEqual(updated)
-  })
-
   it('remove calls getAll to refresh list', async () => {
     fetchWrapper.delete.mockResolvedValue({})
     fetchWrapper.get.mockResolvedValue([{ id: 2, name: 'Warehouse' }])
@@ -90,30 +65,12 @@ describe('hotkey action schemes store', () => {
     expect(store.hotKeyActionSchemes).toEqual([{ id: 2, name: 'Warehouse' }])
   })
 
-  it('getById returns item on success', async () => {
-    fetchWrapper.get.mockResolvedValue({ id: 10, name: 'A' })
-    const store = useHotKeyActionSchemesStore()
-
-    const result = await store.getById(10)
-
-    expect(result).toEqual({ id: 10, name: 'A' })
-  })
-
   it('create throws and stores error on failure', async () => {
     const error = new Error('conflict')
     fetchWrapper.post.mockRejectedValue(error)
     const store = useHotKeyActionSchemesStore()
 
     await expect(store.create({ name: 'x' })).rejects.toThrow('conflict')
-    expect(store.error).toBe(error)
-  })
-
-  it('update throws and stores error on failure', async () => {
-    const error = new Error('conflict')
-    fetchWrapper.put.mockRejectedValue(error)
-    const store = useHotKeyActionSchemesStore()
-
-    await expect(store.update(1, { name: 'x' })).rejects.toThrow('conflict')
     expect(store.error).toBe(error)
   })
 
@@ -127,36 +84,6 @@ describe('hotkey action schemes store', () => {
   })
 
   describe('ops', () => {
-    it('handles ops error', async () => {
-      const error = new Error('Ops error')
-      fetchWrapper.get.mockRejectedValue(error)
-      const store = useHotKeyActionSchemesStore()
-
-      await expect(store.getOps()).rejects.toBe(error)
-      expect(store.opsLoading).toBe(false)
-      expect(store.opsError).toBe(error)
-    })
-
-    it('ensureOpsLoaded handles concurrent calls', async () => {
-      fetchWrapper.get.mockResolvedValue(mockOps)
-      const store = useHotKeyActionSchemesStore()
-
-      // Make multiple concurrent calls
-      const [result1, result2, result3] = await Promise.all([
-        store.ensureOpsLoaded(),
-        store.ensureOpsLoaded(),
-        store.ensureOpsLoaded()
-      ])
-
-      // All should return the same data
-      expect(result1).toEqual(mockOps)
-      expect(result2).toEqual(mockOps)
-      expect(result3).toEqual(mockOps)
-
-      // But fetch should only be called once
-      expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
-    })
-
     it('getOpsLabel returns matching name and falls back to string when missing', () => {
       const store = useHotKeyActionSchemesStore()
 

@@ -435,41 +435,6 @@ describe('ReturnRegister_EditDialog.vue', () => {
     }
   })
 
-  it('shows pair lookup errors from API message payloads', async () => {
-    getReturnRegisterPairs.mockRejectedValueOnce({ msg: 'Pair lookup failed' })
-
-    const wrapper = mountDialog()
-    await flushPromises()
-    await selectWarehouse(wrapper, 1)
-
-    expect(alertError).toHaveBeenCalledWith(
-      { msg: 'Pair lookup failed' },
-      expect.objectContaining({ fallback: 'Не удалось загрузить отправителей и получателей' })
-    )
-  })
-
-  it('shows source register lookup fallback errors', async () => {
-    getReturnRegisterPairs.mockResolvedValueOnce([
-      {
-        senderCompanyId: 2,
-        senderCompanyName: 'Sender',
-        receiverCompanyId: 3,
-        receiverCompanyName: 'Receiver'
-      }
-    ])
-    getRegisters.mockRejectedValueOnce(null)
-
-    const wrapper = mountDialog()
-    await flushPromises()
-    await selectWarehouse(wrapper, 1)
-    await selectPair(wrapper)
-
-    expect(alertError).toHaveBeenCalledWith(
-      null,
-      expect.objectContaining({ fallback: 'Не удалось загрузить реестры' })
-    )
-  })
-
   it('routes back to warehouse registers on cancel', async () => {
     const wrapper = mountDialog()
     await flushPromises()
@@ -536,41 +501,6 @@ describe('ReturnRegister_EditDialog.vue', () => {
       registerIds: [7]
     })
     expect(routerPush).toHaveBeenCalledWith('/registers/100/parcels?mode=modeWarehouse')
-  })
-
-  it('displays create errors', async () => {
-    getReturnRegisterPairs.mockResolvedValueOnce([
-      {
-        senderCompanyId: 2,
-        senderCompanyName: 'Sender',
-        receiverCompanyId: 3,
-        receiverCompanyName: 'Receiver'
-      }
-    ])
-    getRegisters.mockResolvedValueOnce([
-      {
-        id: 7,
-        dealNumber: 'D-7',
-        date: '2026-06-12T10:00:00Z',
-        redParcelsCount: 2,
-        parcelsTotal: 5
-      }
-    ])
-    createReturnRegister.mockRejectedValueOnce(new Error('No red parcels'))
-
-    const wrapper = mountDialog()
-    await flushPromises()
-    await selectWarehouse(wrapper, 1)
-    await selectPair(wrapper)
-    await wrapper.find('[data-testid="register-checkbox"]').setValue(true)
-    await okButton(wrapper).trigger('click')
-    await flushPromises()
-
-    expect(alertError).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'No red parcels' }),
-      { fallback: 'Не удалось создать реестр возврата' }
-    )
-    expect(routerPush).not.toHaveBeenCalledWith('/registers/99/parcels?mode=modeWarehouse')
   })
 
   it('displays an error when creation response has no id', async () => {

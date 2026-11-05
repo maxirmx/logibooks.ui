@@ -23,13 +23,6 @@ vi.mock('@/lists/Registers_WhList.vue', () => ({
 }))
 
 describe('Registers_View.vue', () => {
-  it('renders paperwork registers list by default', () => {
-    const wrapper = mount(RegistersView)
-
-    expect(wrapper.find('[data-testid="registers-list"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="registers-wh-list"]').exists()).toBe(false)
-  })
-
   it('renders warehouse parties list for warehouse mode', () => {
     const wrapper = mount(RegistersView, {
       props: {

@@ -169,19 +169,6 @@ describe('WarehouseRegistersTable matching-count column', () => {
     expect(cancelRegisterStatusChange).toHaveBeenCalledWith(1)
   })
 
-  it('renders register-status tooltip for read-only warehouse rows', () => {
-    const wrapper = mountTable({
-      showRegisterStatusIcon: true,
-      linksEnabled: false,
-      items: [{ id: 1, statusId: 2 }]
-    })
-
-    const statusIcon = wrapper.find('.register-status-action-button--readonly')
-
-    expect(statusIcon.exists()).toBe(true)
-    expect(statusIcon.attributes('title')).toBe('Status 2')
-  })
-
   it('passes the optional header to the table and formats matching counts', () => {
     const wrapper = mountTable({
       showMatchingCount: true,

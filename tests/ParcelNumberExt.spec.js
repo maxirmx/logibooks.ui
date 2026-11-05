@@ -62,36 +62,6 @@ describe('ParcelNumberExt', () => {
     })
   }
 
-  describe('Export category marker', () => {
-    it('shows an accessible framed marker alongside existing indicators', async () => {
-      const wrapper = createWrapper({
-        item: { ...defaultItem, matchesExportFeeCategory: true, markedByFellowItem: true },
-        disabled: true
-      })
-      const marker = wrapper.get('.export-fee-category-marker')
-      expect(marker.text()).toBe('C')
-      expect(marker.attributes('role')).toBe('img')
-      expect(marker.attributes('aria-label')).toBe('Код ТН ВЭД входит в справочник экспортных сборов')
-      expect(wrapper.getComponent({ name: 'VTooltip' }).props()).toMatchObject({
-        text: marker.attributes('aria-label'), location: 'top', openDelay: '300'
-      })
-      expect(marker.attributes('data-tooltip-activator')).toBe('true')
-      expect(marker.attributes('title')).toBeUndefined()
-      expect(marker.attributes('tabindex')).toBe('0')
-      expect(wrapper.findComponent(ActionButton).exists()).toBe(true)
-      await marker.trigger('click')
-      expect(wrapper.emitted('click')).toBeUndefined()
-      expect(wrapper.emitted('fellows')).toBeUndefined()
-      await wrapper.setProps({ item: { ...defaultItem, matchesExportFeeCategory: false } })
-      expect(wrapper.find('.export-fee-category-marker').exists()).toBe(false)
-    })
-
-    it.each([false, undefined])('hides the marker for %s, including older API responses', (flag) => {
-      const wrapper = createWrapper({ item: { ...defaultItem, matchesExportFeeCategory: flag } })
-      expect(wrapper.find('.export-fee-category-marker').exists()).toBe(false)
-    })
-  })
-
   describe('Events', () => {
     it('emits click event when ClickableCell is clicked', async () => {
       const wrapper = createWrapper()

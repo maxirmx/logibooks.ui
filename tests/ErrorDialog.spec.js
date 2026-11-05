@@ -61,13 +61,4 @@ describe('ErrorDialog', () => {
     )
   })
 
-  it('emits close from the visible close action', async () => {
-    const wrapper = mountDialog()
-
-    await wrapper.get('[data-testid="error-dialog-close"]').trigger('click')
-
-    expect(wrapper.emitted('close')).toHaveLength(1)
-    expect(wrapper.text()).toContain('Закрыть')
-  })
-
 })

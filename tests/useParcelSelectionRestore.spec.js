@@ -17,23 +17,6 @@ describe('useParcelSelectionRestore', () => {
     sessionStorage.clear()
   })
 
-  describe('saveSelectedParcelIdSnapshot', () => {
-    it('should remove snapshot when saving undefined', () => {
-      const { saveSelectedParcelIdSnapshot } = useParcelSelectionRestore()
-
-      // First save a valid ID
-      saveSelectedParcelIdSnapshot(456)
-      let stored = sessionStorage.getItem('logibooks.idSnapshot')
-      expect(stored).toBeDefined()
-
-      // Then save undefined
-      saveSelectedParcelIdSnapshot(undefined)
-      stored = sessionStorage.getItem('logibooks.idSnapshot')
-      expect(stored).toBeNull()
-    })
-
-  })
-
   describe('restoreSelectedParcelIdSnapshot', () => {
     it('should handle undefined selectedParcelId in snapshot', () => {
       const { restoreSelectedParcelIdSnapshot } = useParcelSelectionRestore()

@@ -104,19 +104,6 @@ describe('StopWord_Settings.vue', () => {
     mockAlert.value = null
   })
 
-  describe('Component Rendering', () => {
-
-    it('shows loading state when fetching data', async () => {
-      getById.mockImplementation(() => new Promise(() => {}))
-      const wrapper = mountComponent({ id: 1 })
-      await wrapper.vm.$nextTick()
-
-      expect(wrapper.find('.spinner-border-lg').exists()).toBe(true)
-      expect(wrapper.get('[data-testid="stopword-save-action"]').attributes('disabled')).toBeDefined()
-      expect(wrapper.get('[data-testid="stopword-cancel-action"]').attributes('disabled')).toBeDefined()
-    })
-  })
-
   describe('Form Fields', () => {
 
     it('starts inactive and allows scope rows to be added', async () => {

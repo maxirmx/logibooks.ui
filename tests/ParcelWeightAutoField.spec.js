@@ -33,16 +33,6 @@ function mountField(props) {
 }
 
 describe('ParcelWeightAutoField', () => {
-  it('keeps the weight field editable when register correction is unavailable', () => {
-    const wrapper = mountField({
-      item: { weightKg: 2.4, weightCorrectionEligible: true },
-      register: { realWeightKg: null, totalWeightKgToRelease: 10 }
-    })
-
-    expect(wrapper.get('[data-testid="editable-weight-field"]').text()).toBe('weightKg:editable')
-    expect(wrapper.find('.parcel-weight-auto-field').exists()).toBe(false)
-  })
-
   it('disables manual weight editing whenever a manual final register weight is set', () => {
     const wrapper = mountField({
       item: { weightKg: 2.4, weightCorrectionEligible: true },

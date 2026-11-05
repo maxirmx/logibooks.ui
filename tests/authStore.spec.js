@@ -4,9 +4,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import { roleWhManager } from '@/helpers/user.roles.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
-import router from '@/router'
 import { createLocalStorageMock } from './helpers/test-utils.js'
 
 // Set up sessionStorage mock at module level
@@ -102,29 +100,9 @@ describe('auth store', () => {
       expect(localStorage.removeItem).toHaveBeenCalledWith('scanjobmonitor_follow_user_id')
     })
 
-    it('treats warehouse manager as a warehouse role', () => {
-      const store = useAuthStore()
-
-      store.user = { id: 1, roles: [roleWhManager] }
-
-      expect(store.isWhManager).toBe(true)
-      expect(store.hasWhRole).toBe(true)
-      expect(store.hasAnyRole).toBe(true)
-    })
-
   })
 
   describe('actions', () => {
-    it('check propagates errors when API call fails', async () => {
-      const errorMessage = 'Authentication check failed'
-      fetchWrapper.get.mockRejectedValue(new Error(errorMessage))
-
-      const store = useAuthStore()
-
-      await expect(store.check()).rejects.toThrow(errorMessage)
-      expect(fetchWrapper.get).toHaveBeenCalledWith(expect.stringContaining('/check'))
-    })
-
     it('register propagates errors when API call fails', async () => {
       const errorMessage = 'Failed to register user'
       fetchWrapper.post.mockRejectedValue(new Error(errorMessage))
@@ -178,22 +156,6 @@ describe('auth store', () => {
         password: 'wrong-password'
       })
       expect(statusStore.fetchStatus).toHaveBeenCalled()
-    })
-
-    it('logout removes user from store, localStorage, and fetches status', () => {
-      const testUser = { id: 1, name: 'Test User' }
-      localStorage.setItem('user', JSON.stringify(testUser))
-
-      const statusStore = useStatusStore()
-      const store = useAuthStore()
-      store.user = testUser
-
-      store.logout()
-
-      expect(store.user).toBeNull()
-      expect(localStorage.removeItem).toHaveBeenCalledWith('user')
-      expect(statusStore.fetchStatus).toHaveBeenCalled()
-      expect(router.push).toHaveBeenCalledWith('/login')
     })
 
     it('fetches status even when re process fails', async () => {

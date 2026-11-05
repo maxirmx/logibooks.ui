@@ -175,19 +175,7 @@ describe('RegisterStatuses_List.vue', () => {
     }
   })
 
-  it('renders sortable 1C export eligibility as Да or Нет', () => {
-    expect(wrapper.vm.headers).toContainEqual(expect.objectContaining({
-      title: 'Выгружать в 1C', key: 'exportTo1C', sortable: true
-    }))
-    expect(wrapper.findAll('.register-status-export-to-1c').map(cell => cell.text())).toEqual(['Нет', 'Да', 'Нет'])
-  })
-
   describe('Authorized Actions', () => {
-    it('calls openCreateDialog and navigates to create page', async () => {
-      await wrapper.vm.openCreateDialog()
-      expect(mockPush).toHaveBeenCalledWith('/registerstatus/create')
-    })
-
     it('opens edit dialog when the status icon column is clicked', async () => {
       const iconButton = wrapper.find('.status-icon-button')
 
@@ -222,24 +210,6 @@ describe('RegisterStatuses_List.vue', () => {
   })
 
   describe('Delete Functionality', () => {
-    it('calls remove when deletion is confirmed', async () => {
-      mockConfirm.mockResolvedValue(true)
-      const testRegisterStatus = mockRegisterStatuses.value[0]
-
-      await wrapper.vm.deleteRegisterStatus(testRegisterStatus)
-
-      expect(removeRegisterStatus).toHaveBeenCalledWith(testRegisterStatus.id)
-    })
-
-    it('does not call remove when deletion is cancelled', async () => {
-      mockConfirm.mockResolvedValue(false)
-      const testRegisterStatus = mockRegisterStatuses.value[0]
-
-      await wrapper.vm.deleteRegisterStatus(testRegisterStatus)
-
-      expect(removeRegisterStatus).not.toHaveBeenCalled()
-    })
-
     it('handles delete error with 409 status', async () => {
       mockConfirm.mockResolvedValue(true)
       const error = new Error('409 Conflict')

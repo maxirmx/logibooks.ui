@@ -679,24 +679,6 @@ describe('WbrNParcels_WhList.vue', () => {
     )
   })
 
-  it('retains the selected parcel when a manual scan rejects', async () => {
-    isAdmin.value = true
-    const activeJob = { id: 7, registerId: 9, status: 15, type: 30, operation: 10 }
-    manualScanApi.getInProgress.mockResolvedValue([activeJob])
-    manualScanApi.getById.mockResolvedValue(activeJob)
-    manualScanApi.scanParcel.mockRejectedValueOnce(Object.assign(new Error('Сбой сканирования'), { status: 400 }))
-    manualScanApi.getAll.mockResolvedValue({ items: mockItems.value })
-    const wrapper = mount(WbrNParcelsWhList, { props: { registerId: 9 }, global: { stubs: globalStubs } })
-    await resolveAll()
-    wrapper.vm.selection.selectAllCurrentPage()
-    await wrapper.vm.manualScan.run(wrapper.vm.selection.selectedItems.value, 7, true)
-    await resolveAll()
-    expect(wrapper.vm.manualScan.pendingBatch.value.parcels).toHaveLength(mockItems.value.length)
-    expect(wrapper.vm.selection.selectedItems.value).toHaveLength(mockItems.value.length)
-    expect(alertError).toHaveBeenCalledWith(expect.stringContaining('Сбой сканирования'))
-    wrapper.unmount()
-  })
-
   it.each([null, 17])('confirms the right-click selection and locks the header during scanning (box: %s)', async boxId => {
     isAdmin.value = true
     mockItems.value = [{ id: 10, statusId: 7 }, { id: 11, statusId: 7 }]

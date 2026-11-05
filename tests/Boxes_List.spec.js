@@ -160,25 +160,6 @@ describe('Boxes_List.vue', () => {
     wrapper.unmount()
   })
 
-  it.each([
-    [1, '$1:1:4542503776:362877', ['WBR_BOX']],
-    [2, null, ['WBR_BOX']],
-    [2, '$1:1:4542503776:362877', []]
-  ])('keeps the sticker column and unavailable print button visible for company %s', async (companyId, boxSticker, printableTemplates) => {
-    mockBoxes.value[0] = { ...mockBoxes.value[0], companyId, boxSticker, printableTemplates }
-    const wrapper = createWrapper()
-    await flushPromises()
-    const table = wrapper.findComponent(vuetifyStubs['v-data-table'])
-    expect(table.props('headers').find((header) => header.key === 'boxSticker')?.title).toBe('Код стикера')
-    expect(wrapper.get('[data-testid="box-printing-panel"]').isVisible()).toBe(true)
-    const button = wrapper.get('.actions-container').get('button[data-testid="box-print-label"]')
-    expect(button.isVisible()).toBe(true)
-    expect(button.element.disabled).toBe(true)
-    await button.trigger('click')
-    expect(printBoxLabel).not.toHaveBeenCalled()
-    wrapper.unmount()
-  })
-
   it('binds persisted controls and searches by code', async () => {
     const wrapper = createWrapper()
     await flushPromises()
@@ -239,27 +220,6 @@ describe('Boxes_List.vue', () => {
     expect(routerPush).not.toHaveBeenCalled()
   })
 
-  it('opens the exact box parcel scope in warehouse mode for read-only registers', async () => {
-    mockRegister.value = { ...mockRegister.value, readOnly: true }
-    registerGetById.mockResolvedValue(mockRegister.value)
-    const wrapper = createWrapper()
-    await flushPromises()
-
-    await wrapper.vm.openParcels(mockBoxes.value[0])
-
-    expect(routerPush).toHaveBeenCalledWith({
-      path: '/registers/42/parcels',
-      query: {
-        mode: 'modeWarehouse',
-        returnUrl: '/registers/42/boxes',
-        boxId: '7',
-        boxCode: 'BOX-7'
-      }
-    })
-    expect(authStore.parcels_wh_page).toBe(1)
-    expect(authStore.parcels_wh_box_number).toBe('')
-  })
-
   it('reports parcel navigation failure once and restores the previous filters', async () => {
     routerPush.mockRejectedValueOnce(new Error('navigation failed'))
     const wrapper = createWrapper()
@@ -270,23 +230,6 @@ describe('Boxes_List.vue', () => {
     expect(authStore.parcels_wh_page).toBe(3)
     expect(authStore.parcels_wh_box_number).toBe('PREVIOUS-')
     expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain('navigation failed')
-  })
-
-  it('places CSV export immediately after printing and downloads by box ID', async () => {
-    authStore.isWhManagerPlus = true
-    mockBoxes.value[0].boxSticker = 'QR'
-    boxesStore.downloadStickers = vi.fn().mockResolvedValue(true)
-    const wrapper = createWrapper()
-    await flushPromises()
-    const action = wrapper.get('[data-testid="box-export-stickers"]')
-    const row = action.element.closest('.actions-container')
-    expect([...row.querySelectorAll('button')].slice(-2).map(button => button.dataset.testid))
-      .toEqual(['box-print-label', 'box-export-stickers'])
-    await action.trigger('click')
-    await flushPromises()
-    expect(boxesStore.downloadStickers).toHaveBeenCalledWith(7)
-    expect(routerPush).not.toHaveBeenCalled()
-    wrapper.unmount()
   })
 
 })

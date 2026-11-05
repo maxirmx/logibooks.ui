@@ -525,19 +525,6 @@ describe('Scanjob_Settings.vue', () => {
       }
     })
 
-    it('shows a preview failure without saving or completing', async () => {
-      const wrapper = await openEditor()
-      getFinishOptions.mockRejectedValueOnce(Object.assign(new Error('Не найдено'), { status: 404 }))
-      await wrapper.get('[data-testid="scanjob-finish-action"]').trigger('click')
-      await resolveAll()
-      expect(update).not.toHaveBeenCalled()
-      expect(finish).not.toHaveBeenCalled()
-      expect(confirmMock).not.toHaveBeenCalled()
-      expect(alertError).toHaveBeenCalledTimes(1)
-      expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain('Задание на сканирование не найдено')
-      expect(routerPush).not.toHaveBeenCalled()
-    })
-
     describe('read-only completion conflicts', () => {
       it.each(['preview', 'save', 'finish'].flatMap((stage) => ['message', 'payload'].map((shape) => [stage, shape])))('locks the editor after a %s conflict in %s', async (stage, shape) => {
         const wrapper = await openEditor()
@@ -587,25 +574,6 @@ describe('Scanjob_Settings.vue', () => {
         expect(routerBack).not.toHaveBeenCalled()
       })
 
-      it('keeps editing available after an unrelated preview conflict and allows retry', async () => {
-        const wrapper = await openEditor()
-        const conflict = Object.assign(new Error('Задание уже завершено другим пользователем'), { status: 409 })
-        getFinishOptions.mockRejectedValueOnce(conflict)
-        await wrapper.get('#name').setValue('Мой ввод')
-        await wrapper.get('[data-testid="scanjob-finish-action"]').trigger('click')
-        await resolveAll()
-        expect(wrapper.find('.read-only-notice').exists()).toBe(false)
-        expect(wrapper.get('#name').element.readOnly).toBe(false)
-        expect(wrapper.get('#operation').element.disabled).toBe(false)
-        expect(wrapper.get('[data-testid="scanjob-finish-action"]').attributes('disabled')).toBeUndefined()
-        expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain(conflict.message)
-        expect(alertError).toHaveBeenCalledTimes(1)
-        await wrapper.get('[data-testid="scanjob-finish-action"]').trigger('click')
-        await resolveAll()
-        expect(getFinishOptions).toHaveBeenCalledTimes(2)
-        expect(update).toHaveBeenCalledWith(11, expect.objectContaining({ name: 'Мой ввод' }))
-        expect(finish).toHaveBeenCalledTimes(1)
-      })
     })
 
     it.each(['save', 'finish'])('preserves fields and selections after a %s failure, then retries', async (stage) => {

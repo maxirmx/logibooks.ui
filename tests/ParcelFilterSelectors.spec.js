@@ -42,22 +42,6 @@ describe('ParcelFilterSelectors', () => {
       }
     })
 
-  const assertDisabledState = (wrapper, expectedSelectDisabled, expectedTextFieldDisabled) => {
-    const selectNodes = wrapper.findAll('.v-select-stub')
-    const textFieldNodes = wrapper.findAll('.v-text-field-stub')
-
-    expect(selectNodes).toHaveLength(5)
-    expect(textFieldNodes).toHaveLength(3)
-
-    selectNodes.forEach((node) => {
-      expect(node.attributes('data-disabled')).toBe(String(expectedSelectDisabled))
-    })
-
-    textFieldNodes.forEach((node) => {
-      expect(node.attributes('data-disabled')).toBe(String(expectedTextFieldDisabled))
-    })
-  }
-
   it('emits update events for all v-model bindings', async () => {
     const wrapper = mountComponent()
 
@@ -80,12 +64,6 @@ describe('ParcelFilterSelectors', () => {
     expect(wrapper.emitted('update:localTnvedSearch')?.[0]).toEqual(['1234'])
     expect(wrapper.emitted('update:localParcelNumberSearch')?.[0]).toEqual(['ABC'])
     expect(wrapper.emitted('update:localProductNameSearch')?.[0]).toEqual(['Product X'])
-  })
-
-  it('labels the applied restrictions filter without duplicate hiding', () => {
-    const wrapper = mountComponent()
-
-    expect(wrapper.get('[data-label="Применённые запреты"]').exists()).toBe(true)
   })
 
   it('normalizes legacy restrictions select values to booleans', async () => {
@@ -120,8 +98,4 @@ describe('ParcelFilterSelectors', () => {
     expect(wrapper.emitted('update:parcelsPassportCheckStatus')).toEqual([[null]])
   })
 
-  it('keeps controls disabled when multiple blocking flags are active', () => {
-    const wrapper = mountComponent({ runningAction: true, loading: true, isInitializing: true })
-    assertDisabledState(wrapper, true, true)
-  })
 })

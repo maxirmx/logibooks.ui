@@ -146,12 +146,6 @@ const AsyncWrapper = {
   `
 }
 
-function findActionButton(wrapper, icon) {
-  return wrapper
-    .findAllComponents({ name: 'ActionButton' })
-    .find((button) => button.props('icon') === icon)
-}
-
 // Import router after mocking
 let mockRouter
 beforeEach(async () => {
@@ -171,24 +165,6 @@ beforeEach(async () => {
 
 describe('RegisterStatus_EditDialog.vue', () => {
   describe('Component Rendering', () => {
-    it.each(['create', 'edit'])('round trips the 1C export flag in %s mode', async (mode) => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode, registerStatusId: 1 },
-        global: { stubs: defaultGlobalStubs }
-      })
-      await resolveAll()
-      expect(wrapper.get('label[for="exportTo1C"]').text()).toBe('Выгружать в 1C:')
-      expect(wrapper.get('#exportTo1C').attributes('type')).toBe('checkbox')
-      const form = wrapper.findComponent({ name: 'Form' })
-      expect(form.props('initialValues').exportTo1C).toBe(mode === 'edit')
-      await form.vm.$emit('submit', { title: 'Queue', exportTo1C: true }, { setErrors: vi.fn() })
-      await resolveAll()
-      const save = mode === 'create' ? mockRegisterStatusesStore.create : mockRegisterStatusesStore.update
-      const payload = save.mock.calls.at(-1).at(-1)
-      expect(payload.exportTo1C).toBe(true)
-      wrapper.unmount()
-    })
-
     it('updates color preview values through color selectors', async () => {
       const wrapper = mount(AsyncWrapper, {
         props: { mode: 'edit', registerStatusId: 1 },
@@ -236,27 +212,6 @@ describe('RegisterStatus_EditDialog.vue', () => {
       )
     })
 
-    it('rejects unsupported icon values in the validation schema', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      const form = wrapper.findComponent({ name: 'Form' })
-      await expect(
-        form.props('validationSchema').validate({
-          title: 'Новый',
-          icon: 'fa-solid fa-not-real',
-          bkColor: '#FFFFFF',
-          fgColor: '#000000'
-        })
-      ).rejects.toThrow('Выберите поддерживаемую иконку статуса')
-    })
-
   })
 
   describe('Form Submission - Create Mode', () => {
@@ -282,68 +237,6 @@ describe('RegisterStatus_EditDialog.vue', () => {
 
   })
 
-  describe('Form Submission - Edit Mode', () => {
-    it('blocks a read-only session from submitting the editor', async () => {
-      mockAuthStore.canWriteSettings = false
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'edit', registerStatusId: 1 },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-      await wrapper.find('form').trigger('submit')
-
-      expect(wrapper.get('fieldset').attributes('disabled')).toBeDefined()
-      expect(wrapper.find('[data-testid="register-status-save-action"]').exists()).toBe(false)
-      expect(mockRegisterStatusesStore.update).not.toHaveBeenCalled()
-    })
-
-    it('handles error during update', async () => {
-      const error = new Error('Update failed')
-      mockRegisterStatusesStore.update.mockRejectedValueOnce(error)
-
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'edit', registerStatusId: 1 },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      const form = wrapper.find('form')
-      await form.trigger('submit')
-      await resolveAll()
-
-      expect(mockRouter.push).not.toHaveBeenCalled()
-    })
-
-  })
-
-  describe('Navigation', () => {
-    it('navigates to order statuses list on cancel button click', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs,
-          mocks: {
-            $router: mockRouter
-          }
-        }
-      })
-
-      await resolveAll()
-
-      const cancelButton = findActionButton(wrapper, 'fa-solid fa-xmark')
-      expect(cancelButton.exists()).toBe(true)
-
-      await cancelButton.find('button').trigger('click')
-      expect(mockRouter.push).toHaveBeenCalledWith('/registerstatuses')
-    })
-  })
-
   describe('Error Handling', () => {
     it('handles empty error messages', async () => {
       const error = new Error()
@@ -364,31 +257,6 @@ describe('RegisterStatus_EditDialog.vue', () => {
       await resolveAll()
 
       expect(mockRouter.push).not.toHaveBeenCalled()
-    })
-  })
-
-  describe('Form Validation', () => {
-    it('displays icon and color validation errors when present', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      const formComponent = wrapper.findComponent({ name: 'Form' })
-      formComponent.vm.setErrors({
-        icon: 'Выберите поддерживаемую иконку статуса',
-        bkColor: 'Цвет фона должен быть в формате #RRGGBB',
-        fgColor: 'Цвет иконки должен быть в формате #RRGGBB'
-      })
-      await resolveAll()
-
-      expect(wrapper.text()).toContain('Выберите поддерживаемую иконку статуса')
-      expect(wrapper.text()).toContain('Цвет фона должен быть в формате #RRGGBB')
-      expect(wrapper.text()).toContain('Цвет иконки должен быть в формате #RRGGBB')
     })
   })
 

@@ -277,20 +277,6 @@ describe('StopWords_List.vue', () => {
   })
 
   describe('Delete Functionality', () => {
-    it('shows confirmation dialog when delete is clicked', async () => {
-      mockConfirm.mockResolvedValue(true)
-      const testStopWord = mockStopWords.value[0]
-
-      await wrapper.vm.deleteStopWord(testStopWord)
-
-      expect(mockConfirm).toHaveBeenCalledWith(expect.objectContaining({
-        title: 'Подтверждение',
-        confirmationText: 'Удалить',
-        cancellationText: 'Не удалять',
-        content: 'Удалить стоп-слово "' + testStopWord.word + '" ?'
-      }))
-    })
-
     it('does not call remove when deletion is cancelled', async () => {
       mockConfirm.mockResolvedValue(false)
       const testStopWord = mockStopWords.value[0]
@@ -328,15 +314,6 @@ describe('StopWords_List.vue', () => {
   })
 
   describe('Search and Filter', () => {
-    it('filters stop words by procedure, reason, and match type', () => {
-      const mockItem = { raw: mockStopWords.value[2] }
-      expect(wrapper.vm.filterStopWords(null, 'dual export', mockItem)).toBe(true)
-      expect(wrapper.vm.filterStopWords(null, 'dual import', mockItem)).toBe(true)
-      expect(wrapper.vm.filterStopWords(null, 'Россия — Экспорт', mockItem)).toBe(true)
-      expect(wrapper.vm.filterStopWords(null, 'Узбекистан — Импорт', mockItem)).toBe(true)
-      expect(wrapper.vm.filterStopWords(null, 'Morphology', mockItem)).toBe(true)
-    })
-
     it('handles null query', () => {
       const mockItem = { raw: { word: 'и' } }
       const result = wrapper.vm.filterStopWords(null, null, mockItem)

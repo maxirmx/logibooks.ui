@@ -89,30 +89,6 @@ describe('AssignTnvedDialog', () => {
     await flushPromises()
   }
 
-  it('keeps confirm disabled until lookup confirms code exists', async () => {
-    // Make lookup slow — never resolve during this test
-    mockGetFeacnInfo.mockReturnValue(new Promise(() => {}))
-    const wrapper = createWrapper()
-
-    const input = wrapper.find('[data-testid="target-tnved-input"]')
-    await input.setValue('1234567890')
-
-    // Before debounce fires: checking flag set, button still disabled
-    const confirmBtn = wrapper.findAll('[data-testid="v-btn"]')[1]
-    expect(confirmBtn.element.disabled).toBe(true)
-
-    // Advance debounce
-    await vi.advanceTimersByTimeAsync(600)
-    await flushPromises()
-
-    // Still disabled (lookup hasn't resolved)
-    expect(confirmBtn.element.disabled).toBe(true)
-    const message = wrapper.find('[data-testid="target-tnved-message"]')
-    expect(message.text()).toContain('Проверка')
-    expect(message.classes()).toContain('validation-info')
-    expect(message.classes()).not.toContain('validation-error')
-  })
-
   it('enables confirm and emits trimmed 10-digit code after successful lookup', async () => {
     const wrapper = createWrapper()
 

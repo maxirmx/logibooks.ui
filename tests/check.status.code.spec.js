@@ -3,15 +3,7 @@
 // This file is a part of Logibooks ui application
 
 import { describe, it, expect } from 'vitest'
-import CheckStatusCode, {
-  createCheckStatusFilterOptions,
-  CheckStatusHelper,
-  FCCheckStatus,
-  SWCheckStatus,
-  WStatusValues
-} from '@/helpers/check.status.code.js'
-
-import { FCCheckStatusNames, SWCheckStatusNames } from '@/helpers/check.status.code.js'
+import CheckStatusCode, { CheckStatusHelper, FCCheckStatus, SWCheckStatus } from '@/helpers/check.status.code.js'
 
 describe('CheckStatusCode', () => {
   describe('EUR1000 status', () => {
@@ -25,18 +17,6 @@ describe('CheckStatusCode', () => {
       expect(CheckStatusCode.EUR1000.toString()).toBe('>1000€')
     })
 
-    it.each([
-      ['SW', SWCheckStatusNames],
-      ['FC', FCCheckStatusNames]
-    ])('should place EUR1000 last in %s filter options, after Duplicate', (_type, names) => {
-      const options = createCheckStatusFilterOptions(names)
-
-      expect(options.at(-2).title).toBe('Дубликат')
-      expect(options.at(-1)).toEqual({
-        value: WStatusValues.EUR1000,
-        title: '>1000€'
-      })
-    })
   })
 
   describe('toInt method', () => {

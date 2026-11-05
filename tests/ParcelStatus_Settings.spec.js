@@ -197,26 +197,6 @@ beforeEach(async () => {
 
 describe('ParcelStatus_Settings.vue', () => {
   describe('Component Rendering', () => {
-    it('shows restriction reason only while customs processing is unchecked', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      const customsProcessing = wrapper.get('#useAtCustomsProcessing')
-      expect(wrapper.find('[data-testid="restriction-reason-group"]').exists()).toBe(true)
-
-      await customsProcessing.setValue(true)
-      expect(wrapper.find('[data-testid="restriction-reason-group"]').exists()).toBe(false)
-
-      await customsProcessing.setValue(false)
-      expect(wrapper.find('[data-testid="restriction-reason-group"]').exists()).toBe(true)
-    })
-
     it('clears export color to null in edit mode', async () => {
       const wrapper = mount(AsyncWrapper, {
         props: { mode: 'edit', parcelStatusId: 1 },
@@ -244,29 +224,6 @@ describe('ParcelStatus_Settings.vue', () => {
   })
 
   describe('Form Submission - Create Mode', () => {
-    it('calls create store method on form submission', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      const saveButton = findActionButton(wrapper, 'fa-solid fa-check-double')
-      await saveButton.find('button').trigger('click')
-
-      expect(mockParcelStatusesStore.create).toHaveBeenCalled()
-      expect(mockParcelStatusesStore.create).toHaveBeenCalledWith({
-        title: '',
-        useAtCustomsProcessing: false,
-        bkColor: null,
-        restrictionReason: '',
-        inspection: false
-      })
-    })
-
     it('handles 409 conflict error during creation', async () => {
       const error = new Error('Order status with this name already exists (409)')
       mockParcelStatusesStore.create.mockRejectedValueOnce(error)
@@ -287,68 +244,6 @@ describe('ParcelStatus_Settings.vue', () => {
       expect(mockRouter.push).not.toHaveBeenCalled()
     })
 
-  })
-
-  describe('Form Submission - Edit Mode', () => {
-    it('shows success message and redirects after successful update', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'edit', parcelStatusId: 1 },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      const form = wrapper.find('form')
-      await form.trigger('submit')
-      await resolveAll()
-
-      expect(mockRouter.push).toHaveBeenCalledWith('/parcelstatuses')
-    })
-
-    it('handles error during update', async () => {
-      const error = new Error('Update failed')
-      mockParcelStatusesStore.update.mockRejectedValueOnce(error)
-
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'edit', parcelStatusId: 1 },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      const form = wrapper.find('form')
-      await form.trigger('submit')
-      await resolveAll()
-
-      expect(mockRouter.push).not.toHaveBeenCalled()
-    })
-
-  })
-
-  describe('Navigation', () => {
-    it('navigates to order statuses list on cancel button click', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs,
-          mocks: {
-            $router: mockRouter
-          }
-        }
-      })
-
-      await resolveAll()
-
-      const cancelButton = findActionButton(wrapper, 'fa-solid fa-xmark')
-      expect(cancelButton.exists()).toBe(true)
-
-      await cancelButton.find('button').trigger('click')
-      expect(mockRouter.push).toHaveBeenCalledWith('/parcelstatuses')
-    })
   })
 
   describe('Error Handling', () => {

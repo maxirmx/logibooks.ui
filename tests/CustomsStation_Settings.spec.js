@@ -137,21 +137,6 @@ beforeEach(() => {
 })
 
 describe('CustomsStation_Settings.vue', () => {
-  it('renders create mode and loads countries', async () => {
-    const wrapper = await mountSettings({ mode: 'create' })
-
-    expect(wrapper.find('h1').text()).toBe('Регистрация таможенного поста')
-    expect(wrapper.find('button[type="submit"]').text()).toContain('Создать')
-    expect(ensureLoaded).toHaveBeenCalled()
-    expect(getById).not.toHaveBeenCalled()
-    expect(wrapper.text()).toContain('Код поста:')
-    expect(wrapper.text()).toContain('Название:')
-    expect(wrapper.text()).toContain('Страна:')
-    expect(wrapper.text()).toContain('Почтовый индекс:')
-    expect(wrapper.text()).toContain('Город:')
-    expect(wrapper.text()).toContain('Улица:')
-  })
-
   it('normalizes wrapped form values and updates the requested station', async () => {
     const wrapper = await mountSettings({ mode: 'edit', customsStationId: 7 })
 

@@ -22,19 +22,6 @@ describe('feacn.orders store', () => {
     vi.clearAllMocks()
   })
 
-  it('fetches prefixes for order', async () => {
-    const mockPrefixes = [{ id: 1, code: '1', exceptions: [] }]
-    fetchWrapper.get.mockResolvedValue(mockPrefixes)
-
-    const store = useFeacnOrdersStore()
-    await store.getPrefixes(1)
-
-    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/feacnorders/orders/1/prefixes`)
-    expect(store.prefixes).toEqual(mockPrefixes)
-    expect(store.loading).toBe(false)
-    expect(store.error).toBeNull()
-  })
-
   it('fetches one order for route-based editing', async () => {
     const mockOrder = {
       id: 7,

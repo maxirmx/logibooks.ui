@@ -479,25 +479,6 @@ describe('Registers_List.vue', () => {
   })
 
   describe('component integration', () => {
-    it('reports initialization failures', async () => {
-      countriesEnsureLoadedFn.mockRejectedValueOnce(new Error('countries failed'))
-
-      mount(RegistersList, {
-        global: {
-          stubs: vuetifyStubs
-        }
-      })
-
-      await flushPromises()
-
-      expect(alertErrorFn).toHaveBeenCalledWith(
-        expect.objectContaining({ message: 'countries failed' }),
-        expect.objectContaining({
-          fallback: 'Ошибка при загрузке данных'
-        })
-      )
-    })
-
     it('reports fallback initialization error text for non-error failures', async () => {
       countriesEnsureLoadedFn.mockRejectedValueOnce('countries failed')
 

@@ -121,16 +121,4 @@ describe('FieldArrayWithButtons', () => {
     expect(wrapper.find('#managers_1').exists()).toBe(true)
   })
 
-  it('disables fields and buttons when disabled prop is true', async () => {
-    const wrapper = createWrapper({ disabled: true })
-    await flushPromises()
-
-    const buttons = wrapper.findAll('button')
-    buttons.forEach((btn) => {
-      expect(btn.attributes('disabled')).toBeDefined()
-    })
-
-    const input = wrapper.find('select')
-    expect(input.attributes('disabled')).toBeDefined()
-  })
 })

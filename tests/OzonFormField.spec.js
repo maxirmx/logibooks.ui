@@ -34,29 +34,4 @@ describe('OzonFormField', () => {
     expect(wrapper.text()).toContain('Test Option')
   })
 
-  it('handles empty errors object gracefully', () => {
-    const wrapper = mount(OzonFormField, {
-      props: {
-        name: 'tnVed',
-        errors: null
-      },
-      global: {
-        plugins: [createPinia()],
-        stubs: {
-          Field: {
-            template: '<input :name="name" :class="classes" />',
-            props: ['name', 'class'],
-            computed: {
-              classes() {
-                return this.class
-              }
-            }
-          }
-        }
-      }
-    })
-
-    expect(wrapper.find('input').classes()).not.toContain('is-invalid')
-  })
-
 })

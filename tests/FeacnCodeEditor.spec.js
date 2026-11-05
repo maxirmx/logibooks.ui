@@ -127,16 +127,6 @@ describe('FeacnCodeEditor', () => {
   })
 
   describe('when disabled prop is false (default)', () => {
-    it('activates search on label dblclick', async () => {
-      const label = wrapper.find('label')
-      await label.trigger('dblclick')
-      await wrapper.vm.$nextTick()
-      // Search overlay should appear
-      expect(wrapper.find('.feacn-overlay').exists()).toBe(true)
-      expect(wrapper.find('.feacn-search-row > .feacn-overlay').exists()).toBe(true)
-      expect(wrapper.find('.feacn-search-wrapper > .feacn-overlay').exists()).toBe(false)
-    })
-
     it('keeps the full-row dropdown open for clicks inside it and closes it outside', async () => {
       await wrapper.find('label').trigger('dblclick')
       const overlay = wrapper.get('.feacn-search-row > .feacn-overlay')

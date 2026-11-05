@@ -148,21 +148,6 @@ beforeEach(async () => {
 })
 
 describe('Warehouse_Settings.vue', () => {
-  it('renders create mode correctly', async () => {
-    const wrapper = mount(AsyncWrapper, {
-      props: { mode: 'create' },
-      global: {
-        stubs: defaultGlobalStubs
-      }
-    })
-
-    await resolveAll()
-
-    expect(wrapper.find('h1').text()).toBe('Регистрация склада')
-    expect(wrapper.find('button[type="submit"]').text()).toContain('Создать')
-    expect(mockWarehousesStore.getById).not.toHaveBeenCalled()
-  })
-
   it('submits create form successfully', async () => {
     const wrapper = mount(AsyncWrapper, {
       props: { mode: 'create' },

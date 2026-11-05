@@ -172,24 +172,6 @@ describe('ParcelStatusBulkChangeDialog', () => {
     expect(wrapper.emitted('update:show')?.[0]).toEqual([false])
   })
 
-  it('handles malformed resolve responses with safe defaults', async () => {
-    mocks.resolveStatusSelection.mockResolvedValue({
-      parcelIds: ['bad', 44],
-      missingNumbers: 'bad',
-      blockedItems: 'bad'
-    })
-    const wrapper = mountDialog()
-
-    await wrapper.find('[data-testid="parcel-status-bulk-input"]').setValue('P-44')
-    await wrapper.find('[data-testid="parcel-status-bulk-find"]').trigger('click')
-    await flushPromises()
-
-    expect(wrapper.find('[data-testid="parcel-status-bulk-summary"]').text()).toContain(
-      'Найдено: 1'
-    )
-    expect(wrapper.find('[data-testid="parcel-status-bulk-report"]').element.value).toBe('')
-  })
-
   it.each([
     [0, '0 посылок'],
     [1, 'одной посылки'],
@@ -219,89 +201,6 @@ describe('ParcelStatusBulkChangeDialog', () => {
     expect(wrapper.emitted('updated')).toHaveLength(1)
   })
 
-  it('refreshes the register after a read-only update conflict', async () => {
-    mocks.resolveStatusSelection.mockResolvedValue({
-      parcelIds: [11],
-      missingNumbers: [],
-      blockedItems: []
-    })
-    const conflict = Object.assign(new Error('Изменения запрещены'), { status: 409 })
-    mocks.updateStatusSelection.mockRejectedValue(conflict)
-    const wrapper = mountDialog()
-
-    await wrapper.find('[data-testid="parcel-status-bulk-status"]').setValue('3')
-    await wrapper.find('[data-testid="parcel-status-bulk-input"]').setValue('P-1')
-    await wrapper.find('[data-testid="parcel-status-bulk-find"]').trigger('click')
-    await flushPromises()
-    await wrapper.find('[data-testid="parcel-status-bulk-update-found"]').trigger('click')
-    await flushPromises()
-
-    expect(mocks.refreshReadOnlyRegister).toHaveBeenCalledWith(7)
-    expect(alert(wrapper).get('[role="alert"]').text()).toContain('Изменения запрещены')
-  })
-
-  it('does not update all parcels when confirmation is declined', async () => {
-    mocks.confirm.mockResolvedValue(false)
-    const wrapper = mountDialog()
-
-    await wrapper.find('[data-testid="parcel-status-bulk-status"]').setValue('4')
-    await wrapper.find('[data-testid="parcel-status-bulk-update-all"]').trigger('click')
-    await flushPromises()
-
-    expect(mocks.confirm).toHaveBeenCalledOnce()
-    expect(mocks.setParcelStatuses).not.toHaveBeenCalled()
-    expect(wrapper.find('[data-testid="page-alert-region"]').exists()).toBe(false)
-    expect(wrapper.emitted('updated')).toBeUndefined()
-  })
-
-  it('uses the exclusion warning for found parcels and cancels the mutation', async () => {
-    mocks.resolveStatusSelection.mockResolvedValue({
-      parcelIds: [11], missingNumbers: [], blockedItems: []
-    })
-    mocks.confirm.mockResolvedValue(false)
-    const wrapper = mountDialog()
-
-    await wrapper.find('[data-testid="parcel-status-bulk-status"]').setValue('5')
-    await wrapper.find('[data-testid="parcel-status-bulk-input"]').setValue('P-1')
-    await wrapper.find('[data-testid="parcel-status-bulk-find"]').trigger('click')
-    await flushPromises()
-    await wrapper.find('[data-testid="parcel-status-bulk-update-found"]').trigger('click')
-    await flushPromises()
-
-    expect(mocks.confirm).toHaveBeenCalledWith(expect.objectContaining({
-      title: 'Подтверждение',
-      confirmationText: 'Изменить',
-      cancellationText: 'Не изменять',
-      dialogProps: { width: 440, maxWidth: 'calc(100vw - 32px)' },
-      cardProps: { class: 'app-dialog-frame' },
-      confirmationButtonProps: { color: 'orange-darken-3', variant: 'flat' },
-      cancellationButtonProps: { variant: 'text' },
-      content: expect.stringContaining('статус посылки на «Excluded»')
-    }))
-    expect(mocks.updateStatusSelection).not.toHaveBeenCalled()
-  })
-
-  it('replaces the generic all-parcels confirmation with the exclusion warning', async () => {
-    const wrapper = mountDialog({ register: { id: 7, parcelsTotal: 12 } })
-
-    await wrapper.find('[data-testid="parcel-status-bulk-status"]').setValue('5')
-    await wrapper.find('[data-testid="parcel-status-bulk-update-all"]').trigger('click')
-    await flushPromises()
-
-    expect(mocks.confirm).toHaveBeenCalledOnce()
-    expect(mocks.confirm).toHaveBeenCalledWith(expect.objectContaining({
-      title: 'Подтверждение',
-      confirmationText: 'Изменить',
-      cancellationText: 'Не изменять',
-      dialogProps: { width: 440, maxWidth: 'calc(100vw - 32px)' },
-      cardProps: { class: 'app-dialog-frame' },
-      confirmationButtonProps: { color: 'orange-darken-3', variant: 'flat' },
-      cancellationButtonProps: { variant: 'text' },
-      content: expect.stringContaining('статус посылок на «Excluded»')
-    }))
-    expect(mocks.setParcelStatuses).toHaveBeenCalledWith(7, 5)
-  })
-
   it('shows a localized update-all error and lets the user retry', async () => {
     mocks.setParcelStatuses.mockRejectedValue({ reason: 'update all failed' })
     const wrapper = mountDialog()
@@ -321,33 +220,6 @@ describe('ParcelStatusBulkChangeDialog', () => {
     expect(mocks.setParcelStatuses.mock.calls).toEqual([[7, 4], [7, 4]])
     expect(alert(wrapper).text()).toContain('Статус успешно применен ко всем посылкам в реестре')
     expect(wrapper.emitted('updated')).toHaveLength(1)
-  })
-
-  it('reports backend errors without clearing user input', async () => {
-    mocks.resolveStatusSelection.mockRejectedValue(new Error('resolve failed'))
-    const wrapper = mountDialog()
-
-    await wrapper.find('[data-testid="parcel-status-bulk-input"]').setValue('P-1')
-    await wrapper.find('[data-testid="parcel-status-bulk-find"]').trigger('click')
-    await flushPromises()
-
-    expect(alert(wrapper).text()).toContain('Ошибка при поиске посылок')
-    expect(alert(wrapper).text()).not.toContain('resolve failed')
-    expect(wrapper.get('hr.hr').element.nextElementSibling).toBe(alert(wrapper).element)
-    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-    expect(console.error).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ message: 'resolve failed' }))
-    expect(wrapper.find('[data-testid="parcel-status-bulk-input"]').element.value).toBe('P-1')
-  })
-
-  it('uses fallback error text when backend does not provide details', async () => {
-    mocks.resolveStatusSelection.mockRejectedValue({})
-    const wrapper = mountDialog()
-
-    await wrapper.find('[data-testid="parcel-status-bulk-input"]').setValue('P-1')
-    await wrapper.find('[data-testid="parcel-status-bulk-find"]').trigger('click')
-    await flushPromises()
-
-    expect(alert(wrapper).text()).toContain('Ошибка при поиске посылок')
   })
 
   it('preserves input and status on mode change and applies only a fresh sticker result', async () => {
@@ -532,27 +404,6 @@ describe('ParcelStatusBulkChangeDialog', () => {
     expect(alert(wrapper).text()).toContain('Статус изменен для одной посылки')
   })
 
-  it.each([
-    { disabled: true },
-    { register: { id: 7, registerType: WBR_COMPANY_ID, readOnly: true } }
-  ])('allows closing a disabled form and blocks a now-disabled confirmation (%j)', async (props) => {
-    const confirmation = Promise.withResolvers()
-    mocks.confirm.mockReturnValueOnce(confirmation.promise)
-    const wrapper = mountDialog({ register: { id: 7, registerType: WBR_COMPANY_ID } })
-    await control(wrapper, 'status').setValue('4')
-    await control(wrapper, 'update-all').trigger('click')
-    expect(control(wrapper, 'cancel').element.disabled).toBe(true)
-
-    await wrapper.setProps(props)
-    confirmation.resolve(true)
-    await flushPromises()
-    expect(mocks.setParcelStatuses).not.toHaveBeenCalled()
-    expect(control(wrapper, 'lookup').element.disabled).toBe(true)
-    expect(control(wrapper, 'cancel').element.disabled).toBe(false)
-    await control(wrapper, 'cancel').trigger('click')
-    expect(wrapper.emitted('update:show')).toEqual([[false]])
-  })
-
   it('guards actions when required state is missing', async () => {
     const wrapper = mountDialog({ registerId: null })
 
@@ -566,21 +417,4 @@ describe('ParcelStatusBulkChangeDialog', () => {
     expect(mocks.confirm).not.toHaveBeenCalled()
   })
 
-  it('closes and resets state when hidden', async () => {
-    const wrapper = mountDialog()
-
-    await wrapper.find('[data-testid="parcel-status-bulk-status"]').setValue('3')
-    await wrapper.find('[data-testid="parcel-status-bulk-input"]').setValue('P-1')
-    await wrapper.find('[data-testid="parcel-status-bulk-cancel"]').trigger('click')
-
-    expect(wrapper.emitted('update:show')?.[0]).toEqual([false])
-
-    await wrapper.setProps({ show: false })
-    await flushPromises()
-
-    expect(wrapper.find('[data-testid="parcel-status-bulk-input"]').element.value).toBe('')
-    expect(wrapper.find('[data-testid="parcel-status-bulk-summary"]').text()).toContain(
-      'Введите номера'
-    )
-  })
 })

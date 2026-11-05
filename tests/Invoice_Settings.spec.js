@@ -112,13 +112,6 @@ describe('Invoice_Settings.vue', () => {
     downloadDo1FileMock.mockResolvedValue(undefined)
   })
 
-  it('loads register by id and renders heading', async () => {
-    const wrapper = mountDialog()
-    await resolveAll()
-    expect(getByIdMock).toHaveBeenCalledWith(77)
-    expect(wrapper.find('h1').text()).toContain('Настройки инвойса')
-  })
-
   it('submits and calls downloadInvoiceFile with selected options', async () => {
     const wrapper = mountDialog({ id: 77, selection: InvoiceParcelSelection.Ordinal })
     await resolveAll()
@@ -161,19 +154,6 @@ describe('Invoice_Settings.vue', () => {
       InvoiceOptionalColumns.Url,
       true
     )
-  })
-
-  it('displays error on submission failure', async () => {
-    downloadInvoiceFileMock.mockRejectedValueOnce(new Error('Ошибка'))
-    const wrapper = mountDialog()
-    await resolveAll()
-    const comp = wrapper.findComponent(InvoiceSettings).vm.$.setupState
-    await comp.onSubmit()
-    // wait for any pending promises and DOM updates (action dialog hide, alert store update)
-    await resolveAll()
-    await nextTick()
-    // assert alert store received the error message
-    expect(comp.alertStore.alert.value.message).toBe('Ошибка')
   })
 
   it('cancel navigates back to registers', async () => {

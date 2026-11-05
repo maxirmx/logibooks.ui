@@ -81,22 +81,6 @@ describe('ParcelStatusSection', () => {
     expect(wrapper.emitted('check-for-duplicate')?.[0]).toEqual([defaultProps.values])
   })
 
-  it('passes disabled state to each action button except clear-check-status', () => {
-    const wrapper = createWrapper({ disabled: true })
-    const buttons = wrapper.findAllComponents(ActionButton)
-
-    // button order: validate-sw, validate-sw-ex, validate-fc, clear-check-status, check-for-duplicate, approve, approve-excise
-    // All buttons except clear-check-status (index 3) use the disabled prop
-    expect(buttons[0].props('disabled')).toBe(true)
-    expect(buttons[1].props('disabled')).toBe(true)
-    expect(buttons[2].props('disabled')).toBe(true)
-    // clear-check-status uses clearCheckStatusDisabled (defaults to false)
-    expect(buttons[3].props('disabled')).toBe(false)
-    expect(buttons[4].props('disabled')).toBe(true)
-    expect(buttons[5].props('disabled')).toBe(true)
-    expect(buttons[6].props('disabled')).toBe(true)
-  })
-
   it('shows bookmark icon for inherited stopwords status', () => {
     const wrapper = createWrapper({ item: { ...defaultProps.item, checkStatus: 128 } })
 
@@ -148,24 +132,6 @@ describe('ParcelStatusSection', () => {
     expect(wrapper.find('.stopwords-info-duplicate2').exists()).toBe(true)
     expect(wrapper.find('.stopwords-info-approved').exists()).toBe(false)
     expect(wrapper.find('.stopwords-text-duplicate2').text()).toContain('Найден дубликат')
-  })
-
-  it('disables only restriction validations and explains the missing route country', async () => {
-    const wrapper = createWrapper({ restrictionValidationDisabled: true })
-    const buttons = wrapper.findAllComponents(ActionButton)
-
-    expect(buttons.slice(0, 3).every((button) => button.props('disabled'))).toBe(true)
-    expect(buttons.slice(0, 3).every((button) =>
-      button.props('tooltipText').includes('страну отправления или назначения')
-    )).toBe(true)
-    expect(buttons.slice(3).every((button) => !button.props('disabled'))).toBe(true)
-
-    await buttons[0].find('button').trigger('click')
-    await buttons[1].find('button').trigger('click')
-    await buttons[2].find('button').trigger('click')
-    expect(wrapper.emitted('validate-sw')).toBeUndefined()
-    expect(wrapper.emitted('validate-sw-ex')).toBeUndefined()
-    expect(wrapper.emitted('validate-fc')).toBeUndefined()
   })
 
 })

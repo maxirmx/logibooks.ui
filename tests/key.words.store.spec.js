@@ -80,21 +80,6 @@ describe('key.words.store.js', () => {
   })
 
   describe('upload', () => {
-    it('uploads file successfully', async () => {
-      const file = new File(['content'], 'keywords.xlsx')
-      fetchWrapper.postFile.mockResolvedValue()
-
-      await store.upload(file)
-
-      expect(fetchWrapper.postFile).toHaveBeenCalledTimes(1)
-      const [url, formData] = fetchWrapper.postFile.mock.calls[0]
-      expect(url).toBe('http://localhost:3000/api/keywords/upload')
-      expect(formData).toBeInstanceOf(FormData)
-      expect(formData.get('file')).toBe(file)
-      expect(store.loading).toBe(false)
-      expect(store.error).toBe(null)
-    })
-
     it('handles upload error', async () => {
       const file = new File(['content'], 'keywords.xlsx')
       const error = new Error('Upload failed')

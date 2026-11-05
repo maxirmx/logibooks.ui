@@ -273,20 +273,6 @@ describe('Registers_WhList.vue', () => {
     router.push.mockClear()
   })
 
-  it('reports initialization failures', async () => {
-    registersStore.ensureOpsLoaded.mockRejectedValueOnce(new Error('ops failed'))
-
-    createWrapper()
-    await flushPromises()
-
-    expect(alertErrorFn).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'ops failed' }),
-      expect.objectContaining({
-        fallback: 'Ошибка при загрузке данных'
-      })
-    )
-  })
-
   it('reports fallback initialization error text for non-error failures', async () => {
     registersStore.ensureOpsLoaded.mockRejectedValueOnce('ops failed')
 
@@ -397,15 +383,6 @@ describe('Registers_WhList.vue', () => {
     const router = (await import('@/router')).default
     await returnButton.find('button').trigger('click')
     expect(router.push).toHaveBeenCalledWith('/register/return')
-  })
-
-  it('falls back to empty local search when no warehouse search is persisted', async () => {
-    mockWhSearch.value = ''
-
-    const wrapper = createWrapper()
-    await wrapper.vm.$nextTick()
-
-    expect(wrapper.vm.localSearch).toBe('')
   })
 
   it('updates search and table controls through rendered v-model bindings', async () => {

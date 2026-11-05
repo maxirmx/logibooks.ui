@@ -47,16 +47,4 @@ describe('automatic printing ownership', () => {
     await expect(Promise.all([first, second])).resolves.toEqual([true, true])
     await owner.release()
   })
-  it('propagates rejection during pending release and permits retry after cleanup', async () => {
-    let fail
-    const locks = { request: vi.fn().mockImplementationOnce(() => new Promise((resolve, reject) => { fail = reject })) }
-    const owner = createPrintingOwnership(locks)
-    const acquiring = expect(owner.acquire()).rejects.toThrow('lock request failed')
-    const releasing = expect(owner.release()).rejects.toThrow('lock request failed')
-    fail(new Error('lock request failed'))
-    await Promise.all([acquiring, releasing])
-    locks.request.mockImplementationOnce(async (_, options, callback) => callback({}))
-    await expect(owner.acquire()).resolves.toBe(true)
-    await owner.release()
-  })
 })

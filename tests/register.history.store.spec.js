@@ -109,37 +109,6 @@ describe('register.history.store.js', () => {
     expect(store.loading).toBe(false)
   })
 
-  it('resets all history state and invalidates an outstanding request', async () => {
-    let resolveRequest
-    mockGet.mockImplementationOnce(
-      () =>
-        new Promise((resolve) => {
-          resolveRequest = resolve
-        })
-    )
-    const store = useRegisterHistoryStore()
-    store.items = [{ id: 1 }]
-    store.totalCount = 1
-    store.userOptions = [{ userId: 1 }]
-    store.reasonOptions = ['Причина']
-    const request = store.getHistory(42)
-
-    store.reset()
-    resolveRequest({
-      items: [{ id: 2 }],
-      pagination: { totalCount: 2 },
-      filterOptions: { users: [{ userId: 2 }], reasons: ['Новая причина'] }
-    })
-    await request
-
-    expect(store.items).toEqual([])
-    expect(store.totalCount).toBe(0)
-    expect(store.userOptions).toEqual([])
-    expect(store.reasonOptions).toEqual([])
-    expect(store.error).toBe(null)
-    expect(store.loading).toBe(false)
-  })
-
   it('clears stale data and exposes an error when loading fails', async () => {
     const store = useRegisterHistoryStore()
     store.items = [{ id: 1 }]

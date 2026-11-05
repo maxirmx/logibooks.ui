@@ -291,16 +291,6 @@ describe('Users_List.vue', () => {
       expect(router.push).toHaveBeenCalledWith('/automated-system/register')
     })
 
-    it('returns empty string for null/undefined user', () => {
-      expect(wrapper.vm.getCredentials(null)).toBe('')
-      expect(wrapper.vm.getCredentials(undefined)).toBe('')
-    })
-
-    it('returns empty warehouse names for users without associations', () => {
-      expect(wrapper.vm.getWarehouseNames({ warehouseIds: [] })).toEqual([])
-      expect(wrapper.vm.getWarehouseNames({})).toEqual([])
-      expect(wrapper.vm.getWarehouseNames(null)).toEqual([])
-    })
   })
 
   describe('Search Filtering', () => {

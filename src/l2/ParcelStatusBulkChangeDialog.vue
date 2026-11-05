@@ -85,7 +85,8 @@ const supportsStickerLookup = computed(() =>
   [WBR_COMPANY_ID, WBRN_REGISTER_ID, OZON_COMPANY_ID].includes(registerType.value)
 )
 const busy = computed(() => activeOperation.value !== null)
-const canOperate = computed(() => props.show && hasRegister.value && !props.disabled && !busy.value)
+const actionsDisabled = computed(() => props.disabled || currentRegister.value?.readOnly === true)
+const canOperate = computed(() => props.show && hasRegister.value && !actionsDisabled.value && !busy.value)
 const foundCount = computed(() => foundParcelIds.value.length)
 const missingCount = computed(() => missingNumbers.value.length)
 const blockedCount = computed(() => blockedItems.value.length)
@@ -245,7 +246,7 @@ async function updateStatus(all) {
         cancellationText: 'Не изменять',
         content
       })
-      if (!confirmed || !isCurrent(operation) || props.disabled) return
+      if (!confirmed || !isCurrent(operation) || actionsDisabled.value) return
     }
 
     if (all) {
@@ -353,7 +354,7 @@ defineExpose({
           variant="outlined"
           density="compact"
           hide-details
-          :disabled="busy || disabled"
+          :disabled="busy || actionsDisabled"
           data-testid="parcel-status-bulk-status"
         />
 
@@ -365,7 +366,7 @@ defineExpose({
               role="switch"
               aria-label="Поиск по стикерам"
               :aria-describedby="isGtc ? 'parcel-status-bulk-gtc-hint' : undefined"
-              :disabled="busy || disabled || !supportsStickerLookup"
+              :disabled="busy || actionsDisabled || !supportsStickerLookup"
               color="primary"
               density="compact"
               hide-details
@@ -388,7 +389,7 @@ defineExpose({
           class="input parcel-status-bulk-textarea"
           :placeholder="identifierPlaceholder"
           spellcheck="false"
-          :disabled="busy || disabled"
+          :disabled="busy || actionsDisabled"
           data-testid="parcel-status-bulk-input"
         ></textarea>
 

@@ -668,21 +668,32 @@ describe('registers store', () => {
       expect(store.items[0].invoiceNumber).toBe('new list')
     })
 
-    it('keeps a new derived snapshot invalidation when an older lock refresh completes', async () => {
-      const pending = Promise.withResolvers()
-      const store = useRegistersStore()
-      store.item = { id: 5 }
-      store.items = [store.item]
-      fetchWrapper.get.mockReturnValueOnce(pending.promise)
-      const refresh = store.refreshReadOnlyRegister(5)
+    it.each([true, false, undefined])(
+      'merges the lock (%s) without overwriting a newer derived invalidation',
+      async (readOnly) => {
+        const pending = Promise.withResolvers()
+        const failure = new Error('Сервер недоступен')
+        const store = useRegistersStore()
+        store.item = { id: 5, readOnly: readOnly === false }
+        store.items = [store.item]
+        fetchWrapper.get.mockReturnValueOnce(pending.promise)
+        const refresh = store.refreshReadOnlyRegister(5)
 
-      store.invalidateDerived(5)
-      pending.resolve({ id: 5, readOnly: true })
-      await refresh
+        store.invalidateDerived(5)
+        if (readOnly === undefined) {
+          const rejected = expect(refresh).rejects.toBe(failure)
+          pending.reject(failure)
+          await rejected
+        } else {
+          pending.resolve({ id: 5, derivedTotalsPending: false, readOnly })
+          await refresh
+        }
 
-      expect(store.item.derivedTotalsPending).toBe(true)
-      expect(store.items[0].derivedTotalsPending).toBe(true)
-    })
+        const expected = { derivedTotalsPending: true, readOnly: readOnly ?? true }
+        expect(store.item).toMatchObject(expected)
+        expect(store.items[0]).toMatchObject(expected)
+      }
+    )
 
     it('refreshes the register and enters read-only mode after a stale conflict', async () => {
       const conflict = Object.assign(new Error('Изменения запрещены для реестра'), { status: 409 })

@@ -529,20 +529,18 @@ export const useRegistersStore = defineStore('registers', () => {
       refreshed = mergeLivePassportCheckState(response, passportCheckStateWatermark)
       setDestinationField(refreshed)
     } finally {
-      // The conflict proves the lock if the refresh fails. A newer request or
-      // derived snapshot keeps ownership of its own view.
-      if (revision === projectionRevisions.get(id)) {
-        if (itemSequence === itemRequestSequence && item.value?.id === id) {
-          item.value = refreshed ?? { ...item.value, readOnly: true }
-        }
+      // Refresh the lock independently of derived values. On failure the
+      // conflict itself proves the lock.
+      const readOnly = refreshed?.readOnly ?? true
+      const snapshot = revision === projectionRevisions.get(id) ? refreshed : null
+      if (itemSequence === itemRequestSequence && item.value?.id === id) {
+        item.value = { ...(snapshot ?? item.value), readOnly }
+      }
 
-        if (listSequence === listRequestSequence) {
-          const index = items.value.findIndex((register) => register.id === id)
-          if (index !== -1) {
-            items.value[index] = refreshed
-              ? { ...items.value[index], ...refreshed }
-              : { ...items.value[index], readOnly: true }
-          }
+      if (listSequence === listRequestSequence) {
+        const index = items.value.findIndex((register) => register.id === id)
+        if (index !== -1) {
+          items.value[index] = { ...items.value[index], ...snapshot, readOnly }
         }
       }
     }

@@ -500,7 +500,10 @@ describe('ParcelStatusBulkChangeDialog', () => {
     expect(alert(wrapper).text()).toContain('Статус изменен для 1 посылок')
   })
 
-  it('allows closing a locked form after a conflict and blocks a now-disabled confirmation', async () => {
+  it.each([
+    { disabled: true },
+    { register: { id: 7, registerType: WBR_COMPANY_ID, readOnly: true } }
+  ])('allows closing a disabled form and blocks a now-disabled confirmation (%j)', async (props) => {
     const confirmation = Promise.withResolvers()
     mocks.confirm.mockReturnValueOnce(confirmation.promise)
     const wrapper = mountDialog({ register: { id: 7, registerType: WBR_COMPANY_ID } })
@@ -508,7 +511,7 @@ describe('ParcelStatusBulkChangeDialog', () => {
     await control(wrapper, 'update-all').trigger('click')
     expect(control(wrapper, 'cancel').element.disabled).toBe(true)
 
-    await wrapper.setProps({ disabled: true })
+    await wrapper.setProps(props)
     confirmation.resolve(true)
     await flushPromises()
     expect(mocks.setParcelStatuses).not.toHaveBeenCalled()

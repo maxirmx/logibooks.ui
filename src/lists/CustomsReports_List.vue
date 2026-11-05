@@ -204,7 +204,7 @@ function viewReportRows(report) {
     <div class="header-with-actions">
       <h1 class="primary-heading">Отчеты о выпуске</h1>
       <div class="header-actions-bar">
-        <div v-if="loading" class="header-actions header-actions-group">
+        <div v-if="loading && !actionDialogState.show" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
         </div>
         <div class="header-actions header-actions-group">

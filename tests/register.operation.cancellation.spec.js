@@ -69,6 +69,7 @@ describe.each(['split', 'reconciliation'])('%s cancellation', kind => {
     await h.begin()
     h.cancel.mockResolvedValueOnce({ ...pending, cancellationRequested: true })
     h.get.mockResolvedValue({ ...pending, cancellationRequested: true })
+    expect(h.wrapper.get('[data-testid="operation-cancel"]').classes()).toContain('text-white')
     await h.wrapper.get('[data-testid="operation-cancel"]').trigger('click'); await flushPromises()
     expect(h.flow.state.progress.show).toBe(true)
     expect(h.running.value).toBe(true)

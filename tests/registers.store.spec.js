@@ -759,14 +759,14 @@ describe('registers store', () => {
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
         `${apiUrl}/registers/6/generate-excise`,
         'IndPost_INV-E-акциз.zip',
-        { pollAccepted: true }
+        { pollAccepted: true, getPollUrl: expect.any(Function) }
       )
 
       await store.generateExcise(7, null)
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
         `${apiUrl}/registers/7/generate-excise`,
         'IndPost_7-акциз.zip',
-        { pollAccepted: true }
+        { pollAccepted: true, getPollUrl: expect.any(Function) }
       )
     })
 
@@ -777,14 +777,14 @@ describe('registers store', () => {
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
         `${apiUrl}/registers/8/generate-notifications`,
         'IndPost_INV-N-нотификации.zip',
-        { pollAccepted: true }
+        { pollAccepted: true, getPollUrl: expect.any(Function) }
       )
 
       await store.generateNotifications(9, undefined)
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
         `${apiUrl}/registers/9/generate-notifications`,
         'IndPost_9-нотификации.zip',
-        { pollAccepted: true }
+        { pollAccepted: true, getPollUrl: expect.any(Function) }
       )
     })
 
@@ -795,15 +795,39 @@ describe('registers store', () => {
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
         `${apiUrl}/registers/11/generate-ordinary`,
         'IndPost_INV-O-без-акциза-и-нотификаций.zip',
-        { pollAccepted: true }
+        { pollAccepted: true, getPollUrl: expect.any(Function) }
       )
 
       await store.generateOrdinary(12)
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
         `${apiUrl}/registers/12/generate-ordinary`,
         'IndPost_12-без-акциза-и-нотификаций.zip',
-        { pollAccepted: true }
+        { pollAccepted: true, getPollUrl: expect.any(Function) }
       )
+    })
+
+    it('binds archive status and cancellation to the handle and propagates DELETE failure', async () => {
+      const store = useRegistersStore()
+      const onProgress = vi.fn()
+      const error = new Error('Не удалось отменить формирование XML архива')
+      fetchWrapper.downloadFile.mockResolvedValue(false)
+      fetchWrapper.delete.mockRejectedValueOnce(error)
+      let cancelling = false
+      await expect(store.generateOrdinary(11, 'INV-O', false, {
+        onProgress, isCancelling: () => cancelling
+      })).resolves.toBe(false)
+      const options = fetchWrapper.downloadFile.mock.lastCall[2]
+      expect(options.onProgress).toBe(onProgress)
+      expect(options.retryPoll(error)).toBe(false)
+      cancelling = true
+      expect(options.retryPoll(error)).toBe(true)
+      expect(options.retryPoll({ status: 503 })).toBe(true)
+      expect(options.retryPoll({ status: 202, cause: new TypeError() })).toBe(true)
+      expect(options.retryPoll({ status: 202, cause: new SyntaxError() })).toBe(false)
+      expect(options.retryPoll({ status: 409 })).toBe(false)
+      expect(options.getPollUrl('archive/1')).toBe(apiUrl + '/registers/11/xml-archives/archive%2F1')
+      await expect(store.cancelXmlArchive('archive/1')).rejects.toBe(error)
+      expect(fetchWrapper.delete).toHaveBeenCalledWith(apiUrl + '/registers/xml-archives/archive%2F1')
     })
 
     it('adds weight correction query to XML generation only when requested', async () => {
@@ -821,21 +845,21 @@ describe('registers store', () => {
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
         `${apiUrl}/registers/6/generate-excise?applyWeightCorrection=true`,
         'IndPost_INV-E-акциз.zip',
-        { pollAccepted: true }
+        { pollAccepted: true, getPollUrl: expect.any(Function) }
       )
 
       await store.generateNotifications(8, 'INV-N', true)
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
         `${apiUrl}/registers/8/generate-notifications?applyWeightCorrection=true`,
         'IndPost_INV-N-нотификации.zip',
-        { pollAccepted: true }
+        { pollAccepted: true, getPollUrl: expect.any(Function) }
       )
 
       await store.generateOrdinary(11, 'INV-O', true)
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
         `${apiUrl}/registers/11/generate-ordinary?applyWeightCorrection=true`,
         'IndPost_INV-O-без-акциза-и-нотификаций.zip',
-        { pollAccepted: true }
+        { pollAccepted: true, getPollUrl: expect.any(Function) }
       )
     })
   })

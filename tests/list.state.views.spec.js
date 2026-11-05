@@ -12,6 +12,9 @@ import { useScanjobsStore } from '@/stores/scanjobs.store.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import OzonParcelsList from '@/lists/OzonParcels_List.vue'
+import GtcParcelsList from '@/lists/GtcParcels_List.vue'
+import WbrParcelsList from '@/lists/WbrParcels_List.vue'
+import WbrNParcelsList from '@/lists/WbrNParcels_List.vue'
 import OzonParcelsWhList from '@/lists/OzonParcels_WhList.vue'
 import RegistersList from '@/lists/Registers_List.vue'
 import ScanjobBoxesMonitor from '@/dialogs/Scanjob_Boxes_Monitor.vue'
@@ -81,6 +84,26 @@ afterEach(() => {
 })
 
 describe('reloads with real Pinia state and list loading', () => {
+  it.each([OzonParcelsList, GtcParcelsList, WbrParcelsList, WbrNParcelsList])(
+    'lets visible dialog progress own the header indicator on each paperwork page', async component => {
+      reload()
+      const header = { props: ['progressDialogVisible'], template: '<div />' }
+      const tnved = { emits: ['progress-visible'], template: '<div />' }
+      const bulk = { emits: ['progress-visible'], template: '<div />' }
+      const wrapper = show(component, { registerId: 4307 }, {
+        RegisterHeaderActionsBar: header, AssignTnvedDialog: tnved, ParcelStatusBulkChangeDialog: bulk
+      })
+      await flushPromises()
+      const indicator = wrapper.findComponent(header)
+      for (const dialog of [tnved, bulk]) {
+        wrapper.findComponent(dialog).vm.$emit('progress-visible', true)
+        await wrapper.vm.$nextTick()
+        expect(indicator.props('progressDialogVisible')).toBe(true)
+        wrapper.findComponent(dialog).vm.$emit('progress-visible', false)
+        await wrapper.vm.$nextTick()
+        expect(indicator.props('progressDialogVisible')).toBe(false)
+      }
+    })
   it.each([false, true])('coalesces scope, page, and search resets into one request (failure: %s)', async fail => {
     vi.useFakeTimers()
     const auth = reload()

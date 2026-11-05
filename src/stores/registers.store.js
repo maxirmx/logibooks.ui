@@ -518,6 +518,34 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
+  async function refreshReadOnlyRegister(id) {
+    const itemSequence = itemRequestSequence
+    const listSequence = listRequestSequence
+    const revision = projectionRevisions.get(id)
+    const passportCheckStateWatermark = livePassportCheckStateArrival
+    let refreshed
+    try {
+      const response = await fetchWrapper.get(`${baseUrl}/${id}`)
+      refreshed = mergeLivePassportCheckState(response, passportCheckStateWatermark)
+      setDestinationField(refreshed)
+    } finally {
+      // Refresh the lock independently of derived values. On failure the
+      // conflict itself proves the lock.
+      const readOnly = refreshed?.readOnly ?? true
+      const snapshot = revision === projectionRevisions.get(id) ? refreshed : null
+      if (itemSequence === itemRequestSequence && item.value?.id === id) {
+        item.value = { ...(snapshot ?? item.value), readOnly }
+      }
+
+      if (listSequence === listRequestSequence) {
+        const index = items.value.findIndex((register) => register.id === id)
+        if (index !== -1) {
+          items.value[index] = { ...items.value[index], ...snapshot, readOnly }
+        }
+      }
+    }
+  }
+
   async function update(id, data) {
     let res
     try {
@@ -527,25 +555,10 @@ export const useRegistersStore = defineStore('registers', () => {
         err?.status === 409 &&
         String(err?.message || err?.data?.msg || '').includes('Изменения запрещены')
       ) {
-        let refreshed = null
         try {
-          refreshed = await fetchWrapper.get(`${baseUrl}/${id}`)
-          setDestinationField(refreshed)
+          await refreshReadOnlyRegister(id)
         } catch (refreshError) {
-          // The conflict already proves the server-side lock; keep the UI safe
-          // even if the follow-up refresh cannot be completed.
           reportError(refreshError, { context: 'registers.update conflict refresh' })
-        }
-
-        if (item.value?.id === id) {
-          item.value = refreshed ?? { ...item.value, readOnly: true }
-        }
-
-        const existingIndex = items.value.findIndex((register) => register.id === id)
-        if (existingIndex !== -1) {
-          items.value[existingIndex] = refreshed
-            ? { ...items.value[existingIndex], ...refreshed }
-            : { ...items.value[existingIndex], readOnly: true }
         }
       }
       throw err
@@ -1252,6 +1265,7 @@ export const useRegistersStore = defineStore('registers', () => {
     getReconciliation,
     updateWeightsFromFile,
     getById,
+    refreshReadOnlyRegister,
     invalidateDerived,
     refreshDerived,
     update,

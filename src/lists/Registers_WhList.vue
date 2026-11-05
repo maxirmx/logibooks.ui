@@ -333,7 +333,7 @@ defineExpose({
 
     <hr class="hr" />
 
-    <PageAlertRegion />
+    <PageAlertRegion v-if="!showParcelStatusBulkDialog" />
 
     <ResponsiveFilterBar class="registers-filter-row list-filters" aria-label="Фильтры реестров">
       <v-select

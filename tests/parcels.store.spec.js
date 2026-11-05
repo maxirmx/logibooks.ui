@@ -299,6 +299,19 @@ describe('parcels store', () => {
   })
 
   describe('status selection methods', () => {
+    it('passes the sticker mode and propagates a failed request', async () => {
+      const error = new Error('Ошибка при поиске посылок')
+      fetchWrapper.post.mockRejectedValueOnce(error)
+      const store = useParcelsStore()
+
+      await expect(store.resolveStatusSelection(9, ['001'], 'sticker')).rejects.toBe(error)
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/status-selection/resolve`, {
+        registerId: 9,
+        numbers: ['001'],
+        lookupBy: 'sticker'
+      })
+    })
+
     it('resolves parcel numbers for status bulk change', async () => {
       fetchWrapper.post.mockResolvedValue({ parcelIds: [1], missingNumbers: ['P-2'] })
       const store = useParcelsStore()

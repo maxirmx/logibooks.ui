@@ -387,7 +387,7 @@ async function clearParcelDefect(item) {
     </div>
     <hr class="hr" />
 
-    <PageAlertRegion />
+    <PageAlertRegion v-if="!showParcelStatusBulkDialog" />
     <div v-if="readOnly" class="alert alert-warning read-only-notice">
       Изменения запрещены. Просмотр, фильтрация и экспорт доступны.
     </div>

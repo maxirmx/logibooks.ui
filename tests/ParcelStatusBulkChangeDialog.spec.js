@@ -170,13 +170,21 @@ describe('ParcelStatusBulkChangeDialog', () => {
     expect(wrapper.find('[data-testid="parcel-status-bulk-report"]').element.value).toBe('')
   })
 
-  it('updates found parcels and emits refresh event', async () => {
+  it.each([
+    [0, '0 посылок'],
+    [1, 'одной посылки'],
+    [2, '2 посылок'],
+    [11, '11 посылок'],
+    [21, '21 посылки'],
+    [111, '111 посылок']
+  ])('updates found parcels and reports the count %i in the genitive case', async (updatedCount, countText) => {
+    const parcelIds = Array.from({ length: updatedCount + 1 }, (_, index) => index + 11)
     mocks.resolveStatusSelection.mockResolvedValue({
-      parcelIds: [11, 12],
+      parcelIds,
       missingNumbers: [],
       blockedItems: []
     })
-    mocks.updateStatusSelection.mockResolvedValue({ updatedCount: 2, skippedCount: 1 })
+    mocks.updateStatusSelection.mockResolvedValue({ updatedCount, skippedCount: 1 })
     const wrapper = mountDialog()
 
     await wrapper.find('[data-testid="parcel-status-bulk-status"]').setValue('3')
@@ -186,8 +194,8 @@ describe('ParcelStatusBulkChangeDialog', () => {
     await wrapper.find('[data-testid="parcel-status-bulk-update-found"]').trigger('click')
     await flushPromises()
 
-    expect(mocks.updateStatusSelection).toHaveBeenCalledWith(7, 3, [11, 12])
-    expect(alert(wrapper).text()).toContain('Статус изменен для 2 посылок. Пропущено: 1')
+    expect(mocks.updateStatusSelection).toHaveBeenCalledWith(7, 3, parcelIds)
+    expect(alert(wrapper).text()).toContain(`Статус изменен для ${countText}. Пропущено: 1`)
     expect(wrapper.emitted('updated')).toHaveLength(1)
   })
 
@@ -497,7 +505,7 @@ describe('ParcelStatusBulkChangeDialog', () => {
     await control(wrapper, 'update-found').trigger('click')
     await flushPromises()
     expect(mocks.updateStatusSelection.mock.calls).toEqual([[7, 3, [11]], [7, 3, [11]]])
-    expect(alert(wrapper).text()).toContain('Статус изменен для 1 посылок')
+    expect(alert(wrapper).text()).toContain('Статус изменен для одной посылки')
   })
 
   it.each([

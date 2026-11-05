@@ -20,6 +20,7 @@ import {
 } from '@/helpers/parcel.status.bulk.helpers.js'
 import {
   buildCustomsExclusionWarning,
+  formatParcelCountGenitive,
   getStatusById
 } from '@/helpers/lifecycle.warning.helpers.js'
 
@@ -258,7 +259,8 @@ async function updateStatus(all) {
       if (!isCurrent(operation)) return
       const updatedCount = Number(result?.updatedCount ?? parcelIds.length)
       const skippedCount = Number(result?.skippedCount ?? 0)
-      alertStore.success(`Статус изменен для ${updatedCount} посылок${skippedCount > 0 ? `. Пропущено: ${skippedCount}` : ''}`)
+      const updatedParcels = updatedCount === 1 ? 'одной посылки' : formatParcelCountGenitive(updatedCount)
+      alertStore.success(`Статус изменен для ${updatedParcels}${skippedCount > 0 ? `. Пропущено: ${skippedCount}` : ''}`)
     }
     emit('updated')
   } catch (error) {

@@ -105,6 +105,21 @@ export const useBoxesStore = defineStore('boxes', () => {
     return fetchWrapper.downloadFile(`${baseUrl}/${id}/stickers.csv`, `box-${id}-stickers.csv`)
   }
 
+  function downloadSelectedStickers(registerId, boxIds) {
+    return fetchWrapper.downloadFile(
+      `${apiUrl}/registers/${registerId}/boxes/stickers.csv`,
+      `register-${registerId}-selected-boxes-stickers.csv`,
+      { method: 'POST', body: { boxIds } }
+    )
+  }
+
+  function downloadRegisterStickers(registerId) {
+    return fetchWrapper.downloadFile(
+      `${apiUrl}/registers/${registerId}/boxes/stickers.csv`,
+      `register-${registerId}-stickers.csv`
+    )
+  }
+
   return {
     boxes,
     box,
@@ -116,6 +131,8 @@ export const useBoxesStore = defineStore('boxes', () => {
     getById,
     create,
     update,
-    downloadStickers
+    downloadStickers,
+    downloadSelectedStickers,
+    downloadRegisterStickers
   }
 })

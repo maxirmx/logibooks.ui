@@ -1,5 +1,5 @@
 const manualScanApi = vi.hoisted(() => ({
-  getInProgress: vi.fn().mockResolvedValue([]), getById: vi.fn(), scanParcel: vi.fn(),
+  getInProgress: vi.fn().mockResolvedValue([]), getById: vi.fn(), scanParcel: vi.fn(), scanParcels: vi.fn(),
   getAll: vi.fn(), updateItems: vi.fn()
 }))
 const manualScanConfirm = vi.hoisted(() => vi.fn().mockResolvedValue(true))
@@ -165,7 +165,7 @@ vi.mock('@/stores/scanjobs.store.js', () => ({
   useScanjobsStore: () => ({ ops: { constants: { inProgressStatus: 15, boxOnlyType: 20, parcelScanSource: 10, lookupOperation: 30 } }, ensureOpsLoaded: vi.fn().mockResolvedValue(true), getScanJobLabel: job => `#${job.id}`, createScanJobsListChannel: () => ({ start: vi.fn().mockResolvedValue(true), stop: vi.fn().mockResolvedValue(true) }),
     getInProgress: manualScanApi.getInProgress,
     getById: manualScanApi.getById,
-    scanParcel: manualScanApi.scanParcel,
+    scanParcel: manualScanApi.scanParcel, scanParcels: manualScanApi.scanParcels,
     startScanJobsListMonitor: vi.fn().mockResolvedValue(true),
     stopScanJobsListMonitor: vi.fn().mockResolvedValue(true),
     startParcelExtIdMonitor,
@@ -685,10 +685,9 @@ describe('WbrNParcels_WhList.vue', () => {
     const job = { id: 7, registerId: 9, status: 15, type: 30, operation: 10 }
     manualScanApi.getInProgress.mockResolvedValue([job])
     manualScanApi.getAll.mockResolvedValue({ items: mockItems.value })
-    manualScanApi.scanParcel.mockResolvedValue({ parcelCount: 1, scanSource: 10 })
     let accept, finish
     manualScanConfirm.mockImplementationOnce(() => new Promise(resolve => { accept = resolve }))
-    manualScanApi.scanParcel.mockImplementationOnce(() => new Promise(resolve => { finish = resolve }))
+    manualScanApi.scanParcels.mockImplementationOnce(() => new Promise(resolve => { finish = resolve }))
     const wrapper = mount(WbrNParcelsWhList, { props: { registerId: 9, boxId }, global: { stubs: globalStubs } })
     await resolveAll()
     const table = wrapper.findComponent({ name: 'v-data-table-server' })
@@ -699,16 +698,17 @@ describe('WbrNParcels_WhList.vue', () => {
     const header = wrapper.findComponent({ name: 'RegisterWhHeaderActionBar' })
     expect(header.props('loading')).toBe(false)
     expect(header.props('disabled')).toBe(true)
-    expect(manualScanApi.scanParcel).not.toHaveBeenCalled()
+    expect(manualScanApi.scanParcels).not.toHaveBeenCalled()
     expect(manualScanConfirm.mock.lastCall[0].contentComponentProps.count).toBe(2)
     expect(wrapper.find('[data-testid="parcel-scan-selection"]').exists()).toBe(false)
     accept(true)
     await resolveAll()
     expect(header.props('loading')).toBe(true)
     expect(wrapper.findAll('button[data-testid="manual-parcel-scan"]').every(button => button.element.disabled)).toBe(true)
-    finish({ parcelCount: 1, scanSource: 10 })
+    finish({ completed: [10, 11].map(id => ({ id, count: 1 })), skippedIds: [] })
     await resolveAll()
-    expect(manualScanApi.scanParcel.mock.calls).toEqual([[7, 10], [7, 11]])
+    expect(manualScanApi.scanParcels).toHaveBeenCalledExactlyOnceWith(7, [10, 11])
+    expect(manualScanApi.scanParcel).not.toHaveBeenCalled()
     expect(header.props('loading')).toBe(false)
     expect(header.props('disabled')).toBe(false)
     wrapper.unmount()

@@ -46,6 +46,7 @@ const getById = vi.hoisted(() =>
   vi.fn().mockResolvedValue({ id: 42, name: 'Scanjob A', type: 30, operation: 30, status: 15, registerId: 101 })
 )
 const manualScanParcel = vi.hoisted(() => vi.fn())
+const manualScanParcels = vi.hoisted(() => vi.fn())
 const manualScanBox = vi.hoisted(() => vi.fn())
 const exportStickers = vi.hoisted(() => vi.fn())
 const exportRegisterStickers = vi.hoisted(() => vi.fn())
@@ -349,6 +350,7 @@ vi.mock('@/stores/scanjobs.store.js', () => ({
     },
     getById,
     scanParcel: manualScanParcel,
+    scanParcels: manualScanParcels,
     scanBox: manualScanBox,
     loadMonitorSnapshot,
     resolveMonitorTarget,
@@ -1423,6 +1425,75 @@ describe('Scanjob_Monitor.vue', () => {
     expect(wrapper.find('[data-testid="scanjob-monitor-closed"]').exists()).toBe(true)
     expect(wrapper.get('button[data-testid="scanjob-monitor-follow-user-open"]').classes()).not.toContain('anti-btn-green')
   })
+  it('refreshes once for a batch even when following its committed scans', async () => {
+    persistedFollowUserId.value = 17
+    isAdmin.value = true
+    monitorParcelsPage.value = 1
+    monitorParcelsSortBy.value = []
+    loadMonitorSnapshot.mockResolvedValue(boxSnapshot)
+    let finishScan
+    manualScanParcels.mockImplementationOnce(() => new Promise(resolve => { finishScan = resolve }))
+    const wrapper = mount(ScanjobMonitor, { props: { scanjobId: 42, monitorScope: box7MonitorScope }, global: { stubs: monitorGlobalStubs } })
+    await flushPromises()
+    loadMonitorSnapshot.mockClear()
+    const table = wrapper.getComponent({ name: 'v-data-table' })
+    const [first, second] = boxSnapshot.box.parcels
+    table.vm.$emit('click:row', {}, { item: first })
+    table.vm.$emit('click:row', { ctrlKey: true }, { item: second })
+    await wrapper.get('[data-testid="manual-parcel-scan"]').trigger('click')
+    await flushPromises()
+    expect(manualScanParcels).toHaveBeenCalledExactlyOnceWith(42, [first.parcelId, second.parcelId])
+    const event = { scanJobId: 42, userId: 17, scanCodeId: 601, followTarget: { area: 1, boxId: 7, parcelId: first.parcelId } }
+    await getFollowEventHandler()(event)
+    finishScan({
+      completed: [{ id: first.parcelId, scanCodeId: 601, count: 1 }, { id: second.parcelId, scanCodeId: 602, count: 1 }],
+      skippedIds: []
+    })
+    await flushPromises()
+    await getFollowEventHandler()(event)
+    expect(loadMonitorSnapshot).toHaveBeenCalledOnce()
+    expect(mockReplace).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
+  it.each([
+    ['box', registerMonitorScope, registerSnapshot, registerSnapshot.boxes, manualScanBox,
+      { area: 1, boxId: 7 }, { count: 1, boxCount: 1 }],
+    ['parcel', box7MonitorScope, boxSnapshot, boxSnapshot.box.parcels, manualScanParcel,
+      { area: 1, boxId: 7, parcelId: 70 }, { count: 1 }]
+  ])('keeps the selected %s in place when its row scan sends a follow event', async (
+    kind, monitorScope, snapshot, rows, scan, followTarget, result
+  ) => {
+    persistedFollowUserId.value = 17
+    isAdmin.value = true
+    monitorBoxesPage.value = 1
+    monitorParcelsPage.value = 1
+    mockScanjob.value = { ...mockScanjob.value, operation: 10 }
+    getById.mockResolvedValue(mockScanjob.value)
+    loadMonitorSnapshot.mockResolvedValue(snapshot)
+    let finish
+    scan.mockImplementationOnce(() => new Promise(resolve => { finish = resolve }))
+    const wrapper = mount(ScanjobMonitor, { props: { scanjobId: 42, monitorScope }, global: { stubs: monitorGlobalStubs } })
+    await flushPromises()
+    loadMonitorSnapshot.mockClear()
+    const table = wrapper.getComponent({ name: 'v-data-table' })
+    table.vm.$emit('update:current-items', rows)
+    table.vm.$emit('click:row', {}, { item: rows[0] })
+    await wrapper.vm.$nextTick()
+    const selectedRow = wrapper.get('.selected-parcel-row')
+    await selectedRow.get(`[data-testid="manual-${kind}-scan"]`).trigger('click')
+    expect(scan).toHaveBeenCalledExactlyOnceWith(42, rows[0].parcelId ?? rows[0].boxId)
+    const event = { scanJobId: 42, userId: 17, scanCodeId: 603, followTarget }
+    await getFollowEventHandler()(event)
+    finish({ ...result, scanCodeId: 603 })
+    await flushPromises()
+    await getFollowEventHandler()(event)
+    expect(mockReplace).not.toHaveBeenCalled()
+    expect(loadMonitorSnapshot).toHaveBeenCalledOnce()
+    expect(wrapper.get('.selected-parcel-row').element).toBe(selectedRow.element)
+    wrapper.unmount()
+  })
+
   for (const navigationFails of [false, true]) {
     it('defers followed-scanner navigation during manual scanning' + (navigationFails ? ' and presents a replay failure' : ''), async () => {
       persistedFollowUserId.value = 17

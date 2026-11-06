@@ -517,6 +517,9 @@ describe('Scanjob_Monitor.vue', () => {
     manualConfirm.mockReset().mockResolvedValue(true)
     mockCurrentRoute.value = { fullPath: '/scanjobs/42/monitor' }
     mockAlert.value = null
+    dismissAlert.mockImplementation(id => {
+      if (mockAlert.value?.id === id) mockAlert.value = null
+    })
     alertError.mockImplementation((error) => {
       mockAlert.value = { id: 71, severity: 'error', message: error?.message || String(error) }
       return 71
@@ -1161,6 +1164,58 @@ describe('Scanjob_Monitor.vue', () => {
     expect(wrapper.text()).not.toContain('BOX-OLD')
   })
 
+  it('shows box inspection advice and committed recovery counts independently', async () => {
+    vi.useFakeTimers()
+    persistedFollowUserId.value = 17
+    const recovery = { ...registerSnapshot, returnRecovery: { remaining: 2, recovered: 0 } }
+    loadMonitorSnapshot.mockResolvedValue(recovery)
+    const wrapper = mount(ScanjobMonitor, { props: { scanjobId: 42 }, global: { stubs: monitorGlobalStubs } })
+    await flushPromises()
+
+    const follow = getFollowEventHandler()
+    await follow({
+      scanJobId: 42, userId: 17,
+      recoveryBoxAdvice: {
+        boxNumber: 'ORIGINAL-BOX',
+        instruction: 'Откройте коробку и проверьте посылки',
+        candidateParcelNumbers: ['P1', 'P2']
+      }
+    })
+    const advice = wrapper.get('[data-testid="scanjob-recovery-box-advice"]')
+    expect(advice.text()).toContain('Коробка ORIGINAL-BOX')
+    expect(advice.text()).toContain('Откройте коробку и проверьте посылки')
+    expect(advice.text()).toContain('Посылки P1, P2')
+    expect(wrapper.text()).toContain('Найдено при поиске0')
+    expect(mockReplace).not.toHaveBeenCalled()
+
+    loadMonitorSnapshot.mockResolvedValue({ ...recovery, returnRecovery: { remaining: 1, recovered: 1 } })
+    await follow({ scanJobId: 42, userId: 17, recoveryConfirmed: true })
+    expect(wrapper.find('[data-testid="scanjob-recovery-box-advice"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="scanjob-recovery-confirmed"]').text()).toContain('Посылка найдена при поиске')
+    expect(wrapper.text()).toContain('Найдено при поиске1')
+    startMonitor.mock.calls[0][1].onSnapshot({ ...recovery, returnRecovery: { remaining: 0, recovered: 2 } })
+    vi.advanceTimersByTime(150)
+    await flushPromises()
+    expect(wrapper.text()).toContain('Осталось найти0')
+    expect(wrapper.text()).toContain('Найдено при поиске2')
+    wrapper.unmount()
+  })
+
+  it('opens the saved Inbound verification result for a completed job', async () => {
+    const completed = { ...mockScanjob.value, status: 20, operation: 10 }
+    mockScanjob.value = completed
+    getById.mockResolvedValue(completed)
+    loadMonitorSnapshot.mockResolvedValue({
+      ...registerSnapshot, status: 20, returnVerification: { expected: 9, confirmed: 7, missing: 2 }
+    })
+    const wrapper = mount(ScanjobMonitor, { props: { scanjobId: 42 }, global: { stubs: monitorGlobalStubs } })
+    await flushPromises()
+    expect(wrapper.text()).toContain('Проверка красной зоны')
+    expect(wrapper.text()).toContain('9 / 7 / 2')
+    expect(startMonitor).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
   it('refreshes and highlights same-scope follow event', async () => {
     persistedFollowUserId.value = 17
     loadMonitorSnapshot.mockResolvedValueOnce(boxSnapshot).mockResolvedValueOnce({
@@ -1460,7 +1515,7 @@ describe('Scanjob_Monitor.vue', () => {
     ['box', registerMonitorScope, registerSnapshot, registerSnapshot.boxes, manualScanBox,
       { area: 1, boxId: 7 }, { count: 1, boxCount: 1 }],
     ['parcel', box7MonitorScope, boxSnapshot, boxSnapshot.box.parcels, manualScanParcel,
-      { area: 1, boxId: 7, parcelId: 70 }, { count: 1 }]
+      { area: 1, boxId: 7, parcelId: 70 }, { count: 1, recoveryConfirmed: true }]
   ])('keeps the selected %s in place when its row scan sends a follow event', async (
     kind, monitorScope, snapshot, rows, scan, followTarget, result
   ) => {
@@ -1491,6 +1546,35 @@ describe('Scanjob_Monitor.vue', () => {
     expect(mockReplace).not.toHaveBeenCalled()
     expect(loadMonitorSnapshot).toHaveBeenCalledOnce()
     expect(wrapper.get('.selected-parcel-row').element).toBe(selectedRow.element)
+    if (result.recoveryConfirmed) {
+      expect(wrapper.find('[data-testid="scanjob-recovery-confirmed"]').exists()).toBe(true)
+      scan.mockResolvedValueOnce({ count: 0, recoveryConfirmed: false, scanCodeId: 604 })
+      await selectedRow.get('[data-testid="manual-parcel-scan"]').trigger('click')
+      await flushPromises()
+      expect(wrapper.find('[data-testid="scanjob-recovery-confirmed"]').exists()).toBe(false)
+
+      scan.mockRejectedValueOnce(Object.assign(new Error('Временный конфликт сканирования'), { status: 409 }))
+      await selectedRow.get('[data-testid="manual-parcel-scan"]').trigger('click')
+      await flushPromises()
+      expect(wrapper.text()).toContain('Временный конфликт сканирования')
+
+      scan.mockResolvedValueOnce({ count: 1, recoveryConfirmed: true, scanCodeId: 605 })
+      await selectedRow.get('[data-testid="manual-parcel-scan"]').trigger('click')
+      await flushPromises()
+      expect(wrapper.text()).not.toContain('Временный конфликт сканирования')
+      expect(wrapper.find('[data-testid="scanjob-recovery-confirmed"]').exists()).toBe(true)
+
+      scan.mockResolvedValueOnce({ count: 1, recoveryConfirmed: true, scanCodeId: 606 })
+      loadMonitorSnapshot.mockRejectedValueOnce(new Error('Не удалось обновить данные после сканирования'))
+      await selectedRow.get('[data-testid="manual-parcel-scan"]').trigger('click')
+      await flushPromises()
+      expect(wrapper.text()).toContain('Не удалось обновить данные после сканирования')
+
+      scan.mockResolvedValueOnce({ count: 1, recoveryConfirmed: true, scanCodeId: 607 })
+      await selectedRow.get('[data-testid="manual-parcel-scan"]').trigger('click')
+      await flushPromises()
+      expect(wrapper.text()).not.toContain('Не удалось обновить данные после сканирования')
+    }
     wrapper.unmount()
   })
 

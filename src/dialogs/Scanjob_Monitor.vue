@@ -14,6 +14,7 @@ import { useRegistersStore } from '@/stores/registers.store.js'
 import { useScanjobsStore } from '@/stores/scanjobs.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useScanjobHeading } from '@/composables/useScanjobHeading.js'
+import ScanjobMonitorSummary from '@/components/ScanjobMonitorSummary.vue'
 import { useManualScan } from '@/composables/useManualScan.js'
 import { BOX_SCAN, PARCEL_SCAN } from '@/helpers/manual.scan.helpers.js'
 import LocalLabelPrinting from '@/components/LocalLabelPrinting.vue'
@@ -78,6 +79,21 @@ const selectedArea = ref(scanJobsStore.scanjobMonitorArea.Boxes)
 const selectedBoxId = ref(null)
 const selectedBucketIndex = ref(null)
 const visibleSnapshot = ref(null)
+const recoveryFeedback = ref(null)
+const returnSummaryCards = computed(() => {
+  const recovery = visibleSnapshot.value?.returnRecovery
+  if (recovery) return [
+    { key: 'return-remaining', label: 'Осталось найти', value: recovery.remaining },
+    { key: 'return-recovered', label: 'Найдено при поиске', value: recovery.recovered }
+  ]
+
+  const verification = visibleSnapshot.value?.returnVerification
+  return verification ? [{
+    key: 'return-verification',
+    label: 'Проверка красной зоны · ожидается / проверено / не найдено',
+    value: `${verification.expected} / ${verification.confirmed} / ${verification.missing}`
+  }] : []
+})
 const closedStatus = ref(null)
 const switchingScope = ref(false)
 const monitorStatusOnly = ref(false)
@@ -86,6 +102,7 @@ const registerLoading = ref(true)
 const followUsers = ref([])
 const followUsersLoading = ref(false)
 const selectedFollowUserId = ref(authStore.scanjobmonitor_follow_user_id ?? null)
+watch(selectedFollowUserId, () => { recoveryFeedback.value = null })
 const followSubscriptionActive = ref(false)
 const draftFollowUserId = ref(selectedFollowUserId.value)
 const activeEditor = ref(null)
@@ -148,7 +165,8 @@ const manualScan = useManualScan({
   registerId, job: scanjob,
   disabled: () => isLoading.value || defectActionRunning.value || Boolean(closedInfo.value),
   scopeKey: () => `${props.scanjobId}:${monitorScopeKey(props.monitorScope)}`,
-  refresh: refreshCurrentScopeSnapshot
+  refresh: refreshCurrentScopeSnapshot,
+  onRecoveryFeedback: (result) => { recoveryFeedback.value = result }
 })
 const controlsBusy = computed(() => isLoading.value || manualScan.locked.value)
 let deferredFollowEvent = null
@@ -502,6 +520,7 @@ function clearPendingSnapshot() {
 }
 
 async function resetMonitorObservation() {
+  recoveryFeedback.value = null
   scopeVersion.value += 1
   clearPendingSnapshot()
   await clearFollowUserSubscription()
@@ -762,6 +781,9 @@ async function handleFollowEvent(followEvent, version = scopeVersion.value) {
   ) {
     return
   }
+
+  recoveryFeedback.value = followEvent.recoveryBoxAdvice || followEvent.recoveryConfirmed ? followEvent : null
+  if (followEvent.recoveryBoxAdvice) return
 
   const targetScope = normalizeFollowTarget(followEvent?.followTarget)
   const targetParcelId = toNumberOrNull(followEvent?.followTarget?.parcelId)
@@ -1104,6 +1126,17 @@ defineExpose({
     </div>
 
     <div class="scanjob-monitor-panel">
+      <ScanjobMonitorSummary v-if="returnSummaryCards.length" :cards="returnSummaryCards" />
+      <div v-if="recoveryFeedback?.recoveryBoxAdvice" class="monitor-empty scanjob-recovery-feedback" role="status"
+        data-testid="scanjob-recovery-box-advice">
+        <div>Коробка {{ recoveryFeedback.recoveryBoxAdvice.boxNumber }}</div>
+        <div>{{ recoveryFeedback.recoveryBoxAdvice.instruction }}</div>
+        <div>Посылки {{ recoveryFeedback.recoveryBoxAdvice.candidateParcelNumbers.join(', ') }}</div>
+      </div>
+      <div v-else-if="recoveryFeedback?.recoveryConfirmed" class="monitor-empty" role="status"
+        data-testid="scanjob-recovery-confirmed">
+        Посылка найдена при поиске.
+      </div>
       <div
         v-if="isLoading && !visibleSnapshot"
         class="monitor-empty"
@@ -1170,6 +1203,10 @@ defineExpose({
 </template>
 
 <style scoped>
+.scanjob-recovery-feedback {
+  overflow-wrap: anywhere;
+}
+
 .scanjob-monitor-panel {
   min-height: 320px;
 }

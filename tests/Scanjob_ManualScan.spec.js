@@ -55,6 +55,17 @@ beforeEach(() => {
 afterEach(() => { wrapper?.unmount(); vi.unstubAllGlobals() })
 
 describe('monitor manual selection with the real Vuetify table', () => {
+  it('reports a confirmed recovery as a recovery in the local alert', async () => {
+    scanParcel.mockResolvedValueOnce({ count: 1, parcelCount: 1, recoveryConfirmed: true })
+    render()
+    await flushPromises()
+    const [, row] = wrapper.findAll('tbody tr')
+    await row.trigger('click')
+    await row.get('[data-testid="manual-parcel-scan"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain('Найдено при поиске: 1')
+  })
+
   it('keeps the selected parcel on the sorted page while scanning and refreshing', async () => {
     let finish
     scanParcel.mockImplementationOnce(() => new Promise(resolve => { finish = resolve }))

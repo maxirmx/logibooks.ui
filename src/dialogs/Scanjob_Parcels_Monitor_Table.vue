@@ -76,7 +76,7 @@ const displayedParcels = computed(() => {
 })
 const selection = useParcelMultiSelect({
   items: displayedParcels, loading: computed(() => props.loading), selectedParcelId: ref(null),
-  page: scanjobmonitor_parcels_page, dataTableRef,
+  page: scanjobmonitor_parcels_page,
   scopeKey: () => JSON.stringify([manualScan?.scopeKey.value, scanjobmonitor_parcels_per_page.value, scanjobmonitor_parcels_sort_by.value]),
   getItemId: parcelScanId,
   isItemSelectable: item => parcelScanId(item) != null,
@@ -85,7 +85,7 @@ const selection = useParcelMultiSelect({
   getBaseRowClass: data => getParcelId(data.item) === selectedParcelIdNumber.value ? 'monitor-followed-parcel-row' : ''
 })
 onUnmounted(selection.stop)
-if (manualScan) watch(manualScan.completedIds, ids => selection.removeSelected(ids))
+if (manualScan) watch(manualScan.completedBatchIds, ids => selection.removeSelected(ids))
 
 function updateDisplayedParcels(items) {
   currentPageItems.value = items.map(item => item.raw ?? item)
@@ -275,7 +275,7 @@ watch(
     @update:page="handlePageChange"
     @update:items-per-page="handleTableControlsChange"
     @update:sort-by="handleTableControlsChange"
-    :disable-sort="manualScan?.locked.value"
+    :inert="manualScan?.locked.value || undefined"
     :items-per-page-options="itemsPerPageOptions"
     items-per-page-text="Посылок на странице"
     page-text="{0}-{1} из {2}"

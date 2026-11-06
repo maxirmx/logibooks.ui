@@ -52,13 +52,12 @@ const manualScan = useManualBoxScan({
   registerId: () => props.registerId, disabled: loading, refresh: () => boxesStore.getAll(props.registerId)
 })
 const controlsBusy = computed(() => loading.value || manualScan.locked.value)
-const dataTableRef = ref(null)
 const contextMenu = ref(null)
 const scopeKey = computed(() => JSON.stringify([
   props.registerId, authStore.boxes_page, authStore.boxes_per_page, authStore.boxes_sort_by, authStore.boxes_search
 ]))
 const { selection, updateDisplayedItems } = useManualScanSelection({
-  scan: manualScan, loading, page: toRef(authStore, 'boxes_page'), dataTableRef, scopeKey, contextMenu
+  scan: manualScan, loading, page: toRef(authStore, 'boxes_page'), scopeKey, contextMenu
 })
 const readOnly = computed(() => register.value?.readOnly === true)
 const registerHeading = computed(() =>
@@ -223,8 +222,6 @@ defineExpose({
 
     <v-card class="table-card">
       <v-data-table
-        ref="dataTableRef"
-        :disable-sort="manualScan.locked.value"
         :inert="manualScan.locked.value || undefined"
         :row-props="selection.getRowProps"
         @click:row="selection.handleRowClick"

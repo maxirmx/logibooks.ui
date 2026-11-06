@@ -1056,4 +1056,16 @@ describe('manual scan API methods', () => {
     expect(store.error).toBe(failure)
   })
 
+  it.each([['scanParcels', 'parcels'], ['scanBoxes', 'boxes']])('submits %s as one batch and propagates failures', async (method, target) => {
+    const store = useScanjobsStore()
+    const result = { completed: [{ id: 21, count: 1 }], skippedIds: [22] }
+    fetchWrapper.post.mockResolvedValueOnce(result)
+    expect(await store[method](7, [21, 22])).toBe(result)
+    expect(fetchWrapper.post).toHaveBeenCalledExactlyOnceWith(apiUrl + `/scanjobs/7/${target}/scan-batch`, { ids: [21, 22] })
+    const failure = Object.assign(new Error('Изменения запрещены'), { status: 409 })
+    fetchWrapper.post.mockRejectedValueOnce(failure)
+    await expect(store[method](7, [21, 22])).rejects.toBe(failure)
+    expect(store.error).toBe(failure)
+  })
+
 })

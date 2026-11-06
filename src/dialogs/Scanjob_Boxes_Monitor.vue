@@ -49,13 +49,12 @@ const {
   scanjobmonitor_boxes_page
 } = storeToRefs(authStore)
 
-const dataTableRef = ref(null)
 const contextMenu = ref(null)
 const scopeKey = computed(() => JSON.stringify([
   props.snapshot?.scanJobId, scanjobmonitor_boxes_page.value, scanjobmonitor_boxes_per_page.value, scanjobmonitor_boxes_sort_by.value
 ]))
 const { selection, locked, updateDisplayedItems } = useManualScanSelection({
-  loading: computed(() => props.loading), page: scanjobmonitor_boxes_page, dataTableRef, scopeKey, contextMenu
+  loading: computed(() => props.loading), page: scanjobmonitor_boxes_page, scopeKey, contextMenu
 })
 const controlsBusy = computed(() => props.loading || locked.value)
 
@@ -109,8 +108,6 @@ function openBox(item) {
       </div>
 
       <v-data-table
-        ref="dataTableRef"
-        :disable-sort="locked"
         :inert="locked || undefined"
         :row-props="selection.getRowProps"
         @click:row="selection.handleRowClick"

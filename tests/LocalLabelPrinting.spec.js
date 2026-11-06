@@ -91,7 +91,7 @@ it.each(['parcel', 'box'].flatMap(kind => [false, true].map(fails => ({ kind, fa
     env.scanStore = {
       ops: { constants: { inProgressStatus: 15, parcelOnlyType: 10, boxOnlyType: 20, lookupOperation: 30 } },
       ensureOpsLoaded: vi.fn().mockResolvedValue(true),
-      scanParcel: scanRequest, scanBox: scanRequest
+      scanParcel: scanRequest, scanBox: scanRequest, scanParcels: scanRequest, scanBoxes: scanRequest
     }
     let manual, accept, finish, reject
     const entity = { id: 7, boxId: 17, printableTemplates: ['WBRN'], companyId: 2, boxSticker: 'BOX-STICKER' }
@@ -128,10 +128,10 @@ it.each(['parcel', 'box'].flatMap(kind => [false, true].map(fails => ({ kind, fa
     expect(await panel().vm.printParcel(target)).toBe(false)
     expect(scanRequest).not.toHaveBeenCalled()
     accept(true); await flushPromises()
-    expect(scanRequest).toHaveBeenCalledWith(42, kind === 'box' ? 17 : 7)
+    expect(scanRequest).toHaveBeenCalledWith(42, [kind === 'box' ? 17 : 7])
     expect(wrapper.get('[data-testid="monitor-print-label"]').element.disabled).toBe(true)
     if (fails) reject(Object.assign(new Error('Не удалось отметить сканирование'), { status: 400 }))
-    else finish({ count: 1, parcelCount: 1, boxCount: 1 })
+    else finish({ completed: [{ id: kind === 'box' ? 17 : 7, count: 1, boxCount: 1 }], skippedIds: [] })
     expect(await pending).toBe(!fails)
     await flushPromises()
     expect(refresh).toHaveBeenCalledOnce()

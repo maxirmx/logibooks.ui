@@ -13,7 +13,7 @@ import { reportError } from '@/helpers/error.helpers.js'
  * @param {import('vue').Ref<boolean>} options.loading       - whether the table is loading
  * @param {import('vue').Ref<number|null>} options.selectedId - single-selected parcel id (auth store ref)
  * @param {import('vue').Ref<number>} options.page           - current page ref (used to clear selection on page change)
- * @param {import('vue').Ref}         options.dataTableRef   - template ref to the v-data-table-server
+ * @param {import('vue').Ref}        [options.dataTableRef]  - table ref for scrolling to the selection after item updates
  * @param {Function}                  [options.getBaseRowClass] - optional fn(data) => string for base row CSS class
  */
 export function useTableMultiSelect({
@@ -101,7 +101,7 @@ export function useTableMultiSelect({
   // ------- scroll -------
 
   function scrollToSelectedItem() {
-    if (selectedIds.value.size === 0 || !dataTableRef.value) return
+    if (selectedIds.value.size === 0 || !dataTableRef?.value) return
 
     nextTick(() => {
       try {

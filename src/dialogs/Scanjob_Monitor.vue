@@ -746,6 +746,7 @@ async function startFollowUserSubscription({
 }
 
 async function handleFollowEvent(followEvent, version = scopeVersion.value) {
+  if (manualScan.includesCompletedScan(followEvent?.scanCodeId)) return
   if (manualScan.locked.value) {
     deferredFollowEvent = { event: followEvent, version }
     return

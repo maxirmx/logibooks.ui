@@ -26,14 +26,14 @@ export function boxScanSuccessMessage({ completed, matched, lookup, empty, match
 
 export const PARCEL_SCAN = {
   kind: 'parcel', getId: parcelScanId, disabledReason: parcelScanDisabledReason,
-  incompatibleType: 'boxOnlyType', scanMethod: 'scanParcel', title: 'Сканирование посылок',
+  incompatibleType: 'boxOnlyType', scanMethod: 'scanParcel', batchMethod: 'scanParcels', title: 'Сканирование посылок',
   confirmation: ParcelScanConfirmationContent, successMessage: parcelScanSuccessMessage,
   failureEntity: 'посылке', checkEntity: 'проверьте посылку', isEmpty: () => false
 }
 
 export const BOX_SCAN = {
   kind: 'box', getId: boxScanId, disabledReason: boxScanDisabledReason,
-  incompatibleType: 'parcelOnlyType', scanMethod: 'scanBox', title: 'Сканирование коробок',
+  incompatibleType: 'parcelOnlyType', scanMethod: 'scanBox', batchMethod: 'scanBoxes', title: 'Сканирование коробок',
   confirmation: BoxScanConfirmationContent, successMessage: boxScanSuccessMessage,
   failureEntity: 'коробке', checkEntity: 'проверьте коробку', isEmpty: result => result?.boxCount === 0
 }

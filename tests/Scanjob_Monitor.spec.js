@@ -520,6 +520,14 @@ describe('Scanjob_Monitor.vue', () => {
     dismissAlert.mockImplementation(id => {
       if (mockAlert.value?.id === id) mockAlert.value = null
     })
+    alertInfo.mockImplementation((message) => {
+      mockAlert.value = { id: 72, severity: 'info', message }
+      return 72
+    })
+    alertSuccess.mockImplementation((message) => {
+      mockAlert.value = { id: 73, severity: 'success', message }
+      return 73
+    })
     alertError.mockImplementation((error) => {
       mockAlert.value = { id: 71, severity: 'error', message: error?.message || String(error) }
       return 71
@@ -1181,17 +1189,20 @@ describe('Scanjob_Monitor.vue', () => {
         candidateParcelNumbers: ['P1', 'P2']
       }
     })
-    const advice = wrapper.get('[data-testid="scanjob-recovery-box-advice"]')
+    const advice = wrapper.get('[data-testid="page-alert-region"]')
     expect(advice.text()).toContain('Коробка ORIGINAL-BOX')
     expect(advice.text()).toContain('Откройте коробку и проверьте посылки')
     expect(advice.text()).toContain('Посылки P1, P2')
     expect(wrapper.text()).toContain('Найдено при поиске0')
     expect(mockReplace).not.toHaveBeenCalled()
 
+    await follow({ scanJobId: 42, userId: 17 })
+    expect(wrapper.find('[data-testid="page-alert-region"]').exists()).toBe(false)
+
     loadMonitorSnapshot.mockResolvedValue({ ...recovery, returnRecovery: { remaining: 1, recovered: 1 } })
     await follow({ scanJobId: 42, userId: 17, recoveryConfirmed: true })
-    expect(wrapper.find('[data-testid="scanjob-recovery-box-advice"]').exists()).toBe(false)
-    expect(wrapper.get('[data-testid="scanjob-recovery-confirmed"]').text()).toContain('Посылка найдена при поиске')
+    expect(wrapper.text()).not.toContain('ORIGINAL-BOX')
+    expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain('Посылка найдена при поиске')
     expect(wrapper.text()).toContain('Найдено при поиске1')
     startMonitor.mock.calls[0][1].onSnapshot({ ...recovery, returnRecovery: { remaining: 0, recovered: 2 } })
     vi.advanceTimersByTime(150)
@@ -1547,11 +1558,11 @@ describe('Scanjob_Monitor.vue', () => {
     expect(loadMonitorSnapshot).toHaveBeenCalledOnce()
     expect(wrapper.get('.selected-parcel-row').element).toBe(selectedRow.element)
     if (result.recoveryConfirmed) {
-      expect(wrapper.find('[data-testid="scanjob-recovery-confirmed"]').exists()).toBe(true)
+      expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain('Посылка найдена при поиске')
       scan.mockResolvedValueOnce({ count: 0, recoveryConfirmed: false, scanCodeId: 604 })
       await selectedRow.get('[data-testid="manual-parcel-scan"]').trigger('click')
       await flushPromises()
-      expect(wrapper.find('[data-testid="scanjob-recovery-confirmed"]').exists()).toBe(false)
+      expect(wrapper.text()).not.toContain('Посылка найдена при поиске')
 
       scan.mockRejectedValueOnce(Object.assign(new Error('Временный конфликт сканирования'), { status: 409 }))
       await selectedRow.get('[data-testid="manual-parcel-scan"]').trigger('click')
@@ -1562,7 +1573,7 @@ describe('Scanjob_Monitor.vue', () => {
       await selectedRow.get('[data-testid="manual-parcel-scan"]').trigger('click')
       await flushPromises()
       expect(wrapper.text()).not.toContain('Временный конфликт сканирования')
-      expect(wrapper.find('[data-testid="scanjob-recovery-confirmed"]').exists()).toBe(true)
+      expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain('Посылка найдена при поиске')
 
       scan.mockResolvedValueOnce({ count: 1, recoveryConfirmed: true, scanCodeId: 606 })
       loadMonitorSnapshot.mockRejectedValueOnce(new Error('Не удалось обновить данные после сканирования'))

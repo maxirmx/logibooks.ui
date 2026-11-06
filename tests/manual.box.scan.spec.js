@@ -108,6 +108,40 @@ afterEach(() => {
 })
 
 describe('manual box adapters', () => {
+  it.each([false, true])('shows local inspection advice for box scans (batch: %s)', async (bulk) => {
+    const { wrapper, scan, opts } = harness({ monitor: true, candidate: { ...job, operation: 30 } })
+    await flushPromises()
+    const scanned = rows.value.slice(0, bulk ? 2 : 1)
+    const results = scanned.map(box => ({
+      id: box.id, count: 0, boxCount: 1,
+      recoveryBoxAdvice: {
+        boxNumber: box.code,
+        instruction: 'Откройте коробку и проверьте посылки',
+        candidateParcelNumbers: [`P-${box.id}`]
+      }
+    }))
+    if (bulk) {
+      api.scanBoxes.mockResolvedValueOnce({ completed: results, skippedIds: [] })
+    } else {
+      api.scanBox.mockResolvedValueOnce(results[0])
+      opts.refresh.mockRejectedValueOnce(new Error('Не удалось обновить данные'))
+      await scan.run(scanned, job.id)
+      expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain('Не удалось обновить данные')
+      api.scanBox.mockResolvedValueOnce(results[0])
+    }
+
+    await scan.run(scanned, job.id, bulk)
+    const message = wrapper.get('[data-testid="page-alert-region"]')
+    for (const box of scanned) {
+      expect(message.text()).toContain(`Коробка ${box.code}`)
+      expect(message.text()).toContain(`Посылки P-${box.id}`)
+    }
+    expect(message.text()).toContain('Откройте коробку и проверьте посылки')
+    expect(message.text()).not.toContain('Не удалось обновить данные')
+    await message.get('[aria-label="Закрыть сообщение"]').trigger('click')
+    expect(wrapper.find('[data-testid="page-alert-region"]').exists()).toBe(false)
+  })
+
   it.each([[null, null], [{ id: 0 }, null], [{ id: 1.5 }, null], [{ id: '2' }, 2],
     [{ boxId: 7, id: 2, area: 1 }, 7], [{ area: 2, boxId: null, bucketIndex: 0 }, null], [{ area: 3, id: 1 }, null]])('normalizes only physical box identities: %j', (row, id) => expect(boxScanId(row)).toBe(id))
   it.each([[1, 'Выбрана 1 коробка'], [2, 'Выбрано 2 коробки'], [5, 'Выбрано 5 коробок'], [11, 'Выбрано 11 коробок'], [21, 'Выбрана 21 коробка']])('reuses confirmation with Russian box counts', (count, message) => {

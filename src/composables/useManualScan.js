@@ -3,6 +3,7 @@
 
 import { computed, markRaw, onMounted, onUnmounted, provide, reactive, ref, toValue, watch } from 'vue'
 import { PARCEL_SCAN, MANUAL_SCAN_KEY } from '@/helpers/manual.scan.helpers.js'
+import { formatRecoveryScanMessage } from '@/helpers/scanjob.monitor.helpers.js'
 import { useScanjobsStore } from '@/stores/scanjobs.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
@@ -11,7 +12,7 @@ import { APP_DIALOG_BUTTON_PROPS } from '@/helpers/dialog.helpers.js'
 import { getErrorMessage, reportError } from '@/helpers/error.helpers.js'
 
 export function useManualScan({ registerId, job = null, disabled = false, target = PARCEL_SCAN,
-  scopeKey = null, refresh, onRecoveryFeedback }) {
+  scopeKey = null, refresh }) {
   const scanTarget = computed(() => toValue(target))
   const store = useScanjobsStore()
   const auth = useAuthStore()
@@ -37,7 +38,6 @@ export function useManualScan({ registerId, job = null, disabled = false, target
   let version = 0
   let jobsVersion = 0
   let completedScanCodes = new Set()
-  let failureAlertId = null
 
   function disabledReason(candidate) {
     return scanTarget.value.disabledReason(candidate, constants.value)
@@ -120,7 +120,6 @@ export function useManualScan({ registerId, job = null, disabled = false, target
       refreshNeeded = true
       pendingBatch.value = { jobId, parcels: frozenParcels, uncertain: false }
       if (toValue(disabled) || !canScan.value) throw new Error('Операция остановлена')
-      onRecoveryFeedback?.(null)
       requestInFlight = true
       const response = bulk
         ? await store[adapter.batchMethod](jobId, ids)
@@ -130,23 +129,21 @@ export function useManualScan({ registerId, job = null, disabled = false, target
       const { completed, skippedIds } = response
       if (skippedIds.length) {
         failureMessage = `Не удалось отсканировать позиции, которых нет в партии задания: ${skippedIds.map(id => `#${id}`).join(', ')}.`
-      } else if (completed.length === 1 && onRecoveryFeedback &&
-          (completed[0].recoveryBoxAdvice || completed[0].recoveryConfirmed)) {
-        if (failureAlertId != null) {
-          alerts.dismiss(failureAlertId)
-          failureAlertId = null
-        }
-        onRecoveryFeedback(completed[0])
-      } else if (completed.some(result => result.recoveryConfirmed)) {
-        const recovered = completed.filter(result => result.recoveryConfirmed).length
-        summary = { level: 'info', message: `Найдено при поиске: ${recovered}` }
       } else {
-        const matches = lookup ? completed.filter(result => result.count > 0) : []
-        const empty = completed.filter(adapter.isEmpty).length
-        const matchedParcels = matches.reduce((sum, result) => sum + result.count, 0)
-        summary = {
-          level: empty ? 'warning' : matches.length ? 'info' : 'success',
-          message: adapter.successMessage({ completed: completed.length, matched: matches.length, lookup, empty, matchedParcels })
+        const advice = completed.filter(result => result.recoveryBoxAdvice)
+          .map(formatRecoveryScanMessage).join('\n\n')
+        const recovery = advice || (completed.length === 1 ? formatRecoveryScanMessage(completed[0]) : null)
+        const recovered = completed.filter(result => result.recoveryConfirmed).length
+        if (recovery || recovered) {
+          summary = { level: 'info', message: recovery ?? `Найдено при поиске: ${recovered}` }
+        } else {
+          const matches = lookup ? completed.filter(result => result.count > 0) : []
+          const empty = completed.filter(adapter.isEmpty).length
+          const matchedParcels = matches.reduce((sum, result) => sum + result.count, 0)
+          summary = {
+            level: empty ? 'warning' : matches.length ? 'info' : 'success',
+            message: adapter.successMessage({ completed: completed.length, matched: matches.length, lookup, empty, matchedParcels })
+          }
         }
       }
       completedScanCodes = new Set(completed.map(item => item.scanCodeId).filter(Number.isInteger))
@@ -171,13 +168,13 @@ export function useManualScan({ registerId, job = null, disabled = false, target
         }
         catch (error) {
           if (failureMessage || !current()) reportError(error, { context: 'manual scan failure refresh' })
-          else failureAlertId = alerts.error(error, { fallback: 'Не удалось обновить данные после сканирования. Обновите страницу.' })
+          else alerts.error(error, { fallback: 'Не удалось обновить данные после сканирования. Обновите страницу.' })
         }
       }
       busy.value = false
       confirming.value = false
       if (failureMessage) {
-        if (current()) failureAlertId = alerts.error(failureMessage)
+        if (current()) alerts.error(failureMessage)
         else if (failure) reportError(failure, { context: 'manual scan after scope change' })
       }
     }

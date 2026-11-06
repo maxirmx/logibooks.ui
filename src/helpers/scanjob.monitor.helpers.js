@@ -126,6 +126,18 @@ export function formatBoxWeight(value) {
   })} кг`
 }
 
+export function formatRecoveryScanMessage(result) {
+  const advice = result?.recoveryBoxAdvice
+  if (advice) {
+    return [
+      `Коробка ${advice.boxNumber}`,
+      advice.instruction,
+      `Посылки ${advice.candidateParcelNumbers.join(', ')}`
+    ].join('\n')
+  }
+  return result?.recoveryConfirmed ? 'Посылка найдена при поиске.' : null
+}
+
 export function formatParcelProgress(item) {
   return [
     item?.totalParcels,

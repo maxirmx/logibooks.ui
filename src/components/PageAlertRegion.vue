@@ -105,6 +105,7 @@ onUnmounted(() => {
 .page-alert-region__content {
   min-width: 0;
   overflow-wrap: anywhere;
+  white-space: pre-line;
 }
 
 .page-alert-region__actions {

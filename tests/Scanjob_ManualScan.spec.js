@@ -63,7 +63,7 @@ describe('monitor manual selection with the real Vuetify table', () => {
     await row.trigger('click')
     await row.get('[data-testid="manual-parcel-scan"]').trigger('click')
     await flushPromises()
-    expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain('Найдено при поиске: 1')
+    expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain('Посылка найдена при поиске')
   })
 
   it('keeps the selected parcel on the sorted page while scanning and refreshing', async () => {

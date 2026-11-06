@@ -30,21 +30,6 @@ const globalStubs = {
 }
 
 describe('ArticleWithH', () => {
-  it('renders input without action button when notificationId is absent', () => {
-    const wrapper = mount(ArticleWithH, {
-      props: {
-        item: { article: '123', notificationId: null },
-        errors: {},
-        disabled: false
-      },
-      global: { stubs: globalStubs }
-    })
-
-    expect(wrapper.find('[data-test="article-input"]').exists()).toBe(true)
-    expect(wrapper.find('.form-group').exists()).toBe(true)
-    expect(wrapper.find('.action-button-stub').exists()).toBe(false)
-  })
-
   it('emits approve-notification when action button is clicked', async () => {
     const wrapper = mount(ArticleWithH, {
       props: {

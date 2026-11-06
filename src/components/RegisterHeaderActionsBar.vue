@@ -28,6 +28,7 @@ const props = defineProps({
   mutationDisabled: { type: Boolean, default: false },
   iconSize: { type: String, default: '2x' },
   loading: { type: Boolean, default: false },
+  progressDialogVisible: { type: Boolean, default: false },
   noHistoricData: { type: Boolean, default: false },
   showPassportCheck: { type: Boolean, default: false },
   showWeightUpdate: { type: Boolean, default: false },
@@ -254,7 +255,7 @@ function openCmrSettings() {
 <template>
   <div class="header-actions-bar">
     <!-- Loading is independent of totals readiness; preserve the original standalone spinner. -->
-    <div v-if="loading" class="header-actions header-actions-group">
+    <div v-if="loading && !progressDialogVisible" class="header-actions header-actions-group">
         <span class="spinner-border spinner-border-m"></span>
     </div>
     <div v-if="isSrLogistPlus" class="header-actions header-actions-group">

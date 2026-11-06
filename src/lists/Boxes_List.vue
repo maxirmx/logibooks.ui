@@ -13,6 +13,8 @@ import router from '@/router'
 import ActionButton from '@/components/ActionButton.vue'
 import BoxStickerPrintButton from '@/components/BoxStickerPrintButton.vue'
 import BoxStickerExportButton from '@/components/BoxStickerExportButton.vue'
+import BoxStickerContextMenu from '@/components/BoxStickerContextMenu.vue'
+import RegisterBoxStickerExportButton from '@/components/RegisterBoxStickerExportButton.vue'
 import LocalLabelPrinting from '@/components/LocalLabelPrinting.vue'
 import { LABEL_PRINTING_KEY } from '@/helpers/label.printing.helpers.js'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
@@ -50,10 +52,12 @@ const manualScan = useManualBoxScan({
   registerId: () => props.registerId, disabled: loading, refresh: () => boxesStore.getAll(props.registerId)
 })
 const controlsBusy = computed(() => loading.value || manualScan.locked.value)
-const dataTableRef = ref(null)
+const contextMenu = ref(null)
+const scopeKey = computed(() => JSON.stringify([
+  props.registerId, authStore.boxes_page, authStore.boxes_per_page, authStore.boxes_sort_by, authStore.boxes_search
+]))
 const { selection, updateDisplayedItems } = useManualScanSelection({
-  scan: manualScan, loading, page: toRef(authStore, 'boxes_page'), dataTableRef,
-  scopeKey: () => JSON.stringify([props.registerId, authStore.boxes_page, authStore.boxes_per_page, authStore.boxes_sort_by, authStore.boxes_search])
+  scan: manualScan, loading, page: toRef(authStore, 'boxes_page'), scopeKey, contextMenu
 })
 const readOnly = computed(() => register.value?.readOnly === true)
 const registerHeading = computed(() =>
@@ -160,10 +164,10 @@ defineExpose({
     <div class="header-with-actions">
       <h1 class="primary-heading">Коробки: {{ registerHeading }}</h1>
       <div class="header-actions-bar">
-        <LocalLabelPrinting ref="printingPanel" :disabled="manualScan.locked.value" />
         <div v-if="loading || manualScan.busy.value" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
         </div>
+        <LocalLabelPrinting ref="printingPanel" :disabled="manualScan.locked.value" />
         <div class="header-actions header-actions-group">
           <ActionButton
             :item="{}"
@@ -173,6 +177,11 @@ defineExpose({
             :disabled="controlsBusy || readOnly"
             data-testid="box-create-action"
             @click="openCreateView"
+          />
+          <RegisterBoxStickerExportButton
+            :key="props.registerId"
+            :register-id="props.registerId"
+            :disabled="controlsBusy"
           />
           <ActionButton
             :item="{}"
@@ -191,6 +200,16 @@ defineExpose({
 
     <PageAlertRegion />
 
+    <BoxStickerContextMenu
+      v-if="authStore.isWhManagerPlus"
+      :key="props.registerId"
+      ref="contextMenu"
+      :register-id="props.registerId"
+      :scope-key="scopeKey"
+      :read-only="readOnly"
+      :disabled="controlsBusy"
+    />
+
     <v-text-field
       class="list-filters"
       v-model="authStore.boxes_search"
@@ -203,8 +222,6 @@ defineExpose({
 
     <v-card class="table-card">
       <v-data-table
-        ref="dataTableRef"
-        :disable-sort="manualScan.locked.value"
         :inert="manualScan.locked.value || undefined"
         :row-props="selection.getRowProps"
         @click:row="selection.handleRowClick"

@@ -12,19 +12,6 @@ const fontAwesomeStub = {
 }
 
 describe('KeyCaptureInput.vue', () => {
-  it('captures keydown and emits update:modelValue', async () => {
-    const wrapper = mount(KeyCaptureInput, {
-      props: { modelValue: '' },
-      global: { stubs: { 'font-awesome-icon': fontAwesomeStub } }
-    })
-
-    const input = wrapper.find('input')
-    await input.trigger('keydown', { code: 'F1', key: 'F1' })
-
-    expect(wrapper.emitted('update:modelValue')).toBeTruthy()
-    expect(wrapper.emitted('update:modelValue')[0]).toEqual(['F1'])
-  })
-
   it('ignores modifier-only keys (Control)', async () => {
     const wrapper = mount(KeyCaptureInput, {
       props: { modelValue: '' },

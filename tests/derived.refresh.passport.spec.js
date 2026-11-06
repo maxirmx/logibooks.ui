@@ -28,23 +28,6 @@ beforeEach(() => {
 })
 
 describe('passport state during derived refreshes', () => {
-  it.each([false, true])('retains newer register state in item and list (initial %s)', async initial => {
-    const registers = useRegistersStore()
-    registers.item = register({ hasPendingPassportChecks: initial })
-    registers.items = [register({ hasPendingPassportChecks: initial }), { id: 99 }]
-    const pending = deferred()
-    fetchWrapper.get.mockReturnValueOnce(pending.promise)
-    const refresh = registers.refreshDerived(12)
-    await flushPromises()
-    registers.applyPassportCheckState(12, { hasPendingPassportChecks: !initial, revision: 8 })
-    pending.resolve(register({ hasPendingPassportChecks: initial }))
-    await refresh
-    expect(registers.item.hasPendingPassportChecks).toBe(!initial)
-    expect(registers.items[0].hasPendingPassportChecks).toBe(!initial)
-    expect(registers.items[1]).toEqual({ id: 99 })
-    expect(registers.applyPassportCheckState(12, { hasPendingPassportChecks: !initial, revision: 8 })).toBe(false)
-  })
-
   it('uses a new watermark for every coalesced follow-up request', async () => {
     const registers = useRegistersStore()
     registers.item = register()

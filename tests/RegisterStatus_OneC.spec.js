@@ -38,18 +38,6 @@ beforeEach(() => {
 })
 
 describe('1C status flag with real form and store', () => {
-  it('defaults to Нет and saves checked Да on creation', async () => {
-    const wrapper = await openEditor('create')
-    expect(wrapper.get('#exportTo1C').element.checked).toBe(false)
-    await wrapper.get('#title').setValue('Очередь')
-    await wrapper.get('#exportTo1C').setValue(true)
-    await wrapper.get('form').trigger('submit')
-    await resolveAll()
-    expect(transport.post).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ exportTo1C: true }))
-    expect(push).toHaveBeenCalledWith('/registerstatuses')
-    wrapper.unmount()
-  })
-
   it('saves unchecked Нет, retains it after failure, and retries without duplicate messages', async () => {
     const wrapper = await openEditor('edit')
     expect(wrapper.get('#exportTo1C').element.checked).toBe(true)

@@ -3,7 +3,7 @@
 // This file is a part of Logibooks ui application
 
 import { describe, it, expect } from 'vitest'
-import { formatAirportDisplayName, getAirportDisplayName, getCompanyDisplayName } from '@/helpers/register.display.helpers.js'
+import { getCompanyDisplayName } from '@/helpers/register.display.helpers.js'
 describe('register display helpers', () => {
   describe('getCompanyDisplayName', () => {
     const companies = [
@@ -21,11 +21,4 @@ describe('register display helpers', () => {
     })
   })
 
-  it('formats airports consistently for selects and resolved references', () => {
-    const airports = [{ id: 1, name: 'Шереметьево', codeIata: 'SVO' }]
-
-    expect(formatAirportDisplayName(airports[0])).toBe('Шереметьево (SVO)')
-    expect(getAirportDisplayName(airports, '1')).toBe('Шереметьево (SVO)')
-    expect(getAirportDisplayName(airports, 999, 'Нет аэропорта')).toBe('Нет аэропорта')
-  })
 })

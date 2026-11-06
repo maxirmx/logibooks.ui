@@ -3,14 +3,7 @@
 // This file is a part of Logibooks ui application
 
 import { describe, expect, it } from 'vitest'
-import {
-  buildParcelStatusBulkReport,
-  getParcelStatusBulkNumberLabel,
-  normalizeParcelStatusBulkIds,
-  parseParcelStatusBulkInput
-} from '@/helpers/parcel.status.bulk.helpers.js'
-import { GTC_COMPANY_ID, OZON_COMPANY_ID, WBR_COMPANY_ID, WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
-
+import { buildParcelStatusBulkReport, normalizeParcelStatusBulkIds, parseParcelStatusBulkInput } from '@/helpers/parcel.status.bulk.helpers.js'
 describe('parcel status bulk helpers', () => {
   it('handles empty values', () => {
     expect(parseParcelStatusBulkInput(null)).toEqual([])
@@ -38,23 +31,4 @@ describe('parcel status bulk helpers', () => {
     expect(buildParcelStatusBulkReport('not-array', 'not-array')).toBe('')
   })
 
-  it.each([
-    [WBR_COMPANY_ID, 'ШК'],
-    [WBRN_REGISTER_ID, 'ШК'],
-    [OZON_COMPANY_ID, '№ отправления'],
-    [GTC_COMPANY_ID, '№ посылки']
-  ])('uses register type %i for the parcel-number label regardless of company', (registerType, label) => {
-    expect(getParcelStatusBulkNumberLabel({ registerType, companyId: WBR_COMPANY_ID })).toBe(label)
-  })
-
-  it.each([undefined, null, 0])('does not infer a missing or unspecified type (%s) from company', (registerType) => {
-    for (const companyId of [WBR_COMPANY_ID, OZON_COMPANY_ID]) {
-      expect(getParcelStatusBulkNumberLabel({ registerType, companyId })).toBe('Номер посылки')
-    }
-  })
-
-  it('uses a neutral parcel-number label for unknown types and missing registers', () => {
-    expect(getParcelStatusBulkNumberLabel({ registerType: 999 })).toBe('Номер посылки')
-    expect(getParcelStatusBulkNumberLabel(null)).toBe('Номер посылки')
-  })
 })

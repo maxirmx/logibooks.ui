@@ -21,8 +21,7 @@ const title = 'Выгрузить коды стикеров'
 const boxId = computed(() => Number(props.box.boxId ?? props.box.id))
 const physical = computed(() => Number.isInteger(boxId.value) && boxId.value > 0 &&
   props.box.bucketIndex == null && (props.box.area == null || Number(props.box.area) === 1))
-const unavailable = computed(() => props.disabled || busy.value ||
-  !(props.box.code ?? props.box.boxCode)?.trim() || !props.box.boxSticker?.trim())
+const unavailable = computed(() => props.disabled || busy.value || !props.box.boxSticker?.trim())
 let mounted = true
 onUnmounted(() => { mounted = false })
 

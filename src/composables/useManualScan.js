@@ -11,7 +11,7 @@ import { APP_DIALOG_BUTTON_PROPS } from '@/helpers/dialog.helpers.js'
 import { getErrorMessage, reportError } from '@/helpers/error.helpers.js'
 
 export function useManualScan({ registerId, job = null, disabled = false, target = PARCEL_SCAN,
-  scopeKey = null, refresh, onScanned = () => {} }) {
+  scopeKey = null, refresh }) {
   const scanTarget = computed(() => toValue(target))
   const store = useScanjobsStore()
   const auth = useAuthStore()
@@ -23,10 +23,9 @@ export function useManualScan({ registerId, job = null, disabled = false, target
   const busy = ref(false)
   const confirming = ref(false)
   const locked = computed(() => busy.value || confirming.value)
-  const progress = ref(null)
   const pendingBatch = ref(null)
   const uncertainOutcome = ref(false)
-  const completedIds = ref([])
+  const completedBatchIds = ref([])
   const constants = computed(() => {
     const values = store.ops.constants
     return values && [values.inProgressStatus, values[scanTarget.value.incompatibleType], values.lookupOperation].every(Number.isInteger) ? values : null
@@ -37,6 +36,7 @@ export function useManualScan({ registerId, job = null, disabled = false, target
   let mounted = true
   let version = 0
   let jobsVersion = 0
+  let completedScanCodes = new Set()
 
   function disabledReason(candidate) {
     return scanTarget.value.disabledReason(candidate, constants.value)
@@ -88,16 +88,13 @@ export function useManualScan({ registerId, job = null, disabled = false, target
     const runVersion = version
     const current = () => mounted && runVersion === version
     const frozenParcels = parcels.map(parcel => ({ ...parcel }))
+    const ids = [...new Set(frozenParcels.map(adapter.getId))]
     const candidates = compatibleJobs()
     let targetJob = jobId == null ? candidates[0] : jobs.value.find(item => Number(item.id) === Number(jobId))
     const reason = disabledReason(targetJob)
     if (reason) { alerts.error(reason); return false }
     confirming.value = true
-    let completed = 0
-    let matched = 0
-    let empty = 0
-    let matchedParcels = 0
-    let lookup = false
+    let summary = null
     let failure = null
     let failureMessage = null
     let refreshNeeded = false
@@ -107,7 +104,7 @@ export function useManualScan({ registerId, job = null, disabled = false, target
       if (bulk && !await confirm({ title: adapter.title,
         contentComponent: markRaw(adapter.confirmation),
         contentComponentProps: {
-          count: frozenParcels.length,
+          count: ids.length,
           jobs: (jobId == null ? candidates : [targetJob]).map(item => ({ id: item.id, label: jobLabel(item) })),
           choice, onSelectJob: id => { choice.jobId = id }
         },
@@ -116,39 +113,41 @@ export function useManualScan({ registerId, job = null, disabled = false, target
       if (!current()) return false
       targetJob = candidates.find(item => Number(item.id) === Number(choice.jobId))
       jobId = targetJob.id
-      lookup = Number(targetJob.operation) === constants.value.lookupOperation
+      const lookup = Number(targetJob.operation) === constants.value.lookupOperation
       busy.value = true
       confirming.value = false
       refreshNeeded = true
       pendingBatch.value = { jobId, parcels: frozenParcels, uncertain: false }
-      completedIds.value = []
-      progress.value = { completed: 0, total: frozenParcels.length }
-      for (const parcel of frozenParcels) {
-        if (!current()) return false
-        if (toValue(disabled) || !canScan.value) throw Object.assign(new Error('Операция остановлена'), { knownOutcome: true })
-        const id = adapter.getId(parcel)
-        requestInFlight = true
-        // Like the scanner, accept a completed request even when Lookup finds no match.
-        const result = await store[adapter.scanMethod](jobId, id)
-        requestInFlight = false
-        if (!current()) return false
-        if (lookup && result?.count > 0) { matched++; matchedParcels += result.count }
-        if (adapter.isEmpty(result)) empty++
-        completed++
-        onScanned(id)
-        completedIds.value = [...completedIds.value, id]
-        pendingBatch.value.parcels = frozenParcels.slice(completed)
-        progress.value.completed = completed
+      if (toValue(disabled) || !canScan.value) throw new Error('Операция остановлена')
+      requestInFlight = true
+      const response = bulk
+        ? await store[adapter.batchMethod](jobId, ids)
+        : { completed: [await store[adapter.scanMethod](jobId, ids[0])], skippedIds: [] }
+      requestInFlight = false
+      if (!current()) return false
+      const { completed, skippedIds } = response
+      if (skippedIds.length) {
+        failureMessage = `Не удалось отсканировать позиции, которых нет в партии задания: ${skippedIds.map(id => `#${id}`).join(', ')}.`
+      } else {
+        const matches = lookup ? completed.filter(result => result.count > 0) : []
+        const empty = completed.filter(adapter.isEmpty).length
+        const matchedParcels = matches.reduce((sum, result) => sum + result.count, 0)
+        summary = {
+          level: empty ? 'warning' : matches.length ? 'info' : 'success',
+          message: adapter.successMessage({ completed: completed.length, matched: matches.length, lookup, empty, matchedParcels })
+        }
       }
+      completedScanCodes = new Set(completed.map(item => item.scanCodeId).filter(Number.isInteger))
+      if (bulk) completedBatchIds.value = completed.map(item => item.id)
       pendingBatch.value = null
     } catch (error) {
       failure = error
       const uncertain = requestInFlight && !error.knownOutcome && (!error.status || error.status >= 500)
       if (current()) {
         uncertainOutcome.value = uncertain
-        pendingBatch.value = { jobId, parcels: frozenParcels.slice(completed), uncertain }
-        const failedId = adapter.getId(frozenParcels[completed])
-        const message = `Сканирование остановлено на ${adapter.failureEntity} #${failedId}. Отсканировано: ${completed} из ${frozenParcels.length}. ${getErrorMessage(error)}`
+        pendingBatch.value = { jobId, parcels: frozenParcels, uncertain }
+        const context = bulk ? 'Не удалось отсканировать выбранные позиции' : `Не удалось выполнить сканирование на ${adapter.failureEntity} #${ids[0]}`
+        const message = `${context}. ${getErrorMessage(error)}`
         failureMessage = uncertain ? `${message} Результат запроса не подтверждён. Обновите страницу и ${adapter.checkEntity} перед повтором.` : message
       } else reportError(error, { context: 'manual scan after scope change' })
     } finally {
@@ -156,21 +155,18 @@ export function useManualScan({ registerId, job = null, disabled = false, target
         // Refresh failures must not replace the scan error or offer another scan.
         try {
           await refresh()
-          if (!failure && current()) {
-            alerts[empty ? 'warning' : matched > 0 ? 'info' : 'success'](adapter.successMessage({ completed, matched, lookup, empty, matchedParcels }))
-          }
+          if (summary && current()) alerts[summary.level](summary.message)
         }
         catch (error) {
-          if (failure || !current()) reportError(error, { context: 'manual scan failure refresh' })
+          if (failureMessage || !current()) reportError(error, { context: 'manual scan failure refresh' })
           else alerts.error(error, { fallback: 'Не удалось обновить данные после сканирования. Обновите страницу.' })
         }
       }
       busy.value = false
       confirming.value = false
-      progress.value = null
       if (failureMessage) {
         if (current()) alerts.error(failureMessage)
-        else reportError(failure, { context: 'manual scan after scope change' })
+        else if (failure) reportError(failure, { context: 'manual scan after scope change' })
       }
     }
     return !failure
@@ -206,7 +202,8 @@ export function useManualScan({ registerId, job = null, disabled = false, target
     if (listChannel) listChannel.stop().catch(error => reportError(error, { context: 'manual scan jobs cleanup' }))
   })
 
-  const context = { target: scanTarget, jobs, jobsLoading, busy, locked, progress, pendingBatch, completedIds, run, disabledReason, invalidateBatch, canScan, compatibleJobs,
+  const context = { target: scanTarget, jobs, jobsLoading, busy, locked, pendingBatch, completedBatchIds, run, disabledReason, invalidateBatch, canScan, compatibleJobs,
+    includesCompletedScan: scanCodeId => completedScanCodes.has(scanCodeId),
     jobLabel,
     scopeKey: computed(() => toValue(scopeKey)),
     disabled: computed(() => toValue(disabled) || uncertainOutcome.value) }

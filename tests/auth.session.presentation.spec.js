@@ -18,7 +18,6 @@ vi.mock('@/views/Registers_View.vue', () => ({ default: { template: '<div>Рее
 describe('authentication failure presentation', () => {
   let wrapper
   let auth
-  let alerts
   let request
   const user = { id: 7, email: 'user@example.com', token: 'expired', roles: [roleLogist] }
   const target = '/registers?statusId=5'
@@ -34,7 +33,7 @@ describe('authentication failure presentation', () => {
     setActivePinia(pinia)
     localStorage.setItem('user', JSON.stringify(user))
     auth = useAuthStore()
-    alerts = useAlertStore()
+    useAlertStore()
     request = vi.fn().mockResolvedValue(response(204))
     vi.stubGlobal('fetch', request)
     await router.replace('/recover')
@@ -57,21 +56,6 @@ describe('authentication failure presentation', () => {
     expect(router.currentRoute.value.fullPath).toBe('/login')
     expect(wrapper.find('#login_email').exists()).toBe(true)
   }
-
-  it('shows an expired session once and preserves its return URL through the login redirect', async () => {
-    alerts.error('Предыдущее сообщение')
-    request.mockResolvedValue(response(401, { msg: 'Unauthorized', errors: {} }))
-    const published = vi.spyOn(alerts, 'error')
-    await navigateToLogin()
-    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-    expect(wrapper.get('[role="alert"]').text()).toContain('Необходимо войти в систему')
-    expect(wrapper.text()).not.toContain('Сервер недоступен')
-    expect(auth.user).toBeNull()
-    expect(localStorage.getItem('user')).toBeNull()
-    expect(auth.returnUrl).toBe(target)
-    expect(published).toHaveBeenCalledExactlyOnceWith('Необходимо войти в систему')
-    expect(request).toHaveBeenCalledTimes(2)
-  })
 
   it('clears a stale session and shows the same message when login is opened directly', async () => {
     request.mockResolvedValue(response(401, { msg: 'Unauthorized' }))

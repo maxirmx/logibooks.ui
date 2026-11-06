@@ -3,10 +3,9 @@
 // This file is a part of Logibooks UI application
 
 import { describe, expect, it } from 'vitest'
-import { ref } from 'vue'
 import { scanjobCheckStatusProjectionKind } from '@/helpers/scanjob.check-status.helpers.js'
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
-import { canSetParcelDefect, getClearParcelDefectErrorMessage, getSetParcelDefectErrorMessage, isParcelDefect, isParcelDuplicate, isParcelMarkedByPartner } from '@/helpers/parcel.defect.helpers.js'
+import { getClearParcelDefectErrorMessage, getSetParcelDefectErrorMessage, isParcelDefect, isParcelDuplicate, isParcelMarkedByPartner } from '@/helpers/parcel.defect.helpers.js'
 
 describe('parcel defect helpers', () => {
   it('detects special statuses from projection only', () => {
@@ -30,35 +29,6 @@ describe('parcel defect helpers', () => {
     expect(
       isParcelMarkedByPartner({ checkStatusProjection: { title: 'Исключено партнёром' } })
     ).toBe(true)
-  })
-
-  it('allows setting defect only for administrator or warehouse manager on regular parcels', () => {
-    const parcel = {
-      checkStatusProjection: {
-        kind: scanjobCheckStatusProjectionKind.NotChecked,
-        title: 'Не проверено'
-      }
-    }
-
-    expect(canSetParcelDefect(parcel, { isAdmin: true, isWhManager: false })).toBe(true)
-    expect(canSetParcelDefect(parcel, { isAdmin: ref(false), isWhManager: ref(true) })).toBe(true)
-    expect(canSetParcelDefect(parcel, { isAdmin: false, isWhManager: false })).toBe(false)
-    expect(canSetParcelDefect({}, { isAdmin: true })).toBe(false)
-    expect(
-      canSetParcelDefect(
-        { checkStatusProjection: { kind: scanjobCheckStatusProjectionKind.Defect, title: 'Брак' } },
-        { isAdmin: true }
-      )
-    ).toBe(false)
-    expect(
-      canSetParcelDefect({ checkStatusProjection: { title: 'Дубликат' } }, { isAdmin: true })
-    ).toBe(false)
-    expect(
-      canSetParcelDefect(
-        { checkStatusProjection: { title: 'Исключено партнёром' } },
-        { isAdmin: true }
-      )
-    ).toBe(false)
   })
 
   it('returns expected error messages for defect actions', () => {

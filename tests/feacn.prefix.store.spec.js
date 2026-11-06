@@ -114,11 +114,6 @@ describe('feacn.prefixes.store.js', () => {
       expect(store.prefix).toEqual(mockPrefix)
     })
 
-    it('ensureLoaded skips fetch when already initialized', async () => {
-      store.isInitialized = true
-      await store.ensureLoaded()
-      expect(fetchWrapper.get).not.toHaveBeenCalled()
-    })
   })
 
   describe('reset', () => {

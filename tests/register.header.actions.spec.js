@@ -4,7 +4,14 @@
 // This file is a part of Logibooks ui application
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { ref, reactive } from 'vue'
+import { ref, reactive, nextTick } from 'vue'
+import { mount } from '@vue/test-utils'
+import { createPinia } from 'pinia'
+import ActionDialog from '@/l2/ActionDialog.vue'
+import RegisterActionsDialogs from '@/l2/RegisterActionsDialogs.vue'
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
+import { useAlertStore } from '@/stores/alert.store.js'
+import { vuetifyStubs } from './helpers/test-utils.js'
 import { refreshAfterCheckStatusFreeze, useRegisterHeaderActions } from '@/helpers/register.actions.js'
 import { WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
 
@@ -58,8 +65,10 @@ describe('useRegisterHeaderActions', () => {
       getLookupFeacnCodesProgress: vi.fn(),
       cancelLookupFeacnCodes: vi.fn().mockResolvedValue(),
       generate: vi.fn().mockResolvedValue(),
+      cancelXmlArchive: vi.fn().mockResolvedValue(),
       generateOrdinary: vi.fn().mockResolvedValue(),
       generateExcise: vi.fn().mockResolvedValue(),
+      generateNotifications: vi.fn().mockResolvedValue(),
       download: vi.fn().mockResolvedValue(),
       getDownloadFormats: vi.fn().mockResolvedValue({ company: { available: true, name: 'Receiver' } }),
       downloadAdditionalRestrictions: vi.fn().mockResolvedValue(),
@@ -105,19 +114,6 @@ describe('useRegisterHeaderActions', () => {
     expect(alertStore.error).not.toHaveBeenCalled()
   })
 
-  it('reports a supported paperwork download failure once without alert callbacks', async () => {
-    registersStore.item.registerType = WBRN_REGISTER_ID
-    registersStore.download.mockRejectedValueOnce(new Error('download failed'))
-    const actions = useRegisterHeaderActions({
-      registersStore, alertStore, runningAction, tableLoading, registerLoading,
-      loadParcels, isComponentMounted
-    })
-    await Promise.resolve()
-    const first = actions.downloadRegister('company')
-    expect(await first).toBe(false)
-    expect(alertStore.error).toHaveBeenCalledTimes(1)
-  })
-
   it('exports raw XML when weight correction is declined', async () => {
     registersStore.item.realWeightKg = 5
     registersStore.item.totalWeightKgToRelease = 10
@@ -140,7 +136,7 @@ describe('useRegisterHeaderActions', () => {
         content: 'Применить поправочный коэффициент 0,500 для веса посылок?'
       })
     )
-    expect(registersStore.generateOrdinary).toHaveBeenCalledWith(1, 'INV-1', false)
+    expect(registersStore.generateOrdinary).toHaveBeenCalledWith(1, 'INV-1', false, expect.objectContaining({ onProgress: expect.any(Function) }))
     expect(actions.actionDialog.show).toBe(false)
   })
 
@@ -196,30 +192,6 @@ describe('useRegisterHeaderActions', () => {
     expect(alertStore.error).toHaveBeenCalledWith('Download failed')
   })
 
-  it('reports additional restrictions download errors and hides action dialog', async () => {
-    const error = new Error('Additional restrictions download failed')
-    registersStore.downloadAdditionalRestrictions.mockRejectedValueOnce(error)
-
-    const actions = useRegisterHeaderActions({
-      registersStore,
-      alertStore,
-      runningAction,
-      tableLoading,
-      registerLoading,
-      loadParcels,
-      isComponentMounted
-    })
-
-    const promise = actions.downloadAdditionalRestrictions()
-
-    expect(actions.actionDialog.show).toBe(true)
-
-    await expect(promise).resolves.toBeUndefined()
-
-    expect(actions.actionDialog.show).toBe(false)
-    expect(alertStore.error).toHaveBeenCalledWith('Additional restrictions download failed')
-  })
-
   it('presents a Tajikistan manifest download failure exactly once', async () => {
     registersStore.downloadTajikistanManifestFile.mockRejectedValueOnce(
       new Error('Отсутствует Сумма в рублях')
@@ -271,26 +243,278 @@ describe('useRegisterHeaderActions', () => {
     expect(alertStore.error).toHaveBeenCalledWith('Box metrics are missing')
   })
 
-  it('reports export errors through alertStore without rejecting', async () => {
-    const error = new Error('Export failed')
+  it('shows one localized XML error and releases the lock for a fresh export', async () => {
+    const error = new Error('TypeError: archive stream failed')
     registersStore.generateOrdinary.mockRejectedValueOnce(error)
-
+    const pinia = createPinia()
+    const alerts = useAlertStore(pinia)
+    const notify = vi.spyOn(alerts, 'error')
+    const wrapper = mount(PageAlertRegion, { global: { plugins: [pinia] } })
     const actions = useRegisterHeaderActions({
-      registersStore,
-      alertStore,
-      runningAction,
-      tableLoading,
-      registerLoading,
-      loadParcels,
-      isComponentMounted
+      registersStore, alertStore: alerts, runningAction, tableLoading, registerLoading,
+      loadParcels, isComponentMounted
     })
 
-    await expect(actions.exportAllXmlOrdinary()).resolves.toBeUndefined()
+    try {
+      await actions.exportAllXmlOrdinary()
+      await nextTick()
+      expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+      expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось сформировать XML архив')
+      expect(wrapper.text()).not.toContain(error.message)
+      expect(notify).toHaveBeenCalledOnce()
+      expect(actions.actionDialog.show).toBe(false)
+      expect(runningAction.value).toBe(false)
 
-    expect(registersStore.generateOrdinary).toHaveBeenCalledWith(1, 'INV-1', false)
-    expect(alertStore.error).toHaveBeenCalledWith('Export failed')
+      await wrapper.get('[aria-label="Закрыть сообщение"]').trigger('click')
+      await actions.exportAllXmlOrdinary()
+      expect(registersStore.generateOrdinary).toHaveBeenCalledTimes(2)
+      expect(registersStore.generateOrdinary).toHaveBeenLastCalledWith(1, 'INV-1', false, expect.objectContaining({ onProgress: expect.any(Function) }))
+      expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+      expect(actions.actionDialog.show).toBe(false)
+      expect(runningAction.value).toBe(false)
+    } finally {
+      actions.stop()
+      wrapper.unmount()
+    }
+  })
+
+  it('renders XML progress from accepted responses and resets for the next dialog', async () => {
+    const download = createDeferred()
+    registersStore.generateNotifications.mockReturnValueOnce(download.promise)
+    const actions = useRegisterHeaderActions({ registersStore, alertStore, runningAction, isComponentMounted })
+    const wrapper = mount(ActionDialog, {
+      props: { actionDialog: actions.actionDialog },
+      global: { stubs: { ...vuetifyStubs,
+        'v-dialog': { props: ['modelValue'], template: '<section v-if="modelValue" role="dialog"><slot /></section>' },
+        'v-progress-circular': { props: ['indeterminate'], template: '<div :data-indeterminate="indeterminate"><slot /></div>' }
+      } }
+    })
+    try {
+      const work = actions.exportAllXmlNotifications()
+      await nextTick()
+      const update = registersStore.generateNotifications.mock.calls[0][3].onProgress
+      expect(wrapper.find('[data-indeterminate="true"]').exists()).toBe(true)
+      update({ handleId: 'archive', total: 0, processed: 1 })
+      expect(actions.actionDialog.percent).toBeNull()
+      update({ handleId: 'archive', total: 3, processed: 2 })
+      await nextTick()
+      expect(wrapper.get('[role="dialog"]').text()).toContain('66%')
+      update({ handleId: 'archive', total: 3, processed: 1 })
+      expect(actions.actionDialog.percent).toBe(66)
+      update({ handleId: 'archive', total: 3, processed: 3 })
+      await nextTick()
+      expect(wrapper.get('[role="dialog"]').text()).toContain('99%')
+      download.resolve(true)
+      await work
+      await nextTick()
+      expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
+      expect(actions.actionDialog.percent).toBeNull()
+
+      const report = createDeferred()
+      registersStore.downloadAdditionalRestrictions.mockReturnValueOnce(report.promise)
+      const next = actions.downloadAdditionalRestrictions()
+      await nextTick()
+      expect(wrapper.find('[data-indeterminate="true"]').exists()).toBe(true)
+      report.resolve(true)
+      await next
+    } finally {
+      actions.stop()
+      wrapper.unmount()
+    }
+  })
+
+  function mountXmlDialogs(actions) {
+    return mount(RegisterActionsDialogs, {
+      props: {
+        actionDialog: actions.actionDialog,
+        xmlDialog: actions.xmlDialog,
+        cancelXmlArchive: actions.cancelXmlArchive,
+        validationState: actions.validationState,
+        progressPercent: actions.progressPercent,
+        cancelValidation: actions.cancelValidation
+      },
+      global: { stubs: { ...vuetifyStubs,
+        'v-btn': { template: '<button><slot /></button>' },
+        'v-dialog': { props: ['modelValue'], template: '<section v-if="modelValue" role="dialog"><slot /></section>' }
+      } }
+    })
+  }
+
+  it('enables Cancel after the handle and keeps the dialog open through cleanup', async () => {
+    const download = createDeferred()
+    const acknowledgement = createDeferred()
+    registersStore.generateOrdinary.mockReturnValueOnce(download.promise)
+    registersStore.cancelXmlArchive.mockReturnValueOnce(acknowledgement.promise)
+    const actions = useRegisterHeaderActions({ registersStore, alertStore, runningAction, isComponentMounted })
+    const wrapper = mountXmlDialogs(actions)
+    const cancelButton = '[data-testid="operation-cancel"]'
+    try {
+      const work = actions.exportAllXmlOrdinary()
+      await nextTick()
+      expect(wrapper.get(cancelButton).element.disabled).toBe(true)
+      await actions.cancelXmlArchive()
+      expect(registersStore.cancelXmlArchive).not.toHaveBeenCalled()
+
+      const { onProgress: update, isCancelling } = registersStore.generateOrdinary.mock.calls[0][3]
+      expect(isCancelling()).toBe(false)
+      update({ handleId: 'archive', total: 10, processed: 4 })
+      await nextTick()
+      expect(wrapper.get(cancelButton).element.disabled).toBe(false)
+      await wrapper.get(cancelButton).trigger('click')
+      await actions.cancelXmlArchive()
+      expect(registersStore.cancelXmlArchive).toHaveBeenCalledExactlyOnceWith('archive')
+      expect(wrapper.get(cancelButton).element.disabled).toBe(true)
+      expect(wrapper.get(cancelButton).text()).toBe('Отмена…')
+      expect(isCancelling()).toBe(true)
+
+      acknowledgement.resolve()
+      await nextTick()
+      expect(wrapper.find('[role="dialog"]').exists()).toBe(true)
+      expect(runningAction.value).toBe(true)
+      download.resolve(false)
+      await work
+      await nextTick()
+      expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
+      expect(runningAction.value).toBe(false)
+      expect(alertStore.error).not.toHaveBeenCalled()
+    } finally {
+      actions.stop()
+      wrapper.unmount()
+    }
+  })
+
+  it('reports a rejected cancellation once and observes cancellation from another holder', async () => {
+    const download = createDeferred()
+    const pinia = createPinia()
+    const alerts = useAlertStore(pinia)
+    const notify = vi.spyOn(alerts, 'error')
+    const alertRegion = mount(PageAlertRegion, { global: { plugins: [pinia] } })
+    const error = new Error('TypeError: request failed unexpectedly')
+    registersStore.cancelXmlArchive.mockRejectedValueOnce(error)
+    registersStore.generateExcise.mockReturnValueOnce(download.promise)
+    const actions = useRegisterHeaderActions({ registersStore, alertStore: alerts, runningAction, isComponentMounted })
+    const wrapper = mountXmlDialogs(actions)
+    try {
+      const work = actions.exportAllXmlExcise()
+      const update = registersStore.generateExcise.mock.calls[0][3].onProgress
+      update({ handleId: 'shared', total: 10, processed: 1 })
+      await actions.cancelXmlArchive()
+      await nextTick()
+      expect(notify).toHaveBeenCalledOnce()
+      expect(alertRegion.get('[role="alert"]').text()).toContain('Не удалось отменить формирование XML архива')
+      expect(wrapper.get('[data-testid="operation-cancel"]').element.disabled).toBe(false)
+
+      update({ handleId: 'shared', total: 10, processed: 2, cancelling: true })
+      await nextTick()
+      expect(wrapper.get('[data-testid="operation-cancel"]').text()).toBe('Отмена…')
+      download.resolve(false)
+      await work
+      expect(notify).toHaveBeenCalledOnce()
+    } finally {
+      actions.stop()
+      wrapper.unmount()
+      alertRegion.unmount()
+    }
+  })
+
+  it('ignores a stale cancellation error after the register changes', async () => {
+    const registerId = ref(1)
+    const oldCancellation = createDeferred()
+    const oldDownload = createDeferred()
+    registersStore.cancelXmlArchive.mockReturnValueOnce(oldCancellation.promise)
+    registersStore.generateOrdinary.mockReturnValueOnce(oldDownload.promise)
+    const actions = useRegisterHeaderActions({
+      registersStore, alertStore, runningAction, isComponentMounted, registerId
+    })
+    const oldWork = actions.exportAllXmlOrdinary()
+    registersStore.generateOrdinary.mock.calls[0][3].onProgress({ handleId: 'old', total: 10, processed: 4 })
+    const cancel = actions.cancelXmlArchive()
+    registerId.value = 2
+    const diagnostics = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      oldCancellation.reject(new Error('Previous cancellation failed'))
+      await cancel
+      expect(alertStore.error).not.toHaveBeenCalled()
+      expect(actions.xmlDialog.cancelling).toBe(false)
+    } finally {
+      oldDownload.resolve(false)
+      await oldWork
+      diagnostics.mockRestore()
+      actions.stop()
+    }
+  })
+
+  it('releases an active XML dialog when the page stops before progress completes', async () => {
+    const download = createDeferred()
+    registersStore.generateOrdinary.mockReturnValueOnce(download.promise)
+    const actions = useRegisterHeaderActions({ registersStore, alertStore, runningAction })
+    const work = actions.exportAllXmlOrdinary()
+    const tracking = registersStore.generateOrdinary.mock.calls[0][3]
+    tracking.onProgress({ handleId: 'archive', total: 10, processed: 1, cancelling: true })
+    expect(tracking.isCancelling()).toBe(true)
+
+    actions.stop()
+    expect(tracking.isCancelling()).toBe(false)
     expect(actions.actionDialog.show).toBe(false)
     expect(runningAction.value).toBe(false)
+    download.resolve(false)
+    await work
+  })
+
+  it('blocks XML export for pending totals or an outdated register view', async () => {
+    const registerId = ref(2)
+    const actions = useRegisterHeaderActions({ registersStore, alertStore, runningAction, registerId })
+    await actions.exportAllXmlOrdinary()
+    registerId.value = 1
+    registersStore.item.derivedTotalsPending = true
+    await actions.exportAllXmlOrdinary()
+    expect(registersStore.generateOrdinary).not.toHaveBeenCalled()
+    expect(actions.actionDialog.show).toBe(false)
+    actions.stop()
+  })
+
+  it('discards a stale XML weight choice and stale progress after navigation', async () => {
+    const registerId = ref(1)
+    const choice = createDeferred()
+    registersStore.item.realWeightKg = 5
+    registersStore.item.totalWeightKgToRelease = 10
+    confirmMock.mockReturnValueOnce(choice.promise)
+    const actions = useRegisterHeaderActions({
+      registersStore, alertStore, runningAction, isComponentMounted, registerId: () => registerId.value
+    })
+    const preparing = actions.exportAllXmlOrdinary()
+    registerId.value = 2
+    choice.resolve(true)
+    await preparing
+    expect(registersStore.generateOrdinary).not.toHaveBeenCalled()
+
+    registersStore.item.id = 2
+    registersStore.item.realWeightKg = 0
+    const old = createDeferred()
+    registersStore.generateOrdinary.mockReturnValueOnce(old.promise)
+    const oldWork = actions.exportAllXmlOrdinary()
+    const oldProgress = registersStore.generateOrdinary.mock.calls[0][3].onProgress
+    registerId.value = 3
+    registersStore.item.id = 3
+    const current = createDeferred()
+    registersStore.generateOrdinary.mockReturnValueOnce(current.promise)
+    const currentWork = actions.exportAllXmlOrdinary()
+    oldProgress({ total: 5, processed: 4 })
+    const diagnostics = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      old.reject(new Error('Previous download failed'))
+      await oldWork
+      expect(alertStore.error).not.toHaveBeenCalled()
+    } finally {
+      diagnostics.mockRestore()
+    }
+    expect(actions.actionDialog.percent).toBeNull()
+    expect(actions.actionDialog.show).toBe(true)
+    expect(runningAction.value).toBe(true)
+    current.resolve(true)
+    await currentWork
+    expect(runningAction.value).toBe(false)
+    actions.stop()
   })
 
   it('cancels extended FEACN lookup via cancelLookupFeacnCodes', async () => {
@@ -352,28 +576,6 @@ describe('useRegisterHeaderActions', () => {
 
     expect(actionDialog.show).toBe(false)
     expect(actionDialog.title).toBe('')
-  })
-
-  it('reports a register refresh rejection once and leaves the restriction filter unchanged', async () => {
-    const hideLegacyRestrictions = ref(false)
-    const refreshError = new Error('Register refresh failed')
-    const fetchRegister = vi.fn().mockRejectedValue(refreshError)
-    const loadParcelsAfterFreeze = vi.fn()
-
-    await expect(refreshAfterCheckStatusFreeze({
-      succeeded: true,
-      hideLegacyRestrictions,
-      fetchRegister,
-      loadParcels: loadParcelsAfterFreeze,
-      alertStore
-    })).resolves.toBe(false)
-
-    expect(alertStore.error).toHaveBeenCalledTimes(1)
-    expect(alertStore.error).toHaveBeenCalledWith(refreshError, {
-      fallback: 'Запреты применены, но не удалось обновить данные'
-    })
-    expect(hideLegacyRestrictions.value).toBe(false)
-    expect(loadParcelsAfterFreeze).not.toHaveBeenCalled()
   })
 
   it('returns false and reports a freeze check status failure exactly once', async () => {

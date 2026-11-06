@@ -1067,22 +1067,14 @@ a,
   background-color: transparent !important;
 }
 
-/* Selected parcel rows must remain visible over issue and interlaced row colors. */
-.v-data-table__tbody tr.selected-parcel-row {
+/* Client and server data tables share row classes but use different tbody markup. */
+.v-data-table .v-data-table__tr.selected-parcel-row,
+.v-data-table .v-data-table__tr.selected-parcel-row > td {
   background-color: var(--parcel-row-selected-bg) !important;
 }
 
-.v-data-table__tbody tr.selected-parcel-row:hover {
-  background-color: var(--parcel-row-selected-hover-bg) !important;
-}
-
-.v-data-table__tbody tr.selected-parcel-row > td,
-.v-data-table__tbody tr.selected-parcel-row .v-data-table__td {
-  background-color: var(--parcel-row-selected-bg) !important;
-}
-
-.v-data-table__tbody tr.selected-parcel-row:hover > td,
-.v-data-table__tbody tr.selected-parcel-row:hover .v-data-table__td {
+.v-data-table .v-data-table__tr.selected-parcel-row:hover,
+.v-data-table .v-data-table__tr.selected-parcel-row:hover > td {
   background-color: var(--parcel-row-selected-hover-bg) !important;
 }
 

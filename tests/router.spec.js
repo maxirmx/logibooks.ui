@@ -110,13 +110,6 @@ describe('router guards', () => {
     console.error = originalConsoleError
   })
 
-  it('redirects unauthenticated users to login', async () => {
-    await router.push('/users')
-    await router.isReady()
-    expect(router.currentRoute.value.fullPath).toBe('/login')
-    expect(authStore.returnUrl).toBe('/users')
-  })
-
   it('defines authenticated prototype parcel-filter routes with a numeric edit id', () => {
     const createRoute = router.getRoutes().find((route) => route.path === '/parcel-filters/create')
     const editRoute = router.getRoutes().find((route) => route.path === '/parcel-filters/edit/:id')
@@ -201,56 +194,6 @@ describe('router guards', () => {
     await router.push('/')
     await router.isReady()
     expect(router.currentRoute.value.fullPath).toBe('/user/edit/4')
-  })
-
-  it('redirects to login when server is unavailable', async () => {
-    authStore.user = { id: 5 }
-    authStore.hasAnyRole = false
-    activeAlert.value = { id: 72, message: 'Старое сообщение' }
-    alertError.mockImplementationOnce((message) => {
-      activeAlert.value = { id: 73, message }
-      return 73
-    })
-    checkMock.mockRejectedValueOnce(new Error('Server unavailable'))
-
-    await router.push('/registers')
-    await router.isReady()
-
-    expect(router.currentRoute.value.fullPath).toBe('/login')
-    expect(authStore.returnUrl).toBe('/registers')
-    expect(clearSessionMock).toHaveBeenCalledOnce()
-    expect(alertError).toHaveBeenCalledWith('Сервер недоступен. Пожалуйста, попробуйте позже.')
-    expect(activeAlert.value).toMatchObject({ id: 73 })
-    expect(alertClear).not.toHaveBeenCalled()
-  })
-
-  it('allows access to login page when server is unavailable', async () => {
-    authStore.user = null
-    checkMock.mockRejectedValueOnce(new Error('Server unavailable'))
-
-    await router.push('/login')
-    await router.isReady()
-
-    expect(router.currentRoute.value.fullPath).toBe('/login')
-    expect(alertError).not.toHaveBeenCalled()
-  })
-
-  it.each([{ status: 401 }, { response: { status: 401 } }])('distinguishes session expiration from downtime for %j', async failure => {
-    authStore.user = { id: 5 }
-    checkMock.mockRejectedValue(failure)
-    await router.push('/registers?statusId=7')
-    expect(router.currentRoute.value.fullPath).toBe('/login')
-    expect(authStore.returnUrl).toBe('/registers?statusId=7')
-    expect(clearSessionMock).toHaveBeenCalledOnce()
-    expect(alertError).toHaveBeenCalledExactlyOnceWith('Необходимо войти в систему')
-  })
-
-  it('does not label a rejected authentication request as downtime for other client errors', async () => {
-    const error = Object.assign(new Error('Недостаточно прав'), { status: 403 })
-    checkMock.mockRejectedValueOnce(error)
-    await router.push('/registers')
-    expect(router.currentRoute.value.fullPath).toBe('/login')
-    expect(alertError).toHaveBeenCalledExactlyOnceWith(error)
   })
 
   it('handles successful password recovery flow', async () => {

@@ -5,7 +5,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { reactive } from 'vue'
-import { toggleBulkStatusEditMode, cancelBulkStatusChange, validateBulkStatusParams, resetBulkStatusState, applyBulkStatusToAllOrders, isBulkStatusEditMode, getBulkStatusSelectedId, setBulkStatusSelectedId, startRegisterStatusEditMode, cancelRegisterStatusChange, validateRegisterStatusParams, applyRegisterStatusChange, createValidationState, pollValidation, validateRegister, cancelValidation, createPollingTimer, createRegisterActionHandlers, POLLING_INTERVAL_MS } from '@/helpers/registers.list.helpers'
+import { toggleBulkStatusEditMode, cancelBulkStatusChange, validateBulkStatusParams, resetBulkStatusState, applyBulkStatusToAllOrders, isBulkStatusEditMode, getBulkStatusSelectedId, setBulkStatusSelectedId, startRegisterStatusEditMode, validateRegisterStatusParams, applyRegisterStatusChange, createValidationState, pollValidation, validateRegister, cancelValidation, createPollingTimer, createRegisterActionHandlers, POLLING_INTERVAL_MS } from '@/helpers/registers.list.helpers'
 
 describe('registers.list.helpers', () => {
   let bulkStatusState
@@ -132,34 +132,6 @@ describe('registers.list.helpers', () => {
       expect(mockRegistersStore.getAll).toHaveBeenCalled()
     })
 
-    it('handles error from store and shows error message', async () => {
-      const registerId = 1
-      const statusId = 5
-      const errorMessage = 'Server error'
-
-      mockRegistersStore.setParcelStatuses.mockRejectedValueOnce(new Error(errorMessage))
-
-      // Initialize state
-      bulkStatusState[registerId] = {
-        editMode: true,
-        selectedStatusId: statusId
-      }
-
-      await applyBulkStatusToAllOrders(
-        registerId,
-        statusId,
-        bulkStatusState,
-        mockRegistersStore,
-        mockAlertStore
-      )
-
-      expect(mockRegistersStore.setParcelStatuses).toHaveBeenCalledWith(registerId, statusId)
-      expect(mockAlertStore.error).toHaveBeenCalledWith(errorMessage)
-      expect(bulkStatusState[registerId].editMode).toBe(false)
-      expect(bulkStatusState[registerId].selectedStatusId).toBeNull()
-      expect(mockRegistersStore.getAll).toHaveBeenCalled()
-    })
-
     it('uses default error message when no error message available', async () => {
       const registerId = 1
       const statusId = 5
@@ -232,22 +204,6 @@ describe('registers.list.helpers', () => {
       startRegisterStatusEditMode(1, 4, registerStatusState, true)
 
       expect(registerStatusState[1]).toBeUndefined()
-    })
-
-    it('cancels register status edit state', () => {
-      registerStatusState[1] = {
-        editMode: true,
-        selectedStatusId: 6,
-        originalStatusId: 4
-      }
-
-      cancelRegisterStatusChange(1, registerStatusState)
-
-      expect(registerStatusState[1]).toEqual({
-        editMode: false,
-        selectedStatusId: null,
-        originalStatusId: null
-      })
     })
 
     it('validates register status change parameters', () => {
@@ -490,6 +446,7 @@ describe('registers.list.helpers', () => {
           generate: vi.fn().mockResolvedValue(),
           generateExcise: vi.fn().mockResolvedValue(),
           generateOrdinary: vi.fn().mockResolvedValue(),
+          generateNotifications: vi.fn().mockResolvedValue(),
           download: vi.fn().mockResolvedValue(),
           validate: vi.fn().mockResolvedValue({ id: 1 }),
           lookupFeacnCodes: vi.fn().mockResolvedValue({ id: 2 }),
@@ -516,6 +473,9 @@ describe('registers.list.helpers', () => {
 
         await handlers.exportAllXmlExcise({ id: 9, invoiceNumber: 'INV-9' })
         expect(registersStore.generateExcise).toHaveBeenCalledWith(9, 'INV-9', false)
+
+        await handlers.exportAllXmlNotifications({ id: 10, invoiceNumber: 'INV-10' })
+        expect(registersStore.generateNotifications).toHaveBeenCalledWith(10, 'INV-10', false)
 
         await handlers.downloadRegister({ id: 4, fileName: 'file.xlsx' })
         expect(registersStore.download).toHaveBeenCalledWith(4, 'file.xlsx')

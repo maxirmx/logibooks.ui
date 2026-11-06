@@ -19,6 +19,7 @@ import { BOX_SCAN, PARCEL_SCAN } from '@/helpers/manual.scan.helpers.js'
 import LocalLabelPrinting from '@/components/LocalLabelPrinting.vue'
 import { LABEL_PRINTING_KEY } from '@/helpers/label.printing.helpers.js'
 import ActionButton from '@/components/ActionButton.vue'
+import RegisterBoxStickerExportButton from '@/components/RegisterBoxStickerExportButton.vue'
 import { canClearParcelExtId, getClearParcelExtIdErrorMessage } from '@/helpers/parcel.ext-id.helpers.js'
 import FieldError from '@/components/FieldError.vue'
 import ScanjobBoxesMonitor from '@/dialogs/Scanjob_Boxes_Monitor.vue'
@@ -745,6 +746,7 @@ async function startFollowUserSubscription({
 }
 
 async function handleFollowEvent(followEvent, version = scopeVersion.value) {
+  if (manualScan.includesCompletedScan(followEvent?.scanCodeId)) return
   if (manualScan.locked.value) {
     deferredFollowEvent = { event: followEvent, version }
     return
@@ -1074,6 +1076,12 @@ defineExpose({
             :disabled="controlsBusy || followUsersLoading || jumpLoading" @click="startEditor('follow')" />
         </div>
         <div class="header-actions header-actions-group">
+          <RegisterBoxStickerExportButton
+            v-if="isRegisterMode && visibleSnapshot && !closedInfo && !monitorStatusOnly"
+            :key="props.scanjobId"
+            :register-id="registerId"
+            :disabled="controlsBusy"
+          />
           <ActionButton
             :item="{}"
             icon="fa-solid fa-xmark"
@@ -1131,6 +1139,8 @@ defineExpose({
       <template v-else>
         <ScanjobBoxesMonitor
           v-if="isRegisterMode"
+          :register-id="registerId"
+          :read-only="readOnly"
           :snapshot="visibleSnapshot"
           :boxes="boxes"
           :loading="isLoading"

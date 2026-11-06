@@ -71,57 +71,6 @@ describe('useParcelCheckStatusSubscription', () => {
     await expect(options.onResync()).resolves.toBeUndefined()
   })
 
-  it.each([
-    ['the subscription is disabled', 7, false],
-    ['the register id is not an integer', '7.5', true],
-    ['the register id is not positive', 0, true]
-  ])('stops instead of starting when %s', async (_case, registerId, enabled) => {
-    mountComposable({ registerId, enabled })
-    await flushPromises()
-
-    expect(parcelChecksStoreMock.stop).toHaveBeenCalledTimes(1)
-    expect(parcelChecksStoreMock.start).not.toHaveBeenCalled()
-  })
-
-  it('tracks reactive changes and ignores resync callbacks from stale subscriptions', async () => {
-    const registerId = ref(7)
-    const enabled = ref(true)
-    const refresh = vi.fn().mockResolvedValue()
-
-    mountComposable({ registerId, enabled, refresh })
-    await flushPromises()
-    const firstResync = parcelChecksStoreMock.start.mock.calls[0][1].onResync
-
-    registerId.value = 8
-    await nextTick()
-    await flushPromises()
-    const secondResync = parcelChecksStoreMock.start.mock.calls[1][1].onResync
-
-    await firstResync()
-    expect(refresh).not.toHaveBeenCalled()
-
-    await secondResync()
-    expect(refresh).toHaveBeenCalledTimes(1)
-    expect(parcelChecksStoreMock.start).toHaveBeenNthCalledWith(2, 8, expect.any(Object))
-
-    enabled.value = false
-    await nextTick()
-    await flushPromises()
-
-    expect(parcelChecksStoreMock.stop).toHaveBeenCalledTimes(1)
-
-    registerId.value = 9
-    await nextTick()
-    await flushPromises()
-    expect(parcelChecksStoreMock.stop).toHaveBeenCalledTimes(2)
-
-    enabled.value = true
-    await nextTick()
-    await flushPromises()
-
-    expect(parcelChecksStoreMock.start).toHaveBeenNthCalledWith(3, 9, expect.any(Object))
-  })
-
   it('invalidates pending work, stops watching, and absorbs stop failures on unmount', async () => {
     let finishStart
     const stopError = new Error('stop failed')

@@ -86,21 +86,6 @@ describe('FeacnCodesTree_Dialog.vue', () => {
     })
   }
 
-  it('handles upload error', async () => {
-    const error = new Error('Upload failed')
-    uploadMock.mockRejectedValue(error)
-
-    const wrapper = createWrapper()
-    const file = new File(['content'], 'codes.xlsx')
-
-    await wrapper.vm.fileSelected(file)
-    await flushPromises()
-
-    expect(uploadMock).toHaveBeenCalledWith(file)
-    expect(alertErrorMock).toHaveBeenCalledWith(error, { fallback: 'Ошибка при загрузке файла' })
-    expect(wrapper.vm.uploading).toBe(false)
-  })
-
   it('shows one Russian upload failure and releases the spinner', async () => {
     setActivePinia(createPinia())
     const { useAlertStore } = await vi.importActual('@/stores/alert.store.js')

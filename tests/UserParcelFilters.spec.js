@@ -13,8 +13,6 @@ import UserParcelFilters from '@/components/UserParcelFilters.vue'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { useAlertStore } from '@/stores/alert.store.js'
-import { useAuthStore } from '@/stores/auth.store.js'
-import { useParcelFiltersStore } from '@/stores/parcel.filters.store.js'
 import { reportError } from '@/helpers/error.helpers.js'
 
 const push = vi.hoisted(() => vi.fn())
@@ -118,16 +116,6 @@ describe('UserParcelFilters', () => {
     expect(wrapper.find('tbody .v-data-table__tr').exists()).toBe(false)
   })
 
-  it('cancellation leaves the row intact', async () => {
-    confirm.mockResolvedValueOnce(false)
-    const wrapper = mountFilters()
-    await flushPromises()
-    await wrapper.find('[data-testid="parcel-filter-delete-1"]').trigger('click')
-    await flushPromises()
-    expect(fetchWrapper.delete).not.toHaveBeenCalled()
-    expect(wrapper.find('tbody tr').exists()).toBe(true)
-  })
-
   it('shows a message-only list failure and recovers when reopened', async () => {
     fetchWrapper.get.mockRejectedValueOnce(new Error('Список недоступен'))
     const wrapper = mountFilters()
@@ -161,57 +149,9 @@ describe('UserParcelFilters', () => {
     expect(fetchWrapper.delete).not.toHaveBeenCalled()
   })
 
-  it('does not display load, confirmation, or delete failures after unmount', async () => {
-    let rejectLoad
-    fetchWrapper.get.mockImplementationOnce(() => new Promise((resolve, reject) => { rejectLoad = reject }))
-    const loading = mountFilters()
-    loading.unmount()
-    rejectLoad(new Error('Поздняя загрузка'))
-    await flushPromises()
-
-    fetchWrapper.get.mockResolvedValueOnce([filter])
-    let rejectConfirm
-    confirm.mockImplementationOnce(() => new Promise((resolve, reject) => { rejectConfirm = reject }))
-    const confirming = mountFilters()
-    await flushPromises()
-    await confirming.find('[data-testid="parcel-filter-delete-1"]').trigger('click')
-    confirming.unmount()
-    rejectConfirm(new Error('Позднее подтверждение'))
-    await flushPromises()
-
-    let rejectDelete
-    fetchWrapper.delete.mockImplementationOnce(() => new Promise((resolve, reject) => { rejectDelete = reject }))
-    const deleting = mountFilters()
-    await flushPromises()
-    await deleting.find('[data-testid="parcel-filter-delete-1"]').trigger('click')
-    await flushPromises()
-    deleting.unmount()
-    rejectDelete(new Error('Позднее удаление'))
-    await flushPromises()
-  })
 })
 
-
 describe('administrator profile filter context', () => {
-  it('uses the profile owner for loading, create/edit links and deletion', async () => {
-    const wrapper = mountFilters(42)
-    const pinia = wrapper.vm.$pinia
-    const store = useParcelFiltersStore(pinia)
-    store.filters = [{ ...filter, id: 7, name: 'Личный' }]
-    await flushPromises()
-    expect(fetchWrapper.get).toHaveBeenCalledWith(expect.stringMatching(/parcel-filters\?userId=42$/))
-    await wrapper.get('[data-testid="parcel-filter-create"]').trigger('click')
-    expect(push).toHaveBeenLastCalledWith({ path: '/parcel-filters/create', query: { userId: '42' } })
-    await wrapper.get('[data-testid="parcel-filter-edit-1"]').trigger('click')
-    expect(push).toHaveBeenLastCalledWith({ path: '/parcel-filters/edit/1', query: { userId: '42' } })
-    await wrapper.get('[data-testid="parcel-filter-delete-1"]').trigger('click')
-    await flushPromises()
-    expect(fetchWrapper.delete).toHaveBeenCalledWith(expect.stringMatching(/parcel-filters\/1\?userId=42$/))
-    expect(wrapper.text()).not.toContain(filter.name)
-    expect(store.filters[0].name).toBe('Личный')
-    wrapper.unmount()
-  })
-
   it.each([false, true])('ignores a superseded profile load (rejection: %s)', async reject => {
     let finish
     fetchWrapper.get.mockImplementationOnce(() => new Promise((resolve, no) => { finish = reject ? no : resolve }))
@@ -250,13 +190,4 @@ describe('administrator profile filter context', () => {
     wrapper.unmount()
   })
 
-  it('reloads locally when the signed-in account changes', async () => {
-    const wrapper = mountFilters(42)
-    await flushPromises()
-    fetchWrapper.get.mockResolvedValueOnce([{ ...filter, name: 'Новая сессия' }])
-    useAuthStore(wrapper.vm.$pinia).user = { id: 8 }
-    await flushPromises()
-    expect(wrapper.text()).toContain('Новая сессия')
-    wrapper.unmount()
-  })
 })

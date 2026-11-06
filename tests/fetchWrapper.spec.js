@@ -265,35 +265,66 @@ describe('fetchWrapper', () => {
       expect(anchor.click).toHaveBeenCalledOnce()
     })
 
-    it('rejects malformed accepted progress without invoking the callback or downloading it', async () => {
-      const parseError = new SyntaxError('Unexpected token')
-      const progressResponse = {
-        ok: true,
-        status: 202,
-        statusText: 'Accepted',
-        headers: { get: () => 'application/json' },
-        json: vi.fn().mockRejectedValue(parseError),
-        blob: vi.fn()
-      }
-      global.fetch = vi.fn().mockResolvedValue(progressResponse)
+    it.each([204, 200])('polls by handle until cancellation or a completed ZIP (%i)', async (status) => {
+      const initialUrl = baseUrl + '/registers/1/generate-ordinary'
+      const pollUrl = baseUrl + '/registers/1/xml-archives/job-1'
+      const initial = { handleId: 'job-1', total: 4, processed: 1 }
+      const cancelling = { ...initial, cancelling: true }
+      const final = status === 204 ? { ok: true, status, blob: vi.fn() } : mockDownloadResponse()
+      global.fetch = vi.fn()
+        .mockResolvedValueOnce({ ok: true, status: 202, json: async () => initial })
+        .mockResolvedValueOnce({ ok: true, status: 202, json: async () => cancelling })
+        .mockResolvedValueOnce(final)
+      const getPollUrl = vi.fn().mockReturnValue(pollUrl)
       const onProgress = vi.fn()
 
-      await expect(
-        fetchWrapper.downloadFile(
-          `${baseUrl}/registers/1/generate`,
-          'must-not-download.zip',
-          { pollAccepted: true, pollIntervalMs: 0, onProgress }
-        )
-      ).rejects.toMatchObject({
-        message: 'Некорректный ответ о ходе формирования файла',
-        status: 202,
-        cause: parseError
-      })
+      await expect(fetchWrapper.downloadFile(initialUrl, 'archive.zip', {
+        pollAccepted: true, pollIntervalMs: 1, getPollUrl, onProgress
+      })).resolves.toBe(status === 200)
+      expect(global.fetch.mock.calls.map(([url]) => url)).toEqual([initialUrl, pollUrl, pollUrl])
+      expect(getPollUrl).toHaveBeenCalledExactlyOnceWith('job-1')
+      expect(onProgress.mock.calls).toEqual([[initial], [cancelling]])
+      expect(final.blob).toHaveBeenCalledTimes(status === 200 ? 1 : 0)
+    })
 
-      expect(global.fetch).toHaveBeenCalledOnce()
-      expect(onProgress).not.toHaveBeenCalled()
-      expect(progressResponse.blob).not.toHaveBeenCalled()
+    it('keeps polling the same handle after status failures during cancellation', async () => {
+      const startUrl = baseUrl + '/generate'
+      const statusUrl = baseUrl + '/xml-archives/job-1'
+      const progress = { handleId: 'job-1', total: 4, processed: 1 }
+      const firstPoll = Promise.withResolvers()
+      const polling = Promise.withResolvers()
+      let cancelling = false
+      global.fetch = vi.fn()
+        .mockResolvedValueOnce({ ok: true, status: 202, json: async () => progress })
+        .mockImplementationOnce(() => {
+          polling.resolve()
+          return firstPoll.promise
+        })
+        .mockResolvedValueOnce({ ok: true, status: 202, json: async () => { throw new TypeError('Failed to read body') } })
+        .mockResolvedValueOnce({ ok: true, status: 204 })
+
+      const download = fetchWrapper.downloadFile(startUrl, 'archive.zip', {
+        pollAccepted: true, pollIntervalMs: 0, getPollUrl: () => statusUrl,
+        retryPoll: error => cancelling && (!error.status || error.cause instanceof TypeError)
+      })
+      await polling.promise
+      cancelling = true
+      firstPoll.reject(new Error('Failed to fetch'))
+
+      await expect(download).resolves.toBe(false)
+      expect(global.fetch.mock.calls.map(([url]) => url)).toEqual([startUrl, statusUrl, statusUrl, statusUrl])
       expect(global.document.createElement).not.toHaveBeenCalled()
+    })
+
+    it.each([undefined, ' '])('rejects an unusable handle without polling the generation endpoint (%s)', async (handleId) => {
+      const progress = { handleId, total: 4, processed: 1 }
+      global.fetch = vi.fn().mockResolvedValue({ ok: true, status: 202, json: async () => progress })
+      const getPollUrl = vi.fn()
+      await expect(fetchWrapper.downloadFile(baseUrl + '/generate', 'archive.zip', {
+        pollAccepted: true, pollIntervalMs: 0, getPollUrl
+      })).rejects.toMatchObject({ status: 202, data: progress })
+      expect(global.fetch).toHaveBeenCalledOnce()
+      expect(getPollUrl).not.toHaveBeenCalled()
     })
 
     it('rejects a null accepted progress payload without invoking the callback', async () => {

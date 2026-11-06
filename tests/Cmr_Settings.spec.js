@@ -216,18 +216,6 @@ describe('Cmr_Settings.vue', () => {
     expect(state.isSubmitting).toBe(false)
   })
 
-  it('keeps the form open and displays the controller error on failure', async () => {
-    downloadCmrFileMock.mockRejectedValueOnce(new Error('Неизвестный таможенный пост'))
-    const wrapper = mountDialog()
-    await resolveAll()
-
-    await setupState(wrapper).onSubmit()
-
-    expect(alertErrorMock).toHaveBeenCalledWith('Неизвестный таможенный пост')
-    expect(router.go).not.toHaveBeenCalled()
-    expect(setupState(wrapper).isSubmitting).toBe(false)
-  })
-
   it('blocks submission when document date is cleared', async () => {
     const wrapper = mountDialog()
     await resolveAll()

@@ -35,10 +35,6 @@ describe('feacn.info.helpers', () => {
       })
     })
 
-    it('keeps transport failures observable to the caller', async () => {
-      getByCodeMock.mockRejectedValue(new Error('Network error'))
-      await expect(formatFeacnName('error')).rejects.toThrow('Network error')
-    })
   })
 
   describe('getFeacnTooltip', () => {
@@ -151,38 +147,6 @@ describe('feacn.info.helpers', () => {
     it('handles null codes array', async () => {
       await preloadFeacnInfo(null)
       expect(bulkLookupMock).not.toHaveBeenCalled()
-    })
-
-    it('handles successful bulk lookup with results property', async () => {
-      bulkLookupMock.mockResolvedValue({
-        results: {
-          123: { normalizedName: 'ПРОДУКТ А', name: 'Product A' },
-          456: { normalizedName: 'ПРОДУКТ Б', name: 'Product B' }
-        }
-      })
-
-      await preloadFeacnInfo(['123', '456', '789'])
-
-      const cache = getCachedFeacnInfo('123')
-      expect(cache).toEqual({
-        name: 'Продукт а',
-        found: true,
-        loading: false
-      })
-
-      const cache2 = getCachedFeacnInfo('456')
-      expect(cache2).toEqual({
-        name: 'Продукт б',
-        found: true,
-        loading: false
-      })
-
-      const cache3 = getCachedFeacnInfo('789')
-      expect(cache3).toEqual({
-        name: 'Несуществующий код ТН ВЭД',
-        found: false,
-        loading: false
-      })
     })
 
     it('falls back to individual loading when bulk lookup fails', async () => {

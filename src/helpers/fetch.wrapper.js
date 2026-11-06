@@ -329,12 +329,32 @@ function parseContentDispositionFilename(disposition) {
   return parameters.get('filename') || null
 }
 
+async function readDownloadProgress(response) {
+  let progress
+  try {
+    progress = await response.json()
+  } catch (cause) {
+    const error = new Error('Некорректный ответ о ходе формирования файла', { cause })
+    error.status = 202
+    throw error
+  }
+
+  if (progress === null || typeof progress !== 'object' || Array.isArray(progress)) {
+    const error = new Error('Некорректный ответ о ходе формирования файла')
+    error.status = 202
+    error.data = progress
+    throw error
+  }
+
+  return progress
+}
+
 /**
  * Downloads a file from the server and initiates browser download
  * @param {string} fileUrl - The URL to download from
  * @param {string} defaultFilename - Fallback filename if none provided in headers
- * @param {{ method?: string, body?: object, pollAccepted?: boolean, pollIntervalMs?: number, onProgress?: function, preferDefaultFilename?: boolean }} options - Optional authenticated request and polling options
- * @returns {Promise<boolean>} - True if download initiated successfully
+ * @param {{ method?: string, body?: object, pollAccepted?: boolean, pollIntervalMs?: number, getPollUrl?: function, onProgress?: function, retryPoll?: function, preferDefaultFilename?: boolean }} options - Optional authenticated request and polling options
+ * @returns {Promise<boolean>} - True when the download starts, false when the tracked job is cancelled
  */
 async function downloadFile(fileUrl, defaultFilename, options = {}) {
   const method = String(options.method || 'GET').toUpperCase()
@@ -345,24 +365,23 @@ async function downloadFile(fileUrl, defaultFilename, options = {}) {
     throw new Error('downloadFile does not support request bodies for GET/HEAD requests')
   }
   const fetchBlob = requestBlob(method)
-  let response = await fetchBlob(fileUrl, options.body)
-
-  while (response.status === 202) {
+  const pollIntervalMs = Math.max(0, Number(options.pollIntervalMs ?? 1000) || 0)
+  let pollUrl = null
+  let polling = false
+  let response
+  for (;;) {
+    if (polling && pollIntervalMs > 0) {
+      await new Promise((resolve) => setTimeout(resolve, pollIntervalMs))
+    }
     let progress
     try {
-      progress = await response.json()
-    } catch (cause) {
-      const error = new Error('Некорректный ответ о ходе формирования файла')
-      error.status = 202
-      error.cause = cause
-      throw error
-    }
-
-    if (progress === null || typeof progress !== 'object' || Array.isArray(progress)) {
-      const error = new Error('Некорректный ответ о ходе формирования файла')
-      error.status = 202
-      error.data = progress
-      throw error
+      response = await fetchBlob(pollUrl ?? fileUrl, options.body)
+      if (response.status !== 202) break
+      progress = await readDownloadProgress(response)
+    } catch (error) {
+      // A transient status failure cannot tell us whether cancellation finished. Check the same handle again.
+      if (!pollUrl || !options.retryPoll?.(error)) throw error
+      continue
     }
 
     if (options.pollAccepted !== true) {
@@ -372,16 +391,24 @@ async function downloadFile(fileUrl, defaultFilename, options = {}) {
       throw error
     }
 
+    if (options.getPollUrl && !pollUrl) {
+      if (typeof progress.handleId !== 'string' || !progress.handleId.trim()) {
+        const error = new Error('Некорректный ответ о ходе формирования файла')
+        error.status = 202
+        error.data = progress
+        throw error
+      }
+      // Track this job by handle so polling can never start a replacement job.
+      pollUrl = options.getPollUrl(progress.handleId)
+    }
+
     if (typeof options.onProgress === 'function') {
       options.onProgress(progress)
     }
-
-    const pollIntervalMs = Math.max(0, Number(options.pollIntervalMs ?? 1000) || 0)
-    if (pollIntervalMs > 0) {
-      await new Promise((resolve) => setTimeout(resolve, pollIntervalMs))
-    }
-    response = await fetchBlob(fileUrl, options.body)
+    polling = true
   }
+
+  if (pollUrl && response.status === 204) return false
 
   let filename = defaultFilename
   const disposition = response.headers.get('Content-Disposition')

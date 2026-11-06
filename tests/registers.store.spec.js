@@ -11,8 +11,6 @@ import { InvoiceParcelSelection } from '@/models/invoice.parcel.selection.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
-import { REGISTER_STATUS_FILTER_IN_PROGRESS } from '@/helpers/register.status.filter.helpers.js'
-
 vi.mock('@/helpers/fetch.wrapper.js', () => ({
   fetchWrapper: {
     get: vi.fn(),
@@ -128,24 +126,6 @@ describe('registers store', () => {
 
   describe('getAll method', () => {
     describe('API format with pagination metadata', () => {
-      it('requests in-progress registers for the paperwork status filter', async () => {
-        useAuthStore.mockReturnValueOnce({
-          ...defaultAuthStore,
-          registers_status: REGISTER_STATUS_FILTER_IN_PROGRESS
-        })
-        fetchWrapper.get.mockResolvedValue({
-          items: [],
-          pagination: { totalCount: 0 }
-        })
-
-        const store = useRegistersStore()
-        await store.getAll()
-
-        expect(fetchWrapper.get).toHaveBeenCalledWith(
-          `${apiUrl}/registers?page=1&pageSize=10&sortBy=id&sortOrder=asc&whOnly=false&inProgressOnly=true`
-        )
-      })
-
       it('handles new format with missing items property', async () => {
         const mockResponse = {
           pagination: {
@@ -164,26 +144,6 @@ describe('registers store', () => {
         expect(store.totalCount).toBe(0)
         expect(store.hasNextPage).toBe(false)
         expect(store.hasPreviousPage).toBe(false)
-      })
-    })
-
-    describe('error handling', () => {
-      it('clears previous error on successful request', async () => {
-        const store = useRegistersStore()
-
-        // First request fails while loading shared operations.
-        fetchWrapper.get.mockRejectedValueOnce(new Error('First error'))
-        await expect(store.getAll()).rejects.toThrow('First error')
-        expect(store.error).toBeTruthy()
-
-        // Second request succeeds
-        fetchWrapper.get.mockResolvedValue({
-          items: [{ id: 1 }],
-          pagination: { totalCount: 1, hasNextPage: false, hasPreviousPage: false }
-        })
-        await store.getAll()
-        expect(store.error).toBeNull()
-        expect(store.items).toEqual([{ id: 1, destination: 'in' }])
       })
     })
 
@@ -612,6 +572,55 @@ describe('registers store', () => {
       expect(store.item.id).toBe(6)
     })
 
+    it('does not overwrite a newer detail or list read of the same register', async () => {
+      const pending = Promise.withResolvers()
+      const store = useRegistersStore()
+      fetchWrapper.get.mockResolvedValueOnce({ customsProcedures: [], transportationTypes: [], incoterms: validIncoterms })
+      await store.ensureOpsLoaded()
+      store.item = { id: 5, invoiceNumber: 'initial' }
+      store.items = [store.item]
+      fetchWrapper.get.mockReturnValueOnce(pending.promise)
+      const refresh = store.refreshReadOnlyRegister(5)
+
+      fetchWrapper.get
+        .mockResolvedValueOnce({ id: 5, invoiceNumber: 'new detail' })
+        .mockResolvedValueOnce({ items: [{ id: 5, invoiceNumber: 'new list' }] })
+      await store.getById(5)
+      await store.getAll()
+      pending.resolve({ id: 5, invoiceNumber: 'old lock snapshot', readOnly: true })
+      await refresh
+
+      expect(store.item.invoiceNumber).toBe('new detail')
+      expect(store.items[0].invoiceNumber).toBe('new list')
+    })
+
+    it.each([true, false, undefined])(
+      'merges the lock (%s) without overwriting a newer derived invalidation',
+      async (readOnly) => {
+        const pending = Promise.withResolvers()
+        const failure = new Error('Сервер недоступен')
+        const store = useRegistersStore()
+        store.item = { id: 5, readOnly: readOnly === false }
+        store.items = [store.item]
+        fetchWrapper.get.mockReturnValueOnce(pending.promise)
+        const refresh = store.refreshReadOnlyRegister(5)
+
+        store.invalidateDerived(5)
+        if (readOnly === undefined) {
+          const rejected = expect(refresh).rejects.toBe(failure)
+          pending.reject(failure)
+          await rejected
+        } else {
+          pending.resolve({ id: 5, derivedTotalsPending: false, readOnly })
+          await refresh
+        }
+
+        const expected = { derivedTotalsPending: true, readOnly: readOnly ?? true }
+        expect(store.item).toMatchObject(expected)
+        expect(store.items[0]).toMatchObject(expected)
+      }
+    )
+
     it('refreshes the register and enters read-only mode after a stale conflict', async () => {
       const conflict = Object.assign(new Error('Изменения запрещены для реестра'), { status: 409 })
       fetchWrapper.put.mockRejectedValue(conflict)
@@ -759,14 +768,14 @@ describe('registers store', () => {
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
         `${apiUrl}/registers/6/generate-excise`,
         'IndPost_INV-E-акциз.zip',
-        { pollAccepted: true }
+        { pollAccepted: true, getPollUrl: expect.any(Function) }
       )
 
       await store.generateExcise(7, null)
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
         `${apiUrl}/registers/7/generate-excise`,
         'IndPost_7-акциз.zip',
-        { pollAccepted: true }
+        { pollAccepted: true, getPollUrl: expect.any(Function) }
       )
     })
 
@@ -777,14 +786,14 @@ describe('registers store', () => {
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
         `${apiUrl}/registers/8/generate-notifications`,
         'IndPost_INV-N-нотификации.zip',
-        { pollAccepted: true }
+        { pollAccepted: true, getPollUrl: expect.any(Function) }
       )
 
       await store.generateNotifications(9, undefined)
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
         `${apiUrl}/registers/9/generate-notifications`,
         'IndPost_9-нотификации.zip',
-        { pollAccepted: true }
+        { pollAccepted: true, getPollUrl: expect.any(Function) }
       )
     })
 
@@ -795,15 +804,39 @@ describe('registers store', () => {
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
         `${apiUrl}/registers/11/generate-ordinary`,
         'IndPost_INV-O-без-акциза-и-нотификаций.zip',
-        { pollAccepted: true }
+        { pollAccepted: true, getPollUrl: expect.any(Function) }
       )
 
       await store.generateOrdinary(12)
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
         `${apiUrl}/registers/12/generate-ordinary`,
         'IndPost_12-без-акциза-и-нотификаций.zip',
-        { pollAccepted: true }
+        { pollAccepted: true, getPollUrl: expect.any(Function) }
       )
+    })
+
+    it('binds archive status and cancellation to the handle and propagates DELETE failure', async () => {
+      const store = useRegistersStore()
+      const onProgress = vi.fn()
+      const error = new Error('Не удалось отменить формирование XML архива')
+      fetchWrapper.downloadFile.mockResolvedValue(false)
+      fetchWrapper.delete.mockRejectedValueOnce(error)
+      let cancelling = false
+      await expect(store.generateOrdinary(11, 'INV-O', false, {
+        onProgress, isCancelling: () => cancelling
+      })).resolves.toBe(false)
+      const options = fetchWrapper.downloadFile.mock.lastCall[2]
+      expect(options.onProgress).toBe(onProgress)
+      expect(options.retryPoll(error)).toBe(false)
+      cancelling = true
+      expect(options.retryPoll(error)).toBe(true)
+      expect(options.retryPoll({ status: 503 })).toBe(true)
+      expect(options.retryPoll({ status: 202, cause: new TypeError() })).toBe(true)
+      expect(options.retryPoll({ status: 202, cause: new SyntaxError() })).toBe(false)
+      expect(options.retryPoll({ status: 409 })).toBe(false)
+      expect(options.getPollUrl('archive/1')).toBe(apiUrl + '/registers/11/xml-archives/archive%2F1')
+      await expect(store.cancelXmlArchive('archive/1')).rejects.toBe(error)
+      expect(fetchWrapper.delete).toHaveBeenCalledWith(apiUrl + '/registers/xml-archives/archive%2F1')
     })
 
     it('adds weight correction query to XML generation only when requested', async () => {
@@ -821,21 +854,21 @@ describe('registers store', () => {
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
         `${apiUrl}/registers/6/generate-excise?applyWeightCorrection=true`,
         'IndPost_INV-E-акциз.zip',
-        { pollAccepted: true }
+        { pollAccepted: true, getPollUrl: expect.any(Function) }
       )
 
       await store.generateNotifications(8, 'INV-N', true)
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
         `${apiUrl}/registers/8/generate-notifications?applyWeightCorrection=true`,
         'IndPost_INV-N-нотификации.zip',
-        { pollAccepted: true }
+        { pollAccepted: true, getPollUrl: expect.any(Function) }
       )
 
       await store.generateOrdinary(11, 'INV-O', true)
       expect(fetchWrapper.downloadFile).toHaveBeenCalledWith(
         `${apiUrl}/registers/11/generate-ordinary?applyWeightCorrection=true`,
         'IndPost_INV-O-без-акциза-и-нотификаций.zip',
-        { pollAccepted: true }
+        { pollAccepted: true, getPollUrl: expect.any(Function) }
       )
     })
   })

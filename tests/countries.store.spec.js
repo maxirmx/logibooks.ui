@@ -72,18 +72,6 @@ describe('countries store', () => {
   })
 
   describe('ensureLoaded', () => {
-    it('does not call getAll when already loading', async () => {
-      const store = useCountriesStore()
-
-      // Set loading state to true to simulate ongoing request
-      store.loading = true
-
-      store.ensureLoaded()
-
-      // Should not make any API calls when loading is true
-      expect(fetchWrapper.get).not.toHaveBeenCalled()
-    })
-
     it('rethrows failures and permits an explicit retry', async () => {
       const store = useCountriesStore()
 

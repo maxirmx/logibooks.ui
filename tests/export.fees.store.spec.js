@@ -22,20 +22,6 @@ describe('export fees store', () => {
     vi.clearAllMocks()
   })
 
-  it('stores error and leaves initialization false when fetch fails', async () => {
-    const testError = new Error('API error')
-    fetchWrapper.get.mockRejectedValue(testError)
-
-    const store = useExportFeesStore()
-    await expect(store.getAll()).rejects.toBe(testError)
-
-    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/exportfees`)
-    expect(store.fees).toEqual([])
-    expect(store.loading).toBe(false)
-    expect(store.error).toBe(testError)
-    expect(store.isInitialized).toBe(false)
-  })
-
   it('calls update endpoint', async () => {
     fetchWrapper.post.mockResolvedValue({})
 

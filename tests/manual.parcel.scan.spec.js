@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { defineComponent, reactive, ref } from 'vue'
+import { defineComponent, reactive, ref, watch } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
 import { useManualParcelScan } from '@/composables/useManualParcelScan.js'
 import { useAlertStore } from '@/stores/alert.store.js'
@@ -13,7 +13,7 @@ import { parcelScanSuccessMessage } from '@/helpers/parcel.scan.helpers.js'
 import { vuetifyStubs } from './helpers/test-utils.js'
 
 const { api, confirm, reportError } = vi.hoisted(() => ({
-  api: { ops: null, getOps: vi.fn(), ensureOpsLoaded: vi.fn(), getInProgress: vi.fn(), getById: vi.fn(), scanParcel: vi.fn(), startScanJobsListMonitor: vi.fn(), stopScanJobsListMonitor: vi.fn(), createScanJobsListChannel: vi.fn() },
+  api: { ops: null, getOps: vi.fn(), ensureOpsLoaded: vi.fn(), getInProgress: vi.fn(), getById: vi.fn(), scanParcel: vi.fn(), scanParcels: vi.fn(), startScanJobsListMonitor: vi.fn(), stopScanJobsListMonitor: vi.fn(), createScanJobsListChannel: vi.fn() },
   confirm: vi.fn(), reportError: vi.fn()
 }))
 const auth = reactive({ isAdmin: true, isWhManager: false, isWhOperator: false })
@@ -30,7 +30,6 @@ function harness(overrides = {}, renderActions = false) {
   let scan, selection
   const renderedParcels = ref(parcels.map(parcel => ({ ...parcel })))
   const opts = { registerId: ref(1), scopeKey: ref('box-1'), refresh: vi.fn().mockResolvedValue(true), ...overrides }
-  opts.onScanned ??= id => selection.removeSelected([id])
   const wrapper = mount(defineComponent({
     components: { PageAlertRegion, ParcelScanAction },
     setup() {
@@ -38,6 +37,7 @@ function harness(overrides = {}, renderActions = false) {
       selection = useParcelMultiSelect({ items: renderedParcels, loading: ref(false), page: ref(1),
         selectedParcelId: ref(null), dataTableRef: ref(null), disabled: scan.locked,
         onContextMenu: () => scan.run(selection.selectedItems.value, null, true) })
+      watch(scan.completedBatchIds, ids => selection.removeSelected(ids))
       return { scan, selection, parcels: renderedParcels, renderActions }
     },
     template: '<div><PageAlertRegion/><template v-if="renderActions"><div v-for="parcel in parcels" :key="parcel.id" data-testid="selectable-row" @click="selection.handleRowClick($event, { item: parcel })" @contextmenu="selection.handleRowContextMenu($event, { item: parcel })"><ParcelScanAction :parcels="[parcel]" :selection="selection"/></div></template></div>'
@@ -56,6 +56,7 @@ beforeEach(() => {
   api.getOps.mockResolvedValue(true)
   api.ensureOpsLoaded.mockResolvedValue(true)
   api.scanParcel.mockResolvedValue({ parcelCount: 1, scanSource: 10, hasIssues: true })
+  api.scanParcels.mockImplementation(async (_jobId, ids) => ({ completed: ids.map(id => ({ id, count: 1 })), skippedIds: [] }))
   api.startScanJobsListMonitor.mockResolvedValue(true)
   api.stopScanJobsListMonitor.mockResolvedValue(true)
   api.createScanJobsListChannel.mockReturnValue({ start: api.startScanJobsListMonitor, stop: api.stopScanJobsListMonitor })
@@ -87,10 +88,12 @@ describe('manual parcel scan workflow', () => {
       content.unmount()
       return true
     })
-    const { scan } = harness()
+    const { scan, wrapper } = harness()
     await flushPromises()
     expect(await scan.run(parcels, null, true)).toBe(true)
-    expect(api.scanParcel.mock.calls).toEqual([[9, 1], [9, 2], [9, 3]])
+    expect(api.scanParcels).toHaveBeenCalledExactlyOnceWith(9, [1, 2, 3])
+    expect(api.scanParcel).not.toHaveBeenCalled()
+    expect(wrapper.get('[role="status"]').text()).toContain('Отсканировано посылок: 3')
   })
   it('observes a definitions failure after teardown without publishing a stale alert', async () => {
     let rejectLabels
@@ -105,7 +108,7 @@ describe('manual parcel scan workflow', () => {
   it('reports a scan failure technically when scope changes during the automatic refresh', async () => {
     let finishRefresh
     const failure = Object.assign(new Error('Сбой сканирования'), { status: 400 })
-    api.scanParcel.mockRejectedValueOnce(failure)
+    api.scanParcels.mockRejectedValueOnce(failure)
     const refresh = vi.fn(() => new Promise(resolve => { finishRefresh = resolve }))
     const { scan, wrapper, opts } = harness({ refresh })
     await flushPromises()
@@ -119,26 +122,47 @@ describe('manual parcel scan workflow', () => {
   })
   it('invalidates active and pending batches after explicit monitor table changes', async () => {
     let finish
-    api.scanParcel.mockImplementationOnce(() => new Promise(resolve => { finish = resolve }))
+    api.scanParcels.mockImplementationOnce(() => new Promise(resolve => { finish = resolve }))
     const { scan } = harness({ job: ref(job) })
     await flushPromises()
     const run = scan.run(parcels, 7, true)
     await flushPromises()
     scan.invalidateBatch()
-    finish({ parcelCount: 1, scanSource: 10 })
+    finish({ completed: [{ id: 1, count: 1 }], skippedIds: [] })
     await run
-    expect(api.scanParcel).toHaveBeenCalledOnce()
+    expect(api.scanParcels).toHaveBeenCalledOnce()
     expect(scan.pendingBatch.value).toBeNull()
   })
   it('preserves the scan error when refresh also rejects', async () => {
     const scanError = Object.assign(new Error('Ошибка сканирования'), { status: 400 })
-    api.scanParcel.mockRejectedValue(scanError)
+    api.scanParcels.mockRejectedValue(scanError)
     const { scan, wrapper } = harness({ refresh: vi.fn().mockRejectedValue(new Error('Ошибка обновления')) })
     await flushPromises()
     await scan.run(parcels, 7, true)
     expect(wrapper.text()).toContain('Ошибка сканирования')
     expect(wrapper.text()).not.toContain('Ошибка обновления')
     expect(reportError).toHaveBeenCalled()
+  })
+  it('shows a reload error after a committed scan', async () => {
+    const { scan, wrapper } = harness({ refresh: vi.fn().mockRejectedValue(new Error('Ошибка обновления списка')) })
+    await flushPromises()
+    await scan.run(parcels, 7, true)
+    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+    expect(wrapper.get('[role="alert"]').text()).toContain('Ошибка обновления списка')
+  })
+  it('keeps the full selection on batch rejection and submits the same IDs on retry', async () => {
+    api.scanParcels.mockRejectedValueOnce(Object.assign(new Error('Задание приостановлено'), { status: 409 }))
+    const { scan, wrapper, selection, opts } = harness({}, true)
+    await flushPromises()
+    selection.selectAllCurrentPage()
+    expect(await scan.run(selection.selectedItems.value, 7, true)).toBe(false)
+    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+    expect(wrapper.get('[role="alert"]').text()).toContain('Задание приостановлено')
+    expect(selection.selectedItems.value.map(parcel => parcel.id)).toEqual([1, 2, 3])
+    expect(await scan.run(selection.selectedItems.value, 7, true)).toBe(true)
+    expect(api.scanParcels.mock.calls).toEqual([[7, [1, 2, 3]], [7, [1, 2, 3]]])
+    expect(opts.refresh).toHaveBeenCalledTimes(2)
+    expect(selection.selectedItems.value).toEqual([])
   })
   it('reports a detached request rejection technically without showing it on the new page', async () => {
     let rejectScan
@@ -209,14 +233,16 @@ describe('shared scan action controls', () => {
     const menu = bulkAction.get('[data-testid="manual-parcel-scan-menu"]')
     expect(menu.attributes('disabled')).toBeUndefined()
 
-    api.scanParcel.mockResolvedValueOnce({ parcelCount: 0, scanSource: 0 })
+    api.scanParcels.mockResolvedValueOnce({ completed: [{ id: 1, count: 0 }, { id: 2, count: 1 }], skippedIds: [3] })
     await menu.trigger('click')
     await flushPromises()
     await bulkAction.findAll('[role="menuitem"]')[0].trigger('click')
     await flushPromises()
-    expect(api.scanParcel.mock.calls).toEqual([[10, 1], [10, 2], [10, 3]])
-    expect(wrapper.get('[role="status"]').text()).toContain('Отсканировано посылок: 3')
+    expect(api.scanParcels).toHaveBeenCalledExactlyOnceWith(10, [1, 2, 3])
+    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+    expect(wrapper.get('[role="alert"]').text()).toContain('нет в партии задания: #3')
+    expect(wrapper.find('[role="status"]').exists()).toBe(false)
     expect(scan.pendingBatch.value).toBeNull()
-    expect(selection.selectedItems.value).toEqual([])
+    expect(selection.selectedItems.value.map(parcel => parcel.id)).toEqual([3])
   })
 })

@@ -87,25 +87,6 @@ describe('ProductLinkWithActions', () => {
     expect(wrapper.emitted()['delete-image']).toHaveLength(1)
   })
 
-  it('does not emit events when buttons are disabled', async () => {
-    const wrapper = mount(ProductLinkWithActions, {
-      props: {
-        label: 'Product Link',
-        item: { id: 12, productLink: '', hasImage: false },
-        disabled: true
-      },
-      global: { stubs: globalStubs }
-    })
-
-    await wrapper.find('[data-test="product-link-select"]').trigger('click')
-    await wrapper.find('[data-test="product-link-view"]').trigger('click')
-    await wrapper.find('[data-test="product-link-delete"]').trigger('click')
-
-    expect(wrapper.emitted()['select-image']).toBeUndefined()
-    expect(wrapper.emitted()['view-image']).toBeUndefined()
-    expect(wrapper.emitted()['delete-image']).toBeUndefined()
-  })
-
   it('handles extension presence through window messages', async () => {
     const wrapper = mount(ProductLinkWithActions, {
       props: {

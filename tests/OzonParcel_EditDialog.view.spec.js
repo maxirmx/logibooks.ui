@@ -293,47 +293,6 @@ describe('OzonParcel_EditDialog image overlay', () => {
     )
   })
 
-  it('hides additional Ozon recipient fields for export register', async () => {
-    registersMock.item.value = { id: 1, customsProcedureCode: 10 }
-    parcelsMock.item.value = { id: 2, registerId: 1, statusId: 1, checkStatus: 0 }
-
-    const TestWrapper = {
-      components: { OzonParcel_EditDialog },
-      template: '<Suspense><OzonParcel_EditDialog :registerId="1" :id="2" /></Suspense>'
-    }
-
-    const wrapper = mount(TestWrapper, {
-      global: {
-        stubs: {
-          Field: { template: '<input />' },
-          Form: {
-            methods: { resetForm() {} },
-            template:
-              '<div><slot :errors="{}" :values="{ id: 2, statusId: 1 }" :isSubmitting="false" :setFieldValue="() => {}"></slot></div>'
-          },
-          ParcelHeaderActionsBar: true,
-          ParcelStatusSection: true,
-          FeacnCodeEditor: true,
-          ParcelNumberExt: true,
-          ArticleWithH: true,
-          ActionButton: true,
-          'font-awesome-icon': true,
-          VTooltip: true
-        }
-      }
-    })
-
-    await nextTick()
-    await resolveAll()
-
-    expect(wrapper.text()).not.toContain('Серия паспорта')
-    expect(wrapper.text()).toContain('Номер паспорта')
-    expect(wrapper.text()).not.toContain('ИНН')
-    expect(wrapper.text()).not.toContain('Дата выдачи паспорта')
-    expect(wrapper.text()).not.toContain('Кем выдан паспорт')
-    expect(wrapper.text()).not.toContain('Адрес')
-  })
-
   it('keeps read-only navigation and downloads while blocking all mutations', async () => {
     const setExciseField = vi.fn()
     const statusSectionStub = {

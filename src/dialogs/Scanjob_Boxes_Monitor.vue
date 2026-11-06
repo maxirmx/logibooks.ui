@@ -12,6 +12,7 @@ import ClickableCell from '@/components/ClickableCell.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import BoxStickerPrintButton from '@/components/BoxStickerPrintButton.vue'
 import BoxStickerExportButton from '@/components/BoxStickerExportButton.vue'
+import BoxStickerContextMenu from '@/components/BoxStickerContextMenu.vue'
 import ScanjobMonitorSummary from '@/components/ScanjobMonitorSummary.vue'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import {
@@ -31,6 +32,8 @@ import '@/assets/styles/scanjob-monitor.css'
 defineOptions({ name: 'Scanjob_Boxes_Monitor' })
 
 const props = defineProps({
+  registerId: { type: Number, default: null },
+  readOnly: Boolean,
   snapshot: { type: Object, default: null },
   boxes: { type: Array, default: () => [] },
   loading: { type: Boolean, default: false },
@@ -46,10 +49,12 @@ const {
   scanjobmonitor_boxes_page
 } = storeToRefs(authStore)
 
-const dataTableRef = ref(null)
+const contextMenu = ref(null)
+const scopeKey = computed(() => JSON.stringify([
+  props.snapshot?.scanJobId, scanjobmonitor_boxes_page.value, scanjobmonitor_boxes_per_page.value, scanjobmonitor_boxes_sort_by.value
+]))
 const { selection, locked, updateDisplayedItems } = useManualScanSelection({
-  loading: computed(() => props.loading), page: scanjobmonitor_boxes_page, dataTableRef,
-  scopeKey: () => JSON.stringify([props.snapshot?.scanJobId, scanjobmonitor_boxes_page.value, scanjobmonitor_boxes_per_page.value, scanjobmonitor_boxes_sort_by.value])
+  loading: computed(() => props.loading), page: scanjobmonitor_boxes_page, scopeKey, contextMenu
 })
 const controlsBusy = computed(() => props.loading || locked.value)
 
@@ -86,6 +91,16 @@ function openBox(item) {
   <div data-testid="scanjob-monitor-register">
     <ScanjobMonitorSummary :cards="summaryCards" :print-queue="props.printQueue" />
 
+    <BoxStickerContextMenu
+      v-if="authStore.isWhManagerPlus && props.registerId"
+      :key="props.snapshot?.scanJobId"
+      ref="contextMenu"
+      :register-id="props.registerId"
+      :scope-key="scopeKey"
+      :read-only="props.readOnly"
+      :disabled="controlsBusy"
+    />
+
     <div class="monitor-section">
     <v-card class="table-card">
       <div v-if="props.boxes.length === 0" class="monitor-empty" data-testid="scanjob-monitor-empty-boxes">
@@ -93,8 +108,6 @@ function openBox(item) {
       </div>
 
       <v-data-table
-        ref="dataTableRef"
-        :disable-sort="locked"
         :inert="locked || undefined"
         :row-props="selection.getRowProps"
         @click:row="selection.handleRowClick"

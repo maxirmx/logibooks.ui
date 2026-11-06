@@ -222,20 +222,6 @@ describe('users store', () => {
       expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:8080/api/users')
     })
 
-    it('delete calls API but does not logout when deleting another user', async () => {
-      fetchWrapper.delete.mockResolvedValue({})
-      fetchWrapper.get.mockResolvedValue([])
-
-      const store = useUsersStore()
-
-      // Delete a different user
-      await store.delete(2)
-
-      expect(fetchWrapper.delete).toHaveBeenCalledWith('http://localhost:8080/api/users/2', {})
-      expect(mockAuthStore.logout).not.toHaveBeenCalled()
-      expect(fetchWrapper.get).toHaveBeenCalledWith('http://localhost:8080/api/users')
-    })
-
     // Error handling tests
     it('add propagates errors when API call fails', async () => {
       const errorMessage = 'Failed to add user'

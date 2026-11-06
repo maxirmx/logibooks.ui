@@ -99,7 +99,6 @@ const isInitializing = ref(true)
 const isComponentMounted = ref(true)
 const runningAction = ref(false)
 const readOnly = computed(() => registersStore.item?.readOnly === true)
-const dataTableRef = ref(null)
 const scanScopeKey = computed(() => JSON.stringify([
   props.registerId, props.boxId, authStore.parcels_filter_id,
   parcels_wh_per_page.value, parcels_wh_sort_by.value, parcels_wh_status.value,
@@ -115,16 +114,16 @@ const manualScan = useManualParcelScan({
     const page = parcels_wh_page.value
     const result = await parcelsStore.getAll(props.registerId, { showMarkedByPartner: true, boxId: props.boxId, updateStore: false })
     if (isComponentMounted.value && scope === scanScopeKey.value && page === parcels_wh_page.value) parcelsStore.updateItems(result)
-  },
-  onScanned: id => selection.removeSelected([id])
+  }
 })
 const selection = useParcelMultiSelect({
-  items, loading, selectedParcelId: ref(null), page: parcels_wh_page, dataTableRef,
+  items, loading, selectedParcelId: ref(null), page: parcels_wh_page,
   scopeKey: scanScopeKey,
   onContextMenu: () => manualScan.run(selection.selectedItems.value, null, true),
   disabled: () => isInitializing.value || runningAction.value || manualScan.locked.value
 })
 onUnmounted(selection.stop)
+watch(manualScan.completedBatchIds, ids => selection.removeSelected(ids))
 
 const showParcelStatusBulkDialog = ref(false)
 
@@ -387,7 +386,7 @@ async function clearParcelDefect(item) {
     </div>
     <hr class="hr" />
 
-    <PageAlertRegion />
+    <PageAlertRegion v-if="!showParcelStatusBulkDialog" />
     <div v-if="readOnly" class="alert alert-warning read-only-notice">
       Изменения запрещены. Просмотр, фильтрация и экспорт доступны.
     </div>
@@ -416,11 +415,10 @@ async function clearParcelDefect(item) {
 
     <v-card class="table-card">
       <v-data-table-server
-        ref="dataTableRef"
         :row-props="selection.getRowProps"
         @click:row="selection.handleRowClick"
         @contextmenu:row="selection.handleRowContextMenu"
-        :disable-sort="manualScan.locked.value"
+        :inert="manualScan.locked.value || undefined"
         v-model:items-per-page="parcels_wh_per_page"
         items-per-page-text="Посылок на странице"
         :items-per-page-options="itemsPerPageOptions"

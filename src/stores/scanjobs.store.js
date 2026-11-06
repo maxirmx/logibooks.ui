@@ -654,22 +654,29 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     }
   }
 
-  async function scanBox(id, boxId) {
+  async function postScan(path, body = {}) {
     try {
-      return await fetchWrapper.post(`${baseUrl}/${id}/boxes/${boxId}/scan`, {})
+      return await fetchWrapper.post(`${baseUrl}/${path}`, body)
     } catch (err) {
       error.value = err
       throw err
     }
   }
 
-  async function scanParcel(id, parcelId) {
-    try {
-      return await fetchWrapper.post(`${baseUrl}/${id}/parcels/${parcelId}/scan`, {})
-    } catch (err) {
-      error.value = err
-      throw err
-    }
+  function scanBox(id, boxId) {
+    return postScan(`${id}/boxes/${boxId}/scan`)
+  }
+
+  function scanParcel(id, parcelId) {
+    return postScan(`${id}/parcels/${parcelId}/scan`)
+  }
+
+  function scanBoxes(id, boxIds) {
+    return postScan(`${id}/boxes/scan-batch`, { ids: boxIds })
+  }
+
+  function scanParcels(id, parcelIds) {
+    return postScan(`${id}/parcels/scan-batch`, { ids: parcelIds })
   }
 
   async function getById(id) {
@@ -870,6 +877,8 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     getInProgress,
     scanParcel,
     scanBox,
+    scanParcels,
+    scanBoxes,
     create,
     update,
     remove,

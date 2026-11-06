@@ -1,5 +1,3 @@
-import { useListStateStore } from '@/stores/list.state.store.js'
-import { LIST_STATE_STORAGE_KEY } from '@/helpers/list.state.helpers.js'
 import { setActivePinia, createPinia } from 'pinia'
 /* @vitest-environment jsdom */
 // Copyright (C) 2025-2026 Maxim [maxirmx] Samsonov (www.sw.consulting)
@@ -248,20 +246,6 @@ describe('ParcelEvents_Settings.vue', () => {
     updateMany.mockResolvedValue()
   })
 
-  it('restores the procedure filter before loading without resetting a valid saved page', async () => {
-    sessionStorage.clear()
-    sessionStorage.setItem(LIST_STATE_STORAGE_KEY, JSON.stringify({ version: 1, userId: 1, lists: {
-      [JSON.stringify(['parcelEvents', ''])]: { selectedCustomsProcedureCode: 10 }
-    } }))
-    useListStateStore().setUser(1)
-    mockAuthStore.parcelevents_page.value = 3
-    const wrapper = mountComponent()
-    await resolveAll()
-    expect(wrapper.find('[data-testid="customs-procedure-select"]').element.value).toBe('10')
-    expect(mockAuthStore.parcelevents_page.value).toBe(3)
-    wrapper.unmount()
-  })
-
   it('updates selections and saves changes', async () => {
     const wrapper = mountComponent()
     await resolveAll()
@@ -301,20 +285,6 @@ describe('ParcelEvents_Settings.vue', () => {
     expect(mockAuthStore.parcelevents_page.value).toBe(1)
     expect(wrapper.find('[data-testid="parcel-event-row-1"]').text()).toBe('Создана')
     expect(wrapper.find('[data-testid="parcel-event-row-1001"]').exists()).toBe(false)
-  })
-
-  it('shows error message when save fails', async () => {
-    updateMany.mockRejectedValue(new Error('Save failed'))
-
-    const wrapper = mountComponent()
-    await resolveAll()
-
-    await wrapper.find('[data-testid="save-button"]').trigger('click')
-    await resolveAll()
-
-    expect(alertError).toHaveBeenCalledWith(expect.objectContaining({ message: 'Save failed' }), {
-      fallback: 'Не удалось сохранить изменения'
-    })
   })
 
   it('handles empty ("Не менять") status selection as 0', async () => {

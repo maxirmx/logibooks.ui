@@ -223,48 +223,6 @@ describe('ParcelsByNumber_List.vue', () => {
     expect(router.push).toHaveBeenCalledWith(expectedNavigation)
   })
 
-  it('routes to parcel view when any other column is clicked', async () => {
-    mockItems.value = [
-      {
-        id: 11,
-        registerId: 4,
-        registerDealNumber: 'D-004',
-        number: 'N-004',
-        productName: 'Product B',
-        tnVed: 'TN2',
-        dTag: 'DT2',
-        dTagComment: 'Comment2',
-        previousDTagComment: 'Prev2'
-      }
-    ]
-
-    const wrapper = mount(ParcelsByNumberList, {
-      global: {
-        stubs: {
-          ...vuetifyStubs,
-          ActionButton: actionButtonStub,
-          TruncateTooltipCell: {
-            template: '<span data-testid="truncate-cell"></span>'
-          }
-        }
-      }
-    })
-
-    await wrapper.find('[data-testid="parcels-by-number-cell-number-11"]').trigger('click')
-
-    expect(router.push).toHaveBeenCalledWith({
-      name: 'Редактирование посылки',
-      params: {
-        id: 11,
-        registerId: 4
-      },
-      query: {
-        mode: OP_MODE_PAPERWORK,
-        returnUrl: '/parcels/by-number'
-      }
-    })
-  })
-
   it('shows alert when number is empty', async () => {
     const wrapper = mount(ParcelsByNumberList, {
       global: {

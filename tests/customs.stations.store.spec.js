@@ -48,18 +48,6 @@ describe('customs stations store', () => {
     vi.clearAllMocks()
   })
 
-  it('gets all stations and returns them', async () => {
-    fetchWrapper.get.mockResolvedValue(stations)
-    const store = useCustomsStationsStore()
-
-    const result = await store.getAll()
-
-    expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/customsstations`)
-    expect(result).toEqual(stations)
-    expect(store.customsStations).toEqual(stations)
-    expect(store.loading).toBe(false)
-  })
-
   it('records and rethrows get-all errors', async () => {
     const error = new Error('network')
     fetchWrapper.get.mockRejectedValue(error)

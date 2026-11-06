@@ -518,6 +518,34 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
+  async function refreshReadOnlyRegister(id) {
+    const itemSequence = itemRequestSequence
+    const listSequence = listRequestSequence
+    const revision = projectionRevisions.get(id)
+    const passportCheckStateWatermark = livePassportCheckStateArrival
+    let refreshed
+    try {
+      const response = await fetchWrapper.get(`${baseUrl}/${id}`)
+      refreshed = mergeLivePassportCheckState(response, passportCheckStateWatermark)
+      setDestinationField(refreshed)
+    } finally {
+      // Refresh the lock independently of derived values. On failure the
+      // conflict itself proves the lock.
+      const readOnly = refreshed?.readOnly ?? true
+      const snapshot = revision === projectionRevisions.get(id) ? refreshed : null
+      if (itemSequence === itemRequestSequence && item.value?.id === id) {
+        item.value = { ...(snapshot ?? item.value), readOnly }
+      }
+
+      if (listSequence === listRequestSequence) {
+        const index = items.value.findIndex((register) => register.id === id)
+        if (index !== -1) {
+          items.value[index] = { ...items.value[index], ...snapshot, readOnly }
+        }
+      }
+    }
+  }
+
   async function update(id, data) {
     let res
     try {
@@ -527,25 +555,10 @@ export const useRegistersStore = defineStore('registers', () => {
         err?.status === 409 &&
         String(err?.message || err?.data?.msg || '').includes('Изменения запрещены')
       ) {
-        let refreshed = null
         try {
-          refreshed = await fetchWrapper.get(`${baseUrl}/${id}`)
-          setDestinationField(refreshed)
+          await refreshReadOnlyRegister(id)
         } catch (refreshError) {
-          // The conflict already proves the server-side lock; keep the UI safe
-          // even if the follow-up refresh cannot be completed.
           reportError(refreshError, { context: 'registers.update conflict refresh' })
-        }
-
-        if (item.value?.id === id) {
-          item.value = refreshed ?? { ...item.value, readOnly: true }
-        }
-
-        const existingIndex = items.value.findIndex((register) => register.id === id)
-        if (existingIndex !== -1) {
-          items.value[existingIndex] = refreshed
-            ? { ...items.value[existingIndex], ...refreshed }
-            : { ...items.value[existingIndex], readOnly: true }
         }
       }
       throw err
@@ -730,7 +743,25 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
-  async function generateExcise(id, invoiceNumber, applyWeightCorrection = false) {
+  function xmlArchiveDownloadOptions(id, { onProgress, isCancelling } = {}) {
+    return {
+      pollAccepted: true,
+      getPollUrl: handleId => `${baseUrl}/${id}/xml-archives/${encodeURIComponent(handleId)}`,
+      ...(onProgress ? { onProgress } : {}),
+      ...(isCancelling ? {
+        retryPoll: error => isCancelling() && (
+          !error.status || [408, 429, 502, 503, 504].includes(error.status) ||
+          (error.status === 202 && error.cause instanceof TypeError)
+        )
+      } : {})
+    }
+  }
+
+  function cancelXmlArchive(handleId) {
+    return fetchWrapper.delete(`${baseUrl}/xml-archives/${encodeURIComponent(handleId)}`)
+  }
+
+  async function generateExcise(id, invoiceNumber, applyWeightCorrection = false, tracking) {
     loading.value = true
     error.value = null
     try {
@@ -743,7 +774,7 @@ export const useRegistersStore = defineStore('registers', () => {
       return await fetchWrapper.downloadFile(
         buildXmlRequestUrl(id, 'generate-excise', applyWeightCorrection),
         filename,
-        { pollAccepted: true }
+        xmlArchiveDownloadOptions(id, tracking)
       )
     } catch (err) {
       error.value = err
@@ -753,7 +784,7 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
-  async function generateNotifications(id, invoiceNumber, applyWeightCorrection = false) {
+  async function generateNotifications(id, invoiceNumber, applyWeightCorrection = false, tracking) {
     loading.value = true
     error.value = null
     try {
@@ -766,7 +797,7 @@ export const useRegistersStore = defineStore('registers', () => {
       return await fetchWrapper.downloadFile(
         buildXmlRequestUrl(id, 'generate-notifications', applyWeightCorrection),
         filename,
-        { pollAccepted: true }
+        xmlArchiveDownloadOptions(id, tracking)
       )
     } catch (err) {
       error.value = err
@@ -776,7 +807,7 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
-  async function generateOrdinary(id, invoiceNumber, applyWeightCorrection = false) {
+  async function generateOrdinary(id, invoiceNumber, applyWeightCorrection = false, tracking) {
     loading.value = true
     error.value = null
     try {
@@ -789,7 +820,7 @@ export const useRegistersStore = defineStore('registers', () => {
       return await fetchWrapper.downloadFile(
         buildXmlRequestUrl(id, 'generate-ordinary', applyWeightCorrection),
         filename,
-        { pollAccepted: true }
+        xmlArchiveDownloadOptions(id, tracking)
       )
     } catch (err) {
       error.value = err
@@ -1234,6 +1265,7 @@ export const useRegistersStore = defineStore('registers', () => {
     getReconciliation,
     updateWeightsFromFile,
     getById,
+    refreshReadOnlyRegister,
     invalidateDerived,
     refreshDerived,
     update,
@@ -1253,6 +1285,7 @@ export const useRegistersStore = defineStore('registers', () => {
     generateExcise,
     generateNotifications,
     generateOrdinary,
+    cancelXmlArchive,
     downloadInvoiceFile,
     downloadTajikistanManifestFile,
     downloadDo1File,

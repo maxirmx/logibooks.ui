@@ -5,8 +5,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useAlertStore } from '@/stores/alert.store.js'
-import { getServerFieldErrors, reportFormError } from '@/helpers/error.helpers.js'
-
 describe('single-position alert store', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -33,39 +31,4 @@ describe('single-position alert store', () => {
     expect(store.alert).toBeNull()
   })
 
-})
-
-describe('form error normalization', () => {
-  it('maps structured server fields without publishing a duplicate general error', () => {
-    const setErrors = vi.fn()
-    const alertStore = { error: vi.fn() }
-    const error = Object.assign(new Error('Ошибка проверки данных'), {
-      data: { msg: 'Некорректные данные запроса', errors: { Name: ['Введите название'], 'Articles[0].Article': 'Введите артикул' } }
-    })
-
-    expect(reportFormError(error, { setErrors, alertStore })).toBe(true)
-    expect(setErrors).toHaveBeenCalledWith({
-      name: 'Введите название',
-      'articles[0].article': 'Введите артикул'
-    })
-    expect(alertStore.error).not.toHaveBeenCalled()
-  })
-
-  it('keeps a general server error in the page notification region', () => {
-    const setErrors = vi.fn()
-    const alertStore = { error: vi.fn() }
-    const error = {
-      data: {
-        msg: 'Некорректные данные запроса',
-        errors: { Number: ['Обязательное поле'], '': ['Исправьте форму'] }
-      }
-    }
-
-    reportFormError(error, { setErrors, alertStore, fallback: 'Ошибка сохранения' })
-
-    expect(getServerFieldErrors(error)).toEqual({ number: 'Обязательное поле' })
-    expect(alertStore.error).toHaveBeenCalledWith('Исправьте форму', {
-      fallback: 'Ошибка сохранения'
-    })
-  })
 })

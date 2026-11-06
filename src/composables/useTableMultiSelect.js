@@ -13,7 +13,7 @@ import { reportError } from '@/helpers/error.helpers.js'
  * @param {import('vue').Ref<boolean>} options.loading       - whether the table is loading
  * @param {import('vue').Ref<number|null>} options.selectedId - single-selected parcel id (auth store ref)
  * @param {import('vue').Ref<number>} options.page           - current page ref (used to clear selection on page change)
- * @param {import('vue').Ref}         options.dataTableRef   - template ref to the v-data-table-server
+ * @param {import('vue').Ref}        [options.dataTableRef]  - table ref for scrolling to the selection after item updates
  * @param {Function}                  [options.getBaseRowClass] - optional fn(data) => string for base row CSS class
  */
 export function useTableMultiSelect({
@@ -24,6 +24,7 @@ export function useTableMultiSelect({
   dataTableRef,
   getBaseRowClass = () => '',
   onContextMenu = null,
+  keyboardContextMenu = false,
   getItemId = item => item.id,
   isItemSelectable = () => true,
   disabled = false,
@@ -100,7 +101,7 @@ export function useTableMultiSelect({
   // ------- scroll -------
 
   function scrollToSelectedItem() {
-    if (selectedIds.value.size === 0 || !dataTableRef.value) return
+    if (selectedIds.value.size === 0 || !dataTableRef?.value) return
 
     nextTick(() => {
       try {
@@ -121,7 +122,18 @@ export function useTableMultiSelect({
   function getRowProps(data) {
     const baseClass = getBaseRowClass(data)
     const selectedClass = selectedIds.value.has(getItemId(data.item)) ? 'selected-parcel-row' : ''
-    return { class: `${baseClass} ${selectedClass}`.trim() }
+    const props = { class: `${baseClass} ${selectedClass}`.trim() }
+    if (toValue(keyboardContextMenu) && !isDisabled() && isItemSelectable(data.item) && getItemId(data.item) != null) {
+      props.tabindex = 0
+      props['aria-haspopup'] = 'menu'
+      props.onKeydown = (event) => {
+        if (event.target === event.currentTarget &&
+            (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10'))) {
+          handleRowContextMenu(event, data)
+        }
+      }
+    }
+    return props
   }
 
   // ------- computed helpers -------
@@ -142,7 +154,7 @@ export function useTableMultiSelect({
       lastClickedId.value = getItemId(item)
     }
 
-    onContextMenu?.()
+    onContextMenu?.(event)
   }
 
   // ------- watchers -------

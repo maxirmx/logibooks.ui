@@ -33,7 +33,7 @@ export function normalizeParcelStatusBulkIds(value) {
     : []
 }
 
-export function buildParcelStatusBulkReport(missingNumbers = [], blockedItems = []) {
+export function buildParcelStatusBulkReport(missingNumbers = [], blockedItems = [], bySticker = false) {
   const lines = []
   const missing = Array.isArray(missingNumbers) ? missingNumbers : []
   const blocked = Array.isArray(blockedItems) ? blockedItems : []
@@ -48,7 +48,10 @@ export function buildParcelStatusBulkReport(missingNumbers = [], blockedItems = 
       lines.push('')
     }
     lines.push('Недоступны для изменения:')
-    lines.push(...blocked.map((item) => item?.number || `#${item?.parcelId}`))
+    lines.push(...blocked.map((item) => {
+      if (bySticker && item?.number) return `${item.number} — посылка #${item.parcelId}`
+      return item?.number || `#${item?.parcelId}`
+    }))
   }
 
   return lines.join('\n')

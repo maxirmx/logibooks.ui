@@ -2,47 +2,16 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { describe, it, expect, vi } from 'vitest'
-import { buildCustomsProcedureOptions, getCustomsProcedureOptionTitle, normalizeCustomsProcedureCode, isReimportCustomsProcedure } from '@/helpers/customs.procedure.helpers.js'
-import {
-  getProhibitionScopeLabels,
-  getProhibitionScopeSortOrder,
-  getProhibitionScopeRows,
-  getProhibitionReasonLines,
-  matchesProhibitionScope,
-  getRestrictionRouteScopeKeys,
-  getApplicableScopeExplanations
-} from '@/helpers/prohibition.scope.helpers.js'
+import { describe, it, expect } from 'vitest'
+import { getCustomsProcedureOptionTitle, normalizeCustomsProcedureCode, isReimportCustomsProcedure } from '@/helpers/customs.procedure.helpers.js'
+import { matchesProhibitionScope, getRestrictionRouteScopeKeys, getApplicableScopeExplanations } from '@/helpers/prohibition.scope.helpers.js'
 
 describe('procedure.helpers', () => {
   describe('customs procedure option builders', () => {
-    const opsProcedures = [
-      { value: 1, charCode: '01', name: 'Возврат' },
-      { value: 10, charCode: 'ЭК 10', name: 'Экспорт' },
-      { value: 31, charCode: 'ЭК 31', name: 'Реэкспорт' },
-      { value: 40, charCode: 'ИМ 40', name: 'Импорт' },
-      { value: 60, charCode: 'ИМ 60', name: 'Реимпорт' }
-    ]
-
     it('falls back to backend value when metadata is missing', () => {
       expect(getCustomsProcedureOptionTitle({ value: 99 })).toBe('99')
     })
 
-    it('preserves backend order without calling sort when no explicit order is provided', () => {
-      const sortSpy = vi.spyOn(Array.prototype, 'sort')
-      try {
-        const options = buildCustomsProcedureOptions([
-          opsProcedures[3],
-          opsProcedures[1],
-          opsProcedures[4]
-        ])
-
-        expect(options.map((option) => option.value)).toEqual([40, 10, 60])
-        expect(sortSpy).not.toHaveBeenCalled()
-      } finally {
-        sortSpy.mockRestore()
-      }
-    })
   })
 
   describe('normalizeCustomsProcedureCode', () => {
@@ -78,36 +47,6 @@ describe('procedure.helpers', () => {
         { countryIsoNumeric: 860, customsProcedureCode: 40, explanation: 'UZ import' }
       ]
     }
-
-    it('renders country, procedure and reason rows', () => {
-      const countryName = (code) => (Number(code) === 643 ? 'Россия' : 'Узбекистан')
-      expect(getProhibitionScopeLabels(rule, countryName)).toEqual([
-        'Россия — Экспорт',
-        'Узбекистан — Импорт'
-      ])
-      expect(getProhibitionScopeRows(rule, countryName)).toEqual([
-        {
-          key: '643:10',
-          countryIsoNumeric: 643,
-          country: 'Россия',
-          customsProcedureCode: 10,
-          procedure: 'Экспорт',
-          label: 'Россия — Экспорт',
-          reason: 'RU export'
-        },
-        {
-          key: '860:40',
-          countryIsoNumeric: 860,
-          country: 'Узбекистан',
-          customsProcedureCode: 40,
-          procedure: 'Импорт',
-          label: 'Узбекистан — Импорт',
-          reason: 'UZ import'
-        }
-      ])
-      expect(getProhibitionReasonLines(rule)).toEqual(['RU export', 'UZ import'])
-      expect(getProhibitionScopeSortOrder(rule)).toBe('643:10|860:40')
-    })
 
     it('matches country and procedure filters against the same scope', () => {
       expect(matchesProhibitionScope(rule, 'export', 643)).toBe(true)

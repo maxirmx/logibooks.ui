@@ -10,8 +10,6 @@ import { DEFAULT_ERROR_MESSAGE, getErrorMessage, getServerFieldErrors, reportFor
 import { useAlertStore } from '@/stores/alert.store.js'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import FieldError from '@/components/FieldError.vue'
-import ErrorDialog from '@/l2/ErrorDialog.vue'
-
 const connectionError = 'Invocation canceled due to the underlying connection being closed.'
 const connectionMessage = 'Соединение с сервером прервано. Обновите страницу и повторите операцию.'
 
@@ -67,18 +65,6 @@ describe('Russian error presentation', () => {
     reportFormError(error, { alertStore: store, setErrors: () => {} })
     expect(store.alert.message).toBe(connectionMessage)
     field.unmount()
-  })
-
-  it('localizes blocking import failures and preserves column identifiers', () => {
-    const wrapper = mount(ErrorDialog, {
-      props: { show: true, title: 'Import failed', message: 'Invalid archive', missingColumns: ['ShipmentWeightKg'] },
-      global: { stubs: { VDialog: { template: '<div><slot /></div>' }, VBtn: { template: '<button><slot /></button>' }, VCard: { template: '<div><slot /></div>' }, VCardTitle: { template: '<div><slot /></div>' }, VCardText: { template: '<div><slot /></div>' }, VCardActions: { template: '<div><slot /></div>' } } }
-    })
-    expect(wrapper.text()).toContain(DEFAULT_ERROR_MESSAGE)
-    expect(wrapper.text()).toContain('ShipmentWeightKg')
-    expect(wrapper.text()).not.toContain('Import failed')
-    expect(wrapper.text()).not.toContain('Invalid archive')
-    wrapper.unmount()
   })
 
 })

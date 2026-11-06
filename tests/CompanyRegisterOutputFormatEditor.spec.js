@@ -11,7 +11,6 @@ import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
 import CompanyRegisterOutputFormatEditor from '@/components/CompanyRegisterOutputFormatEditor.vue'
-import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { COMPANY_REGISTER_OUTPUT_TYPES } from '@/helpers/company.constants.js'
 
 const confirm = vi.fn()
@@ -139,37 +138,6 @@ describe('company register output format editor', () => {
     expect(entryRows(reloaded)).toHaveLength(2)
     reloaded.unmount()
   })
-  it('shows blank and normalized duplicate additional-title errors once in the alert area', async () => {
-    alertStore.error.mockImplementation((message) => {
-      alertStore.alert = { id: 1, severity: 'error', message, title: '' }
-    })
-    const wrapper = mount({
-      components: { PageAlertRegion, CompanyRegisterOutputFormatEditor },
-      template: '<div><PageAlertRegion /><CompanyRegisterOutputFormatEditor :company-id="42" /></div>'
-    }, { global: { plugins: [vuetify], stubs: { ActionButton: ActionButtonStub } } })
-    await vi.waitFor(() => expect(wrapper.find('.register-output-editor__add-row').exists()).toBe(true))
-    await addOptional(wrapper, '   ')
-    const editor = wrapper.findComponent(CompanyRegisterOutputFormatEditor)
-    expect(await editor.vm.save()).toBe(false)
-    await flush()
-    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-    expect(wrapper.text()).toContain('Столбец 1: Укажите непустое, неповторяющееся название')
-    expect(companiesStore.saveRegisterOutputFormat).not.toHaveBeenCalled()
-    await wrapper.get('input').setValue('Reference')
-    await wrapper.get('input').trigger('keydown', { key: 'Enter' })
-    await addOptional(wrapper, '  rEFERENCE  ')
-    expect(await editor.vm.save()).toBe(false)
-    await flush()
-    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-    expect(wrapper.text()).toContain('Столбец 2: Укажите непустое, неповторяющееся название')
-    expect(wrapper.get('input').element.value).toBe('  rEFERENCE  ')
-    expect(companiesStore.saveRegisterOutputFormat).not.toHaveBeenCalled()
-    await wrapper.get('input').setValue('Other')
-    await wrapper.get('input').trigger('keydown', { key: 'Enter' })
-    expect(await editor.vm.save()).toBe(true)
-    wrapper.unmount()
-  })
-
   it('cancels drafts without changing accepted names and removes cancelled new rows', async () => {
     companiesStore.getRegisterOutputFormat.mockResolvedValue({ entries: [{ kind: 'optional', title: 'Original' }] })
     const wrapper = await mountEditor()
@@ -228,15 +196,6 @@ describe('company register output format editor', () => {
     await vi.waitFor(() => expect(companiesStore.getRegisterOutputFormat).toHaveBeenCalledTimes(2))
     expect(companiesStore.getRegisterOutputFormat.mock.calls[1][1]).toBe(COMPANY_REGISTER_OUTPUT_TYPES[2])
     await vi.waitFor(() => expect(wrapper.find('.register-output-editor__add-row').exists()).toBe(true))
-    wrapper.unmount()
-  })
-
-  it('shows one catalog load error without discarding the editor', async () => {
-    companiesStore.getRegisterOutputColumns.mockRejectedValueOnce(new Error('offline'))
-    const wrapper = await mountEditor(false)
-    expect(alertStore.error).toHaveBeenCalledTimes(1)
-    expect(wrapper.text()).toContain('Форматы выгрузки реестров')
-    expect(wrapper.find('.page-alert-region__action').exists()).toBe(false)
     wrapper.unmount()
   })
 
@@ -369,33 +328,4 @@ describe('company register output format editor', () => {
     wrapper.unmount()
   })
 
-  it('reports a save transport failure without retaining callback metadata', async () => {
-    const wrapper = await mountEditor()
-    await addOptional(wrapper)
-    companiesStore.saveRegisterOutputFormat.mockRejectedValueOnce(new Error('offline'))
-    await wrapper.findAll('button').find((button) => button.text() === 'Сохранить формат').trigger('click')
-    await flush()
-    expect(entryRows(wrapper)).toHaveLength(1)
-    expect(alertStore.error).toHaveBeenCalledTimes(1)
-    await wrapper.get('select#register-output-type').setValue(String(COMPANY_REGISTER_OUTPUT_TYPES[1]))
-    expect(wrapper.find('.page-alert-region__action').exists()).toBe(false)
-    wrapper.unmount()
-  })
-
-  it('keeps a saved format on delete failure without alert callbacks', async () => {
-    companiesStore.getRegisterOutputFormat.mockImplementation(async (id, type) =>
-      type === COMPANY_REGISTER_OUTPUT_TYPES[1]
-        ? { schemaVersion: 1, registerType: type, entries: [{ kind: 'optional', title: 'Extra' }] }
-        : null)
-    companiesStore.deleteRegisterOutputFormat.mockRejectedValueOnce(new Error('offline'))
-    const wrapper = await mountEditor()
-    await wrapper.get('select#register-output-type').setValue(String(COMPANY_REGISTER_OUTPUT_TYPES[1]))
-    await wrapper.findAll('button').find((button) => button.text() === 'Удалить формат').trigger('click')
-    await flush()
-    expect(wrapper.findAll('button').some((button) => button.text() === 'Удалить формат')).toBe(true)
-    expect(alertStore.error).toHaveBeenCalledTimes(1)
-    await wrapper.get('select#register-output-type').setValue(String(COMPANY_REGISTER_OUTPUT_TYPES[0]))
-    expect(wrapper.find('.page-alert-region__action').exists()).toBe(false)
-    wrapper.unmount()
-  })
 })

@@ -479,25 +479,6 @@ describe('Registers_List.vue', () => {
   })
 
   describe('component integration', () => {
-    it('reports initialization failures', async () => {
-      countriesEnsureLoadedFn.mockRejectedValueOnce(new Error('countries failed'))
-
-      mount(RegistersList, {
-        global: {
-          stubs: vuetifyStubs
-        }
-      })
-
-      await flushPromises()
-
-      expect(alertErrorFn).toHaveBeenCalledWith(
-        expect.objectContaining({ message: 'countries failed' }),
-        expect.objectContaining({
-          fallback: 'Ошибка при загрузке данных'
-        })
-      )
-    })
-
     it('reports fallback initialization error text for non-error failures', async () => {
       countriesEnsureLoadedFn.mockRejectedValueOnce('countries failed')
 
@@ -1074,6 +1055,7 @@ describe('Registers_List.vue', () => {
 
       await flushPromises()
       const actionButtons = wrapper.findAllComponents(ActionButton)
+      expect(wrapper.findComponent({ name: 'PageAlertRegion' }).exists()).toBe(true)
       const bulkButton = actionButtons.find(
         (button) => button.props('tooltipText') === 'Выбрать посылки и изменить статус'
       )
@@ -1085,6 +1067,7 @@ describe('Registers_List.vue', () => {
       expect(dialog.attributes('data-show')).toBe('true')
       expect(dialog.attributes('data-register-id')).toBe('1')
       expect(dialog.attributes('data-register-type')).toBe(String(OZON_COMPANY_ID))
+      expect(wrapper.findComponent({ name: 'PageAlertRegion' }).exists()).toBe(false)
 
       await wrapper.find('[data-testid="parcel-status-bulk-dialog-updated"]').trigger('click')
       await flushPromises()

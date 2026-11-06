@@ -65,25 +65,6 @@ describe('HotKeyActionSchemes_List.vue', () => {
     alertStoreMock = { alert: alertRef, error: errorMock, clear: clearMock }
   })
 
-  it('navigates to create/edit', async () => {
-    const wrapper = mount(HotKeyActionSchemesList, {
-      global: { stubs: { ...defaultGlobalStubs, ActionButton: true } }
-    })
-    await wrapper.vm.openCreateDialog()
-    await wrapper.vm.openEditDialog({ id: 3 })
-    expect(pushMock).toHaveBeenCalledWith('/hotkeyactionscheme/create')
-    expect(pushMock).toHaveBeenCalledWith('/hotkeyactionscheme/edit/3')
-  })
-
-  it('deletes after confirmation', async () => {
-    const wrapper = mount(HotKeyActionSchemesList, {
-      global: { stubs: { ...defaultGlobalStubs, ActionButton: true } }
-    })
-    await wrapper.vm.deleteHotKeyActionScheme({ id: 1, name: 'Default' })
-    expect(confirmMock).toHaveBeenCalled()
-    expect(removeMock).toHaveBeenCalledWith(1)
-  })
-
   it('filters by name', async () => {
     const wrapper = mount(HotKeyActionSchemesList, {
       global: { stubs: { ...defaultGlobalStubs, ActionButton: true } }

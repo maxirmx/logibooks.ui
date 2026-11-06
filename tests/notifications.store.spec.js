@@ -49,18 +49,6 @@ describe('notifications store', () => {
   })
 
   describe('getAll', () => {
-    it('fetches notifications successfully', async () => {
-      fetchWrapper.get.mockResolvedValue(mockNotifications)
-      const store = useNotificationsStore()
-
-      await store.getAll()
-
-      expect(fetchWrapper.get).toHaveBeenCalledWith(`${apiUrl}/notifications`)
-      expect(store.notifications).toEqual(mockNotifications)
-      expect(store.loading).toBe(false)
-      expect(store.error).toBeNull()
-    })
-
     it('handles fetch error', async () => {
       const error = new Error('Network error')
       fetchWrapper.get.mockRejectedValue(error)

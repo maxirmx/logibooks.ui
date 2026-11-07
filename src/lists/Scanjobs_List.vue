@@ -65,6 +65,12 @@ const headers = [
   { title: 'Склад', key: 'warehouseId', sortable: true }
 ]
 
+function operationLabel(item) {
+  if (item.lookupTargetSource === 'status') return 'Поиск по статусу'
+  if (item.lookupTargetSource === 'list') return 'Поиск по списку'
+  return scanJobsStore.getOpsLabel(ops.value?.operations, item.operation)
+}
+
 function openEditDialog(scanJob) {
   router.push('/scanjob/edit/' + scanJob.id)
 }
@@ -313,7 +319,7 @@ defineExpose({
         </template>
 
         <template v-slot:[`item.operation`]="{ item }">
-          {{ scanJobsStore.getOpsLabel(ops?.operations, item.operation) }}
+          {{ operationLabel(item) }}
         </template>
 
         <template v-slot:[`item.mode`]="{ item }">

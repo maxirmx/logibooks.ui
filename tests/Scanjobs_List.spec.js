@@ -513,6 +513,27 @@ describe('Scanjobs_List.vue', () => {
     consoleError.mockRestore()
   })
 
+  it('distinguishes Lookup sources in the operation column and handles older responses', async () => {
+    const originalJobs = mockScanjobs.value
+    const originalOperations = mockOps.value.operations
+    mockScanjobs.value = [
+      { ...originalJobs[0], id: 7, operation: 30, lookupTargetSource: 'status' },
+      { ...originalJobs[0], id: 8, operation: 30, lookupTargetSource: 'list' },
+      { ...originalJobs[0], id: 9, operation: 30 }
+    ]
+    mockOps.value.operations = [{ value: 30, name: 'Поиск' }]
+    const wrapper = mount(ScanjobsList, { global: { stubs: testStubs } })
+    try {
+      await wrapper.vm.$nextTick()
+      const cells = wrapper.findAll('.v-data-table-cell').map(cell => cell.text())
+      expect(cells).toEqual(expect.arrayContaining(['Поиск по статусу', 'Поиск по списку', 'Поиск', 'Тип 1']))
+    } finally {
+      wrapper.unmount()
+      mockScanjobs.value = originalJobs
+      mockOps.value.operations = originalOperations
+    }
+  })
+
   describe('startScanjob', () => {
     it('calls start function and reloads list on success', async () => {
       startScanjobFn.mockResolvedValue(true)

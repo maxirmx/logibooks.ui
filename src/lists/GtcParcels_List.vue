@@ -711,7 +711,7 @@ function getGenericTemplateHeaders() {
     </div>
     <hr class="hr" />
 
-    <PageAlertRegion v-if="!showParcelStatusBulkDialog" />
+    <PageAlertRegion v-if="!showParcelStatusBulkDialog && !xmlDialog.cancellable" />
     <div v-if="registersStore.item?.readOnly" class="alert alert-warning read-only-notice">
       Изменения запрещены. Просмотр, фильтрация и скачивание документов доступны.
     </div>

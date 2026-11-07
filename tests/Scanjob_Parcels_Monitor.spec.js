@@ -52,6 +52,18 @@ describe('parcel monitor summary', () => {
     wrapper.unmount()
   })
 
+  it('shows the box Lookup counts only when present on the box itself', async () => {
+    const box = { area: scanjobMonitorArea.Box, boxId: 3, totalParcels: 5, lookupFoundCount: 1, lookupNotFoundCount: 0 }
+    const register = { lookupFoundCount: 2, lookupNotFoundCount: 3 }
+    const wrapper = mount(ScanjobParcelsMonitor, { props: { box, register }, global })
+    const lookupCard = () => wrapper.findAll('.monitor-summary-item').find(card =>
+      card.get('.monitor-summary-label').text() === 'Найдено / Не найдено')
+    expect(lookupCard().get('.monitor-summary-value').text()).toBe('1 / 0')
+    await wrapper.setProps({ box: { area: scanjobMonitorArea.Box, boxId: 4, totalParcels: 5 } })
+    expect(lookupCard()).toBeUndefined()
+    wrapper.unmount()
+  })
+
   it.each([null, { area: scanjobMonitorArea.Unassigned, bucketIndex: 0, parcels: [] }])(
     'does not show a physical box sticker for an absent box or virtual parcel group', (box) => {
       const wrapper = mount(ScanjobParcelsMonitor, { props: { box }, global })

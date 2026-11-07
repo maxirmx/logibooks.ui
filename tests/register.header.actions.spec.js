@@ -323,7 +323,7 @@ describe('useRegisterHeaderActions', () => {
     }
   })
 
-  function mountXmlDialogs(actions) {
+  function mountXmlDialogs(actions, pinia = createPinia()) {
     return mount(RegisterActionsDialogs, {
       props: {
         actionDialog: actions.actionDialog,
@@ -333,7 +333,7 @@ describe('useRegisterHeaderActions', () => {
         progressPercent: actions.progressPercent,
         cancelValidation: actions.cancelValidation
       },
-      global: { stubs: { ...vuetifyStubs,
+      global: { plugins: [pinia], stubs: { ...vuetifyStubs,
         'v-btn': { template: '<button><slot /></button>' },
         'v-dialog': { props: ['modelValue'], template: '<section v-if="modelValue" role="dialog"><slot /></section>' }
       } }
@@ -388,12 +388,11 @@ describe('useRegisterHeaderActions', () => {
     const pinia = createPinia()
     const alerts = useAlertStore(pinia)
     const notify = vi.spyOn(alerts, 'error')
-    const alertRegion = mount(PageAlertRegion, { global: { plugins: [pinia] } })
     const error = new Error('TypeError: request failed unexpectedly')
     registersStore.cancelXmlArchive.mockRejectedValueOnce(error)
     registersStore.generateExcise.mockReturnValueOnce(download.promise)
     const actions = useRegisterHeaderActions({ registersStore, alertStore: alerts, runningAction, isComponentMounted })
-    const wrapper = mountXmlDialogs(actions)
+    const wrapper = mountXmlDialogs(actions, pinia)
     try {
       const work = actions.exportAllXmlExcise()
       const update = registersStore.generateExcise.mock.calls[0][3].onProgress
@@ -401,7 +400,9 @@ describe('useRegisterHeaderActions', () => {
       await actions.cancelXmlArchive()
       await nextTick()
       expect(notify).toHaveBeenCalledOnce()
-      expect(alertRegion.get('[role="alert"]').text()).toContain('Не удалось отменить формирование XML архива')
+      const dialog = wrapper.get('[role="dialog"]')
+      expect(dialog.findAll('[role="alert"]')).toHaveLength(1)
+      expect(dialog.get('[role="alert"]').text()).toContain('Не удалось отменить формирование XML архива')
       expect(wrapper.get('[data-testid="operation-cancel"]').element.disabled).toBe(false)
 
       update({ handleId: 'shared', total: 10, processed: 2, cancelling: true })
@@ -409,11 +410,11 @@ describe('useRegisterHeaderActions', () => {
       expect(wrapper.get('[data-testid="operation-cancel"]').text()).toBe('Отмена…')
       download.resolve(false)
       await work
+      expect(alerts.alert).toBeNull()
       expect(notify).toHaveBeenCalledOnce()
     } finally {
       actions.stop()
       wrapper.unmount()
-      alertRegion.unmount()
     }
   })
 
@@ -444,12 +445,18 @@ describe('useRegisterHeaderActions', () => {
     }
   })
 
-  it('releases an active XML dialog when the page stops before progress completes', async () => {
+  it.each([false, true])('cleans up the XML dialog when the page stops (newer alert: %s)', async newerAlert => {
     const download = createDeferred()
+    const alerts = useAlertStore(createPinia())
     registersStore.generateOrdinary.mockReturnValueOnce(download.promise)
-    const actions = useRegisterHeaderActions({ registersStore, alertStore, runningAction })
+    registersStore.cancelXmlArchive.mockRejectedValueOnce(new Error('TypeError: request failed unexpectedly'))
+    const actions = useRegisterHeaderActions({ registersStore, alertStore: alerts, runningAction })
     const work = actions.exportAllXmlOrdinary()
     const tracking = registersStore.generateOrdinary.mock.calls[0][3]
+    tracking.onProgress({ handleId: 'archive', total: 10, processed: 1 })
+    await actions.cancelXmlArchive()
+    expect(alerts.alert?.message).toBe('Не удалось отменить формирование XML архива')
+    const replacementId = newerAlert ? alerts.error('Ошибка на странице') : null
     tracking.onProgress({ handleId: 'archive', total: 10, processed: 1, cancelling: true })
     expect(tracking.isCancelling()).toBe(true)
 
@@ -457,6 +464,7 @@ describe('useRegisterHeaderActions', () => {
     expect(tracking.isCancelling()).toBe(false)
     expect(actions.actionDialog.show).toBe(false)
     expect(runningAction.value).toBe(false)
+    expect(alerts.alert?.id ?? null).toBe(replacementId)
     download.resolve(false)
     await work
   })

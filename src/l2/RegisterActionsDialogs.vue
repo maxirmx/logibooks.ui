@@ -60,6 +60,7 @@ const onValidationDialogUpdate = (value) => {
   <ActionDialog
     :action-dialog="actionDialog"
     :cancellable="xmlDialog?.cancellable"
+    :show-alerts="xmlDialog?.cancellable"
     :cancel-disabled="xmlDialog?.cancelDisabled"
     :cancelling="xmlDialog?.cancelling"
     @cancel="cancelXmlArchive"

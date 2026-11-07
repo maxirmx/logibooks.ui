@@ -167,6 +167,12 @@ This file is a part of Logibooks ui application
   outline-offset: -2px;
 }
 
+.scanjob-monitor-parcel-progress {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
 .scanjob-monitor-parcel-progress-panel {
   display: inline-grid;
   grid-template-columns: repeat(2, minmax(120px, 1fr));
@@ -178,6 +184,14 @@ This file is a part of Logibooks ui application
   border-radius: 6px;
   background: rgba(25, 118, 210, 0.04);
   line-height: 1.15;
+}
+
+.scanjob-monitor-parcel-progress-lookup {
+  display: grid;
+  row-gap: 4px;
+  padding-block: 7px;
+  line-height: 1.15;
+  white-space: nowrap;
 }
 
 .scanjob-monitor-parcel-progress-item {

@@ -11,6 +11,7 @@ defineProps({
     validator: (value) => ['default', 'error', 'warning'].includes(value)
   },
   compact: { type: Boolean, default: false },
+  selectionLayout: Boolean,
   contentClass: { type: [String, Array, Object], default: null }
 })
 </script>
@@ -20,10 +21,20 @@ defineProps({
     class="app-dialog-frame"
     :class="[
       `app-dialog-frame--${tone}`,
-      { 'app-dialog-frame--compact': compact }
+      { 'app-dialog-frame--compact': compact, 'app-dialog-frame--selection': selectionLayout }
     ]"
   >
-    <v-card-title class="app-dialog-frame__title">
+    <div v-if="selectionLayout" class="parcel-selection-dialog-header">
+      <div class="header-with-actions">
+        <h1 class="primary-heading">{{ title }}</h1>
+        <div class="header-actions-bar">
+          <slot name="headerActions" />
+        </div>
+      </div>
+      <hr class="hr" />
+      <slot name="afterHeader" />
+    </div>
+    <v-card-title v-else class="app-dialog-frame__title">
       <span
         v-if="tone === 'error' || tone === 'warning'"
         class="app-dialog-frame__tone-icon"
@@ -37,7 +48,7 @@ defineProps({
       </div>
     </v-card-title>
 
-    <v-card-text class="app-dialog-frame__content" :class="contentClass">
+    <v-card-text :class="[selectionLayout ? 'app-dialog-frame__selection-content' : 'app-dialog-frame__content', contentClass]">
       <slot />
     </v-card-text>
 

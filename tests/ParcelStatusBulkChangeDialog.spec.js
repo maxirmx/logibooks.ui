@@ -131,7 +131,7 @@ describe('ParcelStatusBulkChangeDialog', () => {
 
   afterEach(() => vi.restoreAllMocks())
 
-  it.each([true, false])('clears the previous page alert before showing the dialog (initially open: %s)', async (show) => {
+  it.each([true, false])('preserves a page alert across opening and closing (initially open: %s)', async (show) => {
     const pinia = createPinia()
     const alertStore = useAlertStore(pinia)
     alertStore.error('Нет активного задания сканирования')
@@ -140,14 +140,60 @@ describe('ParcelStatusBulkChangeDialog', () => {
       expect(alertStore.alert?.message).toBe('Нет активного задания сканирования')
       await wrapper.setProps({ show: true })
     }
-    expect(alertStore.alert).toBeNull()
-    expect(wrapper.find('[data-testid="page-alert-region"]').exists()).toBe(false)
+    expect(wrapper.get('[role="alert"]').text()).toContain('Нет активного задания сканирования')
+    await wrapper.setProps({ show: false })
+    expect(alertStore.alert?.message).toBe('Нет активного задания сканирования')
+  })
 
+  it.each(['close', 'unmount', 'replacement'])('dismisses only the dialog error (%s)', async (scenario) => {
+    const pinia = createPinia()
+    const alertStore = useAlertStore(pinia)
+    const wrapper = mountDialog({}, pinia)
     mocks.resolveStatusSelection.mockRejectedValueOnce(new Error('Сервер недоступен'))
     await control(wrapper, 'input').setValue('P-1')
     await control(wrapper, 'find').trigger('click')
     await flushPromises()
     expect(wrapper.get('[role="alert"]').text()).toContain('Сервер недоступен')
+
+    if (scenario === 'replacement') alertStore.error('Не удалось обновить реестр')
+    if (scenario === 'unmount') wrapper.unmount()
+    else await wrapper.setProps({ show: false })
+
+    if (scenario === 'replacement') expect(alertStore.alert?.message).toBe('Не удалось обновить реестр')
+    else expect(alertStore.alert).toBeNull()
+  })
+
+  it('dismisses the status update success alert on close', async () => {
+    const pinia = createPinia()
+    const alertStore = useAlertStore(pinia)
+    const wrapper = mountDialog({}, pinia)
+    await control(wrapper, 'status').setValue('4')
+    await control(wrapper, 'update-all').trigger('click')
+    await flushPromises()
+    expect(alert(wrapper).text()).toContain('Статус успешно применен ко всем посылкам в реестре')
+
+    await wrapper.setProps({ show: false })
+    expect(alertStore.alert).toBeNull()
+  })
+
+  it('keeps a late status update failure out of the reopened dialog', async () => {
+    const pinia = createPinia()
+    const alertStore = useAlertStore(pinia)
+    const update = Promise.withResolvers()
+    mocks.setParcelStatuses.mockReturnValueOnce(update.promise)
+    const wrapper = mountDialog({}, pinia)
+    await control(wrapper, 'status').setValue('4')
+    await control(wrapper, 'update-all').trigger('click')
+    await flushPromises()
+    expect(mocks.setParcelStatuses).toHaveBeenCalledOnce()
+
+    await wrapper.setProps({ show: false })
+    await wrapper.setProps({ show: true })
+    update.reject(Object.assign(new Error('Изменения запрещены'), { status: 409 }))
+    await flushPromises()
+
+    expect(alertStore.alert).toBeNull()
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
   })
 
   it('falls back to matching registers store entries for the parcel-number label', () => {
@@ -230,7 +276,7 @@ describe('ParcelStatusBulkChangeDialog', () => {
     const find = control(wrapper, 'find')
     expect(wrapper.get('.parcel-status-bulk-lookup').findAll('span').map(label => label.text())).toEqual([
       'По номерам отправлений',
-      'По стикерам'
+      'По стикерам и кодам стикеров'
     ])
     expect(mode.element.checked).toBe(false)
     mocks.resolveStatusSelection.mockResolvedValueOnce({ parcelIds: [81], missingNumbers: ['A'], blockedItems: [] })
@@ -244,12 +290,12 @@ describe('ParcelStatusBulkChangeDialog', () => {
 
     await mode.setValue(true)
     expect(input.element.value).toBe(' 0001, A\t0001 ')
-    expect(input.attributes('placeholder')).toContain('коды со стикеров')
+    expect(input.attributes('placeholder')).toContain('стикеры или коды стикеров')
     expect(control(wrapper, 'status').element.value).toBe('3')
-    expect(wrapper.get('label[for="parcel-status-bulk-input"]').text()).toBe('Стикеры')
+    expect(wrapper.get('label[for="parcel-status-bulk-input"]').text()).toBe('Стикеры или коды стикеров')
     expect(apply.element.disabled).toBe(true)
     expect(control(wrapper, 'report').element.value).toBe('')
-    expect(control(wrapper, 'summary').text()).toContain('Введите коды')
+    expect(control(wrapper, 'summary').text()).toContain('Введите стикеры или коды стикеров')
 
     mocks.resolveStatusSelection.mockResolvedValueOnce({
       lookupBy: 'sticker', parcelIds: [82, 83], missingNumbers: ['A'],
@@ -260,7 +306,7 @@ describe('ParcelStatusBulkChangeDialog', () => {
     expect(mocks.resolveStatusSelection).toHaveBeenLastCalledWith(7, ['0001', 'A'], 'sticker')
     expect(control(wrapper, 'report').element.value).toContain('0001 — посылка #84\n0001 — посылка #85')
     expect(control(wrapper, 'summary').text()).toBe(
-      'Обработано кодов: 2. Найдено посылок: 2. Не найдено кодов: 1. Недоступных совпадений: 2.'
+      'Обработано: 2. Найдено: 2. Не найдено: 1. Недоступно: 2.'
     )
     await apply.trigger('click')
     await flushPromises()
@@ -274,7 +320,7 @@ describe('ParcelStatusBulkChangeDialog', () => {
   it('rejects an old Core response and clears a prior selection before retrying', async () => {
     const wrapper = mountDialog({ register: { id: 7, registerType: OZON_COMPANY_ID } })
     await control(wrapper, 'lookup').setValue(true)
-    expect(wrapper.get('label[for="parcel-status-bulk-input"]').text()).toBe('Штрихкоды')
+    expect(wrapper.get('label[for="parcel-status-bulk-input"]').text()).toBe('Стикеры или коды стикеров')
     await control(wrapper, 'status').setValue('3')
     await control(wrapper, 'input').setValue('ABC')
 

@@ -135,6 +135,14 @@ export function formatParcelProgress(item) {
   ].map(formatCount).join(' / ')
 }
 
+export function getLookupParcelProgressStats(item) {
+  if (item?.lookupFoundCount == null || item.lookupNotFoundCount == null) return []
+  return [
+    { label: 'Найдено', value: formatCount(item.lookupFoundCount) },
+    { label: 'Не найдено', value: formatCount(item.lookupNotFoundCount) }
+  ]
+}
+
 export function getParcelProgressStats(item) {
   return [
     { label: 'Всего', value: formatCount(item?.totalParcels) },

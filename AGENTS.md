@@ -44,7 +44,8 @@ These instructions apply to the entire repository. Follow them for every new fea
 - Use `ErrorDialog` only for blocking file/import workflows that require acknowledgement.
 - Failed submissions must keep the form open and preserve entered values. Navigate only after confirmed success, except when a partially completed workflow has a documented recovery route.
 - The alert store has one active position. Every newly published message replaces the previous one.
-- Errors remain visible until dismissed, replaced, or cleared by successful route navigation.
+- Errors remain visible until dismissed, replaced, cleared by successful route navigation, or dismissed when the modal dialog that published them closes.
+- On every modal close path, including unmount, dismiss alerts owned by that modal by their notification ID. Preserve alerts from the parent page or another dialog. Guard asynchronous work against publishing alerts after the modal closes.
 - Successful route changes must clear the active alert so messages from the previous page are not retained.
 
 ## Dialog consistency
@@ -62,7 +63,7 @@ These instructions apply to the entire repository. Follow them for every new fea
   - Dark-orange flat button with white text: cancelling an active operation from its progress dialog.
 - Use `APP_DIALOG_BUTTON_PROPS` for dialog buttons. Do not hardcode dialog button colors or variants at call sites.
 - Color must not be the only indication of meaning: error and warning dialogs also use a tone indicator, while destructive confirmations use explicit action text.
-- `ParcelStatusBulkChangeDialog.vue` is an explicit legacy exception and must not be restyled without a separate user request.
+- `ParcelSelectionDialogFrame` is the shared legacy shell for bulk parcel status changes and the scan-job Lookup parcel selector. Preserve its layout unless a user requests a change.
 
 ## Tooltips
 

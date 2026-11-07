@@ -5,11 +5,13 @@
 
 import { computed } from 'vue'
 import AppDialogFrame from '@/components/AppDialogFrame.vue'
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { APP_DIALOG_BUTTON_PROPS, APP_DIALOG_MAX_WIDTH, APP_DIALOG_SIZES } from '@/helpers/dialog.helpers.js'
 
 const props = defineProps({
   actionDialog: { type: Object, required: true },
   cancellable: { type: Boolean, default: false },
+  showAlerts: { type: Boolean, default: false },
   cancelDisabled: { type: Boolean, default: false },
   cancelling: { type: Boolean, default: false }
 })
@@ -35,6 +37,7 @@ const actionDialogVisible = computed(
     persistent
   >
     <AppDialogFrame :title="actionDialogTitle" compact>
+      <PageAlertRegion v-if="showAlerts && actionDialogVisible" />
       <v-progress-circular :model-value="progressPercent ?? 0" :indeterminate="progressPercent === null" :size="70" :width="7" color="primary">
         <span v-if="progressPercent !== null">{{ progressPercent }}%</span>
       </v-progress-circular>

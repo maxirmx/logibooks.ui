@@ -8,7 +8,7 @@ import { ref } from 'vue'
 defineProps({
   prefix: { type: String, required: true },
   disabled: Boolean,
-  supportsStickerLookup: { type: Boolean, default: true },
+  supportsStickerLookup: Boolean,
   isGtc: Boolean,
   label: { type: String, required: true },
   placeholder: { type: String, required: true },

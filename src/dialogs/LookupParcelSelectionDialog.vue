@@ -10,7 +10,8 @@ import ParcelIdentifierFields from '@/components/ParcelIdentifierFields.vue'
 import { useParcelSelectionRequest } from '@/composables/useParcelSelectionRequest.js'
 import { useTableMultiSelect } from '@/composables/useTableMultiSelect.js'
 import { APP_DIALOG_BUTTON_PROPS, APP_DIALOG_MAX_WIDTH, getAppDialogWidth } from '@/helpers/dialog.helpers.js'
-import { getParcelStatusBulkNumberLabel, parseParcelStatusBulkInput } from '@/helpers/parcel.status.bulk.helpers.js'
+import { GTC_COMPANY_ID } from '@/helpers/company.constants.js'
+import { getParcelStatusBulkNumberLabel, parseParcelStatusBulkInput, supportsParcelStickerLookup } from '@/helpers/parcel.status.bulk.helpers.js'
 import { reportError } from '@/helpers/error.helpers.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useParcelsStore } from '@/stores/parcels.store.js'
@@ -28,6 +29,8 @@ const { activeOperation, beginOperation, isCurrent, finishOperation, invalidateO
 const inputRef = ref(null)
 const input = ref('')
 const bySticker = ref(false)
+const registerType = computed(() => Number(props.register.registerType))
+const supportsStickerLookup = computed(() => supportsParcelStickerLookup(registerType.value))
 const groups = ref([])
 const missing = ref([])
 const busy = computed(() => activeOperation.value !== null)
@@ -52,8 +55,7 @@ function invalidatePreview() {
 }
 
 watch([input, bySticker], invalidatePreview, { flush: 'sync' })
-watch([open, () => props.register?.id], () => {
-  alertStore.clear()
+watch([open, () => props.register?.id, registerType], () => {
   input.value = ''
   bySticker.value = false
   invalidatePreview()
@@ -69,7 +71,7 @@ onBeforeUnmount(() => {
 async function findParcels() {
   if (!canFind.value) return
   const registerId = Number(props.register.id)
-  const lookupBy = bySticker.value ? 'sticker' : 'number'
+  const lookupBy = bySticker.value && supportsStickerLookup.value ? 'sticker' : 'number'
   const numbers = identifiers.value
   invalidatePreview()
   const request = beginOperation({ registerId, lookupBy })
@@ -116,6 +118,8 @@ function confirmSelection() {
           prefix="lookup-parcels"
           :label="label"
           :disabled="disabled"
+          :supports-sticker-lookup="supportsStickerLookup"
+          :is-gtc="registerType === GTC_COMPANY_ID"
           placeholder="Введите, вставьте или отсканируйте коды. Разделяйте их запятой, табуляцией или новой строкой."
           report-label="Не найдены"
           :report="missing.join('\n')"

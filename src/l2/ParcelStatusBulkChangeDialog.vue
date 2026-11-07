@@ -8,7 +8,7 @@ import ActionButton from '@/components/ActionButton.vue'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import ParcelIdentifierFields from '@/components/ParcelIdentifierFields.vue'
 import { useParcelSelectionRequest } from '@/composables/useParcelSelectionRequest.js'
-import { GTC_COMPANY_ID, OZON_COMPANY_ID, WBR_COMPANY_ID, WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
+import { GTC_COMPANY_ID, OZON_COMPANY_ID } from '@/helpers/company.constants.js'
 import { getErrorMessage, reportError } from '@/helpers/error.helpers.js'
 import { useAppConfirm } from '@/composables/useAppConfirm.js'
 import { useAlertStore } from '@/stores/alert.store.js'
@@ -18,7 +18,8 @@ import {
   buildParcelStatusBulkReport,
   getParcelStatusBulkNumberLabel,
   normalizeParcelStatusBulkIds,
-  parseParcelStatusBulkInput
+  parseParcelStatusBulkInput,
+  supportsParcelStickerLookup
 } from '@/helpers/parcel.status.bulk.helpers.js'
 import {
   buildCustomsExclusionWarning,
@@ -84,9 +85,7 @@ const currentRegister = computed(() => {
 })
 const registerType = computed(() => Number(currentRegister.value?.registerType))
 const isGtc = computed(() => registerType.value === GTC_COMPANY_ID)
-const supportsStickerLookup = computed(() =>
-  [WBR_COMPANY_ID, WBRN_REGISTER_ID, OZON_COMPANY_ID].includes(registerType.value)
-)
+const supportsStickerLookup = computed(() => supportsParcelStickerLookup(registerType.value))
 const busy = computed(() => activeOperation.value !== null)
 const actionsDisabled = computed(() => props.disabled || currentRegister.value?.readOnly === true)
 const canOperate = computed(() => props.show && hasRegister.value && !actionsDisabled.value && !busy.value)

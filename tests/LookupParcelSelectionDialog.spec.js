@@ -7,6 +7,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
 import LookupParcelSelectionDialog from '@/dialogs/LookupParcelSelectionDialog.vue'
+import { GTC_COMPANY_ID, WBR_COMPANY_ID } from '@/helpers/company.constants.js'
+import { useAlertStore } from '@/stores/alert.store.js'
 
 const resolveStatusSelection = vi.hoisted(() => vi.fn())
 vi.mock('@/stores/parcels.store.js', () => ({
@@ -16,11 +18,11 @@ vi.mock('@/stores/parcels.store.js', () => ({
 enableAutoUnmount(afterEach)
 afterEach(() => resolveStatusSelection.mockReset())
 
-function mountDialog() {
+function mountDialog(registerType = WBR_COMPANY_ID, pinia = createPinia()) {
   return mount(LookupParcelSelectionDialog, {
-    props: { modelValue: true, register: { id: 7 } },
+    props: { modelValue: true, register: { id: 7, registerType } },
     global: {
-      plugins: [createPinia()],
+      plugins: [pinia],
       stubs: {
         'v-dialog': { template: '<div><slot /></div>' },
         'v-card': { template: '<div><slot /></div>' },
@@ -48,6 +50,22 @@ const match = (identifier, ...ids) => ({
 })
 
 describe('LookupParcelSelectionDialog', () => {
+  it('disables sticker mode on registers without sticker support', () => {
+    const wrapper = mountDialog(GTC_COMPANY_ID)
+    expect(wrapper.get('[data-testid="lookup-parcels-lookup"]').element.disabled).toBe(true)
+    expect(wrapper.text()).toContain('В реестрах GTC поиск доступен только по номеру посылки')
+  })
+
+  it('preserves the active error while opening and closing the picker', async () => {
+    const pinia = createPinia()
+    const alertStore = useAlertStore(pinia)
+    alertStore.error('Не удалось сохранить задание')
+    const wrapper = mountDialog(WBR_COMPANY_ID, pinia)
+    expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось сохранить задание')
+    await wrapper.setProps({ modelValue: false })
+    expect(alertStore.alert.message).toBe('Не удалось сохранить задание')
+  })
+
   it('previews pasted or scanned codes and confirms only explicitly chosen IDs', async () => {
     const wrapper = mountDialog()
     resolveStatusSelection.mockResolvedValue({

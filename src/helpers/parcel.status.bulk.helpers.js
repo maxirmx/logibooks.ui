@@ -57,6 +57,10 @@ export function buildParcelStatusBulkReport(missingNumbers = [], blockedItems = 
   return lines.join('\n')
 }
 
+export function supportsParcelStickerLookup(registerType) {
+  return [WBR_COMPANY_ID, WBRN_REGISTER_ID, OZON_COMPANY_ID].includes(Number(registerType))
+}
+
 export function getParcelStatusBulkNumberLabel(register) {
   const registerType = Number(register?.registerType)
 

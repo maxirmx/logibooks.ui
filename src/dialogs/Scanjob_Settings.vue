@@ -107,7 +107,7 @@ function resolveLookupOperationValue() {
   if (!Array.isArray(operations) || operations.length === 0) return null
   // Lookup operation is the last in the array
   const lookupOperation = operations[operations.length - 1]
-  return lookupOperation?.value ?? null
+  return lookupOperation?.value == null ? null : Number(lookupOperation.value)
 }
 
 function getLookupTargetError(values) {
@@ -706,7 +706,7 @@ defineExpose({ onSubmit, cancel })
     <hr class="hr" />
 
     <PageAlertRegion v-if="!lookupSelectionOpen" />
-    <div v-if="isLookupOnlyRegisterType" class="alert alert-warning">Задания сканирования недоступны для реестров GTC</div>
+    <p v-if="isLookupOnlyRegisterType" class="text-muted">Задания сканирования недоступны для реестров GTC</p>
     <div v-if="loading" class="text-center m-5">
       <span class="spinner-border spinner-border-lg align-center"></span>
     </div>

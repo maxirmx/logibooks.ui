@@ -128,6 +128,15 @@ export function useManualScan({ registerId, job = null, disabled = false, target
       const { completed, skippedIds } = response
       if (skippedIds.length) {
         failureMessage = `Не удалось отсканировать позиции, которых нет в партии задания: ${skippedIds.map(id => `#${id}`).join(', ')}.`
+      } else if (completed.some(result => result.lookupOutcome)) {
+        summary = {
+          level: 'info',
+          message: completed.map(result => {
+            const candidates = result.lookupCandidates?.map(candidate => candidate.parcelNumber || `#${candidate.parcelId}`)
+            const number = result.itemNumbers?.join(', ') || (result.id == null ? null : `#${result.id}`)
+            return [number, result.extData, candidates?.join(', ')].filter(Boolean).join(' — ')
+          }).join('\n')
+        }
       } else {
         const matches = lookup ? completed.filter(result => result.count > 0) : []
         const empty = completed.filter(adapter.isEmpty).length

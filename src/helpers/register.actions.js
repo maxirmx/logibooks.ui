@@ -578,7 +578,7 @@ export function useRegisterHeaderActions({
     } catch (error) {
       if (ownsXmlRun(run)) {
         xmlDialog.cancelling = run.serverCancelling
-        alertStore.error(error, { fallback: 'Не удалось отменить формирование XML архива' })
+        run.cancelAlertId = alertStore.error(error, { fallback: 'Не удалось отменить формирование XML архива' })
       } else {
         reportError(error, { context: 'XML archive cancellation after navigation' })
       }
@@ -588,6 +588,7 @@ export function useRegisterHeaderActions({
   function releaseXmlRun(run) {
     if (xmlRun.value !== run) return
     xmlRun.value = null
+    if (run.cancelAlertId != null) alertStore.dismiss(run.cancelAlertId)
     Object.assign(xmlDialog, { cancellable: false, cancelDisabled: true, cancelling: false })
     if (run.started) {
       hideActionDialog()
@@ -603,7 +604,7 @@ export function useRegisterHeaderActions({
     const register = currentRegister.value
     if (generalActionsDisabled.value || !register || register.derivedTotalsPending === true) return
 
-    const run = { registerId: register.id, started: false, handleId: null, serverCancelling: false }
+    const run = { registerId: register.id, started: false, handleId: null, serverCancelling: false, cancelAlertId: null }
     xmlRun.value = run
     const ownsRun = () => ownsXmlRun(run)
 

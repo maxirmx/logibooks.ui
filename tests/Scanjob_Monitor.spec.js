@@ -638,6 +638,49 @@ describe('Scanjob_Monitor.vue', () => {
     await flushPromises()
   })
 
+  it.each([
+    [{}, null, null],
+    [{ lookupRemainingCount: 3 }, '— / —', '3'],
+    [{ lookupRemainingCount: 5, lookupFoundCount: 0, lookupNotFoundCount: 5 }, '0 / 5', null],
+    [{ lookupRemainingCount: 2, lookupFoundCount: 2, lookupNotFoundCount: 0 }, '2 / 0', null]
+  ])('adds Lookup progress to the existing parcel statistics for %j', async (counts, expectedProgress, expectedRemaining) => {
+    loadMonitorSnapshot.mockResolvedValue({ ...registerSnapshot, ...counts })
+    const wrapper = mount(ScanjobMonitor, { props: { scanjobId: 42 }, global: { stubs: monitorGlobalStubs } })
+    await flushPromises()
+    const cards = wrapper.findAll('.monitor-summary-item')
+    const valueFor = label => cards.find(card => card.get('.monitor-summary-label').text() === label)
+      ?.get('.monitor-summary-value').text() ?? null
+    expect(valueFor('Посылки всего / сканировано / не сканировано / запретов')).toBe('5 / 3 / 2 / 2')
+    expect(valueFor('Найдено / Не найдено')).toBe(expectedProgress)
+    expect(valueFor('Осталось найти')).toBe(expectedRemaining)
+    wrapper.unmount()
+  })
+
+  it('places Lookup counts to the right of the parcel totals only for boxes with Lookup items', async () => {
+    loadMonitorSnapshot.mockResolvedValue({
+      ...registerSnapshot,
+      lookupFoundCount: 0,
+      lookupNotFoundCount: 1,
+      boxes: [{ ...registerSnapshot.boxes[0], lookupFoundCount: 0, lookupNotFoundCount: 1 }, registerSnapshot.boxes[1]]
+    })
+    const wrapper = mount(ScanjobMonitor, { props: { scanjobId: 42 }, global: { stubs: monitorGlobalStubs } })
+    await flushPromises()
+    const rows = wrapper.get('[data-testid="scanjob-monitor-boxes-table"]').findAll('.v-data-table-row')
+    const parcelStats = row => Object.fromEntries(row.findAll('.scanjob-monitor-parcel-progress-item').map(item => [
+      item.get('.scanjob-monitor-parcel-progress-label').text(),
+      item.get('.scanjob-monitor-parcel-progress-value').text()
+    ]))
+    const progress = rows[0].get('.scanjob-monitor-parcel-progress')
+    const panel = progress.get('.scanjob-monitor-parcel-progress-panel')
+    const lookup = progress.get('.scanjob-monitor-parcel-progress-lookup')
+    expect(panel.element.nextElementSibling).toBe(lookup.element)
+    expect(parcelStats(panel)).toEqual({ 'Всего': '3', 'Сканировано': '2', 'Запретов': '1', 'Не сканировано': '1' })
+    expect(Object.entries(parcelStats(lookup))).toEqual([['Найдено', '0'], ['Не найдено', '1']])
+    expect(rows[1].find('.scanjob-monitor-parcel-progress-lookup').exists()).toBe(false)
+    expect(parcelStats(rows[1])).toEqual({ 'Всего': '2', 'Сканировано': '1', 'Запретов': '1', 'Не сканировано': '1' })
+    wrapper.unmount()
+  })
+
   it('shows the saved name when the scanjob has no register', async () => {
     mockScanjob.value = { ...mockScanjob.value, registerId: null }
     getById.mockResolvedValue(mockScanjob.value)

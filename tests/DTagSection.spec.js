@@ -7,9 +7,16 @@ import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import DTagSection from '@/components/DTagSection.vue'
 
+const global = {
+  stubs: {
+    'font-awesome-icon': true
+  }
+}
+
 describe('DTagSection', () => {
   it('renders customs fee and duty below dtag values', () => {
     const wrapper = mount(DTagSection, {
+      global,
       props: {
         item: {
           dTag: 'DT-1',
@@ -28,6 +35,7 @@ describe('DTagSection', () => {
 
   it('renders dash for a missing charge value when the other charge is present', () => {
     const wrapper = mount(DTagSection, {
+      global,
       props: {
         item: {
           dTag: 'DT-1',

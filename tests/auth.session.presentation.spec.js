@@ -65,7 +65,22 @@ describe('authentication failure presentation', () => {
     expect(localStorage.getItem('user')).toBeNull()
   })
 
+  it('keeps the requested route when an unauthenticated visitor is redirected', async () => {
+    auth.clearSession()
+    await navigateToLogin()
+    expect(auth.returnUrl).toBe(target)
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+  })
+
+  it('keeps the login form available during downtime for a signed-out visitor', async () => {
+    auth.clearSession()
+    request.mockRejectedValue(new TypeError('Failed to fetch'))
+    await navigateToLogin('/login')
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+  })
+
   it.each(['network', 503])('keeps downtime distinct from session expiration for %s failures', async failure => {
+    useAlertStore().error('Предыдущее сообщение')
     if (failure === 'network') request.mockRejectedValue(new TypeError('Failed to fetch'))
     else request.mockResolvedValue(response(failure, { msg: 'Service unavailable', errors: {} }))
     await navigateToLogin()
@@ -73,6 +88,8 @@ describe('authentication failure presentation', () => {
     expect(wrapper.get('[role="alert"]').text()).toContain('Сервер недоступен')
     expect(wrapper.text()).not.toContain('Необходимо войти в систему')
     expect(auth.returnUrl).toBe(target)
+    expect(auth.user).toBeNull()
+    expect(localStorage.getItem('user')).toBeNull()
   })
 
   it.each([400, 403, 429])('presents the actual HTTP %s rejection without calling it downtime or expiration', async status => {
@@ -88,6 +105,10 @@ describe('authentication failure presentation', () => {
   it('returns to the intended page after signing in again and clears the expiration message', async () => {
     request.mockResolvedValue(response(401))
     await navigateToLogin()
+    expect(wrapper.get('[role="alert"]').text()).toContain('Необходимо войти в систему')
+    expect(auth.user).toBeNull()
+    expect(localStorage.getItem('user')).toBeNull()
+    expect(auth.returnUrl).toBe(target)
     const renewed = { ...user, token: 'renewed' }
     request.mockImplementation(async url => url.endsWith('/auth/login')
       ? response(200, renewed)

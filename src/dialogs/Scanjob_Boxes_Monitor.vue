@@ -18,8 +18,10 @@ import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import {
   formatBoxDimensions,
   formatBoxWeight,
+  formatCount,
   formatParcelProgress,
   formatScanTime,
+  getLookupParcelProgressStats,
   getParcelProgressStats,
   monitorBoxStickerClass,
   monitorBoxStickerText,
@@ -62,6 +64,8 @@ const summaryCards = computed(() => {
   const snapshot = props.snapshot
   if (!snapshot) return []
 
+  const { lookupRemainingCount, lookupFoundCount, lookupNotFoundCount } = snapshot
+  const hasLookupStats = lookupRemainingCount != null || lookupFoundCount != null || lookupNotFoundCount != null
   return [
     {
       key: 'boxes',
@@ -73,11 +77,23 @@ const summaryCards = computed(() => {
       label: scanjobParcelsProgressTitle,
       value: formatParcelProgress(snapshot),
     },
+    ...(hasLookupStats ? [{
+      key: 'lookupProgress',
+      label: 'Найдено / Не найдено',
+      value: [lookupFoundCount, lookupNotFoundCount]
+        .map(count => count == null ? '—' : formatCount(count))
+        .join(' / ')
+    }] : []),
     {
       key: 'unregistered',
       label: 'Стикеры не в реестре',
       value: String(snapshot.scannedItemsNotInRegister ?? 0),
-    }
+    },
+    ...(lookupRemainingCount == null || lookupNotFoundCount != null ? [] : [{
+      key: 'lookupRemaining',
+      label: 'Осталось найти',
+      value: String(lookupRemainingCount)
+    }])
   ]
 })
 
@@ -224,14 +240,29 @@ function openBox(item) {
             :disabled="controlsBusy"
             @click="openBox(item)"
           >
-            <span class="scanjob-monitor-parcel-progress-panel">
+            <span class="scanjob-monitor-parcel-progress">
+              <span class="scanjob-monitor-parcel-progress-panel">
+                <span
+                  v-for="stat in getParcelProgressStats(item)"
+                  :key="stat.label"
+                  :class="['scanjob-monitor-parcel-progress-item', stat.isRestricted ? 'scanjob-monitor-parcel-progress-restricted' : '']"
+                >
+                  <span class="scanjob-monitor-parcel-progress-label">{{ stat.label }}</span>
+                  <span class="scanjob-monitor-parcel-progress-value">{{ stat.value }}</span>
+                </span>
+              </span>
               <span
-                v-for="stat in getParcelProgressStats(item)"
-                :key="stat.label"
-                :class="['scanjob-monitor-parcel-progress-item', stat.isRestricted ? 'scanjob-monitor-parcel-progress-restricted' : '']"
+                v-if="item.lookupFoundCount != null && item.lookupNotFoundCount != null"
+                class="scanjob-monitor-parcel-progress-lookup"
               >
-                <span class="scanjob-monitor-parcel-progress-label">{{ stat.label }}</span>
-                <span class="scanjob-monitor-parcel-progress-value">{{ stat.value }}</span>
+                <span
+                  v-for="stat in getLookupParcelProgressStats(item)"
+                  :key="stat.label"
+                  class="scanjob-monitor-parcel-progress-item"
+                >
+                  <span class="scanjob-monitor-parcel-progress-label">{{ stat.label }}</span>
+                  <span class="scanjob-monitor-parcel-progress-value">{{ stat.value }}</span>
+                </span>
               </span>
             </span>
           </ClickableCell>

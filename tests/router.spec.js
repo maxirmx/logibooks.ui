@@ -44,6 +44,19 @@ vi.mock('@/views/Wd4Scanner_View.vue', () => ({ default: { template: '<div />' }
 vi.mock('@/views/Order_EditView.vue', () => ({ default: { template: '<div />' } }))
 vi.mock('@/views/Parcel_EditView.vue', () => ({ default: { template: '<div />' } }))
 
+// These cases exercise router permissions. The settings views have their own suites.
+vi.mock('@/views/ParcelStatuses_View.vue', () => ({ default: { template: '<div />' } }))
+vi.mock('@/views/RegisterStatuses_View.vue', () => ({ default: { template: '<div />' } }))
+vi.mock('@/views/ParcelEvents_View.vue', () => ({ default: { template: '<div />' } }))
+vi.mock('@/views/RegisterEvents_View.vue', () => ({ default: { template: '<div />' } }))
+vi.mock('@/views/HotKeyActionSchemes_View.vue', () => ({ default: { template: '<div />' } }))
+vi.mock('@/views/ParcelStatus_EditView.vue', () => ({ default: { template: '<div />' } }))
+vi.mock('@/views/RegisterStatus_EditView.vue', () => ({ default: { template: '<div />' } }))
+vi.mock('@/views/HotKeyActionScheme_EditView.vue', () => ({ default: { template: '<div />' } }))
+vi.mock('@/views/ParcelStatus_CreateView.vue', () => ({ default: { template: '<div />' } }))
+vi.mock('@/views/RegisterStatus_CreateView.vue', () => ({ default: { template: '<div />' } }))
+vi.mock('@/views/HotKeyActionScheme_CreateView.vue', () => ({ default: { template: '<div />' } }))
+
 import router from '@/router'
 
 async function resetRouter(to = '/recover') {
@@ -108,6 +121,18 @@ describe('router guards', () => {
   afterEach(() => {
     // Restore console.error
     console.error = originalConsoleError
+  })
+
+  it('treats a nested HTTP 401 status as an expired session', async () => {
+    authStore.user = { id: 5 }
+    checkMock.mockRejectedValueOnce({ response: { status: 401 } })
+
+    await router.push('/registers?statusId=7')
+
+    expect(router.currentRoute.value.fullPath).toBe('/login')
+    expect(authStore.returnUrl).toBe('/registers?statusId=7')
+    expect(clearSessionMock).toHaveBeenCalledOnce()
+    expect(alertError).toHaveBeenCalledExactlyOnceWith('Необходимо войти в систему')
   })
 
   it('defines authenticated prototype parcel-filter routes with a numeric edit id', () => {

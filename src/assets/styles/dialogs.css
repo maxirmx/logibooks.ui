@@ -19,7 +19,7 @@ This file is a part of Logibooks ui application
   --app-dialog-radius: 12px;
 }
 
-.v-card.app-dialog-frame {
+.v-card.app-dialog-frame:where(:not(.app-dialog-frame--selection)) {
   max-height: min(84vh, 720px);
   overflow: hidden;
   border: 1px solid var(--app-dialog-divider-color) !important;
@@ -27,6 +27,32 @@ This file is a part of Logibooks ui application
   box-shadow: 0 20px 48px rgba(16, 24, 40, 0.2) !important;
   color: var(--app-dialog-text-color);
   font-family: var(--app-dialog-font-family) !important;
+}
+
+.v-card.app-dialog-frame--selection {
+  border: 2px solid #797979;
+  box-shadow: 0 3px 7px rgba(0, 0, 0, 0.1);
+  border-radius: 0.25rem;
+}
+
+.app-dialog-frame--selection .parcel-selection-dialog-header {
+  padding: 16px 16px 0;
+}
+
+.app-dialog-frame--selection .header-with-actions {
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.app-dialog-frame--selection .primary-heading {
+  margin: 0;
+}
+
+.app-dialog-frame--selection .app-dialog-frame__selection-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 0;
 }
 
 .app-dialog-frame .app-dialog-frame__title {

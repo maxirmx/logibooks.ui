@@ -206,6 +206,7 @@ vi.mock('@/helpers/register.actions.js', async (importOriginal) => ({
     validationState: ref(null),
     progressPercent: ref(0),
     actionDialog: ref({ open: false }),
+    xmlDialog: { cancellable: false },
     generalActionsDisabled: ref(false),
     ...headerActions,
     stop: stopRegisterHeaderActions

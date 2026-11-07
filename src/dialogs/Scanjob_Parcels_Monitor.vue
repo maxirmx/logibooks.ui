@@ -15,6 +15,7 @@ import {
   formatBoxDimensions,
   formatBoxWeight,
   formatParcelProgress,
+  getLookupParcelProgressStats,
   isPhysicalMonitorBox,
   isUnassignedMonitorBox,
   scanjobParcelHeaders,
@@ -76,6 +77,15 @@ const summaryCards = computed(() => {
       value: formatParcelProgress(box)
     }
   ]
+
+  const lookupStats = getLookupParcelProgressStats(box)
+  if (lookupStats.length) {
+    cards.push({
+      key: 'boxLookupProgress',
+      label: lookupStats.map(stat => stat.label).join(' / '),
+      value: lookupStats.map(stat => stat.value).join(' / ')
+    })
+  }
 
   if (isPhysicalMonitorBox(box)) {
     cards.push(

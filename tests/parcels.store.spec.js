@@ -312,6 +312,16 @@ describe('parcels store', () => {
       })
     })
 
+    it('passes Lookup purpose on the existing resolver route', async () => {
+      const response = { purpose: 'lookup', lookupBy: 'sticker', matches: [] }
+      fetchWrapper.post.mockResolvedValueOnce(response)
+      const store = useParcelsStore()
+      await expect(store.resolveStatusSelection(9, ['0001'], 'sticker', 'lookup')).resolves.toEqual(response)
+      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/status-selection/resolve?purpose=lookup`, {
+        registerId: 9, numbers: ['0001'], lookupBy: 'sticker'
+      })
+    })
+
     it('resolves parcel numbers for status bulk change', async () => {
       fetchWrapper.post.mockResolvedValue({ parcelIds: [1], missingNumbers: ['P-2'] })
       const store = useParcelsStore()

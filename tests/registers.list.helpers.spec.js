@@ -5,7 +5,13 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { reactive } from 'vue'
+import { reportError } from '@/helpers/error.helpers.js'
 import { toggleBulkStatusEditMode, cancelBulkStatusChange, validateBulkStatusParams, resetBulkStatusState, applyBulkStatusToAllOrders, isBulkStatusEditMode, getBulkStatusSelectedId, setBulkStatusSelectedId, startRegisterStatusEditMode, validateRegisterStatusParams, applyRegisterStatusChange, createValidationState, pollValidation, validateRegister, cancelValidation, createPollingTimer, createRegisterActionHandlers, POLLING_INTERVAL_MS } from '@/helpers/registers.list.helpers'
+
+vi.mock('@/helpers/error.helpers.js', async importOriginal => ({
+  ...await importOriginal(),
+  reportError: vi.fn()
+}))
 
 describe('registers.list.helpers', () => {
   let bulkStatusState
@@ -306,10 +312,13 @@ describe('registers.list.helpers', () => {
       it('handles polling errors', async () => {
         validationState.show = true
         const errorMessage = 'Polling failed'
-        mockRegistersStore.getValidationProgress.mockRejectedValueOnce(new Error(errorMessage))
+        const failure = new Error(errorMessage)
+        mockRegistersStore.getValidationProgress.mockRejectedValueOnce(failure)
 
         await pollValidation(validationState, mockRegistersStore, mockAlertStore, stopPollingFn)
 
+        expect(reportError).toHaveBeenCalledExactlyOnceWith(failure, { context: 'register operation progress or reload' })
+        expect(mockAlertStore.error).toHaveBeenCalledOnce()
         expect(mockAlertStore.error).toHaveBeenCalledWith(expect.any(Error), { fallback: 'Не удалось обновить данные обработки реестра' })
         expect(validationState.show).toBe(false)
         expect(stopPollingFn).toHaveBeenCalled()
@@ -330,7 +339,8 @@ describe('registers.list.helpers', () => {
 
       it('handles validation start errors', async () => {
         const errorMessage = 'Validation failed to start'
-        mockRegistersStore.validate.mockRejectedValueOnce(new Error(errorMessage))
+        const failure = new Error(errorMessage)
+        mockRegistersStore.validate.mockRejectedValueOnce(failure)
 
         await validateRegister(
           item,
@@ -342,6 +352,8 @@ describe('registers.list.helpers', () => {
           false
         )
 
+        expect(reportError).toHaveBeenCalledExactlyOnceWith(failure, { context: 'register validation start' })
+        expect(mockAlertStore.error).toHaveBeenCalledOnce()
         expect(stopPollingFn).toHaveBeenCalled()
         expect(mockRegistersStore.validate).toHaveBeenCalled()
         expect(mockRegistersStore.validate.mock.calls[0][0]).toBe(123)

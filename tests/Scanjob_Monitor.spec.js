@@ -638,6 +638,16 @@ describe('Scanjob_Monitor.vue', () => {
     await flushPromises()
   })
 
+  it.each([undefined, 0, 3])('shows one Lookup remaining value when Core supplies %s', async remaining => {
+    loadMonitorSnapshot.mockResolvedValue({ ...registerSnapshot, lookupRemainingCount: remaining })
+    const wrapper = mount(ScanjobMonitor, { props: { scanjobId: 42 }, global: { stubs: monitorGlobalStubs } })
+    await flushPromises()
+    const cards = wrapper.findAll('.monitor-summary-item').filter(card => card.text().includes('Осталось найти'))
+    expect(cards).toHaveLength(remaining === undefined ? 0 : 1)
+    if (remaining !== undefined) expect(cards[0].get('.monitor-summary-value').text()).toBe(String(remaining))
+    wrapper.unmount()
+  })
+
   it('shows the saved name when the scanjob has no register', async () => {
     mockScanjob.value = { ...mockScanjob.value, registerId: null }
     getById.mockResolvedValue(mockScanjob.value)

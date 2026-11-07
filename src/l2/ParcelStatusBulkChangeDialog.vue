@@ -3,10 +3,12 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { computed, onBeforeUnmount, ref, shallowRef, watch, watchPostEffect } from 'vue'
+import { computed, onBeforeUnmount, ref, watch, watchPostEffect } from 'vue'
 import ActionButton from '@/components/ActionButton.vue'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
-import { GTC_COMPANY_ID, OZON_COMPANY_ID, WBR_COMPANY_ID, WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
+import ParcelIdentifierFields from '@/components/ParcelIdentifierFields.vue'
+import { useParcelSelectionRequest } from '@/composables/useParcelSelectionRequest.js'
+import { GTC_COMPANY_ID, OZON_COMPANY_ID } from '@/helpers/company.constants.js'
 import { getErrorMessage, reportError } from '@/helpers/error.helpers.js'
 import { useAppConfirm } from '@/composables/useAppConfirm.js'
 import { useAlertStore } from '@/stores/alert.store.js'
@@ -16,7 +18,8 @@ import {
   buildParcelStatusBulkReport,
   getParcelStatusBulkNumberLabel,
   normalizeParcelStatusBulkIds,
-  parseParcelStatusBulkInput
+  parseParcelStatusBulkInput,
+  supportsParcelStickerLookup
 } from '@/helpers/parcel.status.bulk.helpers.js'
 import {
   buildCustomsExclusionWarning,
@@ -46,7 +49,7 @@ const identifiersInput = ref('')
 const foundParcelIds = ref([])
 const missingNumbers = ref([])
 const blockedItems = ref([])
-const activeOperation = shallowRef(null)
+const { activeOperation, beginOperation, isCurrent, finishOperation, invalidateOperation } = useParcelSelectionRequest()
 const lastSearchCount = ref(0)
 
 const parsedIdentifiers = computed(() => parseParcelStatusBulkInput(identifiersInput.value))
@@ -82,9 +85,7 @@ const currentRegister = computed(() => {
 })
 const registerType = computed(() => Number(currentRegister.value?.registerType))
 const isGtc = computed(() => registerType.value === GTC_COMPANY_ID)
-const supportsStickerLookup = computed(() =>
-  [WBR_COMPANY_ID, WBRN_REGISTER_ID, OZON_COMPANY_ID].includes(registerType.value)
-)
+const supportsStickerLookup = computed(() => supportsParcelStickerLookup(registerType.value))
 const busy = computed(() => activeOperation.value !== null)
 const actionsDisabled = computed(() => props.disabled || currentRegister.value?.readOnly === true)
 const canOperate = computed(() => props.show && hasRegister.value && !actionsDisabled.value && !busy.value)
@@ -134,7 +135,7 @@ watch(registerType, () => {
   invalidateResolution()
 }, { flush: 'sync' })
 watch([identifiersInput, bySticker], invalidateResolution, { flush: 'sync' })
-onBeforeUnmount(() => { activeOperation.value = null })
+onBeforeUnmount(invalidateOperation)
 
 function resetResolution() {
   foundParcelIds.value = []
@@ -144,7 +145,7 @@ function resetResolution() {
 }
 
 function invalidateResolution() {
-  activeOperation.value = null
+  invalidateOperation()
   resetResolution()
 }
 
@@ -155,18 +156,8 @@ function resetState() {
   invalidateResolution()
 }
 
-function beginOperation() {
-  const operation = { registerId: Number(props.registerId), statusId: statusId.value }
-  activeOperation.value = operation
-  return operation
-}
-
-function isCurrent(operation) {
-  return activeOperation.value === operation
-}
-
-function finishOperation(operation) {
-  if (isCurrent(operation)) activeOperation.value = null
+function beginRequest() {
+  return beginOperation({ registerId: Number(props.registerId), statusId: statusId.value })
 }
 
 function close() {
@@ -201,7 +192,7 @@ async function findParcels() {
   const identifiers = parsedIdentifiers.value
   const lookupBy = bySticker.value ? 'sticker' : 'number'
   resetResolution()
-  const operation = beginOperation()
+  const operation = beginRequest()
   try {
     const result = await parcelsStore.resolveStatusSelection(operation.registerId, identifiers, lookupBy)
     if (!isCurrent(operation)) return
@@ -230,7 +221,7 @@ function updateAll() {
 async function updateStatus(all) {
   if (!(all ? canUpdateAll.value : canUpdateFound.value)) return
 
-  const operation = beginOperation()
+  const operation = beginRequest()
   const { registerId, statusId } = operation
   const parcelIds = foundParcelIds.value
   try {
@@ -361,52 +352,20 @@ defineExpose({
           data-testid="parcel-status-bulk-status"
         />
 
-        <div>
-          <div class="parcel-status-bulk-lookup">
-            <span :class="{ 'parcel-status-bulk-mode-active': !bySticker }">По номерам отправлений</span>
-            <v-switch
-              v-model="bySticker"
-              role="switch"
-              aria-label="Поиск по стикерам"
-              :aria-describedby="isGtc ? 'parcel-status-bulk-gtc-hint' : undefined"
-              :disabled="busy || actionsDisabled || !supportsStickerLookup"
-              color="primary"
-              density="compact"
-              hide-details
-              data-testid="parcel-status-bulk-lookup"
-            />
-            <span :class="{ 'parcel-status-bulk-mode-active': bySticker }">По стикерам</span>
-          </div>
-          <div v-if="isGtc" id="parcel-status-bulk-gtc-hint" class="parcel-status-bulk-summary">
-            В реестрах GTC поиск доступен только по номеру посылки.
-          </div>
-        </div>
-
-        <label for="parcel-status-bulk-input" class="parcel-status-bulk-label">
-          {{ identifierLabel }}
-        </label>
-        <textarea
-          id="parcel-status-bulk-input"
+        <ParcelIdentifierFields
           ref="inputRef"
-          v-model="identifiersInput"
-          class="input parcel-status-bulk-textarea"
-          :placeholder="identifierPlaceholder"
-          spellcheck="false"
+          v-model:input="identifiersInput"
+          v-model:by-sticker="bySticker"
+          prefix="parcel-status-bulk"
           :disabled="busy || actionsDisabled"
-          data-testid="parcel-status-bulk-input"
-        ></textarea>
-
-        <label for="parcel-status-bulk-report" class="parcel-status-bulk-label">
-          Не найдены / недоступны
-        </label>
-        <textarea
-          id="parcel-status-bulk-report"
-          class="input parcel-status-bulk-report"
-          :value="notFoundReport"
-          readonly
-          :placeholder="reportPlaceholder"
-          data-testid="parcel-status-bulk-report"
-        ></textarea>
+          :supports-sticker-lookup="supportsStickerLookup"
+          :is-gtc="isGtc"
+          :label="identifierLabel"
+          :placeholder="identifierPlaceholder"
+          report-label="Не найдены / недоступны"
+          :report="notFoundReport"
+          :report-placeholder="reportPlaceholder"
+        />
 
         <div class="parcel-status-bulk-summary" data-testid="parcel-status-bulk-summary" aria-live="polite">
           {{ searchSummary }}
@@ -441,44 +400,6 @@ defineExpose({
   flex-direction: column;
   gap: 10px;
   padding-top: 0;
-}
-
-.parcel-status-bulk-lookup {
-  display: grid;
-  grid-template-columns: minmax(0, max-content) max-content max-content;
-  align-items: center;
-  column-gap: clamp(16px, 3vw, 24px);
-}
-
-.parcel-status-bulk-lookup > span:first-child {
-  overflow-wrap: anywhere;
-}
-
-.parcel-status-bulk-mode-active {
-  font-weight: 600;
-}
-
-.parcel-status-bulk-label {
-  margin-top: 4px;
-  font-weight: 600;
-  color: #4b4b4b;
-}
-
-.parcel-status-bulk-textarea,
-.parcel-status-bulk-report {
-  width: 100%;
-  min-height: 140px;
-  resize: vertical;
-  line-height: 1.35;
-  font-family: inherit;
-}
-
-.parcel-status-bulk-report {
-  min-height: 100px;
-  max-height: 220px;
-  overflow: auto;
-  background-color: #f8f9fa;
-  white-space: pre;
 }
 
 .parcel-status-bulk-summary {

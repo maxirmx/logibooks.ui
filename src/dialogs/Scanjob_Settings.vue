@@ -5,9 +5,9 @@
 
 import FieldError from '@/components/FieldError.vue'
 import { focusFirstInvalidField } from '@/helpers/form.validation.helpers.js'
-import { getErrorMessage, reportFormError } from '@/helpers/error.helpers.js'
+import { getErrorMessage, reportError, reportFormError } from '@/helpers/error.helpers.js'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
-import { ref, computed, onMounted, nextTick, watch } from 'vue'
+import { ref, computed, onBeforeUnmount, onMounted, nextTick, watch } from 'vue'
 import router from '@/router'
 import { storeToRefs } from 'pinia'
 import { useForm, useField } from 'vee-validate'
@@ -24,6 +24,7 @@ import { GTC_COMPANY_ID } from '@/helpers/company.constants.js'
 import { getCompanyDisplayName } from '@/helpers/register.display.helpers.js'
 import { formatRegisterInvoice } from '@/helpers/register.heading.helpers.js'
 import ActionButton from '@/components/ActionButton.vue'
+import LookupParcelSelectionDialog from '@/dialogs/LookupParcelSelectionDialog.vue'
 import { useAppConfirm } from '@/composables/useAppConfirm.js'
 import { useScanjobFinishConfirmation } from '@/composables/useScanjobFinishConfirmation.js'
 
@@ -85,8 +86,10 @@ if (props.mode === 'edit' && (props.scanjobId === null || props.scanjobId === un
 const loading = ref(false)
 const saving = ref(false)
 const runningAction = ref(false)
+const settingsBusy = computed(() => saving.value || runningAction.value)
 const currentScanjob = ref(null)
 const nameManuallyEdited = ref(false)
+let initializationVersion = 0
 
 function formatDefaultScanjobName(operationValue) {
   const operationNames = {
@@ -104,7 +107,19 @@ function resolveLookupOperationValue() {
   if (!Array.isArray(operations) || operations.length === 0) return null
   // Lookup operation is the last in the array
   const lookupOperation = operations[operations.length - 1]
-  return lookupOperation?.value ?? null
+  return lookupOperation?.value == null ? null : Number(lookupOperation.value)
+}
+
+function getLookupTargetError(values) {
+  if (Number(values.operation) !== Number(resolveLookupOperationValue())) return null
+  if (values.lookupTargetSource === 'list') {
+    return values.lookupParcelIds?.length ? null : {
+      path: 'lookupParcelIds', message: 'Выберите посылки для поиска'
+    }
+  }
+  return Number(values.lookupStatusId) > 0 ? null : {
+    path: 'lookupStatusId', message: 'Статус для поиска обязателен'
+  }
 }
 
 const schema = toTypedSchema(
@@ -117,13 +132,12 @@ const schema = toTypedSchema(
     status: Yup.number().required('Статус обязателен'),
     warehouseId: Yup.number().nullable().required('Склад обязателен'),
     registerId: Yup.number().nullable().required('Реестр обязателен'),
-    lookupStatusId: Yup.number()
-      .nullable()
-      .when('operation', {
-        is: (operationValue) => Number(operationValue) === Number(resolveLookupOperationValue()),
-        then: (fieldSchema) => fieldSchema.required('Статус для поиска обязателен'),
-        otherwise: (fieldSchema) => fieldSchema.nullable()
-      })
+    lookupStatusId: Yup.number().nullable(),
+    lookupTargetSource: Yup.string().oneOf(['status', 'list']),
+    lookupParcelIds: Yup.array().of(Yup.number().integer().positive())
+  }).test('lookup-target', function (values) {
+    const error = getLookupTargetError(values)
+    return error ? this.createError(error) : true
   })
 )
 
@@ -138,7 +152,9 @@ const { errors, handleSubmit, resetForm, setErrors } = useForm({
     status: null,
     warehouseId: props.warehouseId ?? null,
     registerId: props.registerId ?? null,
-    lookupStatusId: null
+    lookupStatusId: null,
+    lookupTargetSource: 'status',
+    lookupParcelIds: []
   }
 })
 
@@ -150,6 +166,21 @@ const { value: status } = useField('status')
 const { value: fieldWarehouseId } = useField('warehouseId')
 const { value: fieldRegisterId } = useField('registerId')
 const { value: lookupStatusId } = useField('lookupStatusId')
+const { value: lookupTargetSource } = useField('lookupTargetSource')
+const { value: lookupParcelIds } = useField('lookupParcelIds')
+const lookupSelectionOpen = ref(false)
+const createdStatus = 10
+const boxOnlyType = 20
+const boxesAndParcelsType = 30
+const isListLookup = computed(() => isLookupOperation.value && lookupTargetSource.value === 'list')
+const savedListLookup = computed(() => (currentScanjob.value?.lookupParcelIds?.length ?? 0) > 0)
+const canChooseListLookup = computed(() => isCreate.value || Number(currentScanjob.value?.status) === createdStatus)
+const lookupSettingsLocked = computed(() => savedListLookup.value && !canChooseListLookup.value)
+const lookupSettingsDisabled = computed(() => settingsBusy.value || readOnly.value ||
+  isLookupOnlyRegisterType.value || lookupSettingsLocked.value)
+const scanTypeOptions = computed(() => (ops.value?.types ?? []).filter(item =>
+  !isListLookup.value || Number(item.value) !== boxOnlyType
+))
 
 const currentRegister = ref(null)
 
@@ -237,8 +268,38 @@ watch(operation, (value) => {
 watch(isLookupOperation, (lookup) => {
   if (!lookup) {
     lookupStatusId.value = null
+    lookupTargetSource.value = 'status'
+    clearLookupSelection()
   }
 })
+
+function clearLookupSelection() {
+  lookupSelectionOpen.value = false
+  lookupParcelIds.value = []
+}
+
+watch(fieldRegisterId, () => {
+  if (!loading.value) clearLookupSelection()
+}, { flush: 'sync' })
+watch(() => props.registerId, () => {
+  if (!isCreate.value) return
+  clearLookupSelection()
+  currentRegister.value = null
+  return initialize()
+})
+
+function changeLookupTargetSource(event) {
+  clearLookupSelection()
+  if (event.target.value === 'list') {
+    lookupStatusId.value = null
+    type.value = boxesAndParcelsType
+  }
+}
+
+function confirmLookupParcels(ids, registerId) {
+  if (lookupSettingsDisabled.value || !isListLookup.value || registerId !== Number(fieldRegisterId.value)) return
+  lookupParcelIds.value = ids
+}
 
 watch(
   operationOptions,
@@ -254,20 +315,14 @@ watch(
 )
 
 async function resolveRegister(registerId) {
-  if (registerId === null || registerId === undefined || registerId === '') {
-    currentRegister.value = null
-    return
-  }
-
-  await registersStore.getById(registerId)
-  if (registersStore.item?.error) {
-    currentRegister.value = null
-    return
-  }
-  currentRegister.value = registersStore.item
+  if (!(Number(registerId) > 0)) return null
+  const register = (await registersStore.getById(registerId)) ?? registersStore.item
+  return Number(register?.id) === Number(registerId) && !register.error ? register : null
 }
 
 async function initialize() {
+  const version = ++initializationVersion
+  const registerId = props.registerId
   loading.value = true
   try {
     await scanJobsStore.ensureOpsLoaded()
@@ -277,7 +332,9 @@ async function initialize() {
     await parcelStatusesStore.ensureLoaded()
 
     if (isCreate.value) {
-      await resolveRegister(props.registerId)
+      const register = await resolveRegister(registerId)
+      if (version !== initializationVersion) return
+      currentRegister.value = register
 
       const initialOperation = isLookupOnlyRegisterType.value
         ? lookupOperationValue.value
@@ -291,7 +348,9 @@ async function initialize() {
         status: ops.value?.statuses?.[0]?.value ?? null,
         warehouseId: props.warehouseId ?? null,
         registerId: props.registerId ?? null,
-        lookupStatusId: null
+        lookupStatusId: null,
+        lookupTargetSource: 'status',
+        lookupParcelIds: []
       }
       nameManuallyEdited.value = false
       resetForm({ values: defaults })
@@ -299,11 +358,14 @@ async function initialize() {
       currentScanjob.value = null
     } else {
       const loaded = await scanJobsStore.getById(props.scanjobId)
+      if (version !== initializationVersion) return
       if (!loaded) {
         alertStore.error('Не удалось загрузить задание на сканирование')
         return
       }
-      await resolveRegister(loaded.registerId ?? props.registerId)
+      const register = await resolveRegister(loaded.registerId ?? registerId)
+      if (version !== initializationVersion) return
+      currentRegister.value = register
       resetForm({
         values: {
           id: loaded.id,
@@ -314,22 +376,27 @@ async function initialize() {
           status: loaded.status,
           warehouseId: loaded.warehouseId ?? props.warehouseId ?? null,
           registerId: loaded.registerId ?? props.registerId ?? null,
-          lookupStatusId: loaded.lookupStatusId ?? null
+          lookupStatusId: loaded.lookupStatusId ?? null,
+          lookupTargetSource: loaded.lookupParcelIds?.length ? 'list' : 'status',
+          lookupParcelIds: loaded.lookupParcelIds ?? []
         }
       })
       await nextTick()
       currentScanjob.value = loaded
     }
   } catch (error) {
-    alertStore.error(error, {
-      fallback: 'Ошибка при инициализации формы'
-    })
+    if (version === initializationVersion) {
+      alertStore.error(error, { fallback: 'Ошибка при инициализации формы' })
+    } else {
+      reportError(error, { context: 'obsolete scan job settings initialization' })
+    }
   } finally {
-    loading.value = false
+    if (version === initializationVersion) loading.value = false
   }
 }
 
 onMounted(initialize)
+onBeforeUnmount(() => { initializationVersion++ })
 
 function toNumberOrNull(value) {
   if (value === null || value === undefined || value === '') return null
@@ -337,16 +404,38 @@ function toNumberOrNull(value) {
 }
 
 function buildPayload(values) {
+  const { lookupTargetSource: source, lookupParcelIds: ids, ...settings } = values
+  const list = Number(values.operation) === lookupOperationValue.value && source === 'list'
   return {
-    ...values,
+    ...settings,
     type: toNumberOrNull(values.type),
     operation: toNumberOrNull(values.operation),
     mode: toNumberOrNull(values.mode),
     status: toNumberOrNull(values.status),
     warehouseId: toNumberOrNull(values.warehouseId ?? props.warehouseId),
     registerId: toNumberOrNull(values.registerId ?? props.registerId),
-    lookupStatusId: toNumberOrNull(values.lookupStatusId)
+    lookupStatusId: list ? null : toNumberOrNull(values.lookupStatusId),
+    ...(list ? { lookupParcelIds: ids } : savedListLookup.value ? { lookupParcelIds: null } : {})
   }
+}
+
+function validateLookupChoice(values) {
+  if (isLookupOnlyRegisterType.value) {
+    alertStore.error('Задания сканирования недоступны для реестров GTC')
+    return false
+  }
+  const error = getLookupTargetError(values)
+  if (error) setErrors({ [error.path]: error.message })
+  return !error
+}
+
+function reportSaveError(error) {
+  if (handleReadOnlyConflict(error)) return
+  if (!error?.data?.code && (error?.status === 409 || String(error?.message || '').includes('409'))) {
+    alertStore.error('Такое задание на сканирование уже существует')
+    return
+  }
+  reportFormError(error, { setErrors, alertStore, fallback: 'Ошибка при сохранении задания на сканирование' })
 }
 
 function handleReadOnlyConflict(error) {
@@ -397,16 +486,6 @@ async function saveScanjobQuiet() {
     alertStore.error('Реестр обязателен')
     return false
   }
-  if (
-    isLookupOperation.value &&
-    (lookupStatusId.value === null ||
-      lookupStatusId.value === undefined ||
-      lookupStatusId.value === '')
-  ) {
-    alertStore.error('Статус для поиска обязателен')
-    return false
-  }
-
   const values = {
     id: currentScanjob.value?.id ?? 0,
     name: name.value,
@@ -416,36 +495,33 @@ async function saveScanjobQuiet() {
     status: status.value,
     warehouseId: fieldWarehouseId.value,
     registerId: fieldRegisterId.value,
-    lookupStatusId: lookupStatusId.value
+    lookupStatusId: lookupStatusId.value,
+    lookupTargetSource: lookupTargetSource.value,
+    lookupParcelIds: lookupParcelIds.value
   }
+  if (!validateLookupChoice(values)) return false
   const payload = buildPayload(values)
   try {
     if (isCreate.value) {
       await scanJobsStore.create(payload)
     } else {
       await scanJobsStore.update(props.scanjobId, payload)
+      currentScanjob.value = { ...currentScanjob.value, ...payload, lookupParcelIds: payload.lookupParcelIds ?? [] }
     }
     return true
   } catch (error) {
-    if (handleReadOnlyConflict(error)) return false
-    if (error?.status === 409 || String(error?.message || '').includes('409')) {
-      alertStore.error('Такое задание на сканирование уже существует')
-    } else {
-      reportFormError(error, {
-        setErrors,
-        alertStore,
-        fallback: 'Ошибка при сохранении задания на сканирование'
-      })
-    }
+    reportSaveError(error)
     return false
   }
 }
 
 const onSubmit = handleSubmit(async (values) => {
+  if (settingsBusy.value) return
   if (readOnly.value) {
     alertStore.error('Изменения запрещены для выбранного реестра')
     return
   }
+  if (!validateLookupChoice(values)) return
   saving.value = true
   try {
     const payload = buildPayload(values)
@@ -466,12 +542,7 @@ const onSubmit = handleSubmit(async (values) => {
       router.back()
     }
   } catch (error) {
-    if (handleReadOnlyConflict(error)) return
-    if (error?.status === 409 || String(error?.message || '').includes('409')) {
-      alertStore.error('Такое задание на сканирование уже существует')
-    } else {
-      alertStore.error(error.message || 'Ошибка при сохранении задания на сканирование')
-    }
+    reportSaveError(error)
   } finally {
     saving.value = false
   }
@@ -495,7 +566,7 @@ async function refreshScanjobStatus() {
 }
 
 async function startScanjob() {
-  if (runningAction.value || isCreate.value || readOnly.value) return
+  if (settingsBusy.value || isCreate.value || readOnly.value) return
   runningAction.value = true
   try {
     const saved = await saveScanjobQuiet()
@@ -516,7 +587,7 @@ async function startScanjob() {
 }
 
 async function pauseScanjob() {
-  if (runningAction.value || isCreate.value || readOnly.value) return
+  if (settingsBusy.value || isCreate.value || readOnly.value) return
   runningAction.value = true
   try {
     const saved = await saveScanjobQuiet()
@@ -537,7 +608,7 @@ async function pauseScanjob() {
 }
 
 async function finishScanjob() {
-  if (runningAction.value || isCreate.value || readOnly.value) return
+  if (settingsBusy.value || isCreate.value || readOnly.value) return
   runningAction.value = true
   let completed = false
   try {
@@ -617,7 +688,7 @@ defineExpose({ onSubmit, cancel })
             icon-size="2x"
             tooltip-text="Сохранить"
             data-testid="scanjob-save-action"
-            :disabled="readOnly || saving || loading || runningAction"
+            :disabled="readOnly || isLookupOnlyRegisterType || saving || loading || runningAction"
             @click="onSubmit"
           />
           <ActionButton
@@ -634,7 +705,8 @@ defineExpose({ onSubmit, cancel })
     </div>
     <hr class="hr" />
 
-    <PageAlertRegion />
+    <PageAlertRegion v-if="!lookupSelectionOpen" />
+    <p v-if="isLookupOnlyRegisterType" class="text-muted">Задания сканирования недоступны для реестров GTC</p>
     <div v-if="loading" class="text-center m-5">
       <span class="spinner-border spinner-border-lg align-center"></span>
     </div>
@@ -719,10 +791,10 @@ defineExpose({ onSubmit, cancel })
             id="type"
             class="form-control input"
             :class="{ 'is-invalid': errors.type }"
-            :disabled="readOnly"
+            :disabled="settingsBusy || readOnly || lookupSettingsLocked"
             v-model="type"
           >
-            <option v-for="item in ops?.types" :key="item.value" :value="item.value">
+            <option v-for="item in scanTypeOptions" :key="item.value" :value="item.value">
               {{ item.name }}
             </option>
           </select>
@@ -737,7 +809,7 @@ defineExpose({ onSubmit, cancel })
             id="mode"
             class="form-control input"
             :class="{ 'is-invalid': errors.mode }"
-            :disabled="readOnly"
+            :disabled="settingsBusy || readOnly || lookupSettingsLocked"
             v-model="fieldMode"
           >
             <option v-for="item in ops?.modes" :key="item.value" :value="item.value">
@@ -768,7 +840,7 @@ defineExpose({ onSubmit, cancel })
             id="operation"
             class="form-control input"
             :class="{ 'is-invalid': errors.operation }"
-            :disabled="readOnly"
+            :disabled="lookupSettingsDisabled"
             v-model="operation"
           >
             <option v-for="item in operationOptions" :key="item.value" :value="item.value">
@@ -777,13 +849,43 @@ defineExpose({ onSubmit, cancel })
           </select>
           <FieldError name="operation" :errors="errors" />
         </div>
-        <div class="form-group" :hidden="!isLookupOperation">
+        <div v-if="isLookupOperation" class="form-group">
+          <label for="lookupTargetSource" class="label">Вид поиска:</label>
+          <select
+            id="lookupTargetSource"
+            v-model="lookupTargetSource"
+            class="form-control input"
+            :disabled="lookupSettingsDisabled"
+            @change="changeLookupTargetSource"
+          >
+            <option value="status">По статусу</option>
+            <option value="list" :disabled="!canChooseListLookup && !savedListLookup">По списку посылок</option>
+          </select>
+        </div>
+      </div>
+
+      <div v-if="isLookupOperation" class="form-row">
+        <div v-if="isListLookup" class="form-group">
+          <label for="lookupParcelIds" class="label">Посылки для поиска:</label>
+          <div class="d-flex align-center ga-2">
+            <button
+              id="lookupParcelIds"
+              type="button"
+              class="btn btn-outline-primary"
+              :disabled="lookupSettingsDisabled || !currentRegister || !fieldRegisterId"
+              @click="lookupSelectionOpen = true"
+            >Выбрать посылки</button>
+            <span>Выбрано: {{ lookupParcelIds?.length ?? 0 }}</span>
+          </div>
+          <FieldError name="lookupParcelIds" :errors="errors" />
+        </div>
+        <div v-else class="form-group">
           <label for="lookupStatusId" class="label">Статус для поиска:</label>
           <select
             id="lookupStatusId"
             class="form-control input"
             :class="{ 'is-invalid': errors.lookupStatusId }"
-            :disabled="readOnly || !isLookupOperation"
+            :disabled="lookupSettingsDisabled"
             v-model="lookupStatusId"
             data-testid="lookup-status-select"
           >
@@ -800,6 +902,13 @@ defineExpose({ onSubmit, cancel })
         </div>
       </div>
     </form>
+    <LookupParcelSelectionDialog
+      v-if="lookupSelectionOpen && currentRegister"
+      v-model="lookupSelectionOpen"
+      :register="currentRegister"
+      :disabled="lookupSettingsDisabled"
+      @selected="confirmLookupParcels"
+    />
   </div>
 </template>
 

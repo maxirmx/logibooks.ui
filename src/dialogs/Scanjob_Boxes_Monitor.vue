@@ -77,7 +77,12 @@ const summaryCards = computed(() => {
       key: 'unregistered',
       label: 'Стикеры не в реестре',
       value: String(snapshot.scannedItemsNotInRegister ?? 0),
-    }
+    },
+    ...(snapshot.lookupRemainingCount == null ? [] : [{
+      key: 'lookupRemaining',
+      label: 'Осталось найти',
+      value: String(snapshot.lookupRemainingCount)
+    }])
   ]
 })
 

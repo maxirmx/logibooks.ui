@@ -206,6 +206,7 @@ describe('Scanjob_Settings.vue', () => {
         },
         stubs: {
           'font-awesome-icon': true,
+          LookupParcelSelectionDialog: { name: 'LookupParcelSelectionDialog', template: '<div />' },
           ...vuetifyStubs
         }
       }
@@ -478,6 +479,78 @@ describe('Scanjob_Settings.vue', () => {
     expect(wrapper.get('form').classes()).toContain('read-only-form')
   })
 
+  it('requires the selected Lookup source before saving', async () => {
+    const wrapper = mountComponent({ mode: 'create', registerId: 22, warehouseId: 11, dealNumber: 'ABC-1' })
+    await resolveAll()
+    await wrapper.get('#operation').setValue('30')
+    await wrapper.vm.$.setupState.onSubmit()
+    expect(wrapper.text()).toContain('Статус для поиска обязателен')
+    await wrapper.get('#lookupTargetSource').setValue('list')
+    await resolveAll()
+    await wrapper.vm.$.setupState.onSubmit()
+    await resolveAll()
+    expect(wrapper.text()).toContain('Выберите посылки для поиска')
+    expect(create).not.toHaveBeenCalled()
+  })
+
+  it('discards the list draft when the register changes', async () => {
+    const wrapper = mountComponent({ mode: 'create', registerId: 22, warehouseId: 11, dealNumber: 'ABC-1' })
+    await resolveAll()
+    await wrapper.get('#operation').setValue('30')
+    await wrapper.get('#lookupTargetSource').setValue('list')
+    await wrapper.get('#lookupParcelIds').trigger('click')
+    const dialog = wrapper.getComponent({ name: 'LookupParcelSelectionDialog' })
+    dialog.vm.$emit('selected', [1010], 22)
+    dialog.vm.$emit('update:modelValue', false)
+    await wrapper.setProps({ registerId: 23 })
+    await resolveAll()
+    expect(getRegisterById).toHaveBeenLastCalledWith(23)
+    expect(wrapper.find('#lookupParcelIds').exists()).toBe(false)
+    expect(create).not.toHaveBeenCalled()
+  })
+
+  it('keeps the saved list source when Start fails after saving settings', async () => {
+    getById.mockResolvedValue({ ...mockScanjob, status: 10 })
+    start.mockRejectedValueOnce(new Error('Не удалось запустить сканирование'))
+    const wrapper = mountComponent({ mode: 'edit', scanjobId: 11 })
+    await resolveAll()
+
+    await wrapper.get('#lookupTargetSource').setValue('list')
+    await wrapper.get('#lookupParcelIds').trigger('click')
+    const dialog = wrapper.getComponent({ name: 'LookupParcelSelectionDialog' })
+    dialog.vm.$emit('selected', [1010, 1011], 22)
+    dialog.vm.$emit('update:modelValue', false)
+    await wrapper.get('[data-testid="scanjob-start-action"]').trigger('click')
+    await resolveAll()
+    expect(update).toHaveBeenLastCalledWith(11, expect.objectContaining({
+      lookupStatusId: null, lookupParcelIds: [1010, 1011], type: 30
+    }))
+
+    await wrapper.get('#lookupTargetSource').setValue('status')
+    await wrapper.get('#lookupStatusId').setValue('102')
+    await wrapper.vm.$.setupState.onSubmit()
+    await resolveAll()
+    expect(update).toHaveBeenLastCalledWith(11, expect.objectContaining({
+      lookupStatusId: 102, lookupParcelIds: null
+    }))
+  })
+
+  it('freezes the list source and picker while saving before Start', async () => {
+    getById.mockResolvedValue({ ...mockScanjob, status: 10, lookupStatusId: null, lookupParcelIds: [1010] })
+    let finishSave
+    update.mockImplementationOnce(() => new Promise(resolve => { finishSave = resolve }))
+    start.mockRejectedValueOnce(new Error('Не удалось запустить сканирование'))
+    const wrapper = mountComponent({ mode: 'edit', scanjobId: 11 })
+    await resolveAll()
+    await wrapper.get('[data-testid="scanjob-start-action"]').trigger('click')
+
+    expect(wrapper.get('#lookupTargetSource').element.disabled).toBe(true)
+    expect(wrapper.get('#lookupParcelIds').element.disabled).toBe(true)
+    finishSave(true)
+    await resolveAll()
+    expect(wrapper.get('#lookupParcelIds').element.disabled).toBe(false)
+  })
+
   it('limits operations to lookup for GTC registers', async () => {
     getRegisterById.mockImplementation(async () => {
       registerItem = { id: 22, registerType: GTC_COMPANY_ID }
@@ -497,6 +570,9 @@ describe('Scanjob_Settings.vue', () => {
     expect(options[0].text()).toBe('Поиск')
     expect(wrapper.find('#operation').element.value).toBe('30')
     expect(wrapper.get('#name').element.value).toBe('Поиск для сделки ABC-1')
+    await wrapper.vm.$.setupState.onSubmit()
+    expect(wrapper.text()).toContain('Задания сканирования недоступны для реестров GTC')
+    expect(create).not.toHaveBeenCalled()
   })
 
 

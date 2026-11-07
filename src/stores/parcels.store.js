@@ -619,8 +619,9 @@ export const useParcelsStore = defineStore('parcels', () => {
     return result ?? true
   }
 
-  async function resolveStatusSelection(registerId, numbers, lookupBy = 'number') {
-    return await fetchWrapper.post(`${baseUrl}/status-selection/resolve`, {
+  async function resolveStatusSelection(registerId, numbers, lookupBy = 'number', purpose = null) {
+    const query = purpose === 'lookup' ? '?purpose=lookup' : ''
+    return await fetchWrapper.post(`${baseUrl}/status-selection/resolve${query}`, {
       registerId,
       numbers,
       ...(lookupBy === 'number' ? {} : { lookupBy })

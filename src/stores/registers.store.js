@@ -505,8 +505,10 @@ export const useRegistersStore = defineStore('registers', () => {
     const passportCheckStateWatermark = livePassportCheckStateArrival
     item.value = { loading: true }
     try {
-      await ensureOpsLoaded()
-      const response = await fetchWrapper.get(`${baseUrl}/${id}`)
+      const [, response] = await Promise.all([
+        ensureOpsLoaded(),
+        fetchWrapper.get(`${baseUrl}/${id}`)
+      ])
       const register = mergeLivePassportCheckState(response, passportCheckStateWatermark)
       setDestinationField(register)
       if (revision !== (projectionRevisions.get(Number(id)) ?? 0)) register.derivedTotalsPending = true

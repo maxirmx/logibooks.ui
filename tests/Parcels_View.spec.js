@@ -143,7 +143,36 @@ describe('Parcels_View', () => {
       query: {}
     }
     const { fetchWrapper } = await import('@/helpers/fetch.wrapper.js')
-    fetchWrapper.get.mockImplementation(mockGet)
+    fetchWrapper.get.mockImplementation(url => url.endsWith('/registers/ops')
+      ? Promise.resolve({ customsProcedures: [], transportationTypes: [], incoterms: [{}] })
+      : mockGet(url))
+  })
+
+  it('loads a single register snapshot and publishes it to the shared store', async () => {
+    const { useRegistersStore } = await import('@/stores/registers.store.js')
+    const register = { id: 1, registerType: WBR_COMPANY_ID, derivedTotalsPending: true }
+    mockGet.mockResolvedValue(register)
+    const wrapper = mount(ParcelsView, { props: { id: 1 } })
+    await flushPromises()
+
+    expect(mockGet).toHaveBeenCalledExactlyOnceWith(expect.stringMatching(/\/registers\/1$/))
+    expect(useRegistersStore().item).toMatchObject(register)
+    expect(wrapper.get('[data-test="wbr-list"]').exists()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('stops refreshing the register list after leaving the page', async () => {
+    mockGet.mockResolvedValue({ id: 1, registerType: WBR_COMPANY_ID })
+    const wrapper = mount(ParcelsView, { props: { id: 1 } })
+    await flushPromises()
+    const parcels = useParcelsStore()
+    mockGet.mockResolvedValueOnce({ items: [], pagination: {} })
+    await parcels.getAll(1)
+    wrapper.unmount()
+
+    mockGet.mockClear()
+    await parcels.refreshVisibleDerived(1)
+    expect(mockGet).not.toHaveBeenCalled()
   })
 
   it('offers owned filters and retains the chosen filter across registers and modes', async () => {
@@ -318,7 +347,9 @@ describe('Parcels_View', () => {
     }
   })
 
-  it.each([['register', true]])('ignores a live refresh after %s changes (rejected=%s)', async (context, rejected) => {
+  it.each(['register', 'mode', 'account', 'unmount'].flatMap(context =>
+    [false, true].map(rejected => [context, rejected])
+  ))('ignores a live refresh after %s changes (rejected=%s)', async (context, rejected) => {
     vi.useFakeTimers()
     const { useAuthStore } = await import('@/stores/auth.store.js')
     const { useParcelsStore } = await import('@/stores/parcels.store.js')
@@ -403,13 +434,13 @@ describe('Parcels_View', () => {
     const { useRegistersStore } = await import('@/stores/registers.store.js')
     const { useAlertStore } = await import('@/stores/alert.store.js')
     vi.spyOn(useParcelsStore(), 'getAll').mockResolvedValue({ items: [], pagination: { totalCount: 0 } })
+    mockGet.mockResolvedValue({ registerType: WBR_COMPANY_ID })
+    const wrapper = mount(ParcelsView, { props: { id: 17 } })
+    await flushPromises()
     let rejectRegister
     vi.spyOn(useRegistersStore(), 'getById').mockImplementationOnce(() => new Promise((_resolve, reject) => {
       rejectRegister = reject
     }))
-    mockGet.mockResolvedValue({ registerType: WBR_COMPANY_ID })
-    const wrapper = mount(ParcelsView, { props: { id: 17 } })
-    await flushPromises()
     const refresh = subscriptionOptions[0].refresh()
     const failure = new Error('Register resync failed')
     const result = context === 'current'
@@ -467,7 +498,7 @@ describe('Parcels_View', () => {
     expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain(expectedMessage)
     expect(wrapper.get('[data-testid="split-recovery"]').text()).toBe('20')
     expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-
+    wrapper.unmount()
   })
 
   it('reports a box-scope clearing failure and keeps the current route intact', async () => {

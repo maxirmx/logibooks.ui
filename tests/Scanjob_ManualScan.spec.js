@@ -71,6 +71,35 @@ describe('monitor manual selection with the real Vuetify table', () => {
     expect(wrapper.get('[role="status"]').text()).toContain('BOX-8 — Откройте коробку и проверьте посылки — P-11')
   })
 
+  it('keeps the selected parcel on the sorted page while scanning and refreshing', async () => {
+    let finish
+    scanParcel.mockImplementationOnce(() => new Promise(resolve => { finish = resolve }))
+    useAuthStore().scanjobmonitor_parcels_page = 2
+    render()
+    await flushPromises()
+    const [row, nextRow] = wrapper.findAll('tbody tr')
+    expect(row.text()).toContain('C')
+    expect(nextRow.text()).toContain('B')
+    const scrollIntoView = vi.fn()
+    row.element.scrollIntoView = scrollIntoView
+    await row.trigger('click')
+    await row.get('[data-testid="manual-parcel-scan"]').trigger('click')
+    expect(wrapper.get('[data-testid="scanjob-monitor-parcels-table"]').attributes('inert')).toBeDefined()
+    expect(wrapper.findAll('tbody tr').map(item => item.element)).toEqual([row.element, nextRow.element])
+    expect(row.classes()).toContain('selected-parcel-row')
+    expect(scanParcel).toHaveBeenCalledExactlyOnceWith(7, 3)
+
+    snapshotRows.value = rows.map(parcel => ({ ...parcel }))
+    finish({ parcelCount: 1, scanSource: 10 })
+    await flushPromises()
+    expect(useAuthStore().scanjobmonitor_parcels_page).toBe(2)
+    expect(wrapper.get('tbody tr.selected-parcel-row').element).toBe(row.element)
+    const message = wrapper.get('[data-testid="page-alert-region"]')
+    expect(message.get('[role="status"]').text()).toContain('Отсканировано посылок: 1')
+    expect(message.classes()).toEqual(['page-alert-region'])
+    expect(scrollIntoView).not.toHaveBeenCalled()
+  })
+
   it('right-clicks a multi-selection and disables row and footer actions until scanning completes', async () => {
     let accept, finish
     confirm.mockImplementationOnce(() => new Promise(resolve => { accept = resolve }))

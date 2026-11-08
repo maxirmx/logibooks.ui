@@ -302,6 +302,11 @@ describe('OzonParcels_List.vue – multi-select', () => {
     await resolveAll()
   })
 
+  it('uses the register snapshot already loaded by the page', () => {
+    expect(mockGetRegister).not.toHaveBeenCalled()
+    expect(wrapper.vm.registerLoading).toBe(false)
+  })
+
   it('shows saved group amounts with the shared action icon style in both clickable charge cells', async () => {
     wrapper.unmount()
     mockRegisterItem.value = { dealNumber: 'D-1', customsFee: 1231, customsDuty: 800 }

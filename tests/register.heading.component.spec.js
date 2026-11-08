@@ -19,7 +19,7 @@ vi.mock('@/helpers/parcel.stats.helpers.js', () => ({
 }))
 
 describe('RegisterHeadingWithStats', () => {
-  it('shows initial stats then refreshes with updated stats', async () => {
+  it('renders the supplied snapshot and its updates without fetching a register', async () => {
     setActivePinia(createPinia())
     const store = useRegistersStore()
     store.item = {
@@ -29,18 +29,10 @@ describe('RegisterHeadingWithStats', () => {
       placesTotal: 20
     }
 
-    const getByIdSpy = vi.spyOn(store, 'getById').mockImplementation(async () => {
-      store.item = {
-        id: 1,
-        parcelsByCheckStatus: { 1: 2, 2: 5 },
-        parcelsTotal: 12,
-        placesTotal: 25
-      }
-    })
+    const getByIdSpy = vi.spyOn(store, 'getById')
 
     const wrapper = mount(RegisterHeadingWithStats, {
       props: {
-        registerId: 1,
         register: store.item,
         heading: 'Heading Text'
       },
@@ -61,11 +53,10 @@ describe('RegisterHeadingWithStats', () => {
     expect(wrapper.text()).toContain('----------------')
     expect(wrapper.text()).toContain('STAT:{"1":2}')
 
-    // Wait microtasks for refresh
-    await Promise.resolve()
-    await Promise.resolve()
-
-    expect(getByIdSpy).toHaveBeenCalled()
+    await wrapper.setProps({ register: {
+      id: 1, parcelsByCheckStatus: { 1: 2, 2: 5 }, parcelsTotal: 12, placesTotal: 25
+    } })
+    expect(getByIdSpy).not.toHaveBeenCalled()
     // Updated stats
     expect(wrapper.text()).toContain('Всего товаров: 12')
     expect(wrapper.text()).toContain('Всего посылок: 25')

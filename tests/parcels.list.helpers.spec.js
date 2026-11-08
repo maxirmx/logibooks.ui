@@ -274,7 +274,7 @@ describe('Parcels List Helpers', () => {
 
       await expect(updateParcelTnVed(item, feacnCode, mockStore, mockLoadOrders)).resolves.toBe(true)
 
-      expect(mockStore.update).toHaveBeenCalledWith(123, { ...item, tnVed: 'new-code' })
+      expect(mockStore.update).toHaveBeenCalledWith(123, { ...item, tnVed: 'new-code' }, { refreshDetail: false })
       expect(mockLoadOrders).not.toHaveBeenCalled()
     })
 

@@ -133,6 +133,126 @@ describe('parcels store', () => {
     wrapper.unmount()
   })
 
+  it.each([false, true])('keeps the new list loading after an older request settles (rejected=%s)', async rejected => {
+    const store = useParcelsStore()
+    const old = Promise.withResolvers()
+    const current = Promise.withResolvers()
+    const failure = new Error('Старая страница недоступна')
+    fetchWrapper.get.mockReset().mockReturnValueOnce(old.promise).mockReturnValueOnce(current.promise)
+    const previous = store.getAll(1)
+    const observedPrevious = rejected ? expect(previous).rejects.toBe(failure) : previous
+    store.clearVisibleList()
+    const pending = store.getAll(2)
+    const wrapper = mount({
+      setup: () => ({ store }),
+      template: '<div><span v-if="store.loading" role="status">Загрузка посылок</span><button :disabled="store.loading">Сканировать</button></div>'
+    })
+    try {
+      if (rejected) old.reject(failure)
+      else old.resolve({ items: [{ id: 101 }], pagination: { totalCount: 1 } })
+      await observedPrevious
+      await nextTick()
+      expect(store.loading).toBe(true)
+      expect(wrapper.get('[role="status"]').text()).toBe('Загрузка посылок')
+      expect(wrapper.get('button').element.disabled).toBe(true)
+      expect(store.items).toEqual([])
+      expect(store.error).toBeNull()
+
+      current.resolve({ items: [{ id: 202 }], pagination: { totalCount: 1 } })
+      await pending
+      await nextTick()
+      expect(store.loading).toBe(false)
+      expect(store.items.map(item => item.id)).toEqual([202])
+      expect(wrapper.find('[role="status"]').exists()).toBe(false)
+      expect(wrapper.get('button').element.disabled).toBe(false)
+    } finally {
+      wrapper.unmount()
+    }
+  })
+
+  it.each([false, true])('releases the visible load when a background read supersedes it (rejected=%s)', async rejected => {
+    const store = useParcelsStore()
+    const visible = Promise.withResolvers()
+    const background = Promise.withResolvers()
+    const failure = new Error('Фоновое обновление недоступно')
+    fetchWrapper.get.mockReset().mockReturnValueOnce(visible.promise).mockReturnValueOnce(background.promise)
+    const pending = store.getAll(1)
+    const refresh = store.getAll(1, { updateStore: false })
+    const observedRefresh = rejected ? expect(refresh).rejects.toBe(failure) : refresh
+    expect(store.loading).toBe(true)
+
+    visible.resolve({ items: [{ id: 101 }], pagination: {} })
+    await pending
+    expect(store.loading).toBe(false)
+    expect(store.items).toEqual([])
+
+    if (rejected) background.reject(failure)
+    else background.resolve({ items: [{ id: 202 }], pagination: {} })
+    await observedRefresh
+    expect(store.loading).toBe(false)
+    expect(store.items).toEqual([])
+    expect(store.error).toBe(rejected ? failure : null)
+  })
+
+  it.each([false, true])('releases the current list loading and preserves failure propagation (rejected=%s)', async rejected => {
+    const store = useParcelsStore()
+    const current = Promise.withResolvers()
+    const failure = new Error('Список посылок недоступен')
+    fetchWrapper.get.mockReset().mockReturnValueOnce(current.promise)
+    const pending = store.getAll(1)
+    const observed = rejected ? expect(pending).rejects.toBe(failure) : pending
+    expect(store.loading).toBe(true)
+    if (rejected) current.reject(failure)
+    else current.resolve({ items: [{ id: 101 }], pagination: {} })
+    await observed
+    expect(store.loading).toBe(false)
+    expect(store.error).toBe(rejected ? failure : null)
+  })
+
+  it('presents a current load rejection once and retries the same list', async () => {
+    const store = useParcelsStore()
+    const alerts = useAlertStore()
+    const present = vi.spyOn(alerts, 'error')
+    const isMounted = ref(true)
+    fetchWrapper.get.mockReset().mockRejectedValueOnce(new Error('Список посылок недоступен'))
+      .mockResolvedValueOnce({ items: [{ id: 101 }], pagination: { totalCount: 1 } })
+    const wrapper = mount(PageAlertRegion)
+    try {
+      await loadParcels(12, store, isMounted, alerts)
+      expect(store.loading).toBe(false)
+      expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+      expect(wrapper.get('[role="alert"]').text()).toContain('Список посылок недоступен')
+      expect(present).toHaveBeenCalledOnce()
+
+      await loadParcels(12, store, isMounted, alerts)
+      expect(fetchWrapper.get.mock.calls[1][0]).toBe(fetchWrapper.get.mock.calls[0][0])
+      expect(store.items.map(item => item.id)).toEqual([101])
+      expect(store.loading).toBe(false)
+      expect(store.error).toBeNull()
+      expect(present).toHaveBeenCalledOnce()
+    } finally {
+      wrapper.unmount()
+    }
+  })
+
+  it('does not retry a deleted filter after closing the list', async () => {
+    const store = useParcelsStore()
+    const delayed = Promise.withResolvers()
+    const missing = Object.assign(new Error('Фильтр не найден'), { status: 404 })
+    mockAuthStore.parcels_filter_id = 23
+    fetchWrapper.get.mockReset().mockRejectedValueOnce(missing).mockReturnValueOnce(delayed.promise)
+    const pending = expect(store.getAll(1)).rejects.toBe(missing)
+    await Promise.resolve()
+    expect(fetchWrapper.get).toHaveBeenCalledTimes(2)
+    store.clearVisibleList()
+    delayed.reject(missing)
+    await pending
+
+    expect(mockAuthStore.parcels_filter_id).toBe(23)
+    expect(fetchWrapper.get).toHaveBeenCalledTimes(2)
+    expect(store.error).toBeNull()
+  })
+
   it('fetches data with check status filtering', async () => {
     mockAuthStore.parcels_check_status_sw = 5
 

@@ -365,7 +365,7 @@ export async function updateParcelTnVed(item, feacnCode, parcelsStore, loadOrder
   const alertStore = useAlertStore()
   try {
     const updatedItem = { ...item, tnVed: feacnCode }
-    await parcelsStore.update(item.id, updatedItem)
+    await parcelsStore.update(item.id, updatedItem, { refreshDetail: false })
     return true
   } catch (error) {
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при обновлении ТН ВЭД'

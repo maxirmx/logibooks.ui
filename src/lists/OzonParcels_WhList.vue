@@ -94,7 +94,7 @@ const onListControlsChange = useParcelBoxScope({
   onChange: () => triggerLoad()
 })
 
-const registerLoading = ref(true)
+const registerLoading = computed(() => Boolean(registersStore.item?.loading))
 const isInitializing = ref(true)
 const isComponentMounted = ref(true)
 const runningAction = ref(false)
@@ -199,17 +199,6 @@ const registerHeading = computed(() => {
   )
 })
 
-async function fetchRegister() {
-  if (!isComponentMounted.value) return
-  try {
-    await registersStore.getById(props.registerId)
-  } finally {
-    if (isComponentMounted.value) {
-      registerLoading.value = false
-    }
-  }
-}
-
 async function loadParcelsWrapper() {
   parcelsLoaded.value = false
   parcelsLoaded.value = await loadParcels(props.registerId, parcelsStore, isComponentMounted, alertStore, {
@@ -297,8 +286,6 @@ async function initializeList() {
 
     await warehousesStore.ensureOpsLoaded()
     if (!isComponentMounted.value) return
-
-    await fetchRegister()
   } catch (error) {
     if (isComponentMounted.value) {
       alertStore.error(error, {
@@ -367,7 +354,6 @@ async function clearParcelDefect(item) {
   <div class="settings table-3 list-with-filters">
     <div class="header-with-actions">
       <RegisterHeadingWithStats
-        :register-id="props.registerId"
         :register="registersStore.item"
         :heading="registerHeading"
       />

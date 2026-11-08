@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application 
 
-import { computed, ref, onMounted, onUnmounted, provide, watch } from 'vue'
+import { computed, ref, onMounted, onBeforeUnmount, provide, watch } from 'vue'
 import OzonParcelsList from '@/lists/OzonParcels_List.vue'
 import OzonParcelsWhList from '@/lists/OzonParcels_WhList.vue'
 import WbrParcelsList from '@/lists/WbrParcels_List.vue'
@@ -14,8 +14,6 @@ import GtcParcelsList from '@/lists/GtcParcels_List.vue'
 import { OZON_COMPANY_ID, WBR_COMPANY_ID, GTC_COMPANY_ID, WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
 import { OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 import { isImportCustomsProcedure } from '@/helpers/customs.procedure.helpers.js'
-import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
-import { apiUrl } from '@/helpers/config.js'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useParcelsStore } from '@/stores/parcels.store.js'
@@ -182,12 +180,13 @@ async function load() {
   const version = ++loadVersion
 const filterSelection = authStore.parcels_filter_id
 cancelPendingFilteredRefresh()
+parcelsStore.clearVisibleList()
 try {
   loading.value = true
   error.value = null
   savedFilters.value = []
   const [loadedRegister, filters] = await Promise.all([
-    fetchWrapper.get(`${apiUrl}/registers/${props.id}`),
+    registersStore.getById(props.id),
     filterStore.getAll()
   ])
   if (!active || version !== loadVersion || filterSelection !== authStore.parcels_filter_id) return
@@ -212,9 +211,10 @@ try {
 onMounted(() => { void load() })
 watch(() => [props.id, props.mode, authStore.user?.id], () => { void load() })
 
-onUnmounted(() => {
+onBeforeUnmount(() => {
   active = false
   cancelPendingFilteredRefresh()
+  parcelsStore.clearVisibleList()
 })
 
 async function clearBoxScope() {

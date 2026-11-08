@@ -88,9 +88,8 @@ it.each([
   null
 ])('shows saved place count %s while a register is pending', async placesTotal => {
   registers.item = { ...serverRegister, parcelsTotal: 3, placesTotal, derivedTotalsPending: true }
-  vi.spyOn(registers, 'getById').mockResolvedValue(undefined)
   const wrapper = mount(RegisterHeadingWithStats, {
-    props: { registerId: 12, register: registers.item, heading: 'Посылки реестра' },
+    props: { register: registers.item, heading: 'Посылки реестра' },
     global: { stubs: {
       'v-tooltip': { template: '<section><slot name="activator" :props="{}" /><slot /></section>' }
     } }

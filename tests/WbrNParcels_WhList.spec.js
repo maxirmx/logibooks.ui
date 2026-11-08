@@ -499,7 +499,7 @@ describe('WbrNParcels_WhList.vue', () => {
     expect(ensureRegisterOpsLoaded).toHaveBeenCalled()
     expect(ensureStatusesLoaded).toHaveBeenCalled()
     expect(ensureWarehouseOpsLoaded).toHaveBeenCalled()
-    expect(getRegisterById).toHaveBeenCalledWith(9)
+    expect(getRegisterById).not.toHaveBeenCalled()
     expect(startParcelExtIdMonitor).toHaveBeenCalledWith(
       9,
       expect.objectContaining({ onChanged: expect.any(Function) })

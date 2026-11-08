@@ -193,6 +193,56 @@ describe('server-owned derived weight projections', () => {
     expect(boxes.boxes[0].weightKg).toBe(2)
   })
 
+  it('refreshes the saved detail without reloading a closed register list', async () => {
+    const parcels = useParcelsStore(), registers = useRegistersStore()
+    registers.item = { ...register }
+    await parcels.getAll(12)
+    parcels.clearVisibleList()
+    await parcels.getById(1)
+    fetchWrapper.get.mockClear()
+    row = parcel({ tnVed: '8471300000', matchesExportFeeCategory: true })
+
+    await parcels.update(1, { tnVed: row.tnVed })
+
+    expect(fetchWrapper.get.mock.calls.map(([url]) => url)).toEqual(['/api/registers/12', '/api/parcels/a/1'])
+    expect(parcels.item).toMatchObject(row)
+  })
+
+  it.each([true, false])('uses the saved list response without a detail read (row remains=%s)', async stays => {
+    const parcels = useParcelsStore(), registers = useRegistersStore()
+    registers.item = { ...register }
+    row = parcel({ tnVed: '1111111111' })
+    await parcels.getAll(12)
+    parcels.item = parcel({ id: 3, customsFee: 100 })
+    fetchWrapper.get.mockClear()
+    const saved = parcel({ id: stays ? 1 : 2, tnVed: '8471300000', matchesExportFeeCategory: true })
+    fetchWrapper.put.mockImplementationOnce(async () => { row = saved })
+
+    await parcels.update(1, { ...row, tnVed: saved.tnVed }, { refreshDetail: false })
+
+    expect(fetchWrapper.get.mock.calls.map(([url]) => url)).toEqual([
+      '/api/registers/12', expect.stringMatching(/^\/api\/parcels\?registerId=12&/)
+    ])
+    expect(parcels.items).toEqual([saved])
+  })
+
+  it('ignores a page refresh that finishes after closing the list', async () => {
+    const parcels = useParcelsStore()
+    row = parcel({ customsFee: 10 })
+    await parcels.getAll(12)
+    parcels.item = parcel({ customsFee: 33 })
+    const delayed = Promise.withResolvers()
+    fetchWrapper.get.mockReturnValueOnce(delayed.promise)
+    const refresh = parcels.refreshVisibleDerived(12)
+    parcels.clearVisibleList()
+    delayed.resolve({ items: [parcel({ customsFee: 20 })], pagination: {} })
+    await refresh
+
+    expect(parcels.items[0].customsFee).toBe(10)
+    expect(parcels.item.customsFee).toBe(33)
+    expect(parcels.loading).toBe(false)
+  })
+
   it('rejects a failed final detail request without overwriting the refreshed list', async () => {
     const parcels = useParcelsStore(), registers = useRegistersStore()
     parcels.item = parcel()

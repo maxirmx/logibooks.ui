@@ -120,6 +120,8 @@ export const useParcelsStore = defineStore('parcels', () => {
   const itemError = ref(null)
   let itemRequestSequence = 0
   let listRequestSequence = 0
+  // Background reads supersede data without taking ownership of the visible loading flag.
+  let listLoadingRequestSequence = 0
   let projectionRevision = 0
   const invalidatedRegisters = new Map()
   const isProjectionCurrent = (registerId, revision) => (invalidatedRegisters.get(Number(registerId)) ?? 0) <= revision
@@ -161,9 +163,17 @@ export const useParcelsStore = defineStore('parcels', () => {
     }
   }
 
+  function clearVisibleList() {
+    lastListRequest = null
+    ++listRequestSequence
+    listLoadingRequestSequence = 0
+    loading.value = false
+  }
+
   async function refreshVisibleDerived(registerId) {
     if (lastListRequest && Number(lastListRequest.registerId) === Number(registerId)) {
-      await getAll(registerId, { ...lastListRequest.options, updateStore: true })
+      const result = await getAll(registerId, { ...lastListRequest.options, updateStore: true })
+      if (responseProjectionMetadata.get(result).requestSequence !== listRequestSequence) return
       const current = items.value.find(row => Number(row.id) === Number(item.value?.id))
       if (current && (Object.hasOwn(current, 'customsFee') || Object.hasOwn(current, 'customsDuty'))) {
         item.value = { ...item.value, customsFee: current.customsFee, customsDuty: current.customsDuty,
@@ -273,6 +283,7 @@ export const useParcelsStore = defineStore('parcels', () => {
     const requestedFilterId = authStore.parcels_filter_id
     const checkStatusWatermark = liveCheckStatusArrival
     if (updateStore) {
+      listLoadingRequestSequence = requestSequence
       loading.value = true
     }
     error.value = null
@@ -322,13 +333,14 @@ export const useParcelsStore = defineStore('parcels', () => {
       responseProjectionMetadata.set(result, { revision, requestSequence, registerId })
       return result
     } catch (err) {
-      if ((err?.status ?? err?.response?.status) === 404 && requestedFilterId != null && authStore.parcels_filter_id === requestedFilterId) {
+      if (requestSequence === listRequestSequence && (err?.status ?? err?.response?.status) === 404 &&
+          requestedFilterId != null && authStore.parcels_filter_id === requestedFilterId) {
         const filterId = requestedFilterId
         try {
           await useParcelFiltersStore().getById(filterId)
         } catch (filterError) {
           if ((filterError?.status ?? filterError?.response?.status) !== 404) throw filterError
-          if (authStore.parcels_filter_id === filterId) {
+          if (requestSequence === listRequestSequence && authStore.parcels_filter_id === filterId) {
             const previousSelection = authStore.parcels_filter_id
             authStore.setParcelFilterId(null)
             if (previousSelection !== null && authStore.parcels_filter_id === null) {
@@ -339,10 +351,10 @@ export const useParcelsStore = defineStore('parcels', () => {
           }
         }
       }
-      error.value = err
+      if (requestSequence === listRequestSequence) error.value = err
       throw err
     } finally {
-      if (updateStore) {
+      if (updateStore && listLoadingRequestSequence === requestSequence) {
         loading.value = false
       }
     }
@@ -402,7 +414,7 @@ export const useParcelsStore = defineStore('parcels', () => {
     }
   }
 
-  async function update(id, data) {
+  async function update(id, data, { refreshDetail = true } = {}) {
     const numericId = Number(id)
     const payload = rawWeightPayload(data)
     const originalRegisterId = [item.value, ...items.value].find(p => Number(p?.id) === numericId)?.registerId
@@ -413,7 +425,7 @@ export const useParcelsStore = defineStore('parcels', () => {
       .some(key => Object.hasOwn(payload, key))
     let updatedData = { ...payload }
     if (updatedData.dangerousGoods == null) delete updatedData.dangerousGoods
-    if (affectsAllocation && [item.value, ...items.value].some(p => Number(p?.id) === numericId)) {
+    if (affectsAllocation && (!refreshDetail || [item.value, ...items.value].some(p => Number(p?.id) === numericId))) {
       affectedRegisters.forEach(invalidateDerived)
       const revision = projectionRevision
       if (Object.hasOwn(payload, 'tnVed')) {
@@ -421,10 +433,11 @@ export const useParcelsStore = defineStore('parcels', () => {
           if (Number(parcel?.id) === numericId) parcel.matchesExportFeeCategory = undefined
         }
       }
-      const detailSequence = ++itemRequestSequence
+      const detailSequence = refreshDetail ? ++itemRequestSequence : null
       const checkStatusWatermark = liveCheckStatusArrival
-      // Read the final detail after the refreshed list so an earlier pending snapshot cannot replace it.
       await Promise.all(affectedRegisters.map(refreshDerived))
+      // An inline edit is represented by the refreshed page, even when the row moved out of it.
+      if (!refreshDetail) return response
       const refreshed = await fetchWrapper.get(`${baseUrl}/a/${id}`)
       updatedData = { ...updatedData, ...(refreshed ?? { adjustedWeightKg: null, derivedTotalsPending: true }) }
       if (Object.hasOwn(payload, 'tnVed')) updatedData.matchesExportFeeCategory = refreshed?.matchesExportFeeCategory === true
@@ -442,7 +455,8 @@ export const useParcelsStore = defineStore('parcels', () => {
       items.value[itemIndex] = { ...items.value[itemIndex], ...updatedData }
     }
 
-    if (Number(item.value?.id) !== numericId && affectedRegisters.some(id => Number(id) === Number(item.value?.registerId))) {
+    if (refreshDetail && Number(item.value?.id) !== numericId &&
+        affectedRegisters.some(id => Number(id) === Number(item.value?.registerId))) {
       await refreshCachedCharges(item.value.registerId)
     }
     return response
@@ -683,6 +697,7 @@ export const useParcelsStore = defineStore('parcels', () => {
     updateItems,
     invalidateDerived,
     refreshVisibleDerived,
+    clearVisibleList,
     refreshCachedDetail,
     refreshDerived,
     getByNumber,

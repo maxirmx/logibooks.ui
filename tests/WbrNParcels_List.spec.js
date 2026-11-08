@@ -640,7 +640,7 @@ describe('WbrNParcels_List.vue', () => {
     expect(ensureFeacnOrdersLoaded).toHaveBeenCalled()
     expect(ensureStopWordsLoaded).toHaveBeenCalled()
     expect(ensureKeyWordsLoaded).toHaveBeenCalled()
-    expect(getRegisterById).toHaveBeenCalledWith(7)
+    expect(getRegisterById).not.toHaveBeenCalled()
     expect(updateSelectedParcelIds).toHaveBeenCalled()
     expect(scrollToSelectedItem).toHaveBeenCalled()
   })

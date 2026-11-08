@@ -227,9 +227,7 @@ const pageOptions = computed(() => {
 
 // When max page decreases (e.g. due to filters), clamp current page
 
-const registerFileName = ref('')
-const registerDealNumber = ref('')
-const registerLoading = ref(true)
+const registerLoading = computed(() => Boolean(registersStore.item?.loading))
 const isInitializing = ref(true)
 const parcelsLoaded = useListPageBounds(parcels_page, maxPage, () => !loading.value && !isInitializing.value && !unref(parcelsStore.error))
 const isComponentMounted = ref(true)
@@ -244,19 +242,7 @@ const registerHeading = computed(() => {
 })
 
 async function fetchRegister() {
-  if (!isComponentMounted.value) return
-  try {
-    await registersStore.getById(props.registerId)
-    if (!isComponentMounted.value) return
-    if (registersStore.item && !registersStore.item.error && !registersStore.item.loading) {
-      registerFileName.value = registersStore.item.fileName || ''
-      registerDealNumber.value = registersStore.item.dealNumber || ''
-    }
-  } finally {
-    if (isComponentMounted.value) {
-      registerLoading.value = false
-    }
-  }
+  if (isComponentMounted.value) await registersStore.getById(props.registerId)
 }
 
 async function loadParcelsWrapper() {
@@ -365,8 +351,6 @@ async function initializeList() {
 
     await keyWordsStore.ensureLoaded()
     if (!isComponentMounted.value) return
-
-    await fetchRegister()
 
     if (items.value?.length > 0) {
       updateSelectedParcelIds()
@@ -624,7 +608,6 @@ function getGenericTemplateHeaders() {
   <div class="settings table-3 list-with-filters">
     <div class="header-with-actions">
       <RegisterHeadingWithStats
-        :register-id="props.registerId"
         :register="registersStore.item"
         :heading="registerHeading"
       />

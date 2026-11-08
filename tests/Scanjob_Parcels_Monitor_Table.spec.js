@@ -132,6 +132,7 @@ describe('Scanjob parcel monitor typed tables', () => {
     wrapper.unmount()
   })
   it.each([
+    ScanjobWbrNParcelsMonitorTable,
     ScanjobWbrParcelsMonitorTable,
     ScanjobOzonParcelsMonitorTable
   ])(
@@ -470,6 +471,50 @@ describe('Scanjob parcel monitor typed tables', () => {
       expect(customSort).toHaveBeenCalled()
     } finally {
       wrapper?.unmount()
+    }
+  })
+
+  it('follows parcel identity through selection, sorting and list changes with id fallback', async () => {
+    const scrollIntoView = mockScrollIntoView()
+    scanjobmonitorParcelsPerPage.value = 2
+    scanjobmonitorParcelsSortBy.value = [{ key: 'parcelNumber', order: 'desc' }]
+    const parcels = [1, 2, 3].map(id => ({ id, parcelNumber: `P-00${id}` }))
+    const wrapper = mount(ScanjobParcelsMonitorTable, {
+      props: {
+        headers: [{ title: 'Посылка', key: 'parcelNumber' }],
+        selectedParcelId: 5,
+        parcels
+      },
+      global
+    })
+    try {
+      await flushPromises()
+      expect(scanjobmonitorParcelsPage.value).toBe(1)
+      expect(wrapper.find('.monitor-followed-parcel-row').exists()).toBe(false)
+
+      await wrapper.setProps({ selectedParcelId: 1 })
+      await flushPromises()
+      expect(scanjobmonitorParcelsPage.value).toBe(2)
+      expect(wrapper.get('.monitor-followed-parcel-row').text()).toContain('P-001')
+
+      await wrapper.setProps({ selectedParcelId: 5 })
+      await wrapper.setProps({ parcels: [...parcels, { id: 5, parcelNumber: 'P-005' }] })
+      await flushPromises()
+      expect(scanjobmonitorParcelsPage.value).toBe(1)
+      expect(wrapper.get('.monitor-followed-parcel-row').text()).toContain('P-005')
+
+      scanjobmonitorParcelsSortBy.value = [{ key: 'parcelNumber', order: 'asc' }]
+      await flushPromises()
+      expect(scanjobmonitorParcelsPage.value).toBe(2)
+
+      await wrapper.setProps({ parcels: [{ id: 5, parcelNumber: 'P-000' }, ...parcels] })
+      await flushPromises()
+      expect(scanjobmonitorParcelsPage.value).toBe(1)
+      expect(wrapper.get('.monitor-followed-parcel-row').text()).toContain('P-000')
+      expect(scrollIntoView).toHaveBeenCalled()
+    } finally {
+      wrapper.unmount()
+      scrollIntoView.mockRestore()
     }
   })
 

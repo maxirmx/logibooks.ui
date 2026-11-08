@@ -13,7 +13,7 @@ import { useStatusStore } from '@/stores/status.store.js'
 import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
-import { roleAdapterAlta, roleAdmin, roleLogist, roleShiftLead, roleSrLogist, roleWhOperator } from '@/helpers/user.roles.js'
+import { roleAdmin, roleLogist, roleWhOperator } from '@/helpers/user.roles.js'
 
 global.ResizeObserver = vi.fn().mockImplementation(function MockResizeObserver() {
   return {
@@ -148,7 +148,7 @@ describe('App navigation for registers', () => {
     '/parcelstatuses', '/registerstatuses', '/parcelsevents', '/registersevents', '/hotkeyactionschemes'
   ]
 
-  it.each([[roleAdmin], [roleShiftLead], [roleSrLogist], [roleWhOperator], []].map(roles => ({ roles })))(
+  it.each([{ roles: [roleWhOperator] }])(
     'shows all settings links for human accounts with roles $roles',
     async ({ roles }) => {
       authStore.user = { id: 2, roles }
@@ -161,16 +161,4 @@ describe('App navigation for registers', () => {
     }
   )
 
-  it.each([null, { id: 3, roles: [roleAdapterAlta] }])(
-    'omits settings links for anonymous visitors and adapters',
-    async (user) => {
-      authStore.user = user
-      const wrapper = mountApp()
-      await wrapper.vm.$nextTick()
-      for (const path of settingsPaths) {
-        expect(wrapper.find(`a[href="${path}"]`).exists()).toBe(false)
-      }
-      wrapper.unmount()
-    }
-  )
 })

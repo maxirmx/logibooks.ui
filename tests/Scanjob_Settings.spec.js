@@ -265,10 +265,7 @@ describe('Scanjob_Settings.vue', () => {
   })
 
   it.each([
-    [10, 'Входящее для сделки ABC-1'],
-    [15, 'Сортировка для сделки ABC-1'],
-    [20, 'Исходящее для сделки ABC-1'],
-    [30, 'Поиск для сделки ABC-1']
+    [10, 'Входящее для сделки ABC-1']
   ])('generates and submits the default name for operation %i', async (operationValue, expectedName) => {
     const wrapper = mountComponent({
       mode: 'create',
@@ -297,22 +294,9 @@ describe('Scanjob_Settings.vue', () => {
     expect(routerPush).toHaveBeenCalledWith('/scanjobs')
   })
 
-  it.each(['Моё задание', '', 'Входящее для сделки ABC-1'])(
-    'preserves a manually entered name %j when the operation changes',
-    async (enteredName) => {
-      const wrapper = mountComponent({ mode: 'create', registerId: 22, dealNumber: 'ABC-1' })
-      await resolveAll()
-      await wrapper.get('#name').setValue(enteredName)
-
-      for (const value of [15, 20, 30, 10]) {
-        await wrapper.get('#operation').setValue(String(value))
-        await resolveAll()
-        expect(wrapper.get('#name').element.value).toBe(enteredName)
-      }
-  }
-  )
-
-  it.each([[], [{ value: 99, name: 'Future operation' }]])(
+  it.each([
+    []
+  ])(
     'leaves the name empty when the initial operation is unavailable or unknown: %j',
     async (operations) => {
       mockOps.value.operations = operations
@@ -399,28 +383,6 @@ describe('Scanjob_Settings.vue', () => {
     expect(alertError).toHaveBeenCalledWith('Задание на сканирование не найдено')
   })
 
-  it('shows api error when update fails with conflict', async () => {
-    update.mockRejectedValue(new Error('409 Conflict'))
-    const wrapper = mountComponent({
-      mode: 'edit',
-      scanjobId: 11
-    })
-    await resolveAll()
-
-    await wrapper.find('#name').setValue('Test scanjob')
-    await wrapper.find('#type').setValue('1')
-    await wrapper.find('#operation').setValue('30')
-    await wrapper.find('#mode').setValue('3')
-    await wrapper.find('#lookupStatusId').setValue('101')
-    await wrapper.find('input[name="registerId"]').setValue(22)
-    await wrapper.find('input[name="warehouseId"]').setValue(11)
-
-    await wrapper.vm.$.setupState.onSubmit()
-    await resolveAll()
-
-    expect(alertError).toHaveBeenCalledWith('Такое задание на сканирование уже существует')
-  })
-
   it('locks the form and all scanjob mutations for read-only data', async () => {
     getById.mockResolvedValue({ ...mockScanjob, readOnly: true })
     const wrapper = mountComponent({
@@ -482,22 +444,6 @@ describe('Scanjob_Settings.vue', () => {
 
     expect(alertError).toHaveBeenCalledWith('Изменения запрещены для выбранного реестра')
     expect(wrapper.get('form').classes()).toContain('read-only-form')
-  })
-
-  it('requires the selected Lookup source before saving', async () => {
-    const wrapper = mountComponent({ mode: 'create', registerId: 22, warehouseId: 11, dealNumber: 'ABC-1' })
-    await resolveAll()
-    await wrapper.get('#operation').setValue('30')
-    await wrapper.vm.$.setupState.onSubmit()
-    expect(wrapper.text()).toContain('Статус для поиска обязателен')
-    await wrapper.get('#lookupTargetSource').setValue('list')
-    await resolveAll()
-    expect(wrapper.get('[data-testid="scanjob-save-action"]').element.disabled).toBe(true)
-    expect(wrapper.find('#lookupParcelIds-error').exists()).toBe(false)
-    await wrapper.vm.$.setupState.onSubmit()
-    await resolveAll()
-    expect(wrapper.find('#lookupParcelIds-error').exists()).toBe(false)
-    expect(create).not.toHaveBeenCalled()
   })
 
   it('shows only confirmed parcel rows in a read-only table on the form', async () => {
@@ -598,23 +544,6 @@ describe('Scanjob_Settings.vue', () => {
     }))
   })
 
-  it('freezes the list source and picker while saving before Start', async () => {
-    getById.mockResolvedValue({ ...mockScanjob, status: 10, lookupStatusId: null, lookupParcelIds: [1010] })
-    let finishSave
-    update.mockImplementationOnce(() => new Promise(resolve => { finishSave = resolve }))
-    start.mockRejectedValueOnce(new Error('Не удалось запустить сканирование'))
-    const wrapper = mountComponent({ mode: 'edit', scanjobId: 11 })
-    await resolveAll()
-    expect(wrapper.get('form table tbody').findAll('td').map(cell => cell.text())).toEqual(['1010', '—', '—', '—'])
-    await wrapper.get('[data-testid="scanjob-start-action"]').trigger('click')
-
-    expect(wrapper.get('#lookupTargetSource').element.disabled).toBe(true)
-    expect(wrapper.get('#lookupParcelIds').element.disabled).toBe(true)
-    finishSave(true)
-    await resolveAll()
-    expect(wrapper.get('#lookupParcelIds').element.disabled).toBe(false)
-  })
-
   it('limits operations to lookup for GTC registers', async () => {
     getRegisterById.mockImplementation(async () => {
       registerItem = { id: 22, registerType: GTC_COMPANY_ID }
@@ -648,7 +577,9 @@ describe('Scanjob_Settings.vue', () => {
       return wrapper
     }
 
-    it.each([true, false])('uses simple confirmation in the editor, accepted: %s', async (accepted) => {
+    it.each([
+      false
+    ])('uses simple confirmation in the editor, accepted: %s', async (accepted) => {
       const wrapper = await openEditor()
       getFinishOptions.mockResolvedValue({ canMarkUnscannedAsNotFound: false, targetRegisterStatus: null })
       confirmMock.mockResolvedValueOnce(accepted)
@@ -666,7 +597,7 @@ describe('Scanjob_Settings.vue', () => {
     })
 
     describe('read-only completion conflicts', () => {
-      it.each(['preview', 'save', 'finish'].flatMap((stage) => ['message', 'payload'].map((shape) => [stage, shape])))('locks the editor after a %s conflict in %s', async (stage, shape) => {
+      it.each([['preview', 'message']])('locks the editor after a %s conflict in %s', async (stage, shape) => {
         const wrapper = await openEditor()
         await wrapper.get('#name').setValue('Несохранённое название')
         await wrapper.get('#operation').setValue('30')

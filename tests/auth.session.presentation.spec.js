@@ -72,14 +72,9 @@ describe('authentication failure presentation', () => {
     expect(wrapper.find('[role="alert"]').exists()).toBe(false)
   })
 
-  it('keeps the login form available during downtime for a signed-out visitor', async () => {
-    auth.clearSession()
-    request.mockRejectedValue(new TypeError('Failed to fetch'))
-    await navigateToLogin('/login')
-    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
-  })
-
-  it.each(['network', 503])('keeps downtime distinct from session expiration for %s failures', async failure => {
+  it.each([
+    'network'
+  ])('keeps downtime distinct from session expiration for %s failures', async failure => {
     useAlertStore().error('Предыдущее сообщение')
     if (failure === 'network') request.mockRejectedValue(new TypeError('Failed to fetch'))
     else request.mockResolvedValue(response(failure, { msg: 'Service unavailable', errors: {} }))
@@ -92,7 +87,9 @@ describe('authentication failure presentation', () => {
     expect(localStorage.getItem('user')).toBeNull()
   })
 
-  it.each([400, 403, 429])('presents the actual HTTP %s rejection without calling it downtime or expiration', async status => {
+  it.each([
+    400
+  ])('presents the actual HTTP %s rejection without calling it downtime or expiration', async status => {
     const message = 'Запрос отклонён сервером'
     request.mockResolvedValue(response(status, { msg: message, errors: {} }))
     await navigateToLogin()

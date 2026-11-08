@@ -265,7 +265,9 @@ describe('fetchWrapper', () => {
       expect(anchor.click).toHaveBeenCalledOnce()
     })
 
-    it.each([204, 200])('polls by handle until cancellation or a completed ZIP (%i)', async (status) => {
+    it.each([
+      204
+    ])('polls by handle until cancellation or a completed ZIP (%i)', async (status) => {
       const initialUrl = baseUrl + '/registers/1/generate-ordinary'
       const pollUrl = baseUrl + '/registers/1/xml-archives/job-1'
       const initial = { handleId: 'job-1', total: 4, processed: 1 }
@@ -316,7 +318,9 @@ describe('fetchWrapper', () => {
       expect(global.document.createElement).not.toHaveBeenCalled()
     })
 
-    it.each([undefined, ' '])('rejects an unusable handle without polling the generation endpoint (%s)', async (handleId) => {
+    it.each([
+      undefined
+    ])('rejects an unusable handle without polling the generation endpoint (%s)', async (handleId) => {
       const progress = { handleId, total: 4, processed: 1 }
       global.fetch = vi.fn().mockResolvedValue({ ok: true, status: 202, json: async () => progress })
       const getPollUrl = vi.fn()

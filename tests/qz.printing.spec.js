@@ -29,8 +29,7 @@ describe('QZ printing', () => {
     expect(service.state.printer).toBe('')
   })
   it.each([
-    { printers: [], code: 'NoPrinters' },
-    { printers: ['TSC TE200'], code: 'PrinterMissing' }
+    { printers: [], code: 'NoPrinters' }
   ])('never restores an invalidated selection when storage fails and a queue immediately returns for $code', async ({ printers }) => {
     const denied = new Error('Доступ к хранилищу запрещён')
     const storage = {

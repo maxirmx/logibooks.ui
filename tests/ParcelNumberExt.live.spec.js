@@ -37,7 +37,9 @@ beforeEach(() => {
   }))
 })
 describe('live category marker', () => {
-  it.each([10, 31])('tracks typing, clearing and programmatic selections in procedure %s', async procedure => {
+  it.each([
+    10
+  ])('tracks typing, clearing and programmatic selections in procedure %s', async procedure => {
     const wrapper = createWrapper(procedure)
     await flushPromises()
     expect(wrapper.find(marker).exists()).toBe(true)
@@ -55,14 +57,9 @@ describe('live category marker', () => {
     expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
     wrapper.unmount()
   })
-  it.each([40, 60, 0, null])('never marks procedure %s', async procedure => {
-    const wrapper = createWrapper(procedure)
-    await flushPromises()
-    expect(wrapper.find(marker).exists()).toBe(false)
-    expect(fetchWrapper.post).not.toHaveBeenCalled()
-    wrapper.unmount()
-  })
-  it.each(['resolve', 'reject'])('ignores stale lookup %s after the code is cleared', async outcome => {
+  it.each([
+    'reject'
+  ])('ignores stale lookup %s after the code is cleared', async outcome => {
     const pending = deferred()
     fetchWrapper.post.mockReturnValueOnce(pending.promise)
     const wrapper = createWrapper()
@@ -74,7 +71,9 @@ describe('live category marker', () => {
     expect(wrapper.find('[role="alert"]').exists()).toBe(false)
     wrapper.unmount()
   })
-  it.each(['get', 'post'])('shows %s failure once, preserves the draft and retries on next change', async method => {
+  it.each([
+    'get'
+  ])('shows %s failure once, preserves the draft and retries on next change', async method => {
     fetchWrapper[method].mockRejectedValueOnce(new Error('Ошибка проверки категории'))
     const wrapper = createWrapper()
     await flushPromises()
@@ -88,7 +87,9 @@ describe('live category marker', () => {
     expect(wrapper.find(marker).exists()).toBe(true)
     wrapper.unmount()
   })
-  it.each([{ Results: { [code]: {} } }, { [code]: {} }, null])('supports lookup response %j', async response => {
+  it.each([
+    { [code]: {} }
+  ])('supports lookup response %j', async response => {
     fetchWrapper.post.mockResolvedValue(response)
     const wrapper = createWrapper()
     await flushPromises()

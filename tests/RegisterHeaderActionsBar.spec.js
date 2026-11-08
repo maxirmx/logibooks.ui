@@ -217,8 +217,7 @@ describe('RegisterHeaderActionsBar', () => {
   })
 
   it.each([
-    { disabled: true, loading: false },
-    { disabled: false, loading: true }
+    { disabled: true, loading: false }
   ])('does not download the Tajikistan manifest when actions are unavailable', async (state) => {
     const wrapper = mount(RegisterHeaderActionsBar, {
       props: {

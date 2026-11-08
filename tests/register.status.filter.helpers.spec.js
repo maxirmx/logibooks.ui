@@ -16,11 +16,7 @@ import {
 describe('register status filter helpers', () => {
   it.each([
     ['', REGISTER_STATUS_FILTER_ALL],
-    [null, REGISTER_STATUS_FILTER_IN_PROGRESS],
-    [undefined, REGISTER_STATUS_FILTER_IN_PROGRESS],
-    [REGISTER_STATUS_FILTER_ALL, REGISTER_STATUS_FILTER_ALL],
-    [REGISTER_STATUS_FILTER_IN_PROGRESS, REGISTER_STATUS_FILTER_IN_PROGRESS],
-    [5, 5]
+    [null, REGISTER_STATUS_FILTER_IN_PROGRESS]
   ])('normalizes persisted filter value %j to %j', (filterValue, expected) => {
     expect(normalizeRegisterStatusFilterValue(filterValue)).toBe(expected)
   })

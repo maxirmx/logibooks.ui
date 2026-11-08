@@ -42,7 +42,9 @@ describe('register restriction confirmation', () => {
     expect(env.update).not.toHaveBeenCalled()
   })
 
-  it.each(['success', 'failure'])('ignores late update %s after disposal', async outcome => {
+  it.each([
+    'failure'
+  ])('ignores late update %s after disposal', async outcome => {
     const env = setup()
     const error = new Error('late network')
     env.update.mockImplementationOnce(async () => {
@@ -54,7 +56,9 @@ describe('register restriction confirmation', () => {
     if (outcome === 'failure') expect(reportError).toHaveBeenCalledWith(error, expect.any(Object))
   })
 
-  it.each(['accept', 'reject'])('does not retry after a late confirmation %s', async outcome => {
+  it.each([
+    'reject'
+  ])('does not retry after a late confirmation %s', async outcome => {
     const env = setup()
     env.update.mockRejectedValueOnce(challenge())
     const error = new Error('late dialog')

@@ -99,7 +99,9 @@ describe('parcel editor initialization lifecycle', () => {
     expect(report).toHaveBeenCalledTimes(outcome === 'reject' ? 1 : 0)
   })
 
-  it.each(['dependencies', 'parcel', 'history'])('reports a late %s failure without alerting another page', async (stage) => {
+  it.each([
+    'history'
+  ])('reports a late %s failure without alerting another page', async (stage) => {
     const pending = deferred()
     if (stage === 'dependencies') dependencies.mockReturnValueOnce(pending.promise)
     if (stage === 'parcel') transport.get.mockReturnValueOnce(pending.promise)

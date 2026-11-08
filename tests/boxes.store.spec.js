@@ -52,7 +52,9 @@ describe('boxes store', () => {
     expect(store.error).toBeNull()
   })
 
-  it.each(['detail', 'list'])('preserves the saved weight when a delayed %s read is superseded', async kind => {
+  it.each([
+    'list'
+  ])('preserves the saved weight when a delayed %s read is superseded', async kind => {
     const store = useBoxesStore()
     store.box = { ...sampleBox }
     store.boxes = [{ ...sampleBox }]

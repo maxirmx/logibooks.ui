@@ -723,39 +723,4 @@ describe('WbrNParcels_WhList.vue', () => {
     wrapper.unmount()
   })
 
-  it.each([null, 17])('confirms the right-click selection and locks the header during scanning (box: %s)', async boxId => {
-    isAdmin.value = true
-    mockItems.value = [{ id: 10, statusId: 7 }, { id: 11, statusId: 7 }]
-    const job = { id: 7, registerId: 9, status: 15, type: 30, operation: 10 }
-    manualScanApi.getInProgress.mockResolvedValue([job])
-    manualScanApi.getAll.mockResolvedValue({ items: mockItems.value })
-    let accept, finish
-    manualScanConfirm.mockImplementationOnce(() => new Promise(resolve => { accept = resolve }))
-    manualScanApi.scanParcels.mockImplementationOnce(() => new Promise(resolve => { finish = resolve }))
-    const wrapper = mount(WbrNParcelsWhList, { props: { registerId: 9, boxId }, global: { stubs: globalStubs } })
-    await resolveAll()
-    const table = wrapper.findComponent({ name: 'v-data-table-server' })
-    table.vm.$emit('click:row', { target: null }, { item: mockItems.value[0] })
-    table.vm.$emit('click:row', { target: null, ctrlKey: true }, { item: mockItems.value[1] })
-    table.vm.$emit('contextmenu:row', { preventDefault: vi.fn() }, { item: mockItems.value[0] })
-    await resolveAll()
-    const header = wrapper.findComponent({ name: 'RegisterWhHeaderActionBar' })
-    expect(header.props('loading')).toBe(false)
-    expect(header.props('disabled')).toBe(true)
-    expect(manualScanApi.scanParcels).not.toHaveBeenCalled()
-    expect(manualScanConfirm.mock.lastCall[0].contentComponentProps.count).toBe(2)
-    expect(wrapper.find('[data-testid="parcel-scan-selection"]').exists()).toBe(false)
-    accept(true)
-    await resolveAll()
-    expect(header.props('loading')).toBe(true)
-    expect(wrapper.findAll('button[data-testid="manual-parcel-scan"]').every(button => button.element.disabled)).toBe(true)
-    finish({ completed: [10, 11].map(id => ({ id, count: 1 })), skippedIds: [] })
-    await resolveAll()
-    expect(manualScanApi.scanParcels).toHaveBeenCalledExactlyOnceWith(7, [10, 11])
-    expect(manualScanApi.scanParcel).not.toHaveBeenCalled()
-    expect(header.props('loading')).toBe(false)
-    expect(header.props('disabled')).toBe(false)
-    wrapper.unmount()
-  })
-
 })

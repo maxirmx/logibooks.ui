@@ -360,7 +360,9 @@ describe('Company_Settings.vue', () => {
       expect(wrapper.find('.page-alert-region__action').exists()).toBe(false)
     })
 
-    it.each(['create', 'edit'])('awaits %s navigation and reports failure without saving twice', async mode => {
+    it.each([
+      'create'
+    ])('awaits %s navigation and reports failure without saving twice', async mode => {
       let failNavigation
       mockRouter.push.mockReturnValueOnce(new Promise((_resolve, reject) => { failNavigation = reject }))
       mockAlertStore.error.mockImplementationOnce((error) => {

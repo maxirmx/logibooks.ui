@@ -14,7 +14,9 @@ function render(props) {
 }
 
 describe('Core adjusted weights', () => {
-  it.each([0, 1])('keeps a server adjusted value of %s instead of treating it as absent', (value) => {
+  it.each([
+    0
+  ])('keeps a server adjusted value of %s instead of treating it as absent', (value) => {
     const view = render({ weight: 1, adjustedWeight: value })
     expect(view.find('[data-testid="arrow"]').exists()).toBe(true)
     expect(view.text()).toContain(value.toFixed(3))

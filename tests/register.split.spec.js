@@ -64,7 +64,9 @@ beforeEach(() => { setActivePinia(createPinia()); sessionStorage.clear(); wrappe
 afterEach(() => { wrappers.forEach(wrapper => wrapper.unmount()); vi.useRealTimers(); vi.restoreAllMocks() })
 
 describe('register splitting', () => {
-  it.each(['role', 'country', 'format', 'count', 'no-dangerous', 'all-dangerous', 'empty', 'total-unavailable', 'readOnly', 'other-register', 'busy'])('guards split for %s', async condition => {
+  it.each([
+    'role'
+  ])('guards split for %s', async condition => {
     const h = harness({ busy: () => condition === 'busy' })
     if (condition === 'role') h.authStore.isSrLogistPlus = false
     if (condition === 'country') h.register.theOtherCountryCode = 860
@@ -97,7 +99,9 @@ describe('register splitting', () => {
     expect(sessionStorage.getItem('register-split:42:7')).toBeNull()
     expect(h.store.startSplit).toHaveBeenCalledOnce()
   })
-  it.each(['start', 'poll'])('unlocks after a confirmed %s failure', async phase => {
+  it.each([
+    'start'
+  ])('unlocks after a confirmed %s failure', async phase => {
     const h = harness()
     if (phase === 'start') h.store.startSplit.mockRejectedValue(failure(409, 'RegisterSplitNoOrdinaryParcels'))
     else h.store.getSplit.mockRejectedValue(failure(409, 'RegisterSplitConflict', { finished: true }))

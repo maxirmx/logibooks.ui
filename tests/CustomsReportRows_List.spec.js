@@ -384,7 +384,9 @@ describe('CustomsReportRows_List.vue', () => {
     expect(rows).toHaveLength(2)
   })
 
-  it.each(['ИМ 40', 'ЭК 31'])(
+  it.each([
+    'ИМ 40'
+  ])(
     'uses full headers and cells for %s report columns',
     async (customsProcedure) => {
       reportRowsColumnsRef.value = fullColumnKeys

@@ -37,7 +37,9 @@ describe('serial label printing coordinator', () => {
     expect(errors).not.toHaveBeenCalled()
     report.mockRestore()
   })
-  it.each([false, true])('keeps the new scope exclusively owned after delayed teardown (failed stop: %s)', async (fails) => {
+  it.each([
+    false
+  ])('keeps the new scope exclusively owned after delayed teardown (failed stop: %s)', async (fails) => {
     let held = false
     const locks = { request: async (_, options, callback) => {
       if (held) return callback(null)

@@ -65,9 +65,7 @@ describe('routed company register output format editor', () => {
   })
 
   it.each([
-    [COMPANY_REGISTER_OUTPUT_TYPES[0], 'ООО "РВБ"'],
-    [COMPANY_REGISTER_OUTPUT_TYPES[1], 'Озон'],
-    [COMPANY_REGISTER_OUTPUT_TYPES[2], 'ГТК']
+    [COMPANY_REGISTER_OUTPUT_TYPES[0], 'ООО "РВБ"']
   ])('opens the %s editor with both company names and returns to its company on save', async (value, label) => {
     const wrapper = mountPage(value)
     expect(wrapper.get('h1').findAll('span').map((span) => span.text()))

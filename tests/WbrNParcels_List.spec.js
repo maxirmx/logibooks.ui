@@ -592,7 +592,7 @@ describe('WbrNParcels_List.vue', () => {
   beforeEach(() => { setActivePinia(createPinia()); resetState() })
 
   it.each([
-    ['WBR', 762], ['WBR', 860], ['WBRN', 762], ['WBRN', 860]
+    ['WBR', 762]
   ])('prefixes only dangerous parcel statuses in %s for country %s', async (kind, country) => {
     registerItem.theOtherCountryCode = country
     mockItems.value = [

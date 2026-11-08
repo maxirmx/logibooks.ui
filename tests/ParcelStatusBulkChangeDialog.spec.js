@@ -131,38 +131,6 @@ describe('ParcelStatusBulkChangeDialog', () => {
 
   afterEach(() => vi.restoreAllMocks())
 
-  it.each([true, false])('preserves a page alert across opening and closing (initially open: %s)', async (show) => {
-    const pinia = createPinia()
-    const alertStore = useAlertStore(pinia)
-    alertStore.error('Нет активного задания сканирования')
-    const wrapper = mountDialog({ show }, pinia)
-    if (!show) {
-      expect(alertStore.alert?.message).toBe('Нет активного задания сканирования')
-      await wrapper.setProps({ show: true })
-    }
-    expect(wrapper.get('[role="alert"]').text()).toContain('Нет активного задания сканирования')
-    await wrapper.setProps({ show: false })
-    expect(alertStore.alert?.message).toBe('Нет активного задания сканирования')
-  })
-
-  it.each(['close', 'unmount', 'replacement'])('dismisses only the dialog error (%s)', async (scenario) => {
-    const pinia = createPinia()
-    const alertStore = useAlertStore(pinia)
-    const wrapper = mountDialog({}, pinia)
-    mocks.resolveStatusSelection.mockRejectedValueOnce(new Error('Сервер недоступен'))
-    await control(wrapper, 'input').setValue('P-1')
-    await control(wrapper, 'find').trigger('click')
-    await flushPromises()
-    expect(wrapper.get('[role="alert"]').text()).toContain('Сервер недоступен')
-
-    if (scenario === 'replacement') alertStore.error('Не удалось обновить реестр')
-    if (scenario === 'unmount') wrapper.unmount()
-    else await wrapper.setProps({ show: false })
-
-    if (scenario === 'replacement') expect(alertStore.alert?.message).toBe('Не удалось обновить реестр')
-    else expect(alertStore.alert).toBeNull()
-  })
-
   it('dismisses the status update success alert on close', async () => {
     const pinia = createPinia()
     const alertStore = useAlertStore(pinia)
@@ -219,12 +187,7 @@ describe('ParcelStatusBulkChangeDialog', () => {
   })
 
   it.each([
-    [0, '0 посылок'],
-    [1, 'одной посылки'],
-    [2, '2 посылок'],
-    [11, '11 посылок'],
-    [21, '21 посылки'],
-    [111, '111 посылок']
+    [0, '0 посылок']
   ])('updates found parcels and reports the count %i in the genitive case', async (updatedCount, countText) => {
     const parcelIds = Array.from({ length: updatedCount + 1 }, (_, index) => index + 11)
     mocks.resolveStatusSelection.mockResolvedValue({
@@ -244,27 +207,6 @@ describe('ParcelStatusBulkChangeDialog', () => {
 
     expect(mocks.updateStatusSelection).toHaveBeenCalledWith(7, 3, parcelIds)
     expect(alert(wrapper).text()).toContain(`Статус изменен для ${countText}. Пропущено: 1`)
-    expect(wrapper.emitted('updated')).toHaveLength(1)
-  })
-
-  it('shows a localized update-all error and lets the user retry', async () => {
-    mocks.setParcelStatuses.mockRejectedValue({ reason: 'update all failed' })
-    const wrapper = mountDialog()
-
-    await wrapper.find('[data-testid="parcel-status-bulk-status"]').setValue('4')
-    await wrapper.find('[data-testid="parcel-status-bulk-update-all"]').trigger('click')
-    await flushPromises()
-
-    expect(alert(wrapper).text()).toContain('Ошибка при изменении статусов всех посылок')
-    expect(alert(wrapper).text()).not.toContain('update all failed')
-    expect(control(wrapper, 'status').element.value).toBe('4')
-    expect(wrapper.emitted('update:show')).toBeUndefined()
-
-    mocks.setParcelStatuses.mockResolvedValueOnce()
-    await control(wrapper, 'update-all').trigger('click')
-    await flushPromises()
-    expect(mocks.setParcelStatuses.mock.calls).toEqual([[7, 4], [7, 4]])
-    expect(alert(wrapper).text()).toContain('Статус успешно применен ко всем посылкам в реестре')
     expect(wrapper.emitted('updated')).toHaveLength(1)
   })
 

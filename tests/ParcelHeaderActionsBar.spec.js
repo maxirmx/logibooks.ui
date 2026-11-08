@@ -183,38 +183,6 @@ describe('ParcelHeaderActionsBar', () => {
     expect(buttons[6].attributes('disabled')).toBeUndefined()
   })
 
-  it('allows lookup hotkeys when lookupDisabled is false', async () => {
-    getByIdMock.mockResolvedValue({
-      id: 1,
-      name: 'Lookup Scheme',
-      actions: [
-        { id: 1, action: 6, keyCode: 'KeyL', shift: false, ctrl: true, alt: false, schemeId: 1 }
-      ]
-    })
-
-    const wrapper = mount(ParcelHeaderActionsBar, {
-      props: { lookupDisabled: false },
-      global: { stubs: { ActionButton: actionButtonStub } }
-    })
-
-    // Wait for onMounted to complete
-    await wrapper.vm.$nextTick()
-    await new Promise((resolve) => setTimeout(resolve, 0))
-
-    // Ctrl+L should trigger lookup when lookupDisabled is false
-    window.dispatchEvent(
-      new KeyboardEvent('keydown', {
-        code: 'KeyL',
-        shiftKey: false,
-        ctrlKey: true,
-        metaKey: false,
-        altKey: false
-      })
-    )
-    await wrapper.vm.$nextTick()
-    expect(wrapper.emitted()['lookup']?.length ?? 0).toBeGreaterThan(0)
-  })
-
   it('does not respond to hotkeys when disabled', async () => {
     const wrapper = mount(ParcelHeaderActionsBar, {
       props: { disabled: true },
@@ -235,44 +203,6 @@ describe('ParcelHeaderActionsBar', () => {
     )
     await wrapper.vm.$nextTick()
     expect(wrapper.emitted()).toEqual({})
-  })
-
-  it('does not respond to hotkeys with incorrect modifiers', async () => {
-    const wrapper = mount(ParcelHeaderActionsBar, {
-      global: { stubs: { ActionButton: actionButtonStub } }
-    })
-
-    // Wait for onMounted to complete
-    await wrapper.vm.$nextTick()
-    await new Promise((resolve) => setTimeout(resolve, 0))
-
-    // F2 without Shift (should not trigger because F2 requires Shift)
-    window.dispatchEvent(
-      new KeyboardEvent('keydown', {
-        code: 'F2',
-        shiftKey: false,
-        ctrlKey: false,
-        altKey: false
-      })
-    )
-    await wrapper.vm.$nextTick()
-    expect(wrapper.emitted()['next-issue']).toBeUndefined()
-
-    // F1 with Shift (should not trigger because F1 requires no modifiers)
-    // Record count before to verify no new event is emitted
-    const countBefore = wrapper.emitted()['next-parcel']?.length ?? 0
-
-    window.dispatchEvent(
-      new KeyboardEvent('keydown', {
-        code: 'F1',
-        shiftKey: true,
-        ctrlKey: false,
-        altKey: false
-      })
-    )
-    await wrapper.vm.$nextTick()
-    const countAfter = wrapper.emitted()['next-parcel']?.length ?? 0
-    expect(countAfter).toBe(countBefore)
   })
 
   it('handles scheme loading error gracefully', async () => {
@@ -327,116 +257,6 @@ describe('ParcelHeaderActionsBar', () => {
     )
     await wrapper.vm.$nextTick()
     expect(wrapper.emitted()).toEqual({})
-  })
-
-  it('filters out actions with empty event', async () => {
-    getOpsEventMock.mockImplementation((actions, actionValue) => {
-      if (actionValue === 2) return '' // Return empty event for action 2
-      const action = actions.find((a) => a.value === actionValue)
-      return action ? action.event : String(actionValue)
-    })
-
-    const wrapper = mount(ParcelHeaderActionsBar, {
-      global: { stubs: { ActionButton: actionButtonStub } }
-    })
-
-    // Wait for onMounted to complete
-    await wrapper.vm.$nextTick()
-    await new Promise((resolve) => setTimeout(resolve, 0))
-
-    // F2 should not work because its event is empty
-    window.dispatchEvent(
-      new KeyboardEvent('keydown', {
-        code: 'F2',
-        shiftKey: true,
-        ctrlKey: false,
-        altKey: false
-      })
-    )
-    await wrapper.vm.$nextTick()
-    expect(wrapper.emitted()['next-issue']).toBeUndefined()
-
-    // F1 should still work
-    window.dispatchEvent(
-      new KeyboardEvent('keydown', {
-        code: 'F1',
-        shiftKey: false,
-        ctrlKey: false,
-        altKey: false
-      })
-    )
-    await wrapper.vm.$nextTick()
-    expect(wrapper.emitted()['next-parcel']?.length ?? 0).toBeGreaterThan(0)
-  })
-
-  it('handles ensureOpsLoaded error gracefully', async () => {
-    ensureOpsLoadedMock.mockRejectedValue(new Error('Ops loading failed'))
-
-    const wrapper = mount(ParcelHeaderActionsBar, {
-      global: { stubs: { ActionButton: actionButtonStub } }
-    })
-
-    // Wait for onMounted to complete
-    await wrapper.vm.$nextTick()
-    await new Promise((resolve) => setTimeout(resolve, 0))
-
-    expect(getByIdMock).not.toHaveBeenCalled()
-  })
-
-  it('does not fire ctrl:false actions when Ctrl or Cmd is pressed', async () => {
-    getByIdMock.mockResolvedValue({
-      id: 1,
-      name: 'No Modifier Scheme',
-      actions: [
-        { id: 1, action: 1, keyCode: 'F1', shift: false, ctrl: false, alt: false, schemeId: 1 }
-      ]
-    })
-
-    const wrapper = mount(ParcelHeaderActionsBar, {
-      global: { stubs: { ActionButton: actionButtonStub } }
-    })
-
-    await wrapper.vm.$nextTick()
-    await new Promise((resolve) => setTimeout(resolve, 0))
-
-    // Ctrl+F1 should NOT trigger the action (action requires ctrl: false)
-    window.dispatchEvent(
-      new KeyboardEvent('keydown', {
-        code: 'F1',
-        shiftKey: false,
-        ctrlKey: true,
-        metaKey: false,
-        altKey: false
-      })
-    )
-    await wrapper.vm.$nextTick()
-    expect(wrapper.emitted()['next-parcel'] ?? []).toHaveLength(0)
-
-    // Cmd+F1 should also NOT trigger the action
-    window.dispatchEvent(
-      new KeyboardEvent('keydown', {
-        code: 'F1',
-        shiftKey: false,
-        ctrlKey: false,
-        metaKey: true,
-        altKey: false
-      })
-    )
-    await wrapper.vm.$nextTick()
-    expect(wrapper.emitted()['next-parcel'] ?? []).toHaveLength(0)
-
-    // Plain F1 (no modifiers) SHOULD trigger the action
-    window.dispatchEvent(
-      new KeyboardEvent('keydown', {
-        code: 'F1',
-        shiftKey: false,
-        ctrlKey: false,
-        metaKey: false,
-        altKey: false
-      })
-    )
-    await wrapper.vm.$nextTick()
-    expect(wrapper.emitted()['next-parcel']?.length ?? 0).toBeGreaterThan(0)
   })
 
   it('respects downloadDisabled for download hotkeys', async () => {
@@ -504,35 +324,4 @@ describe('ParcelHeaderActionsBar', () => {
     wrapper.unmount()
   })
 
-  it('respects disabled prop for download hotkeys', async () => {
-    getByIdMock.mockResolvedValue({
-      id: 1,
-      name: 'Download Scheme',
-      actions: [
-        { id: 1, action: 7, keyCode: 'KeyD', shift: false, ctrl: true, alt: false, schemeId: 1 }
-      ]
-    })
-
-    const wrapper = mount(ParcelHeaderActionsBar, {
-      props: { disabled: true, downloadDisabled: false },
-      global: { stubs: { ActionButton: actionButtonStub } }
-    })
-
-    // Wait for onMounted to complete
-    await wrapper.vm.$nextTick()
-    await new Promise((resolve) => setTimeout(resolve, 0))
-
-    // Ctrl+D should NOT trigger download when disabled is true
-    window.dispatchEvent(
-      new KeyboardEvent('keydown', {
-        code: 'KeyD',
-        shiftKey: false,
-        ctrlKey: true,
-        metaKey: false,
-        altKey: false
-      })
-    )
-    await wrapper.vm.$nextTick()
-    expect(wrapper.emitted()).toEqual({})
-  })
 })

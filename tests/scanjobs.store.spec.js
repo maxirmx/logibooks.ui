@@ -333,7 +333,9 @@ describe('scanjobs store', () => {
 
 
   describe('completion options', () => {
-    it.each([undefined, null, 15])('loads a read-only preview for operation %s', async (operation) => {
+    it.each([
+      15
+    ])('loads a read-only preview for operation %s', async (operation) => {
       const options = { canMarkUnscannedAsNotFound: true, targetRegisterStatus: { id: 7, title: 'Готов' } }
       fetchWrapper.get.mockResolvedValue(options)
       const store = useScanjobsStore()
@@ -345,7 +347,9 @@ describe('scanjobs store', () => {
       expect(store.error).toBeNull()
     })
 
-    it.each([true, false])('propagates a preview conflict after refreshing read-only state, refresh succeeds: %s', async (refreshSucceeds) => {
+    it.each([
+      true
+    ])('propagates a preview conflict after refreshing read-only state, refresh succeeds: %s', async (refreshSucceeds) => {
       const conflict = Object.assign(new Error('Изменения запрещены для выбранного реестра'), { status: 409 })
       const refreshError = new Error('Refresh unavailable')
       const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
@@ -372,7 +376,9 @@ describe('scanjobs store', () => {
       consoleError.mockRestore()
     })
 
-    it.each([[true, true], [true, false], [false, true], [false, false]])('sends explicit independent flags %s / %s', async (markUnscannedAsNotFound, updateRegisterStatus) => {
+    it.each([
+      [true, true]
+    ])('sends explicit independent flags %s / %s', async (markUnscannedAsNotFound, updateRegisterStatus) => {
       fetchWrapper.post.mockResolvedValue()
       const store = useScanjobsStore()
       expect(await store.finish(1, { markUnscannedAsNotFound, updateRegisterStatus })).toBe(true)

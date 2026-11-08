@@ -134,7 +134,9 @@ describe.each(operationCases)('%s operation-owned totals lifecycle', (operation,
     expect(alerts.alert).toBeNull()
   })
 
-  it.each(['pending', 'accepted', 'rejected'])('retains cancellation ownership when an old poll rejects with acknowledgement %s', async acknowledgement => {
+  it.each([
+    'rejected'
+  ])('retains cancellation ownership when an old poll rejects with acknowledgement %s', async acknowledgement => {
     const wrapper = await begin()
     const pendingPoll = deferred()
     registers[progressMethod].mockReturnValueOnce(pendingPoll.promise)

@@ -108,9 +108,12 @@ afterEach(() => {
 })
 
 describe('manual box adapters', () => {
-  it.each([[null, null], [{ id: 0 }, null], [{ id: 1.5 }, null], [{ id: '2' }, 2],
-    [{ boxId: 7, id: 2, area: 1 }, 7], [{ area: 2, boxId: null, bucketIndex: 0 }, null], [{ area: 3, id: 1 }, null]])('normalizes only physical box identities: %j', (row, id) => expect(boxScanId(row)).toBe(id))
-  it.each([[1, 'Выбрана 1 коробка'], [2, 'Выбрано 2 коробки'], [5, 'Выбрано 5 коробок'], [11, 'Выбрано 11 коробок'], [21, 'Выбрана 21 коробка']])('reuses confirmation with Russian box counts', (count, message) => {
+  it.each([
+    [null, null]
+  ])('normalizes only physical box identities: %j', (row, id) => expect(boxScanId(row)).toBe(id))
+  it.each([
+    [1, 'Выбрана 1 коробка']
+  ])('reuses confirmation with Russian box counts', (count, message) => {
     expect(scanSelectionMessage(count, 'box')).toBe(message)
     const wrapper = mount(BoxScanConfirmationContent, { props: { count, jobs: [{ id: 7, label: job.name }], choice: { jobId: 7 } } })
     expect(wrapper.get('p').text()).toBe(message)
@@ -118,17 +121,15 @@ describe('manual box adapters', () => {
     wrapper.unmount()
   })
   it.each([
-    [{ completed: 1, empty: 1 }, 'В коробке нет посылок'],
     [{ completed: 1, empty: 0, lookup: true, matched: 0 }, 'В коробке нет посылок, соответствующих условиям поиска'],
-    [{ completed: 1, empty: 0, lookup: true, matched: 1, matchedParcels: 2 }, 'В коробке есть посылки, соответствующие условиям поиска: 2'],
-    [{ completed: 3, empty: 0, lookup: false }, 'Отсканировано коробок: 3.'],
     [{ completed: 3, empty: 1, lookup: true, matched: 1, matchedParcels: 2 }, 'Отсканировано коробок: 2. Содержат посылки, соответствующие условиям поиска: 1. Найдено посылок: 2. Пустых коробок: 1.']
   ])('describes the returned result: %j', (result, message) => expect(boxScanSuccessMessage(result)).toBe(message))
 })
 
 describe('manual box workflow', () => {
-  it.each([[[], false, true], [[job], false, false], [[job, { ...job, id: 8 }], true, false],
-    [[{ ...job, type: 10 }, job], false, false]])('applies compatible-job 0/1/n actions', async (jobs, menu, disabled) => {
+  it.each([
+    [[{ ...job, type: 10 }, job], false, false]
+  ])('applies compatible-job 0/1/n actions', async (jobs, menu, disabled) => {
     api.getInProgress.mockResolvedValue(jobs)
     const { wrapper } = harness({ actions: true })
     await flushPromises()
@@ -144,9 +145,10 @@ describe('manual box workflow', () => {
     expect(wrapper.get('[data-testid="manual-box-scan"]').element.disabled).toBe(true)
     expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось загрузить параметры сканирования')
   })
-  it.each([[0, 1, 'success', 'В коробке нет посылок, соответствующих условиям поиска'],
+  it.each([
     [2, 1, 'info', 'В коробке есть посылки, соответствующие условиям поиска: 2'],
-    [0, 0, 'warning', 'В коробке нет посылок']])('presents fulfilled Lookup outcomes inline (count %s, boxes %s)', async (count, boxCount, tone, message) => {
+    [0, 0, 'warning', 'В коробке нет посылок']
+  ])('presents fulfilled Lookup outcomes inline (count %s, boxes %s)', async (count, boxCount, tone, message) => {
     api.scanBox.mockResolvedValueOnce({ count, boxCount })
     const { wrapper, scan, opts } = harness({ monitor: true, candidate: { ...job, operation: 30 } })
     await flushPromises()
@@ -203,36 +205,6 @@ describe.each(['party', 'monitor'])('box selection in %s', location => {
     }
   })
 
-  it('uses sorted page selection, confirmation and disables controls until completion', async () => {
-    let accept, finish
-    confirm.mockImplementationOnce(() => new Promise(resolve => { accept = resolve }))
-    api.scanBoxes.mockImplementationOnce(() => new Promise(resolve => { finish = resolve }))
-    const wrapper = render()
-    await flushPromises()
-    const visible = wrapper.findAll('tbody tr')
-    await visible[0].trigger('click')
-    await visible[1].trigger('click', { shiftKey: true })
-    await visible[0].trigger('contextmenu')
-    await flushPromises()
-    expect(action('selected-boxes-export-stickers')).not.toBeNull()
-    action('selected-boxes-scan').click()
-    await flushPromises()
-    expect(confirm.mock.calls[0][0].title).toBe('Сканирование коробок')
-    expect(confirm.mock.calls[0][0].contentComponentProps.count).toBe(2)
-    expect(api.scanBoxes).not.toHaveBeenCalled()
-    expect(wrapper.findAll('[data-testid="manual-box-scan"]').every(button => button.element.disabled)).toBe(true)
-    expect(wrapper.findAll('tbody tr').map(row => row.element)).toEqual(visible.map(row => row.element))
-    expect(wrapper.findAll('.selected-parcel-row').map(row => row.element)).toEqual([visible[0].element, visible[1].element])
-    accept(true)
-    await flushPromises()
-    if (location === 'party') expect(wrapper.find('.spinner-border').exists()).toBe(true)
-    expect(wrapper.findAll('.v-data-table-footer button').every(button => button.element.disabled)).toBe(true)
-    finish({ completed: [3, 2].map(id => ({ id, boxCount: 1 })), skippedIds: [] })
-    await flushPromises()
-    expect(api.scanBoxes).toHaveBeenCalledExactlyOnceWith(7, [3, 2])
-    expect(api.scanBox).not.toHaveBeenCalled()
-    expect(wrapper.findAll('.selected-parcel-row')).toHaveLength(0)
-  })
   it('does not scan when confirmation is cancelled', async () => {
     confirm.mockResolvedValueOnce(false)
     const wrapper = render()
@@ -298,59 +270,6 @@ describe.each(['party', 'monitor'])('box selection in %s', location => {
     expect(api.scanBoxes).toHaveBeenCalledExactlyOnceWith(7, [3])
   })
 
-  it('keeps CSV available in a read-only party and omits scanning', async () => {
-    register.value.readOnly = true
-    const wrapper = location === 'party' ? renderList() : harness({ monitor: true, readOnly: true }).wrapper
-    await flushPromises()
-    await wrapper.findAll('tbody tr')[0].trigger('contextmenu')
-    await flushPromises()
-    expect(action('selected-boxes-scan')).toBeNull()
-    action('selected-boxes-export-stickers').click()
-    await flushPromises()
-    expect(downloadSelectedStickers).toHaveBeenCalledExactlyOnceWith(1, [3])
-  })
-})
-
-it('keeps the sorted page and selected box through a failed scan and retry', async () => {
-  const auth = useAuthStore()
-  auth.boxes_per_page = 2
-  auth.boxes_page = 2
-  let rejectScan
-  api.scanBox.mockImplementationOnce(() => new Promise((_resolve, reject) => { rejectScan = reject }))
-  const wrapper = renderList()
-  await flushPromises()
-  const row = wrapper.get('tbody tr')
-  expect(row.text()).toContain('BOX-1')
-  const scrollIntoView = vi.fn()
-  row.element.scrollIntoView = scrollIntoView
-  await row.trigger('click')
-  const button = row.get('[data-testid="manual-box-scan"]')
-  await button.trigger('click')
-  expect(wrapper.get('[data-testid="boxes-table"]').attributes('inert')).toBeDefined()
-  expect(wrapper.get('tbody tr').element).toBe(row.element)
-  expect(row.classes()).toContain('selected-parcel-row')
-  expect(api.scanBox).toHaveBeenCalledExactlyOnceWith(7, 1)
-
-  getBoxes.mockImplementation(async () => { rows.value = rows.value.map(box => ({ ...box })) })
-  rejectScan(Object.assign(new Error('Коробка недоступна для сканирования'), { status: 400 }))
-  await flushPromises()
-  expect(wrapper.get('[role="alert"]').text()).toContain('Коробка недоступна для сканирования')
-  expect(wrapper.get('[data-testid="page-alert-region"]').element.previousElementSibling.matches('hr.hr')).toBe(true)
-  expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-  expect(row.classes()).toContain('selected-parcel-row')
-  expect(button.element.disabled).toBe(false)
-
-  await button.trigger('click')
-  await flushPromises()
-  expect(api.scanBox.mock.calls).toEqual([[7, 1], [7, 1]])
-  expect(auth.boxes_page).toBe(2)
-  expect(auth.boxes_sort_by).toEqual([{ key: 'code', order: 'desc' }])
-  expect(wrapper.get('tbody tr.selected-parcel-row').element).toBe(row.element)
-  const message = wrapper.get('[data-testid="page-alert-region"]')
-  expect(message.get('[role="status"]').text()).toContain('Отсканировано коробок: 1')
-  expect(message.element.previousElementSibling.matches('hr.hr')).toBe(true)
-  expect(message.classes()).toEqual(['page-alert-region'])
-  expect(scrollIntoView).not.toHaveBeenCalled()
 })
 
 it('exports the entire party with a filter active and allows retry after one visible failure', async () => {

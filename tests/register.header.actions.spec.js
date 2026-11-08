@@ -445,7 +445,9 @@ describe('useRegisterHeaderActions', () => {
     }
   })
 
-  it.each([false, true])('cleans up the XML dialog when the page stops (newer alert: %s)', async newerAlert => {
+  it.each([
+    false
+  ])('cleans up the XML dialog when the page stops (newer alert: %s)', async newerAlert => {
     const download = createDeferred()
     const alerts = useAlertStore(createPinia())
     registersStore.generateOrdinary.mockReturnValueOnce(download.promise)

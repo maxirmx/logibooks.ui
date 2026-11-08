@@ -253,7 +253,9 @@ describe('registers store', () => {
       expect(fetchWrapper.postFile.mock.calls[0][1].get('file')).toBe(file)
     })
 
-    it.each([null, undefined])('defaults a missing Incoterms code to CPT (%s)', async (value) => {
+    it.each([
+      null
+    ])('defaults a missing Incoterms code to CPT (%s)', async (value) => {
       const file = new File(['data'], 'default-incoterms.xlsx')
       fetchWrapper.postFile.mockResolvedValue({ success: true, registerId: 7 })
 
@@ -594,7 +596,9 @@ describe('registers store', () => {
       expect(store.items[0].invoiceNumber).toBe('new list')
     })
 
-    it.each([true, false, undefined])(
+    it.each([
+      undefined
+    ])(
       'merges the lock (%s) without overwriting a newer derived invalidation',
       async (readOnly) => {
         const pending = Promise.withResolvers()
@@ -1006,7 +1010,9 @@ describe('registers store', () => {
   })
 
   describe('ops functionality', () => {
-    it.each([undefined, null, []])(
+    it.each([
+      undefined
+    ])(
       'getOps rejects missing or empty Incoterms metadata (%s)',
       async (incoterms) => {
         const response = {

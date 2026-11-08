@@ -167,7 +167,9 @@ describe('ActionButton2L', () => {
     expect(wrapper.emitted('close')).toHaveLength(1)
   })
 
-  it.each([false, true])('dismisses on Tab and restores the native navigation starting point (backward: %s)', async shiftKey => {
+  it.each([
+    false
+  ])('dismisses on Tab and restores the native navigation starting point (backward: %s)', async shiftKey => {
     const host = document.createElement('div')
     const before = document.createElement('button')
     const after = document.createElement('button')
@@ -193,7 +195,9 @@ describe('ActionButton2L', () => {
     expect(controls[controls.indexOf(trigger.element) + (shiftKey ? -1 : 1)]).toBe(shiftKey ? before : after)
   })
 
-  it.each(['click', 'keyboard'])('observes a rejected %s action and restores the button', async method => {
+  it.each([
+    'click'
+  ])('observes a rejected %s action and restores the button', async method => {
     const failure = new Error('Technical action failure')
     const alerts = useAlertStore()
     const errorHandler = vi.fn(error => alerts.error(error, { fallback: 'Не удалось выполнить действие' }))

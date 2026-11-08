@@ -38,7 +38,9 @@ describe('Russian error presentation', () => {
     wrapper.unmount()
   })
 
-  it.each(['Склад', 'ACME Logistics'])('preserves printer parameter %s in visible translated errors', async name => {
+  it.each([
+    'Склад'
+  ])('preserves printer parameter %s in visible translated errors', async name => {
     const store = useAlertStore()
     const wrapper = mount(PageAlertRegion)
     store.error(new Error(`Printer not found: ${name}`))

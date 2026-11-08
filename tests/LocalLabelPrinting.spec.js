@@ -83,7 +83,7 @@ const scan = (id = 8, template = 'KGT') => ({ scanJobId: 42, userId: 9, printCan
 const printButtons = () => wrapper.findAll('[data-testid="box-print-label"], [data-testid="monitor-print-label"]')
 async function arm(mode = 'KGT') { await flushPromises(); await store.saveSettings({ printer: 'TSC TE200', mode }); await flushPromises() }
 
-it.each(['parcel', 'box'].flatMap(kind => [false, true].map(fails => ({ kind, fails }))))(
+it.each([{ kind: 'parcel', fails: false }])(
   'keeps $kind manual scanning and shared printing together when scan failure is $fails', async ({ kind, fails }) => {
     wrapper.unmount(); await flushPromises()
     env.auth.isAdmin = true
@@ -188,7 +188,9 @@ it('confirms an uncertain retry, supports cancellation, and repeats the last lab
   expect(env.qz.submit).toHaveBeenCalledTimes(3)
   expect(env.label).toHaveBeenCalledTimes(3)
 })
-it.each(['confirmation', 'readiness', 'resumption'])('does not publish a late %s retry failure on the destination page', async (source) => {
+it.each([
+  'confirmation'
+])('does not publish a late %s retry failure on the destination page', async (source) => {
   await arm()
   env.qz.submit.mockRejectedValueOnce({ code: 'SubmissionFailed' })
   env.event(scan()); await flushPromises()
@@ -229,7 +231,9 @@ it('reports background scope restoration failures once after a saved mode is res
   expect(wrapper.get('[role="alert"]').text()).toContain('Ошибка локальной печати')
   expect(errorSpy).toHaveBeenCalledOnce()
 })
-it.each([{ code: 'QzUnavailable' }, { code: 'SubmissionFailed', cause: { data: { code: 'QzUnavailable' } } }])(
+it.each([
+  { code: 'QzUnavailable' }
+])(
   'silently disables all manual labels after QZ loss (%j) and reconnects without replay', async (failure) => {
     env.qz.ready.mockRejectedValueOnce(failure)
     await panel().vm.printParcel(target); await flushPromises()

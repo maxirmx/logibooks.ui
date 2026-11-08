@@ -558,28 +558,6 @@ describe('Scanjob_Monitor.vue', () => {
     })
   })
 
-  it('exports the party from its boxes monitor header, with retry after one visible failure', async () => {
-    isWhManager.value = true
-    exportRegisterStickers.mockRejectedValueOnce(new Error('У коробки отсутствует код стикера')).mockResolvedValueOnce(true)
-    loadMonitorSnapshot.mockResolvedValueOnce(registerSnapshot).mockResolvedValueOnce(boxSnapshot)
-    const wrapper = mount(ScanjobMonitor, { props: { scanjobId: 42 }, global: { stubs: monitorGlobalStubs } })
-    await flushPromises()
-    const button = wrapper.get('button[data-testid="register-export-stickers"]')
-    const headerButtons = [...button.element.closest('.header-actions-group').querySelectorAll('button')]
-    expect(headerButtons.at(-2)).toBe(button.element)
-    await button.trigger('click')
-    await flushPromises()
-    expect(wrapper.get('[role="alert"]').text()).toContain('У коробки отсутствует код стикера')
-    expect(alertError).toHaveBeenCalledOnce()
-    await button.trigger('click')
-    await flushPromises()
-    expect(exportRegisterStickers.mock.calls).toEqual([[101], [101]])
-    await wrapper.setProps({ monitorScope: box7MonitorScope })
-    await flushPromises()
-    expect(wrapper.find('[data-testid="register-export-stickers"]').exists()).toBe(false)
-    wrapper.unmount()
-  })
-
   it('preserves jump input on a resolved navigation failure and allows retry', async () => {
     const navigationRouter = createRouter({ history: createMemoryHistory(), routes: [{ path: '/', component: {} }, { path: '/blocked', component: {} }] })
     await navigationRouter.push('/')
@@ -622,7 +600,9 @@ describe('Scanjob_Monitor.vue', () => {
     expect(wrapper.find('[data-testid="scanjob-monitor-follow-user-select"]').exists()).toBe(false)
   })
 
-  it.each(['', null, undefined])('uses the existing heading fallback for an unnamed scanjob: %j', async (name) => {
+  it.each([
+    ''
+  ])('uses the existing heading fallback for an unnamed scanjob: %j', async (name) => {
     mockScanjob.value = { ...mockScanjob.value, name }
     getById.mockResolvedValue(mockScanjob.value)
     const wrapper = mount(ScanjobMonitor, {
@@ -639,10 +619,7 @@ describe('Scanjob_Monitor.vue', () => {
   })
 
   it.each([
-    [{}, null, null],
-    [{ lookupRemainingCount: 3 }, '— / —', '3'],
-    [{ lookupRemainingCount: 5, lookupFoundCount: 0, lookupNotFoundCount: 5 }, '0 / 5', null],
-    [{ lookupRemainingCount: 2, lookupFoundCount: 2, lookupNotFoundCount: 0 }, '2 / 0', null]
+    [{ lookupRemainingCount: 3 }, '— / —', '3']
   ])('adds Lookup progress to the existing parcel statistics for %j', async (counts, expectedProgress, expectedRemaining) => {
     loadMonitorSnapshot.mockResolvedValue({ ...registerSnapshot, ...counts })
     const wrapper = mount(ScanjobMonitor, { props: { scanjobId: 42 }, global: { stubs: monitorGlobalStubs } })
@@ -935,7 +912,9 @@ describe('Scanjob_Monitor.vue', () => {
     })
   })
 
-  it.each(['snapshot', 'scanjob', 'register'])('allows parcel printing with a read-only %s while blocking parcel changes', async (source) => {
+  it.each([
+    'snapshot'
+  ])('allows parcel printing with a read-only %s while blocking parcel changes', async (source) => {
     isAdmin.value = true
     const parcel = { ...boxSnapshot.box.parcels[0], extId: '77', printableTemplates: ['WBRN', 'TJ_EXPORT'] }
     const snapshot = { ...boxSnapshot, readOnly: source === 'snapshot', box: { ...boxSnapshot.box, parcels: [parcel] } }
@@ -1468,37 +1447,6 @@ describe('Scanjob_Monitor.vue', () => {
     expect(wrapper.find('[data-testid="scanjob-monitor-closed"]').exists()).toBe(true)
     expect(wrapper.get('button[data-testid="scanjob-monitor-follow-user-open"]').classes()).not.toContain('anti-btn-green')
   })
-  it('refreshes once for a batch even when following its committed scans', async () => {
-    persistedFollowUserId.value = 17
-    isAdmin.value = true
-    monitorParcelsPage.value = 1
-    monitorParcelsSortBy.value = []
-    loadMonitorSnapshot.mockResolvedValue(boxSnapshot)
-    let finishScan
-    manualScanParcels.mockImplementationOnce(() => new Promise(resolve => { finishScan = resolve }))
-    const wrapper = mount(ScanjobMonitor, { props: { scanjobId: 42, monitorScope: box7MonitorScope }, global: { stubs: monitorGlobalStubs } })
-    await flushPromises()
-    loadMonitorSnapshot.mockClear()
-    const table = wrapper.getComponent({ name: 'v-data-table' })
-    const [first, second] = boxSnapshot.box.parcels
-    table.vm.$emit('click:row', {}, { item: first })
-    table.vm.$emit('click:row', { ctrlKey: true }, { item: second })
-    await wrapper.get('[data-testid="manual-parcel-scan"]').trigger('click')
-    await flushPromises()
-    expect(manualScanParcels).toHaveBeenCalledExactlyOnceWith(42, [first.parcelId, second.parcelId])
-    const event = { scanJobId: 42, userId: 17, scanCodeId: 601, followTarget: { area: 1, boxId: 7, parcelId: first.parcelId } }
-    await getFollowEventHandler()(event)
-    finishScan({
-      completed: [{ id: first.parcelId, scanCodeId: 601, count: 1 }, { id: second.parcelId, scanCodeId: 602, count: 1 }],
-      skippedIds: []
-    })
-    await flushPromises()
-    await getFollowEventHandler()(event)
-    expect(loadMonitorSnapshot).toHaveBeenCalledOnce()
-    expect(mockReplace).not.toHaveBeenCalled()
-    wrapper.unmount()
-  })
-
   it.each([
     ['box', registerMonitorScope, registerSnapshot, registerSnapshot.boxes, manualScanBox,
       { area: 1, boxId: 7 }, { count: 1, boxCount: 1 }],

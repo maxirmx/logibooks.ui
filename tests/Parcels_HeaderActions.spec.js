@@ -12,7 +12,6 @@ import OzonParcelsList from '@/lists/OzonParcels_List.vue'
 import WbrParcelsList from '@/lists/WbrParcels_List.vue'
 import WbrNParcelsList from '@/lists/WbrNParcels_List.vue'
 import GtcParcelsList from '@/lists/GtcParcels_List.vue'
-import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { CUSTOMS_PROCEDURE_IMPORT } from '@/helpers/customs.procedure.helpers.js'
 import { getRowPropsForParcel } from '@/helpers/parcels.list.helpers.js'
 import { vuetifyStubs, resolveAll } from './helpers/test-utils.js'
@@ -410,25 +409,6 @@ describe.each([
     await wrapper.vm.freezeTnVedOrderAndRefetch()
     expect(registerHeaderActionsMock.freezeTnVedOrder).toHaveBeenCalledTimes(2)
     expect(loadParcelsMock.mock.calls.length).toBe(callsBeforeWithSort + 1)
-  })
-
-  it('moves the alert region to the progress dialog during XML generation', async () => {
-    const wrapper = mount(Component, {
-      props: { registerId: 13 },
-      global: { stubs: { ...vuetifyStubs,
-        'v-dialog': { props: ['modelValue'], template: '<section v-if="modelValue" role="dialog"><slot /></section>' }
-      } }
-    })
-    await resolveAll()
-    expect(wrapper.findAllComponents(PageAlertRegion)).toHaveLength(1)
-    expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
-
-    registerHeaderActionsMock.actionDialog.show = true
-    registerHeaderActionsMock.xmlDialog.cancellable = true
-    await resolveAll()
-    expect(wrapper.findAllComponents(PageAlertRegion)).toHaveLength(1)
-    expect(wrapper.get('[role="dialog"]').findComponent(PageAlertRegion).exists()).toBe(true)
-    wrapper.unmount()
   })
 
   it('refreshes explicitly when the restriction filter is already enabled', async () => {

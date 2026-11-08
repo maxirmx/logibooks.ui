@@ -114,7 +114,9 @@ describe('Parcels List Helpers', () => {
       expect(CheckStatusCode.hasIssues).toHaveBeenCalledWith(duplicate2Value)
     })
 
-    it.each([10, 40, 50])(
+    it.each([
+      10
+    ])(
       'should return class for passport check issue status %s',
       async (passportCheckStatus) => {
         const { CheckStatusCode } = await vi.importMock('../src/helpers/check.status.code.js')

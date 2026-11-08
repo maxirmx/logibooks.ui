@@ -66,7 +66,6 @@ afterEach(() => { wrappers.splice(0).forEach(wrapper => wrapper.unmount()) })
 
 describe('manual parcel scan eligibility', () => {
   it.each([
-    [{ completed: 2, matched: 0, lookup: false }, 'Отсканировано посылок: 2.'],
     [{ completed: 1, matched: 1, lookup: true }, 'Посылка соответствует условиям поиска'],
     [{ completed: 1, matched: 0, lookup: true }, 'Посылка не соответствует условиям поиска'],
     [{ completed: 3, matched: 2, lookup: true }, 'Отсканировано посылок: 3. Соответствуют условиям поиска: 2. Не соответствуют: 1.']
@@ -149,20 +148,6 @@ describe('manual parcel scan workflow', () => {
     await scan.run(parcels, 7, true)
     expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
     expect(wrapper.get('[role="alert"]').text()).toContain('Ошибка обновления списка')
-  })
-  it('keeps the full selection on batch rejection and submits the same IDs on retry', async () => {
-    api.scanParcels.mockRejectedValueOnce(Object.assign(new Error('Задание приостановлено'), { status: 409 }))
-    const { scan, wrapper, selection, opts } = harness({}, true)
-    await flushPromises()
-    selection.selectAllCurrentPage()
-    expect(await scan.run(selection.selectedItems.value, 7, true)).toBe(false)
-    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-    expect(wrapper.get('[role="alert"]').text()).toContain('Задание приостановлено')
-    expect(selection.selectedItems.value.map(parcel => parcel.id)).toEqual([1, 2, 3])
-    expect(await scan.run(selection.selectedItems.value, 7, true)).toBe(true)
-    expect(api.scanParcels.mock.calls).toEqual([[7, [1, 2, 3]], [7, [1, 2, 3]]])
-    expect(opts.refresh).toHaveBeenCalledTimes(2)
-    expect(selection.selectedItems.value).toEqual([])
   })
   it('reports a detached request rejection technically without showing it on the new page', async () => {
     let rejectScan

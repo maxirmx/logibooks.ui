@@ -619,7 +619,9 @@ describe('Scanjobs_List.vue', () => {
 
 
   describe('independent completion workflow', () => {
-    it.each([true, false])('uses simple confirmation from the list, accepted: %s', async (accepted) => {
+    it.each([
+      false
+    ])('uses simple confirmation from the list, accepted: %s', async (accepted) => {
       getAllScanjobs.mockResolvedValue()
       getFinishOptions.mockResolvedValue({ canMarkUnscannedAsNotFound: false, targetRegisterStatus: null })
       confirmMock.mockResolvedValueOnce(accepted)

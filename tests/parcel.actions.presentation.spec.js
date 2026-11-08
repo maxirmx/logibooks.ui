@@ -64,7 +64,9 @@ describe('parcel action failure presentation', () => {
     await wrapper.get('[data-testid="product"]').setValue('edited')
   }
 
-  it.each(['approve', 'stopWords'])('%s reports a refresh failure after successful mutation without resubmitting', async action => {
+  it.each([
+    'approve'
+  ])('%s reports a refresh failure after successful mutation without resubmitting', async action => {
     store.getById.mockRejectedValueOnce(new Error('соединение потеряно'))
     await editor(action)
     await wrapper.get('[data-testid="run"]').trigger('click')

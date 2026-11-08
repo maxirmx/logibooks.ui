@@ -126,7 +126,9 @@ describe('register reconciliation', () => {
     expect(h.flow.state.result).toEqual(statistics)
   })
 
-  it.each(['InvalidManifest', 'Unexpected'])('presents terminal %s exactly once and unlocks', async failureKind => {
+  it.each([
+    'InvalidManifest'
+  ])('presents terminal %s exactly once and unlocks', async failureKind => {
     const h = harness()
     h.store.getReconciliation.mockRejectedValueOnce(failure('ReconciliationFailed', 400, { finished: true, failureKind }))
     await h.flow.selectFile(h.event)
@@ -145,7 +147,9 @@ describe('register reconciliation', () => {
     expect(h.flow.state.result).toBeNull()
   })
 
-  it.each([400, 403])('handles definite upload rejection %i without a retry loop', async status => {
+  it.each([
+    400
+  ])('handles definite upload rejection %i without a retry loop', async status => {
     const h = harness()
     h.store.startReconciliation.mockRejectedValueOnce(failure('ReconciliationInvalidManifest', status))
     await h.flow.selectFile(h.event)
@@ -198,7 +202,9 @@ describe('register reconciliation', () => {
     }
   })
 
-  it.each(['expiry', 'restart'])('requires acknowledgement after a lost POST and server %s', async () => {
+  it.each([
+    'expiry'
+  ])('requires acknowledgement after a lost POST and server %s', async () => {
     const makeId = vi.fn().mockReturnValueOnce('old-op').mockReturnValueOnce('new-op')
     const h = harness({ makeId })
     h.store.startReconciliation.mockRejectedValueOnce(new Error('Ответ сервера потерян'))

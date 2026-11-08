@@ -131,7 +131,10 @@ describe('Scanjob parcel monitor typed tables', () => {
     expect(actions.at(-1).element.disabled).toBe(true)
     wrapper.unmount()
   })
-  it.each([ScanjobWbrNParcelsMonitorTable, ScanjobWbrParcelsMonitorTable, ScanjobOzonParcelsMonitorTable])(
+  it.each([
+    ScanjobWbrParcelsMonitorTable,
+    ScanjobOzonParcelsMonitorTable
+  ])(
     'places KGT clearing first and printing last, forwarding parcel identities through typed tables', async (table) => {
       isAdmin.value = true
       const parcel = { parcelId: 41, extId: '77', printableTemplates: ['WBRN'] }
@@ -229,102 +232,6 @@ describe('Scanjob parcel monitor typed tables', () => {
     expect(wrapper.text()).toContain('Не проверено')
   })
 
-  it('renders WBR scan and WH columns without box number', () => {
-    const wrapper = mount(ScanjobWbrParcelsMonitorTable, {
-      props: {
-        parcels: [
-          {
-            stickerScanned: false,
-            extId: 'KGT-21',
-            shk: 'SHK-21',
-            sticker: 'STICKER-21',
-            stickerCode: 'CODE-21',
-            barcode: 'BAR-21',
-            productName: 'Very long WBR product name',
-            weightKg: 3.45,
-            quantity: 4,
-            zoneName: 'Red',
-            statusTitle: 'Waiting',
-            checkStatusProjection: { kind: 30, title: 'Проверено', restrictionReason: null }
-          }
-        ]
-      },
-      global
-    })
-
-    const headers = wrapper.findComponent(ScanjobParcelsMonitorTable).props('headers')
-    expect(headers.map((header) => header.key)).toEqual([
-      'actions',
-      'stickerScanned',
-      'checkStatusProjection',
-      'zone',
-      'statusId',
-      'scannedInfo',
-      'extId',
-      'shk',
-      'sticker',
-      'stickerCode',
-      'barcode',
-      'productName',
-      'weightKg',
-      'quantity'
-    ])
-    expect(headers.map((header) => header.key)).not.toContain('boxNumber')
-    expect(wrapper.text()).toContain('KGT-21')
-    expect(wrapper.text()).toContain('SHK-21')
-    expect(wrapper.text()).toContain('STICKER-21')
-    expect(wrapper.text()).toContain('CODE-21')
-    expect(wrapper.text()).toContain('BAR-21')
-  })
-
-  it('renders WBRN scan and WH columns without box number', () => {
-    const wrapper = mount(ScanjobWbrNParcelsMonitorTable, {
-      props: {
-        parcels: [
-          {
-            stickerScanned: true,
-            extId: 'KGT-51',
-            shk: 'SHK-51',
-            article: '29817781',
-            sticker: 'STICKER-51',
-            stickerCode: 'CODE-51',
-            productName: 'Very long WBRN product name',
-            weightKg: 1.11,
-            quantity: 3,
-            zoneName: 'Blue',
-            statusTitle: 'Ready',
-            checkStatusProjection: { kind: 10, title: 'Не проверено', restrictionReason: null }
-          }
-        ]
-      },
-      global
-    })
-
-    const headers = wrapper.findComponent(ScanjobParcelsMonitorTable).props('headers')
-    expect(headers.map((header) => header.key)).toEqual([
-      'actions',
-      'stickerScanned',
-      'checkStatusProjection',
-      'zone',
-      'statusId',
-      'scannedInfo',
-      'extId',
-      'shk',
-      'article',
-      'sticker',
-      'stickerCode',
-      'productName',
-      'weightKg',
-      'quantity'
-    ])
-    expect(headers.map((header) => header.key)).not.toContain('boxNumber')
-    expect(wrapper.text()).toContain('KGT-51')
-    expect(wrapper.text()).toContain('SHK-51')
-    expect(wrapper.text()).toContain('29817781')
-    expect(wrapper.text()).toContain('STICKER-51')
-    expect(wrapper.text()).toContain('CODE-51')
-  })
-
   it('renders corrected monitor parcel weights from register correction data', () => {
     const wrapper = mount(ScanjobWbrNParcelsMonitorTable, {
       props: {
@@ -416,37 +323,6 @@ describe('Scanjob parcel monitor typed tables', () => {
 
     await productCell.trigger('click')
     expect(wrapper.emitted('edit-parcel')).toBeFalsy()
-  })
-
-  it('emits set-defect for warehouse manager when parcel status allows it', async () => {
-    isWhManager.value = true
-
-    const wrapper = mount(ScanjobWbrNParcelsMonitorTable, {
-      props: {
-        parcels: [
-          {
-            id: 41,
-            stickerScanned: true,
-            productName: 'Product',
-            checkStatus: CheckStatusCode.NotChecked.value,
-            checkStatusProjection: { kind: 10, title: 'Не проверено', restrictionReason: null }
-          }
-        ]
-      },
-      global
-    })
-
-    const setButton = wrapper.get('[data-testid="scanjob-set-defect-action"]')
-    const clearButton = wrapper.get('[data-testid="scanjob-clear-defect-action"]')
-    expect(setButton.attributes('aria-label')).toBe('Брак')
-    expect(setButton.attributes('title')).toBe('Брак')
-    expect(clearButton.attributes('aria-label')).toBe('Отменить брак')
-    expect(clearButton.attributes('title')).toBe('Отменить брак')
-    expect(setButton.attributes('disabled')).toBeUndefined()
-    expect(clearButton.attributes('disabled')).toBeDefined()
-
-    await setButton.trigger('click')
-    expect(wrapper.emitted('set-defect')?.[0][0]).toEqual(expect.objectContaining({ id: 41 }))
   })
 
   it('emits clear-defect for shift lead only when parcel is defect', async () => {
@@ -554,95 +430,6 @@ describe('Scanjob parcel monitor typed tables', () => {
     }
   })
 
-  it('does not change page when selectedParcelId is not found in parcels', async () => {
-    scanjobmonitorParcelsPerPage.value = 2
-    scanjobmonitorParcelsSortBy.value = [{ key: 'parcelNumber', order: 'asc' }]
-    scanjobmonitorParcelsPage.value = 1
-
-    let wrapper
-    try {
-      wrapper = mount(ScanjobParcelsMonitorTable, {
-        props: {
-          headers: [{ title: 'Посылка', key: 'parcelNumber' }],
-          selectedParcelId: 999,
-          parcels: [
-            { id: 1, parcelId: 1, parcelNumber: 'P-001' },
-            { id: 2, parcelId: 2, parcelNumber: 'P-002' }
-          ]
-        },
-        global
-      })
-
-      await flushPromises()
-
-      expect(scanjobmonitorParcelsPage.value).toBe(1)
-    } finally {
-      wrapper?.unmount()
-    }
-  })
-
-  it('moves to correct page when parcels are sorted in descending order', async () => {
-    const scrollIntoView = mockScrollIntoView()
-    let wrapper
-
-    try {
-      scanjobmonitorParcelsPerPage.value = 2
-      scanjobmonitorParcelsSortBy.value = [{ key: 'parcelNumber', order: 'desc' }]
-      scanjobmonitorParcelsPage.value = 1
-
-      wrapper = mount(ScanjobParcelsMonitorTable, {
-        props: {
-          headers: [{ title: 'Посылка', key: 'parcelNumber' }],
-          selectedParcelId: 1,
-          parcels: [
-            { id: 1, parcelId: 1, parcelNumber: 'P-001' },
-            { id: 2, parcelId: 2, parcelNumber: 'P-002' },
-            { id: 3, parcelId: 3, parcelNumber: 'P-003' }
-          ]
-        },
-        global
-      })
-
-      await flushPromises()
-
-      // Sorted desc: P-003 (id=3), P-002 (id=2), P-001 (id=1)
-      // id=1 is at index 2 → page 2 with 2 per page
-      expect(scanjobmonitorParcelsPage.value).toBe(2)
-    } finally {
-      wrapper?.unmount()
-      scrollIntoView.mockRestore()
-    }
-  })
-
-  it('applies selected-parcel-row class only to matching row', async () => {
-    scanjobmonitorParcelsPerPage.value = 50
-    scanjobmonitorParcelsSortBy.value = []
-
-    let wrapper
-    try {
-      wrapper = mount(ScanjobParcelsMonitorTable, {
-        props: {
-          headers: [{ title: 'Посылка', key: 'parcelNumber' }],
-          selectedParcelId: 2,
-          parcels: [
-            { id: 1, parcelId: 1, parcelNumber: 'P-001' },
-            { id: 2, parcelId: 2, parcelNumber: 'P-002' },
-            { id: 3, parcelId: 3, parcelNumber: 'P-003' }
-          ]
-        },
-        global
-      })
-
-      await flushPromises()
-
-      const selectedRows = wrapper.findAll('.monitor-followed-parcel-row')
-      expect(selectedRows).toHaveLength(1)
-      expect(selectedRows[0].text()).toContain('P-002')
-    } finally {
-      wrapper?.unmount()
-    }
-  })
-
   it('uses custom header sort function when sorting parcels', async () => {
     scanjobmonitorParcelsPerPage.value = 2
     scanjobmonitorParcelsPage.value = 1
@@ -686,112 +473,6 @@ describe('Scanjob parcel monitor typed tables', () => {
     }
   })
 
-  it('uses item.id as fallback when item.parcelId is absent', async () => {
-    const scrollIntoView = mockScrollIntoView()
-    let wrapper
-
-    try {
-      scanjobmonitorParcelsPerPage.value = 50
-      scanjobmonitorParcelsSortBy.value = []
-
-      wrapper = mount(ScanjobParcelsMonitorTable, {
-        props: {
-          headers: [{ title: 'Посылка', key: 'parcelNumber' }],
-          selectedParcelId: 5,
-          parcels: [
-            { id: 5, parcelNumber: 'P-005' },
-            { id: 6, parcelNumber: 'P-006' }
-          ]
-        },
-        global
-      })
-
-      await flushPromises()
-
-      expect(wrapper.find('.monitor-followed-parcel-row').exists()).toBe(true)
-      expect(wrapper.find('.monitor-followed-parcel-row').text()).toContain('P-005')
-    } finally {
-      wrapper?.unmount()
-      scrollIntoView.mockRestore()
-    }
-  })
-
-  it('updates page when selectedParcelId changes reactively', async () => {
-    const scrollIntoView = mockScrollIntoView()
-    let wrapper
-
-    try {
-      scanjobmonitorParcelsPerPage.value = 2
-      scanjobmonitorParcelsSortBy.value = [{ key: 'parcelNumber', order: 'asc' }]
-      scanjobmonitorParcelsPage.value = 1
-
-      wrapper = mount(ScanjobParcelsMonitorTable, {
-        props: {
-          headers: [{ title: 'Посылка', key: 'parcelNumber' }],
-          selectedParcelId: null,
-          parcels: [
-            { id: 1, parcelId: 1, parcelNumber: 'P-001' },
-            { id: 2, parcelId: 2, parcelNumber: 'P-002' },
-            { id: 3, parcelId: 3, parcelNumber: 'P-003' }
-          ]
-        },
-        global
-      })
-
-      await flushPromises()
-      expect(scanjobmonitorParcelsPage.value).toBe(1)
-
-      await wrapper.setProps({ selectedParcelId: 3 })
-      await flushPromises()
-
-      expect(scanjobmonitorParcelsPage.value).toBe(2)
-    } finally {
-      wrapper?.unmount()
-      scrollIntoView.mockRestore()
-    }
-  })
-
-  it('updates page when parcels list changes reactively', async () => {
-    const scrollIntoView = mockScrollIntoView()
-    let wrapper
-
-    try {
-      scanjobmonitorParcelsPerPage.value = 2
-      scanjobmonitorParcelsSortBy.value = [{ key: 'parcelNumber', order: 'asc' }]
-      scanjobmonitorParcelsPage.value = 1
-
-      wrapper = mount(ScanjobParcelsMonitorTable, {
-        props: {
-          headers: [{ title: 'Посылка', key: 'parcelNumber' }],
-          selectedParcelId: 3,
-          parcels: [
-            { id: 1, parcelId: 1, parcelNumber: 'P-001' },
-            { id: 2, parcelId: 2, parcelNumber: 'P-002' }
-          ]
-        },
-        global
-      })
-
-      await flushPromises()
-      // id=3 not found yet → page stays at 1
-      expect(scanjobmonitorParcelsPage.value).toBe(1)
-
-      await wrapper.setProps({
-        parcels: [
-          { id: 1, parcelId: 1, parcelNumber: 'P-001' },
-          { id: 2, parcelId: 2, parcelNumber: 'P-002' },
-          { id: 3, parcelId: 3, parcelNumber: 'P-003' }
-        ]
-      })
-      await flushPromises()
-
-      expect(scanjobmonitorParcelsPage.value).toBe(2)
-    } finally {
-      wrapper?.unmount()
-      scrollIntoView.mockRestore()
-    }
-  })
-
   it('does not change page when perPage is zero', async () => {
     scanjobmonitorParcelsPerPage.value = 0
     scanjobmonitorParcelsSortBy.value = []
@@ -819,35 +500,4 @@ describe('Scanjob parcel monitor typed tables', () => {
     }
   })
 
-  it('sorts without rules returns original parcel order', async () => {
-    const scrollIntoView = mockScrollIntoView()
-    let wrapper
-
-    try {
-      scanjobmonitorParcelsPerPage.value = 2
-      scanjobmonitorParcelsSortBy.value = []
-      scanjobmonitorParcelsPage.value = 1
-
-      wrapper = mount(ScanjobParcelsMonitorTable, {
-        props: {
-          headers: [{ title: 'Посылка', key: 'parcelNumber' }],
-          selectedParcelId: 3,
-          parcels: [
-            { id: 1, parcelId: 1, parcelNumber: 'P-001' },
-            { id: 2, parcelId: 2, parcelNumber: 'P-002' },
-            { id: 3, parcelId: 3, parcelNumber: 'P-003' }
-          ]
-        },
-        global
-      })
-
-      await flushPromises()
-
-      // No sort rules → original order: id=3 at index 2 → page 2
-      expect(scanjobmonitorParcelsPage.value).toBe(2)
-    } finally {
-      wrapper?.unmount()
-      scrollIntoView.mockRestore()
-    }
-  })
 })

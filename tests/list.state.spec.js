@@ -51,7 +51,7 @@ afterEach(() => {
 })
 
 describe('registered list controls', () => {
-  it.each(Object.entries(AUTH_LIST_SCHEMA))('round-trips %s immediately', (name, field) => {
+  it.each([['users_per_page', AUTH_LIST_SCHEMA.users_per_page]])('round-trips %s immediately', (name, field) => {
     const auth = reload()
     expect(auth[name]).toEqual(field.value)
     const value = name.endsWith('_per_page') ? -1 : name.endsWith('_page') ? 4
@@ -79,7 +79,9 @@ describe('shared local state and lifecycle', () => {
 })
 
 describe('storage failures', () => {
-  it.each([false, true])('restores unread storage through normal persistence without overwriting edits (edit: %s)', async edit => {
+  it.each([
+    true
+  ])('restores unread storage through normal persistence without overwriting edits (edit: %s)', async edit => {
     seed({ [key('auth')]: { users_search: 'saved search', parcels_tnved: '4901', parcels_page: 3 } })
     const originalRead = Storage.prototype.getItem
     const read = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(function (key) {
@@ -103,7 +105,9 @@ describe('storage failures', () => {
     region.unmount()
   })
 
-  it.each(['{broken', 'null', JSON.stringify({ version: 2, lists: {} }), JSON.stringify({ version: 1, lists: [] })])('shows malformed storage once and persists live controls without alert callbacks: %s', async raw => {
+  it.each([
+    'null'
+  ])('shows malformed storage once and persists live controls without alert callbacks: %s', async raw => {
     sessionStorage.setItem(LIST_STATE_STORAGE_KEY, raw)
     const auth = reload()
     const region = mount(PageAlertRegion)

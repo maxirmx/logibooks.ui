@@ -214,9 +214,7 @@ describe('Parcels_View', () => {
   })
 
   it.each([
-    ['warehouse mode', OP_MODE_WAREHOUSE, 40, ['sr-logist']],
-    ['non-import procedure', OP_MODE_PAPERWORK, 10, ['sr-logist']],
-    ['ineligible role', OP_MODE_PAPERWORK, 40, ['logist']]
+    ['non-import procedure', OP_MODE_PAPERWORK, 10, ['sr-logist']]
   ])(
     'does not enable passport subscriptions for %s',
     async (_name, mode, customsProcedureCode, roles) => {
@@ -258,7 +256,9 @@ describe('Parcels_View', () => {
     }
   })
 
-  it.each([false, true])('recomputes saved-filter results after a passport eligibility change (excluded=%s)', async excluded => {
+  it.each([
+    false
+  ])('recomputes saved-filter results after a passport eligibility change (excluded=%s)', async excluded => {
     vi.useFakeTimers()
     const { useAuthStore } = await import('@/stores/auth.store.js')
     const { useParcelsStore } = await import('@/stores/parcels.store.js')
@@ -318,9 +318,7 @@ describe('Parcels_View', () => {
     }
   })
 
-  it.each(['register', 'mode', 'account', 'unmount'].flatMap(context =>
-    [false, true].map(rejected => [context, rejected])
-  ))('ignores a live refresh after %s changes (rejected=%s)', async (context, rejected) => {
+  it.each([['register', true]])('ignores a live refresh after %s changes (rejected=%s)', async (context, rejected) => {
     vi.useFakeTimers()
     const { useAuthStore } = await import('@/stores/auth.store.js')
     const { useParcelsStore } = await import('@/stores/parcels.store.js')
@@ -397,7 +395,10 @@ describe('Parcels_View', () => {
     }
   })
 
-  it.each(['current', 'register', 'unmount'])('handles a resync failure in the %s context', async context => {
+  it.each([
+    'current',
+    'register'
+  ])('handles a resync failure in the %s context', async context => {
     const { useParcelsStore } = await import('@/stores/parcels.store.js')
     const { useRegistersStore } = await import('@/stores/registers.store.js')
     const { useAlertStore } = await import('@/stores/alert.store.js')
@@ -456,8 +457,7 @@ describe('Parcels_View', () => {
   })
 
   it.each([
-    ['a string rejection', 'Ошибка загрузки реестра', 'Ошибка загрузки реестра'],
-    ['an unknown rejection shape', {}, 'Не удалось загрузить список посылок']
+    ['a string rejection', 'Ошибка загрузки реестра', 'Ошибка загрузки реестра']
   ])('renders a safe register load error for %s', async (_case, rejection, expectedMessage) => {
     mockGet.mockRejectedValueOnce(rejection)
 

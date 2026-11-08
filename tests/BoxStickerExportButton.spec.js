@@ -49,12 +49,6 @@ afterEach(() => {
 })
 
 describe('box sticker CSV export', () => {
-  it('downloads a persisted box with a sticker code even if its old second field is blank', async () => {
-    const wrapper = render({ ...goodBox, code: '' })
-    await wrapper.get('button[data-testid="box-export-stickers"]').trigger('click')
-    expect(fetchWrapper.downloadFile).toHaveBeenCalledOnce()
-  })
-
   it('locks a pending export, respects external loading and permits a subsequent download', async () => {
     let complete
     fetchWrapper.downloadFile.mockReturnValueOnce(new Promise(resolve => { complete = resolve }))

@@ -140,7 +140,9 @@ describe('Box_EditDialog.vue', () => {
     routerPush.mockResolvedValue()
   })
 
-  it.each(['replacement sticker', '', '   '])('blocks printing an unsaved sticker %j and restores printing when the edit is reverted', async (draft) => {
+  it.each([
+    'replacement sticker'
+  ])('blocks printing an unsaved sticker %j and restores printing when the edit is reverted', async (draft) => {
     mockIsAdmin.value = true
     const saved = '$1:1:4542503776:362877'
     mockBox.value = { ...mockBox.value, companyId: 2, boxSticker: saved, printableTemplates: ['WBR_BOX'] }

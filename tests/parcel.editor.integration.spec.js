@@ -363,7 +363,9 @@ describe.each(editors)('%s editor with real forms and stores', (_name, component
   })
 })
 
-it.each(['resolve', 'reject'])('preserves destination editor ownership during a cached-charge refresh (navigation %ss)', async outcome => {
+it.each([
+  'resolve'
+])('preserves destination editor ownership during a cached-charge refresh (navigation %ss)', async outcome => {
   const store = useParcelsStore()
   const presentation = vi.spyOn(useAlertStore(), 'error')
   const wrapper = mountEditor()

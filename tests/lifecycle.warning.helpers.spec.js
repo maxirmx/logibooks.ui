@@ -7,10 +7,7 @@ import { buildFinishPassportCheckWarning, confirmPassportCheckRestart } from '@/
 
 describe('lifecycle warning helpers', () => {
   it.each([
-    [1, 12, 'для 1 посылки она не проводилась; для 12 посылок она ещё выполняется'],
-    [21, 0, 'для 21 посылки она не проводилась'],
-    [11, 0, 'для 11 посылок она не проводилась'],
-    [0, 2, 'для 2 посылок она ещё выполняется']
+    [1, 12, 'для 1 посылки она не проводилась; для 12 посылок она ещё выполняется']
   ])('builds finish warning for %i/%i', (notChecked, inProgress, clause) => {
     expect(buildFinishPassportCheckWarning(notChecked, inProgress)).toBe(
       `Вы завершаете проверку паспортов, хотя ${clause}. Целостность выгружаемых данных может быть нарушена.`

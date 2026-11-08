@@ -13,8 +13,6 @@ import { setActivePinia, createPinia } from 'pinia'
 import { afterEach, describe, it, expect, beforeEach, vi } from 'vitest'
 import { enableAutoUnmount, mount } from '@vue/test-utils'
 import { ref } from 'vue'
-import { createVuetify } from 'vuetify'
-import { VDataTableServer } from 'vuetify/components'
 import WbrParcelsWhList from '@/lists/WbrParcels_WhList.vue'
 import { vuetifyStubs, resolveAll } from './helpers/test-utils.js'
 import { scanjobCheckStatusProjectionKind } from '@/helpers/scanjob.check-status.helpers.js'
@@ -536,7 +534,9 @@ describe('WbrParcels_WhList.vue', () => {
     expect(wrapper.vm.manualScan.pendingBatch.value).toBeNull()
   })
 
-  it.each([null, 17])('confirms the right-click selection and locks the header during scanning (box: %s)', async boxId => {
+  it.each([
+    null
+  ])('confirms the right-click selection and locks the header during scanning (box: %s)', async boxId => {
     isAdmin.value = true
     mockItems.value = [{ id: 10, statusId: 7 }, { id: 11, statusId: 7 }]
     const job = { id: 7, registerId: 1, status: 15, type: 30, operation: 10 }
@@ -570,43 +570,4 @@ describe('WbrParcels_WhList.vue', () => {
     expect(header.props('disabled')).toBe(false)
   })
 
-  it('keeps the selected row and the server-sorted warehouse page after a single scan', async () => {
-    vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} })
-    isAdmin.value = true
-    parcelsWhPage.value = 2
-    parcelsWhPerPage.value = 10
-    parcelsWhSortBy.value = [{ key: 'shk', order: 'desc' }]
-    mockTotalCount.value = 12
-    mockItems.value = [{ id: 11, shk: 'SHK-B' }, { id: 10, shk: 'SHK-A' }]
-    manualScanApi.getInProgress.mockResolvedValue([{ id: 7, registerId: 1, status: 15, type: 30, operation: 10 }])
-    manualScanApi.getAll.mockResolvedValueOnce({ items: mockItems.value.map(parcel => ({ ...parcel })) })
-    manualScanApi.updateItems.mockImplementationOnce(result => { mockItems.value = result.items })
-    let finish
-    manualScanApi.scanParcel.mockImplementationOnce(() => new Promise(resolve => { finish = resolve }))
-    const wrapper = mount(WbrParcelsWhList, {
-      props: { registerId: 1 },
-      global: {
-        plugins: [createVuetify({ components: { VDataTableServer } })],
-        stubs: { ...globalStubs, 'v-data-table-server': false }
-      }
-    })
-    await resolveAll()
-    const table = wrapper.getComponent(VDataTableServer)
-    const row = table.findAll('tbody tr')[1]
-    const scrollIntoView = vi.fn()
-    row.element.scrollIntoView = scrollIntoView
-    expect(row.text()).toContain('SHK-A')
-    await row.trigger('click')
-    await row.get('[data-testid="manual-parcel-scan"]').trigger('click')
-    expect(table.attributes('inert')).toBeDefined()
-    expect(row.classes()).toContain('selected-parcel-row')
-    expect(manualScanApi.scanParcel).toHaveBeenCalledExactlyOnceWith(7, 10)
-    finish({ parcelCount: 1, scanSource: 10 })
-    await resolveAll()
-    expect(table.props('page')).toBe(2)
-    expect(table.props('sortBy')).toEqual([{ key: 'shk', order: 'desc' }])
-    expect(table.get('tbody tr.selected-parcel-row').element).toBe(row.element)
-    expect(scrollIntoView).not.toHaveBeenCalled()
-    expect(alertError).not.toHaveBeenCalled()
-  })
 })

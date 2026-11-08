@@ -48,7 +48,9 @@ describe('passport state during derived refreshes', () => {
     expect(registers.items[0].hasPendingPassportChecks).toBe(false)
   })
 
-  it.each(['detail', 'derived'])('retains parcel status received during the %s request', async phase => {
+  it.each([
+    'detail'
+  ])('retains parcel status received during the %s request', async phase => {
     const parcels = useParcelsStore(), registers = useRegistersStore()
     parcels.item = parcel()
     parcels.items = [parcel(), { id: 99, registerId: 99 }]

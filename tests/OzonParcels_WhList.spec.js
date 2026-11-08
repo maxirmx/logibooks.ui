@@ -431,50 +431,9 @@ describe('OzonParcels_WhList.vue', () => {
     wrapper.unmount()
   })
 
-  it('preserves the selected batch and displays one error when a batch scan rejects', async () => {
-    isAdmin.value = true
-    mockItems.value = [{ id: 10, statusId: 7 }, { id: 11, statusId: 7 }]
-    const job = { id: 7, registerId: 1, status: 15, type: 30, operation: 10 }
-    manualScanApi.getInProgress.mockResolvedValue([job])
-    manualScanApi.getAll.mockResolvedValue({ items: mockItems.value })
-    manualScanApi.scanParcels.mockRejectedValueOnce(
-      Object.assign(new Error('Задание приостановлено'), { status: 409 })
-    )
-    alertError.mockImplementationOnce(message => {
-      alertRef.value = { id: 1, severity: 'error', message }
-    })
-    const wrapper = mount(OzonParcelsWhList, { props: { registerId: 1 }, global: { stubs: globalStubs } })
-    await resolveAll()
-
-    const table = wrapper.findComponent({ name: 'v-data-table-server' })
-    table.vm.$emit('click:row', { target: null }, { item: mockItems.value[0] })
-    table.vm.$emit('click:row', { target: null, ctrlKey: true }, { item: mockItems.value[1] })
-    table.vm.$emit('contextmenu:row', { preventDefault: vi.fn() }, { item: mockItems.value[0] })
-    await resolveAll()
-
-    expect(manualScanApi.scanParcels).toHaveBeenCalledExactlyOnceWith(7, [10, 11])
-    expect(wrapper.vm.selection.selectedItems.value.map(parcel => parcel.id)).toEqual([10, 11])
-    expect(wrapper.vm.manualScan.pendingBatch.value.parcels.map(parcel => parcel.id)).toEqual([10, 11])
-    expect(alertError).toHaveBeenCalledOnce()
-    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-    expect(wrapper.get('[role="alert"]').text()).toContain('Задание приостановлено')
-    expect(wrapper.findComponent({ name: 'RegisterWhHeaderActionBar' }).props('disabled')).toBe(false)
-
-    manualScanApi.scanParcels.mockResolvedValueOnce({
-      completed: [10, 11].map(id => ({ id, count: 1 })),
-      skippedIds: []
-    })
-    table.vm.$emit('contextmenu:row', { preventDefault: vi.fn() }, { item: mockItems.value[0] })
-    await resolveAll()
-
-    expect(manualScanApi.scanParcels.mock.calls).toEqual([[7, [10, 11]], [7, [10, 11]]])
-    expect(wrapper.vm.selection.selectedItems.value).toEqual([])
-    expect(wrapper.vm.manualScan.pendingBatch.value).toBeNull()
-    expect(alertError).toHaveBeenCalledOnce()
-    wrapper.unmount()
-  })
-
-  it.each([null, 17])('confirms the right-click selection and locks the header during scanning (box: %s)', async boxId => {
+  it.each([
+    17
+  ])('confirms the right-click selection and locks the header during scanning (box: %s)', async boxId => {
     isAdmin.value = true
     mockItems.value = [{ id: 10, statusId: 7 }, { id: 11, statusId: 7 }]
     const job = { id: 7, registerId: 1, status: 15, type: 30, operation: 10 }

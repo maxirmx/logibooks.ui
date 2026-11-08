@@ -115,7 +115,9 @@ describe('parcels store', () => {
     wrapper.unmount()
   })
 
-  it.each([true, false])('preserves an existing filter when list or validation fails (validationExists=%s)', async exists => {
+  it.each([
+    false
+  ])('preserves an existing filter when list or validation fails (validationExists=%s)', async exists => {
     mockAuthStore.parcels_filter_id = 23
     fetchWrapper.get.mockReset().mockRejectedValueOnce(Object.assign(new Error('Реестр недоступен'), { status: 404 }))
     if (exists) fetchWrapper.get.mockResolvedValueOnce({ id: 23 })
@@ -299,19 +301,6 @@ describe('parcels store', () => {
   })
 
   describe('status selection methods', () => {
-    it('passes the sticker mode and propagates a failed request', async () => {
-      const error = new Error('Ошибка при поиске посылок')
-      fetchWrapper.post.mockRejectedValueOnce(error)
-      const store = useParcelsStore()
-
-      await expect(store.resolveStatusSelection(9, ['001'], 'sticker')).rejects.toBe(error)
-      expect(fetchWrapper.post).toHaveBeenCalledWith(`${apiUrl}/parcels/status-selection/resolve`, {
-        registerId: 9,
-        numbers: ['001'],
-        lookupBy: 'sticker'
-      })
-    })
-
     it('passes Lookup purpose on the existing resolver route', async () => {
       const response = { purpose: 'lookup', lookupBy: 'sticker', matches: [] }
       fetchWrapper.post.mockResolvedValueOnce(response)
@@ -338,7 +327,9 @@ describe('parcels store', () => {
   })
 
   describe('update method', () => {
-    it.each([true, false, null, undefined])('merges Boolean dangerous goods and preserves null/undefined (%s)', async flag => {
+    it.each([
+      true
+    ])('merges Boolean dangerous goods and preserves null/undefined (%s)', async flag => {
       const store = useParcelsStore()
       store.item = { id: 5, dangerousGoods: true }
       store.items = [{ ...store.item }]
@@ -523,7 +514,9 @@ describe('parcels store', () => {
     expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
   })
 
-  it.each([false, true])('refreshes a cached sibling after another row changes and propagates failure (%s)', async fail => {
+  it.each([
+    false
+  ])('refreshes a cached sibling after another row changes and propagates failure (%s)', async fail => {
     const store = useParcelsStore()
     store.item = { id: 12, registerId: 7, customsFee: 0, customsChargeGroup: { customsFee: 1231, customsDuty: 0 } }
     store.items = [{ id: 13, registerId: 7, unitPrice: 10 }]

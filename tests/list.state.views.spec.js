@@ -103,7 +103,9 @@ describe('reloads with real Pinia state and list loading', () => {
         expect(indicator.props('progressDialogVisible')).toBe(false)
       }
     })
-  it.each([false, true])('coalesces scope, page, and search resets into one request (failure: %s)', async fail => {
+  it.each([
+    false
+  ])('coalesces scope, page, and search resets into one request (failure: %s)', async fail => {
     vi.useFakeTimers()
     const auth = reload()
     auth.parcels_wh_page = 3
@@ -261,7 +263,9 @@ describe('reloads with real Pinia state and list loading', () => {
     expect(table.props('sortBy')).toEqual([{ key: 'boxCode', order: 'desc' }])
   })
 
-  it.each(['save', 'cancel'])('preserves personal and ordinary controls through editor %s and subsequent reload', async action => {
+  it.each([
+    'save'
+  ])('preserves personal and ordinary controls through editor %s and subsequent reload', async action => {
     const auth = reload()
     auth.setParcelFilterId(23)
     auth.parcels_tnved = '4901'

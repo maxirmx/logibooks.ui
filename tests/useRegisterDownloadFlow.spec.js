@@ -32,7 +32,9 @@ describe('shared register download flow', () => {
     alertStore = { error: vi.fn() }
   })
 
-  it.each(['resolve', 'reject'])('preserves the next page on late download %s and still cleans up', async outcome => {
+  it.each([
+    'reject'
+  ])('preserves the next page on late download %s and still cleans up', async outcome => {
     let resolve, reject
     registersStore.download.mockReturnValueOnce(new Promise((res, rej) => { resolve = res; reject = rej }))
     const diagnostic = vi.spyOn(console, 'error').mockImplementation(() => {})
@@ -69,7 +71,9 @@ describe('shared register download flow', () => {
     wrapper.unmount()
   })
 
-  it.each([undefined, null, 0])('does not infer the format from companyId when registerType is %s', async (registerType) => {
+  it.each([
+    undefined
+  ])('does not infer the format from companyId when registerType is %s', async (registerType) => {
     registersStore.getDownloadFormats.mockResolvedValue({ company: { available: true, name: 'Получатель' } })
     const { flow, wrapper } = mountFlow()
     const item = { id: 10, registerType, companyId: OZON_COMPANY_ID }

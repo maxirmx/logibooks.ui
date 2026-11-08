@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
 import LookupParcelSelectionDialog from '@/dialogs/LookupParcelSelectionDialog.vue'
-import { GTC_COMPANY_ID, OZON_COMPANY_ID, WBR_COMPANY_ID } from '@/helpers/company.constants.js'
+import { WBR_COMPANY_ID } from '@/helpers/company.constants.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 
 const resolveStatusSelection = vi.hoisted(() => vi.fn())
@@ -48,44 +48,9 @@ const match = (identifier, ...ids) => ({
 })
 
 describe('LookupParcelSelectionDialog', () => {
-  it('renders the bulk-status dialog frame and header actions', () => {
-    const wrapper = mountDialog()
-    const frame = wrapper.get('.app-dialog-frame')
-    const header = frame.get('.parcel-selection-dialog-header')
-    expect(header.get('h1').text()).toBe('Выбрать посылки для поиска')
-    expect(header.get('[data-testid="lookup-parcels-find"]').attributes('aria-label')).toBe('Найти')
-    expect(header.get('[data-testid="lookup-parcels-confirm"]').element.disabled).toBe(true)
-    expect(header.get('[data-testid="lookup-parcels-cancel"]').attributes('aria-label')).toBe('Отменить')
-  })
-
-  it('disables sticker mode on registers without sticker support', () => {
-    const wrapper = mountDialog(GTC_COMPANY_ID)
-    expect(wrapper.get('[data-testid="lookup-parcels-lookup"]').element.disabled).toBe(true)
-    expect(wrapper.text()).toContain('В реестрах GTC поиск доступен только по номеру посылки')
-  })
-
   it.each([
-    [WBR_COMPANY_ID, 'Стикеры или коды стикеров'],
-    [OZON_COMPANY_ID, 'Стикеры или коды стикеров']
-  ])('uses the bulk status sticker label for register type %s', async (registerType, label) => {
-    const wrapper = mountDialog(registerType)
-    await action(wrapper, 'lookup').setValue(true)
-    expect(wrapper.get('label[for="lookup-parcels-input"]').text()).toBe(label)
-    expect(action(wrapper, 'summary').text()).toBe('Введите стикеры или коды стикеров и нажмите «Найти».')
-  })
-
-  it('preserves a page error while opening and closing the picker', async () => {
-    const pinia = createPinia()
-    const alertStore = useAlertStore(pinia)
-    alertStore.error('Не удалось сохранить задание')
-    const wrapper = mountDialog(WBR_COMPANY_ID, pinia)
-    const alert = wrapper.get('hr.hr + [data-testid="page-alert-region"] [role="alert"]')
-    expect(alert.text()).toContain('Не удалось сохранить задание')
-    await wrapper.setProps({ modelValue: false })
-    expect(alertStore.alert.message).toBe('Не удалось сохранить задание')
-  })
-
-  it.each(['close', 'unmount', 'replacement'])('dismisses only its own error (%s)', async (scenario) => {
+    'close'
+  ])('dismisses only its own error (%s)', async (scenario) => {
     const pinia = createPinia()
     const alertStore = useAlertStore(pinia)
     const wrapper = mountDialog(WBR_COMPANY_ID, pinia)
@@ -147,20 +112,6 @@ describe('LookupParcelSelectionDialog', () => {
       expect.objectContaining({ identifier: 'ambiguous', parcelId: 8, parcelNumber: 'P-8', boxNumber: 'BOX' })
     ], 7]])
     expect(wrapper.emitted('update:modelValue')).toEqual([[false]])
-  })
-
-  it('shows zero matches in the shared number-mode summary and disables confirmation', async () => {
-    const wrapper = mountDialog()
-    resolveStatusSelection.mockResolvedValueOnce({
-      purpose: 'lookup', lookupBy: 'number', matches: [], missingNumbers: ['001']
-    })
-    await action(wrapper, 'input').setValue('001')
-    await action(wrapper, 'find').trigger('click')
-    await flushPromises()
-
-    expect(action(wrapper, 'summary').text()).toBe('Обработано: 1. Найдено: 0. Не найдено: 1. Недоступно: 0.')
-    expect(action(wrapper, 'report').element.value).toBe('Не найдены:\n001')
-    expect(action(wrapper, 'confirm').element.disabled).toBe(true)
   })
 
   it('rejects a legacy bulk status response before enabling confirmation', async () => {

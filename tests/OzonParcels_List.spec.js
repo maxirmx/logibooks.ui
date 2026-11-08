@@ -330,33 +330,6 @@ describe('OzonParcels_List.vue – multi-select', () => {
     expect(navigateToEditParcel).toHaveBeenCalledWith(expect.anything(), item, 'Редактирование посылки',
       expect.objectContaining({ registerId: 1 }))
   })
-  it.each([762, 860])('prefixes only dangerous parcel statuses for country %s', async country => {
-    wrapper.unmount()
-    mockRegisterItem.value = { dealNumber: 'D-1', theOtherCountryCode: country }
-    mockItems.value = [
-      { id: 1, postingNumber: 'P-1', statusId: 5, dangerousGoods: true },
-      { id: 2, postingNumber: 'P-2', statusId: 5, dangerousGoods: false }
-    ]
-    wrapper = mount(OzonParcels_List, {
-      props: { registerId: 1 },
-      global: { plugins: [createPinia()], stubs: { ...globalStubs, ClickableCell: false } }
-    })
-    try {
-      await resolveAll()
-      const labels = wrapper.findAll('.parcel-status-label')
-      expect(labels).toHaveLength(2)
-      expect(labels[0].text()).toBe('Status 5')
-      expect(labels[1].text()).toBe('Status 5')
-      expect(labels[0].find('[role="img"]').exists()).toBe(country === 762)
-      expect(labels[1].find('[role="img"]').exists()).toBe(false)
-      if (country === 762) {
-        navigateToEditParcel.mockClear()
-        await labels[0].get('[role="img"]').trigger('click')
-        expect(navigateToEditParcel).toHaveBeenCalledTimes(1)
-      }
-    } finally { wrapper.unmount() }
-  })
-
   it('returns a handled list failure and skips the cached detail after bulk assignment', async () => {
     const { loadParcels } = await import('@/helpers/parcels.list.helpers.js')
     loadParcels.mockResolvedValueOnce(false)

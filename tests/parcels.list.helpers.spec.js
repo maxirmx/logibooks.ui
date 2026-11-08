@@ -260,7 +260,7 @@ describe('Parcels List Helpers', () => {
   })
 
   describe('updateParcelTnVed', () => {
-    it('should update parcel TN VED without calling loadOrdersFn when not provided', async () => {
+    it('leaves the list refresh to the store after updating TN VED', async () => {
       const mockStore = {
         update: vi.fn().mockResolvedValue(),
         error: ''
@@ -268,9 +268,12 @@ describe('Parcels List Helpers', () => {
       const item = { id: 123, tnVed: 'old-code' }
       const feacnCode = 'new-code'
 
-      await updateParcelTnVed(item, feacnCode, mockStore, null)
+      const mockLoadOrders = vi.fn()
+
+      await expect(updateParcelTnVed(item, feacnCode, mockStore, mockLoadOrders)).resolves.toBe(true)
 
       expect(mockStore.update).toHaveBeenCalledWith(123, { ...item, tnVed: 'new-code' })
+      expect(mockLoadOrders).not.toHaveBeenCalled()
     })
 
     it('should handle update errors with default message', async () => {
@@ -282,10 +285,10 @@ describe('Parcels List Helpers', () => {
       const item = { id: 123, tnVed: 'old-code' }
       const feacnCode = 'new-code'
 
-      await updateParcelTnVed(item, feacnCode, mockStore, mockLoadOrders)
+      await expect(updateParcelTnVed(item, feacnCode, mockStore, mockLoadOrders)).resolves.toBe(false)
 
       expect(mockStore.error).toBe('Ошибка при обновлении ТН ВЭД')
-      expect(mockLoadOrders).toHaveBeenCalled()
+      expect(mockLoadOrders).toHaveBeenCalledTimes(1)
     })
   })
 

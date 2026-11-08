@@ -358,28 +358,25 @@ export function getMatchType(code, tnVed) {
  * @param {Object} item - The parcel item
  * @param {string} feacnCode - The FEACN code to set as TN VED
  * @param {Object} parcelsStore - The parcels store instance
- * @param {Function} loadOrdersFn - Function to reload orders
- * @returns {Promise<void>}
+ * @param {Function} [loadOrdersFn] - Reloads the list if the update fails
+ * @returns {Promise<boolean>}
  */
 export async function updateParcelTnVed(item, feacnCode, parcelsStore, loadOrdersFn) {
   const alertStore = useAlertStore()
-  let succeeded = false
   try {
     const updatedItem = { ...item, tnVed: feacnCode }
     await parcelsStore.update(item.id, updatedItem)
-    succeeded = true
+    return true
   } catch (error) {
     parcelsStore.error = error?.response?.data?.message || 'Ошибка при обновлении ТН ВЭД'
     alertStore.error(parcelsStore.error)
-  } finally {
     try {
       await loadOrdersFn?.()
     } catch (refreshError) {
       alertStore.error(refreshError, { fallback: 'Не удалось обновить список посылок' })
-      succeeded = false
     }
+    return false
   }
-  return succeeded
 }
 
 /**

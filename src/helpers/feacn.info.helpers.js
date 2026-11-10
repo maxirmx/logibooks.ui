@@ -179,10 +179,19 @@ export function clearFeacnInfoCache() {
 }
 
 /**
- * Preloads FEACN info for an array of codes (new name for clarity)
- * @param {string[]} codes - Array of FEACN codes
- * @returns {Promise<void>}
+ * Installs the FEACN descriptions returned with a parcel page.
+ * A null value marks a code missing from the dictionary.
+ * @param {Record<string, object | null>} results
  */
+export function seedFeacnInfo(results) {
+  const entries = Object.entries(results ?? {}).map(([code, item]) => [code, {
+    name: item ? formatFeacnNameFromItem({ ...item, code }) : 'Несуществующий код ТН ВЭД',
+    found: item != null,
+    loading: false
+  }])
+  globalFeacnInfo.value = { ...globalFeacnInfo.value, ...Object.fromEntries(entries) }
+}
+
 export async function preloadFeacnInfo(codes) {
   if (!codes || !Array.isArray(codes) || codes.length === 0) return
 

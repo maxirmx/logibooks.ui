@@ -36,7 +36,7 @@ vi.mock('../src/helpers/feacn.info.helpers.js', () => ({
   preloadFeacnInfo: vi.fn()
 }))
 
-import { validateParcelData, getRowPropsForParcel, generateRegisterName, getFeacnCodesForKeywords, getKeywordFeacnPairs, getFeacnCodeItemClass, getMatchingFeacnCodeItemClass, getTnVedCellClass, updateParcelTnVed, loadParcels, formatPassport, buildParcelEditCellClass } from '../src/helpers/parcels.list.helpers.js'
+import { validateParcelData, getRowPropsForParcel, generateRegisterName, getFeacnCodesForKeywords, getKeywordFeacnPairs, getFeacnCodeItemClass, getMatchingFeacnCodeItemClass, getTnVedCellClass, loadParcels, formatPassport, buildParcelEditCellClass } from '../src/helpers/parcels.list.helpers.js'
 
 // Import mocked FEACN info helpers
 import { getCachedFeacnInfo, preloadFeacnInfo } from '../src/helpers/feacn.info.helpers.js'
@@ -259,39 +259,6 @@ describe('Parcels List Helpers', () => {
       expect(result).toBe('tnved-cell matched')
     })
 
-  })
-
-  describe('updateParcelTnVed', () => {
-    it('leaves the list refresh to the store after updating TN VED', async () => {
-      const mockStore = {
-        update: vi.fn().mockResolvedValue(),
-        error: ''
-      }
-      const item = { id: 123, tnVed: 'old-code' }
-      const feacnCode = 'new-code'
-
-      const mockLoadOrders = vi.fn()
-
-      await expect(updateParcelTnVed(item, feacnCode, mockStore, mockLoadOrders)).resolves.toBe(true)
-
-      expect(mockStore.update).toHaveBeenCalledWith(123, { ...item, tnVed: 'new-code' }, { refreshDetail: false })
-      expect(mockLoadOrders).not.toHaveBeenCalled()
-    })
-
-    it('should handle update errors with default message', async () => {
-      const mockStore = {
-        update: vi.fn().mockRejectedValue(new Error('Network error')),
-        error: ''
-      }
-      const mockLoadOrders = vi.fn()
-      const item = { id: 123, tnVed: 'old-code' }
-      const feacnCode = 'new-code'
-
-      await expect(updateParcelTnVed(item, feacnCode, mockStore, mockLoadOrders)).resolves.toBe(false)
-
-      expect(mockStore.error).toBe('Ошибка при обновлении ТН ВЭД')
-      expect(mockLoadOrders).toHaveBeenCalledTimes(1)
-    })
   })
 
   describe('loadParcels', () => {

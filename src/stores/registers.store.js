@@ -31,6 +31,9 @@ export const useRegistersStore = defineStore('registers', () => {
   let itemRequestRegisterId = null
   let listRequestSequence = 0
   const projectionRevisions = new Map()
+  const chargeSnapshots = new Map()
+  const readOnlyConflicts = new Map()
+  let registerSnapshotArrival = 0
   const derivedRefreshes = new Map()
   const uploadFile = ref(null)
   const loading = ref(false)
@@ -51,6 +54,24 @@ export const useRegistersStore = defineStore('registers', () => {
 
   let opsInitialized = false
   let opsPromise = null
+
+  function getRegisterSnapshotWatermark() {
+    return registerSnapshotArrival
+  }
+
+  function mergeRegisterSnapshot(register, watermark) {
+    const id = Number(register?.id)
+    const accountId = useAuthStore().user?.id
+    const charges = chargeSnapshots.get(id)
+    const conflict = readOnlyConflicts.get(id)
+    if (charges && charges.arrival > watermark && charges.accountId === accountId) {
+      register = { ...register, ...charges.charges }
+    }
+    if (conflict && conflict.arrival > watermark && conflict.accountId === accountId) {
+      register = { ...register, readOnly: true }
+    }
+    return register
+  }
 
   function mergeLivePassportCheckState(register, requestWatermark) {
     const registerId = Number(register?.id)
@@ -245,6 +266,7 @@ export const useRegistersStore = defineStore('registers', () => {
     registerStatusId,
     inProgressOnly = false
   } = {}) {
+    const registerWatermark = getRegisterSnapshotWatermark()
     const passportCheckStateWatermark = livePassportCheckStateArrival
     const revisions = new Map(projectionRevisions)
     const preserveCurrentProjection = register => {
@@ -289,13 +311,15 @@ export const useRegistersStore = defineStore('registers', () => {
       const response = await fetchWrapper.get(`${baseUrl}?${queryParams.toString()}`)
       if (Array.isArray(response)) {
         response.forEach((register, index) => {
-          const merged = preserveCurrentProjection(mergeLivePassportCheckState(register, passportCheckStateWatermark))
+          const merged = mergeRegisterSnapshot(
+            preserveCurrentProjection(mergeLivePassportCheckState(register, passportCheckStateWatermark)), registerWatermark)
           setDestinationField(merged)
           response[index] = merged
         })
       } else if (Array.isArray(response?.items)) {
         response.items = response.items.map((register) => {
-          const merged = preserveCurrentProjection(mergeLivePassportCheckState(register, passportCheckStateWatermark))
+          const merged = mergeRegisterSnapshot(
+            preserveCurrentProjection(mergeLivePassportCheckState(register, passportCheckStateWatermark)), registerWatermark)
           setDestinationField(merged)
           return merged
         })
@@ -311,6 +335,7 @@ export const useRegistersStore = defineStore('registers', () => {
 
   async function getAll({ mode = OP_MODE_PAPERWORK } = {}) {
     const requestSequence = ++listRequestSequence
+    const registerWatermark = getRegisterSnapshotWatermark()
     const authStore = useAuthStore()
     const warehouseMode = mode === OP_MODE_WAREHOUSE
     const page = warehouseMode ? authStore.registers_wh_page : authStore.registers_page
@@ -338,7 +363,7 @@ export const useRegistersStore = defineStore('registers', () => {
 
       if (requestSequence !== listRequestSequence) return
       // API format with pagination metadata
-      items.value = response.items || []
+      items.value = (response.items || []).map(register => mergeRegisterSnapshot(register, registerWatermark))
       totalCount.value = response.pagination?.totalCount || 0
       hasNextPage.value = response.pagination?.hasNextPage || false
       hasPreviousPage.value = response.pagination?.hasPreviousPage || false
@@ -474,10 +499,11 @@ export const useRegistersStore = defineStore('registers', () => {
           await useParcelsStore().refreshVisibleDerived(id)
           continue
         }
+        const registerWatermark = getRegisterSnapshotWatermark()
         const passportCheckStateWatermark = livePassportCheckStateArrival
         const response = await fetchWrapper.get(`${baseUrl}/${id}`)
         if (!response || revision !== (projectionRevisions.get(Number(id)) ?? 0)) continue
-        const register = mergeLivePassportCheckState(response, passportCheckStateWatermark)
+        const register = mergeRegisterSnapshot(mergeLivePassportCheckState(response, passportCheckStateWatermark), registerWatermark)
         setDestinationField(register)
         // A successful terminal snapshot supersedes older reads, including loading/error
         // detail placeholders. A newer list/filter change or detail navigation keeps ownership.
@@ -502,6 +528,7 @@ export const useRegistersStore = defineStore('registers', () => {
     const requestSequence = ++itemRequestSequence
     itemRequestRegisterId = Number(id)
     const revision = projectionRevisions.get(Number(id)) ?? 0
+    const registerWatermark = getRegisterSnapshotWatermark()
     const passportCheckStateWatermark = livePassportCheckStateArrival
     item.value = { loading: true }
     try {
@@ -509,7 +536,7 @@ export const useRegistersStore = defineStore('registers', () => {
         ensureOpsLoaded(),
         fetchWrapper.get(`${baseUrl}/${id}`)
       ])
-      const register = mergeLivePassportCheckState(response, passportCheckStateWatermark)
+      const register = mergeRegisterSnapshot(mergeLivePassportCheckState(response, passportCheckStateWatermark), registerWatermark)
       setDestinationField(register)
       if (revision !== (projectionRevisions.get(Number(id)) ?? 0)) register.derivedTotalsPending = true
       if (requestSequence === itemRequestSequence) item.value = register
@@ -520,15 +547,24 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
+  function markRegisterReadOnly(registerId) {
+    const accountId = useAuthStore().user?.id
+    readOnlyConflicts.set(registerId, { arrival: ++registerSnapshotArrival, accountId })
+    const lock = register => Number(register?.id) === registerId ? { ...register, readOnly: true } : register
+    item.value = lock(item.value)
+    items.value = items.value.map(lock)
+  }
+
   async function refreshReadOnlyRegister(id) {
     const itemSequence = itemRequestSequence
     const listSequence = listRequestSequence
     const revision = projectionRevisions.get(id)
+    const registerWatermark = getRegisterSnapshotWatermark()
     const passportCheckStateWatermark = livePassportCheckStateArrival
     let refreshed
     try {
       const response = await fetchWrapper.get(`${baseUrl}/${id}`)
-      refreshed = mergeLivePassportCheckState(response, passportCheckStateWatermark)
+      refreshed = mergeRegisterSnapshot(mergeLivePassportCheckState(response, passportCheckStateWatermark), registerWatermark)
       setDestinationField(refreshed)
     } finally {
       // Refresh the lock independently of derived values. On failure the
@@ -1084,16 +1120,20 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
-  function patchRegisterCharges(result) {
+  function patchRegisterCharges(result, watermark = getRegisterSnapshotWatermark()) {
     if (!result || result.registerId === undefined || result.registerId === null) {
       return
     }
 
     const registerId = Number(result.registerId)
+    const accountId = useAuthStore().user?.id
+    const previous = chargeSnapshots.get(registerId)
+    if (previous?.accountId === accountId && previous?.arrival > watermark) return
     const charges = {
       customsFee: result.customsFee ?? null,
       customsDuty: result.customsDuty ?? null
     }
+    chargeSnapshots.set(registerId, { arrival: ++registerSnapshotArrival, accountId, charges })
 
     if (item.value && Number(item.value.id) === registerId) {
       item.value = { ...item.value, ...charges }
@@ -1268,7 +1308,10 @@ export const useRegistersStore = defineStore('registers', () => {
     updateWeightsFromFile,
     getById,
     refreshReadOnlyRegister,
+    markRegisterReadOnly,
     invalidateDerived,
+    patchRegisterCharges,
+    getRegisterSnapshotWatermark,
     refreshDerived,
     update,
     getReturnRegisterPairs,

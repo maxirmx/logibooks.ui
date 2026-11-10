@@ -19,12 +19,6 @@ vi.mock('@/stores/key.words.store.js', () => ({
   })
 }))
 
-vi.mock('@/stores/parcels.store.js', () => ({
-  useParcelsStore: () => ({
-    updateTnVed: vi.fn().mockResolvedValue({ success: true })
-  })
-}))
-
 vi.mock('@/stores/alert.store.js', () => ({
   useAlertStore: () => ({ error: vi.fn() })
 }))
@@ -42,7 +36,6 @@ vi.mock('@/helpers/parcels.list.helpers.js', () => ({
     mockGetFeacnCodeItemClass(code, selectedCode, codes),
   getMatchingFeacnCodeItemClass: (code, selectedCode, codes) =>
     mockGetMatchingFeacnCodeItemClass(code, selectedCode, codes),
-  updateParcelTnVed: (...args) => mockUpdateParcelTnVed(...args),
   getMatchType: (code, tnVed) => mockGetMatchType(code, tnVed)
 }))
 
@@ -70,7 +63,6 @@ const vuetify = createVuetify({
 })
 
 // Mock the inject value
-const mockLoadParcels = vi.fn()
 
 describe('FeacnCodeSelector', () => {
   const defaultProps = {
@@ -125,7 +117,7 @@ describe('FeacnCodeSelector', () => {
         plugins: [vuetify],
         components: globalComponents,
         provide: {
-          loadParcels: mockLoadParcels
+          selectTnVed: mockUpdateParcelTnVed
         }
       }
     })
@@ -145,7 +137,7 @@ describe('FeacnCodeSelector', () => {
       const matchingDiv = wrapper.find('.matching-feacn-code-item')
       expect(matchingDiv.exists()).toBe(true)
       await matchingDiv.trigger('click')
-      expect(mockUpdateParcelTnVed).toHaveBeenCalled()
+      expect(mockUpdateParcelTnVed).toHaveBeenCalledWith(expect.objectContaining({ id: 5 }), '8888888888')
     })
 
     it('does not call updateParcelTnVed when clicking matchingFC if it equals tnVed', async () => {

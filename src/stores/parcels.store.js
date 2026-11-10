@@ -11,6 +11,7 @@ import { useParcelFiltersStore } from '@/stores/parcel.filters.store.js'
 import { rawWeightPayload, pendingWeightProjection } from '@/helpers/derived.weights.helpers.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { reportError } from '@/helpers/error.helpers.js'
+import { seedFeacnInfo } from '@/helpers/feacn.info.helpers.js'
 import { SwValidationMatchMode } from '@/models/sw.validation.match.mode.js'
 import { ParcelApprovalMode } from '@/models/parcel.approval.mode.js'
 import { PassportCheckStatusFilterValue } from '@/helpers/passport.check.status.helpers.js'
@@ -98,6 +99,32 @@ export function buildParcelsWhFilterParams(authStore, additionalParams = {}) {
   return params
 }
 
+function buildParcelListParams(authStore, registerId, { showMarkedByPartner = false, boxId } = {}) {
+  const additionalParams = {
+    registerId: registerId.toString(),
+    page: String(showMarkedByPartner ? authStore.parcels_wh_page : authStore.parcels_page),
+    pageSize: String(showMarkedByPartner ? authStore.parcels_wh_per_page : authStore.parcels_per_page)
+  }
+  const normalizedBoxId = Number(boxId)
+  if (Number.isInteger(normalizedBoxId) && normalizedBoxId > 0) {
+    additionalParams.boxId = normalizedBoxId.toString()
+  }
+  const buildFilters = showMarkedByPartner ? buildParcelsWhFilterParams : buildParcelsFilterParams
+  return buildFilters(authStore, additionalParams)
+}
+
+function toListContext(params) {
+  const context = Object.fromEntries(params)
+  for (const field of ['registerId', 'page', 'pageSize', 'boxId', 'parcelFilterId',
+    'statusId', 'checkStatusSw', 'checkStatusFc', 'passportCheckStatus']) {
+    if (Object.hasOwn(context, field)) context[field] = Number(context[field])
+  }
+  for (const field of ['passportCheckWithProblems', 'hideLegacyRestrictions']) {
+    if (Object.hasOwn(context, field)) context[field] = context[field] === 'true'
+  }
+  return context
+}
+
 export function buildParcelsNumberParams(number) {
   const params = new URLSearchParams()
   if (number) {
@@ -120,6 +147,8 @@ export const useParcelsStore = defineStore('parcels', () => {
   const itemError = ref(null)
   let itemRequestSequence = 0
   let listRequestSequence = 0
+  let listScope = 0
+  let listReadOnlyConflict = null
   // Background reads supersede data without taking ownership of the visible loading flag.
   let listLoadingRequestSequence = 0
   let projectionRevision = 0
@@ -164,6 +193,8 @@ export const useParcelsStore = defineStore('parcels', () => {
   }
 
   function clearVisibleList() {
+    ++listScope
+    listReadOnlyConflict = null
     lastListRequest = null
     ++listRequestSequence
     listLoadingRequestSequence = 0
@@ -274,8 +305,15 @@ export const useParcelsStore = defineStore('parcels', () => {
     return accepted
   }
 
+  function isListReadOnly(registerId, requestSequence) {
+    // Reads already in flight can carry an unlocked snapshot. Later reads can observe an unlock.
+    return listReadOnlyConflict?.registerId === Number(registerId) &&
+      listReadOnlyConflict.accountId === useAuthStore().user?.id &&
+      requestSequence <= listReadOnlyConflict.requestSequence
+  }
+
   async function getAll(registerId, options = {}) {
-    const { updateStore = true, showMarkedByPartner = false, boxId = null } = options
+    const { updateStore = true, showMarkedByPartner = false } = options
     const requestSequence = ++listRequestSequence
     const revision = projectionRevision
     lastListRequest = { registerId, options }
@@ -288,29 +326,14 @@ export const useParcelsStore = defineStore('parcels', () => {
     }
     error.value = null
     try {
-      const filterBuilder = showMarkedByPartner
-        ? buildParcelsWhFilterParams
-        : buildParcelsFilterParams
-      const page = showMarkedByPartner ? authStore.parcels_wh_page : authStore.parcels_page
-      const pageSize = showMarkedByPartner
-        ? authStore.parcels_wh_per_page
-        : authStore.parcels_per_page
-      const additionalParams = {
-        registerId: registerId.toString(),
-        page: page.toString(),
-        pageSize: pageSize.toString()
-      }
-      const normalizedBoxId = Number(boxId)
-      if (Number.isInteger(normalizedBoxId) && normalizedBoxId > 0) {
-        additionalParams.boxId = normalizedBoxId.toString()
-      }
-      const params = filterBuilder(authStore, additionalParams)
-
+      const params = buildParcelListParams(authStore, registerId, options)
       const listEndpoint = showMarkedByPartner ? `${baseUrl}/a` : baseUrl
       const response = await fetchWrapper.get(`${listEndpoint}?${params.toString()}`)
+      const readOnly = isListReadOnly(registerId, requestSequence)
       const responseItems = (response.items || []).map((parcel) => {
         const contextualParcel = showMarkedByPartner ? { ...parcel, registerId: parcel.registerId ?? Number(registerId) } : parcel
-        const projection = mergeLiveParcelCheckStatuses(contextualParcel, checkStatusWatermark)
+        const row = readOnly ? { ...contextualParcel, readOnly: true } : contextualParcel
+        const projection = mergeLiveParcelCheckStatuses(row, checkStatusWatermark)
         return isProjectionCurrent(registerId, revision) ? projection : pendingWeightProjection(projection)
       })
 
@@ -383,15 +406,73 @@ export const useParcelsStore = defineStore('parcels', () => {
       if (metadata && metadata.requestSequence !== listRequestSequence) return
       const checkStatusWatermark =
         responseCheckStatusWatermarks.get(responseData) ?? liveCheckStatusArrival
-      items.value = (responseData.items || []).map((parcel) =>
-        metadata && !isProjectionCurrent(metadata.registerId, metadata.revision) ? pendingWeightProjection(mergeLiveParcelCheckStatuses(parcel, checkStatusWatermark)) :
-          mergeLiveParcelCheckStatuses(parcel, checkStatusWatermark)
-      )
+      const readOnly = metadata && isListReadOnly(metadata.registerId, metadata.requestSequence)
+      items.value = (responseData.items || []).map((parcel) => {
+        const row = readOnly ? { ...parcel, readOnly: true } : parcel
+        const projection = mergeLiveParcelCheckStatuses(row, checkStatusWatermark)
+        return metadata && !isProjectionCurrent(metadata.registerId, metadata.revision)
+          ? pendingWeightProjection(projection)
+          : projection
+      })
       totalCount.value = responseData.pagination?.totalCount || 0
       hasNextPage.value = responseData.pagination?.hasNextPage || false
       hasPreviousPage.value = responseData.pagination?.hasPreviousPage || false
     }
     loading.value = false
+  }
+
+  function paperworkListKey(registerId, boxId, page) {
+    const params = buildParcelListParams(useAuthStore(), registerId, { boxId })
+    if (page != null) params.set('page', String(page))
+    return params.toString()
+  }
+
+  async function updateTnVedFromList(id, tnVed, { registerId, getBoxId, isCurrent, applyPage }) {
+    const authStore = useAuthStore()
+    const registersStore = useRegistersStore()
+    const accountId = authStore.user?.id
+    const scope = listScope
+    const requestSequence = listRequestSequence
+    const revision = projectionRevision
+    const checkStatusWatermark = liveCheckStatusArrival
+    const chargeWatermark = registersStore.getRegisterSnapshotWatermark()
+    const params = buildParcelListParams(authStore, registerId, { boxId: getBoxId() })
+    const ownsList = () => scope === listScope && accountId === authStore.user?.id && isCurrent()
+    let result
+    try {
+      result = await fetchWrapper.put(`${baseUrl}/${id}/tnved`, {
+        tnVed,
+        listContext: toListContext(params)
+      })
+    } catch (error) {
+      if (ownsList() && error?.status === 409 && error.data?.code === 'RegisterReadOnly' &&
+          error.data.details?.registerId === registerId) {
+        listReadOnlyConflict = { registerId, accountId, requestSequence: listRequestSequence }
+        registersStore.markRegisterReadOnly(registerId)
+        items.value = items.value.map(row => Number(row.registerId) === registerId ? { ...row, readOnly: true } : row)
+      }
+      throw error
+    }
+
+    if (!ownsList()) return
+    const page = result?.page
+    if (!Array.isArray(page?.items) || !Number.isInteger(page.pagination?.currentPage)) {
+      throw new Error('Не удалось получить обновлённый список посылок')
+    }
+
+    registersStore.patchRegisterCharges(result.registerCharges, chargeWatermark)
+    const superseded = requestSequence !== listRequestSequence ||
+      params.toString() !== paperworkListKey(registerId, getBoxId())
+    // Reads started before the write was acknowledged may contain the previous snapshot.
+    const nextSequence = ++listRequestSequence
+    if (superseded) return 'refresh'
+
+    seedFeacnInfo(result.feacnInfo)
+    responseCheckStatusWatermarks.set(page, checkStatusWatermark)
+    responseProjectionMetadata.set(page, { revision, requestSequence: nextSequence, registerId })
+    applyPage(page.pagination.currentPage)
+    updateItems(page)
+    return 'applied'
   }
 
   async function getById(id) {
@@ -695,6 +776,8 @@ export const useParcelsStore = defineStore('parcels', () => {
     getById,
     update,
     updateItems,
+    updateTnVedFromList,
+    paperworkListKey,
     invalidateDerived,
     refreshVisibleDerived,
     clearVisibleList,

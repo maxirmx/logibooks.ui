@@ -354,32 +354,6 @@ export function getMatchType(code, tnVed) {
 }
 
 /**
- * Updates a parcel's TN VED code
- * @param {Object} item - The parcel item
- * @param {string} feacnCode - The FEACN code to set as TN VED
- * @param {Object} parcelsStore - The parcels store instance
- * @param {Function} [loadOrdersFn] - Reloads the list if the update fails
- * @returns {Promise<boolean>}
- */
-export async function updateParcelTnVed(item, feacnCode, parcelsStore, loadOrdersFn) {
-  const alertStore = useAlertStore()
-  try {
-    const updatedItem = { ...item, tnVed: feacnCode }
-    await parcelsStore.update(item.id, updatedItem, { refreshDetail: false })
-    return true
-  } catch (error) {
-    parcelsStore.error = error?.response?.data?.message || 'Ошибка при обновлении ТН ВЭД'
-    alertStore.error(parcelsStore.error)
-    try {
-      await loadOrdersFn?.()
-    } catch (refreshError) {
-      alertStore.error(refreshError, { fallback: 'Не удалось обновить список посылок' })
-    }
-    return false
-  }
-}
-
-/**
  * Loads parcels for a register with FEACN info preloading
  * @param {number} registerId - The register ID
  * @param {Object} parcelsStore - The parcels store instance

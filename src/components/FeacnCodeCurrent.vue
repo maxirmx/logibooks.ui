@@ -6,10 +6,10 @@
 import { computed, ref, watch } from 'vue'
 import { getTnVedCellClass } from '@/helpers/parcels.list.helpers.js'
 import { useFeacnTooltips, loadFeacnTooltipOnHover } from '@/helpers/feacn.info.helpers.js'
+import { reportError } from '@/helpers/error.helpers.js'
 
 const componentProps = defineProps({
-  item: { type: Object, required: true },
-  feacnCodes: { type: Array, default: () => [] }
+  item: { type: Object, required: true }
 })
 
 const emit = defineEmits(['click'])
@@ -22,11 +22,11 @@ const cellClass = computed(() => {
 })
 
 // Watch for changes and update class asynchronously
-watch([() => componentProps.item.tnVed, () => componentProps.feacnCodes, () => componentProps.item.matchingFC], async () => {
+watch([() => componentProps.item.tnVed, () => componentProps.item.feacnLookupSuggestions], async ([tnVed, suggestions]) => {
   try {
-    tnvedClass.value = await getTnVedCellClass(componentProps.item.tnVed, componentProps.feacnCodes, componentProps.item.matchingFC)
+    tnvedClass.value = await getTnVedCellClass(tnVed, suggestions?.map(({ code }) => code) ?? [])
   } catch (error) {
-    console.error('Error getting TN VED cell class:', error)
+    reportError(error, { context: 'TN VED cell classification' })
     tnvedClass.value = 'feacn-code-tooltip'
   }
 }, { immediate: true })

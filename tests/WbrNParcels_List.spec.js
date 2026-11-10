@@ -190,7 +190,6 @@ vi.mock('@/helpers/parcels.list.helpers.js', async () => {
             'previousDTagComment'
           ].includes(header.key)
       ),
-    getFeacnCodesForKeywords: (ids) => (ids || []).map((id) => `TN-${id}`),
     getFrozenOrderSortDir: (sortBy) =>
       sortBy?.find((item) => item.key === 'frozenOrder')?.order ?? null
   }
@@ -339,7 +338,7 @@ const sampleParcel = {
   checkStatus: new CheckStatusCode({ fc: FCCheckStatus.NoIssues, sw: SWCheckStatus.NoIssues })
     .value,
   tnVed: '6403999300',
-  keyWordIds: [3],
+  feacnLookupSuggestions: [{ code: '6403999300', fromKeywords: true, fromHistory: false }],
   productName: 'Wildberries new product',
   productLink: 'www.wildberries.ru/catalog/29817781/detail.aspx',
   productCountryName: 'Китай',
@@ -488,10 +487,10 @@ const globalStubs = {
       '<button type="button" :class="cellClass" :title="displayValue" @click="$emit(\'click\', item)"><slot>{{ displayValue }}</slot></button>'
   },
   FeacnCodeCurrent: {
-    props: ['item', 'feacnCodes'],
+    props: ['item'],
     emits: ['click'],
     template:
-      '<button type="button" data-testid="feacn-current" @click="$emit(\'click\', item)">{{ item.tnVed }} {{ feacnCodes.join(\',\') }}</button>'
+      '<button type="button" data-testid="feacn-current" @click="$emit(\'click\', item)">{{ item.tnVed }}</button>'
   },
   FeacnCodeSelector: {
     props: ['item'],
@@ -639,7 +638,7 @@ describe('WbrNParcels_List.vue', () => {
     expect(ensureParcelStatusesLoaded).toHaveBeenCalled()
     expect(ensureFeacnOrdersLoaded).toHaveBeenCalled()
     expect(ensureStopWordsLoaded).toHaveBeenCalled()
-    expect(ensureKeyWordsLoaded).toHaveBeenCalled()
+    expect(ensureKeyWordsLoaded).not.toHaveBeenCalled()
     expect(getRegisterById).not.toHaveBeenCalled()
     expect(updateSelectedParcelIds).toHaveBeenCalled()
     expect(scrollToSelectedItem).toHaveBeenCalled()
@@ -965,7 +964,7 @@ describe('WbrNParcels_List.vue', () => {
   })
 
   it('reports initialization errors without leaving the component loading forever', async () => {
-    ensureKeyWordsLoaded.mockRejectedValueOnce(new Error('keywords failed'))
+    ensureStopWordsLoaded.mockRejectedValueOnce(new Error('stop words failed'))
 
     const wrapper = mount(WbrNParcelsList, {
       props: { registerId: 7 },
@@ -974,7 +973,7 @@ describe('WbrNParcels_List.vue', () => {
     await resolveAll()
 
     expect(alertError).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'keywords failed' }),
+      expect.objectContaining({ message: 'stop words failed' }),
       expect.objectContaining({
         fallback: 'Ошибка при инициализации компонента'
       })

@@ -2,167 +2,86 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
-import { createVuetify } from 'vuetify'
-import * as components from 'vuetify/components'
-import * as directives from 'vuetify/directives'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { flushPromises, mount } from '@vue/test-utils'
+import { createPinia } from 'pinia'
 import FeacnCodeSelector from '@/components/FeacnCodeSelector.vue'
+import { getFeacnTooltip } from '@/helpers/feacn.info.helpers.js'
 
-// Mock the store and helpers
-vi.mock('@/stores/key.words.store.js', () => ({
-  useKeyWordsStore: () => ({
-    keyWords: [
-      { id: 1, title: 'Keyword1', feacnCodes: ['1234567890', '0987654321'] },
-      { id: 2, title: 'Keyword2', feacnCodes: ['2345678901'] }
-    ]
+vi.mock('@/helpers/feacn.info.helpers.js', async (importOriginal) => ({
+  ...await importOriginal(),
+  getFeacnTooltip: vi.fn()
+}))
+
+const selectTnVed = vi.fn()
+const historyCode = '6403999300'
+const weakCode = '6403999500'
+
+function mountSelector(tnVed, feacnLookupSuggestions) {
+  return mount(FeacnCodeSelector, {
+    props: { item: { id: 1, tnVed, feacnLookupSuggestions } },
+    global: {
+      plugins: [createPinia()],
+      provide: { selectTnVed },
+      stubs: {
+        VTooltip: { template: '<div><slot name="activator" :props="{}" /><slot /></div>' },
+        FontAwesomeIcon: { props: ['icon'], template: '<i :data-icon="icon" />' }
+      }
+    }
   })
-}))
-
-vi.mock('@/stores/alert.store.js', () => ({
-  useAlertStore: () => ({ error: vi.fn() })
-}))
-
-// Mock helper functions - use individually named mocks for better control
-const mockGetFeacnCodesForKeywords = vi.fn()
-const mockGetFeacnCodeItemClass = vi.fn()
-const mockGetMatchingFeacnCodeItemClass = vi.fn()
-const mockUpdateParcelTnVed = vi.fn().mockResolvedValue({ success: true })
-const mockGetMatchType = vi.fn()
-
-vi.mock('@/helpers/parcels.list.helpers.js', () => ({
-  getFeacnCodesForKeywords: (keyWordIds) => mockGetFeacnCodesForKeywords(keyWordIds),
-  getFeacnCodeItemClass: (code, selectedCode, codes) =>
-    mockGetFeacnCodeItemClass(code, selectedCode, codes),
-  getMatchingFeacnCodeItemClass: (code, selectedCode, codes) =>
-    mockGetMatchingFeacnCodeItemClass(code, selectedCode, codes),
-  getMatchType: (code, tnVed) => mockGetMatchType(code, tnVed)
-}))
-
-// Mock FontAwesome
-vi.mock('@fortawesome/vue-fontawesome', () => ({
-  FontAwesomeIcon: {
-    name: 'FontAwesomeIcon',
-    template: '<i class="fa-icon" :class="[icon]"></i>',
-    props: ['icon', 'size', 'class']
-  }
-}))
-
-// Global component registration
-const globalComponents = {
-  'font-awesome-icon': {
-    name: 'FontAwesomeIcon',
-    template: '<i class="fa-icon" :class="[icon]"></i>',
-    props: ['icon', 'size', 'class']
-  }
 }
 
-const vuetify = createVuetify({
-  components,
-  directives
-})
-
-// Mock the inject value
-
 describe('FeacnCodeSelector', () => {
-  const defaultProps = {
-    item: {
-      id: 1,
-      keyWordIds: [1, 2],
-      tnVed: '1234567890'
-    }
-  }
-
-  // Setup default mock implementations for each test
   beforeEach(() => {
     vi.clearAllMocks()
-
-    // Set up mock implementation for getFeacnCodesForKeywords
-    mockGetFeacnCodesForKeywords.mockImplementation((keyWordIds) => {
-      if (keyWordIds && keyWordIds.length > 0) {
-        return ['1234567890', '0987654321']
-      }
-      return []
-    })
-
-    // Set up mock implementation for getFeacnCodeItemClass
-    mockGetFeacnCodeItemClass.mockImplementation((code, selectedCode) => {
-      return code === selectedCode ? 'selected-code' : 'unselected-code'
-    })
-    // Matching FC inherits selected/unselected logic plus border class
-    mockGetMatchingFeacnCodeItemClass.mockImplementation((code, selectedCode) => {
-      const base = code === selectedCode ? 'selected-code' : 'unselected-code'
-      return base + ' matching-feacn-code-item'
-    })
-
-    // Set up mock implementation for getMatchType
-    mockGetMatchType.mockImplementation((code, tnVed) => {
-      if (!code || !tnVed) {
-        return 'none'
-      }
-      if (code === tnVed) {
-        return 'exact'
-      }
-      if (code.substring(0, 6) === tnVed.substring(0, 6)) {
-        return 'weak'
-      }
-      return 'none'
-    })
+    getFeacnTooltip.mockResolvedValue('Описание кода')
   })
 
-  function createWrapper(props = {}) {
-    return mount(FeacnCodeSelector, {
-      props: { ...defaultProps, ...props },
-      global: {
-        plugins: [vuetify],
-        components: globalComponents,
-        provide: {
-          selectTnVed: mockUpdateParcelTnVed
-        }
-      }
-    })
-  }
+  it('shows a merged code once with its history border, exact match and current tooltip', async () => {
+    const wrapper = mountSelector(historyCode, [
+      { code: historyCode, fromKeywords: true, fromHistory: true },
+      { code: weakCode, fromKeywords: true, fromHistory: false }
+    ])
+    const chips = wrapper.findAll('.feacn-code-item')
+    expect(chips.map(chip => chip.text())).toEqual([historyCode, weakCode])
+    const [history, weakMatch] = chips
+    expect(history.classes()).toEqual(expect.arrayContaining(['matching-feacn-code-item', 'matched']))
+    expect(history.find('[data-icon="fa-solid fa-check-double"]').exists()).toBe(true)
+    expect(weakMatch.classes()).toContain('matched-weak')
+    expect(weakMatch.find('[data-icon="fa-solid fa-ellipsis-vertical"]').exists()).toBe(true)
 
-  describe('interactions', () => {
-    it('calls updateParcelTnVed when clicking matchingFC if not selected', async () => {
-      const wrapper = createWrapper({
-        item: {
-          id: 5,
-          keyWordIds: [1],
-          tnVed: '1234567890',
-          matchingFC: '8888888888',
-          matchingFCComment: 'Особый'
-        }
-      })
-      const matchingDiv = wrapper.find('.matching-feacn-code-item')
-      expect(matchingDiv.exists()).toBe(true)
-      await matchingDiv.trigger('click')
-      expect(mockUpdateParcelTnVed).toHaveBeenCalledWith(expect.objectContaining({ id: 5 }), '8888888888')
-    })
+    await history.trigger('mouseenter')
+    await flushPromises()
+    expect(wrapper.text()).toContain('Выбрано')
+    expect(wrapper.text()).toContain('Описание кода')
+    expect(getFeacnTooltip).toHaveBeenCalledExactlyOnceWith(historyCode)
+    await history.trigger('click')
+    expect(selectTnVed).not.toHaveBeenCalled()
+  })
 
-    it('does not call updateParcelTnVed when clicking matchingFC if it equals tnVed', async () => {
-      const wrapper = createWrapper({
-        item: {
-          id: 6,
-          keyWordIds: [1],
-          tnVed: '7777777777',
-          matchingFC: '7777777777',
-          matchingFCComment: 'Точный'
-        }
-      })
-      const matchingDiv = wrapper.find('.matching-feacn-code-item')
-      expect(matchingDiv.exists()).toBe(true)
-      await matchingDiv.trigger('click')
-      expect(mockUpdateParcelTnVed).not.toHaveBeenCalled()
-    })
+  it('keeps the history-only border style and selects that code once', async () => {
+    const wrapper = mountSelector('1111111111', [
+      { code: historyCode, fromKeywords: false, fromHistory: true }
+    ])
+    const history = wrapper.get('.matching-feacn-code-item')
+    expect(history.classes()).not.toContain('unmatched')
+    expect(wrapper.text()).toContain('Выбрать')
+    await history.trigger('click', { shiftKey: true })
+    await history.trigger('click', { ctrlKey: true })
+    await history.trigger('click', { metaKey: true })
+    expect(selectTnVed).not.toHaveBeenCalled()
+    await history.trigger('click')
+    expect(selectTnVed).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ id: 1 }), historyCode)
+  })
 
-    it('does not call updateParcelTnVed when shift is pressed', async () => {
-      const wrapper = createWrapper()
-      const unselectedCodeDiv = wrapper.find('.unselected-code')
-      expect(unselectedCodeDiv.exists()).toBe(true)
-      await unselectedCodeDiv.trigger('click', { shiftKey: true })
-      expect(mockUpdateParcelTnVed).not.toHaveBeenCalled()
-    })
+  it('keeps the history class when the same suggestion is also an unmatched keyword code', () => {
+    const wrapper = mountSelector('1111111111', [
+      { code: historyCode, fromKeywords: true, fromHistory: true }
+    ])
+    expect(wrapper.get('.matching-feacn-code-item').classes()).toContain('unmatched')
+  })
 
+  it('shows the placeholder for an empty suggestion list', () => {
+    expect(mountSelector('', []).text()).toBe('-')
   })
 })

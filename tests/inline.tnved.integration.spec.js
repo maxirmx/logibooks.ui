@@ -25,7 +25,10 @@ vi.mock('@/stores/auth.store.js', () => ({ useAuthStore: () => auth }))
 const originalCode = '1111111111'
 const newCode = '2222222222'
 const auth = reactive({})
-const row = { id: 31, registerId: 12, tnVed: originalCode, matchingFC: newCode, passportCheckStatus: 1 }
+const row = {
+  id: 31, registerId: 12, tnVed: originalCode, passportCheckStatus: 1,
+  feacnLookupSuggestions: [{ code: newCode, fromKeywords: true, fromHistory: true }]
+}
 const register = { id: 12, customsFee: 40, customsDuty: 0, derivedTotalsPending: false }
 let wrapper
 
@@ -152,7 +155,9 @@ describe('inline TN VED through a suggested-code click', () => {
     })
     expect(fetchWrapper.get).not.toHaveBeenCalled()
     expect(fetchWrapper.post).not.toHaveBeenCalled()
-    expect(wrapper.text()).toContain(newCode)
+    expect(wrapper.get('.tnved-cell.matched').text()).toBe(newCode)
+    expect(wrapper.findAll('.feacn-code-item')).toHaveLength(1)
+    expect(wrapper.get('.matching-feacn-code-item').classes()).toContain('matched')
     expect(auth.parcels_page).toBe(2)
     expect(parcels.totalCount).toBe(2)
     expect(selected.value).toBe(31)

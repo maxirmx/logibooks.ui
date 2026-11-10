@@ -12,7 +12,6 @@ import { watch, ref, computed, onMounted, onUnmounted, provide, nextTick, unref,
 import { useParcelsStore } from '@/stores/parcels.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
-import { useKeyWordsStore } from '@/stores/key.words.store.js'
 import { useStopWordsStore } from '@/stores/stop.words.store.js'
 import { useFeacnOrdersStore } from '@/stores/feacn.orders.store.js'
 import { useCountriesStore } from '@/stores/countries.store.js'
@@ -45,7 +44,6 @@ import {
   navigateToEditParcel,
   getRowPropsForParcel,
   filterGenericTemplateHeadersForParcel,
-  getFeacnCodesForKeywords,
   getFrozenOrderSortDir,
   loadParcels,
   formatPassport,
@@ -88,7 +86,6 @@ const emit = defineEmits(['close'])
 const parcelsStore = useParcelsStore()
 const registersStore = useRegistersStore()
 const parcelStatusStore = useParcelStatusesStore()
-const keyWordsStore = useKeyWordsStore()
 const stopWordsStore = useStopWordsStore()
 const feacnOrdersStore = useFeacnOrdersStore()
 const countriesStore = useCountriesStore()
@@ -452,9 +449,6 @@ async function initializeList() {
     if (!isComponentMounted.value) return
 
     await stopWordsStore.ensureLoaded()
-    if (!isComponentMounted.value) return
-
-    await keyWordsStore.ensureLoaded()
     if (!isComponentMounted.value) return
 
     if (items.value?.length > 0) {
@@ -956,7 +950,6 @@ function getGenericTemplateHeaders() {
         <template #[`item.tnVed`]="{ item }">
           <FeacnCodeCurrent
             :item="item"
-            :feacn-codes="getFeacnCodesForKeywords(item.keyWordIds, keyWordsStore)"
             data-test="editable-cell"
             @click="editParcel"
           />

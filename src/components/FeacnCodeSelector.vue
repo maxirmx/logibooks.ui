@@ -4,9 +4,7 @@
 // This file is a part of Logibooks ui application
 
 import { computed, inject, ref } from 'vue'
-import { useKeyWordsStore } from '@/stores/key.words.store.js'
 import {
-  getFeacnCodesForKeywords,
   getFeacnCodeItemClass,
   getMatchType,
   getMatchingFeacnCodeItemClass
@@ -18,7 +16,6 @@ const props = defineProps({
   item: { type: Object, required: true }
 })
 
-const keyWordsStore = useKeyWordsStore()
 const alertStore = useAlertStore()
 
 const selectTnVed = inject('selectTnVed')
@@ -26,22 +23,8 @@ const selectTnVed = inject('selectTnVed')
 // Local tooltip cache for this component
 const tooltipCache = ref({})
 
-const feacnCodes = computed(() => getFeacnCodesForKeywords(props.item.keyWordIds, keyWordsStore))
-
-// Unified list: optional matchingFC first, then regular codes
-const combinedCodes = computed(() => {
-  const codes = feacnCodes.value || []
-  const out = []
-  if (props.item.matchingFC && props.item.matchingFC !== '') {
-    out.push({
-      code: props.item.matchingFC,
-      comment: props.item.matchingFCComment || 'Комментарий отсутствует',
-      isMatching: true
-    })
-  }
-  codes.forEach((c) => out.push({ code: c, isMatching: false }))
-  return out
-})
+const suggestions = computed(() => props.item.feacnLookupSuggestions ?? [])
+const keywordCodes = computed(() => suggestions.value.filter((entry) => entry.fromKeywords).map((entry) => entry.code))
 
 const tooltipMaxWidth = computed(() => {
   if (typeof window !== 'undefined') {
@@ -77,10 +60,10 @@ function getTooltipText(code) {
 </script>
 
 <template>
-  <div v-if="combinedCodes.length > 0" class="feacn-lookup-column">
+  <div v-if="suggestions.length > 0" class="feacn-lookup-column">
     <v-tooltip
-      v-for="entry in combinedCodes"
-      :key="entry.isMatching ? 'matchingFC' : entry.code"
+      v-for="entry in suggestions"
+      :key="entry.code"
       location="top"
       content-class="feacn-tooltip"
       :max-width="tooltipMaxWidth"
@@ -89,9 +72,9 @@ function getTooltipText(code) {
         <div
           v-bind="props"
           :class="
-            entry.isMatching
-              ? getMatchingFeacnCodeItemClass(entry.code, item.tnVed, feacnCodes)
-              : getFeacnCodeItemClass(entry.code, item.tnVed, feacnCodes)
+            entry.fromHistory
+              ? getMatchingFeacnCodeItemClass(entry.code, item.tnVed, keywordCodes)
+              : getFeacnCodeItemClass(entry.code, item.tnVed, keywordCodes)
           "
           @click="selectCode($event, entry.code)"
           @mouseenter="loadTooltip(entry.code)"

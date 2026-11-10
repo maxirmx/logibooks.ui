@@ -8,11 +8,9 @@ import { useKeyWordsStore } from '@/stores/key.words.store.js'
 import {
   getFeacnCodesForKeywords,
   getFeacnCodeItemClass,
-  updateParcelTnVed,
   getMatchType,
   getMatchingFeacnCodeItemClass
 } from '@/helpers/parcels.list.helpers.js'
-import { useParcelsStore } from '@/stores/parcels.store.js'
 import { getFeacnTooltip } from '@/helpers/feacn.info.helpers.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 
@@ -21,11 +19,9 @@ const props = defineProps({
 })
 
 const keyWordsStore = useKeyWordsStore()
-const parcelsStore = useParcelsStore()
 const alertStore = useAlertStore()
 
-// Get the loadParcels function from parent component
-const loadParcels = inject('loadParcels')
+const selectTnVed = inject('selectTnVed')
 
 // Local tooltip cache for this component
 const tooltipCache = ref({})
@@ -54,12 +50,12 @@ const tooltipMaxWidth = computed(() => {
   return '400px' // fallback
 })
 
-async function selectCode(event, code) {
+function selectCode(event, code) {
   if (event.shiftKey || event.ctrlKey || event.metaKey) {
     return
   }
   if (code !== props.item.tnVed) {
-    await updateParcelTnVed(props.item, code, parcelsStore, loadParcels)
+    return selectTnVed(props.item, code)
   }
 }
 

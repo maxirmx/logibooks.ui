@@ -76,7 +76,10 @@ function setupStores() {
     items: ref([]),
     loading: ref(false),
     error: ref(null),
-    totalCount: ref(0)
+    totalCount: ref(0),
+    paperworkListKey: (registerId, boxId, page = stores.auth.parcels_page.value) =>
+      JSON.stringify([registerId, boxId, page]),
+    updateTnVedFromList: vi.fn()
   }
 
   stores.registers = {
@@ -343,7 +346,12 @@ vi.mock('@/components/ClickableCell.vue', () => ({
 }))
 
 vi.mock('@/components/FeacnCodeSelector.vue', () => ({
-  default: { name: 'FeacnCodeSelector', template: '<div class="feacn-selector-stub"></div>' }
+  default: {
+    name: 'FeacnCodeSelector',
+    inject: ['selectTnVed'],
+    props: ['item'],
+    template: '<button class="feacn-selector-stub" @click="selectTnVed(item, \'2222222222\')"></button>'
+  }
 }))
 
 vi.mock('@/components/FeacnCodeCurrent.vue', () => ({
@@ -384,6 +392,38 @@ describe.each([
     setupStores()
     loadParcelsMock.mockClear()
     registerHeaderActionsMock = createRegisterHeaderActionsMock()
+  })
+
+  it('wires a suggested code to the inline update and uses its returned page', async () => {
+    const registerId = 12
+    const boxId = Component === GtcParcelsList ? 5 : null
+    stores.parcels.items.value = [{ id: 31, registerId, tnVed: '1111111111', checkStatus: 0 }]
+    stores.parcels.totalCount.value = 300
+    stores.auth.parcels_page.value = 3
+    stores.parcels.updateTnVedFromList.mockImplementationOnce(async (_id, _code, { applyPage }) => {
+      applyPage(2)
+      return 'applied'
+    }).mockResolvedValueOnce('refresh')
+
+    const wrapper = mount(Component, {
+      props: { registerId, ...(boxId ? { boxId } : {}) },
+      global: { stubs: vuetifyStubs }
+    })
+    await resolveAll()
+    loadParcelsMock.mockClear()
+    await wrapper.get('.feacn-selector-stub').trigger('click')
+    await resolveAll()
+
+    expect(stores.parcels.updateTnVedFromList).toHaveBeenCalledExactlyOnceWith(31, '2222222222',
+      expect.objectContaining({ registerId }))
+    expect(stores.parcels.updateTnVedFromList.mock.lastCall[2].getBoxId()).toBe(boxId)
+    expect(stores.auth.parcels_page.value).toBe(2)
+    expect(loadParcelsMock).not.toHaveBeenCalled()
+
+    await wrapper.get('.feacn-selector-stub').trigger('click')
+    await resolveAll()
+    expect(loadParcelsMock).toHaveBeenCalledTimes(1)
+    wrapper.unmount()
   })
 
   it('refetches parcels after freeze only when frozenOrder sorting is active', async () => {

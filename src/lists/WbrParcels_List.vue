@@ -4,6 +4,7 @@
 // This file is a part of Logibooks ui application
 
 import { useParcelBoxScope } from '@/composables/useParcelBoxScope.js'
+import { useInlineTnVed } from '@/composables/useInlineTnVed.js'
 import { useListPageBounds } from '@/composables/useListPageBounds.js'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { watch, ref, computed, onMounted, onUnmounted, provide, nextTick, unref, toRef } from 'vue'
@@ -108,7 +109,7 @@ const localProductNameSearch = ref(parcels_product_name.value || '')
 const onListControlsChange = useParcelBoxScope({
   mode: 'paperwork', boxId: () => props.boxId ?? null,
   page: parcels_page,
-  onChange: () => triggerLoad()
+  onChange: () => { if (!inlineTnVed.isPageAlreadyLoaded()) triggerLoad() }
 })
 
 function parseSelectedParcelIdFromQuery(value) {
@@ -135,6 +136,7 @@ const {
   getRowProps: getRowPropsForWbrParcel,
   stop: stopMultiSelect
 } = useParcelMultiSelect({
+  isPageAlreadyLoaded: () => inlineTnVed.isPageAlreadyLoaded(),
   items,
   loading,
   selectedParcelId,
@@ -248,8 +250,18 @@ async function loadParcelsWrapper() {
   return parcelsLoaded.value
 }
 
-// Provide the loadParcels function for child components
-provide('loadParcels', loadParcelsWrapper)
+const inlineTnVed = useInlineTnVed({
+  scope: () => [authStore.user?.id, props.registerId],
+  page: parcels_page,
+  isComponentMounted,
+  isBusy: () => runningAction.value || loading.value || isInitializing.value ||
+    registersStore.item?.readOnly === true || registerLoading.value,
+  runningAction,
+  parcelsStore,
+  alertStore,
+  refresh: () => triggerLoad()
+})
+provide('selectTnVed', inlineTnVed.selectTnVed)
 
 const {
   validationState,

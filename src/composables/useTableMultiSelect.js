@@ -29,6 +29,7 @@ export function useTableMultiSelect({
   isItemSelectable = () => true,
   disabled = false,
   scopeKey = null,
+  isPageAlreadyLoaded = () => false,
 }) {
   const selectableItems = computed(() => items.value.filter(item => getItemId(item) != null && isItemSelectable(item)))
   const isDisabled = () => loading.value || toValue(disabled)
@@ -189,7 +190,13 @@ export function useTableMultiSelect({
     if (removed.has(lastClickedId.value)) lastClickedId.value = selectedId.value
   }
 
-  const stopPageWatch = watch([page, () => toValue(scopeKey)], clearSelection)
+  const stopPageWatch = watch([page, () => toValue(scopeKey)], ([, scope], [, previousScope]) => {
+    if (scope === previousScope && isPageAlreadyLoaded()) {
+      updateSelectedIds()
+    } else {
+      clearSelection()
+    }
+  })
   const stopLoadingWatch = watch(() => isDisabled(), busy => {
     if (!busy) updateSelectedIds()
   })

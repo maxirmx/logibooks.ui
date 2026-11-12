@@ -3,261 +3,133 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { Suspense, ref } from 'vue'
+import { createPinia } from 'pinia'
+import { h, Suspense } from 'vue'
 import RegisterStatusEditDialog from '@/dialogs/RegisterStatus_EditDialog.vue'
-import { defaultGlobalStubs, createMockStore } from './helpers/test-utils.js'
-import { resolveAll } from './helpers/test-utils.js'
+import { defaultGlobalStubs, resolveAll } from './helpers/test-utils.js'
 
-// Mock dependencies at the top level
-const mockRegisterStatus = {
-  id: 1,
-  title: 'Черновик',
-  icon: 'svg:registered',
-  bkColor: '#FFFFFF',
-  fgColor: '#000000',
-  readOnly: true,
-  transit: true,
-  exportTo1C: true
+const store = vi.hoisted(() => ({ getById: vi.fn(), create: vi.fn(), update: vi.fn() }))
+const push = vi.hoisted(() => vi.fn())
+vi.mock('@/stores/register.statuses.store.js', () => ({ useRegisterStatusesStore: () => store }))
+vi.mock('@/stores/auth.store.js', () => ({ useAuthStore: () => ({ canWriteSettings: true }) }))
+vi.mock('@/router', () => ({ default: { push } }))
+
+const saved = { id: 1, title: 'Черновик', icon: 'svg:registered', bkColor: '#FFFFFF', fgColor: '#000000' }
+let wrapper
+
+beforeEach(() => {
+  vi.resetAllMocks()
+  store.getById.mockResolvedValue(saved)
+  store.update.mockResolvedValue(undefined)
+})
+
+afterEach(() => wrapper?.unmount())
+
+async function openEditor(mode) {
+  wrapper = mount({
+    render: () => h(Suspense, null, {
+      default: () => h(RegisterStatusEditDialog, { mode, registerStatusId: saved.id })
+    })
+  }, {
+    attachTo: document.body,
+    global: { plugins: [createPinia()], stubs: defaultGlobalStubs }
+  })
+  await resolveAll()
 }
-
-// Mock stores using test-utils
-const mockRegisterStatusesStore = createMockStore({
-  registerStatus: mockRegisterStatus,
-  getById: vi.fn().mockResolvedValue(mockRegisterStatus),
-  create: vi.fn().mockResolvedValue(mockRegisterStatus),
-  update: vi.fn().mockResolvedValue()
-})
-
-const mockAlertStore = createMockStore({
-  success: vi.fn(),
-  error: vi.fn(),
-  alert: null
-})
-
-const mockAuthStore = {
-  canWriteSettings: true
-}
-
-// Mock all external dependencies
-vi.mock('@/stores/register.statuses.store.js', () => ({
-  useRegisterStatusesStore: () => mockRegisterStatusesStore
-}))
-
-vi.mock('@/stores/alert.store.js', () => ({
-  useAlertStore: () => mockAlertStore
-}))
-
-vi.mock('@/stores/auth.store.js', () => ({
-  useAuthStore: () => mockAuthStore
-}))
-
-vi.mock('@/router', () => ({
-  default: {
-    push: vi.fn()
-  }
-}))
-
-vi.mock('pinia', async () => {
-  const actual = await vi.importActual('pinia')
-  return {
-    ...actual,
-    storeToRefs: (store) => {
-      if (store.registerStatus !== undefined) {
-        return { registerStatus: ref(store.registerStatus) }
-      }
-      return {}
-    }
-  }
-})
-
-// Mock vee-validate with proper form submission handling
-vi.mock('vee-validate', () => ({
-  Form: {
-    name: 'Form',
-    props: ['initialValues', 'validationSchema'],
-    emits: ['submit'],
-    template: `
-      <form @submit.prevent="handleSubmit">
-        <slot :errors="errors" :isSubmitting="isSubmitting" :handleSubmit="runSubmit" />
-      </form>
-    `,
-    data() {
-      return {
-        errors: {},
-        isSubmitting: false
-      }
-    },
-    methods: {
-      handleSubmit() {
-        const actions = {
-          setErrors: this.setErrors.bind(this)
-        }
-        this.$emit('submit', this.$props.initialValues || {}, actions)
-      },
-      runSubmit(callback) {
-        const actions = {
-          setErrors: this.setErrors.bind(this)
-        }
-        return callback(this.$props.initialValues || {}, actions)
-      },
-      setErrors(newErrors) {
-        this.errors = { ...this.errors, ...newErrors }
-      }
-    }
-  },
-  Field: {
-    name: 'Field',
-    props: ['name', 'id', 'type', 'as', 'class', 'placeholder', 'rows', 'disabled'],
-    setup(props, { slots }) {
-      const value = ref('')
-      function handleChange(valueOrEvent) {
-        value.value = valueOrEvent?.target ? valueOrEvent.target.value : valueOrEvent
-      }
-      return { value, handleChange, slots }
-    },
-    template: `
-      <slot
-        v-if="$slots.default"
-        :field="{ value, name, id }"
-        :handleChange="handleChange"
-      />
-      <input v-else-if="!as || as === 'input'" v-bind="$props" />
-      <textarea v-else-if="as === 'textarea'" v-bind="$props"></textarea>
-      <component v-else :is="as" v-bind="$props">
-        <slot />
-      </component>
-    `
-  }
-}))
-
-// Create a wrapper component that provides Suspense boundary
-const AsyncWrapper = {
-  components: { RegisterStatusEditDialog, Suspense },
-  props: ['mode', 'registerStatusId'],
-  template: `
-    <Suspense>
-      <RegisterStatusEditDialog :mode="mode" :register-status-id="registerStatusId" />
-      <template #fallback>
-        <div>Loading...</div>
-      </template>
-    </Suspense>
-  `
-}
-
-// Import router after mocking
-let mockRouter
-beforeEach(async () => {
-  const router = await import('@/router')
-  mockRouter = router.default
-  vi.clearAllMocks()
-  // Reset store states
-  mockRegisterStatusesStore.registerStatus = { ...mockRegisterStatus }
-  mockRegisterStatusesStore.getById.mockResolvedValue(mockRegisterStatusesStore.registerStatus)
-  mockRegisterStatusesStore.create.mockResolvedValue(mockRegisterStatusesStore.registerStatus)
-  mockRegisterStatusesStore.update.mockResolvedValue()
-  mockRegisterStatusesStore.loading = false
-  mockRegisterStatusesStore.error = null
-  mockAlertStore.loading = false
-  mockAuthStore.canWriteSettings = true
-})
 
 describe('RegisterStatus_EditDialog.vue', () => {
-  describe('Component Rendering', () => {
-    it('updates color preview values through color selectors', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'edit', registerStatusId: 1 },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
+  it('copies a native picker color to the RGB field and accepts that value in the other field', async () => {
+    await openEditor('edit')
+    const background = wrapper.get('#bkColor')
+    const icon = wrapper.get('#fgColor')
+    expect(background.element.value).toBe('255, 255, 255')
+    expect(icon.element.value).toBe('0, 0, 0')
 
-      await resolveAll()
+    await wrapper.get('#bkColor-picker[type="color"]').setValue('#fff76b')
+    background.element.focus()
+    const { value, selectionStart, selectionEnd } = background.element
+    const selected = value.slice(selectionStart, selectionEnd)
+    expect(selected).toBe('255, 247, 107')
 
-      await wrapper.find('#bkColor').setValue('#123456')
-      await wrapper.find('#fgColor').setValue('#abcdef')
+    await icon.setValue(selected)
+    expect(wrapper.get('#fgColor-picker[type="color"]').element.value).toBe('#fff76b')
+    const preview = wrapper.get('[data-testid="register-status-icon"]').element
+    expect(preview.style.backgroundColor).toBe('rgb(255, 247, 107)')
+    expect(preview.style.color).toBe('rgb(255, 247, 107)')
+    expect(saved.fgColor).toBe('#000000')
 
-      expect(mockRegisterStatusesStore.registerStatus.bkColor).toBe('#FFFFFF')
-      expect(mockRegisterStatusesStore.registerStatus.fgColor).toBe('#000000')
-      expect(wrapper.find('[data-testid="bk-color-swatch"]').attributes('style')).toContain(
-        'background-color: rgb(18, 52, 86)'
-      )
-      expect(wrapper.find('[data-testid="fg-color-swatch"]').attributes('style')).toContain(
-        'background-color: rgb(171, 205, 239)'
-      )
-    })
-
-    it('selects a Font Awesome status icon from the visual icon selector', async () => {
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      const option = wrapper
-        .findAll('.status-icon-option')
-        .find((button) => button.attributes('aria-label') === 'fa-solid fa-plane-departure')
-      expect(option.exists()).toBe(true)
-      expect(option.attributes('title')).toBeUndefined()
-      expect(option.text()).toBe('')
-
-      await option.trigger('click')
-
-      expect(wrapper.find('.status-icon-option.selected').attributes('aria-label')).toBe(
-        'fa-solid fa-plane-departure'
-      )
-    })
-
+    await wrapper.get('form').trigger('submit')
+    await vi.waitFor(() => expect(store.update).toHaveBeenCalledExactlyOnceWith(
+      saved.id, expect.objectContaining({ bkColor: '#fff76b', fgColor: '#fff76b' })
+    ))
+    expect(push).toHaveBeenCalledExactlyOnceWith('/registerstatuses')
   })
 
-  describe('Form Submission - Create Mode', () => {
-    it('handles 409 conflict error during creation', async () => {
-      const error = new Error('Order status with this name already exists (409)')
-      mockRegisterStatusesStore.create.mockRejectedValueOnce(error)
+  it('blocks invalid RGB values and keeps corrected values after a rejected save for retry', async () => {
+    await openEditor('edit')
+    const background = wrapper.get('#bkColor')
+    const icon = wrapper.get('#fgColor')
+    await background.setValue('256, 0, 0')
+    await background.trigger('blur')
+    await vi.waitFor(() => expect(background.attributes('aria-invalid')).toBe('true'))
+    await icon.setValue('2, 3')
+    await icon.trigger('blur')
+    await vi.waitFor(() => expect(icon.attributes('aria-invalid')).toBe('true'))
 
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
+    await wrapper.get('form').trigger('submit')
+    await resolveAll()
+    const fieldErrors = wrapper.findAll('.status-settings-row > .invalid-feedback')
+    expect(fieldErrors.map((error) => error.text())).toEqual([
+      'Укажите цвет фона тремя числами от 0 до 255 через запятую',
+      'Укажите цвет иконки тремя числами от 0 до 255 через запятую'
+    ])
+    expect(store.update).not.toHaveBeenCalled()
+    expect(push).not.toHaveBeenCalled()
 
-      await resolveAll()
+    await background.setValue('0, 16, 255')
+    await icon.setValue(' 12, 34, 56 ')
+    store.update.mockRejectedValueOnce(new Error('Database diagnostic'))
+    await wrapper.get('form').trigger('submit')
+    await vi.waitFor(() => expect(wrapper.get('hr.hr + [data-testid="page-alert-region"]').text())
+      .toContain('Ошибка при сохранении статуса партии'))
+    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+    expect(background.element.value).toBe('0, 16, 255')
+    expect(icon.element.value).toBe(' 12, 34, 56 ')
+    expect(push).not.toHaveBeenCalled()
 
-      const form = wrapper.find('form')
-      await form.trigger('submit')
-      await resolveAll()
-
-      expect(mockRouter.push).not.toHaveBeenCalled()
-    })
-
+    await wrapper.get('form').trigger('submit')
+    await vi.waitFor(() => expect(push).toHaveBeenCalledExactlyOnceWith('/registerstatuses'))
+    expect(store.update).toHaveBeenCalledTimes(2)
+    expect(store.update.mock.calls[1]).toEqual(store.update.mock.calls[0])
+    expect(store.update.mock.calls[1][1]).toMatchObject({ bkColor: '#0010ff', fgColor: '#0c2238' })
   })
 
-  describe('Error Handling', () => {
-    it('handles empty error messages', async () => {
-      const error = new Error()
-      error.message = undefined
-      mockRegisterStatusesStore.create.mockRejectedValueOnce(error)
+  it('selects a Font Awesome status icon from the visual icon selector', async () => {
+    await openEditor('create')
+    expect(wrapper.get('#fgColor').element.value).toBe('33, 37, 41')
+    const option = wrapper.get('.status-icon-option[aria-label="fa-solid fa-plane-departure"]')
+    expect(option.attributes('title')).toBeUndefined()
+    expect(option.text()).toBe('')
 
-      const wrapper = mount(AsyncWrapper, {
-        props: { mode: 'create' },
-        global: {
-          stubs: defaultGlobalStubs
-        }
-      })
-
-      await resolveAll()
-
-      const form = wrapper.find('form')
-      await form.trigger('submit')
-      await resolveAll()
-
-      expect(mockRouter.push).not.toHaveBeenCalled()
-    })
+    await option.trigger('click')
+    expect(wrapper.get('.status-icon-option.selected').attributes('aria-label')).toBe(
+      'fa-solid fa-plane-departure'
+    )
   })
 
+  it.each([
+    ['Already exists (409)', 'Такой статус партии уже существует'],
+    [undefined, 'Ошибка при создании статуса партии']
+  ])('shows a rejected create request with message %s', async (diagnostic, message) => {
+    store.create.mockRejectedValueOnce(new Error(diagnostic))
+    await openEditor('create')
+    await wrapper.get('#title').setValue('Черновик')
+    await wrapper.get('form').trigger('submit')
+    await vi.waitFor(() => expect(wrapper.get('hr.hr + [data-testid="page-alert-region"]').text())
+      .toContain(message))
+    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+    expect(push).not.toHaveBeenCalled()
+  })
 })

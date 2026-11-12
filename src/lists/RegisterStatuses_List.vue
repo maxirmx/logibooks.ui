@@ -46,6 +46,13 @@ const headers = [
   { title: 'Название статуса', key: 'title', sortable: true },
   { title: 'Транзит', align: 'center', key: 'transit', sortable: true },
   { title: 'Выгружать в 1C', align: 'center', key: 'exportTo1C', sortable: true },
+  {
+    title: 'Мониторинг реестра Альта-Софт',
+    align: 'center',
+    key: 'monitorInAlta',
+    sortable: true,
+    width: '11rem'
+  },
   { title: 'Изменения запрещены', align: 'center', key: 'readOnly', sortable: true }
 ]
 
@@ -195,6 +202,9 @@ defineExpose({
 
         <template v-slot:[`item.exportTo1C`]="{ item }">
           <span class="register-status-export-to-1c">{{ item.exportTo1C ? 'Да' : 'Нет' }}</span>
+        </template>
+        <template v-slot:[`item.monitorInAlta`]="{ item }">
+          {{ item.monitorInAlta ? 'Да' : 'Нет' }}
         </template>
         <template v-slot:[`item.readOnly`]="{ item }">
           <span class="register-status-read-only">{{ item.readOnly ? 'Да' : 'Нет' }}</span>

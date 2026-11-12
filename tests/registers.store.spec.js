@@ -1028,6 +1028,31 @@ describe('registers store', () => {
       }
     )
 
+    it('refreshes Alta options for editors, coalesces concurrent loads and propagates errors', async () => {
+      const metadata = { customsProcedures: [], transportationTypes: [], incoterms: validIncoterms }
+      fetchWrapper.get.mockResolvedValueOnce({ ...metadata, altaDatabaseNames: ['Retired'] })
+      const store = useRegistersStore()
+      expect((await store.ensureOpsLoaded()).altaDatabaseNames).toEqual(['Retired'])
+      expect((await store.ensureOpsLoaded()).altaDatabaseNames).toEqual(['Retired'])
+      expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
+
+      const pending = Promise.withResolvers()
+      fetchWrapper.get.mockReturnValueOnce(pending.promise)
+      const refresh = store.ensureOpsLoaded({ refresh: true })
+      const joined = store.ensureOpsLoaded({ refresh: true })
+      pending.resolve({ ...metadata, altaDatabaseNames: ['Alta-West'] })
+      expect((await refresh).altaDatabaseNames).toEqual(['Alta-West'])
+      expect((await joined).altaDatabaseNames).toEqual(['Alta-West'])
+      expect(fetchWrapper.get).toHaveBeenCalledTimes(2)
+
+      const failure = new Error('Не удалось загрузить данные формы')
+      fetchWrapper.get.mockRejectedValueOnce(failure)
+      await expect(store.ensureOpsLoaded({ refresh: true })).rejects.toBe(failure)
+      expect(store.opsError).toBe(failure)
+      fetchWrapper.get.mockResolvedValueOnce(metadata)
+      expect((await store.ensureOpsLoaded({ refresh: true })).altaDatabaseNames).toEqual([])
+    })
+
     it('getOpsLabel returns name for matching value', () => {
       const store = useRegistersStore()
       const list = [

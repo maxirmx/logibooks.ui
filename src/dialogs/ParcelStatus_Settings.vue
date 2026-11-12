@@ -16,6 +16,8 @@ import * as Yup from 'yup'
 import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import ActionButton from '@/components/ActionButton.vue'
+import StatusColorInput from '@/components/StatusColorInput.vue'
+import { hexToRgb, isOptionalRgb, rgbToHex } from '@/helpers/status.color.helpers.js'
 
 const alertStore = useAlertStore()
 const authStore = useAuthStore()
@@ -51,7 +53,7 @@ if (!isCreate.value) {
     fallback: 'Не удалось загрузить статус посылки',
     scope: getCurrentScope()
   })
-  parcelStatus.value = saved && { ...saved }
+  parcelStatus.value = saved && { ...saved, bkColor: hexToRgb(saved.bkColor) }
 }
 
 // Get page title
@@ -70,52 +72,16 @@ const schema = Yup.object({
   title: Yup.string().required('Название статуса обязательно'),
   bkColor: Yup.string()
     .nullable()
-    .matches(/^#[0-9A-Fa-f]{6}$/, {
-      message: 'Цвет при выгрузке должен быть в формате #RRGGBB',
-      excludeEmptyString: true
-    })
+    .test('rgb-color', 'Укажите цвет при выгрузке тремя числами от 0 до 255 через запятую', isOptionalRgb)
 })
-
-function getBackgroundColorValue(fieldValue) {
-  const value = fieldValue === undefined ? parcelStatus.value?.bkColor : fieldValue
-  return /^#[0-9A-Fa-f]{6}$/.test(value || '') ? value : null
-}
-
-function getBackgroundColorPickerValue(fieldValue) {
-  return getBackgroundColorValue(fieldValue) || '#ffffff'
-}
-
-function getBackgroundColorDisplay(fieldValue) {
-  return getBackgroundColorValue(fieldValue) || 'Не задан'
-}
-
-function hasBackgroundColor(fieldValue) {
-  return getBackgroundColorValue(fieldValue) !== null
-}
-
-function handleBackgroundColorInput(event, handleChange) {
-  if (!canEdit.value) return
-  const value = event.target.value || null
-  if (parcelStatus.value) {
-    parcelStatus.value.bkColor = value
-  }
-  handleChange(value)
-}
-
-function handleBackgroundColorClear(handleChange) {
-  if (!canEdit.value) return
-  if (parcelStatus.value) {
-    parcelStatus.value.bkColor = null
-  }
-  handleChange(null)
-}
 
 // Form submission
 function onSubmit(values, { setErrors } = {}) {
   if (!canEdit.value) return
+  const payload = { ...values, bkColor: rgbToHex(values.bkColor) }
   if (isCreate.value) {
     return parcelStatusesStore
-      .create(values)
+      .create(payload)
       .then(close)
       .catch((error) => {
         if (error.message?.includes('409')) {
@@ -130,7 +96,7 @@ function onSubmit(values, { setErrors } = {}) {
       })
   } else {
     return parcelStatusesStore
-      .update(props.orderStatusId, values)
+      .update(props.orderStatusId, payload)
       .then(close)
       .catch((error) => {
         reportFormError(error, {
@@ -230,42 +196,28 @@ function close() {
           </div>
         </div>
 
-        <Field name="bkColor" v-slot="{ field, handleChange }">
+        <Field name="bkColor" v-slot="{ value, handleChange, handleBlur }">
           <div class="form-group">
-            <label for="bkColor" class="label">Цвет при выгрузке:</label>
+            <label :for="canEdit ? 'bkColor' : 'bkColor-picker'" class="label">Цвет при выгрузке:</label>
             <div class="status-color-actions">
-              <label
-                class="status-color-control"
-                :class="{ 'status-color-control--empty': !hasBackgroundColor(field?.value) }"
-                for="bkColor"
-              >
-                <span
-                  class="status-color-swatch"
-                  :class="{ 'status-color-swatch--empty': !hasBackgroundColor(field?.value) }"
-                  :style="{ backgroundColor: getBackgroundColorValue(field?.value) || 'transparent' }"
-                  data-testid="bk-color-swatch"
-                ></span>
-                <span class="status-color-value">{{ getBackgroundColorDisplay(field?.value) }}</span>
-                <input
-                  id="bkColor"
-                  type="color"
-                  class="status-color-native"
-                  :class="{ 'is-invalid': errors.bkColor }"
-                  aria-label="Цвет при выгрузке"
-                  :value="getBackgroundColorPickerValue(field?.value)"
-                  @input="(event) => handleBackgroundColorInput(event, handleChange)"
-                />
-              </label>
-              <div v-if="canEdit" class="status-color-control status-color-control-brush">
-                <ActionButton
-                  :item="{}"
-                  icon="fa-solid fa-broom"
-                  tooltip-text="Очистить"
-                  :disabled="!hasBackgroundColor(field?.value)"
-                  data-testid="bk-color-clear-action"
-                  @click="handleBackgroundColorClear(handleChange)"
-                />
-              </div>
+              <StatusColorInput
+                id="bkColor"
+                label="Цвет при выгрузке"
+                :model-value="value"
+                :disabled="!canEdit"
+                :invalid="Boolean(errors.bkColor)"
+                @update:model-value="handleChange($event, Boolean(errors.bkColor))"
+                @blur="handleBlur($event, true)"
+              />
+              <ActionButton
+                v-if="canEdit"
+                :item="{}"
+                icon="fa-solid fa-broom"
+                tooltip-text="Очистить"
+                :disabled="!value"
+                data-testid="bk-color-clear-action"
+                @click="handleChange(null)"
+              />
             </div>
             <FieldError name="bkColor" :errors="errors" />
           </div>
@@ -321,72 +273,11 @@ function close() {
   right: 2px;
 }
 
-.status-color-control {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  width: fit-content;
-  min-width: 7.25rem;
-  min-height: 2.25rem;
-  border: 1px solid #c7ccd1;
-  border-radius: 4px;
-  background: #fff;
-  padding: 0.25rem 0.5rem;
-  cursor: pointer;
-}
-
-.status-color-control-brush {
-  padding: 0rem 0rem;
-  min-width: 2.25rem;
-  margin-bottom: 8px;
-}
-
-.status-color-control:focus-within {
-  border-color: #1976d2;
-  box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.18);
-}
-
 .status-color-actions {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-}
-
-.status-color-control--empty {
-  color: #6c757d;
-}
-
-.status-color-swatch {
-  position: relative;
-  width: 1.75rem;
-  height: 1.25rem;
-  border: 1px solid #74777c;
-  border-radius: 4px;
-}
-
-.status-color-swatch--empty::after {
-  content: '';
-  position: absolute;
-  left: 0.2rem;
-  right: 0.2rem;
-  top: 50%;
-  border-top: 2px solid #d3223f;
-  transform: rotate(-45deg);
-}
-
-.status-color-value {
-  font-variant-numeric: tabular-nums;
-}
-
-.status-color-native {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  border: 0;
-  opacity: 0;
-  cursor: pointer;
+  min-width: 0;
 }
 
 </style>

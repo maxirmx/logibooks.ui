@@ -298,11 +298,11 @@ it('saves the keyboard shortcut a shift lead captures with its modifiers', async
   ))
 })
 
-it('updates the parcel status color preview and saves the new color', async () => {
+it('accepts a pasted parcel status RGB value and saves the matching hex color', async () => {
   const wrapper = open(ParcelStatusEditView, [roleShiftLead], { id: 1 })
   await resolveAll()
-  await wrapper.get('#bkColor').setValue('#223344')
-  expect(wrapper.get('.status-color-value').text()).toBe('#223344')
+  await wrapper.get('#bkColor').setValue('34, 51, 68')
+  expect(wrapper.get('#bkColor-picker[type="color"]').element.value).toBe('#223344')
   await getAction(wrapper, 'Сохранить').trigger('click')
   await vi.waitFor(() => expect(transport.put).toHaveBeenCalledExactlyOnceWith(
     expect.stringContaining('/parcelstatuses/1'), expect.objectContaining({ bkColor: '#223344' })

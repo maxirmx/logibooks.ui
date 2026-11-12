@@ -45,7 +45,8 @@ export const useRegistersStore = defineStore('registers', () => {
     customsProcedures: [],
     transportationTypes: [],
     incoterms: [],
-    passportCheckStatuses: []
+    passportCheckStatuses: [],
+    altaDatabaseNames: []
   })
   const opsLoading = ref(false)
   const opsError = ref(null)
@@ -187,6 +188,7 @@ export const useRegistersStore = defineStore('registers', () => {
         }
         ops.value = {
           ...response,
+          altaDatabaseNames: response.altaDatabaseNames ?? [],
           passportCheckStatuses: Array.isArray(response.passportCheckStatuses)
             ? response.passportCheckStatuses
             : []
@@ -202,8 +204,8 @@ export const useRegistersStore = defineStore('registers', () => {
     }
   }
 
-  async function ensureOpsLoaded() {
-    if (opsInitialized) {
+  async function ensureOpsLoaded({ refresh = false } = {}) {
+    if (opsInitialized && !refresh && !opsPromise) {
       return ops.value
     }
 
@@ -524,7 +526,7 @@ export const useRegistersStore = defineStore('registers', () => {
     return state.promise
   }
 
-  async function getById(id) {
+  async function getById(id, { refreshOps = false } = {}) {
     const requestSequence = ++itemRequestSequence
     itemRequestRegisterId = Number(id)
     const revision = projectionRevisions.get(Number(id)) ?? 0
@@ -533,7 +535,7 @@ export const useRegistersStore = defineStore('registers', () => {
     item.value = { loading: true }
     try {
       const [, response] = await Promise.all([
-        ensureOpsLoaded(),
+        ensureOpsLoaded({ refresh: refreshOps }),
         fetchWrapper.get(`${baseUrl}/${id}`)
       ])
       const register = mergeRegisterSnapshot(mergeLivePassportCheckState(response, passportCheckStateWatermark), registerWatermark)

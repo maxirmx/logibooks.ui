@@ -1017,6 +1017,101 @@ describe('Register_EditDialog', () => {
     )
   })
 
+  describe('Alta integration with real form controls', () => {
+    async function openAltaEditor(saved = {}, create = false) {
+      mockItem.value = { ...baseRegisterItem, ...saved }
+      mockOps.value.altaDatabaseNames = ['Alta-East', 'Alta-West']
+      const wrapper = mount({
+        components: { RegisterEditDialog },
+        template: `<Suspense><RegisterEditDialog :id="1" :create="${create}" /></Suspense>`
+      }, { attachTo: document.body, global: { stubs: defaultGlobalStubs } })
+      await resolveAll()
+      return wrapper
+    }
+
+    it.each([undefined, null])('starts collapsed and saves a configured name for an empty value (%s)', async (saved) => {
+      const wrapper = await openAltaEditor({ altaDatabaseName: saved })
+      expect(getById).toHaveBeenCalledWith(1, { refreshOps: true })
+      const section = wrapper.get('.alta-section')
+      const toggle = section.get('[data-testid="register-alta-toggle"]')
+      expect(section.element.previousElementSibling.classList.contains('form-section')).toBe(true)
+      expect(wrapper.get('#register-alta-body').isVisible()).toBe(false)
+      await toggle.trigger('click')
+      const select = section.get('#altaDatabaseName')
+      expect(select.element.selectedIndex).toBe(0)
+      expect(Array.from(select.element.options, option => option.value)).toEqual(['', 'Alta-East', 'Alta-West'])
+      await select.setValue('Alta-East')
+      await wrapper.get('form').trigger('submit')
+      await resolveAll()
+      await vi.waitFor(() => expect(update).toHaveBeenCalledWith(1, expect.objectContaining({ altaDatabaseName: 'Alta-East' })))
+      await vi.waitFor(() => expect(router.push).toHaveBeenCalledTimes(1))
+    })
+
+    it.each([['Alta-East', ''], ['Retired', ''], ['Retired', 'Alta-West']])(
+      'loads %s and saves the new selection',
+      async (saved, selection) => {
+        const wrapper = await openAltaEditor({ altaDatabaseName: saved })
+        await wrapper.get('[data-testid="register-alta-toggle"]').trigger('click')
+        const select = wrapper.get('#altaDatabaseName')
+        expect(select.element.value).toBe(saved)
+        const selected = select.element.selectedOptions[0]
+        expect(selected.disabled).toBe(saved === 'Retired')
+        if (saved === 'Retired') expect(selected.textContent).toContain('недоступна')
+        await select.setValue(selection)
+        await wrapper.get('form').trigger('submit')
+        await resolveAll()
+        await vi.waitFor(() => expect(update).toHaveBeenCalledWith(1, expect.objectContaining({ altaDatabaseName: selection })))
+      }
+    )
+
+    it('omits an unchanged unavailable name when saving unrelated edits', async () => {
+      const wrapper = await openAltaEditor({ altaDatabaseName: 'Retired' })
+      await wrapper.get('#dealNumber').setValue('new reference')
+      await wrapper.get('form').trigger('submit')
+      await resolveAll()
+      await vi.waitFor(() => expect(update).toHaveBeenCalledWith(1, expect.objectContaining({ dealNumber: 'new reference' })))
+      expect(update.mock.calls[0][1]).not.toHaveProperty('altaDatabaseName')
+    })
+
+    it('reveals a rejected selection, preserves edits and retries with a new database', async () => {
+      const wrapper = await openAltaEditor({ altaDatabaseName: 'Retired' })
+      const toggle = wrapper.get('[data-testid="register-alta-toggle"]')
+      await toggle.trigger('click')
+      const select = wrapper.get('#altaDatabaseName')
+      const message = 'База данных «Alta-East» не настроена в Альта-Софт'
+      await select.setValue('Alta-East')
+      await wrapper.get('#dealNumber').setValue('new reference')
+      await toggle.trigger('click')
+      update.mockRejectedValueOnce(Object.assign(new Error(message), { status: 400, data: {
+        msg: 'Недоступная база данных Альта-Софт', errors: { altaDatabaseName: [message] }
+      } }))
+      await wrapper.get('form').trigger('submit')
+      await resolveAll()
+      const errors = wrapper.findAll('[role="alert"]').filter(node => node.text() === message)
+      expect(errors).toHaveLength(1)
+      expect(errors[0].isVisible()).toBe(true)
+      expect(select.element.value).toBe('Alta-East')
+      expect(wrapper.get('#dealNumber').element.value).toBe('new reference')
+      expect(router.push).not.toHaveBeenCalled()
+      expect(useAlertStore().alert).toBeNull()
+      await select.setValue('Alta-West')
+      await wrapper.get('form').trigger('submit')
+      await resolveAll()
+      await vi.waitFor(() => expect(update).toHaveBeenCalledTimes(2))
+      expect(update.mock.calls[1][1]).toMatchObject({ dealNumber: 'new reference', altaDatabaseName: 'Alta-West' })
+      await vi.waitFor(() => expect(router.push).toHaveBeenCalledTimes(1))
+    })
+
+    it('disables the selector on locked registers and omits the section on upload', async () => {
+      const locked = await openAltaEditor({ readOnly: true, altaDatabaseName: 'Alta-East' })
+      await locked.get('[data-testid="register-alta-toggle"]').trigger('click')
+      expect(locked.get('#altaDatabaseName').element.disabled).toBe(true)
+      locked.unmount()
+      const uploadEditor = await openAltaEditor({}, true)
+      expect(uploadEditor.find('.alta-section').exists()).toBe(false)
+    })
+  })
+
   describe('cargo unit count', () => {
     async function mountCargoEditor(create = false, realForm = false) {
       const Parent = {

@@ -51,7 +51,8 @@ const registerStatus = ref({
   fgColor: null,
   readOnly: false,
   transit: false,
-  exportTo1C: false
+  exportTo1C: false,
+  monitorInAlta: false
 })
 const canEdit = computed(() => Boolean(registerStatus.value) && authStore.canWriteSettings)
 
@@ -77,6 +78,7 @@ function getButtonText() {
 // Validation schema
 const schema = Yup.object({
   exportTo1C: Yup.boolean().default(false),
+  monitorInAlta: Yup.boolean().default(false),
   title: Yup.string().required('Название статуса обязательно'),
   icon: Yup.string()
     .nullable()
@@ -214,21 +216,6 @@ function close() {
         </div>
 
         <div class="status-settings-row">
-          <label for="readOnly" class="label status-settings-label">Изменения запрещены:</label>
-          <div class="checkbox-item">
-            <Field
-              id="readOnly"
-              name="readOnly"
-              type="checkbox"
-              class="checkbox checkbox-styled"
-              :value="true"
-              :unchecked-value="false"
-            />
-            <label for="readOnly" aria-hidden="true"></label>
-          </div>
-        </div>
-
-        <div class="status-settings-row">
           <label for="transit" class="label status-settings-label">Транзит:</label>
           <div class="checkbox-item">
             <Field
@@ -257,6 +244,39 @@ function close() {
             <label for="exportTo1C" aria-hidden="true"></label>
           </div>
           <FieldError name="exportTo1C" :errors="errors" />
+        </div>
+
+        <div class="status-settings-row">
+          <label for="monitorInAlta" class="label status-settings-label">
+            Мониторинг реестра в Альта-Софт:
+          </label>
+          <div class="checkbox-item">
+            <Field
+              id="monitorInAlta"
+              name="monitorInAlta"
+              type="checkbox"
+              class="checkbox checkbox-styled"
+              :value="true"
+              :unchecked-value="false"
+            />
+            <label for="monitorInAlta" aria-hidden="true"></label>
+          </div>
+          <FieldError name="monitorInAlta" :errors="errors" />
+        </div>
+
+        <div class="status-settings-row">
+          <label for="readOnly" class="label status-settings-label">Изменения запрещены:</label>
+          <div class="checkbox-item">
+            <Field
+              id="readOnly"
+              name="readOnly"
+              type="checkbox"
+              class="checkbox checkbox-styled"
+              :value="true"
+              :unchecked-value="false"
+            />
+            <label for="readOnly" aria-hidden="true"></label>
+          </div>
         </div>
 
         <Field name="bkColor" v-slot="{ field, handleChange }">
@@ -350,7 +370,7 @@ function close() {
 }
 
 .register-status-form {
-  --register-status-label-width: 13rem;
+  --register-status-label-width: min(40%, 19rem);
   --register-status-control-height: 2.25rem;
   --register-status-icon-option-size: 2.5rem;
 }
@@ -399,6 +419,8 @@ function close() {
 .status-settings-label {
   width: auto;
   min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
   align-self: center;
   display: flex;
   align-items: center;

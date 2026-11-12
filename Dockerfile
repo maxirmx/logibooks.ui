@@ -4,6 +4,7 @@
 
 # Stage for building the frontend
 FROM node:22.23.0 AS build
+RUN npm install --global npm@11.19.1
 WORKDIR /app
 
 # Add build arguments with default values

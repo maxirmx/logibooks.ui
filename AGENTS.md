@@ -92,6 +92,11 @@ These instructions apply to the entire repository. Follow them for every new fea
 - Invalid modes fall back to `modePaperwork`. Ignore external, protocol-relative, or otherwise unsafe return URLs and use the mode-correct parcel-list fallback.
 - Do not use browser-history navigation for parcel workflow returns. Failed parcel submissions must remain on the editor and must not navigate.
 
+## Ops endpoints
+
+- Drive Core-owned UI labels, codes, supported values, defaults, and behavior flags from the resource’s typed `GET /api/<resource>/ops` contract. Load and reuse metadata through the resource store. Keep layout and navigation in the UI.
+- Ops endpoints are available to every authenticated user. Resource reads and mutations use their own access policies.
+
 ## Testing requirements
 
 - Maintain at least 95% patch coverage for all new or modified code, measured against the target branch.

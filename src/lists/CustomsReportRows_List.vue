@@ -4,13 +4,13 @@
 // This file is a part of Logibooks ui application
 
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
-import { onUnmounted, computed, watch, ref, toRef, unref } from 'vue'
+import { onUnmounted, computed, watch, ref, toRef } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useCustomsReportsStore } from '@/stores/customs.reports.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
-import { formatDateTimeLines } from '@/helpers/date.formatters.js'
+import { formatDateTime, formatDateTimeLines } from '@/helpers/date.formatters.js'
 import TruncateTooltipCell from '@/components/TruncateTooltipCell.vue'
 import ClickableCell from '@/components/ClickableCell.vue'
 import PaginationFooter from '@/components/PaginationFooter.vue'
@@ -21,6 +21,8 @@ import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync.js'
 import { navigateToEditParcel } from '@/helpers/parcels.list.helpers.js'
 import { getCurrentInternalRoute } from '@/helpers/parcel.navigation.helpers.js'
 import { OP_MODE_PAPERWORK } from '@/helpers/op.mode.js'
+import { useCustomsReportPolling } from '@/composables/useCustomsReportPolling.js'
+import { getErrorMessage, reportError } from '@/helpers/error.helpers.js'
 const props = defineProps({
   reportId: {
     type: Number,
@@ -34,21 +36,29 @@ const props = defineProps({
 
 const customsReportsStore = useCustomsReportsStore()
 const alertStore = useAlertStore()
+const report = ref(null)
+let statusRequest = 0
+let rowsScope = 0
 const authStore = useAuthStore()
 const customsreportrows_search = toRef(authStore, 'customsreportrows_search')
 const customsreportrows_page = toRef(authStore, 'customsreportrows_page')
 const customsreportrows_per_page = toRef(authStore, 'customsreportrows_per_page')
 const customsreportrows_sort_by = toRef(authStore, 'customsreportrows_sort_by')
 
-const { reportRows, loading, reportRowsTotalCount, reportRowsColumns, reportRowsCustomsProcedure } =
+const { accountVersion, ops, reportRows, loading, reportRowsTotalCount, reportRowsColumns, reportRowsCustomsProcedure } =
   storeToRefs(customsReportsStore)
+const initialAccountVersion = accountVersion.value
 const localSearch = ref(customsreportrows_search.value || '')
 
 const isComponentMounted = ref(true)
 const DEFAULT_SORT_BY = Object.freeze([{ key: 'rowNumber', order: 'asc' }])
 const SORT_ONLY_COLUMN_KEYS = new Set(['rowNumber'])
 
-const headingLabel = computed(() => props.masterInvoice || `№${props.reportId}`)
+const headingLabel = computed(() => {
+  const invoice = report.value?.masterInvoice
+  const routeInvoice = accountVersion.value === initialAccountVersion ? props.masterInvoice : ''
+  return (invoice !== ops.value?.defaultMasterInvoice && invoice) || routeInvoice || `№${props.reportId}`
+})
 const procedureHeadingLabel = computed(() =>
   formatProcedureForHeading(reportRowsCustomsProcedure.value)
 )
@@ -65,7 +75,7 @@ function formatProcedureForHeading(value) {
 }
 
 function isParcelRowClickable(item) {
-  return item?.parcelId !== null && item?.registerId !== null
+  return Boolean(item?.parcelId && item?.registerId)
 }
 
 function openParcel(item) {
@@ -94,12 +104,44 @@ function joinDisplayParts(...parts) {
 }
 
 async function loadReportRows() {
-  await customsReportsStore.getReportRows(props.reportId)
-  const storeError = unref(customsReportsStore.error)
-  if (storeError) {
-    alertStore.error(storeError instanceof Error ? storeError.message : String(storeError))
+  const scope = rowsScope
+  try {
+    await customsReportsStore.getReportRows(props.reportId)
+  } catch (error) {
+    if (isComponentMounted.value && scope === rowsScope) {
+      alertStore.error(error, { fallback: 'Не удалось загрузить строки отчёта' })
+    } else reportError(error, { context: 'customs report rows after disposal' })
   }
 }
+
+async function loadReportStatus() {
+  const id = props.reportId
+  const request = ++statusRequest
+  const next = await customsReportsStore.getReportStatus(id)
+  if (next && isComponentMounted.value && request === statusRequest) showStatus(next)
+}
+
+function showStatus(next) {
+  const previous = report.value
+  report.value = next
+  if (next && previous?.stage !== next.stage && customsReportsStore.reportStage(next)?.hasParsedRows) {
+    triggerLoad()
+  }
+}
+
+function reportStatusError(error) {
+  if (customsReportsStore.claimReportStatusFailure(props.reportId, error)) {
+    alertStore.error(error, { fallback: 'Не удалось получить состояние отчёта' })
+  }
+}
+
+watch([accountVersion, () => props.reportId], ([, id], previous, onCleanup) => {
+  rowsScope++
+  customsReportsStore.resetReportRows()
+  report.value = null
+  onCleanup(customsReportsStore.displayReportStatus(id, showStatus))
+  if (previous?.length) triggerLoad()
+}, { immediate: true })
 
 const { triggerLoad, stop: stopFilterSync } = useDebouncedFilterSync({
   filters: [{ local: localSearch, store: customsreportrows_search }],
@@ -112,14 +154,21 @@ const watcherStop = watch(
   [
     customsreportrows_page,
     customsreportrows_per_page,
-    customsreportrows_sort_by,
-    () => props.reportId
+    customsreportrows_sort_by
   ],
   () => {
     triggerLoad()
   },
   { immediate: false }
 )
+
+const reportToPoll = computed(() => !report.value || customsReportsStore.reportStage(report.value)?.isActive
+  ? `${accountVersion.value}/${props.reportId}`
+  : null)
+useCustomsReportPolling(reportToPoll, loadReportStatus, reportStatusError, {
+  startImmediately: true,
+  canRetry: customsReportsStore.canRetryReportStatus
+})
 
 // Column keys that should use TruncateTooltipCell
 const TRUNCATABLE_COLUMNS = [
@@ -219,6 +268,7 @@ const pageOptions = computed(() => {
     <div class="header-with-actions">
       <h1 class="primary-heading">{{ headingText }}</h1>
       <div class="header-actions-bar">
+        <RouterLink to="/customs-reports" class="link">К списку отчётов</RouterLink>
         <div v-if="loading" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
         </div>
@@ -227,6 +277,15 @@ const pageOptions = computed(() => {
     <hr class="hr" />
 
     <PageAlertRegion />
+
+    <div v-if="report" aria-live="polite" class="mb-3">
+      <strong>{{ customsReportsStore.reportStage(report)?.name ?? report.stage }}</strong>
+      <span v-if="report.uploadedAt"> · Загружен {{ formatDateTime(report.uploadedAt) }}</span>
+      <span v-if="report.uploadedByUserId"> · Пользователь №{{ report.uploadedByUserId }}</span>
+      <div v-if="report.errMsg">
+        {{ getErrorMessage(report.errMsg, 'Не удалось обработать отчёт о выпуске') }}
+      </div>
+    </div>
 
     <div class="list-filters">
       <v-text-field
@@ -305,8 +364,12 @@ const pageOptions = computed(() => {
                 :disabled="!isParcelRowClickable(item)"
                 @click="openParcel"
               >
+                <template v-if="col.key === 'parcelNumber'">
+                  {{ item.parcelNumber }}
+                </template>
+
                 <!-- DTag column: two-line display with secondary muted line for rowNumber -->
-                <template v-if="col.key === 'dTag'">
+                <template v-else-if="col.key === 'dTag'">
                   <div class="two-line-cell">
                     <div class="primary-line">{{ item.dTag }}</div>
                     <div class="secondary-line">Позиция {{ item.rowNumber }}</div>

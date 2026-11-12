@@ -3,11 +3,14 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { mount, flushPromises } from '@vue/test-utils'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { mount as mountComponent, flushPromises } from '@vue/test-utils'
 import { ref, unref } from 'vue'
+import { createPinia, setActivePinia } from 'pinia'
 import CustomsReportsList from '@/lists/CustomsReports_List.vue'
 import { defaultGlobalStubs } from './helpers/test-utils.js'
+
+import { customsReportOps } from './helpers/customs-report-ops.fixture.js'
 
 const reportsRef = ref([])
 const loadingRef = ref(false)
@@ -137,9 +140,27 @@ vi.mock('@/router', () => ({
   }
 }))
 
+const mounted = new Set()
+
+function mount(component, options) {
+  const wrapper = mountComponent(component, options)
+  mounted.add(wrapper)
+  return wrapper
+}
+
+function dispose(wrapper) {
+  mounted.delete(wrapper)
+  wrapper.unmount()
+}
+
 describe('CustomsReports_List.vue', () => {
+  afterEach(() => {
+    for (const wrapper of mounted) dispose(wrapper)
+  })
+
   beforeEach(() => {
-    vi.clearAllMocks()
+    vi.resetAllMocks()
+    getReportsMock.mockResolvedValue()
     reportsRef.value = []
     loadingRef.value = false
     errorRef.value = null
@@ -147,6 +168,9 @@ describe('CustomsReports_List.vue', () => {
     alertRef.value = null
 
     customsReportsStoreMock = {
+      accountVersion: ref(0),
+      ops: ref(customsReportOps),
+      reportStage: report => customsReportOps.stages[report?.stage],
       reports: reportsRef,
       loading: loadingRef,
       error: errorRef,
@@ -190,6 +214,7 @@ describe('CustomsReports_List.vue', () => {
       }
     })
     authStoreMock.isSrLogistPlus = true
+    authStoreMock.isShiftLeadPlus = true
   })
 
   it('renders report data with calculated fields', async () => {
@@ -197,6 +222,7 @@ describe('CustomsReports_List.vue', () => {
       {
         id: 1,
         success: true,
+        stage: 'completed',
         fileName: 'report.xlsx',
         customsProcedure: 'IM',
         masterInvoice: 'INV-1',
@@ -210,8 +236,7 @@ describe('CustomsReports_List.vue', () => {
         releasedParcels: 7,
         releasedWithDutyParcels: 8,
         heldParcels: 9,
-        updatedTnVedParcels: 10,
-        errMsg: 'Some error'
+        updatedTnVedParcels: 10
       }
     ]
     reportsTotalCountRef.value = 1
@@ -228,7 +253,7 @@ describe('CustomsReports_List.vue', () => {
 
     expect(textFor('id')).toBe('1')
     expect(textFor('fileName')).toBe('report.xlsx')
-    expect(textFor('result')).toBe('Успешно')
+    expect(textFor('result')).toBe('Обработан')
     expect(textFor('customsProcedure')).toBe('IM')
     expect(textFor('masterInvoice')).toBe('INV-1')
     expect(textFor('processedRows')).toBe('50')
@@ -237,10 +262,24 @@ describe('CustomsReports_List.vue', () => {
     expect(textFor('heldParcels')).toBe('9')
     expect(textFor('updatedTnVedParcels')).toBe('10')
     expect(textFor('errorCount')).toContain('21')
-    expect(textFor('errMsg')).toBe('Some error')
+    expect(textFor('errMsg')).toBe('')
+    expect(wrapper.get('[data-testid="reports-upload-input"]').attributes('accept')).toBe('.xlsx,.rar')
 
     const actionsCell = wrapper.find('[data-column-key="actions"]')
     expect(actionsCell.find('[data-testid="reports-delete-button"]').exists()).toBe(true)
+  })
+
+  it.each([
+    ['Unexpected database exception', 'Не удалось обработать отчёт о выпуске'],
+    ['Обработка файла прервана. Загрузите файл отчёта повторно.', 'Обработка файла прервана. Загрузите файл отчёта повторно.']
+  ])('presents the saved report failure in its cell for %s', async (errMsg, expected) => {
+    reportsRef.value = [{ id: 1, stage: 'parseFailed', errMsg }]
+    reportsTotalCountRef.value = 1
+    const wrapper = mount(CustomsReportsList, { global: { stubs: testStubs } })
+    await flushPromises()
+    expect(wrapper.get('[data-column-key="errMsg"]').text()).toBe(expected)
+    expect(reportsRef.value[0].errMsg).toBe(errMsg)
+    expect(alertErrorMock).not.toHaveBeenCalled()
   })
 
   it('binds pagination and sorting to authStore', async () => {
@@ -307,7 +346,7 @@ describe('CustomsReports_List.vue', () => {
     expect(clickSpy).toHaveBeenCalled()
   })
 
-  it('uploads a report from the header action and refreshes the list', async () => {
+  it('opens the queued report after upload and leaves completion to status tracking', async () => {
     getReportsMock.mockResolvedValue()
     const wrapper = mount(CustomsReportsList, {
       global: {
@@ -348,20 +387,72 @@ describe('CustomsReports_List.vue', () => {
     expect(uploadMock).toHaveBeenCalledWith(file)
     expect(wrapper.find('.action-dialog-stub').attributes('data-show')).toBe('true')
 
-    resolveUpload()
+    resolveUpload({ id: 42, success: false, stage: 'pendingParse' })
     await flushPromises()
 
     const dispatchedEvent = dispatchSpy.mock.calls.find(
       (call) => call[0] instanceof globalThis.CustomEvent
     )
-    expect(dispatchedEvent?.[0].detail).toEqual({ fileName: 'report.xlsx' })
-    expect(getReportsMock).toHaveBeenCalledTimes(2)
+    expect(dispatchedEvent).toBeUndefined()
+    expect(routerPushMock).toHaveBeenCalledWith({ path: '/customs-reports/42/rows', query: {} })
+    dispatchSpy.mockRestore()
     expect(wrapper.find('.action-dialog-stub').attributes('data-show')).toBe('false')
     expect(assignedInputValue).toBe('')
     expect(alertErrorMock).not.toHaveBeenCalled()
   })
 
+  it.each([
+    [{ success: false, errMsg: 'Не удалось прочитать файл "report-ALPHA.xlsx"' }, 'Не удалось прочитать файл "report-ALPHA.xlsx"'],
+    [{ id: 42, success: false, errMsg: 'Ошибка загрузки файла' }, 'Ошибка загрузки файла'],
+    [{ success: false, errMsg: 'Unexpected database exception' }, 'Не удалось загрузить отчёт'],
+    [{ success: true }, 'Не удалось загрузить отчёт'],
+    [null, 'Не удалось загрузить отчёт'],
+    [undefined, 'Не удалось загрузить отчёт']
+  ])('keeps the list open for unsuccessful upload result %j and allows retry', async (result, expected) => {
+    setActivePinia(createPinia())
+    const { useAlertStore } = await vi.importActual('@/stores/alert.store.js')
+    alertStoreMock = useAlertStore()
+    const alert = vi.spyOn(alertStoreMock, 'error')
+    reportsRef.value = [{ id: 7, stage: 'completed', fileName: 'saved.xlsx' }]
+    reportsTotalCountRef.value = 1
+    searchRef.value = 'MASTER-ALPHA'
+    pageRef.value = 3
+    const wrapper = mount(CustomsReportsList, { global: { stubs: testStubs } })
+    await flushPromises()
+    uploadMock.mockResolvedValueOnce(result).mockResolvedValueOnce({ id: 42, success: false, stage: 'pendingParse' })
+    const input = wrapper.get('[data-testid="reports-upload-input"]')
+    const file = new File(['dummy'], 'broken.xlsx')
+    Object.defineProperty(input.element, 'files', { value: [file], configurable: true })
+
+    await input.trigger('change')
+    await flushPromises()
+
+    expect(routerPushMock).not.toHaveBeenCalled()
+    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+    expect(wrapper.get('[role="alert"]').text()).toContain(expected)
+    expect(wrapper.text()).not.toContain('Unexpected database exception')
+    expect(alert).toHaveBeenCalledOnce()
+    expect(alert.mock.calls[0][0]).toMatchObject({ cause: result })
+    expect(wrapper.get('[data-testid="report-id-link-7"]').exists()).toBe(true)
+    expect(wrapper.get('.action-dialog-stub').attributes('data-show')).toBe('false')
+    expect(searchRef.value).toBe('MASTER-ALPHA')
+    expect(pageRef.value).toBe(3)
+
+    await input.trigger('change')
+    await flushPromises()
+
+    expect(uploadMock).toHaveBeenCalledTimes(2)
+    expect(uploadMock).toHaveBeenNthCalledWith(1, file)
+    expect(uploadMock).toHaveBeenNthCalledWith(2, file)
+    expect(routerPushMock).toHaveBeenCalledExactlyOnceWith({ path: '/customs-reports/42/rows', query: {} })
+    expect(alert).toHaveBeenCalledOnce()
+  })
+
   it('handles upload errors and clears the file input', async () => {
+    setActivePinia(createPinia())
+    const { useAlertStore } = await vi.importActual('@/stores/alert.store.js')
+    alertStoreMock = useAlertStore()
+    const alert = vi.spyOn(alertStoreMock, 'error')
     getReportsMock.mockResolvedValue()
     const wrapper = mount(CustomsReportsList, {
       global: {
@@ -394,12 +485,66 @@ describe('CustomsReports_List.vue', () => {
     await flushPromises()
 
     expect(uploadMock).toHaveBeenCalledWith(file)
-    expect(alertErrorMock).toHaveBeenCalledWith('upload failed')
+    expect(alert).toHaveBeenCalledExactlyOnceWith(new Error('upload failed'), { fallback: 'Не удалось загрузить отчёт' })
+    expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось соединиться с сервером')
+    expect(wrapper.text()).not.toContain('upload failed')
+    expect(routerPushMock).not.toHaveBeenCalled()
     expect(wrapper.find('.action-dialog-stub').attributes('data-show')).toBe('false')
     expect(assignedInputValue).toBe('')
   })
 
+  it.each(['success', 'failure'])('ignores a previous-account upload %s while the new upload is open', async outcome => {
+    const previous = Promise.withResolvers()
+    const current = Promise.withResolvers()
+    uploadMock.mockReturnValueOnce(previous.promise).mockReturnValueOnce(current.promise)
+    const diagnostic = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      const wrapper = mount(CustomsReportsList, { global: { stubs: testStubs } })
+      const input = wrapper.get('[data-testid="reports-upload-input"]')
+      const dialog = wrapper.get('.action-dialog-stub')
+      const selectFile = async file => {
+        Object.defineProperty(input.element, 'files', { value: [file], configurable: true })
+        await input.trigger('change')
+      }
+
+      const oldFile = new File(['old'], 'old.xlsx')
+      await selectFile(oldFile)
+      expect(dialog.attributes('data-show')).toBe('true')
+      customsReportsStoreMock.accountVersion.value++
+      await flushPromises()
+      expect(dialog.attributes('data-show')).toBe('false')
+
+      const currentFile = new File(['current'], 'current.xlsx')
+      await selectFile(currentFile)
+      if (outcome === 'success') {
+        previous.resolve({ id: 51, stage: 'pendingParse' })
+      } else {
+        const failure = new Error('Previous upload failed')
+        previous.reject(failure)
+        await flushPromises()
+        expect(diagnostic).toHaveBeenCalledWith('[customs report upload after disposal]', failure)
+      }
+      await flushPromises()
+      expect(uploadMock.mock.calls).toEqual([[oldFile], [currentFile]])
+      expect(routerPushMock).not.toHaveBeenCalled()
+      expect(alertErrorMock).not.toHaveBeenCalled()
+      expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+      expect(dialog.attributes('data-show')).toBe('true')
+
+      current.resolve({ id: 52, stage: 'pendingParse' })
+      await flushPromises()
+      expect(routerPushMock).toHaveBeenCalledExactlyOnceWith({ path: '/customs-reports/52/rows', query: {} })
+      expect(dialog.attributes('data-show')).toBe('false')
+    } finally {
+      diagnostic.mockRestore()
+    }
+  })
+
   it('shows alert when deleting report fails', async () => {
+    setActivePinia(createPinia())
+    const { useAlertStore } = await vi.importActual('@/stores/alert.store.js')
+    alertStoreMock = useAlertStore()
+    const alert = vi.spyOn(alertStoreMock, 'error')
     reportsRef.value = [
       {
         id: 11,
@@ -408,7 +553,8 @@ describe('CustomsReports_List.vue', () => {
       }
     ]
     reportsTotalCountRef.value = 1
-    removeMock.mockRejectedValue(new Error('delete failed'))
+    const failure = new Error('delete failed')
+    removeMock.mockRejectedValueOnce(failure).mockResolvedValueOnce()
     confirmMock.mockResolvedValue(true)
 
     const wrapper = mount(CustomsReportsList, {
@@ -424,7 +570,14 @@ describe('CustomsReports_List.vue', () => {
     await flushPromises()
 
     expect(removeMock).toHaveBeenCalledWith(11)
-    expect(alertErrorMock).toHaveBeenCalledWith('delete failed')
+    expect(alert).toHaveBeenCalledExactlyOnceWith(failure, { fallback: 'Не удалось удалить отчёт' })
+    expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось удалить отчёт')
+    expect(routerPushMock).not.toHaveBeenCalled()
+
+    await deleteButton.trigger('click')
+    await flushPromises()
+    expect(removeMock.mock.calls).toEqual([[11], [11]])
+    expect(alert).toHaveBeenCalledOnce()
   })
 
   it('does not call delete if confirmation is cancelled', async () => {
@@ -454,6 +607,61 @@ describe('CustomsReports_List.vue', () => {
     expect(removeMock).not.toHaveBeenCalled()
   })
 
+  it.each(['account change', 'unmount'])('ignores a late deletion confirmation after %s', async boundary => {
+    const confirmation = Promise.withResolvers()
+    confirmMock.mockReturnValueOnce(confirmation.promise)
+    reportsRef.value = [{ id: 11, stage: 'completed' }]
+    const wrapper = mount(CustomsReportsList, { global: { stubs: testStubs } })
+    const deleteButton = wrapper.get('[data-testid="reports-delete-button"]')
+    await deleteButton.trigger('click')
+    expect(confirmMock).toHaveBeenCalledOnce()
+
+    if (boundary === 'unmount') dispose(wrapper)
+    else customsReportsStoreMock.accountVersion.value++
+    confirmation.resolve(true)
+    await flushPromises()
+
+    expect(removeMock).not.toHaveBeenCalled()
+    expect(alertErrorMock).not.toHaveBeenCalled()
+  })
+
+  it('keeps a current deletion active when the previous account’s deletion fails', async () => {
+    const previous = Promise.withResolvers()
+    const current = Promise.withResolvers()
+    confirmMock.mockResolvedValue(true)
+    removeMock.mockReturnValueOnce(previous.promise).mockReturnValueOnce(current.promise)
+    reportsRef.value = [{ id: 11, stage: 'completed' }]
+    const wrapper = mount(CustomsReportsList, { global: { stubs: testStubs } })
+    await wrapper.get('[data-testid="reports-delete-button"]').trigger('click')
+    expect(removeMock).toHaveBeenCalledExactlyOnceWith(11)
+
+    customsReportsStoreMock.accountVersion.value++
+    reportsRef.value = [{ id: 20, stage: 'completed' }]
+    await flushPromises()
+    const deleteButton = wrapper.get('[data-testid="reports-delete-button"]')
+    expect(deleteButton.element.disabled).toBe(false)
+    await deleteButton.trigger('click')
+    expect(removeMock.mock.calls).toEqual([[11], [20]])
+    expect(deleteButton.element.disabled).toBe(true)
+
+    const diagnostic = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      const failure = new Error('Previous delete failed')
+      previous.reject(failure)
+      await flushPromises()
+      expect(diagnostic).toHaveBeenCalledWith('[customs report deletion after disposal]', failure)
+      expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+      expect(alertErrorMock).not.toHaveBeenCalled()
+      expect(deleteButton.element.disabled).toBe(true)
+
+      current.resolve()
+      await flushPromises()
+      expect(deleteButton.element.disabled).toBe(false)
+    } finally {
+      diagnostic.mockRestore()
+    }
+  })
+
   it('omits actions column when user lacks permissions', async () => {
     authStoreMock.isSrLogistPlus = false
     reportsRef.value = [
@@ -475,6 +683,48 @@ describe('CustomsReports_List.vue', () => {
 
     expect(wrapper.find('[data-column-key="actions"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="reports-delete-button"]').exists()).toBe(false)
+  })
+
+  it('shows active stages without offering deletion', async () => {
+    reportsRef.value = [{ id: 7, stage: 'pendingApply' }]
+    reportsTotalCountRef.value = 1
+    const wrapper = mount(CustomsReportsList, { global: { stubs: testStubs } })
+    await flushPromises()
+    expect(wrapper.text()).toContain('Решения ожидают применения')
+    expect(wrapper.find('[data-testid="reports-delete-button"]').exists()).toBe(false)
+    dispose(wrapper)
+  })
+
+  it('surfaces a background report refresh failure without clearing the committed list', async () => {
+    vi.useFakeTimers()
+    reportsRef.value = [{ id: 7, stage: 'pendingApply' }]
+    reportsTotalCountRef.value = 1
+    getReportsMock.mockResolvedValueOnce().mockRejectedValue(new Error('status failed'))
+    const wrapper = mount(CustomsReportsList, { global: { stubs: testStubs } })
+    try {
+      await flushPromises()
+      await vi.advanceTimersByTimeAsync(4000)
+      expect(alertErrorMock).toHaveBeenCalledOnce()
+      expect(alertErrorMock).toHaveBeenCalledWith(new Error('status failed'), { fallback: 'Не удалось получить состояние отчётов' })
+      expect(wrapper.text()).toContain('Решения ожидают применения')
+    } finally {
+      dispose(wrapper)
+      vi.useRealTimers()
+    }
+  })
+
+  it('records a late list failure without presenting it after unmount', async () => {
+    let rejectLoad
+    getReportsMock.mockReturnValue(new Promise((_, reject) => { rejectLoad = reject }))
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const wrapper = mount(CustomsReportsList, { global: { stubs: testStubs } })
+    await flushPromises()
+    dispose(wrapper)
+    rejectLoad(new Error('late list failure'))
+    await flushPromises()
+    expect(consoleError).toHaveBeenCalledWith('[customs report list after disposal]', new Error('late list failure'))
+    expect(alertErrorMock).not.toHaveBeenCalled()
+    consoleError.mockRestore()
   })
 
   it('navigates to rows view when report ID is clicked', async () => {
@@ -503,7 +753,7 @@ describe('CustomsReports_List.vue', () => {
   })
 
   it('reports string store error via alertStore on load', async () => {
-    errorRef.value = 'load reports failed'
+    getReportsMock.mockRejectedValue('load reports failed')
 
     mount(CustomsReportsList, {
       global: { stubs: testStubs }
@@ -511,11 +761,11 @@ describe('CustomsReports_List.vue', () => {
 
     await flushPromises()
 
-    expect(alertErrorMock).toHaveBeenCalledWith('load reports failed')
+    expect(alertErrorMock).toHaveBeenCalledWith('load reports failed', { fallback: 'Не удалось загрузить отчёты' })
   })
 
   it('reports Error object store error as message string via alertStore on load', async () => {
-    errorRef.value = new Error('load reports failed')
+    getReportsMock.mockRejectedValue(new Error('load reports failed'))
 
     mount(CustomsReportsList, {
       global: { stubs: testStubs }
@@ -523,6 +773,6 @@ describe('CustomsReports_List.vue', () => {
 
     await flushPromises()
 
-    expect(alertErrorMock).toHaveBeenCalledWith('load reports failed')
+    expect(alertErrorMock).toHaveBeenCalledWith(new Error('load reports failed'), { fallback: 'Не удалось загрузить отчёты' })
   })
 })

@@ -48,6 +48,12 @@ These instructions apply to the entire repository. Follow them for every new fea
 - On every modal close path, including unmount, dismiss alerts owned by that modal by their notification ID. Preserve alerts from the parent page or another dialog. Guard asynchronous work against publishing alerts after the modal closes.
 - Successful route changes must clear the active alert so messages from the previous page are not retained.
 
+## Boolean flags and nullable strings
+
+- Use the existing checkbox pattern for settings flags such as `exportTo1C` and `monitorInAlta`. Start new forms with `false`, load the saved value for edits, and submit actual booleans, including `false` when unchecked.
+- Use standard form bindings for optional strings, including `Field as="select"` for selectors. For clearable fields such as `customerOrderNumber` and `altaDatabaseName`, send `""` to clear the value. An omitted or `null` value leaves the stored value alone. Keep the empty string in the payload when the user clears the control.
+- Follow the endpoint's established contract for fields with different update semantics.
+
 ## Dialog consistency
 
 - Build modal shells with `AppDialogFrame` and use the shared sizes from `dialog.helpers.js`; do not add page-specific card, title, content, or action-bar styling for a new dialog.

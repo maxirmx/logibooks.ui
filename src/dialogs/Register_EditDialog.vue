@@ -139,6 +139,7 @@ const checkForDuplicates = ref(true)
 const originalCustomsProcedureCode = ref(null)
 const isLoadReportExpanded = ref(false)
 const isAdditionalInfoExpanded = ref(false)
+const isAltaExpanded = ref(false)
 const isWarehouseArrivalDateEdited = ref(false)
 const isRealWeightEdited = ref(false)
 const isRegisterStatusEdited = ref(false)
@@ -212,6 +213,11 @@ const additionalInfoToggleTooltip = computed(() =>
     ? 'Скрыть дополнительную информацию для 1С'
     : 'Показать дополнительную информацию для 1С'
 )
+const altaDatabaseNames = computed(() => ops.value?.altaDatabaseNames ?? [])
+const unavailableAltaDatabaseName = computed(() => {
+  const saved = item.value?.altaDatabaseName
+  return saved && !altaDatabaseNames.value.includes(saved) ? saved : null
+})
 const uploadDateDisplay = computed(() => formatDate(item.value?.date))
 const realWeightValidationMessage =
   'Фактический вес к оформлению должен быть больше 0. Если взвешивание не проводилось, оставьте поле пустым.'
@@ -497,7 +503,7 @@ watch([loadReport, canViewLoadReport], ([report, canViewReport]) => {
 async function loadRegister() {
   registerLoadFailed.value = false
   try {
-    await registersStore.getById(props.id)
+    await registersStore.getById(props.id, { refreshOps: true })
     if (item.value.lookupByArticle === undefined || item.value.lookupByArticle === null) {
       item.value.lookupByArticle = false
     }
@@ -953,6 +959,9 @@ function prepareRegisterPayload(formValues) {
   ensureDefaultCustomsProcedure()
   const payload = { ...formValues }
   delete payload.checkForDuplicates
+  if (props.create || (formValues.altaDatabaseName ?? '') === (item.value?.altaDatabaseName ?? '')) {
+    delete payload.altaDatabaseName
+  }
   const customerOrderNumber = String(
     formValues.customerOrderNumber ?? item.value?.customerOrderNumber ?? ''
   ).trim()
@@ -1132,7 +1141,9 @@ async function onSubmit(values, { setErrors } = {}) {
         error?.message
       )
     } else {
-      revealAdditionalInfoErrors(getServerFieldErrors(error))
+      const fieldErrors = getServerFieldErrors(error)
+      revealAdditionalInfoErrors(fieldErrors)
+      if (fieldErrors.altaDatabaseName) isAltaExpanded.value = true
       reportFormError(error, {
         setErrors,
         alertStore,
@@ -1819,6 +1830,44 @@ const loadReportFields = computed(() => {
         </div>
       </div>
 
+      <section v-if="!props.create" class="form-section alta-section" :inert="isSubmitting || undefined">
+        <div class="alta-header">
+          <h2 class="section-title alta-title">Интеграция с Альта-Софт</h2>
+          <ActionButton
+            :item="{}"
+            :icon="isAltaExpanded ? 'fa-solid fa-angles-up' : 'fa-solid fa-angles-down'"
+            :iconSize="'2x'"
+            :tooltip-text="isAltaExpanded ? 'Скрыть настройки Альта-Софт' : 'Показать настройки Альта-Софт'"
+            :aria-expanded="isAltaExpanded"
+            aria-controls="register-alta-body"
+            data-testid="register-alta-toggle"
+            @click="isAltaExpanded = !isAltaExpanded"
+          />
+        </div>
+        <div v-show="isAltaExpanded" id="register-alta-body" class="form-row alta-grid">
+          <div class="form-group">
+            <label for="altaDatabaseName" class="label">База данных реестра в Альта-Софт:</label>
+            <Field
+              as="select"
+              name="altaDatabaseName"
+              id="altaDatabaseName"
+              class="form-control input"
+              :class="{ 'is-invalid': errors.altaDatabaseName }"
+              :disabled="readOnly || isInitializing || registerLoadFailed"
+            >
+              <option value="">Не выбрана</option>
+              <option v-if="unavailableAltaDatabaseName" :value="unavailableAltaDatabaseName" disabled>
+                {{ unavailableAltaDatabaseName }} (недоступна)
+              </option>
+              <option v-for="name in altaDatabaseNames" :key="name" :value="name">
+                {{ name }}
+              </option>
+            </Field>
+            <FieldError name="altaDatabaseName" :errors="errors" />
+          </div>
+        </div>
+      </section>
+
       <!-- actions moved to header -->
       <div class="form-actions" style="display: none">
         <button class="button primary" type="submit" :disabled="isSubmitting || !canSubmit">
@@ -1884,9 +1933,14 @@ const loadReportFields = computed(() => {
   border-top: 1px solid #d7dbe1;
 }
 
+.alta-section {
+  margin-top: 0.75rem;
+}
+
 .weight-section-header,
 .additional-info-header,
-.load-report-header {
+.load-report-header,
+.alta-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1895,14 +1949,16 @@ const loadReportFields = computed(() => {
 
 .weight-section-title,
 .additional-info-title,
-.load-report-title {
+.load-report-title,
+.alta-title {
   flex: 1;
   margin-bottom: 0;
 }
 
 .weight-grid,
 .additional-info-grid,
-.load-report-grid {
+.load-report-grid,
+.alta-grid {
   margin-top: 0.75rem;
 }
 

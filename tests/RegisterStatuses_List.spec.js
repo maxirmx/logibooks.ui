@@ -5,7 +5,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 import RegisterStatusesList from '@/lists/RegisterStatuses_List.vue'
 import { defaultGlobalStubs } from './helpers/test-utils.js'
 import { roleAdmin } from '@/helpers/user.roles.js'
@@ -173,6 +173,25 @@ describe('RegisterStatuses_List.vue', () => {
     if (wrapper) {
       wrapper.unmount()
     }
+  })
+
+  it('shows Alta monitoring between the export and read-only flags', async () => {
+    mockRegisterStatuses.value[0].monitorInAlta = false
+    mockRegisterStatuses.value[1].monitorInAlta = true
+    await nextTick()
+
+    const headers = wrapper.findAll('.v-data-table-header-cell').map(header => header.text())
+    const monitoringColumn = headers.indexOf('Мониторинг реестра Альта-Софт')
+    expect(headers.slice(monitoringColumn - 1, monitoringColumn + 2)).toEqual([
+      'Выгружать в 1C',
+      'Мониторинг реестра Альта-Софт',
+      'Изменения запрещены'
+    ])
+
+    const values = wrapper.findAll('.v-data-table-row').map(
+      row => row.findAll('.v-data-table-cell')[monitoringColumn].text()
+    )
+    expect(values).toEqual(['Нет', 'Да', 'Нет'])
   })
 
   describe('Authorized Actions', () => {

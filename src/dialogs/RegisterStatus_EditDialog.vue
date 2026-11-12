@@ -17,6 +17,8 @@ import { useRegisterStatusesStore } from '@/stores/register.statuses.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import ActionButton from '@/components/ActionButton.vue'
 import RegisterStatusIcon from '@/components/RegisterStatusIcon.vue'
+import StatusColorInput from '@/components/StatusColorInput.vue'
+import { hexToRgb, isOptionalRgb, rgbToHex } from '@/helpers/status.color.helpers.js'
 import {
   REGISTER_STATUS_DEFAULT_BK_COLOR,
   REGISTER_STATUS_DEFAULT_FG_COLOR,
@@ -61,7 +63,11 @@ if (!isCreate.value) {
     fallback: 'Не удалось загрузить статус партии',
     scope: getCurrentScope()
   })
-  registerStatus.value = saved && { ...saved }
+  registerStatus.value = saved && {
+    ...saved,
+    bkColor: hexToRgb(saved.bkColor),
+    fgColor: hexToRgb(saved.fgColor)
+  }
 }
 
 // Get page title
@@ -89,45 +95,20 @@ const schema = Yup.object({
     ),
   bkColor: Yup.string()
     .nullable()
-    .matches(/^#[0-9A-Fa-f]{6}$/, {
-      message: 'Цвет фона должен быть в формате #RRGGBB',
-      excludeEmptyString: true
-    }),
+    .test('rgb-color', 'Укажите цвет фона тремя числами от 0 до 255 через запятую', isOptionalRgb),
   fgColor: Yup.string()
     .nullable()
-    .matches(/^#[0-9A-Fa-f]{6}$/, {
-      message: 'Цвет иконки должен быть в формате #RRGGBB',
-      excludeEmptyString: true
-    })
+    .test('rgb-color', 'Укажите цвет иконки тремя числами от 0 до 255 через запятую', isOptionalRgb)
 })
-
-function getColorFieldValue(fieldValue, fieldName) {
-  const value = fieldValue || registerStatus.value?.[fieldName]
-  if (/^#[0-9A-Fa-f]{6}$/.test(value || '')) {
-    return value
-  }
-  return fieldName === 'bkColor'
-    ? REGISTER_STATUS_DEFAULT_BK_COLOR
-    : REGISTER_STATUS_DEFAULT_FG_COLOR
-}
-
-function getIconFieldValue(fieldValue) {
-  return fieldValue || registerStatus.value?.icon || null
-}
-
-function handleColorInput(event, handleChange, fieldName) {
-  if (!canEdit.value) return
-  const value = event.target.value || null
-  if (registerStatus.value) {
-    registerStatus.value[fieldName] = value
-  }
-  handleChange(value)
-}
 
 // Form submission
 function onSubmit(values, { setErrors } = {}) {
   if (!canEdit.value) return
-  const payload = normalizeRegisterStatusPresentationPayload(values)
+  const payload = normalizeRegisterStatusPresentationPayload({
+    ...values,
+    bkColor: rgbToHex(values.bkColor),
+    fgColor: rgbToHex(values.fgColor)
+  })
   if (isCreate.value) {
     return registerStatusesStore
       .create(payload)
@@ -171,7 +152,7 @@ function close() {
       @submit="onSubmit"
       :initial-values="registerStatus"
       :validation-schema="schema"
-      v-slot="{ errors, isSubmitting, handleSubmit }"
+      v-slot="{ errors, values, isSubmitting, handleSubmit }"
     >
       <div class="header-with-actions">
         <h1 class="primary-heading">{{ getTitle() }}</h1>
@@ -279,58 +260,44 @@ function close() {
           </div>
         </div>
 
-        <Field name="bkColor" v-slot="{ field, handleChange }">
+        <Field name="bkColor" v-slot="{ value, handleChange, handleBlur }">
           <div class="status-settings-row">
-            <label for="bkColor" class="label status-settings-label">Цвет фона:</label>
-            <label class="status-color-control" for="bkColor">
-              <span
-                class="status-color-swatch"
-                :style="{ backgroundColor: getColorFieldValue(field?.value, 'bkColor') }"
-                data-testid="bk-color-swatch"
-              ></span>
-              <span class="status-color-value">{{
-                getColorFieldValue(field?.value, 'bkColor')
-              }}</span>
-              <input
-                id="bkColor"
-                type="color"
-                class="status-color-native"
-                :class="{ 'is-invalid': errors.bkColor }"
-                aria-label="Цвет фона"
-                :value="getColorFieldValue(field?.value, 'bkColor')"
-                @input="(event) => handleColorInput(event, handleChange, 'bkColor')"
-              />
+            <label :for="canEdit ? 'bkColor' : 'bkColor-picker'" class="label status-settings-label">
+              Цвет фона:
             </label>
+            <StatusColorInput
+              id="bkColor"
+              label="Цвет фона"
+              :model-value="value"
+              :default-color="REGISTER_STATUS_DEFAULT_BK_COLOR"
+              :disabled="!canEdit"
+              :invalid="Boolean(errors.bkColor)"
+              @update:model-value="handleChange($event, Boolean(errors.bkColor))"
+              @blur="handleBlur($event, true)"
+            />
             <FieldError name="bkColor" :errors="errors" />
           </div>
         </Field>
-        <Field name="fgColor" v-slot="{ field, handleChange }">
+        <Field name="fgColor" v-slot="{ value, handleChange, handleBlur }">
           <div class="status-settings-row">
-            <label for="fgColor" class="label status-settings-label">Цвет иконки:</label>
-            <label class="status-color-control" for="fgColor">
-              <span
-                class="status-color-swatch"
-                :style="{ backgroundColor: getColorFieldValue(field?.value, 'fgColor') }"
-                data-testid="fg-color-swatch"
-              ></span>
-              <span class="status-color-value">{{
-                getColorFieldValue(field?.value, 'fgColor')
-              }}</span>
-              <input
-                id="fgColor"
-                type="color"
-                class="status-color-native"
-                :class="{ 'is-invalid': errors.fgColor }"
-                aria-label="Цвет иконки"
-                :value="getColorFieldValue(field?.value, 'fgColor')"
-                @input="(event) => handleColorInput(event, handleChange, 'fgColor')"
-              />
+            <label :for="canEdit ? 'fgColor' : 'fgColor-picker'" class="label status-settings-label">
+              Цвет иконки:
             </label>
+            <StatusColorInput
+              id="fgColor"
+              label="Цвет иконки"
+              :model-value="value"
+              :default-color="REGISTER_STATUS_DEFAULT_FG_COLOR"
+              :disabled="!canEdit"
+              :invalid="Boolean(errors.fgColor)"
+              @update:model-value="handleChange($event, Boolean(errors.fgColor))"
+              @blur="handleBlur($event, true)"
+            />
             <FieldError name="fgColor" :errors="errors" />
           </div>
         </Field>
 
-        <Field name="icon" v-slot="{ field, handleChange }">
+        <Field name="icon" v-slot="{ value, handleChange }">
           <div class="status-settings-row status-settings-row--icons">
             <span class="label status-settings-label">Иконка:</span>
             <div class="status-icon-column">
@@ -340,15 +307,15 @@ function close() {
                   :key="option.value"
                   type="button"
                   class="status-icon-option"
-                  :class="{ selected: getIconFieldValue(field?.value) === option.value }"
+                  :class="{ selected: value === option.value }"
                   :aria-label="option.value"
                   @click="handleChange(option.value)"
                 >
                   <RegisterStatusIcon
                     :status="{
                       icon: option.value,
-                      bkColor: getColorFieldValue(undefined, 'bkColor'),
-                      fgColor: getColorFieldValue(undefined, 'fgColor')
+                      bkColor: rgbToHex(values.bkColor),
+                      fgColor: rgbToHex(values.fgColor)
                     }"
                   />
                 </button>
@@ -435,47 +402,6 @@ function close() {
 .status-title-input {
   width: 100%;
   margin-bottom: 0;
-}
-
-.status-color-control {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  width: fit-content;
-  min-width: 9.5rem;
-  min-height: 2.25rem;
-  border: 1px solid #c7ccd1;
-  border-radius: 4px;
-  background: #fff;
-  padding: 0.25rem 0.5rem;
-  cursor: pointer;
-}
-
-.status-color-control:focus-within {
-  border-color: #1976d2;
-  box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.18);
-}
-
-.status-color-swatch {
-  width: 1.75rem;
-  height: 1.75rem;
-  border: 1px solid #74777c;
-  border-radius: 4px;
-}
-
-.status-color-value {
-  font-variant-numeric: tabular-nums;
-}
-
-.status-color-native {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  border: 0;
-  opacity: 0;
-  cursor: pointer;
 }
 
 .status-icon-selector {

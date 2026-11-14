@@ -20,22 +20,24 @@ export const useCustomsReportsStore = defineStore('customsreports', () => {
   const authStore = useAuthStore()
   const accountVersion = ref(0)
   const reports = ref([])
-  const reportRows = ref([])
+  const decisionSources = ref(null)
+  const decisions = ref([])
   const reportsLoading = ref(false)
-  const reportRowsLoading = ref(false)
+  const decisionsLoading = ref(false)
   const pendingReportMutations = ref(0)
-  const loading = computed(() => reportsLoading.value || reportRowsLoading.value || pendingReportMutations.value > 0)
+  const loading = computed(() => reportsLoading.value || decisionsLoading.value || pendingReportMutations.value > 0)
   const error = ref(null)
   const reportsTotalCount = ref(0)
   const reportsHasNextPage = ref(false)
   const reportsHasPreviousPage = ref(false)
-  const reportRowsTotalCount = ref(0)
-  const reportRowsHasNextPage = ref(false)
-  const reportRowsHasPreviousPage = ref(false)
-  const reportRowsColumns = ref([])
-  const reportRowsCustomsProcedure = ref(null)
+  const decisionsTotalCount = ref(0)
+  const decisionsHasNextPage = ref(false)
+  const decisionsHasPreviousPage = ref(false)
+  const decisionsColumns = ref([])
+  const decisionsCustomsProcedure = ref(null)
+  let opsRequest = null
   let latestReportsRequestId = 0
-  let latestRowsRequestId = 0
+  let latestDecisionsRequestId = 0
 
   function clearReports() {
     reports.value = []
@@ -44,30 +46,58 @@ export const useCustomsReportsStore = defineStore('customsreports', () => {
     reportsHasPreviousPage.value = false
   }
 
-  function clearReportRows() {
-    reportRows.value = []
-    reportRowsTotalCount.value = 0
-    reportRowsHasNextPage.value = false
-    reportRowsHasPreviousPage.value = false
-    reportRowsColumns.value = []
-    reportRowsCustomsProcedure.value = null
+  function clearDecisions() {
+    decisions.value = []
+    decisionsTotalCount.value = 0
+    decisionsHasNextPage.value = false
+    decisionsHasPreviousPage.value = false
+    decisionsColumns.value = []
+    decisionsCustomsProcedure.value = null
   }
 
-  function resetReportRows() {
-    latestRowsRequestId++
-    clearReportRows()
-    reportRowsLoading.value = false
+  function resetDecisions() {
+    latestDecisionsRequestId++
+    clearDecisions()
+    decisionsLoading.value = false
   }
 
   watch(() => authStore.user?.id, () => {
     accountVersion.value++
+    decisionSources.value = null
+    opsRequest = null
     latestReportsRequestId++
     clearReports()
-    resetReportRows()
+    resetDecisions()
     reportsLoading.value = false
     pendingReportMutations.value = 0
     error.value = null
   }, { flush: 'sync' })
+
+  async function fetchDecisionSources() {
+    const response = await fetchWrapper.get(`${baseUrl}/ops`)
+    const sources = response?.decisionSources
+    if (!Array.isArray(sources) || sources.length === 0 || sources.some(source =>
+      !Number.isInteger(source?.value) || typeof source.name !== 'string' || !source.name.trim()
+    )) {
+      throw new Error('Сервер вернул некорректный справочник источников решений')
+    }
+    return sources
+  }
+
+  function ensureOpsLoaded() {
+    if (decisionSources.value !== null) return Promise.resolve()
+    if (!opsRequest) {
+      const version = accountVersion.value
+      opsRequest = fetchDecisionSources()
+        .then(sources => {
+          if (version === accountVersion.value) decisionSources.value = sources
+        })
+        .finally(() => {
+          if (version === accountVersion.value) opsRequest = null
+        })
+    }
+    return opsRequest
+  }
 
   async function upload(file) {
     const version = accountVersion.value
@@ -137,65 +167,67 @@ export const useCustomsReportsStore = defineStore('customsreports', () => {
     if (version === accountVersion.value) await getReports()
   }
 
-  async function getReportRows(reportId) {
-    const requestId = ++latestRowsRequestId
-    reportRowsLoading.value = true
+  async function getDecisions(reportId) {
+    const requestId = ++latestDecisionsRequestId
+    decisionsLoading.value = true
     error.value = null
     try {
       const queryParams = new URLSearchParams({
-        page: authStore.customsreportrows_page.toString(),
-        pageSize: authStore.customsreportrows_per_page.toString(),
-        sortBy: authStore.customsreportrows_sort_by?.[0]?.key || 'id',
-        sortOrder: authStore.customsreportrows_sort_by?.[0]?.order || 'asc'
+        page: authStore.customsdecisions_page.toString(),
+        pageSize: authStore.customsdecisions_per_page.toString(),
+        sortBy: authStore.customsdecisions_sort_by?.[0]?.key || 'id',
+        sortOrder: authStore.customsdecisions_sort_by?.[0]?.order || 'asc'
       })
 
-      if (authStore.customsreportrows_search) {
-        queryParams.append('search', authStore.customsreportrows_search)
+      if (authStore.customsdecisions_search) {
+        queryParams.append('search', authStore.customsdecisions_search)
       }
 
       const response = await fetchWrapper.get(
-        `${baseUrl}/${reportId}/rows?${queryParams.toString()}`
+        `${baseUrl}/${reportId}/decisions?${queryParams.toString()}`
       )
 
-      if (requestId !== latestRowsRequestId) return
+      if (requestId !== latestDecisionsRequestId) return
 
-      reportRows.value = response?.items || []
-      reportRowsTotalCount.value = response?.pagination?.totalCount || 0
-      reportRowsHasNextPage.value = response?.pagination?.hasNextPage || false
-      reportRowsHasPreviousPage.value = response?.pagination?.hasPreviousPage || false
-      reportRowsColumns.value = Array.isArray(response?.columns) ? response.columns : []
-      reportRowsCustomsProcedure.value = response?.customsProcedure || null
+      decisions.value = response?.items || []
+      decisionsTotalCount.value = response?.pagination?.totalCount || 0
+      decisionsHasNextPage.value = response?.pagination?.hasNextPage || false
+      decisionsHasPreviousPage.value = response?.pagination?.hasPreviousPage || false
+      decisionsColumns.value = Array.isArray(response?.columns) ? response.columns : []
+      decisionsCustomsProcedure.value = response?.customsProcedure || null
       return response
     } catch (err) {
-      if (requestId !== latestRowsRequestId) throw err
+      if (requestId !== latestDecisionsRequestId) throw err
 
       error.value = err
-      clearReportRows()
+      clearDecisions()
       throw err
     } finally {
-      if (requestId === latestRowsRequestId) reportRowsLoading.value = false
+      if (requestId === latestDecisionsRequestId) decisionsLoading.value = false
     }
   }
 
   return {
     accountVersion,
+    decisionSources,
+    ensureOpsLoaded,
     reports,
-    reportRows,
+    decisions,
     reportsTotalCount,
     reportsHasNextPage,
     reportsHasPreviousPage,
-    reportRowsTotalCount,
-    reportRowsHasNextPage,
-    reportRowsHasPreviousPage,
-    reportRowsColumns,
-    reportRowsCustomsProcedure,
-    reportRowsLoading,
+    decisionsTotalCount,
+    decisionsHasNextPage,
+    decisionsHasPreviousPage,
+    decisionsColumns,
+    decisionsCustomsProcedure,
+    decisionsLoading,
     loading,
     error,
     upload,
     getReports,
     remove,
-    getReportRows,
-    resetReportRows
+    getDecisions,
+    resetDecisions
   }
 })

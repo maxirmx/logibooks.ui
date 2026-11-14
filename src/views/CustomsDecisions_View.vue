@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import CustomsReportRowsList from '@/lists/CustomsReportRows_List.vue'
+import CustomsDecisionsList from '@/lists/CustomsDecisions_List.vue'
 
 const props = defineProps({
   reportId: {
@@ -18,5 +18,5 @@ const props = defineProps({
 </script>
 
 <template>
-  <CustomsReportRowsList :report-id="props.reportId" :master-invoice="props.masterInvoice" />
+  <CustomsDecisionsList :report-id="props.reportId" :master-invoice="props.masterInvoice" />
 </template>

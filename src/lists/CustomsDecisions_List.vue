@@ -39,23 +39,30 @@ const customsReportsStore = useCustomsReportsStore()
 const alertStore = useAlertStore()
 const componentScope = getCurrentScope()
 const authStore = useAuthStore()
-const customsreportrows_search = toRef(authStore, 'customsreportrows_search')
-const customsreportrows_page = toRef(authStore, 'customsreportrows_page')
-const customsreportrows_per_page = toRef(authStore, 'customsreportrows_per_page')
-const customsreportrows_sort_by = toRef(authStore, 'customsreportrows_sort_by')
+const customsdecisions_search = toRef(authStore, 'customsdecisions_search')
+const customsdecisions_page = toRef(authStore, 'customsdecisions_page')
+const customsdecisions_per_page = toRef(authStore, 'customsdecisions_per_page')
+const customsdecisions_sort_by = toRef(authStore, 'customsdecisions_sort_by')
 
-const { accountVersion, reportRows, reportRowsLoading, reportRowsTotalCount,
-  reportRowsColumns, reportRowsCustomsProcedure } = storeToRefs(customsReportsStore)
-const localSearch = ref(customsreportrows_search.value || '')
+const { accountVersion, decisionSources, decisions, decisionsLoading, decisionsTotalCount,
+  decisionsColumns, decisionsCustomsProcedure } = storeToRefs(customsReportsStore)
+const localSearch = ref(customsdecisions_search.value || '')
 const reportChangePending = ref(false)
-const loading = computed(() => reportChangePending.value || reportRowsLoading.value)
+const loading = computed(() => reportChangePending.value || decisionsLoading.value)
 let reportScope = 0
+let opsLoad = null
+let opsAlertId
+
+const sourceNames = computed(() =>
+  new Map(decisionSources.value?.map(({ value, name }) => [value, name]))
+)
 
 watch([() => props.reportId, accountVersion], () => {
   reportScope++
+  dismissOpsAlert()
   reportChangePending.value = true
 }, { flush: 'sync' })
-watch(() => props.reportId, () => customsReportsStore.resetReportRows(), { immediate: true, flush: 'sync' })
+watch(() => props.reportId, () => customsReportsStore.resetDecisions(), { immediate: true, flush: 'sync' })
 
 const isComponentMounted = ref(true)
 const DEFAULT_SORT_BY = Object.freeze([{ key: 'rowNumber', order: 'asc' }])
@@ -63,13 +70,13 @@ const SORT_ONLY_COLUMN_KEYS = new Set(['rowNumber'])
 
 const headingLabel = computed(() => props.masterInvoice || `№${props.reportId}`)
 const procedureHeadingLabel = computed(() =>
-  formatProcedureForHeading(reportRowsCustomsProcedure.value)
+  formatProcedureForHeading(decisionsCustomsProcedure.value)
 )
 const headingText = computed(() => {
   const procedure = procedureHeadingLabel.value
   return procedure
-    ? `Отчёт о выпуске для ${headingLabel.value} по процедуре ${procedure}`
-    : `Отчёт о выпуске для ${headingLabel.value}`
+    ? `Решения о выпуске для ${headingLabel.value} по процедуре ${procedure}`
+    : `Решения о выпуске для ${headingLabel.value}`
 })
 
 function formatProcedureForHeading(value) {
@@ -106,32 +113,62 @@ function joinDisplayParts(...parts) {
     .join(' ')
 }
 
-async function loadReportRows() {
+function dismissOpsAlert() {
+  if (opsAlertId === undefined) return
+  alertStore.dismiss(opsAlertId)
+  opsAlertId = undefined
+}
+
+async function loadDecisionSources(scope) {
+  const version = accountVersion.value
+  if (opsLoad?.version === version) {
+    opsLoad.scope = scope
+    return
+  }
+  const load = { version, scope }
+  opsLoad = load
+
+  try {
+    await customsReportsStore.ensureOpsLoaded()
+    if (isComponentMounted.value && load.scope === reportScope) dismissOpsAlert()
+  } catch (error) {
+    if (isComponentMounted.value && load.scope === reportScope) {
+      opsAlertId = alertStore.error(error, { fallback: 'Не удалось загрузить источники решений о выпуске' })
+    } else {
+      reportError(error, { context: 'customs decision sources after their scope changed' })
+    }
+  } finally {
+    if (opsLoad === load) opsLoad = null
+  }
+}
+
+async function loadDecisions() {
   const scope = reportScope
   reportChangePending.value = false
+  void loadDecisionSources(scope)
   try {
-    await customsReportsStore.getReportRows(props.reportId)
+    await customsReportsStore.getDecisions(props.reportId)
   } catch (error) {
     if (scope === reportScope && isComponentMounted.value) {
-      alertStore.error(error, { fallback: 'Не удалось загрузить строки отчёта' })
+      alertStore.error(error, { fallback: 'Не удалось загрузить решения о выпуске' })
     } else {
-      reportError(error, { context: 'customs report rows after their scope changed' })
+      reportError(error, { context: 'customs decisions after their scope changed' })
     }
   }
 }
 
 const { triggerLoad, stop: stopFilterSync } = useDebouncedFilterSync({
-  filters: [{ local: localSearch, store: customsreportrows_search }],
-  loadFn: loadReportRows,
+  filters: [{ local: localSearch, store: customsdecisions_search }],
+  loadFn: loadDecisions,
   isComponentMounted,
   debounceMs: 300
 })
 
 const watcherStop = watch(
   [
-    customsreportrows_page,
-    customsreportrows_per_page,
-    customsreportrows_sort_by,
+    customsdecisions_page,
+    customsdecisions_per_page,
+    customsdecisions_sort_by,
     () => props.reportId,
     accountVersion
   ],
@@ -176,11 +213,12 @@ const allHeaders = [
   },
   { title: 'ID резервирования', key: 'customsPaymentReservationId', align: 'start' },
   { title: 'Дата и время', key: 'dateTime', align: 'start', width: '150px' },
-  { title: 'Комментарии', key: 'comments', align: 'start', width: '250px' }
+  { title: 'Комментарии', key: 'comments', align: 'start', width: '250px' },
+  { title: 'Источник', key: 'source', align: 'start', sortable: false }
 ]
 
 const visibleColumnKeys = computed(() => {
-  const columns = reportRowsColumns.value
+  const columns = decisionsColumns.value
   return Array.isArray(columns) && columns.length > 0 ? new Set(columns) : null
 })
 
@@ -193,31 +231,32 @@ function resetHiddenSortColumn() {
   const keys = visibleColumnKeys.value
   if (!keys) return
 
-  const sortKey = customsreportrows_sort_by.value?.[0]?.key
+  const sortKey = customsdecisions_sort_by.value?.[0]?.key
   if (sortKey && !keys.has(sortKey) && !SORT_ONLY_COLUMN_KEYS.has(sortKey)) {
-    customsreportrows_sort_by.value = DEFAULT_SORT_BY.map((sort) => ({ ...sort }))
+    customsdecisions_sort_by.value = DEFAULT_SORT_BY.map((sort) => ({ ...sort }))
   }
 }
 
-const columnMetadataStop = watch(reportRowsColumns, () => {
+const columnMetadataStop = watch(decisionsColumns, () => {
   resetHiddenSortColumn()
 })
 
 onBeforeUnmount(() => {
   isComponentMounted.value = false
-  customsReportsStore.resetReportRows()
+  dismissOpsAlert()
+  customsReportsStore.resetDecisions()
   stopFilterSync()
   watcherStop()
   columnMetadataStop()
 })
 
 const maxPage = computed(() =>
-  Math.max(1, Math.ceil((reportRowsTotalCount.value || 0) / customsreportrows_per_page.value))
+  Math.max(1, Math.ceil((decisionsTotalCount.value || 0) / customsdecisions_per_page.value))
 )
 
 const pageOptions = computed(() => {
   const mp = maxPage.value
-  const current = customsreportrows_page.value || 1
+  const current = customsdecisions_page.value || 1
   if (mp <= 200) {
     return Array.from({ length: mp }, (_, i) => ({ value: i + 1, title: String(i + 1) }))
   }
@@ -276,7 +315,7 @@ function closeReport() {
       <v-text-field
         v-model="localSearch"
         :append-inner-icon="mdiMagnify"
-        label="Поиск по отчёту"
+        label="Поиск по решениям"
         variant="solo"
         hide-details
         :loading="loading"
@@ -285,13 +324,13 @@ function closeReport() {
 
     <v-card class="table-card">
       <v-data-table-server
-        v-model:items-per-page="customsreportrows_per_page"
+        v-model:items-per-page="customsdecisions_per_page"
         :items-per-page-options="itemsPerPageOptions"
-        v-model:page="customsreportrows_page"
-        v-model:sort-by="customsreportrows_sort_by"
+        v-model:page="customsdecisions_page"
+        v-model:sort-by="customsdecisions_sort_by"
         :headers="headers"
-        :items="reportRows"
-        :items-length="reportRowsTotalCount"
+        :items="decisions"
+        :items-length="decisionsTotalCount"
         :loading="loading"
         density="compact"
         class="elevation-1 interlaced-table"
@@ -396,6 +435,10 @@ function closeReport() {
                   :text="item[col.key]"
                 />
 
+                <template v-else-if="col.key === 'source'">
+                  {{ sourceNames.get(item.source) ?? '—' }}
+                </template>
+
                 <!-- Fallback for all other columns -->
                 <template v-else>
                   {{ item[col.key] }}
@@ -407,11 +450,11 @@ function closeReport() {
       </v-data-table-server>
       <div class="v-data-table-footer">
         <PaginationFooter
-          v-model:items-per-page="customsreportrows_per_page"
-          v-model:page="customsreportrows_page"
+          v-model:items-per-page="customsdecisions_per_page"
+          v-model:page="customsdecisions_page"
           :items-per-page-options="itemsPerPageOptions"
           :page-options="pageOptions"
-          :total-count="reportRowsTotalCount"
+          :total-count="decisionsTotalCount"
           :max-page="maxPage"
         />
       </div>

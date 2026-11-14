@@ -428,9 +428,9 @@ const router = createRouter({
       meta: { reqAdminOrSrLogist: true }
     },
     {
-      path: '/customs-reports/:id/rows',
-      name: 'Строки отчёта о выпуске',
-      component: () => import('@/views/CustomsReportRows_View.vue'),
+      path: '/customs-reports/:id/decisions',
+      name: 'Решения о выпуске',
+      component: () => import('@/views/CustomsDecisions_View.vue'),
       props: (route) => ({
         reportId: Number(route.params.id),
         masterInvoice: route.query.masterInvoice || ''

@@ -259,6 +259,73 @@ describe('customs.reports.store', () => {
     expect(fetchWrapper.get).not.toHaveBeenCalled()
   })
 
+  it('clears the previous report immediately and discards its response before the next load starts', async () => {
+    const store = useCustomsReportsStore()
+    const oldResponse = {
+      items: [{ id: 50 }], columns: ['parcelNumber'], customsProcedure: 'ИМ 40',
+      pagination: { totalCount: 2, hasNextPage: true, hasPreviousPage: true }
+    }
+    fetchWrapper.get.mockResolvedValueOnce(oldResponse)
+    await store.getReportRows(5)
+
+    const { promise, resolve } = Promise.withResolvers()
+    fetchWrapper.get.mockReturnValueOnce(promise)
+    const pending = store.getReportRows(5)
+    expect(store.reportRowsLoading).toBe(true)
+    store.resetReportRows()
+    expect(store.reportRows).toEqual([])
+    expect(store.reportRowsColumns).toEqual([])
+    expect(store.reportRowsCustomsProcedure).toBeNull()
+    expect(store.reportRowsTotalCount).toBe(0)
+    expect(store.reportRowsHasNextPage).toBe(false)
+    expect(store.reportRowsHasPreviousPage).toBe(false)
+    expect(store.reportRowsLoading).toBe(false)
+
+    resolve(oldResponse)
+    await expect(pending).resolves.toBeUndefined()
+    expect(store.reportRows).toEqual([])
+    expect(store.reportRowsCustomsProcedure).toBeNull()
+  })
+
+  it('keeps the newer report rows when an older request finishes last', async () => {
+    const store = useCustomsReportsStore()
+    const { promise, resolve } = Promise.withResolvers()
+    const currentResponse = {
+      items: [{ id: 60 }], columns: ['id', 'uin'], customsProcedure: 'ЭК 10',
+      pagination: { totalCount: 1 }
+    }
+    fetchWrapper.get.mockReturnValueOnce(promise).mockResolvedValueOnce(currentResponse)
+    const old = store.getReportRows(5)
+    await expect(store.getReportRows(6)).resolves.toEqual(currentResponse)
+    resolve({ items: [{ id: 50 }], columns: ['parcelNumber'], customsProcedure: 'ИМ 40' })
+    await expect(old).resolves.toBeUndefined()
+
+    expect(store.reportRows).toEqual(currentResponse.items)
+    expect(store.reportRowsColumns).toEqual(currentResponse.columns)
+    expect(store.reportRowsCustomsProcedure).toBe(currentResponse.customsProcedure)
+    expect(store.reportRowsTotalCount).toBe(1)
+    expect(store.reportRowsLoading).toBe(false)
+  })
+
+  it('keeps the active loading state when an older request rejects', async () => {
+    const store = useCustomsReportsStore()
+    const old = Promise.withResolvers()
+    const current = Promise.withResolvers()
+    fetchWrapper.get.mockReturnValueOnce(old.promise).mockReturnValueOnce(current.promise)
+    const oldLoad = store.getReportRows(5)
+    const currentLoad = store.getReportRows(6)
+    const staleError = new Error('Previous report')
+    old.reject(staleError)
+    await expect(oldLoad).rejects.toBe(staleError)
+    expect(store.error).toBeNull()
+    expect(store.reportRowsLoading).toBe(true)
+
+    current.resolve({ items: [{ id: 60 }] })
+    await currentLoad
+    expect(store.reportRows).toEqual([{ id: 60 }])
+    expect(store.reportRowsLoading).toBe(false)
+  })
+
   it('stores error when getReportRows fails', async () => {
     const store = useCustomsReportsStore()
     store.reportRowsColumns = ['id', 'parcelNumber']

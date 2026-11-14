@@ -3,7 +3,7 @@
 // This file is a part of Logibooks ui application
 
 import { defineStore } from 'pinia'
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 import { useAuthStore } from '@/stores/auth.store.js'
@@ -15,7 +15,9 @@ export const useCustomsReportsStore = defineStore('customsreports', () => {
   const accountVersion = ref(0)
   const reports = ref([])
   const reportRows = ref([])
-  const loading = ref(false)
+  const reportsLoading = ref(false)
+  const reportRowsLoading = ref(false)
+  const loading = computed(() => reportsLoading.value || reportRowsLoading.value)
   const error = ref(null)
   const reportsTotalCount = ref(0)
   const reportsHasNextPage = ref(false)
@@ -25,6 +27,7 @@ export const useCustomsReportsStore = defineStore('customsreports', () => {
   const reportRowsHasPreviousPage = ref(false)
   const reportRowsColumns = ref([])
   const reportRowsCustomsProcedure = ref(null)
+  let latestRowsRequestId = 0
 
   function clearReports() {
     reports.value = []
@@ -42,17 +45,23 @@ export const useCustomsReportsStore = defineStore('customsreports', () => {
     reportRowsCustomsProcedure.value = null
   }
 
+  function resetReportRows() {
+    latestRowsRequestId++
+    clearReportRows()
+    reportRowsLoading.value = false
+  }
+
   watch(() => authStore.user?.id, () => {
     accountVersion.value++
     clearReports()
-    clearReportRows()
-    loading.value = false
+    resetReportRows()
+    reportsLoading.value = false
     error.value = null
   }, { flush: 'sync' })
 
   async function upload(file) {
     const version = accountVersion.value
-    loading.value = true
+    reportsLoading.value = true
     error.value = null
     try {
       const formData = new FormData()
@@ -63,13 +72,13 @@ export const useCustomsReportsStore = defineStore('customsreports', () => {
       if (version === accountVersion.value) error.value = err
       throw err
     } finally {
-      if (version === accountVersion.value) loading.value = false
+      if (version === accountVersion.value) reportsLoading.value = false
     }
   }
 
   async function getReports() {
     const version = accountVersion.value
-    loading.value = true
+    reportsLoading.value = true
     error.value = null
     try {
       const queryParams = new URLSearchParams({
@@ -98,13 +107,13 @@ export const useCustomsReportsStore = defineStore('customsreports', () => {
       }
       throw err
     } finally {
-      if (version === accountVersion.value) loading.value = false
+      if (version === accountVersion.value) reportsLoading.value = false
     }
   }
 
   async function remove(id) {
     const version = accountVersion.value
-    loading.value = true
+    reportsLoading.value = true
     error.value = null
     try {
       await fetchWrapper.delete(`${baseUrl}/${id}`)
@@ -113,13 +122,13 @@ export const useCustomsReportsStore = defineStore('customsreports', () => {
       if (version === accountVersion.value) error.value = err
       throw err
     } finally {
-      if (version === accountVersion.value) loading.value = false
+      if (version === accountVersion.value) reportsLoading.value = false
     }
   }
 
   async function getReportRows(reportId) {
-    const version = accountVersion.value
-    loading.value = true
+    const requestId = ++latestRowsRequestId
+    reportRowsLoading.value = true
     error.value = null
     try {
       const queryParams = new URLSearchParams({
@@ -137,7 +146,7 @@ export const useCustomsReportsStore = defineStore('customsreports', () => {
         `${baseUrl}/${reportId}/rows?${queryParams.toString()}`
       )
 
-      if (version !== accountVersion.value) return
+      if (requestId !== latestRowsRequestId) return
 
       reportRows.value = response?.items || []
       reportRowsTotalCount.value = response?.pagination?.totalCount || 0
@@ -147,13 +156,13 @@ export const useCustomsReportsStore = defineStore('customsreports', () => {
       reportRowsCustomsProcedure.value = response?.customsProcedure || null
       return response
     } catch (err) {
-      if (version !== accountVersion.value) throw err
+      if (requestId !== latestRowsRequestId) throw err
 
       error.value = err
       clearReportRows()
       throw err
     } finally {
-      if (version === accountVersion.value) loading.value = false
+      if (requestId === latestRowsRequestId) reportRowsLoading.value = false
     }
   }
 
@@ -169,11 +178,13 @@ export const useCustomsReportsStore = defineStore('customsreports', () => {
     reportRowsHasPreviousPage,
     reportRowsColumns,
     reportRowsCustomsProcedure,
+    reportRowsLoading,
     loading,
     error,
     upload,
     getReports,
     remove,
-    getReportRows
+    getReportRows,
+    resetReportRows
   }
 })

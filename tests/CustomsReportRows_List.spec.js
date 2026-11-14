@@ -24,6 +24,7 @@ const pageRef = ref(1)
 const searchRef = ref('')
 
 const getReportRowsMock = vi.hoisted(() => vi.fn())
+const resetReportRowsMock = vi.hoisted(() => vi.fn())
 const dismissMock = vi.hoisted(() => vi.fn())
 const alertErrorMock = vi.hoisted(() => vi.fn())
 
@@ -297,6 +298,7 @@ describe('CustomsReportRows_List.vue', () => {
     routerHistoryState.back = null
     routerReplaceMock.mockReset().mockResolvedValue(undefined)
     getReportRowsMock.mockReset().mockResolvedValue(undefined)
+    resetReportRowsMock.mockReset()
     accountVersionRef.value = 0
     reportRowsRef.value = []
     reportRowsColumnsRef.value = []
@@ -310,12 +312,13 @@ describe('CustomsReportRows_List.vue', () => {
 
     customsReportsStoreMock = {
       reportRows: reportRowsRef,
-      loading: loadingRef,
+      reportRowsLoading: loadingRef,
       accountVersion: accountVersionRef,
       reportRowsTotalCount: ref(0),
       reportRowsColumns: reportRowsColumnsRef,
       reportRowsCustomsProcedure: reportRowsCustomsProcedureRef,
-      getReportRows: getReportRowsMock
+      getReportRows: getReportRowsMock,
+      resetReportRows: resetReportRowsMock
     }
 
     alertStoreMock = {
@@ -477,6 +480,45 @@ describe('CustomsReportRows_List.vue', () => {
 
     expect(wrapper.get('[role="alert"]').text()).toContain(error.message)
     expect(alertErrorMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('drops the previous report rows on route reuse and invalidates loads on unmount', async () => {
+    resetReportRowsMock.mockImplementation(() => { reportRowsRef.value = [] })
+    getReportRowsMock.mockImplementationOnce(async () => {
+      reportRowsRef.value = [{ id: 50, parcelNumber: 'OLD-REPORT' }]
+    })
+    const next = Promise.withResolvers()
+    getReportRowsMock.mockReturnValueOnce(next.promise)
+    wrapper = mount(CustomsReportRowsList, { props: { reportId: 5 }, global: { stubs: testStubs } })
+    await flushPromises()
+    expect(wrapper.text()).toContain('OLD-REPORT')
+
+    await wrapper.setProps({ reportId: 6 })
+    expect(wrapper.text()).toContain('№6')
+    expect(wrapper.text()).not.toContain('OLD-REPORT')
+    expect(getReportRowsMock.mock.calls).toEqual([[5], [6]])
+    expect(resetReportRowsMock).toHaveBeenCalledTimes(2)
+
+    wrapper.unmount()
+    wrapper = null
+    expect(resetReportRowsMock).toHaveBeenCalledTimes(3)
+    next.resolve()
+    await flushPromises()
+  })
+
+  it('shows loading while the new report waits for an invalidated load to finish', async () => {
+    const previous = Promise.withResolvers()
+    getReportRowsMock.mockReturnValueOnce(previous.promise)
+    wrapper = mount(CustomsReportRowsList, { props: { reportId: 5 }, global: { stubs: testStubs } })
+    await wrapper.setProps({ reportId: 6 })
+
+    expect(getReportRowsMock.mock.calls).toEqual([[5]])
+    expect(wrapper.find('.spinner-border').exists()).toBe(true)
+
+    previous.resolve()
+    await flushPromises()
+    expect(getReportRowsMock.mock.calls).toEqual([[5], [6]])
+    expect(wrapper.find('.spinner-border').exists()).toBe(false)
   })
 
   it('updates local search from the search field', async () => {

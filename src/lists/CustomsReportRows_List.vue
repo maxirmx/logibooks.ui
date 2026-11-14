@@ -7,7 +7,7 @@ import ActionButton from '@/components/ActionButton.vue'
 import { reportError } from '@/helpers/error.helpers.js'
 import { runWithAlert } from '@/helpers/notification.helpers.js'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
-import { onUnmounted, computed, getCurrentScope, watch, ref, toRef } from 'vue'
+import { onBeforeUnmount, computed, getCurrentScope, watch, ref, toRef } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useCustomsReportsStore } from '@/stores/customs.reports.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
@@ -44,14 +44,18 @@ const customsreportrows_page = toRef(authStore, 'customsreportrows_page')
 const customsreportrows_per_page = toRef(authStore, 'customsreportrows_per_page')
 const customsreportrows_sort_by = toRef(authStore, 'customsreportrows_sort_by')
 
-const { accountVersion, reportRows, loading, reportRowsTotalCount, reportRowsColumns, reportRowsCustomsProcedure } =
-  storeToRefs(customsReportsStore)
+const { accountVersion, reportRows, reportRowsLoading, reportRowsTotalCount,
+  reportRowsColumns, reportRowsCustomsProcedure } = storeToRefs(customsReportsStore)
 const localSearch = ref(customsreportrows_search.value || '')
+const reportChangePending = ref(false)
+const loading = computed(() => reportChangePending.value || reportRowsLoading.value)
 let reportScope = 0
 
 watch([() => props.reportId, accountVersion], () => {
   reportScope++
+  reportChangePending.value = true
 }, { flush: 'sync' })
+watch(() => props.reportId, () => customsReportsStore.resetReportRows(), { immediate: true, flush: 'sync' })
 
 const isComponentMounted = ref(true)
 const DEFAULT_SORT_BY = Object.freeze([{ key: 'rowNumber', order: 'asc' }])
@@ -104,6 +108,7 @@ function joinDisplayParts(...parts) {
 
 async function loadReportRows() {
   const scope = reportScope
+  reportChangePending.value = false
   try {
     await customsReportsStore.getReportRows(props.reportId)
   } catch (error) {
@@ -198,8 +203,9 @@ const columnMetadataStop = watch(reportRowsColumns, () => {
   resetHiddenSortColumn()
 })
 
-onUnmounted(() => {
+onBeforeUnmount(() => {
   isComponentMounted.value = false
+  customsReportsStore.resetReportRows()
   stopFilterSync()
   watcherStop()
   columnMetadataStop()

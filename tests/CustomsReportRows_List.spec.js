@@ -7,10 +7,13 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { ref } from 'vue'
 import CustomsReportRowsList from '@/lists/CustomsReportRows_List.vue'
+import ActionButton from '@/components/ActionButton.vue'
 import ClickableCell from '@/components/ClickableCell.vue'
 import PaginationFooter from '@/components/PaginationFooter.vue'
+import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { defaultGlobalStubs } from './helpers/test-utils.js'
 import { OP_MODE_PAPERWORK } from '@/helpers/op.mode.js'
+import { getErrorMessage } from '@/helpers/error.helpers.js'
 
 import { customsReportOps } from './helpers/customs-report-ops.fixture.js'
 
@@ -103,7 +106,9 @@ function createFullReportRow() {
 
 const testStubs = {
   ...defaultGlobalStubs,
-  RouterLink: { template: '<a><slot /></a>' },
+  'v-tooltip': {
+    template: '<div><slot name="activator" :props="{}" /></div>'
+  },
   'v-data-table': {
     inheritAttrs: false,
     emits: [
@@ -292,6 +297,7 @@ describe('CustomsReportRows_List.vue', () => {
 
   beforeEach(() => {
     vi.resetAllMocks()
+    routerPushMock.mockResolvedValue()
     getReportRowsMock.mockResolvedValue()
     getReportStatusMock.mockResolvedValue()
     reportRowsRef.value = []
@@ -300,6 +306,9 @@ describe('CustomsReportRows_List.vue', () => {
     loadingRef.value = false
     errorRef.value = null
     alertRef.value = null
+    alertErrorMock.mockImplementation((error, options) => {
+      alertRef.value = { id: 1, severity: 'error', message: getErrorMessage(error, options?.fallback) }
+    })
     searchRef.value = ''
     perPageRef.value = 10
     sortByRef.value = [{ key: 'rowNumber', order: 'asc' }]
@@ -360,7 +369,7 @@ describe('CustomsReportRows_List.vue', () => {
     })
   })
 
-  it('shows both stage transitions and retained failure on a focused decision', async () => {
+  it('tracks stage transitions and shows retained failures without the status summary', async () => {
     vi.useFakeTimers()
     try {
       getReportStatusMock.mockResolvedValueOnce({ id: 5, stage: 'pendingParse' })
@@ -374,13 +383,13 @@ describe('CustomsReportRows_List.vue', () => {
       })
       await flushPromises()
       expect(getReportRowsMock).toHaveBeenCalledWith(5)
-      expect(wrapper.text()).toContain('Ожидает чтения отчёта')
-      expect(wrapper.text()).toContain('К списку отчётов')
+      expect(wrapper.text()).not.toContain('Ожидает чтения отчёта')
+      expect(wrapper.find('[aria-live="polite"]').exists()).toBe(false)
       await vi.advanceTimersByTimeAsync(2000)
-      expect(wrapper.text()).toContain('Решения ожидают применения')
+      expect(wrapper.text()).not.toContain('Решения ожидают применения')
       expect(wrapper.text()).toContain('MASTER-18')
       await vi.advanceTimersByTimeAsync(2000)
-      expect(wrapper.text()).toContain('Ошибка применения решений')
+      expect(wrapper.text()).not.toContain('Ошибка применения решений')
       expect(wrapper.text()).toContain('Не удалось применить решения')
       expect(alertErrorMock).not.toHaveBeenCalled()
       await vi.advanceTimersByTimeAsync(4000)
@@ -390,6 +399,73 @@ describe('CustomsReportRows_List.vue', () => {
       wrapper = null
       vi.useRealTimers()
     }
+  })
+
+  it('omits the completed status, upload date and uploading user', async () => {
+    getReportStatusMock.mockResolvedValue({
+      id: 5,
+      stage: 'completed',
+      uploadedAt: '2026-11-14T17:08:51+03:00',
+      uploadedByUserId: 17
+    })
+    wrapper = mount(CustomsReportRowsList, { props: { reportId: 5 }, global: { stubs: testStubs } })
+    await flushPromises()
+
+    expect(wrapper.text()).not.toContain('Обработан')
+    expect(wrapper.text()).not.toContain('Загружен')
+    expect(wrapper.text()).not.toContain('14.11.2026')
+    expect(wrapper.text()).not.toContain('Пользователь №17')
+    expect(wrapper.find('[aria-live="polite"]').exists()).toBe(false)
+    expect(wrapper.find('.list-filters').element.previousElementSibling.tagName).toBe('HR')
+    expect(wrapper.findAllComponents(PageAlertRegion)).toHaveLength(1)
+  })
+
+  it.each([false, true])('returns to reports with the standard close action while loading is %s', async (loading) => {
+    loadingRef.value = loading
+    wrapper = mount(CustomsReportRowsList, { props: { reportId: 5 }, global: { stubs: testStubs } })
+    await flushPromises()
+
+    const action = wrapper.getComponent(ActionButton)
+    expect(action.props()).toMatchObject({
+      icon: 'fa-solid fa-xmark', iconSize: '2x', tooltipText: 'Закрыть', disabled: false
+    })
+    expect(wrapper.find('a.link').exists()).toBe(false)
+    expect(action.get('button').attributes('aria-label')).toBe('Закрыть')
+    expect(action.get('[data-testid="fa-icon"]').attributes('data-icon')).toBe('fa-solid fa-xmark')
+    if (loading) {
+      const groups = wrapper.findAll('.header-actions-bar > .header-actions-group')
+      expect(groups).toHaveLength(2)
+      expect(groups[0].find('.spinner-border-m').exists()).toBe(true)
+      expect(groups[1].findComponent(ActionButton).exists()).toBe(true)
+    }
+
+    await action.get('button').trigger('click')
+    await flushPromises()
+    expect(routerPushMock).toHaveBeenCalledExactlyOnceWith('/customs-reports')
+    expect(alertErrorMock).not.toHaveBeenCalled()
+  })
+
+  it('shows one Russian alert when closing fails and retries the same route', async () => {
+    const failure = new Error('Chunk loading failed')
+    routerPushMock.mockRejectedValueOnce(failure)
+    wrapper = mount(CustomsReportRowsList, { props: { reportId: 5 }, global: { stubs: testStubs } })
+    await flushPromises()
+    await wrapper.find('input').setValue('PN-001')
+    await wrapper.getComponent(ActionButton).get('button').trigger('click')
+    await flushPromises()
+
+    expect(alertErrorMock).toHaveBeenCalledExactlyOnceWith(failure, {
+      fallback: 'Не удалось открыть список отчётов', title: ''
+    })
+    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+    expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось открыть список отчётов')
+    expect(wrapper.text()).not.toContain(failure.message)
+    expect(wrapper.get('hr.hr').element.nextElementSibling).toBe(wrapper.getComponent(PageAlertRegion).element)
+    expect(wrapper.get('input').element.value).toBe('PN-001')
+    await wrapper.getComponent(ActionButton).get('button').trigger('click')
+    await flushPromises()
+    expect(routerPushMock.mock.calls).toEqual([['/customs-reports'], ['/customs-reports']])
+    expect(alertErrorMock).toHaveBeenCalledOnce()
   })
 
   it.each([
@@ -424,9 +500,11 @@ describe('CustomsReportRows_List.vue', () => {
       await flushPromises()
       expect(alertErrorMock).toHaveBeenCalledOnce()
       await vi.advanceTimersByTimeAsync(2000)
-      expect(wrapper.text()).toContain('Решения ожидают применения')
+      expect(getReportStatusMock).toHaveBeenCalledTimes(2)
+      expect(wrapper.text()).not.toContain('Решения ожидают применения')
       await vi.advanceTimersByTimeAsync(2000)
-      expect(wrapper.text()).toContain('Обработан')
+      expect(getReportStatusMock).toHaveBeenCalledTimes(3)
+      expect(wrapper.text()).not.toContain('Обработан')
       await vi.advanceTimersByTimeAsync(4000)
       expect(getReportStatusMock).toHaveBeenCalledTimes(3)
       expect(alertErrorMock).toHaveBeenCalledOnce()
@@ -623,8 +701,6 @@ describe('CustomsReportRows_List.vue', () => {
     expect(sortByRef.value).toEqual([{ key: 'rowNumber', order: 'asc' }])
     expect(getReportRowsMock.mock.calls.length).toBeGreaterThan(callsBeforeMetadata)
   })
-
-  // Back navigation handled by parent view; no local back button to test
 
   it('displays loading indicator when loading', async () => {
     loadingRef.value = true

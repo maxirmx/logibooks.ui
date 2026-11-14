@@ -164,7 +164,7 @@ async function handleDeleteReport(report) {
   const version = accountVersion.value
   runningAction.value = true
   try {
-    const content = `Удалить отчёт «${report.fileName || report.id}» и его решения? Связи посылок с ДТЭГ/ПТДЭГ будут сняты, если их подтверждает только этот отчёт.`
+    const content = `Удалить отчёт «${report.fileName || report.id}»? Информация о ДТЭГ/ПТДЭГ в посылках будет очищена.`
     const confirmed = await confirm({
       title: 'Подтверждение',
       confirmationText: 'Удалить',
@@ -332,7 +332,7 @@ function viewReportRows(report) {
                     :item="item"
                     v-if="authStore.isShiftLeadPlus && !customsReportsStore.reportStage(item)?.isActive"
                     icon="fa-solid fa-trash-can"
-                    tooltip-text="Удалить отчёт и его решения"
+                    tooltip-text="Удалить отчёт"
                     data-testid="reports-delete-button"
                     :disabled="loading || runningAction"
                     @click="handleDeleteReport(item)"

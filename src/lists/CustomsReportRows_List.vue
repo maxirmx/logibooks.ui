@@ -4,13 +4,14 @@
 // This file is a part of Logibooks ui application
 
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
-import { onUnmounted, computed, watch, ref, toRef } from 'vue'
+import ActionButton from '@/components/ActionButton.vue'
+import { onUnmounted, computed, getCurrentScope, watch, ref, toRef } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useCustomsReportsStore } from '@/stores/customs.reports.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
-import { formatDateTime, formatDateTimeLines } from '@/helpers/date.formatters.js'
+import { formatDateTimeLines } from '@/helpers/date.formatters.js'
 import TruncateTooltipCell from '@/components/TruncateTooltipCell.vue'
 import ClickableCell from '@/components/ClickableCell.vue'
 import PaginationFooter from '@/components/PaginationFooter.vue'
@@ -23,6 +24,7 @@ import { getCurrentInternalRoute } from '@/helpers/parcel.navigation.helpers.js'
 import { OP_MODE_PAPERWORK } from '@/helpers/op.mode.js'
 import { useCustomsReportPolling } from '@/composables/useCustomsReportPolling.js'
 import { getErrorMessage, reportError } from '@/helpers/error.helpers.js'
+import { runWithAlert } from '@/helpers/notification.helpers.js'
 const props = defineProps({
   reportId: {
     type: Number,
@@ -36,6 +38,7 @@ const props = defineProps({
 
 const customsReportsStore = useCustomsReportsStore()
 const alertStore = useAlertStore()
+const componentScope = getCurrentScope()
 const report = ref(null)
 let statusRequest = 0
 let rowsScope = 0
@@ -260,7 +263,12 @@ const pageOptions = computed(() => {
     .map((n) => ({ value: n, title: String(n) }))
 })
 
-// Navigation handled by parent view; no local back action
+function returnToReports() {
+  return runWithAlert(() => router.push('/customs-reports'), {
+    fallback: 'Не удалось открыть список отчётов',
+    scope: componentScope
+  })
+}
 </script>
 
 <template>
@@ -268,9 +276,18 @@ const pageOptions = computed(() => {
     <div class="header-with-actions">
       <h1 class="primary-heading">{{ headingText }}</h1>
       <div class="header-actions-bar">
-        <RouterLink to="/customs-reports" class="link">К списку отчётов</RouterLink>
         <div v-if="loading" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
+        </div>
+        <div class="header-actions header-actions-group">
+          <ActionButton
+            :item="{}"
+            icon="fa-solid fa-xmark"
+            icon-size="2x"
+            tooltip-text="Закрыть"
+            aria-label="Закрыть"
+            @click="returnToReports"
+          />
         </div>
       </div>
     </div>
@@ -278,13 +295,8 @@ const pageOptions = computed(() => {
 
     <PageAlertRegion />
 
-    <div v-if="report" aria-live="polite" class="mb-3">
-      <strong>{{ customsReportsStore.reportStage(report)?.name ?? report.stage }}</strong>
-      <span v-if="report.uploadedAt"> · Загружен {{ formatDateTime(report.uploadedAt) }}</span>
-      <span v-if="report.uploadedByUserId"> · Пользователь №{{ report.uploadedByUserId }}</span>
-      <div v-if="report.errMsg">
-        {{ getErrorMessage(report.errMsg, 'Не удалось обработать отчёт о выпуске') }}
-      </div>
+    <div v-if="report?.errMsg" aria-live="polite" class="mb-3">
+      {{ getErrorMessage(report.errMsg, 'Не удалось обработать отчёт о выпуске') }}
     </div>
 
     <div class="list-filters">

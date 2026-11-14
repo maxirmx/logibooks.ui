@@ -6,6 +6,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { ref, unref } from 'vue'
+import { formatDateTime } from '@/helpers/date.formatters.js'
+import { SupersededReportsRequestError } from '@/stores/customs.reports.store.js'
 import CustomsReportsList from '@/lists/CustomsReports_List.vue'
 import { defaultGlobalStubs } from './helpers/test-utils.js'
 
@@ -115,7 +117,8 @@ vi.mock('pinia', async () => {
   }
 })
 
-vi.mock('@/stores/customs.reports.store.js', () => ({
+vi.mock('@/stores/customs.reports.store.js', async (importOriginal) => ({
+  ...(await importOriginal()),
   useCustomsReportsStore: () => customsReportsStoreMock
 }))
 
@@ -140,6 +143,7 @@ vi.mock('@/router', () => ({
 describe('CustomsReports_List.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    getReportsMock.mockReset().mockResolvedValue(undefined)
     reportsRef.value = []
     loadingRef.value = false
     errorRef.value = null
@@ -147,6 +151,7 @@ describe('CustomsReports_List.vue', () => {
     alertRef.value = null
 
     customsReportsStoreMock = {
+      accountVersion: ref(0),
       reports: reportsRef,
       loading: loadingRef,
       error: errorRef,
@@ -157,9 +162,11 @@ describe('CustomsReports_List.vue', () => {
     }
 
     alertStoreMock = {
-      alert: alertRef,
+      get alert() { return alertRef.value },
       clear: clearMock,
-      error: alertErrorMock
+      error: alertErrorMock.mockImplementation((error) => {
+        alertRef.value = { severity: 'error', message: error.message ?? String(error) }
+      })
     }
 
     authStoreMock = {}
@@ -502,27 +509,63 @@ describe('CustomsReports_List.vue', () => {
     expect(routerPushMock).toHaveBeenCalledWith({ path: '/customs-reports/7/rows', query: {} })
   })
 
-  it('reports string store error via alertStore on load', async () => {
-    errorRef.value = 'load reports failed'
-
-    mount(CustomsReportsList, {
-      global: { stubs: testStubs }
-    })
-
-    await flushPromises()
-
-    expect(alertErrorMock).toHaveBeenCalledWith('load reports failed')
+  it('shows upload metadata in the last two columns using register history formatting', () => {
+    const uploadedAt = '2026-11-14T10:07:25Z'
+    reportsRef.value = [
+      { id: 5, uploadedAt, uploadedByUserName: 'Иванов Иван', uploadedByUserEmail: 'ivan@example.test' },
+      { id: 4 }
+    ]
+    const wrapper = mount(CustomsReportsList, { global: { stubs: testStubs } })
+    const table = wrapper.findComponent(testStubs['v-data-table-server'])
+    expect(table.props('headers').slice(-3).map(({ title, key }) => [title, key])).toEqual([
+      ['Ошибка', 'errMsg'], ['Дата и время', 'uploadedAt'], ['Пользователь', 'uploadedByUserName']
+    ])
+    const [current, legacy] = wrapper.findAll('tr')
+    expect(current.get('[data-column-key="uploadedAt"]').text()).toBe(formatDateTime(uploadedAt))
+    const userCell = current.get('[data-column-key="uploadedByUserName"]')
+    expect(userCell.get('.d-block').text()).toBe('Иванов Иван')
+    expect(userCell.get('.text-medium-emphasis').text()).toBe('ivan@example.test')
+    expect(legacy.get('[data-column-key="uploadedAt"]').text()).toBe('')
+    expect(legacy.get('[data-column-key="uploadedByUserName"]').text()).toBe('')
+    wrapper.unmount()
   })
 
-  it('reports Error object store error as message string via alertStore on load', async () => {
-    errorRef.value = new Error('load reports failed')
+  it.each(['list load', 'delete refresh'])('keeps a rejected superseded %s out of the page alerts', async (operation) => {
+    reportsRef.value = [{ id: 11, fileName: 'current-report.xlsx' }]
+    const error = new Error('Ошибка предыдущего запроса')
+    const superseded = new SupersededReportsRequestError(error)
+    const diagnostics = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const wrapper = mount(CustomsReportsList, { global: { stubs: testStubs } })
+    try {
+      const input = wrapper.get('[data-testid="reports-upload-input"]')
+      if (operation === 'list load') {
+        uploadMock.mockResolvedValueOnce(undefined)
+        getReportsMock.mockRejectedValueOnce(superseded)
+        Object.defineProperty(input.element, 'files', { value: [new File(['report'], 'report.xlsx')] })
+        await input.trigger('change')
+      } else {
+        confirmMock.mockResolvedValueOnce(true)
+        removeMock.mockRejectedValueOnce(superseded)
+        await wrapper.get('[data-testid="reports-delete-button"]').trigger('click')
+      }
+      await flushPromises()
 
-    mount(CustomsReportsList, {
-      global: { stubs: testStubs }
-    })
+      expect(wrapper.text()).toContain('current-report.xlsx')
+      expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+      expect(diagnostics).toHaveBeenCalledWith(expect.any(String), error)
+    } finally {
+      diagnostics.mockRestore()
+      wrapper.unmount()
+    }
+  })
 
+  it('shows a rejected list request once in the page alert region', async () => {
+    const error = new Error('Не удалось загрузить отчёты')
+    getReportsMock.mockRejectedValueOnce(error)
+    const wrapper = mount(CustomsReportsList, { global: { stubs: testStubs } })
     await flushPromises()
-
-    expect(alertErrorMock).toHaveBeenCalledWith('load reports failed')
+    expect(wrapper.get('[role="alert"]').text()).toContain(error.message)
+    expect(alertErrorMock).toHaveBeenCalledTimes(1)
+    wrapper.unmount()
   })
 })

@@ -3,8 +3,11 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
+import ActionButton from '@/components/ActionButton.vue'
+import { reportError } from '@/helpers/error.helpers.js'
+import { runWithAlert } from '@/helpers/notification.helpers.js'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
-import { onUnmounted, computed, watch, ref, toRef, unref } from 'vue'
+import { onBeforeUnmount, computed, getCurrentScope, watch, ref, toRef } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useCustomsReportsStore } from '@/stores/customs.reports.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
@@ -34,15 +37,25 @@ const props = defineProps({
 
 const customsReportsStore = useCustomsReportsStore()
 const alertStore = useAlertStore()
+const componentScope = getCurrentScope()
 const authStore = useAuthStore()
 const customsreportrows_search = toRef(authStore, 'customsreportrows_search')
 const customsreportrows_page = toRef(authStore, 'customsreportrows_page')
 const customsreportrows_per_page = toRef(authStore, 'customsreportrows_per_page')
 const customsreportrows_sort_by = toRef(authStore, 'customsreportrows_sort_by')
 
-const { reportRows, loading, reportRowsTotalCount, reportRowsColumns, reportRowsCustomsProcedure } =
-  storeToRefs(customsReportsStore)
+const { accountVersion, reportRows, reportRowsLoading, reportRowsTotalCount,
+  reportRowsColumns, reportRowsCustomsProcedure } = storeToRefs(customsReportsStore)
 const localSearch = ref(customsreportrows_search.value || '')
+const reportChangePending = ref(false)
+const loading = computed(() => reportChangePending.value || reportRowsLoading.value)
+let reportScope = 0
+
+watch([() => props.reportId, accountVersion], () => {
+  reportScope++
+  reportChangePending.value = true
+}, { flush: 'sync' })
+watch(() => props.reportId, () => customsReportsStore.resetReportRows(), { immediate: true, flush: 'sync' })
 
 const isComponentMounted = ref(true)
 const DEFAULT_SORT_BY = Object.freeze([{ key: 'rowNumber', order: 'asc' }])
@@ -94,10 +107,16 @@ function joinDisplayParts(...parts) {
 }
 
 async function loadReportRows() {
-  await customsReportsStore.getReportRows(props.reportId)
-  const storeError = unref(customsReportsStore.error)
-  if (storeError) {
-    alertStore.error(storeError instanceof Error ? storeError.message : String(storeError))
+  const scope = reportScope
+  reportChangePending.value = false
+  try {
+    await customsReportsStore.getReportRows(props.reportId)
+  } catch (error) {
+    if (scope === reportScope && isComponentMounted.value) {
+      alertStore.error(error, { fallback: 'Не удалось загрузить строки отчёта' })
+    } else {
+      reportError(error, { context: 'customs report rows after their scope changed' })
+    }
   }
 }
 
@@ -113,7 +132,8 @@ const watcherStop = watch(
     customsreportrows_page,
     customsreportrows_per_page,
     customsreportrows_sort_by,
-    () => props.reportId
+    () => props.reportId,
+    accountVersion
   ],
   () => {
     triggerLoad()
@@ -183,8 +203,9 @@ const columnMetadataStop = watch(reportRowsColumns, () => {
   resetHiddenSortColumn()
 })
 
-onUnmounted(() => {
+onBeforeUnmount(() => {
   isComponentMounted.value = false
+  customsReportsStore.resetReportRows()
   stopFilterSync()
   watcherStop()
   columnMetadataStop()
@@ -211,7 +232,19 @@ const pageOptions = computed(() => {
     .map((n) => ({ value: n, title: String(n) }))
 })
 
-// Navigation handled by parent view; no local back action
+function closeReport() {
+  const reportsPath = '/customs-reports'
+  const previous = router.options.history.state.back
+  if (typeof previous === 'string' && previous.split(/[?#]/, 1)[0] === reportsPath) {
+    router.back()
+    return
+  }
+
+  return runWithAlert(() => router.replace(reportsPath), {
+    fallback: 'Не удалось открыть список отчётов',
+    scope: componentScope
+  })
+}
 </script>
 
 <template>
@@ -221,6 +254,17 @@ const pageOptions = computed(() => {
       <div class="header-actions-bar">
         <div v-if="loading" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
+        </div>
+        <div class="header-actions header-actions-group">
+          <ActionButton
+            :item="null"
+            icon="fa-solid fa-xmark"
+            icon-size="2x"
+            tooltip-text="Закрыть"
+            aria-label="Закрыть"
+            data-testid="customs-report-close"
+            @click="closeReport"
+          />
         </div>
       </div>
     </div>

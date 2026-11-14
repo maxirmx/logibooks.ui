@@ -16,7 +16,7 @@ const reportRowsRef = ref([])
 const reportRowsColumnsRef = ref([])
 const reportRowsCustomsProcedureRef = ref(null)
 const loadingRef = ref(false)
-const errorRef = ref(null)
+const accountVersionRef = ref(0)
 const alertRef = ref(null)
 const perPageRef = ref(10)
 const sortByRef = ref([{ key: 'rowNumber', order: 'asc' }])
@@ -24,6 +24,7 @@ const pageRef = ref(1)
 const searchRef = ref('')
 
 const getReportRowsMock = vi.hoisted(() => vi.fn())
+const resetReportRowsMock = vi.hoisted(() => vi.fn())
 const dismissMock = vi.hoisted(() => vi.fn())
 const alertErrorMock = vi.hoisted(() => vi.fn())
 
@@ -31,6 +32,9 @@ let customsReportsStoreMock
 let alertStoreMock
 let authStoreMock
 const routerPushMock = vi.hoisted(() => vi.fn())
+const routerBackMock = vi.hoisted(() => vi.fn())
+const routerReplaceMock = vi.hoisted(() => vi.fn())
+const routerHistoryState = vi.hoisted(() => ({ back: null }))
 
 const fullColumnKeys = [
   'id',
@@ -272,6 +276,9 @@ vi.mock('@/stores/auth.store.js', () => ({
 vi.mock('@/router', () => ({
   default: {
     push: routerPushMock,
+    back: routerBackMock,
+    replace: routerReplaceMock,
+    options: { history: { state: routerHistoryState } },
     currentRoute: ref({ fullPath: '/customs-reports/5/rows' })
   }
 }))
@@ -288,11 +295,15 @@ describe('CustomsReportRows_List.vue', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    routerHistoryState.back = null
+    routerReplaceMock.mockReset().mockResolvedValue(undefined)
+    getReportRowsMock.mockReset().mockResolvedValue(undefined)
+    resetReportRowsMock.mockReset()
+    accountVersionRef.value = 0
     reportRowsRef.value = []
     reportRowsColumnsRef.value = []
     reportRowsCustomsProcedureRef.value = null
     loadingRef.value = false
-    errorRef.value = null
     alertRef.value = null
     searchRef.value = ''
     perPageRef.value = 10
@@ -301,12 +312,13 @@ describe('CustomsReportRows_List.vue', () => {
 
     customsReportsStoreMock = {
       reportRows: reportRowsRef,
-      loading: loadingRef,
-      error: errorRef,
+      reportRowsLoading: loadingRef,
+      accountVersion: accountVersionRef,
       reportRowsTotalCount: ref(0),
       reportRowsColumns: reportRowsColumnsRef,
       reportRowsCustomsProcedure: reportRowsCustomsProcedureRef,
-      getReportRows: getReportRowsMock
+      getReportRows: getReportRowsMock,
+      resetReportRows: resetReportRowsMock
     }
 
     alertStoreMock = {
@@ -314,7 +326,9 @@ describe('CustomsReportRows_List.vue', () => {
         return alertRef.value
       },
       dismiss: dismissMock,
-      error: alertErrorMock
+      error: alertErrorMock.mockImplementation((error) => {
+        alertRef.value = { severity: 'error', message: error.message }
+      })
     }
 
     authStoreMock = {}
@@ -436,8 +450,6 @@ describe('CustomsReportRows_List.vue', () => {
     expect(getReportRowsMock.mock.calls.length).toBeGreaterThan(callsBeforeMetadata)
   })
 
-  // Back navigation handled by parent view; no local back button to test
-
   it('displays loading indicator when loading', async () => {
     loadingRef.value = true
 
@@ -453,8 +465,9 @@ describe('CustomsReportRows_List.vue', () => {
     expect(wrapper.find('.spinner-border').exists()).toBe(true)
   })
 
-  it('reports store error through alertStore', async () => {
-    errorRef.value = new Error('Failed to load rows')
+  it('shows a rejected row request once in the page alert region', async () => {
+    const error = new Error('Не удалось загрузить строки отчёта')
+    getReportRowsMock.mockRejectedValueOnce(error)
 
     wrapper = mount(CustomsReportRowsList, {
       props: { reportId: 5 },
@@ -465,8 +478,47 @@ describe('CustomsReportRows_List.vue', () => {
 
     await flushPromises()
 
-    expect(wrapper.text()).not.toContain('Ошибка при загрузке информации')
-    expect(alertErrorMock).toHaveBeenCalledWith(errorRef.value.message)
+    expect(wrapper.get('[role="alert"]').text()).toContain(error.message)
+    expect(alertErrorMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('drops the previous report rows on route reuse and invalidates loads on unmount', async () => {
+    resetReportRowsMock.mockImplementation(() => { reportRowsRef.value = [] })
+    getReportRowsMock.mockImplementationOnce(async () => {
+      reportRowsRef.value = [{ id: 50, parcelNumber: 'OLD-REPORT' }]
+    })
+    const next = Promise.withResolvers()
+    getReportRowsMock.mockReturnValueOnce(next.promise)
+    wrapper = mount(CustomsReportRowsList, { props: { reportId: 5 }, global: { stubs: testStubs } })
+    await flushPromises()
+    expect(wrapper.text()).toContain('OLD-REPORT')
+
+    await wrapper.setProps({ reportId: 6 })
+    expect(wrapper.text()).toContain('№6')
+    expect(wrapper.text()).not.toContain('OLD-REPORT')
+    expect(getReportRowsMock.mock.calls).toEqual([[5], [6]])
+    expect(resetReportRowsMock).toHaveBeenCalledTimes(2)
+
+    wrapper.unmount()
+    wrapper = null
+    expect(resetReportRowsMock).toHaveBeenCalledTimes(3)
+    next.resolve()
+    await flushPromises()
+  })
+
+  it('shows loading while the new report waits for an invalidated load to finish', async () => {
+    const previous = Promise.withResolvers()
+    getReportRowsMock.mockReturnValueOnce(previous.promise)
+    wrapper = mount(CustomsReportRowsList, { props: { reportId: 5 }, global: { stubs: testStubs } })
+    await wrapper.setProps({ reportId: 6 })
+
+    expect(getReportRowsMock.mock.calls).toEqual([[5]])
+    expect(wrapper.find('.spinner-border').exists()).toBe(true)
+
+    previous.resolve()
+    await flushPromises()
+    expect(getReportRowsMock.mock.calls).toEqual([[5], [6]])
+    expect(wrapper.find('.spinner-border').exists()).toBe(false)
   })
 
   it('updates local search from the search field', async () => {
@@ -604,19 +656,36 @@ describe('CustomsReportRows_List.vue', () => {
     expect(routerPushMock).not.toHaveBeenCalled()
   })
 
-  it('reports string store error through alertStore', async () => {
-    errorRef.value = 'row load error'
-
-    wrapper = mount(CustomsReportRowsList, {
-      props: { reportId: 5 },
-      global: {
-        stubs: testStubs
-      }
-    })
-
+  it('omits upload metadata and closes to the previous reports list even while loading', async () => {
+    routerHistoryState.back = '/customs-reports?search=CMR'
+    loadingRef.value = true
+    getReportRowsMock.mockResolvedValueOnce({ uploadedByUserName: 'Имя загрузившего' })
+    wrapper = mount(CustomsReportRowsList, { props: { reportId: 5 }, global: { stubs: testStubs } })
     await flushPromises()
 
-    expect(alertErrorMock).toHaveBeenCalledWith('row load error')
+    expect(wrapper.text()).not.toContain('Имя загрузившего')
+    expect(wrapper.find('[data-testid="report-upload-metadata"]').exists()).toBe(false)
+    await wrapper.get('button[aria-label="Закрыть"]').trigger('click')
+    expect(routerBackMock).toHaveBeenCalledOnce()
+    expect(routerReplaceMock).not.toHaveBeenCalled()
+  })
+
+  it.each([null, '/registers', '/customs-reports/4/rows'])('closes to the list when the previous route is %s', async (previous) => {
+    routerHistoryState.back = previous
+    wrapper = mount(CustomsReportRowsList, { props: { reportId: 5 }, global: { stubs: testStubs } })
+    await wrapper.get('button[aria-label="Закрыть"]').trigger('click')
+    expect(routerReplaceMock).toHaveBeenCalledWith('/customs-reports')
+    expect(routerBackMock).not.toHaveBeenCalled()
+  })
+
+  it('shows a navigation rejection in the page alert region', async () => {
+    const error = new Error('Не удалось открыть список отчётов')
+    routerReplaceMock.mockRejectedValueOnce(error)
+    wrapper = mount(CustomsReportRowsList, { props: { reportId: 5 }, global: { stubs: testStubs } })
+    await wrapper.get('button[aria-label="Закрыть"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.get('[role="alert"]').text()).toContain(error.message)
+    expect(alertErrorMock).toHaveBeenCalledOnce()
   })
 
   it('uses page 1 as the page options fallback when current page is empty', async () => {

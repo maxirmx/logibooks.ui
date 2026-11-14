@@ -4,7 +4,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import { useCustomsReportsStore } from '@/stores/customs.reports.store.js'
+import { SupersededReportsRequestError, useCustomsReportsStore } from '@/stores/customs.reports.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 
@@ -83,6 +83,106 @@ describe('customs.reports.store', () => {
     expect(store.reportsTotalCount).toBe(0)
     expect(store.reportsHasNextPage).toBe(false)
     expect(store.reportsHasPreviousPage).toBe(false)
+  })
+
+  it('keeps the refreshed reports and pagination when an older list response arrives last', async () => {
+    const store = useCustomsReportsStore()
+    const previous = Promise.withResolvers()
+    fetchWrapper.get.mockReturnValueOnce(previous.promise).mockResolvedValueOnce({
+      items: [{ id: 2 }],
+      pagination: { totalCount: 10, hasNextPage: true, hasPreviousPage: true }
+    })
+    const oldLoad = store.getReports()
+    await store.getReports()
+    previous.resolve({ items: [{ id: 1 }], pagination: { totalCount: 1 } })
+    await oldLoad
+
+    expect(store.reports).toEqual([{ id: 2 }])
+    expect(store.reportsTotalCount).toBe(10)
+    expect(store.reportsHasNextPage).toBe(true)
+    expect(store.reportsHasPreviousPage).toBe(true)
+    expect(store.loading).toBe(false)
+  })
+
+  it.each([true, false])('ignores a superseded list failure with latest request still pending: %s', async (latestPending) => {
+    const store = useCustomsReportsStore()
+    const previous = Promise.withResolvers()
+    const current = Promise.withResolvers()
+    fetchWrapper.get.mockResolvedValueOnce({ items: [{ id: 1 }] })
+      .mockReturnValueOnce(previous.promise).mockReturnValueOnce(current.promise)
+    await store.getReports()
+    const oldLoad = store.getReports()
+    const currentLoad = store.getReports()
+    if (!latestPending) {
+      current.resolve({ items: [{ id: 2 }] })
+      await currentLoad
+    }
+
+    const error = new Error('Previous request failed')
+    previous.reject(error)
+    await expect(oldLoad).rejects.toBeInstanceOf(SupersededReportsRequestError)
+    await expect(oldLoad).rejects.toHaveProperty('cause', error)
+    expect(store.error).toBeNull()
+    expect(store.reports).toEqual([{ id: latestPending ? 1 : 2 }])
+    expect(store.loading).toBe(latestPending)
+
+    if (latestPending) {
+      current.resolve({ items: [{ id: 2 }] })
+      await currentLoad
+      expect(store.reports).toEqual([{ id: 2 }])
+      expect(store.loading).toBe(false)
+    }
+  })
+
+  it('keeps the spinner active until both the upload and the latest list request settle', async () => {
+    const store = useCustomsReportsStore()
+    const upload = Promise.withResolvers()
+    const list = Promise.withResolvers()
+    const refresh = Promise.withResolvers()
+    fetchWrapper.postFile.mockReturnValueOnce(upload.promise)
+    fetchWrapper.get.mockReturnValueOnce(list.promise).mockReturnValueOnce(refresh.promise)
+
+    const uploading = store.upload(new File(['report'], 'report.xlsx'))
+    const loading = store.getReports()
+    list.resolve({ items: [{ id: 1 }] })
+    await loading
+    expect(store.loading).toBe(true)
+
+    const refreshing = store.getReports()
+    upload.resolve({ success: true })
+    await uploading
+    expect(store.loading).toBe(true)
+
+    refresh.resolve({ items: [{ id: 2 }] })
+    await refreshing
+    expect(store.loading).toBe(false)
+  })
+
+  it('does not publish errors or clear loading when the delete refresh is superseded', async () => {
+    const store = useCustomsReportsStore()
+    const refreshStarted = Promise.withResolvers()
+    const refresh = Promise.withResolvers()
+    const current = Promise.withResolvers()
+    fetchWrapper.delete.mockResolvedValueOnce(undefined)
+    fetchWrapper.get.mockImplementationOnce(() => {
+      refreshStarted.resolve()
+      return refresh.promise
+    }).mockReturnValueOnce(current.promise)
+
+    const deleting = store.remove(1)
+    await refreshStarted.promise
+    const loading = store.getReports()
+    const error = new Error('Delete refresh failed')
+    refresh.reject(error)
+    await expect(deleting).rejects.toBeInstanceOf(SupersededReportsRequestError)
+    await expect(deleting).rejects.toHaveProperty('cause', error)
+    expect(store.error).toBeNull()
+    expect(store.loading).toBe(true)
+
+    current.resolve({ items: [{ id: 2 }] })
+    await loading
+    expect(store.reports).toEqual([{ id: 2 }])
+    expect(store.loading).toBe(false)
   })
 
   it('stores error when getReports fails', async () => {
@@ -243,7 +343,12 @@ describe('customs.reports.store', () => {
     fetchWrapper.delete.mockRejectedValueOnce(error)
     const pending = store[method](method === 'upload' ? new File(['file'], 'report.xlsx') : 5)
     auth.user = { id: 2 }
-    await expect(pending).rejects.toBe(error)
+    if (method === 'getReports') {
+      await expect(pending).rejects.toBeInstanceOf(SupersededReportsRequestError)
+      await expect(pending).rejects.toHaveProperty('cause', error)
+    } else {
+      await expect(pending).rejects.toBe(error)
+    }
     expect(store.error).toBeNull()
     expect(store.loading).toBe(false)
   })

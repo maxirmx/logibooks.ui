@@ -10,6 +10,12 @@ import { useAuthStore } from '@/stores/auth.store.js'
 
 const baseUrl = `${apiUrl}/customsreports`
 
+export class SupersededReportsRequestError extends Error {
+  constructor(cause) {
+    super('Superseded customs reports request', { cause })
+  }
+}
+
 export const useCustomsReportsStore = defineStore('customsreports', () => {
   const authStore = useAuthStore()
   const accountVersion = ref(0)
@@ -17,7 +23,8 @@ export const useCustomsReportsStore = defineStore('customsreports', () => {
   const reportRows = ref([])
   const reportsLoading = ref(false)
   const reportRowsLoading = ref(false)
-  const loading = computed(() => reportsLoading.value || reportRowsLoading.value)
+  const pendingReportMutations = ref(0)
+  const loading = computed(() => reportsLoading.value || reportRowsLoading.value || pendingReportMutations.value > 0)
   const error = ref(null)
   const reportsTotalCount = ref(0)
   const reportsHasNextPage = ref(false)
@@ -27,6 +34,7 @@ export const useCustomsReportsStore = defineStore('customsreports', () => {
   const reportRowsHasPreviousPage = ref(false)
   const reportRowsColumns = ref([])
   const reportRowsCustomsProcedure = ref(null)
+  let latestReportsRequestId = 0
   let latestRowsRequestId = 0
 
   function clearReports() {
@@ -53,15 +61,17 @@ export const useCustomsReportsStore = defineStore('customsreports', () => {
 
   watch(() => authStore.user?.id, () => {
     accountVersion.value++
+    latestReportsRequestId++
     clearReports()
     resetReportRows()
     reportsLoading.value = false
+    pendingReportMutations.value = 0
     error.value = null
   }, { flush: 'sync' })
 
   async function upload(file) {
     const version = accountVersion.value
-    reportsLoading.value = true
+    pendingReportMutations.value++
     error.value = null
     try {
       const formData = new FormData()
@@ -72,12 +82,12 @@ export const useCustomsReportsStore = defineStore('customsreports', () => {
       if (version === accountVersion.value) error.value = err
       throw err
     } finally {
-      if (version === accountVersion.value) reportsLoading.value = false
+      if (version === accountVersion.value) pendingReportMutations.value--
     }
   }
 
   async function getReports() {
-    const version = accountVersion.value
+    const requestId = ++latestReportsRequestId
     reportsLoading.value = true
     error.value = null
     try {
@@ -94,36 +104,37 @@ export const useCustomsReportsStore = defineStore('customsreports', () => {
 
       const response = await fetchWrapper.get(`${baseUrl}?${queryParams.toString()}`)
 
-      if (version !== accountVersion.value) return
+      if (requestId !== latestReportsRequestId) return
 
       reports.value = response?.items || []
       reportsTotalCount.value = response?.pagination?.totalCount || 0
       reportsHasNextPage.value = response?.pagination?.hasNextPage || false
       reportsHasPreviousPage.value = response?.pagination?.hasPreviousPage || false
     } catch (err) {
-      if (version === accountVersion.value) {
-        error.value = err
-        clearReports()
-      }
+      if (requestId !== latestReportsRequestId) throw new SupersededReportsRequestError(err)
+
+      error.value = err
+      clearReports()
       throw err
     } finally {
-      if (version === accountVersion.value) reportsLoading.value = false
+      if (requestId === latestReportsRequestId) reportsLoading.value = false
     }
   }
 
   async function remove(id) {
     const version = accountVersion.value
-    reportsLoading.value = true
+    pendingReportMutations.value++
     error.value = null
     try {
       await fetchWrapper.delete(`${baseUrl}/${id}`)
-      if (version === accountVersion.value) await getReports()
     } catch (err) {
       if (version === accountVersion.value) error.value = err
       throw err
     } finally {
-      if (version === accountVersion.value) reportsLoading.value = false
+      if (version === accountVersion.value) pendingReportMutations.value--
     }
+
+    if (version === accountVersion.value) await getReports()
   }
 
   async function getReportRows(reportId) {

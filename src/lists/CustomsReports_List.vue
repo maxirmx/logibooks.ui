@@ -12,7 +12,7 @@ import { useAppConfirm } from '@/composables/useAppConfirm.js'
 import TruncateTooltipCell from '@/components/TruncateTooltipCell.vue'
 import ClickableCell from '@/components/ClickableCell.vue'
 import { storeToRefs } from 'pinia'
-import { useCustomsReportsStore } from '@/stores/customs.reports.store.js'
+import { SupersededReportsRequestError, useCustomsReportsStore } from '@/stores/customs.reports.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import ActionDialog from '@/l2/ActionDialog.vue'
 import ActionButton from '@/components/ActionButton.vue'
@@ -45,10 +45,12 @@ async function loadReports() {
   try {
     await customsReportsStore.getReports()
   } catch (error) {
-    if (isComponentMounted.value && version === accountVersion.value) {
+    if (isComponentMounted.value && version === accountVersion.value && !(error instanceof SupersededReportsRequestError)) {
       alertStore.error(error, { fallback: 'Не удалось загрузить отчёты' })
     } else {
-      reportError(error, { context: 'customs report list after its scope changed' })
+      reportError(error instanceof SupersededReportsRequestError ? error.cause : error, {
+        context: 'customs report list after its scope changed'
+      })
     }
   }
 }
@@ -189,8 +191,12 @@ async function handleDeleteReport(report) {
 
     await customsReportsStore.remove(report.id)
   } catch (error) {
-    const message = error?.response?.data?.message || error?.message || 'Не удалось удалить отчёт'
-    alertStore.error(message)
+    if (error instanceof SupersededReportsRequestError) {
+      reportError(error.cause, { context: 'superseded customs report list refresh after deletion' })
+    } else {
+      const message = error?.response?.data?.message || error?.message || 'Не удалось удалить отчёт'
+      alertStore.error(message)
+    }
   } finally {
     runningAction.value = false
   }

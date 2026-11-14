@@ -7,6 +7,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { ref, unref } from 'vue'
 import { formatDateTime } from '@/helpers/date.formatters.js'
+import { SupersededReportsRequestError } from '@/stores/customs.reports.store.js'
 import CustomsReportsList from '@/lists/CustomsReports_List.vue'
 import { defaultGlobalStubs } from './helpers/test-utils.js'
 
@@ -116,7 +117,8 @@ vi.mock('pinia', async () => {
   }
 })
 
-vi.mock('@/stores/customs.reports.store.js', () => ({
+vi.mock('@/stores/customs.reports.store.js', async (importOriginal) => ({
+  ...(await importOriginal()),
   useCustomsReportsStore: () => customsReportsStoreMock
 }))
 
@@ -526,6 +528,35 @@ describe('CustomsReports_List.vue', () => {
     expect(legacy.get('[data-column-key="uploadedAt"]').text()).toBe('')
     expect(legacy.get('[data-column-key="uploadedByUserName"]').text()).toBe('')
     wrapper.unmount()
+  })
+
+  it.each(['list load', 'delete refresh'])('keeps a rejected superseded %s out of the page alerts', async (operation) => {
+    reportsRef.value = [{ id: 11, fileName: 'current-report.xlsx' }]
+    const error = new Error('Ошибка предыдущего запроса')
+    const superseded = new SupersededReportsRequestError(error)
+    const diagnostics = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const wrapper = mount(CustomsReportsList, { global: { stubs: testStubs } })
+    try {
+      const input = wrapper.get('[data-testid="reports-upload-input"]')
+      if (operation === 'list load') {
+        uploadMock.mockResolvedValueOnce(undefined)
+        getReportsMock.mockRejectedValueOnce(superseded)
+        Object.defineProperty(input.element, 'files', { value: [new File(['report'], 'report.xlsx')] })
+        await input.trigger('change')
+      } else {
+        confirmMock.mockResolvedValueOnce(true)
+        removeMock.mockRejectedValueOnce(superseded)
+        await wrapper.get('[data-testid="reports-delete-button"]').trigger('click')
+      }
+      await flushPromises()
+
+      expect(wrapper.text()).toContain('current-report.xlsx')
+      expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+      expect(diagnostics).toHaveBeenCalledWith(expect.any(String), error)
+    } finally {
+      diagnostics.mockRestore()
+      wrapper.unmount()
+    }
   })
 
   it('shows a rejected list request once in the page alert region', async () => {

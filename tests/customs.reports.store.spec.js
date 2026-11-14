@@ -219,7 +219,8 @@ describe('customs.reports.store', () => {
       return refresh.promise
     }).mockReturnValueOnce(current.promise)
 
-    const deleting = store.remove(1)
+    await store.remove(1)
+    const deleting = store.getReports()
     await refreshStarted.promise
     const loading = store.getReports()
     const error = new Error('Delete refresh failed')
@@ -250,7 +251,7 @@ describe('customs.reports.store', () => {
     expect(store.loading).toBe(false)
   })
 
-  it('remove calls API and refreshes reports on success', async () => {
+  it('remove calls DELETE and leaves the refresh to its caller', async () => {
     fetchWrapper.delete.mockResolvedValue({})
     fetchWrapper.get.mockResolvedValue({
       items: [],
@@ -266,9 +267,7 @@ describe('customs.reports.store', () => {
     await store.remove(10)
 
     expect(fetchWrapper.delete).toHaveBeenCalledWith('http://localhost:8080/api/customsreports/10')
-    expect(fetchWrapper.get).toHaveBeenCalledWith(
-      'http://localhost:8080/api/customsreports?page=1&pageSize=100&sortBy=id&sortOrder=desc'
-    )
+    expect(fetchWrapper.get).not.toHaveBeenCalled()
     expect(store.loading).toBe(false)
     expect(store.error).toBeNull()
   })

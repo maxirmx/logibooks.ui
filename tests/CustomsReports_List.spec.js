@@ -506,7 +506,7 @@ describe('CustomsReports_List.vue', () => {
     expect(idLink.exists()).toBe(true)
 
     await idLink.trigger('click')
-    expect(routerPushMock).toHaveBeenCalledWith({ path: '/customs-reports/7/rows', query: {} })
+    expect(routerPushMock).toHaveBeenCalledWith({ path: '/customs-reports/7/decisions', query: {} })
   })
 
   it('shows upload metadata in the last two columns using register history formatting', () => {

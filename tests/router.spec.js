@@ -69,6 +69,20 @@ async function resetRouter(to = '/recover') {
 describe('router guards', () => {
   let originalConsoleError
 
+  it('loads the decisions view for the current report and keeps its role guard', async () => {
+    authStore.user = { id: 1 }
+    authStore.isSrLogistPlus = true
+    await router.push('/customs-reports/41/decisions?masterInvoice=MAWB-42')
+
+    const route = router.currentRoute.value
+    expect(route.name).toBe('Решения о выпуске')
+    expect(route.matched.at(-1).props.default(route)).toEqual({ reportId: 41, masterInvoice: 'MAWB-42' })
+
+    authStore.isSrLogistPlus = false
+    await router.push('/customs-reports/42/decisions')
+    expect(router.currentRoute.value.path).toBe('/login')
+  })
+
   it('requires a warehouse role for print settings and preserves its return route', async () => {
     authStore.user = { id: 1 }
     authStore.hasWhRole = true

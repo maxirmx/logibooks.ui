@@ -33,13 +33,13 @@ describe('parcel navigation helpers', () => {
   it('returns to a safe source before using the mode-correct parcel-list fallback', () => {
     expect(
       resolveParcelReturnLocation({
-        returnUrl: '/customs-reports/5/rows',
+        returnUrl: '/customs-reports/5/decisions',
         registerId: 12,
         parcelId: 4,
         mode: OP_MODE_WAREHOUSE,
         boxId: 17
       })
-    ).toBe('/customs-reports/5/rows')
+    ).toBe('/customs-reports/5/decisions')
 
     expect(
       resolveParcelReturnLocation({

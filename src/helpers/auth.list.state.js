@@ -135,10 +135,10 @@ export const AUTH_LIST_SCHEMA = {
   uploadcustomsreports_search: listField(''),
   uploadcustomsreports_sort_by: listField([]),
   uploadcustomsreports_page: pageField(1),
-  customsreportrows_per_page: pageSizeField(100),
-  customsreportrows_search: listField(''),
-  customsreportrows_sort_by: listField([]),
-  customsreportrows_page: pageField(1),
+  customsdecisions_per_page: pageSizeField(100),
+  customsdecisions_search: listField(''),
+  customsdecisions_sort_by: listField([]),
+  customsdecisions_page: pageField(1),
   parcelevents_per_page: pageSizeField(50),
   parcelevents_page: pageField(1)
 }

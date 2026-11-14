@@ -202,14 +202,14 @@ async function handleDeleteReport(report) {
   }
 }
 
-function viewReportRows(report) {
+function viewDecisions(report) {
   const query = {}
   if (report?.masterInvoice) {
     query.masterInvoice = report.masterInvoice
   }
 
   router.push({
-    path: `/customs-reports/${report.id}/rows`,
+    path: `/customs-reports/${report.id}/decisions`,
     query
   })
 }
@@ -298,7 +298,7 @@ function viewReportRows(report) {
                 <ClickableCell
                   :item="item"
                   cell-class="truncated-cell clickable-cell"
-                  @click="() => viewReportRows(item)"
+                  @click="() => viewDecisions(item)"
                 >
                   <template #default>
                     <TruncateTooltipCell :text="item[col.key]" />
@@ -313,7 +313,7 @@ function viewReportRows(report) {
                   :display-value="item.id"
                   cell-class="truncated-cell clickable-cell"
                   :data-testid="'report-id-link-' + item.id"
-                  @click="() => viewReportRows(item)"
+                  @click="() => viewDecisions(item)"
                 />
               </template>
 
@@ -325,7 +325,7 @@ function viewReportRows(report) {
                       v-bind="props"
                       :item="item"
                       cell-class="truncated-cell clickable-cell"
-                      @click="() => viewReportRows(item)"
+                      @click="() => viewDecisions(item)"
                     >
                       <template #default>
                         {{ item.errorCount }}
@@ -348,7 +348,7 @@ function viewReportRows(report) {
                     :item="item"
                     icon="fa-solid fa-list"
                     tooltip-text="Подробная информация"
-                    @click="viewReportRows(item)"
+                    @click="viewDecisions(item)"
                     :disabled="loading || runningAction"
                   />
                   <ActionButton
@@ -367,7 +367,7 @@ function viewReportRows(report) {
                 <ClickableCell
                   :item="item"
                   cell-class="truncated-cell clickable-cell"
-                  @click="() => viewReportRows(item)"
+                  @click="() => viewDecisions(item)"
                 >
                   <template #default>
                     <UserDisplay

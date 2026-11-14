@@ -3,13 +3,16 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { mount, flushPromises } from '@vue/test-utils'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { enableAutoUnmount, mount, flushPromises } from '@vue/test-utils'
 import { ref, unref } from 'vue'
 import { formatDateTime } from '@/helpers/date.formatters.js'
+import { getErrorMessage } from '@/helpers/error.helpers.js'
 import { SupersededReportsRequestError } from '@/stores/customs.reports.store.js'
 import CustomsReportsList from '@/lists/CustomsReports_List.vue'
 import { defaultGlobalStubs } from './helpers/test-utils.js'
+
+enableAutoUnmount(afterEach)
 
 const reportsRef = ref([])
 const loadingRef = ref(false)
@@ -143,6 +146,10 @@ vi.mock('@/router', () => ({
 describe('CustomsReports_List.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    confirmMock.mockReset()
+    uploadMock.mockReset()
+    removeMock.mockReset()
+    routerPushMock.mockReset().mockResolvedValue(undefined)
     getReportsMock.mockReset().mockResolvedValue(undefined)
     reportsRef.value = []
     loadingRef.value = false
@@ -164,8 +171,8 @@ describe('CustomsReports_List.vue', () => {
     alertStoreMock = {
       get alert() { return alertRef.value },
       clear: clearMock,
-      error: alertErrorMock.mockImplementation((error) => {
-        alertRef.value = { severity: 'error', message: error.message ?? String(error) }
+      error: alertErrorMock.mockImplementation((error, options) => {
+        alertRef.value = { severity: 'error', message: getErrorMessage(error, options?.fallback) }
       })
     }
 
@@ -197,6 +204,7 @@ describe('CustomsReports_List.vue', () => {
       }
     })
     authStoreMock.isSrLogistPlus = true
+    authStoreMock.isShiftLeadPlus = true
   })
 
   it('renders report data with calculated fields', async () => {
@@ -378,7 +386,7 @@ describe('CustomsReports_List.vue', () => {
 
     await flushPromises()
 
-    uploadMock.mockRejectedValue(new Error('upload failed'))
+    uploadMock.mockRejectedValue(new Error('Technical failure'))
 
     const input = wrapper.find('[data-testid="reports-upload-input"]')
     const file = new File(['dummy'], 'broken.xlsx', { type: 'application/vnd.ms-excel' })
@@ -401,7 +409,7 @@ describe('CustomsReports_List.vue', () => {
     await flushPromises()
 
     expect(uploadMock).toHaveBeenCalledWith(file)
-    expect(alertErrorMock).toHaveBeenCalledWith('upload failed')
+    expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось загрузить отчёт')
     expect(wrapper.find('.action-dialog-stub').attributes('data-show')).toBe('false')
     expect(assignedInputValue).toBe('')
   })
@@ -415,7 +423,8 @@ describe('CustomsReports_List.vue', () => {
       }
     ]
     reportsTotalCountRef.value = 1
-    removeMock.mockRejectedValue(new Error('delete failed'))
+    const message = "Изменения запрещены для реестра '23'"
+    removeMock.mockRejectedValue({ status: 409, data: { msg: message, code: 'RegisterReadOnly' } })
     confirmMock.mockResolvedValue(true)
 
     const wrapper = mount(CustomsReportsList, {
@@ -431,7 +440,11 @@ describe('CustomsReports_List.vue', () => {
     await flushPromises()
 
     expect(removeMock).toHaveBeenCalledWith(11)
-    expect(alertErrorMock).toHaveBeenCalledWith('delete failed')
+    expect(wrapper.get('[role="alert"]').text()).toContain(message)
+    expect(alertErrorMock).toHaveBeenCalledTimes(1)
+    expect(wrapper.get('.action-dialog-stub').attributes('data-show')).toBe('false')
+    expect(getReportsMock).toHaveBeenCalledTimes(1)
+    wrapper.unmount()
   })
 
   it('does not call delete if confirmation is cancelled', async () => {
@@ -459,10 +472,126 @@ describe('CustomsReports_List.vue', () => {
     await flushPromises()
 
     expect(removeMock).not.toHaveBeenCalled()
+    expect(wrapper.get('.action-dialog-stub').attributes('data-show')).toBe('false')
+    wrapper.unmount()
+  })
+
+  it('keeps delete progress through the refresh and consumes a queued filter load', async () => {
+    vi.useFakeTimers()
+    reportsRef.value = [{ id: 11, fileName: 'report.xlsx' }]
+    const confirmation = Promise.withResolvers()
+    const deletion = Promise.withResolvers()
+    const refresh = Promise.withResolvers()
+    confirmMock.mockReturnValueOnce(confirmation.promise)
+    removeMock.mockReturnValueOnce(deletion.promise)
+    const wrapper = mount(CustomsReportsList, { global: { stubs: testStubs } })
+    try {
+      await flushPromises()
+      getReportsMock.mockReturnValueOnce(refresh.promise)
+      await wrapper.get('[data-testid="v-text-field"] input').setValue('new filter')
+      await wrapper.vm.$nextTick()
+      const button = wrapper.get('[data-testid="reports-delete-button"]')
+      const dialog = wrapper.get('.action-dialog-stub')
+      await button.trigger('click')
+      expect(dialog.attributes('data-show')).toBe('false')
+      expect(confirmMock).toHaveBeenCalledTimes(1)
+      expect(button.attributes('disabled')).toBeDefined()
+      confirmation.resolve(true)
+      await flushPromises()
+      expect(dialog.attributes('data-show')).toBe('true')
+      expect(dialog.attributes('data-title')).toBe('Удаление отчёта')
+      expect(wrapper.get('[data-testid="reports-upload-header-button"]').attributes('disabled')).toBeDefined()
+      deletion.resolve()
+      await flushPromises()
+      await vi.advanceTimersByTimeAsync(350)
+      expect(dialog.attributes('data-show')).toBe('true')
+      expect(getReportsMock).toHaveBeenCalledTimes(2)
+      expect(searchRef.value).toBe('new filter')
+      refresh.resolve()
+      await flushPromises()
+      expect(dialog.attributes('data-show')).toBe('false')
+      expect(removeMock).toHaveBeenCalledExactlyOnceWith(11)
+    } finally {
+      wrapper.unmount()
+      vi.useRealTimers()
+    }
+  })
+
+  it('reports a failed post-delete refresh as a list error and closes progress', async () => {
+    reportsRef.value = [{ id: 11 }]
+    confirmMock.mockResolvedValueOnce(true)
+    removeMock.mockResolvedValueOnce(undefined)
+    const wrapper = mount(CustomsReportsList, { global: { stubs: testStubs } })
+    await flushPromises()
+    getReportsMock.mockRejectedValueOnce(new Error('Technical failure'))
+    await wrapper.get('[data-testid="reports-delete-button"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось загрузить отчёты')
+    expect(alertErrorMock).toHaveBeenCalledTimes(1)
+    expect(wrapper.get('.action-dialog-stub').attributes('data-show')).toBe('false')
+    wrapper.unmount()
+  })
+
+  it.each(['account change', 'unmount'])('discards confirmation after %s', async (exit) => {
+    reportsRef.value = [{ id: 11 }]
+    const confirmation = Promise.withResolvers()
+    confirmMock.mockReturnValueOnce(confirmation.promise)
+    const wrapper = mount(CustomsReportsList, { global: { stubs: testStubs } })
+    await wrapper.get('[data-testid="reports-delete-button"]').trigger('click')
+    if (exit === 'account change') {
+      customsReportsStoreMock.accountVersion.value++
+    } else {
+      wrapper.unmount()
+    }
+    confirmation.resolve(true)
+    await flushPromises()
+
+    expect(removeMock).not.toHaveBeenCalled()
+    expect(alertErrorMock).not.toHaveBeenCalled()
+    if (exit === 'account change') wrapper.unmount()
+  })
+
+  it('keeps new delete progress open when an old upload finishes', async () => {
+    reportsRef.value = [{ id: 11 }]
+    const upload = Promise.withResolvers()
+    const deletion = Promise.withResolvers()
+    uploadMock.mockReturnValueOnce(upload.promise)
+    removeMock.mockReturnValueOnce(deletion.promise)
+    confirmMock.mockResolvedValueOnce(true)
+    const wrapper = mount(CustomsReportsList, { global: { stubs: testStubs } })
+    const input = wrapper.get('[data-testid="reports-upload-input"]')
+    Object.defineProperty(input.element, 'files', { value: [new File(['report'], 'report.xlsx')] })
+    await input.trigger('change')
+    customsReportsStoreMock.accountVersion.value++
+    await flushPromises()
+    await wrapper.get('[data-testid="reports-delete-button"]').trigger('click')
+    await flushPromises()
+    const loaded = getReportsMock.mock.calls.length
+    upload.resolve()
+    await flushPromises()
+
+    expect(wrapper.get('.action-dialog-stub').attributes('data-title')).toBe('Удаление отчёта')
+    expect(wrapper.get('.action-dialog-stub').attributes('data-show')).toBe('true')
+    expect(getReportsMock).toHaveBeenCalledTimes(loaded)
+    deletion.resolve()
+    await flushPromises()
+    expect(wrapper.get('.action-dialog-stub').attributes('data-show')).toBe('false')
+    wrapper.unmount()
+  })
+
+  it('shows senior logisticians the report actions without a delete button', () => {
+    authStoreMock.isShiftLeadPlus = false
+    reportsRef.value = [{ id: 11 }]
+    const wrapper = mount(CustomsReportsList, { global: { stubs: testStubs } })
+    expect(wrapper.find('[data-column-key="actions"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="reports-delete-button"]').exists()).toBe(false)
+    wrapper.unmount()
   })
 
   it('omits actions column when user lacks permissions', async () => {
     authStoreMock.isSrLogistPlus = false
+    authStoreMock.isShiftLeadPlus = false
     reportsRef.value = [
       {
         id: 3,
@@ -509,6 +638,23 @@ describe('CustomsReports_List.vue', () => {
     expect(routerPushMock).toHaveBeenCalledWith({ path: '/customs-reports/7/decisions', query: {} })
   })
 
+  it('shows one page alert when opening report decisions rejects', async () => {
+    const error = new Error('Failed to load the route component')
+    routerPushMock.mockRejectedValueOnce(error)
+    reportsRef.value = [{ id: 7, masterInvoice: 'MAWB-7' }]
+    const wrapper = mount(CustomsReportsList, { global: { stubs: testStubs } })
+
+    await wrapper.get('[data-testid="report-id-link-7"]').trigger('click')
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledExactlyOnceWith({
+      path: '/customs-reports/7/decisions',
+      query: { masterInvoice: 'MAWB-7' }
+    })
+    expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось открыть решения о выпуске')
+    expect(alertErrorMock).toHaveBeenCalledOnce()
+  })
+
   it('shows upload metadata in the last two columns using register history formatting', () => {
     const uploadedAt = '2026-11-14T10:07:25Z'
     reportsRef.value = [
@@ -545,7 +691,8 @@ describe('CustomsReports_List.vue', () => {
         await input.trigger('change')
       } else {
         confirmMock.mockResolvedValueOnce(true)
-        removeMock.mockRejectedValueOnce(superseded)
+        removeMock.mockResolvedValueOnce(undefined)
+        getReportsMock.mockRejectedValueOnce(superseded)
         await wrapper.get('[data-testid="reports-delete-button"]').trigger('click')
       }
       await flushPromises()

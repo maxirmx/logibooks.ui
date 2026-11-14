@@ -14,6 +14,7 @@ export const ACTION_DIALOG_TITLES = {
   'upload-register': 'Загрузка реестра',
   'update-register-weights': 'Обновление посылок',
   'upload-report': 'Загрузка отчёта',
+  'delete-report': 'Удаление отчёта',
   'download-invoice': 'Подготовка файла инвойса',
   'download-tajikistan-manifest': 'Подготовка манифеста для Таджикистана',
   'download-do1': 'Подготовка файла ДО1',

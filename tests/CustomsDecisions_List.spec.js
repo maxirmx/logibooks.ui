@@ -12,6 +12,7 @@ import ClickableCell from '@/components/ClickableCell.vue'
 import PaginationFooter from '@/components/PaginationFooter.vue'
 import { defaultGlobalStubs } from './helpers/test-utils.js'
 import { OP_MODE_PAPERWORK } from '@/helpers/op.mode.js'
+import { getErrorMessage } from '@/helpers/error.helpers.js'
 
 const decisionsRef = ref([])
 const decisionSourcesRef = ref(null)
@@ -37,6 +38,10 @@ let authStoreMock
 const routerPushMock = vi.hoisted(() => vi.fn())
 const routerBackMock = vi.hoisted(() => vi.fn())
 const routerReplaceMock = vi.hoisted(() => vi.fn())
+const routerOnErrorMock = vi.hoisted(() => vi.fn())
+const routerAfterEachMock = vi.hoisted(() => vi.fn())
+const stopRouterErrorMock = vi.hoisted(() => vi.fn())
+const stopRouterAfterEachMock = vi.hoisted(() => vi.fn())
 const routerHistoryState = vi.hoisted(() => ({ back: null }))
 
 const fullColumnKeys = [
@@ -283,6 +288,9 @@ vi.mock('@/router', () => ({
     push: routerPushMock,
     back: routerBackMock,
     replace: routerReplaceMock,
+    resolve: (fullPath) => ({ fullPath }),
+    onError: routerOnErrorMock,
+    afterEach: routerAfterEachMock,
     options: { history: { state: routerHistoryState } },
     currentRoute: ref({ fullPath: '/customs-reports/5/decisions' })
   }
@@ -301,6 +309,9 @@ describe('CustomsDecisions_List.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     routerHistoryState.back = null
+    routerBackMock.mockReset()
+    routerOnErrorMock.mockReset().mockReturnValue(stopRouterErrorMock)
+    routerAfterEachMock.mockReset().mockReturnValue(stopRouterAfterEachMock)
     routerReplaceMock.mockReset().mockResolvedValue(undefined)
     getDecisionsMock.mockReset().mockResolvedValue(undefined)
     ensureOpsLoadedMock.mockReset().mockResolvedValue(undefined)
@@ -335,8 +346,8 @@ describe('CustomsDecisions_List.vue', () => {
         return alertRef.value
       },
       dismiss: dismissMock,
-      error: alertErrorMock.mockImplementation((error) => {
-        alertRef.value = { id: 1, severity: 'error', message: error.message }
+      error: alertErrorMock.mockImplementation((error, options) => {
+        alertRef.value = { id: 1, severity: 'error', message: getErrorMessage(error, options?.fallback) }
         return 1
       })
     }
@@ -776,6 +787,66 @@ describe('CustomsDecisions_List.vue', () => {
     await wrapper.get('button[aria-label="Закрыть"]').trigger('click')
     expect(routerBackMock).toHaveBeenCalledOnce()
     expect(routerReplaceMock).not.toHaveBeenCalled()
+    routerAfterEachMock.mock.calls[0][0](
+      { fullPath: routerHistoryState.back },
+      { fullPath: '/customs-reports/5/decisions' }
+    )
+    expect(stopRouterErrorMock).toHaveBeenCalledOnce()
+    expect(stopRouterAfterEachMock).toHaveBeenCalledOnce()
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+  })
+
+  it.each([false, true])('observes a failed history Back and lets the user retry it (redirected: %s)', async (redirected) => {
+    routerHistoryState.back = '/customs-reports?search=CMR#results'
+    wrapper = mount(CustomsDecisionsList, { props: { reportId: 5 }, global: { stubs: testStubs } })
+    const button = wrapper.get('button[aria-label="Закрыть"]')
+    await button.trigger('click')
+    await button.trigger('click')
+    expect(routerBackMock).toHaveBeenCalledOnce()
+
+    const handleError = routerOnErrorMock.mock.calls[0][0]
+    const from = { fullPath: '/customs-reports/5/decisions' }
+    const error = new Error('Route guard failed')
+    handleError(error, { fullPath: '/registers' }, from)
+    expect(alertErrorMock).not.toHaveBeenCalled()
+
+    const reports = { fullPath: routerHistoryState.back }
+    const destination = redirected ? { fullPath: '/login', redirectedFrom: reports } : reports
+    handleError(error, destination, from)
+    await flushPromises()
+    expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось открыть список отчётов')
+    expect(alertErrorMock).toHaveBeenCalledOnce()
+    expect(stopRouterErrorMock).toHaveBeenCalledOnce()
+    expect(stopRouterAfterEachMock).toHaveBeenCalledOnce()
+    expect(routerReplaceMock).not.toHaveBeenCalled()
+    await button.trigger('click')
+    expect(routerBackMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('removes the history Back handlers when the page unmounts', async () => {
+    routerHistoryState.back = '/customs-reports'
+    wrapper = mount(CustomsDecisionsList, { props: { reportId: 5 }, global: { stubs: testStubs } })
+    await wrapper.get('button[aria-label="Закрыть"]').trigger('click')
+
+    wrapper.unmount()
+    wrapper = null
+
+    expect(stopRouterErrorMock).toHaveBeenCalledOnce()
+    expect(stopRouterAfterEachMock).toHaveBeenCalledOnce()
+  })
+
+  it('shows a synchronous history error and releases the pending Back', async () => {
+    routerHistoryState.back = '/customs-reports'
+    routerBackMock.mockImplementationOnce(() => { throw new Error('History failed') })
+    wrapper = mount(CustomsDecisionsList, { props: { reportId: 5 }, global: { stubs: testStubs } })
+    const button = wrapper.get('button[aria-label="Закрыть"]')
+    await button.trigger('click')
+    expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось открыть список отчётов')
+    expect(alertErrorMock).toHaveBeenCalledOnce()
+    expect(stopRouterErrorMock).toHaveBeenCalledOnce()
+    expect(stopRouterAfterEachMock).toHaveBeenCalledOnce()
+    await button.trigger('click')
+    expect(routerBackMock).toHaveBeenCalledTimes(2)
   })
 
   it.each([null, '/registers', '/customs-reports/4/decisions'])('closes to the list when the previous route is %s', async (previous) => {

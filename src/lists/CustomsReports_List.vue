@@ -6,8 +6,9 @@
 import UserDisplay from '@/components/UserDisplay.vue'
 import { formatDateTime } from '@/helpers/date.formatters.js'
 import { reportError } from '@/helpers/error.helpers.js'
+import { runWithAlert } from '@/helpers/notification.helpers.js'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
-import { computed, onUnmounted, ref, toRef, watch } from 'vue'
+import { computed, getCurrentScope, onUnmounted, ref, toRef, watch } from 'vue'
 import { useAppConfirm } from '@/composables/useAppConfirm.js'
 import TruncateTooltipCell from '@/components/TruncateTooltipCell.vue'
 import ClickableCell from '@/components/ClickableCell.vue'
@@ -26,11 +27,13 @@ import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync.js'
 
 const customsReportsStore = useCustomsReportsStore()
 const alertStore = useAlertStore()
+const componentScope = getCurrentScope()
 const authStore = useAuthStore()
 
 const { accountVersion, reports, loading, reportsTotalCount } = storeToRefs(customsReportsStore)
 const fileInput = ref(null)
-const runningAction = ref(false)
+const activeAction = ref(null)
+const runningAction = computed(() => activeAction.value !== null)
 const { actionDialogState, showActionDialog, hideActionDialog } = useActionDialog()
 const confirm = useAppConfirm()
 const uploadcustomsreports_page = toRef(authStore, 'uploadcustomsreports_page')
@@ -55,9 +58,16 @@ async function loadReports() {
   }
 }
 
-const { triggerLoad, stop: stopFilterSync } = useDebouncedFilterSync({
+let refreshPending = false
+const { triggerLoad, cancelPendingLoad, stop: stopFilterSync } = useDebouncedFilterSync({
   filters: [{ local: localSearch, store: uploadcustomsreports_search }],
-  loadFn: loadReports,
+  loadFn: () => {
+    if (runningAction.value) {
+      refreshPending = true
+      return
+    }
+    return loadReports()
+  },
   isComponentMounted,
   debounceMs: 300
 })
@@ -70,39 +80,71 @@ const watcherStop = watch(
   { immediate: false }
 )
 
+function resetAction() {
+  activeAction.value = null
+  refreshPending = false
+  cancelPendingLoad()
+  hideActionDialog()
+}
+
+watch(accountVersion, resetAction, { flush: 'sync' })
+
 onUnmounted(() => {
   isComponentMounted.value = false
+  resetAction()
   stopFilterSync()
   if (watcherStop) {
     watcherStop()
   }
 })
 
+function startAction() {
+  const version = accountVersion.value
+  const token = Symbol()
+  activeAction.value = token
+  return () => isComponentMounted.value && activeAction.value === token && accountVersion.value === version
+}
+
+async function refreshAfterAction() {
+  cancelPendingLoad()
+  refreshPending = false
+  await loadReports()
+}
+
+function finishAction(ownsAction) {
+  if (!ownsAction()) return
+  activeAction.value = null
+  hideActionDialog()
+  if (refreshPending) {
+    refreshPending = false
+    triggerLoad()
+  }
+}
+
 function openReportUploadDialog() {
-  fileInput.value?.click()
+  if (!runningAction.value) fileInput.value?.click()
 }
 
 async function onReportFileSelected(event) {
   const input = event?.target
   const file = input?.files?.[0]
 
-  if (!file) {
-    return
-  }
+  if (!file) return
+  input.value = ''
+  if (runningAction.value) return
 
+  const ownsAction = startAction()
   try {
     showActionDialog('upload-report')
     await customsReportsStore.upload(file)
+    if (!ownsAction()) return
     dispatchDecReportUploadedEvent({ fileName: file.name })
-    await loadReports()
+    await refreshAfterAction()
   } catch (error) {
-    const message = error?.response?.data?.message || error?.message || 'Не удалось загрузить отчёт'
-    alertStore.error(message)
+    if (ownsAction()) alertStore.error(error, { fallback: 'Не удалось загрузить отчёт' })
+    else reportError(error, { context: 'customs report upload after its scope changed' })
   } finally {
-    hideActionDialog()
-    if (input) {
-      input.value = ''
-    }
+    finishAction(ownsAction)
   }
 }
 
@@ -171,15 +213,11 @@ const tableItems = computed(() =>
 )
 
 async function handleDeleteReport(report) {
-  if (!report?.id || runningAction.value) {
-    return
-  }
+  if (!report?.id || runningAction.value || !authStore.isShiftLeadPlus) return
 
-  if (runningAction.value) return
-
-  runningAction.value = true
+  const ownsAction = startAction()
   try {
-    const content = `Удалить информацию об отчёте "${report.fileName || report.id}" ?`
+    const content = `Удалить отчёт «${report.fileName || report.id}»? Ссылки посылок на ДТЭГ/ПТДЭГ могут быть удалены.`
     const confirmed = await confirm({
       title: 'Подтверждение',
       confirmationText: 'Удалить',
@@ -187,18 +225,16 @@ async function handleDeleteReport(report) {
       content
     })
 
-    if (!confirmed) return
+    if (!confirmed || !ownsAction()) return
 
+    showActionDialog('delete-report')
     await customsReportsStore.remove(report.id)
+    if (ownsAction()) await refreshAfterAction()
   } catch (error) {
-    if (error instanceof SupersededReportsRequestError) {
-      reportError(error.cause, { context: 'superseded customs report list refresh after deletion' })
-    } else {
-      const message = error?.response?.data?.message || error?.message || 'Не удалось удалить отчёт'
-      alertStore.error(message)
-    }
+    if (ownsAction()) alertStore.error(error, { fallback: 'Не удалось удалить отчёт' })
+    else reportError(error, { context: 'customs report deletion after its scope changed' })
   } finally {
-    runningAction.value = false
+    finishAction(ownsAction)
   }
 }
 
@@ -208,9 +244,12 @@ function viewDecisions(report) {
     query.masterInvoice = report.masterInvoice
   }
 
-  router.push({
+  return runWithAlert(() => router.push({
     path: `/customs-reports/${report.id}/decisions`,
     query
+  }), {
+    fallback: 'Не удалось открыть решения о выпуске',
+    scope: componentScope
   })
 }
 </script>
@@ -229,7 +268,7 @@ function viewDecisions(report) {
             iconSize="2x"
             icon="fa-solid fa-file-import"
             :item="null"
-            :disabled="loading"
+            :disabled="loading || runningAction"
             data-testid="reports-upload-header-button"
             @click="openReportUploadDialog"
           >
@@ -352,6 +391,7 @@ function viewDecisions(report) {
                     :disabled="loading || runningAction"
                   />
                   <ActionButton
+                    v-if="authStore.isShiftLeadPlus"
                     :item="item"
                     icon="fa-solid fa-trash-can"
                     tooltip-text="Удалить информацию об отчёте"

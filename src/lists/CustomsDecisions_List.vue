@@ -52,6 +52,7 @@ const loading = computed(() => reportChangePending.value || decisionsLoading.val
 let reportScope = 0
 let opsLoad = null
 let opsAlertId
+let stopBackNavigation = null
 
 const sourceNames = computed(() =>
   new Map(decisionSources.value?.map(({ value, name }) => [value, name]))
@@ -243,6 +244,7 @@ const columnMetadataStop = watch(decisionsColumns, () => {
 
 onBeforeUnmount(() => {
   isComponentMounted.value = false
+  stopBackNavigation?.()
   dismissOpsAlert()
   customsReportsStore.resetDecisions()
   stopFilterSync()
@@ -271,16 +273,44 @@ const pageOptions = computed(() => {
     .map((n) => ({ value: n, title: String(n) }))
 })
 
+const reportsNavigationFallback = 'Не удалось открыть список отчётов'
+
 function closeReport() {
   const reportsPath = '/customs-reports'
   const previous = router.options.history.state.back
   if (typeof previous === 'string' && previous.split(/[?#]/, 1)[0] === reportsPath) {
-    router.back()
-    return
+    if (stopBackNavigation) return
+
+    const fromPath = router.currentRoute.value.fullPath
+    const toPath = router.resolve(previous).fullPath
+    const stopError = router.onError((error, to, from) => {
+      if (from.fullPath !== fromPath || (to.redirectedFrom ?? to).fullPath !== toPath) return
+      stopBackNavigation()
+      alertStore.error(error, { fallback: reportsNavigationFallback })
+    })
+    const stopAfterEach = router.afterEach((_to, from) => {
+      if (from.fullPath === fromPath) stopBackNavigation()
+    })
+
+    // History traversal returns void. Vue Router reports asynchronous errors via onError.
+    stopBackNavigation = () => {
+      stopError()
+      stopAfterEach()
+      stopBackNavigation = null
+    }
+
+    return runWithAlert(() => {
+      try {
+        router.back()
+      } catch (error) {
+        stopBackNavigation?.()
+        throw error
+      }
+    }, { fallback: reportsNavigationFallback, scope: componentScope })
   }
 
   return runWithAlert(() => router.replace(reportsPath), {
-    fallback: 'Не удалось открыть список отчётов',
+    fallback: reportsNavigationFallback,
     scope: componentScope
   })
 }

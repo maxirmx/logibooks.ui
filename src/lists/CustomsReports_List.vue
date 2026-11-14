@@ -4,7 +4,7 @@
 // This file is a part of Logibooks ui application
 
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
-import { computed, onUnmounted, ref, toRef, unref, watch } from 'vue'
+import { computed, onUnmounted, ref, toRef, watch } from 'vue'
 import { useAppConfirm } from '@/composables/useAppConfirm.js'
 import TruncateTooltipCell from '@/components/TruncateTooltipCell.vue'
 import ClickableCell from '@/components/ClickableCell.vue'
@@ -14,7 +14,8 @@ import { useAlertStore } from '@/stores/alert.store.js'
 import ActionDialog from '@/l2/ActionDialog.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import { useActionDialog } from '@/composables/useActionDialog.js'
-import { dispatchDecReportUploadedEvent } from '@/helpers/dec.report.events.js'
+import { useCustomsReportPolling } from '@/composables/useCustomsReportPolling.js'
+import { getErrorMessage, reportError } from '@/helpers/error.helpers.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { mdiMagnify } from '@mdi/js'
@@ -25,7 +26,7 @@ const customsReportsStore = useCustomsReportsStore()
 const alertStore = useAlertStore()
 const authStore = useAuthStore()
 
-const { reports, loading, reportsTotalCount } = storeToRefs(customsReportsStore)
+const { accountVersion, ops, reports, loading, reportsTotalCount } = storeToRefs(customsReportsStore)
 const fileInput = ref(null)
 const runningAction = ref(false)
 const { actionDialogState, showActionDialog, hideActionDialog } = useActionDialog()
@@ -38,12 +39,20 @@ const localSearch = ref(uploadcustomsreports_search.value || '')
 const isComponentMounted = ref(true)
 
 async function loadReports() {
-  await customsReportsStore.getReports()
-  const storeError = unref(customsReportsStore.error)
-  if (storeError) {
-    alertStore.error(storeError instanceof Error ? storeError.message : String(storeError))
+  const version = accountVersion.value
+  try {
+    await customsReportsStore.getReports()
+  } catch (error) {
+    if (isComponentMounted.value && version === accountVersion.value) {
+      alertStore.error(error, { fallback: 'Не удалось загрузить отчёты' })
+    } else reportError(error, { context: 'customs report list after disposal' })
   }
 }
+
+const canPoll = computed(() => !loading.value && !runningAction.value &&
+  reports.value.some(report => customsReportsStore.reportStage(report)?.isActive) ? accountVersion.value + 1 : null)
+useCustomsReportPolling(canPoll, () => customsReportsStore.getReports(true),
+  error => alertStore.error(error, { fallback: 'Не удалось получить состояние отчётов' }))
 
 const { triggerLoad, stop: stopFilterSync } = useDebouncedFilterSync({
   filters: [{ local: localSearch, store: uploadcustomsreports_search }],
@@ -53,7 +62,7 @@ const { triggerLoad, stop: stopFilterSync } = useDebouncedFilterSync({
 })
 
 const watcherStop = watch(
-  [uploadcustomsreports_page, uploadcustomsreports_per_page, uploadcustomsreports_sort_by],
+  [accountVersion, uploadcustomsreports_page, uploadcustomsreports_per_page, uploadcustomsreports_sort_by],
   () => {
     triggerLoad()
   },
@@ -68,6 +77,11 @@ onUnmounted(() => {
   }
 })
 
+watch(accountVersion, () => {
+  hideActionDialog()
+  runningAction.value = false
+}, { flush: 'sync' })
+
 function openReportUploadDialog() {
   fileInput.value?.click()
 }
@@ -80,26 +94,29 @@ async function onReportFileSelected(event) {
     return
   }
 
+  input.value = ''
+  const version = accountVersion.value
   try {
     showActionDialog('upload-report')
-    await customsReportsStore.upload(file)
-    dispatchDecReportUploadedEvent({ fileName: file.name })
-    await loadReports()
-  } catch (error) {
-    const message = error?.response?.data?.message || error?.message || 'Не удалось загрузить отчёт'
-    alertStore.error(message)
-  } finally {
-    hideActionDialog()
-    if (input) {
-      input.value = ''
+    const report = await customsReportsStore.upload(file)
+    if (version !== accountVersion.value) return
+    if (!report?.id || (report.success === false && !customsReportsStore.reportStage(report))) {
+      throw new Error(getErrorMessage(report?.errMsg, 'Не удалось загрузить отчёт'), { cause: report })
     }
+    if (isComponentMounted.value) await viewReportRows(report)
+  } catch (error) {
+    if (isComponentMounted.value && version === accountVersion.value) {
+      alertStore.error(error, { fallback: 'Не удалось загрузить отчёт' })
+    } else reportError(error, { context: 'customs report upload after disposal' })
+  } finally {
+    if (version === accountVersion.value) hideActionDialog()
   }
 }
 
 const baseHeaders = [
   { title: '№', key: 'id', align: 'center', width: '70px' },
   { title: 'Имя файла', key: 'fileName', align: 'center', class: 'col-text' },
-  { title: 'Результат загрузки', key: 'result', align: 'center' },
+  { title: 'Состояние', key: 'result', align: 'center', sortable: false },
   { title: 'Процедура', key: 'customsProcedure', align: 'center' },
   { title: 'Мастер накладная', key: 'masterInvoice', align: 'center', class: 'col-text' },
   { title: 'Всего записей', key: 'processedRows', align: 'center' },
@@ -119,30 +136,9 @@ const headers = computed(() => {
   return list
 })
 
-// Labels for error breakdown tooltip
-const errorLabels = {
-  emptyRows: 'Пустых строк в отчёте',
-  errorInvalidTnVedRecords: 'Несуществующих ТН ВЭД',
-  errorDecisionRecords: 'Нераспознанных решений таможенного органа',
-  errorProcedureMismatchRecords: 'Несовпадений таможенной процедуры с реестром',
-  errorParcelNotFoundRecords: 'Ненайденных посылок',
-  errorRegisterReadOnlyRecords: 'Посылок из реестров с запретом изменений',
-  errorAlreadyProcessedParcels: 'Посылок с установленным полем ДТЭГ/ПТДЭГ'
-}
-
 const tableItems = computed(() =>
   (reports.value || []).map((report) => {
-    const errorCount =
-      (report.emptyRows || 0) +
-      (report.errorInvalidTnVedRecords || 0) +
-      (report.errorDecisionRecords || 0) +
-      (report.errorProcedureMismatchRecords || 0) +
-      (report.errorParcelNotFoundRecords || 0) +
-      (report.errorRegisterReadOnlyRecords || 0) +
-      (report.errorAlreadyProcessedParcels || 0)
-
-    // Build breakdown array only for non-zero entries
-    const errorsBreakdown = Object.entries(errorLabels)
+    const errorsBreakdown = Object.entries(ops.value?.errorLabels ?? {})
       .map(([key, label]) => {
         const count = report[key] || 0
         return count ? { key, label, count } : null
@@ -151,51 +147,48 @@ const tableItems = computed(() =>
 
     return {
       ...report,
-      result: report.success ? 'Успешно' : 'Не успешно',
-      errorCount,
+      errMsg: report.errMsg ? getErrorMessage(report.errMsg, 'Не удалось обработать отчёт о выпуске') : null,
+      result: customsReportsStore.reportStage(report)?.name ?? report.stage,
+      errorCount: errorsBreakdown.reduce((total, entry) => total + entry.count, 0),
       errorsBreakdown
     }
   })
 )
 
 async function handleDeleteReport(report) {
-  if (!report?.id || runningAction.value) {
+  if (!report?.id || runningAction.value || customsReportsStore.reportStage(report)?.isActive) {
     return
   }
 
-  if (runningAction.value) return
 
+  const version = accountVersion.value
   runningAction.value = true
   try {
-    const content = `Удалить информацию об отчёте "${report.fileName || report.id}" ?`
+    const content = `Удалить отчёт «${report.fileName || report.id}» и его решения? Связи посылок с ДТЭГ/ПТДЭГ будут сняты, если их подтверждает только этот отчёт.`
     const confirmed = await confirm({
       title: 'Подтверждение',
       confirmationText: 'Удалить',
-      cancellationText: 'Не удалять',
+      cancellationText: 'Отмена',
       content
     })
 
-    if (!confirmed) return
+    if (!confirmed || !isComponentMounted.value || version !== accountVersion.value) return
 
     await customsReportsStore.remove(report.id)
   } catch (error) {
-    const message = error?.response?.data?.message || error?.message || 'Не удалось удалить отчёт'
-    alertStore.error(message)
+    if (isComponentMounted.value && version === accountVersion.value) {
+      alertStore.error(error, { fallback: 'Не удалось удалить отчёт' })
+    } else reportError(error, { context: 'customs report deletion after disposal' })
   } finally {
-    runningAction.value = false
+    if (version === accountVersion.value) runningAction.value = false
   }
 }
 
 function viewReportRows(report) {
-  const query = {}
-  if (report?.masterInvoice) {
-    query.masterInvoice = report.masterInvoice
-  }
-
-  router.push({
-    path: `/customs-reports/${report.id}/rows`,
-    query
-  })
+  const hasInvoice = report.masterInvoice && report.masterInvoice !== ops.value?.defaultMasterInvoice &&
+    customsReportsStore.reportStage(report)?.hasParsedRows
+  const query = hasInvoice ? { masterInvoice: report.masterInvoice } : {}
+  return router.push({ path: '/customs-reports/' + report.id + '/rows', query })
 }
 </script>
 
@@ -223,7 +216,7 @@ function viewReportRows(report) {
         <input
           type="file"
           ref="fileInput"
-          accept=".xls,.xlsx,.xlsm,.zip,.rar"
+          :accept="ops?.uploadExtensions.join(',')"
           data-testid="reports-upload-input"
           style="display: none"
           @change="onReportFileSelected"
@@ -337,8 +330,9 @@ function viewReportRows(report) {
                   />
                   <ActionButton
                     :item="item"
+                    v-if="authStore.isShiftLeadPlus && !customsReportsStore.reportStage(item)?.isActive"
                     icon="fa-solid fa-trash-can"
-                    tooltip-text="Удалить информацию об отчёте"
+                    tooltip-text="Удалить отчёт и его решения"
                     data-testid="reports-delete-button"
                     :disabled="loading || runningAction"
                     @click="handleDeleteReport(item)"

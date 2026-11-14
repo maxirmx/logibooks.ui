@@ -12,6 +12,8 @@ import PaginationFooter from '@/components/PaginationFooter.vue'
 import { defaultGlobalStubs } from './helpers/test-utils.js'
 import { OP_MODE_PAPERWORK } from '@/helpers/op.mode.js'
 
+import { customsReportOps } from './helpers/customs-report-ops.fixture.js'
+
 const reportRowsRef = ref([])
 const reportRowsColumnsRef = ref([])
 const reportRowsCustomsProcedureRef = ref(null)
@@ -24,6 +26,7 @@ const pageRef = ref(1)
 const searchRef = ref('')
 
 const getReportRowsMock = vi.hoisted(() => vi.fn())
+const getReportStatusMock = vi.hoisted(() => vi.fn())
 const dismissMock = vi.hoisted(() => vi.fn())
 const alertErrorMock = vi.hoisted(() => vi.fn())
 
@@ -100,6 +103,7 @@ function createFullReportRow() {
 
 const testStubs = {
   ...defaultGlobalStubs,
+  RouterLink: { template: '<a><slot /></a>' },
   'v-data-table': {
     inheritAttrs: false,
     emits: [
@@ -287,7 +291,9 @@ describe('CustomsReportRows_List.vue', () => {
   })
 
   beforeEach(() => {
-    vi.clearAllMocks()
+    vi.resetAllMocks()
+    getReportRowsMock.mockResolvedValue()
+    getReportStatusMock.mockResolvedValue()
     reportRowsRef.value = []
     reportRowsColumnsRef.value = []
     reportRowsCustomsProcedureRef.value = null
@@ -300,13 +306,21 @@ describe('CustomsReportRows_List.vue', () => {
     pageRef.value = 1
 
     customsReportsStoreMock = {
+      accountVersion: ref(0),
+      ops: ref(customsReportOps),
+      reportStage: report => customsReportOps.stages[report?.stage],
+      canRetryReportStatus: error => !customsReportOps.nonRetryableStatusCodes.includes(error?.status),
       reportRows: reportRowsRef,
       loading: loadingRef,
       error: errorRef,
       reportRowsTotalCount: ref(0),
       reportRowsColumns: reportRowsColumnsRef,
       reportRowsCustomsProcedure: reportRowsCustomsProcedureRef,
-      getReportRows: getReportRowsMock
+      getReportRows: getReportRowsMock,
+      resetReportRows: vi.fn(),
+      displayReportStatus: () => () => {},
+      claimReportStatusFailure: () => true,
+      getReportStatus: getReportStatusMock
     }
 
     alertStoreMock = {
@@ -344,6 +358,180 @@ describe('CustomsReportRows_List.vue', () => {
         }
       }
     })
+  })
+
+  it('shows both stage transitions and retained failure on a focused decision', async () => {
+    vi.useFakeTimers()
+    try {
+      getReportStatusMock.mockResolvedValueOnce({ id: 5, stage: 'pendingParse' })
+        .mockResolvedValueOnce({ id: 5, stage: 'pendingApply', masterInvoice: 'MASTER-18' })
+        .mockResolvedValueOnce({
+          id: 5, stage: 'applyFailed', errMsg: 'Не удалось применить решения'
+        })
+      wrapper = mount(CustomsReportRowsList, {
+        props: { reportId: 5, masterInvoice: 'Временное значение' },
+        global: { stubs: testStubs }
+      })
+      await flushPromises()
+      expect(getReportRowsMock).toHaveBeenCalledWith(5)
+      expect(wrapper.text()).toContain('Ожидает чтения отчёта')
+      expect(wrapper.text()).toContain('К списку отчётов')
+      await vi.advanceTimersByTimeAsync(2000)
+      expect(wrapper.text()).toContain('Решения ожидают применения')
+      expect(wrapper.text()).toContain('MASTER-18')
+      await vi.advanceTimersByTimeAsync(2000)
+      expect(wrapper.text()).toContain('Ошибка применения решений')
+      expect(wrapper.text()).toContain('Не удалось применить решения')
+      expect(alertErrorMock).not.toHaveBeenCalled()
+      await vi.advanceTimersByTimeAsync(4000)
+      expect(getReportStatusMock).toHaveBeenCalledTimes(3)
+    } finally {
+      wrapper?.unmount()
+      wrapper = null
+      vi.useRealTimers()
+    }
+  })
+
+  it.each([
+    ['Unexpected database exception', 'Не удалось обработать отчёт о выпуске'],
+    ['Обработка файла прервана. Загрузите файл отчёта повторно.', 'Обработка файла прервана. Загрузите файл отчёта повторно.']
+  ])('presents the saved report failure inline for %s', async (errMsg, expected) => {
+    getReportStatusMock.mockResolvedValue({ id: 5, stage: 'parseFailed', errMsg })
+    wrapper = mount(CustomsReportRowsList, { props: { reportId: 5 }, global: { stubs: testStubs } })
+    await flushPromises()
+    const status = wrapper.get('[aria-live="polite"]')
+    expect(status.text()).toContain(expected)
+    expect(status.text()).not.toContain('Unexpected database exception')
+    expect(alertErrorMock).not.toHaveBeenCalled()
+  })
+
+  it('reports a status failure while the rows view is mounted', async () => {
+    const failure = new Error('status failed')
+    getReportStatusMock.mockRejectedValue(failure)
+    wrapper = mount(CustomsReportRowsList, { props: { reportId: 5 }, global: { stubs: testStubs } })
+    await flushPromises()
+    expect(alertErrorMock).toHaveBeenCalledOnce()
+    expect(alertErrorMock).toHaveBeenCalledWith(failure, { fallback: 'Не удалось получить состояние отчёта' })
+  })
+
+  it('recovers the status of an active report opened directly after a transient initial failure', async () => {
+    vi.useFakeTimers()
+    try {
+      getReportStatusMock.mockRejectedValueOnce(new Error('status unavailable'))
+        .mockResolvedValueOnce({ id: 5, stage: 'pendingApply' })
+        .mockResolvedValueOnce({ id: 5, stage: 'completed' })
+      wrapper = mount(CustomsReportRowsList, { props: { reportId: 5 }, global: { stubs: testStubs } })
+      await flushPromises()
+      expect(alertErrorMock).toHaveBeenCalledOnce()
+      await vi.advanceTimersByTimeAsync(2000)
+      expect(wrapper.text()).toContain('Решения ожидают применения')
+      await vi.advanceTimersByTimeAsync(2000)
+      expect(wrapper.text()).toContain('Обработан')
+      await vi.advanceTimersByTimeAsync(4000)
+      expect(getReportStatusMock).toHaveBeenCalledTimes(3)
+      expect(alertErrorMock).toHaveBeenCalledOnce()
+    } finally {
+      wrapper?.unmount()
+      wrapper = null
+      vi.useRealTimers()
+    }
+  })
+
+  it('stops polling after a missing report is reported', async () => {
+    vi.useFakeTimers()
+    try {
+      getReportStatusMock.mockRejectedValue(Object.assign(new Error('Отчёт не найден'), { status: 404 }))
+      wrapper = mount(CustomsReportRowsList, { props: { reportId: 5 }, global: { stubs: testStubs } })
+      await vi.advanceTimersByTimeAsync(6000)
+      expect(getReportStatusMock).toHaveBeenCalledOnce()
+      expect(alertErrorMock).toHaveBeenCalledOnce()
+    } finally {
+      wrapper?.unmount()
+      wrapper = null
+      vi.useRealTimers()
+    }
+  })
+
+  it('logs late row and status failures after unmount without showing an alert', async () => {
+    let rejectRows
+    let rejectStatus
+    getReportRowsMock.mockReturnValue(new Promise((_, reject) => { rejectRows = reject }))
+    getReportStatusMock.mockReturnValue(new Promise((_, reject) => { rejectStatus = reject }))
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    wrapper = mount(CustomsReportRowsList, { props: { reportId: 5 }, global: { stubs: testStubs } })
+    await flushPromises()
+    wrapper.unmount()
+    wrapper = null
+    rejectRows(new Error('late rows'))
+    rejectStatus(new Error('late status'))
+    await flushPromises()
+    expect(consoleError).toHaveBeenCalledWith('[customs report rows after disposal]', new Error('late rows'))
+    expect(consoleError).toHaveBeenCalledWith('[customs report polling after disposal]', new Error('late status'))
+    expect(alertErrorMock).not.toHaveBeenCalled()
+    consoleError.mockRestore()
+  })
+
+  it('invalidates the rows snapshot immediately when the route changes during a load', async () => {
+    const previous = Promise.withResolvers()
+    getReportRowsMock.mockReturnValueOnce(previous.promise)
+    getReportStatusMock.mockResolvedValueOnce({ id: 5, stage: 'completed', masterInvoice: 'OLD-INVOICE' })
+    wrapper = mount(CustomsReportRowsList, { props: { reportId: 5 }, global: { stubs: testStubs } })
+    await flushPromises()
+    expect(wrapper.get('h1').text()).toContain('OLD-INVOICE')
+    expect(getReportRowsMock).toHaveBeenCalledExactlyOnceWith(5)
+
+    await wrapper.setProps({ reportId: 6 })
+    expect(customsReportsStoreMock.resetReportRows).toHaveBeenCalledTimes(2)
+    expect(getReportRowsMock).toHaveBeenCalledExactlyOnceWith(5)
+    expect(wrapper.get('h1').text()).toContain('№6')
+    const diagnostic = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      const failure = new Error('Previous report failed')
+      previous.reject(failure)
+      await flushPromises()
+      expect(diagnostic).toHaveBeenCalledWith('[customs report rows after disposal]', failure)
+      expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+      expect(alertErrorMock).not.toHaveBeenCalled()
+      expect(getReportRowsMock).toHaveBeenLastCalledWith(6)
+    } finally {
+      diagnostic.mockRestore()
+    }
+  })
+
+  it('reloads the same report on account change and ignores the previous status', async () => {
+    const previous = Promise.withResolvers()
+    const current = Promise.withResolvers()
+    getReportStatusMock.mockReturnValueOnce(previous.promise).mockReturnValueOnce(current.promise)
+    wrapper = mount(CustomsReportRowsList, {
+      props: { reportId: 5, masterInvoice: 'OLD-INVOICE' },
+      global: { stubs: testStubs }
+    })
+    await flushPromises()
+    expect(wrapper.get('h1').text()).toContain('OLD-INVOICE')
+
+    customsReportsStoreMock.accountVersion.value++
+    await flushPromises()
+    expect(getReportStatusMock.mock.calls).toEqual([[5], [5]])
+    expect(getReportRowsMock.mock.calls).toEqual([[5], [5]])
+    expect(wrapper.get('h1').text()).toContain('№5')
+    expect(wrapper.text()).not.toContain('OLD-INVOICE')
+
+    current.resolve({ id: 5, stage: 'completed', masterInvoice: 'CURRENT-INVOICE' })
+    await flushPromises()
+    previous.resolve(undefined)
+    await flushPromises()
+    expect(wrapper.get('h1').text()).toContain('CURRENT-INVOICE')
+  })
+
+  it('keeps a status failure silent when it was already shown in the background', async () => {
+    customsReportsStoreMock.claimReportStatusFailure = vi.fn(() => false)
+    const failure = new Error('Service unavailable')
+    getReportStatusMock.mockRejectedValue(failure)
+    wrapper = mount(CustomsReportRowsList, { props: { reportId: 5 }, global: { stubs: testStubs } })
+    await flushPromises()
+    expect(customsReportsStoreMock.claimReportStatusFailure).toHaveBeenCalledExactlyOnceWith(5, failure)
+    expect(alertErrorMock).not.toHaveBeenCalled()
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
   })
 
   it('renders report rows data', async () => {
@@ -454,7 +642,7 @@ describe('CustomsReportRows_List.vue', () => {
   })
 
   it('reports store error through alertStore', async () => {
-    errorRef.value = new Error('Failed to load rows')
+    getReportRowsMock.mockRejectedValue(new Error('Failed to load rows'))
 
     wrapper = mount(CustomsReportRowsList, {
       props: { reportId: 5 },
@@ -466,7 +654,7 @@ describe('CustomsReportRows_List.vue', () => {
     await flushPromises()
 
     expect(wrapper.text()).not.toContain('Ошибка при загрузке информации')
-    expect(alertErrorMock).toHaveBeenCalledWith(errorRef.value.message)
+    expect(alertErrorMock).toHaveBeenCalledWith(new Error('Failed to load rows'), { fallback: 'Не удалось загрузить строки отчёта' })
   })
 
   it('updates local search from the search field', async () => {
@@ -599,13 +787,15 @@ describe('CustomsReportRows_List.vue', () => {
 
     const cell = wrapper.findComponent(ClickableCell)
     expect(cell.classes()).toContain('clickable-cell-disabled')
+    expect(wrapper.text()).toContain('PN-002')
+    expect(wrapper.text()).not.toContain('Посылка №')
 
     await cell.trigger('click')
     expect(routerPushMock).not.toHaveBeenCalled()
   })
 
   it('reports string store error through alertStore', async () => {
-    errorRef.value = 'row load error'
+    getReportRowsMock.mockRejectedValue('row load error')
 
     wrapper = mount(CustomsReportRowsList, {
       props: { reportId: 5 },
@@ -616,7 +806,7 @@ describe('CustomsReportRows_List.vue', () => {
 
     await flushPromises()
 
-    expect(alertErrorMock).toHaveBeenCalledWith('row load error')
+    expect(alertErrorMock).toHaveBeenCalledWith('row load error', { fallback: 'Не удалось загрузить строки отчёта' })
   })
 
   it('uses page 1 as the page options fallback when current page is empty', async () => {

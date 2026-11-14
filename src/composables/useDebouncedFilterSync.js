@@ -144,13 +144,19 @@ export function useDebouncedFilterSync({ filters, loadFn, isComponentMounted, de
     )
   )
 
-  function stop() {
-    watcherStops.forEach((stopWatcher) => stopWatcher())
-    watcherStops.length = 0
+  function cancelPendingLoad() {
     if (loadTimeout) {
       clearTimeout(loadTimeout)
       loadTimeout = null
     }
+    hasPendingReload.value = false
+    pendingDebounceDelay = 0
+  }
+
+  function stop() {
+    watcherStops.forEach((stopWatcher) => stopWatcher())
+    watcherStops.length = 0
+    cancelPendingLoad()
   }
 
   if (getCurrentInstance()) {
@@ -160,6 +166,7 @@ export function useDebouncedFilterSync({ filters, loadFn, isComponentMounted, de
   return {
     triggerLoad,
     executeLoad,
+    cancelPendingLoad,
     stop
   }
 }

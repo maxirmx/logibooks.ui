@@ -163,8 +163,6 @@ export const useCustomsReportsStore = defineStore('customsreports', () => {
     } finally {
       if (version === accountVersion.value) pendingReportMutations.value--
     }
-
-    if (version === accountVersion.value) await getReports()
   }
 
   async function getDecisions(reportId) {

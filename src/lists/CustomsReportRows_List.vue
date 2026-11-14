@@ -3,16 +3,17 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import UserDisplay from '@/components/UserDisplay.vue'
+import ActionButton from '@/components/ActionButton.vue'
 import { reportError } from '@/helpers/error.helpers.js'
+import { runWithAlert } from '@/helpers/notification.helpers.js'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
-import { onUnmounted, computed, watch, ref, toRef } from 'vue'
+import { onUnmounted, computed, getCurrentScope, watch, ref, toRef } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useCustomsReportsStore } from '@/stores/customs.reports.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
-import { formatDateTime, formatDateTimeLines } from '@/helpers/date.formatters.js'
+import { formatDateTimeLines } from '@/helpers/date.formatters.js'
 import TruncateTooltipCell from '@/components/TruncateTooltipCell.vue'
 import ClickableCell from '@/components/ClickableCell.vue'
 import PaginationFooter from '@/components/PaginationFooter.vue'
@@ -36,6 +37,7 @@ const props = defineProps({
 
 const customsReportsStore = useCustomsReportsStore()
 const alertStore = useAlertStore()
+const componentScope = getCurrentScope()
 const authStore = useAuthStore()
 const customsreportrows_search = toRef(authStore, 'customsreportrows_search')
 const customsreportrows_page = toRef(authStore, 'customsreportrows_page')
@@ -45,12 +47,10 @@ const customsreportrows_sort_by = toRef(authStore, 'customsreportrows_sort_by')
 const { accountVersion, reportRows, loading, reportRowsTotalCount, reportRowsColumns, reportRowsCustomsProcedure } =
   storeToRefs(customsReportsStore)
 const localSearch = ref(customsreportrows_search.value || '')
-const uploadMetadata = ref(null)
 let reportScope = 0
 
 watch([() => props.reportId, accountVersion], () => {
   reportScope++
-  uploadMetadata.value = null
 }, { flush: 'sync' })
 
 const isComponentMounted = ref(true)
@@ -105,14 +105,9 @@ function joinDisplayParts(...parts) {
 async function loadReportRows() {
   const scope = reportScope
   try {
-    const result = await customsReportsStore.getReportRows(props.reportId)
-    if (scope === reportScope && isComponentMounted.value) {
-      const { uploadedAt, uploadedByUserName, uploadedByUserEmail } = result ?? {}
-      uploadMetadata.value = { uploadedAt, uploadedByUserName, uploadedByUserEmail }
-    }
+    await customsReportsStore.getReportRows(props.reportId)
   } catch (error) {
     if (scope === reportScope && isComponentMounted.value) {
-      uploadMetadata.value = null
       alertStore.error(error, { fallback: 'Не удалось загрузить строки отчёта' })
     } else {
       reportError(error, { context: 'customs report rows after their scope changed' })
@@ -231,7 +226,19 @@ const pageOptions = computed(() => {
     .map((n) => ({ value: n, title: String(n) }))
 })
 
-// Navigation handled by parent view; no local back action
+function closeReport() {
+  const reportsPath = '/customs-reports'
+  const previous = router.options.history.state.back
+  if (typeof previous === 'string' && previous.split(/[?#]/, 1)[0] === reportsPath) {
+    router.back()
+    return
+  }
+
+  return runWithAlert(() => router.replace(reportsPath), {
+    fallback: 'Не удалось открыть список отчётов',
+    scope: componentScope
+  })
+}
 </script>
 
 <template>
@@ -242,23 +249,22 @@ const pageOptions = computed(() => {
         <div v-if="loading" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
         </div>
+        <div class="header-actions header-actions-group">
+          <ActionButton
+            :item="null"
+            icon="fa-solid fa-xmark"
+            icon-size="2x"
+            tooltip-text="Закрыть"
+            aria-label="Закрыть"
+            data-testid="customs-report-close"
+            @click="closeReport"
+          />
+        </div>
       </div>
     </div>
     <hr class="hr" />
 
     <PageAlertRegion />
-
-    <dl v-if="uploadMetadata?.uploadedAt || uploadMetadata?.uploadedByUserName || uploadMetadata?.uploadedByUserEmail"
-      class="d-flex flex-wrap ga-6 mb-3" data-testid="report-upload-metadata">
-      <div>
-        <dt>Дата и время</dt>
-        <dd>{{ formatDateTime(uploadMetadata.uploadedAt) }}</dd>
-      </div>
-      <div>
-        <dt>Пользователь</dt>
-        <dd><UserDisplay :name="uploadMetadata.uploadedByUserName" :email="uploadMetadata.uploadedByUserEmail" /></dd>
-      </div>
-    </dl>
 
     <div class="list-filters">
       <v-text-field

@@ -6,7 +6,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { ref } from 'vue'
-import { formatDateTime } from '@/helpers/date.formatters.js'
 import CustomsReportRowsList from '@/lists/CustomsReportRows_List.vue'
 import ClickableCell from '@/components/ClickableCell.vue'
 import PaginationFooter from '@/components/PaginationFooter.vue'
@@ -32,6 +31,9 @@ let customsReportsStoreMock
 let alertStoreMock
 let authStoreMock
 const routerPushMock = vi.hoisted(() => vi.fn())
+const routerBackMock = vi.hoisted(() => vi.fn())
+const routerReplaceMock = vi.hoisted(() => vi.fn())
+const routerHistoryState = vi.hoisted(() => ({ back: null }))
 
 const fullColumnKeys = [
   'id',
@@ -273,6 +275,9 @@ vi.mock('@/stores/auth.store.js', () => ({
 vi.mock('@/router', () => ({
   default: {
     push: routerPushMock,
+    back: routerBackMock,
+    replace: routerReplaceMock,
+    options: { history: { state: routerHistoryState } },
     currentRoute: ref({ fullPath: '/customs-reports/5/rows' })
   }
 }))
@@ -289,6 +294,8 @@ describe('CustomsReportRows_List.vue', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    routerHistoryState.back = null
+    routerReplaceMock.mockReset().mockResolvedValue(undefined)
     getReportRowsMock.mockReset().mockResolvedValue(undefined)
     accountVersionRef.value = 0
     reportRowsRef.value = []
@@ -439,8 +446,6 @@ describe('CustomsReportRows_List.vue', () => {
     expect(sortByRef.value).toEqual([{ key: 'rowNumber', order: 'asc' }])
     expect(getReportRowsMock.mock.calls.length).toBeGreaterThan(callsBeforeMetadata)
   })
-
-  // Back navigation handled by parent view; no local back button to test
 
   it('displays loading indicator when loading', async () => {
     loadingRef.value = true
@@ -609,28 +614,36 @@ describe('CustomsReportRows_List.vue', () => {
     expect(routerPushMock).not.toHaveBeenCalled()
   })
 
-  it('shows upload history on a direct visit and clears it when the report or account changes', async () => {
-    const uploadedAt = '2026-11-14T10:07:25Z'
-    let resolveStale
-    getReportRowsMock.mockResolvedValueOnce({ uploadedAt, uploadedByUserName: 'Первый', uploadedByUserEmail: 'first@example.test' })
-      .mockImplementationOnce(() => new Promise(resolve => { resolveStale = resolve }))
-      .mockResolvedValueOnce({ uploadedByUserName: 'Второй', uploadedByUserEmail: 'next@example.test' })
-
+  it('omits upload metadata and closes to the previous reports list even while loading', async () => {
+    routerHistoryState.back = '/customs-reports?search=CMR'
+    loadingRef.value = true
+    getReportRowsMock.mockResolvedValueOnce({ uploadedByUserName: 'Имя загрузившего' })
     wrapper = mount(CustomsReportRowsList, { props: { reportId: 5 }, global: { stubs: testStubs } })
     await flushPromises()
-    const metadata = () => wrapper.find('[data-testid="report-upload-metadata"]')
-    expect(metadata().text()).toContain(formatDateTime(uploadedAt))
-    expect(metadata().get('.text-medium-emphasis').text()).toBe('first@example.test')
 
-    await wrapper.setProps({ reportId: 6 })
-    expect(metadata().exists()).toBe(false)
-    accountVersionRef.value++
+    expect(wrapper.text()).not.toContain('Имя загрузившего')
+    expect(wrapper.find('[data-testid="report-upload-metadata"]').exists()).toBe(false)
+    await wrapper.get('button[aria-label="Закрыть"]').trigger('click')
+    expect(routerBackMock).toHaveBeenCalledOnce()
+    expect(routerReplaceMock).not.toHaveBeenCalled()
+  })
+
+  it.each([null, '/registers', '/customs-reports/4/rows'])('closes to the list when the previous route is %s', async (previous) => {
+    routerHistoryState.back = previous
+    wrapper = mount(CustomsReportRowsList, { props: { reportId: 5 }, global: { stubs: testStubs } })
+    await wrapper.get('button[aria-label="Закрыть"]').trigger('click')
+    expect(routerReplaceMock).toHaveBeenCalledWith('/customs-reports')
+    expect(routerBackMock).not.toHaveBeenCalled()
+  })
+
+  it('shows a navigation rejection in the page alert region', async () => {
+    const error = new Error('Не удалось открыть список отчётов')
+    routerReplaceMock.mockRejectedValueOnce(error)
+    wrapper = mount(CustomsReportRowsList, { props: { reportId: 5 }, global: { stubs: testStubs } })
+    await wrapper.get('button[aria-label="Закрыть"]').trigger('click')
     await flushPromises()
-    resolveStale({ uploadedByUserName: 'Устаревший' })
-    await flushPromises()
-    expect(metadata().text()).toContain('Второй')
-    expect(metadata().text()).not.toContain('Устаревший')
-    expect(getReportRowsMock.mock.calls).toEqual([[5], [6], [6]])
+    expect(wrapper.get('[role="alert"]').text()).toContain(error.message)
+    expect(alertErrorMock).toHaveBeenCalledOnce()
   })
 
   it('uses page 1 as the page options fallback when current page is empty', async () => {

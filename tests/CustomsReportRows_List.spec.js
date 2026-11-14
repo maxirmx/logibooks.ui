@@ -6,6 +6,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { ref } from 'vue'
+import { formatDateTime } from '@/helpers/date.formatters.js'
 import CustomsReportRowsList from '@/lists/CustomsReportRows_List.vue'
 import ClickableCell from '@/components/ClickableCell.vue'
 import PaginationFooter from '@/components/PaginationFooter.vue'
@@ -16,7 +17,7 @@ const reportRowsRef = ref([])
 const reportRowsColumnsRef = ref([])
 const reportRowsCustomsProcedureRef = ref(null)
 const loadingRef = ref(false)
-const errorRef = ref(null)
+const accountVersionRef = ref(0)
 const alertRef = ref(null)
 const perPageRef = ref(10)
 const sortByRef = ref([{ key: 'rowNumber', order: 'asc' }])
@@ -288,11 +289,12 @@ describe('CustomsReportRows_List.vue', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    getReportRowsMock.mockReset().mockResolvedValue(undefined)
+    accountVersionRef.value = 0
     reportRowsRef.value = []
     reportRowsColumnsRef.value = []
     reportRowsCustomsProcedureRef.value = null
     loadingRef.value = false
-    errorRef.value = null
     alertRef.value = null
     searchRef.value = ''
     perPageRef.value = 10
@@ -302,7 +304,7 @@ describe('CustomsReportRows_List.vue', () => {
     customsReportsStoreMock = {
       reportRows: reportRowsRef,
       loading: loadingRef,
-      error: errorRef,
+      accountVersion: accountVersionRef,
       reportRowsTotalCount: ref(0),
       reportRowsColumns: reportRowsColumnsRef,
       reportRowsCustomsProcedure: reportRowsCustomsProcedureRef,
@@ -314,7 +316,9 @@ describe('CustomsReportRows_List.vue', () => {
         return alertRef.value
       },
       dismiss: dismissMock,
-      error: alertErrorMock
+      error: alertErrorMock.mockImplementation((error) => {
+        alertRef.value = { severity: 'error', message: error.message }
+      })
     }
 
     authStoreMock = {}
@@ -453,8 +457,9 @@ describe('CustomsReportRows_List.vue', () => {
     expect(wrapper.find('.spinner-border').exists()).toBe(true)
   })
 
-  it('reports store error through alertStore', async () => {
-    errorRef.value = new Error('Failed to load rows')
+  it('shows a rejected row request once in the page alert region', async () => {
+    const error = new Error('Не удалось загрузить строки отчёта')
+    getReportRowsMock.mockRejectedValueOnce(error)
 
     wrapper = mount(CustomsReportRowsList, {
       props: { reportId: 5 },
@@ -465,8 +470,8 @@ describe('CustomsReportRows_List.vue', () => {
 
     await flushPromises()
 
-    expect(wrapper.text()).not.toContain('Ошибка при загрузке информации')
-    expect(alertErrorMock).toHaveBeenCalledWith(errorRef.value.message)
+    expect(wrapper.get('[role="alert"]').text()).toContain(error.message)
+    expect(alertErrorMock).toHaveBeenCalledTimes(1)
   })
 
   it('updates local search from the search field', async () => {
@@ -604,19 +609,28 @@ describe('CustomsReportRows_List.vue', () => {
     expect(routerPushMock).not.toHaveBeenCalled()
   })
 
-  it('reports string store error through alertStore', async () => {
-    errorRef.value = 'row load error'
+  it('shows upload history on a direct visit and clears it when the report or account changes', async () => {
+    const uploadedAt = '2026-11-14T10:07:25Z'
+    let resolveStale
+    getReportRowsMock.mockResolvedValueOnce({ uploadedAt, uploadedByUserName: 'Первый', uploadedByUserEmail: 'first@example.test' })
+      .mockImplementationOnce(() => new Promise(resolve => { resolveStale = resolve }))
+      .mockResolvedValueOnce({ uploadedByUserName: 'Второй', uploadedByUserEmail: 'next@example.test' })
 
-    wrapper = mount(CustomsReportRowsList, {
-      props: { reportId: 5 },
-      global: {
-        stubs: testStubs
-      }
-    })
-
+    wrapper = mount(CustomsReportRowsList, { props: { reportId: 5 }, global: { stubs: testStubs } })
     await flushPromises()
+    const metadata = () => wrapper.find('[data-testid="report-upload-metadata"]')
+    expect(metadata().text()).toContain(formatDateTime(uploadedAt))
+    expect(metadata().get('.text-medium-emphasis').text()).toBe('first@example.test')
 
-    expect(alertErrorMock).toHaveBeenCalledWith('row load error')
+    await wrapper.setProps({ reportId: 6 })
+    expect(metadata().exists()).toBe(false)
+    accountVersionRef.value++
+    await flushPromises()
+    resolveStale({ uploadedByUserName: 'Устаревший' })
+    await flushPromises()
+    expect(metadata().text()).toContain('Второй')
+    expect(metadata().text()).not.toContain('Устаревший')
+    expect(getReportRowsMock.mock.calls).toEqual([[5], [6], [6]])
   })
 
   it('uses page 1 as the page options fallback when current page is empty', async () => {

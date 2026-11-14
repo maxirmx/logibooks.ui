@@ -23,7 +23,7 @@ vi.mock('@/helpers/config.js', () => ({
 describe('customs.reports.store', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    vi.clearAllMocks()
+    vi.resetAllMocks()
   })
 
   it('uploads file using fetchWrapper.postFile', async () => {
@@ -216,6 +216,47 @@ describe('customs.reports.store', () => {
     expect(store.reportRowsHasPreviousPage).toBe(false)
     expect(store.reportRowsColumns).toEqual([])
     expect(store.reportRowsCustomsProcedure).toBeNull()
+  })
+
+  it.each(['getReports', 'getReportRows'])('discards late data from the previous account for %s', async (load) => {
+    const auth = useAuthStore()
+    auth.user = { id: 1 }
+    const store = useCustomsReportsStore()
+    let resolve
+    fetchWrapper.get.mockImplementationOnce(() => new Promise(done => { resolve = done }))
+    const loading = store[load](5)
+    auth.user = { id: 2 }
+    resolve({ items: [{ id: 5, uploadedByUserName: 'Previous account' }] })
+
+    await expect(loading).resolves.toBeUndefined()
+    expect(store.reports).toEqual([])
+    expect(store.reportRows).toEqual([])
+  })
+
+  it.each(['getReports', 'getReportRows', 'upload', 'remove'])('keeps stale %s failures out of the active account state', async (method) => {
+    const auth = useAuthStore()
+    auth.user = { id: 1 }
+    const store = useCustomsReportsStore()
+    const error = new Error('Previous account')
+    fetchWrapper.get.mockRejectedValueOnce(error)
+    fetchWrapper.postFile.mockRejectedValueOnce(error)
+    fetchWrapper.delete.mockRejectedValueOnce(error)
+    const pending = store[method](method === 'upload' ? new File(['file'], 'report.xlsx') : 5)
+    auth.user = { id: 2 }
+    await expect(pending).rejects.toBe(error)
+    expect(store.error).toBeNull()
+    expect(store.loading).toBe(false)
+  })
+
+  it('does not refresh reports after a delete completes for the previous account', async () => {
+    const auth = useAuthStore()
+    auth.user = { id: 1 }
+    const store = useCustomsReportsStore()
+    fetchWrapper.delete.mockResolvedValueOnce(undefined)
+    const pending = store.remove(5)
+    auth.user = { id: 2 }
+    await pending
+    expect(fetchWrapper.get).not.toHaveBeenCalled()
   })
 
   it('stores error when getReportRows fails', async () => {

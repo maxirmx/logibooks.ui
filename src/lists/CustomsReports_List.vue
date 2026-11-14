@@ -3,8 +3,11 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
+import UserDisplay from '@/components/UserDisplay.vue'
+import { formatDateTime } from '@/helpers/date.formatters.js'
+import { reportError } from '@/helpers/error.helpers.js'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
-import { computed, onUnmounted, ref, toRef, unref, watch } from 'vue'
+import { computed, onUnmounted, ref, toRef, watch } from 'vue'
 import { useAppConfirm } from '@/composables/useAppConfirm.js'
 import TruncateTooltipCell from '@/components/TruncateTooltipCell.vue'
 import ClickableCell from '@/components/ClickableCell.vue'
@@ -25,7 +28,7 @@ const customsReportsStore = useCustomsReportsStore()
 const alertStore = useAlertStore()
 const authStore = useAuthStore()
 
-const { reports, loading, reportsTotalCount } = storeToRefs(customsReportsStore)
+const { accountVersion, reports, loading, reportsTotalCount } = storeToRefs(customsReportsStore)
 const fileInput = ref(null)
 const runningAction = ref(false)
 const { actionDialogState, showActionDialog, hideActionDialog } = useActionDialog()
@@ -38,10 +41,15 @@ const localSearch = ref(uploadcustomsreports_search.value || '')
 const isComponentMounted = ref(true)
 
 async function loadReports() {
-  await customsReportsStore.getReports()
-  const storeError = unref(customsReportsStore.error)
-  if (storeError) {
-    alertStore.error(storeError instanceof Error ? storeError.message : String(storeError))
+  const version = accountVersion.value
+  try {
+    await customsReportsStore.getReports()
+  } catch (error) {
+    if (isComponentMounted.value && version === accountVersion.value) {
+      alertStore.error(error, { fallback: 'Не удалось загрузить отчёты' })
+    } else {
+      reportError(error, { context: 'customs report list after its scope changed' })
+    }
   }
 }
 
@@ -53,7 +61,7 @@ const { triggerLoad, stop: stopFilterSync } = useDebouncedFilterSync({
 })
 
 const watcherStop = watch(
-  [uploadcustomsreports_page, uploadcustomsreports_per_page, uploadcustomsreports_sort_by],
+  [accountVersion, uploadcustomsreports_page, uploadcustomsreports_per_page, uploadcustomsreports_sort_by],
   () => {
     triggerLoad()
   },
@@ -108,7 +116,9 @@ const baseHeaders = [
   { title: 'Запрет выпуска', key: 'heldParcels', align: 'center' },
   { title: 'Обновлено ТН ВЭД', key: 'updatedTnVedParcels', align: 'center' },
   { title: 'Ошибочных записей', key: 'errorCount', align: 'center' },
-  { title: 'Ошибка', key: 'errMsg', align: 'center', class: 'col-text' }
+  { title: 'Ошибка', key: 'errMsg', align: 'center', class: 'col-text' },
+  { title: 'Дата и время', key: 'uploadedAt', sortable: true },
+  { title: 'Пользователь', key: 'uploadedByUserName', sortable: false }
 ]
 
 const headers = computed(() => {
@@ -354,7 +364,15 @@ function viewReportRows(report) {
                   @click="() => viewReportRows(item)"
                 >
                   <template #default>
-                    {{ item[col.key] }}
+                    <UserDisplay
+                      v-if="col.key === 'uploadedByUserName'"
+                      :name="item.uploadedByUserName"
+                      :email="item.uploadedByUserEmail"
+                    />
+                    <template v-else-if="col.key === 'uploadedAt'">
+                      {{ formatDateTime(item.uploadedAt) }}
+                    </template>
+                    <template v-else>{{ item[col.key] }}</template>
                   </template>
                 </ClickableCell>
               </template>

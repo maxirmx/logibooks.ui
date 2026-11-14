@@ -3,7 +3,7 @@
 // This file is a part of Logibooks ui application
 
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 import { apiUrl } from '@/helpers/config.js'
 import { useAuthStore } from '@/stores/auth.store.js'
@@ -11,6 +11,8 @@ import { useAuthStore } from '@/stores/auth.store.js'
 const baseUrl = `${apiUrl}/customsreports`
 
 export const useCustomsReportsStore = defineStore('customsreports', () => {
+  const authStore = useAuthStore()
+  const accountVersion = ref(0)
   const reports = ref([])
   const reportRows = ref([])
   const loading = ref(false)
@@ -24,7 +26,32 @@ export const useCustomsReportsStore = defineStore('customsreports', () => {
   const reportRowsColumns = ref([])
   const reportRowsCustomsProcedure = ref(null)
 
+  function clearReports() {
+    reports.value = []
+    reportsTotalCount.value = 0
+    reportsHasNextPage.value = false
+    reportsHasPreviousPage.value = false
+  }
+
+  function clearReportRows() {
+    reportRows.value = []
+    reportRowsTotalCount.value = 0
+    reportRowsHasNextPage.value = false
+    reportRowsHasPreviousPage.value = false
+    reportRowsColumns.value = []
+    reportRowsCustomsProcedure.value = null
+  }
+
+  watch(() => authStore.user?.id, () => {
+    accountVersion.value++
+    clearReports()
+    clearReportRows()
+    loading.value = false
+    error.value = null
+  }, { flush: 'sync' })
+
   async function upload(file) {
+    const version = accountVersion.value
     loading.value = true
     error.value = null
     try {
@@ -33,15 +60,15 @@ export const useCustomsReportsStore = defineStore('customsreports', () => {
       const response = await fetchWrapper.postFile(`${baseUrl}/upload-report`, formData)
       return response
     } catch (err) {
-      error.value = err
+      if (version === accountVersion.value) error.value = err
       throw err
     } finally {
-      loading.value = false
+      if (version === accountVersion.value) loading.value = false
     }
   }
 
   async function getReports() {
-    const authStore = useAuthStore()
+    const version = accountVersion.value
     loading.value = true
     error.value = null
     try {
@@ -58,39 +85,40 @@ export const useCustomsReportsStore = defineStore('customsreports', () => {
 
       const response = await fetchWrapper.get(`${baseUrl}?${queryParams.toString()}`)
 
+      if (version !== accountVersion.value) return
+
       reports.value = response?.items || []
       reportsTotalCount.value = response?.pagination?.totalCount || 0
       reportsHasNextPage.value = response?.pagination?.hasNextPage || false
       reportsHasPreviousPage.value = response?.pagination?.hasPreviousPage || false
     } catch (err) {
-      error.value = err
-      reports.value = []
-      reportsTotalCount.value = 0
-      reportsHasNextPage.value = false
-      reportsHasPreviousPage.value = false
+      if (version === accountVersion.value) {
+        error.value = err
+        clearReports()
+      }
       throw err
     } finally {
-      loading.value = false
+      if (version === accountVersion.value) loading.value = false
     }
   }
 
   async function remove(id) {
+    const version = accountVersion.value
     loading.value = true
     error.value = null
     try {
       await fetchWrapper.delete(`${baseUrl}/${id}`)
-      // refresh list after deletion
-      await getReports()
+      if (version === accountVersion.value) await getReports()
     } catch (err) {
-      error.value = err
+      if (version === accountVersion.value) error.value = err
       throw err
     } finally {
-      loading.value = false
+      if (version === accountVersion.value) loading.value = false
     }
   }
 
   async function getReportRows(reportId) {
-    const authStore = useAuthStore()
+    const version = accountVersion.value
     loading.value = true
     error.value = null
     try {
@@ -109,27 +137,28 @@ export const useCustomsReportsStore = defineStore('customsreports', () => {
         `${baseUrl}/${reportId}/rows?${queryParams.toString()}`
       )
 
+      if (version !== accountVersion.value) return
+
       reportRows.value = response?.items || []
       reportRowsTotalCount.value = response?.pagination?.totalCount || 0
       reportRowsHasNextPage.value = response?.pagination?.hasNextPage || false
       reportRowsHasPreviousPage.value = response?.pagination?.hasPreviousPage || false
       reportRowsColumns.value = Array.isArray(response?.columns) ? response.columns : []
       reportRowsCustomsProcedure.value = response?.customsProcedure || null
+      return response
     } catch (err) {
+      if (version !== accountVersion.value) throw err
+
       error.value = err
-      reportRows.value = []
-      reportRowsTotalCount.value = 0
-      reportRowsHasNextPage.value = false
-      reportRowsHasPreviousPage.value = false
-      reportRowsColumns.value = []
-      reportRowsCustomsProcedure.value = null
+      clearReportRows()
       throw err
     } finally {
-      loading.value = false
+      if (version === accountVersion.value) loading.value = false
     }
   }
 
   return {
+    accountVersion,
     reports,
     reportRows,
     reportsTotalCount,

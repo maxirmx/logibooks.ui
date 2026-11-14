@@ -6,6 +6,7 @@
 import { useListState } from '@/composables/useListState.js'
 import { useListPageBounds } from '@/composables/useListPageBounds.js'
 import { listField, pageField, pageSizeField, scalarField } from '@/helpers/list.state.helpers.js'
+import UserDisplay from '@/components/UserDisplay.vue'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import ResponsiveFilterBar from '@/components/ResponsiveFilterBar.vue'
 import { computed, ref, unref, watch } from 'vue'
@@ -398,8 +399,7 @@ watch(
         </template>
 
         <template #[`item.user`]="{ item }">
-          <div>{{ item.userName }}</div>
-          <div class="text-medium-emphasis">{{ item.userEmail }}</div>
+          <UserDisplay :name="item.userName" :email="item.userEmail" />
         </template>
 
         <template #[`item.changes`]="{ item }">

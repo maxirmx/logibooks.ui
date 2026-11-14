@@ -3,14 +3,16 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
+import UserDisplay from '@/components/UserDisplay.vue'
+import { reportError } from '@/helpers/error.helpers.js'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
-import { onUnmounted, computed, watch, ref, toRef, unref } from 'vue'
+import { onUnmounted, computed, watch, ref, toRef } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useCustomsReportsStore } from '@/stores/customs.reports.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
-import { formatDateTimeLines } from '@/helpers/date.formatters.js'
+import { formatDateTime, formatDateTimeLines } from '@/helpers/date.formatters.js'
 import TruncateTooltipCell from '@/components/TruncateTooltipCell.vue'
 import ClickableCell from '@/components/ClickableCell.vue'
 import PaginationFooter from '@/components/PaginationFooter.vue'
@@ -40,9 +42,16 @@ const customsreportrows_page = toRef(authStore, 'customsreportrows_page')
 const customsreportrows_per_page = toRef(authStore, 'customsreportrows_per_page')
 const customsreportrows_sort_by = toRef(authStore, 'customsreportrows_sort_by')
 
-const { reportRows, loading, reportRowsTotalCount, reportRowsColumns, reportRowsCustomsProcedure } =
+const { accountVersion, reportRows, loading, reportRowsTotalCount, reportRowsColumns, reportRowsCustomsProcedure } =
   storeToRefs(customsReportsStore)
 const localSearch = ref(customsreportrows_search.value || '')
+const uploadMetadata = ref(null)
+let reportScope = 0
+
+watch([() => props.reportId, accountVersion], () => {
+  reportScope++
+  uploadMetadata.value = null
+}, { flush: 'sync' })
 
 const isComponentMounted = ref(true)
 const DEFAULT_SORT_BY = Object.freeze([{ key: 'rowNumber', order: 'asc' }])
@@ -94,10 +103,20 @@ function joinDisplayParts(...parts) {
 }
 
 async function loadReportRows() {
-  await customsReportsStore.getReportRows(props.reportId)
-  const storeError = unref(customsReportsStore.error)
-  if (storeError) {
-    alertStore.error(storeError instanceof Error ? storeError.message : String(storeError))
+  const scope = reportScope
+  try {
+    const result = await customsReportsStore.getReportRows(props.reportId)
+    if (scope === reportScope && isComponentMounted.value) {
+      const { uploadedAt, uploadedByUserName, uploadedByUserEmail } = result ?? {}
+      uploadMetadata.value = { uploadedAt, uploadedByUserName, uploadedByUserEmail }
+    }
+  } catch (error) {
+    if (scope === reportScope && isComponentMounted.value) {
+      uploadMetadata.value = null
+      alertStore.error(error, { fallback: 'Не удалось загрузить строки отчёта' })
+    } else {
+      reportError(error, { context: 'customs report rows after their scope changed' })
+    }
   }
 }
 
@@ -113,7 +132,8 @@ const watcherStop = watch(
     customsreportrows_page,
     customsreportrows_per_page,
     customsreportrows_sort_by,
-    () => props.reportId
+    () => props.reportId,
+    accountVersion
   ],
   () => {
     triggerLoad()
@@ -227,6 +247,18 @@ const pageOptions = computed(() => {
     <hr class="hr" />
 
     <PageAlertRegion />
+
+    <dl v-if="uploadMetadata?.uploadedAt || uploadMetadata?.uploadedByUserName || uploadMetadata?.uploadedByUserEmail"
+      class="d-flex flex-wrap ga-6 mb-3" data-testid="report-upload-metadata">
+      <div>
+        <dt>Дата и время</dt>
+        <dd>{{ formatDateTime(uploadMetadata.uploadedAt) }}</dd>
+      </div>
+      <div>
+        <dt>Пользователь</dt>
+        <dd><UserDisplay :name="uploadMetadata.uploadedByUserName" :email="uploadMetadata.uploadedByUserEmail" /></dd>
+      </div>
+    </dl>
 
     <div class="list-filters">
       <v-text-field

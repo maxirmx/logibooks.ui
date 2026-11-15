@@ -22,6 +22,7 @@ import {
   getCountryDisplayName as getRegisterCountryDisplayName
 } from '@/helpers/warehouse.registers.table.helpers.js'
 import ActionButton from '@/components/ActionButton.vue'
+import ActionButton2L from '@/components/ActionButton2L.vue'
 import ClickableCell from '@/components/ClickableCell.vue'
 import RegisterInvoiceCell from '@/components/RegisterInvoiceCell.vue'
 import RegisterStatusInlineEditor from '@/components/RegisterStatusInlineEditor.vue'
@@ -56,6 +57,8 @@ const emit = defineEmits([
   'update:page',
   'update:sortBy',
   'open-parcels',
+  'open-decs',
+  'open-customs-decisions',
   'open-history',
   'edit-register',
   'delete-register'
@@ -402,6 +405,18 @@ function getRegisterStatusTitle(item) {
             icon="fa-solid fa-list"
             tooltip-text="Список посылок"
             @click="(row) => emit('open-parcels', row)"
+            :disabled="runningAction || loading"
+          />
+          <ActionButton2L
+            v-if="isSrLogistPlus"
+            :item="item"
+            icon="fa-solid fa-file-invoice"
+            tooltip-text="Информация о выпуске"
+            aria-label="Информация о выпуске"
+            :options="[
+              { label: 'Решения о выпуске', action: (row) => emit('open-customs-decisions', row) },
+              { label: 'ДТЭГ/ПДТЭГ', action: (row) => emit('open-decs', row) }
+            ]"
             :disabled="runningAction || loading"
           />
           <ActionButton

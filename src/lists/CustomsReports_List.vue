@@ -181,6 +181,7 @@ const errorLabels = {
   errorProcedureMismatchRecords: 'Несовпадений таможенной процедуры с реестром',
   errorParcelNotFoundRecords: 'Ненайденных посылок',
   errorRegisterReadOnlyRecords: 'Посылок из реестров с запретом изменений',
+  errorDecRegisterConflictRecords: 'Решений с ДТЭГ/ПТДЭГ другого реестра',
   errorAlreadyProcessedParcels: 'Посылок с установленным полем ДТЭГ/ПТДЭГ'
 }
 
@@ -193,6 +194,7 @@ const tableItems = computed(() =>
       (report.errorProcedureMismatchRecords || 0) +
       (report.errorParcelNotFoundRecords || 0) +
       (report.errorRegisterReadOnlyRecords || 0) +
+      (report.errorDecRegisterConflictRecords || 0) +
       (report.errorAlreadyProcessedParcels || 0)
 
     // Build breakdown array only for non-zero entries
@@ -217,7 +219,7 @@ async function handleDeleteReport(report) {
 
   const ownsAction = startAction()
   try {
-    const content = `Удалить отчёт «${report.fileName || report.id}»? Ссылки посылок на ДТЭГ/ПТДЭГ могут быть удалены.`
+    const content = `Удалить отчёт «${report.fileName || report.id}»? Информация о связанных ДТЭГ/ПТДЭГ будет удалена.`
     const confirmed = await confirm({
       title: 'Подтверждение',
       confirmationText: 'Удалить',

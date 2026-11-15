@@ -83,6 +83,21 @@ describe('router guards', () => {
     expect(router.currentRoute.value.path).toBe('/login')
   })
 
+  it('opens paperwork DEC routes for customs roles and restores the URL filter', async () => {
+    authStore.user = { id: 1 }
+    authStore.isSrLogistPlus = true
+    await router.push('/registers/11/decs')
+    let route = router.currentRoute.value
+    expect(route.matched.at(-1).props.default(route)).toEqual({ registerId: 11 })
+
+    await router.push('/registers/11/customs-decisions?decId=21')
+    route = router.currentRoute.value
+    expect(route.matched.at(-1).props.default(route)).toEqual({ registerId: 11, decId: 21 })
+    authStore.isSrLogistPlus = false
+    await router.push('/registers/12/customs-decisions')
+    expect(router.currentRoute.value.path).toBe('/login')
+  })
+
   it('requires a warehouse role for print settings and preserves its return route', async () => {
     authStore.user = { id: 1 }
     authStore.hasWhRole = true

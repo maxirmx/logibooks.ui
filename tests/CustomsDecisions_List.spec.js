@@ -8,6 +8,9 @@ import { mount, flushPromises } from '@vue/test-utils'
 import { ref } from 'vue'
 import CustomsDecisionsList from '@/lists/CustomsDecisions_List.vue'
 import CustomsDecisionsView from '@/views/CustomsDecisions_View.vue'
+import RegisterCustomsDecisionsView from '@/views/RegisterCustomsDecisions_View.vue'
+import RegisterDecsList from '@/lists/RegisterDecs_List.vue'
+import ActionButton from '@/components/ActionButton.vue'
 import ClickableCell from '@/components/ClickableCell.vue'
 import PaginationFooter from '@/components/PaginationFooter.vue'
 import { defaultGlobalStubs } from './helpers/test-utils.js'
@@ -27,6 +30,25 @@ const pageRef = ref(1)
 const searchRef = ref('')
 
 const ensureOpsLoadedMock = vi.hoisted(() => vi.fn())
+const registerOpsMock = vi.hoisted(() => vi.fn())
+const getCustomsMock = vi.hoisted(() => vi.fn())
+const deleteCustomsMock = vi.hoisted(() => vi.fn())
+const confirmCustomsMock = vi.hoisted(() => vi.fn())
+
+vi.mock('@/helpers/fetch.wrapper.js', () => ({
+  fetchWrapper: { get: getCustomsMock, delete: deleteCustomsMock }
+}))
+
+vi.mock('@/composables/useAppConfirm.js', () => ({
+  useAppConfirm: () => confirmCustomsMock
+}))
+
+vi.mock('@/stores/registers.store.js', () => ({
+  useRegistersStore: () => ({
+    ensureOpsLoaded: registerOpsMock,
+    getTransportationDocument: () => 'Авиа накладная'
+  })
+}))
 const getDecisionsMock = vi.hoisted(() => vi.fn())
 const resetDecisionsMock = vi.hoisted(() => vi.fn())
 const dismissMock = vi.hoisted(() => vi.fn())
@@ -115,6 +137,7 @@ function createFullDecision() {
 const testStubs = {
   ...defaultGlobalStubs,
   'v-data-table': {
+    name: 'v-data-table',
     inheritAttrs: false,
     emits: [
       'update:itemsPerPage',
@@ -352,7 +375,7 @@ describe('CustomsDecisions_List.vue', () => {
       })
     }
 
-    authStoreMock = {}
+    authStoreMock = { hasLogistRole: true }
     Object.defineProperties(authStoreMock, {
       customsdecisions_per_page: {
         get: () => perPageRef.value,
@@ -386,7 +409,201 @@ describe('CustomsDecisions_List.vue', () => {
       props: { reportId: 5, masterInvoice: 'MAWB-42' },
       global: { stubs: { CustomsDecisionsList: true } }
     })
-    expect(wrapper.getComponent(CustomsDecisionsList).props()).toEqual({ reportId: 5, masterInvoice: 'MAWB-42' })
+    expect(wrapper.getComponent(CustomsDecisionsList).props()).toMatchObject({ reportId: 5, masterInvoice: 'MAWB-42' })
+  })
+
+  function setupRegister({ locked = false } = {}) {
+    authStoreMock.isShiftLeadPlus = true
+    registerOpsMock.mockResolvedValue(undefined)
+    deleteCustomsMock.mockReset().mockResolvedValue(undefined)
+    confirmCustomsMock.mockReset().mockResolvedValue(true)
+    getCustomsMock.mockReset().mockImplementation(async url => url.endsWith('/decs')
+      ? {
+          register: { id: 11, dealNumber: 'A-11', invoiceNumber: '123', transportationTypeCode: 1, readOnly: locked },
+          items: [{ id: 21, number: '100/010826/200', decisionCount: 1, appliedCount: 1, notAppliedCount: 0 }]
+        }
+      : {
+          items: [createFullDecision()],
+          pagination: { currentPage: 1, totalCount: 1 },
+          columns: fullColumnKeys,
+          customsProcedure: 'ЭК 10'
+        })
+  }
+
+  function action(label) {
+    return wrapper.findAllComponents(ActionButton).find(button => button.props('tooltipText') === label)
+  }
+
+  it('loads a URL-selected DEC, uses supported controls, and refreshes after a row deletion', async () => {
+    setupRegister()
+    wrapper = mount(RegisterCustomsDecisionsView, {
+      props: { registerId: 11, decId: 21 }, global: { stubs: testStubs }
+    })
+    await flushPromises()
+    expect(wrapper.text()).toContain('A-11')
+    expect(getCustomsMock).toHaveBeenCalledWith(expect.stringContaining('/customs-decisions?page=1&pageSize=100'))
+    expect(getCustomsMock).toHaveBeenCalledWith(expect.stringContaining('decId=21'))
+    expect(registerOpsMock).toHaveBeenCalled()
+    const table = wrapper.getComponent({ name: 'v-data-table-server' })
+    expect(table.props('itemsPerPageOptions').map(option => option.value)).toEqual([10, 50, 100, 500])
+    expect(table.props('headers').find(column => column.key === 'totalWeight').sortable).toBe(false)
+
+    action('Удалить решение').vm.$emit('click', { id: 1 })
+    await flushPromises()
+    expect(confirmCustomsMock).toHaveBeenCalledWith(expect.objectContaining({ content: expect.stringContaining('№1') }))
+    expect(deleteCustomsMock).toHaveBeenCalledWith(expect.stringContaining('/registers/11/customs-decisions/1'))
+    expect(getCustomsMock.mock.calls.filter(([url]) => url.endsWith('/decs'))).toHaveLength(2)
+    table.vm.$emit('update:page', 9)
+    await flushPromises()
+    expect(getCustomsMock).toHaveBeenCalledWith(expect.stringContaining('page=9'))
+    expect(table.props('page')).toBe(1)
+
+    wrapper.getComponent({ name: 'v-select' }).vm.$emit('update:modelValue', null)
+    await flushPromises()
+    expect(routerReplaceMock).toHaveBeenLastCalledWith({
+      name: 'Решения реестра', params: { registerId: 11 }, query: {}
+    })
+
+    await wrapper.setProps({ decId: null })
+    await flushPromises()
+    expect(getCustomsMock.mock.lastCall[0]).not.toContain('decId=')
+    action('Удалить все решения для реестра').vm.$emit('click')
+    await flushPromises()
+    expect(deleteCustomsMock).toHaveBeenLastCalledWith(expect.stringMatching(/registers\/11\/customs-decisions$/))
+    await wrapper.get('input').setValue('номер')
+    action('Закрыть').vm.$emit('click')
+    await flushPromises()
+    expect(routerPushMock).toHaveBeenLastCalledWith({ name: 'ДТЭГ/ПТДЭГ реестра', params: { registerId: 11 } })
+  })
+
+  it('shows the DEC count table, opens its filter and handles a failed bulk delete once', async () => {
+    setupRegister()
+    wrapper = mount(RegisterDecsList, {
+      props: { registerId: 11 }, global: { stubs: testStubs }
+    })
+    await flushPromises()
+    expect(wrapper.text()).toContain('100/010826/200')
+    expect(wrapper.text()).toContain('Всего решений')
+    const dec = { id: 21, number: '100/010826/200' }
+    action('Список решений').vm.$emit('click', dec)
+    await flushPromises()
+    expect(routerPushMock).toHaveBeenCalledWith({
+      name: 'Решения реестра', params: { registerId: 11 }, query: { decId: 21 }
+    })
+    deleteCustomsMock.mockRejectedValueOnce(new Error('boom'))
+    action('Удалить все решения по ДТЭГ/ПТДЭГ').vm.$emit('click', dec)
+    await flushPromises()
+    expect(confirmCustomsMock).toHaveBeenCalledWith(expect.objectContaining({ content: expect.stringContaining('все страницы') }))
+    expect(deleteCustomsMock).toHaveBeenCalledWith(expect.stringContaining('/decs/21/customs-decisions'))
+    expect(wrapper.get('[role=alert]').text()).toContain('Не удалось удалить решения о выпуске')
+    expect(alertErrorMock).toHaveBeenCalledTimes(1)
+    action('Все решения').vm.$emit('click')
+    await flushPromises()
+    expect(routerPushMock).toHaveBeenLastCalledWith({
+      name: 'Решения реестра', params: { registerId: 11 }, query: {}
+    })
+    action('Закрыть').vm.$emit('click')
+    await flushPromises()
+    expect(routerPushMock).toHaveBeenLastCalledWith({ path: '/registers', query: { mode: OP_MODE_PAPERWORK } })
+  })
+
+  it('keeps the selected DEC page size', async () => {
+    setupRegister()
+    wrapper = mount(RegisterDecsList, {
+      props: { registerId: 11 }, global: { stubs: testStubs }
+    })
+    await flushPromises()
+    const table = wrapper.getComponent({ name: 'v-data-table' })
+    expect(table.props('itemsPerPage')).toBe(100)
+
+    table.vm.$emit('update:itemsPerPage', 10)
+    await flushPromises()
+    expect(table.props('itemsPerPage')).toBe(10)
+
+    table.vm.$emit('update:itemsPerPage', -1)
+    await flushPromises()
+    expect(table.props('itemsPerPage')).toBe(-1)
+  })
+
+  it('does not publish a failed summary for a previous register', async () => {
+    setupRegister()
+    let rejectOldSummary
+    getCustomsMock.mockImplementationOnce(() => new Promise((_, reject) => { rejectOldSummary = reject }))
+    wrapper = mount(RegisterDecsList, {
+      props: { registerId: 11 }, global: { stubs: testStubs }
+    })
+    await wrapper.setProps({ registerId: 12 })
+    await flushPromises()
+    rejectOldSummary(new Error('previous register'))
+    await flushPromises()
+    expect(getCustomsMock).toHaveBeenCalledWith(expect.stringContaining('/registers/12/decs'))
+    expect(wrapper.find('[role=alert]').exists()).toBe(false)
+  })
+
+  it('keeps a cancelled or expired confirmation from deleting decisions', async () => {
+    setupRegister()
+    wrapper = mount(RegisterDecsList, {
+      props: { registerId: 11 }, global: { stubs: testStubs }
+    })
+    await flushPromises()
+    const dec = { id: 21, number: '100/010826/200' }
+    confirmCustomsMock.mockResolvedValueOnce(false)
+    action('Удалить все решения по ДТЭГ/ПТДЭГ').vm.$emit('click', dec)
+    await flushPromises()
+    let confirmOld
+    confirmCustomsMock.mockImplementationOnce(() => new Promise(resolve => { confirmOld = resolve }))
+    action('Удалить все решения по ДТЭГ/ПТДЭГ').vm.$emit('click', dec)
+    await wrapper.setProps({ registerId: 12 })
+    confirmOld(true)
+    await flushPromises()
+    expect(deleteCustomsMock).not.toHaveBeenCalled()
+  })
+
+  it('disables deletion while the displayed rows belong to the previous search', async () => {
+    setupRegister()
+    wrapper = mount(RegisterCustomsDecisionsView, {
+      props: { registerId: 11 }, global: { stubs: testStubs }
+    })
+    await flushPromises()
+    expect(action('Удалить решение').props('disabled')).toBe(false)
+    await wrapper.get('input').setValue('новый поиск')
+    expect(action('Удалить решение').props('disabled')).toBe(true)
+    action('Удалить решение').vm.$emit('click', { id: 1 })
+    expect(confirmCustomsMock).not.toHaveBeenCalled()
+  })
+
+  it('drops stale rows when the current filter fails and fences an open delete confirmation', async () => {
+    setupRegister()
+    wrapper = mount(RegisterCustomsDecisionsView, {
+      props: { registerId: 11 }, global: { stubs: testStubs }
+    })
+    await flushPromises()
+    const table = wrapper.getComponent({ name: 'v-data-table-server' })
+    expect(table.props('items')).toHaveLength(1)
+    let confirmOld
+    confirmCustomsMock.mockImplementationOnce(() => new Promise(resolve => { confirmOld = resolve }))
+    action('Удалить решение').vm.$emit('click', { id: 1 })
+    getCustomsMock.mockRejectedValueOnce(new Error('unavailable'))
+    table.vm.$emit('update:sortBy', [{ key: 'dTag', order: 'asc' }])
+    await flushPromises()
+    expect(table.props('items')).toEqual([])
+    expect(wrapper.get('[role=alert]').text()).toContain('Не удалось загрузить решения о выпуске')
+    confirmOld(true)
+    await flushPromises()
+    expect(deleteCustomsMock).not.toHaveBeenCalled()
+  })
+
+  it('disables deletion on a read-only register and presents read failures', async () => {
+    setupRegister({ locked: true })
+    getCustomsMock.mockImplementationOnce(async () => {
+      throw new Error('unavailable')
+    })
+    wrapper = mount(RegisterCustomsDecisionsView, {
+      props: { registerId: 11 }, global: { stubs: testStubs }
+    })
+    await flushPromises()
+    expect(wrapper.get('[role=alert]').text()).toContain('Не удалось загрузить ДТЭГ/ПТДЭГ реестра')
+    expect(action('Удалить все решения для реестра').props('disabled')).toBe(true)
   })
 
   it('ignores a late decision error from the previous report', async () => {
@@ -721,6 +938,8 @@ describe('CustomsDecisions_List.vue', () => {
     await flushPromises()
 
     const cell = wrapper.findComponent(ClickableCell)
+    expect(cell.props('disabled')).toBe(false)
+    expect(cell.classes()).not.toContain('clickable-cell-disabled')
     await cell.trigger('click')
 
     expect(routerPushMock).toHaveBeenCalledWith({
@@ -746,12 +965,21 @@ describe('CustomsDecisions_List.vue', () => {
     expect(routerPushMock).not.toHaveBeenCalled()
   })
 
-  it('prevents click and shows disabled cursor when parcelId is null', async () => {
+  it.each([
+    { parcelId: null, registerId: 5 },
+    { parcelId: undefined, registerId: 5 },
+    { parcelId: 0, registerId: 5 },
+    { parcelId: '', registerId: 5 },
+    { parcelId: 12, registerId: null },
+    { parcelId: 12, registerId: undefined },
+    { parcelId: 12, registerId: 0 },
+    { parcelId: 12, registerId: '' },
+    {}
+  ])('prevents navigation and shows the stop cursor for unavailable links (%o)', async (link) => {
     decisionsRef.value = [
       {
         id: 2,
-        parcelId: null,
-        registerId: 5,
+        ...link,
         rowNumber: 1,
         parcelNumber: 'PN-002',
         processingResult: 'OK',
@@ -768,10 +996,34 @@ describe('CustomsDecisions_List.vue', () => {
 
     await flushPromises()
 
-    const cell = wrapper.findComponent(ClickableCell)
-    expect(cell.classes()).toContain('clickable-cell-disabled')
+    const cells = wrapper.findAllComponents(ClickableCell)
+    expect(cells.length).toBeGreaterThan(0)
+    for (const cell of cells) {
+      expect(cell.props('disabled')).toBe(true)
+      expect(cell.classes()).toContain('clickable-cell-disabled')
+      expect(cell.attributes('aria-disabled')).toBe('true')
+      await cell.trigger('click')
+    }
 
+    wrapper.vm.openParcel(decisionsRef.value[0])
+    expect(routerPushMock).not.toHaveBeenCalled()
+  })
+
+  it('shows the stop cursor and prevents navigation without parcel-route access', async () => {
+    authStoreMock.hasLogistRole = false
+    decisionsRef.value = [{ ...createFullDecision(), parcelId: 12, registerId: 5 }]
+    wrapper = mount(CustomsDecisionsList, {
+      props: { reportId: 5 },
+      global: { stubs: testStubs }
+    })
+    await flushPromises()
+
+    const cell = wrapper.findComponent(ClickableCell)
+    expect(cell.props('disabled')).toBe(true)
+    expect(cell.classes()).toContain('clickable-cell-disabled')
     await cell.trigger('click')
+    wrapper.vm.openParcel(decisionsRef.value[0])
+
     expect(routerPushMock).not.toHaveBeenCalled()
   })
 

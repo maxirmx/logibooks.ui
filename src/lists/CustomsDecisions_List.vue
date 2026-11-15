@@ -21,14 +21,20 @@ import SortableMultilineHeader from '@/components/SortableMultilineHeader.vue'
 import { mdiMagnify } from '@mdi/js'
 import router from '@/router'
 import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync.js'
-import { navigateToEditParcel } from '@/helpers/parcels.list.helpers.js'
+import { hasParcelEditRouteAccess, navigateToEditParcel } from '@/helpers/parcels.list.helpers.js'
 import { getCurrentInternalRoute } from '@/helpers/parcel.navigation.helpers.js'
-import { OP_MODE_PAPERWORK } from '@/helpers/op.mode.js'
+import { getRegisterNouns, OP_MODE_PAPERWORK } from '@/helpers/op.mode.js'
+import { useRegisterCustoms } from '@/composables/useRegisterCustoms.js'
+import { useRegistersStore } from '@/stores/registers.store.js'
+import { buildParcelListHeading } from '@/helpers/register.heading.helpers.js'
+import ResponsiveFilterBar from '@/components/ResponsiveFilterBar.vue'
 const props = defineProps({
   reportId: {
     type: Number,
-    required: true
+    default: null
   },
+  registerId: { type: Number, default: null },
+  decId: { type: Number, default: null },
   masterInvoice: {
     type: String,
     default: ''
@@ -39,17 +45,37 @@ const customsReportsStore = useCustomsReportsStore()
 const alertStore = useAlertStore()
 const componentScope = getCurrentScope()
 const authStore = useAuthStore()
-const customsdecisions_search = toRef(authStore, 'customsdecisions_search')
-const customsdecisions_page = toRef(authStore, 'customsdecisions_page')
-const customsdecisions_per_page = toRef(authStore, 'customsdecisions_per_page')
-const customsdecisions_sort_by = toRef(authStore, 'customsdecisions_sort_by')
+const registerMode = props.registerId !== null
+const registerCustoms = registerMode ? useRegisterCustoms(toRef(props, 'registerId'), toRef(props, 'decId')) : null
+const registers = registerMode ? useRegistersStore() : null
+const summary = registerCustoms?.summary ?? ref(null)
+const deleting = registerCustoms?.deleting ?? ref(false)
+const registerPageOptions = registerMode ? itemsPerPageOptions.filter(option => option.value > 0) : itemsPerPageOptions
+const customsdecisions_search = registerMode ? ref('') : toRef(authStore, 'customsdecisions_search')
+const customsdecisions_page = registerMode ? ref(1) : toRef(authStore, 'customsdecisions_page')
+const customsdecisions_per_page = registerMode ? ref(100) : toRef(authStore, 'customsdecisions_per_page')
+const customsdecisions_sort_by = registerMode ? ref([{ key: 'id', order: 'desc' }]) : toRef(authStore, 'customsdecisions_sort_by')
 
-const { accountVersion, decisionSources, decisions, decisionsLoading, decisionsTotalCount,
-  decisionsColumns, decisionsCustomsProcedure } = storeToRefs(customsReportsStore)
+const reportState = storeToRefs(customsReportsStore)
+const { accountVersion, decisionSources } = reportState
+const decisions = registerMode ? ref([]) : reportState.decisions
+const decisionsLoading = registerMode ? ref(false) : reportState.decisionsLoading
+const decisionsTotalCount = registerMode ? ref(0) : reportState.decisionsTotalCount
+const decisionsColumns = registerMode ? ref([]) : reportState.decisionsColumns
+const decisionsCustomsProcedure = registerMode ? ref(null) : reportState.decisionsCustomsProcedure
+const registerHeading = computed(() => registerMode ? buildParcelListHeading(
+  summary.value?.register, registers.getTransportationDocument, getRegisterNouns(OP_MODE_PAPERWORK).singular
+) : '')
+const canDelete = computed(() => registerMode && authStore.isShiftLeadPlus)
+const displayedFilterKey = ref(null)
+const deleteDisabled = computed(() => deleting.value || summary.value?.register?.readOnly !== false ||
+  displayedFilterKey.value !== decisionFilterKey.value)
 const localSearch = ref(customsdecisions_search.value || '')
 const reportChangePending = ref(false)
-const loading = computed(() => reportChangePending.value || decisionsLoading.value)
+const loading = computed(() => reportChangePending.value || decisionsLoading.value ||
+  Boolean(registerCustoms?.summaryLoading.value))
 let reportScope = 0
+let registerRequest = 0
 let opsLoad = null
 let opsAlertId
 let stopBackNavigation = null
@@ -58,12 +84,21 @@ const sourceNames = computed(() =>
   new Map(decisionSources.value?.map(({ value, name }) => [value, name]))
 )
 
-watch([() => props.reportId, accountVersion], () => {
+watch([() => props.reportId, () => props.decId, accountVersion], () => {
   reportScope++
   dismissOpsAlert()
   reportChangePending.value = true
+  if (registerMode) {
+    customsdecisions_page.value = 1
+    decisions.value = []
+    decisionsTotalCount.value = 0
+    displayedFilterKey.value = null
+    decisionsLoading.value = false
+  }
 }, { flush: 'sync' })
-watch(() => props.reportId, () => customsReportsStore.resetDecisions(), { immediate: true, flush: 'sync' })
+if (!registerMode) {
+  watch(() => props.reportId, () => customsReportsStore.resetDecisions(), { immediate: true, flush: 'sync' })
+}
 
 const isComponentMounted = ref(true)
 const DEFAULT_SORT_BY = Object.freeze([{ key: 'rowNumber', order: 'asc' }])
@@ -75,6 +110,7 @@ const procedureHeadingLabel = computed(() =>
 )
 const headingText = computed(() => {
   const procedure = procedureHeadingLabel.value
+  if (registerMode) return 'Решения о выпуске — ' + registerHeading.value
   return procedure
     ? `Решения о выпуске для ${headingLabel.value} по процедуре ${procedure}`
     : `Решения о выпуске для ${headingLabel.value}`
@@ -86,13 +122,13 @@ function formatProcedureForHeading(value) {
 }
 
 function isParcelRowClickable(item) {
-  return item?.parcelId !== null && item?.registerId !== null
+  return hasParcelEditRouteAccess(authStore) && Boolean(item?.parcelId && item?.registerId)
 }
 
 function openParcel(item) {
   const parcelId = item?.parcelId
   const registerId = item?.registerId
-  if (!parcelId || !registerId) return
+  if (!isParcelRowClickable(item)) return
   navigateToEditParcel(router, { ...item, id: parcelId }, 'Редактирование посылки', {
     registerId,
     mode: OP_MODE_PAPERWORK,
@@ -145,16 +181,51 @@ async function loadDecisionSources(scope) {
 
 async function loadDecisions() {
   const scope = reportScope
+  const sort = customsdecisions_sort_by.value[0]
+  const filter = {
+    page: customsdecisions_page.value,
+    pageSize: customsdecisions_per_page.value,
+    sortBy: sort?.key ?? 'id',
+    sortOrder: sort?.order ?? 'desc',
+    search: customsdecisions_search.value
+  }
+  const request = ++registerRequest
+  const isCurrent = () => scope === reportScope && isComponentMounted.value &&
+    (!registerMode || (request === registerRequest && filter.page === customsdecisions_page.value &&
+      filter.pageSize === customsdecisions_per_page.value && sort === customsdecisions_sort_by.value[0] &&
+      filter.search === localSearch.value))
   reportChangePending.value = false
   void loadDecisionSources(scope)
   try {
-    await customsReportsStore.getDecisions(props.reportId)
+    if (!registerMode) {
+      await customsReportsStore.getDecisions(props.reportId)
+      return
+    }
+
+    decisionsLoading.value = true
+    const response = await registerCustoms.getDecisions(filter)
+    if (!isCurrent()) return
+    decisions.value = response.items
+    decisionsTotalCount.value = response.pagination.totalCount
+    decisionsColumns.value = response.columns
+    decisionsCustomsProcedure.value = response.customsProcedure
+    if (customsdecisions_page.value !== response.pagination.currentPage) {
+      customsdecisions_page.value = response.pagination.currentPage
+    }
+    displayedFilterKey.value = decisionFilterKey.value
   } catch (error) {
-    if (scope === reportScope && isComponentMounted.value) {
+    if (isCurrent()) {
+      if (registerMode) {
+        decisions.value = []
+        decisionsTotalCount.value = 0
+        displayedFilterKey.value = null
+      }
       alertStore.error(error, { fallback: 'Не удалось загрузить решения о выпуске' })
     } else {
       reportError(error, { context: 'customs decisions after their scope changed' })
     }
+  } finally {
+    if (registerMode && request === registerRequest && isComponentMounted.value && scope === reportScope) decisionsLoading.value = false
   }
 }
 
@@ -171,6 +242,7 @@ const watcherStop = watch(
     customsdecisions_per_page,
     customsdecisions_sort_by,
     () => props.reportId,
+    () => props.decId,
     accountVersion
   ],
   () => {
@@ -225,7 +297,13 @@ const visibleColumnKeys = computed(() => {
 
 const headers = computed(() => {
   const keys = visibleColumnKeys.value
-  return keys ? allHeaders.filter((header) => keys.has(header.key)) : allHeaders
+  const visible = keys ? allHeaders.filter((header) => keys.has(header.key)) : allHeaders
+  if (!registerMode) return visible
+  const sortable = ['id', 'dTag', 'parcelNumber', 'processingResult']
+  return [
+    ...(canDelete.value ? [{ title: '', key: 'actions', sortable: false }] : []),
+    ...visible.map(header => ({ ...header, sortable: !deleting.value && sortable.includes(header.key) }))
+  ]
 })
 
 function resetHiddenSortColumn() {
@@ -234,7 +312,8 @@ function resetHiddenSortColumn() {
 
   const sortKey = customsdecisions_sort_by.value?.[0]?.key
   if (sortKey && !keys.has(sortKey) && !SORT_ONLY_COLUMN_KEYS.has(sortKey)) {
-    customsdecisions_sort_by.value = DEFAULT_SORT_BY.map((sort) => ({ ...sort }))
+    customsdecisions_sort_by.value = registerMode ? [{ key: 'id', order: 'desc' }] :
+      DEFAULT_SORT_BY.map((sort) => ({ ...sort }))
   }
 }
 
@@ -246,7 +325,7 @@ onBeforeUnmount(() => {
   isComponentMounted.value = false
   stopBackNavigation?.()
   dismissOpsAlert()
-  customsReportsStore.resetDecisions()
+  if (!registerMode) customsReportsStore.resetDecisions()
   stopFilterSync()
   watcherStop()
   columnMetadataStop()
@@ -275,7 +354,33 @@ const pageOptions = computed(() => {
 
 const reportsNavigationFallback = 'Не удалось открыть список отчётов'
 
+function selectDec(id) {
+  return runWithAlert(() => router.replace({
+    name: 'Решения реестра', params: { registerId: props.registerId },
+    query: id ? { decId: id } : {}
+  }), { fallback: 'Не удалось применить фильтр по ДТЭГ/ПТДЭГ', scope: componentScope })
+}
+
+const decisionFilterKey = computed(() => JSON.stringify([
+  localSearch.value, customsdecisions_page.value, customsdecisions_per_page.value, customsdecisions_sort_by.value
+]))
+
+function deleteDecisions(decision) {
+  if (deleteDisabled.value || loading.value) return
+  const confirmedFilter = decisionFilterKey.value
+  return registerCustoms.remove({
+    decision,
+    refresh: loadDecisions,
+    canSubmit: () => decisionFilterKey.value === confirmedFilter
+  })
+}
+
 function closeReport() {
+  if (registerMode) {
+    return runWithAlert(() => router.push({
+      name: 'ДТЭГ/ПТДЭГ реестра', params: { registerId: props.registerId }
+    }), { fallback: 'Не удалось открыть ДТЭГ/ПТДЭГ реестра', scope: componentScope })
+  }
   const reportsPath = '/customs-reports'
   const previous = router.options.history.state.back
   if (typeof previous === 'string' && previous.split(/[?#]/, 1)[0] === reportsPath) {
@@ -321,10 +426,17 @@ function closeReport() {
     <div class="header-with-actions">
       <h1 class="primary-heading">{{ headingText }}</h1>
       <div class="header-actions-bar">
-        <div v-if="loading" class="header-actions header-actions-group">
+        <div v-if="loading || deleting" class="header-actions header-actions-group">
           <span class="spinner-border spinner-border-m"></span>
         </div>
         <div class="header-actions header-actions-group">
+          <ActionButton v-if="canDelete && !decId" 
+            :item="null" 
+            icon="fa-solid fa-broom"
+            icon-size="2x"
+            tooltip-text="Удалить все решения для реестра" 
+            aria-label="Удалить все решения для реестра" :disabled="deleteDisabled || loading || !decisionsTotalCount"
+            @click="() => deleteDecisions()" />
           <ActionButton
             :item="null"
             icon="fa-solid fa-xmark"
@@ -341,7 +453,14 @@ function closeReport() {
 
     <PageAlertRegion />
 
-    <div class="list-filters">
+    <ResponsiveFilterBar v-if="registerMode" aria-label="Фильтры таможенных решений">
+      <v-select :model-value="decId" :items="summary?.items ?? []" item-title="number" item-value="id"
+        label="ДТЭГ/ПТДЭГ" placeholder="Все решения" :disabled="deleting || !summary" clearable
+        density="compact" @update:model-value="selectDec" />
+      <v-text-field v-model="localSearch" :append-inner-icon="mdiMagnify" label="Поиск по решениям"
+        :disabled="deleting" density="compact" class="responsive-filter-bar__item--grow" />
+    </ResponsiveFilterBar>
+    <div v-else class="list-filters">
       <v-text-field
         v-model="localSearch"
         :append-inner-icon="mdiMagnify"
@@ -355,7 +474,7 @@ function closeReport() {
     <v-card class="table-card">
       <v-data-table-server
         v-model:items-per-page="customsdecisions_per_page"
-        :items-per-page-options="itemsPerPageOptions"
+        :items-per-page-options="registerPageOptions"
         v-model:page="customsdecisions_page"
         v-model:sort-by="customsdecisions_sort_by"
         :headers="headers"
@@ -412,7 +531,9 @@ function closeReport() {
               :class="[col.class, getColumnAlignmentClass(col)]"
               :data-column-key="col.key"
             >
-              <ClickableCell
+              <ActionButton v-if="col.key === 'actions'" :item="item" icon="fa-solid fa-trash-can"
+                tooltip-text="Удалить решение" aria-label="Удалить решение" :disabled="deleteDisabled || loading" @click="deleteDecisions" />
+              <ClickableCell v-else
                 :item="item"
                 cell-class="clickable-cell"
                 :disabled="!isParcelRowClickable(item)"
@@ -482,10 +603,11 @@ function closeReport() {
         <PaginationFooter
           v-model:items-per-page="customsdecisions_per_page"
           v-model:page="customsdecisions_page"
-          :items-per-page-options="itemsPerPageOptions"
+          :items-per-page-options="registerPageOptions"
           :page-options="pageOptions"
           :total-count="decisionsTotalCount"
           :max-page="maxPage"
+          :disabled="deleting"
         />
       </div>
     </v-card>

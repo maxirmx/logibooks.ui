@@ -438,6 +438,23 @@ const router = createRouter({
       meta: { reqAdminOrSrLogist: true }
     },
     {
+      path: '/registers/:registerId/decs',
+      name: 'ДТЭГ/ПТДЭГ реестра',
+      component: () => import('@/lists/RegisterDecs_List.vue'),
+      props: (route) => ({ registerId: Number(route.params.registerId) }),
+      meta: { reqAdminOrSrLogist: true, hideSidebar: true }
+    },
+    {
+      path: '/registers/:registerId/customs-decisions',
+      name: 'Решения реестра',
+      component: () => import('@/views/RegisterCustomsDecisions_View.vue'),
+      props: (route) => ({
+        registerId: Number(route.params.registerId),
+        decId: normalizeParcelBoxId(route.query.decId)
+      }),
+      meta: { reqAdminOrSrLogist: true, hideSidebar: true }
+    },
+    {
       path: '/feacn/prefix/create',
       name: 'Создание префикса ТН ВЭД',
       component: () => import('@/views/FeacnLocalPrefix_CreateView.vue'),

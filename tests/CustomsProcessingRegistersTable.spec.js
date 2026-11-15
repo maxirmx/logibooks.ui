@@ -6,7 +6,9 @@
 import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import CustomsProcessingRegistersTable from '@/components/CustomsProcessingRegistersTable.vue'
+import ActionButton2L from '@/components/ActionButton2L.vue'
 import { CUSTOMS_PROCEDURE_EXPORT, CUSTOMS_PROCEDURE_IMPORT, CUSTOMS_PROCEDURE_REEXPORT, CUSTOMS_PROCEDURE_REIMPORT } from '@/helpers/customs.procedure.helpers.js'
+import { vuetifyStubs } from './helpers/test-utils.js'
 
 const opsRef = vi.hoisted(() => ({ value: { customsProcedures: [], transportationTypes: [] } }))
 const companiesRef = vi.hoisted(() => ({ value: [] }))
@@ -110,6 +112,7 @@ function mountTable(props = {}) {
     },
     global: {
       stubs: {
+        VOverlay: vuetifyStubs['v-overlay'],
         'v-card': {
           template: '<div><slot /></div>'
         },
@@ -161,6 +164,34 @@ function mountTable(props = {}) {
 }
 
 describe('CustomsProcessingRegistersTable', () => {
+  it('shows the release menu with its tooltip only for a senior logistics role', async () => {
+    const wrapper = mountTable({ items: [{ id: 7 }] })
+    try {
+      expect(wrapper.find('[aria-label="Информация о выпуске"]').exists()).toBe(false)
+
+      await wrapper.setProps({ isSrLogistPlus: true })
+
+      expect(wrapper.getComponent(ActionButton2L).props('tooltipText')).toBe('Информация о выпуске')
+      expect(wrapper.get('button[aria-label="Информация о выпуске"]').element.disabled).toBe(false)
+    } finally {
+      wrapper.unmount()
+    }
+  })
+
+  it.each([{ runningAction: true }, { loading: true }])('disables the release menu while %o', async (props) => {
+    const wrapper = mountTable({ items: [{ id: 7 }], isSrLogistPlus: true, ...props })
+    try {
+      const button = wrapper.get('button[aria-label="Информация о выпуске"]')
+      expect(button.element.disabled).toBe(true)
+
+      await button.trigger('click')
+
+      expect(wrapper.find('[role="menu"]').exists()).toBe(false)
+    } finally {
+      wrapper.unmount()
+    }
+  })
+
   it('selects, applies, and cancels register status changes inline', async () => {
     const setSelectedRegisterStatusId = vi.fn()
     const applyRegisterStatusChange = vi.fn()

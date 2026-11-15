@@ -523,6 +523,81 @@ describe('Registers_List.vue', () => {
       expect(router.push).toHaveBeenCalledWith('/registers/1/parcels?mode=modePaperwork')
     })
 
+    const releaseDestinations = [
+      {
+        label: 'Решения о выпуске',
+        routeName: 'Решения реестра',
+        fallback: 'Не удалось открыть решения о выпуске реестра'
+      },
+      {
+        label: 'ДТЭГ/ПДТЭГ',
+        routeName: 'ДТЭГ/ПТДЭГ реестра',
+        fallback: 'Не удалось открыть ДТЭГ/ПТДЭГ реестра'
+      }
+    ]
+
+    it.each(releaseDestinations)('opens $label for the selected register', async ({ label, routeName }) => {
+      mockIsSrLogistPlus.value = true
+      mockItems.value = [{ id: 1, dealNumber: 'D-1' }, { id: 2, dealNumber: 'D-2' }]
+      const wrapper = mount(RegistersList, { global: { stubs: vuetifyStubs } })
+      await flushPromises()
+      try {
+        const button = wrapper.findAll('button[aria-label="Информация о выпуске"]')[1]
+        expect(button.attributes('disabled')).toBeUndefined()
+        await button.trigger('click')
+        expect(router.push).not.toHaveBeenCalled()
+
+        const menuItems = wrapper.findAll('[role="menuitem"]')
+        expect(menuItems.map(option => option.text())).toEqual(['Решения о выпуске', 'ДТЭГ/ПДТЭГ'])
+        await menuItems.find(option => option.text() === label).trigger('click')
+        await flushPromises()
+
+        expect(router.push).toHaveBeenCalledExactlyOnceWith({ name: routeName, params: { registerId: 2 } })
+        expect(wrapper.find('[role="menu"]').exists()).toBe(false)
+      } finally {
+        wrapper.unmount()
+      }
+    })
+
+    it.each(releaseDestinations)('shows one localized navigation error and retries $label', async ({ label, routeName, fallback }) => {
+      mockIsSrLogistPlus.value = true
+      mockItems.value = [{ id: 1, dealNumber: 'D-1' }]
+      const error = new Error('private navigation failure')
+      router.push.mockRejectedValueOnce(error).mockResolvedValueOnce(undefined)
+      alertErrorFn.mockImplementationOnce((value, options) => {
+        mockAlert.value = { severity: 'error', message: getErrorMessage(value, options.fallback) }
+      })
+      const errorHandler = vi.fn()
+      const wrapper = mount(RegistersList, { global: { stubs: vuetifyStubs, config: { errorHandler } } })
+      await flushPromises()
+      try {
+        const button = wrapper.get('button[aria-label="Информация о выпуске"]')
+        await button.trigger('click')
+        await wrapper.findAll('[role="menuitem"]').find(option => option.text() === label).trigger('click')
+        await flushPromises()
+
+        await expect(router.push.mock.results[0].value).rejects.toBe(error)
+        expect(alertErrorFn).toHaveBeenCalledExactlyOnceWith(error, { fallback, title: '' })
+        expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+        expect(wrapper.get('[role="alert"]').text()).toBe(`${fallback} ×`)
+        expect(wrapper.text()).not.toContain(error.message)
+        expect(errorHandler).not.toHaveBeenCalled()
+
+        await button.trigger('click')
+        await wrapper.findAll('[role="menuitem"]').find(option => option.text() === label).trigger('click')
+        await flushPromises()
+
+        expect(router.push.mock.calls).toEqual([
+          [{ name: routeName, params: { registerId: 1 } }],
+          [{ name: routeName, params: { registerId: 1 } }]
+        ])
+        expect(alertErrorFn).toHaveBeenCalledOnce()
+        expect(errorHandler).not.toHaveBeenCalled()
+      } finally {
+        wrapper.unmount()
+      }
+    })
+
     it('applies inline register status changes in paperwork mode', async () => {
       mockIsSrLogistPlus.value = true
       setRegisterStatusFn.mockResolvedValue()

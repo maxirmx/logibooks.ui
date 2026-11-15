@@ -39,6 +39,7 @@ import {
   normalizeRegisterStatusFilterValue
 } from '@/helpers/register.status.filter.helpers.js'
 import { useAlertStore } from '@/stores/alert.store.js'
+import { runWithAlert } from '@/helpers/notification.helpers.js'
 import { mdiMagnify } from '@mdi/js'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
@@ -316,6 +317,16 @@ function openParcels(item) {
   router.push(`/registers/${item.id}/parcels?mode=${OP_MODE_PAPERWORK}`)
 }
 
+function openDecs(item) {
+  return runWithAlert(() => router.push({ name: 'ДТЭГ/ПТДЭГ реестра', params: { registerId: item.id } }),
+    { fallback: 'Не удалось открыть ДТЭГ/ПТДЭГ реестра' })
+}
+
+function openCustomsDecisions(item) {
+  return runWithAlert(() => router.push({ name: 'Решения реестра', params: { registerId: item.id } }),
+    { fallback: 'Не удалось открыть решения о выпуске реестра' })
+}
+
 function openHistory(item) {
   router.push(`/registers/${item.id}/history?mode=${OP_MODE_PAPERWORK}`)
 }
@@ -451,6 +462,8 @@ defineExpose({
       :calculate-customs-charges="runCalculateCustomsCharges"
       @open-parcels="openParcels"
       @open-history="openHistory"
+      @open-decs="openDecs"
+      @open-customs-decisions="openCustomsDecisions"
       @edit-register="editRegister"
       @delete-register="deleteRegister"
     />

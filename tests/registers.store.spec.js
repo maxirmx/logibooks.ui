@@ -528,19 +528,19 @@ describe('registers store', () => {
 
   describe('remove', () => {
     it('removes register successfully', async () => {
-      fetchWrapper.delete.mockResolvedValue({})
-      fetchWrapper.get.mockResolvedValue({
-        items: [],
-        pagination: { totalCount: 0, hasNextPage: false, hasPreviousPage: false }
-      })
+      const deletion = Promise.withResolvers()
+      fetchWrapper.delete.mockReturnValueOnce(deletion.promise)
 
       const store = useRegistersStore()
-      await store.remove(1)
+      const pending = store.remove(1)
 
       expect(fetchWrapper.delete).toHaveBeenCalledWith(`${apiUrl}/registers/1`)
-      expect(fetchWrapper.get).toHaveBeenCalledWith(
-        `${apiUrl}/registers?page=1&pageSize=10&sortBy=id&sortOrder=asc&whOnly=false`
-      )
+      expect(store.loading).toBe(true)
+      deletion.resolve()
+      await pending
+
+      expect(store.loading).toBe(false)
+      expect(fetchWrapper.get).not.toHaveBeenCalled()
     })
 
     it('handles remove error', async () => {

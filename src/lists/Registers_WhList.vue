@@ -37,13 +37,14 @@ import { useAlertStore } from '@/stores/alert.store.js'
 import { mdiMagnify } from '@mdi/js'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
-import { useAppConfirm } from '@/composables/useAppConfirm.js'
 import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync.js'
+import { useRegisterDeletion } from '@/composables/useRegisterDeletion.js'
 import ActionButton from '@/components/ActionButton.vue'
 import WarehouseRegistersTable from '@/components/WarehouseRegistersTable.vue'
 import RegisterStatusSelect from '@/components/RegisterStatusSelect.vue'
 import ResponsiveFilterBar from '@/components/ResponsiveFilterBar.vue'
 import ParcelStatusBulkChangeDialog from '@/l2/ParcelStatusBulkChangeDialog.vue'
+import ActionDialog from '@/l2/ActionDialog.vue'
 
 const registersStore = useRegistersStore()
 const { items, loading, totalCount } = storeToRefs(registersStore)
@@ -64,7 +65,11 @@ const warehousesStore = useWarehousesStore()
 const registerStatusesStore = useRegisterStatusesStore()
 
 const alertStore = useAlertStore()
-const confirm = useAppConfirm()
+const { deleteDialog, deleteRegister } = useRegisterDeletion({
+  mode: OP_MODE_WAREHOUSE,
+  runningAction,
+  reloadRegisters: loadRegisters
+})
 
 const { validationState, progressPercent, stopPolling } = createRegisterActionHandlers(
   registersStore,
@@ -252,32 +257,6 @@ function editRegister(item) {
   router.push(`/register/edit/${item.id}?mode=${OP_MODE_WAREHOUSE}`)
 }
 
-async function deleteRegister(item) {
-  if (runningAction.value) return
-  runningAction.value = true
-  try {
-    const confirmed = await confirm({
-      title: 'Подтверждение',
-      confirmationText: 'Удалить',
-      cancellationText: 'Не удалять',
-      content: `Удалить ${registerNouns.value.accusative} "${item.fileName}" ?`
-    })
-
-    if (confirmed) {
-      try {
-        await registersStore.remove(item.id)
-      } catch (err) {
-        alertStore.error(
-          `Ошибка при удалении ${registerNouns.value.genitiveSingular}` +
-            (err.message ? `: ${err.message}` : '')
-        )
-      }
-    }
-  } finally {
-    runningAction.value = false
-  }
-}
-
 function openReturnRegisterCreate() {
   router.push('/register/return')
 }
@@ -313,7 +292,7 @@ defineExpose({
       <h1 class="primary-heading">{{ registerNouns.plural }}</h1>
       <div class="header-actions-bar">
         <div
-          v-if="runningAction || loading || isInitializing"
+          v-if="!deleteDialog.show && (runningAction || loading || isInitializing)"
           class="header-actions header-actions-group"
         >
           <span class="spinner-border spinner-border-m"></span>
@@ -409,6 +388,7 @@ defineExpose({
       @update:show="showParcelStatusBulkDialog = $event"
       @updated="handleParcelStatusBulkUpdated"
     />
+    <ActionDialog :action-dialog="deleteDialog" />
   </div>
 </template>
 

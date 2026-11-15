@@ -3,7 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { ref } from 'vue'
 import RegistersList from '@/lists/Registers_List.vue'
@@ -14,6 +14,7 @@ import {
   WBRN_REGISTER_ID
 } from '@/helpers/company.constants.js'
 import { OP_MODE_PAPERWORK } from '@/helpers/op.mode.js'
+import { getErrorMessage } from '@/helpers/error.helpers.js'
 import {
   REGISTER_STATUS_FILTER_ALL,
   REGISTER_STATUS_FILTER_ALL_ICON,
@@ -100,6 +101,7 @@ const mockIsShiftLeadPlus = ref(false)
 const mockIsSrLogistPlus = ref(false)
 const mockPaperworkRegistersProcedure = ref('all')
 const mockPaperworkRegistersStatus = ref(REGISTER_STATUS_FILTER_IN_PROGRESS)
+const mockUser = ref({ id: 1 })
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -252,6 +254,7 @@ vi.mock('@/stores/alert.store.js', () => ({
 
 vi.mock('@/stores/auth.store.js', () => ({
   useAuthStore: () => ({
+    get user() { return mockUser.value },
     registers_per_page: ref(10),
     registers_search: ref(''),
     registers_procedure: mockPaperworkRegistersProcedure,
@@ -821,23 +824,38 @@ describe('Registers_List.vue', () => {
   })
 
   describe('delete functionality', () => {
+    const item = { id: 3, fileName: 'register.xlsx' }
     let wrapper
 
-    beforeEach(() => {
+    beforeEach(async () => {
+      mockUser.value = { id: 1 }
+      mockItems.value = [item]
+      mockIsShiftLeadPlus.value = true
+      confirmMock.mockReset()
+      removeFn.mockReset()
       wrapper = mount(RegistersList, {
         global: {
           stubs: vuetifyStubs
         }
       })
+      await flushPromises()
+      getAll.mockClear()
+    })
+
+    afterEach(() => {
+      wrapper?.unmount()
+      vi.restoreAllMocks()
     })
 
     it('does not call remove when deletion is cancelled', async () => {
       confirmMock.mockResolvedValue(false)
-      const item = { id: 3, fileName: 'file.xlsx' }
 
       await wrapper.vm.deleteRegister(item)
+      await wrapper.vm.$nextTick()
 
       expect(removeFn).not.toHaveBeenCalled()
+      expect(getAll).not.toHaveBeenCalled()
+      expect(wrapper.getComponent(vuetifyStubs['v-dialog']).props('modelValue')).toBe(false)
     })
 
     it('does not open confirmation while another action is running', async () => {
@@ -849,23 +867,109 @@ describe('Registers_List.vue', () => {
       expect(removeFn).not.toHaveBeenCalled()
     })
 
-    it('handles delete error', async () => {
-      confirmMock.mockResolvedValue(true)
-      removeFn.mockRejectedValueOnce(new Error('Network error'))
-      const item = { id: 4, fileName: 'file.xlsx' }
+    it('shows modal progress after confirmation through deletion and list refresh', async () => {
+      const confirmation = Promise.withResolvers()
+      const deletion = Promise.withResolvers()
+      const refresh = Promise.withResolvers()
+      confirmMock.mockReturnValueOnce(confirmation.promise)
+      removeFn.mockReturnValueOnce(deletion.promise)
+      getAll.mockReturnValueOnce(refresh.promise)
+      const dialog = wrapper.getComponent(vuetifyStubs['v-dialog'])
+      const deleteButton = wrapper.findAllComponents(ActionButton)
+        .find(button => button.props('tooltipText') === 'Удалить реестр')
 
-      await wrapper.vm.deleteRegister(item)
+      await deleteButton.get('button').trigger('click')
+      expect(dialog.props('modelValue')).toBe(false)
+      expect(wrapper.get('.header-actions-bar > :first-child .spinner-border-m').exists()).toBe(true)
+      expect(removeFn).not.toHaveBeenCalled()
+      expect(confirmMock.mock.calls[0][0].content).toBe('Удалить реестр «register.xlsx»?')
 
-      expect(removeFn).toHaveBeenCalledWith(item.id)
+      confirmation.resolve(true)
+      await flushPromises()
+      expect(dialog.props()).toMatchObject({ modelValue: true, persistent: '' })
+      expect(dialog.text()).toContain('Удаление реестра')
+      expect(dialog.find('[data-testid="v-progress-circular"]').exists()).toBe(true)
+      expect(wrapper.find('.header-actions-bar .spinner-border-m').exists()).toBe(false)
+      expect(deleteButton.get('button').element.disabled).toBe(true)
+      expect(removeFn).toHaveBeenCalledExactlyOnceWith(item.id)
+      expect(getAll).not.toHaveBeenCalled()
+
+      deletion.resolve()
+      await flushPromises()
+      expect(dialog.props('modelValue')).toBe(true)
+      expect(getAll).toHaveBeenCalledExactlyOnceWith({ mode: OP_MODE_PAPERWORK })
+
+      refresh.resolve()
+      await flushPromises()
+      expect(dialog.props('modelValue')).toBe(false)
+      expect(deleteButton.get('button').element.disabled).toBe(false)
+      expect(alertErrorFn).not.toHaveBeenCalled()
+      expect(router.push).not.toHaveBeenCalled()
     })
 
-    it('handles delete errors without a message', async () => {
+    it('closes the dialog after a rejected delete, shows one localized alert and allows retry', async () => {
+      const deletion = Promise.withResolvers()
+      const error = new Error('Delete failed')
       confirmMock.mockResolvedValue(true)
-      removeFn.mockRejectedValueOnce({})
+      removeFn.mockReturnValueOnce(deletion.promise).mockResolvedValueOnce(undefined)
+      alertErrorFn.mockImplementationOnce((value, { fallback }) => {
+        mockAlert.value = { severity: 'error', message: getErrorMessage(value, fallback) }
+      })
+      const dialog = wrapper.getComponent(vuetifyStubs['v-dialog'])
+      const deleteButton = wrapper.findAllComponents(ActionButton)
+        .find(button => button.props('tooltipText') === 'Удалить реестр')
 
-      await wrapper.vm.deleteRegister({ id: 6, fileName: 'file.xlsx' })
+      await deleteButton.get('button').trigger('click')
+      await flushPromises()
+      expect(dialog.props('modelValue')).toBe(true)
 
-      expect(alertErrorFn).toHaveBeenCalledWith('Ошибка при удалении реестра')
+      deletion.reject(error)
+      await flushPromises()
+      expect(dialog.props('modelValue')).toBe(false)
+      expect(wrapper.get('[role="alert"]').text()).toBe('Ошибка при удалении реестра ×')
+      expect(alertErrorFn).toHaveBeenCalledExactlyOnceWith(error, { fallback: 'Ошибка при удалении реестра' })
+      expect(getAll).not.toHaveBeenCalled()
+      expect(router.push).not.toHaveBeenCalled()
+
+      await deleteButton.get('button').trigger('click')
+      await flushPromises()
+      expect(removeFn.mock.calls).toEqual([[item.id], [item.id]])
+      expect(getAll).toHaveBeenCalledExactlyOnceWith({ mode: OP_MODE_PAPERWORK })
+      expect(alertErrorFn).toHaveBeenCalledOnce()
+    })
+
+    it('ignores confirmation after the signed-in user changes', async () => {
+      const confirmation = Promise.withResolvers()
+      confirmMock.mockReturnValueOnce(confirmation.promise)
+      const action = wrapper.vm.deleteRegister(item)
+
+      mockUser.value = { id: 2 }
+      confirmation.resolve(true)
+      await expect(action).resolves.toBe(false)
+
+      expect(removeFn).not.toHaveBeenCalled()
+      expect(alertErrorFn).not.toHaveBeenCalled()
+    })
+
+    it.each(['resolve', 'reject'])('handles a pending delete that finishes with %s after leaving the page', async (outcome) => {
+      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const deletion = Promise.withResolvers()
+      const error = new Error('Delete failed')
+      confirmMock.mockResolvedValueOnce(true)
+      removeFn.mockReturnValueOnce(deletion.promise)
+      const action = wrapper.vm.deleteRegister(item)
+      await flushPromises()
+
+      wrapper.unmount()
+      wrapper = null
+      deletion[outcome](outcome === 'reject' ? error : undefined)
+      await expect(action).resolves.toBe(false)
+
+      expect(getAll).not.toHaveBeenCalled()
+      expect(alertErrorFn).not.toHaveBeenCalled()
+      if (outcome === 'reject') {
+        expect(consoleError).toHaveBeenCalledExactlyOnceWith('[register deletion after its scope changed]', error)
+      }
     })
   })
 

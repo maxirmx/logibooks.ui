@@ -38,8 +38,12 @@ describe('FeacnCodeSearchByKeyword', () => {
     })
 
   it('emits refocus event on unmount', () => {
-    const wrapper = createWrapper()
+    const onRefocus = vi.fn()
+    const wrapper = createWrapper({ onRefocus })
+    expect(onRefocus).not.toHaveBeenCalled()
+
     wrapper.unmount()
-    expect(wrapper.emitted('refocus')).toBeTruthy()
+
+    expect(onRefocus).toHaveBeenCalledExactlyOnceWith()
   })
 })

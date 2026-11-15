@@ -58,6 +58,9 @@ vi.mock('@/views/HotKeyActionScheme_EditView.vue', () => ({ default: { template:
 vi.mock('@/views/ParcelStatus_CreateView.vue', () => ({ default: { template: '<div />' } }))
 vi.mock('@/views/RegisterStatus_CreateView.vue', () => ({ default: { template: '<div />' } }))
 vi.mock('@/views/HotKeyActionScheme_CreateView.vue', () => ({ default: { template: '<div />' } }))
+vi.mock('@/views/CustomsDecisions_View.vue', () => ({ default: { template: '<div />' } }))
+vi.mock('@/lists/RegisterDecs_List.vue', () => ({ default: { template: '<div />' } }))
+vi.mock('@/views/RegisterCustomsDecisions_View.vue', () => ({ default: { template: '<div />' } }))
 
 import router from '@/router'
 

@@ -8,6 +8,7 @@ import { mount, flushPromises } from '@vue/test-utils'
 import { ref } from 'vue'
 import RegistersWhList from '@/lists/Registers_WhList.vue'
 import ActionButton from '@/components/ActionButton.vue'
+import { getErrorMessage } from '@/helpers/error.helpers.js'
 import { vuetifyStubs } from './helpers/test-utils.js'
 import { OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 import { REGISTER_STATUS_FILTER_IN_PROGRESS } from '@/helpers/register.status.filter.helpers.js'
@@ -25,10 +26,12 @@ const getAirportsAll = vi.fn()
 const ensureParcelStatusesLoadedFn = vi.fn().mockResolvedValue()
 const countriesEnsureLoadedFn = vi.fn().mockResolvedValue()
 const warehousesEnsureLoadedFn = vi.fn().mockResolvedValue()
-const alertErrorFn = vi.fn()
 const alertSuccessFn = vi.fn()
 const alertDismissFn = vi.fn()
 const mockAlert = ref(null)
+const alertErrorFn = vi.fn((error, { fallback } = {}) => {
+  mockAlert.value = { severity: 'error', message: getErrorMessage(error, fallback) }
+})
 const mockWhPerPage = ref(25)
 const mockWhSearch = ref('warehouse search')
 const mockWhProcedure = ref('all')
@@ -358,14 +361,69 @@ describe('Registers_WhList.vue', () => {
   })
 
   it('reports warehouse party delete errors', async () => {
+    mockItems.value = [{ id: 12, fileName: 'party.xlsx' }]
+    const message = 'Партия «party.xlsx» доступна только для чтения'
+    const error = { status: 409, data: { msg: message } }
     confirmMock.mockResolvedValueOnce(true)
-    registersStore.remove.mockRejectedValueOnce(new Error('delete failed'))
+    registersStore.remove.mockRejectedValueOnce(error)
     const wrapper = createWrapper()
-    await wrapper.vm.$nextTick()
+    await flushPromises()
+    const deleteButton = wrapper.findAllComponents(ActionButton)
+      .find(button => button.props('tooltipText') === 'Удалить партию')
 
-    await wrapper.vm.deleteRegister({ id: 12, fileName: 'party.xlsx' })
+    await deleteButton.get('button').trigger('click')
+    await flushPromises()
 
-    expect(alertErrorFn).toHaveBeenCalledWith('Ошибка при удалении партии: delete failed')
+    expect(wrapper.getComponent(vuetifyStubs['v-dialog']).props('modelValue')).toBe(false)
+    expect(wrapper.get('[role="alert"]').text()).toContain(message)
+    expect(alertErrorFn).toHaveBeenCalledExactlyOnceWith(error, { fallback: 'Ошибка при удалении партии' })
+    expect(deleteButton.get('button').element.disabled).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('shows warehouse deletion progress and keeps the warehouse filters for the refresh', async () => {
+    const deletion = Promise.withResolvers()
+    confirmMock.mockResolvedValueOnce(true)
+    registersStore.remove.mockReturnValueOnce(deletion.promise)
+    const wrapper = createWrapper()
+    await flushPromises()
+    getAll.mockClear()
+    const dialog = wrapper.getComponent(vuetifyStubs['v-dialog'])
+
+    const action = wrapper.vm.deleteRegister({ id: 12, fileName: 'party.xlsx' })
+    await flushPromises()
+    expect(dialog.props('modelValue')).toBe(true)
+    expect(dialog.text()).toContain('Удаление партии')
+    expect(wrapper.find('.header-actions-bar .spinner-border-m').exists()).toBe(false)
+
+    deletion.resolve()
+    await expect(action).resolves.toBe(true)
+    await flushPromises()
+    expect(dialog.props('modelValue')).toBe(false)
+    expect(getAll).toHaveBeenCalledExactlyOnceWith({ mode: OP_MODE_WAREHOUSE })
+    expect(mockWhSearch.value).toBe('warehouse search')
+    expect(mockWhPage.value).toBe(3)
+    wrapper.unmount()
+  })
+
+  it('shows a list refresh error after a successful deletion', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    confirmMock.mockResolvedValueOnce(true)
+    const wrapper = createWrapper()
+    await flushPromises()
+    const error = new Error('List request failed')
+    getAll.mockRejectedValueOnce(error)
+
+    try {
+      await expect(wrapper.vm.deleteRegister({ id: 12, fileName: 'party.xlsx' })).resolves.toBe(false)
+      expect(wrapper.getComponent(vuetifyStubs['v-dialog']).props('modelValue')).toBe(false)
+      expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось загрузить реестры')
+      expect(alertErrorFn).toHaveBeenCalledOnce()
+      expect(registersStore.remove).toHaveBeenCalledExactlyOnceWith(12)
+    } finally {
+      wrapper.unmount()
+      consoleError.mockRestore()
+    }
   })
 
   it('shows return-register action and routes to creation view', async () => {

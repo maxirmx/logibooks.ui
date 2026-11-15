@@ -1278,7 +1278,6 @@ export const useRegistersStore = defineStore('registers', () => {
     error.value = null
     try {
       await fetchWrapper.delete(`${baseUrl}/${id}`)
-      await getAll()
     } catch (err) {
       error.value = err
       throw err

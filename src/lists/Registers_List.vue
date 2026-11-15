@@ -43,13 +43,14 @@ import { runWithAlert } from '@/helpers/notification.helpers.js'
 import { mdiMagnify } from '@mdi/js'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
-import { useAppConfirm } from '@/composables/useAppConfirm.js'
 import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync.js'
+import { useRegisterDeletion } from '@/composables/useRegisterDeletion.js'
 import ActionButton2L from '@/components/ActionButton2L.vue'
 import CustomsProcessingRegistersTable from '@/components/CustomsProcessingRegistersTable.vue'
 import RegisterStatusSelect from '@/components/RegisterStatusSelect.vue'
 import ResponsiveFilterBar from '@/components/ResponsiveFilterBar.vue'
 import ParcelStatusBulkChangeDialog from '@/l2/ParcelStatusBulkChangeDialog.vue'
+import ActionDialog from '@/l2/ActionDialog.vue'
 
 const registersStore = useRegistersStore()
 const { items, loading, totalCount } = storeToRefs(registersStore)
@@ -68,7 +69,11 @@ const countriesStore = useCountriesStore()
 const airportsStore = useAirportsStore()
 
 const alertStore = useAlertStore()
-const confirm = useAppConfirm()
+const { deleteDialog, deleteRegister } = useRegisterDeletion({
+  mode: OP_MODE_PAPERWORK,
+  runningAction,
+  reloadRegisters: loadRegisters
+})
 
 const { validationState, progressPercent, calculateCustomsCharges, stopPolling } =
   createRegisterActionHandlers(registersStore, alertStore, { mode: OP_MODE_PAPERWORK })
@@ -335,33 +340,6 @@ function editRegister(item) {
   router.push(`/register/edit/${item.id}?mode=${OP_MODE_PAPERWORK}`)
 }
 
-async function deleteRegister(item) {
-  if (runningAction.value) return
-  runningAction.value = true
-  try {
-    const content = `Удалить ${registerNouns.value.accusative} "${item.fileName}" ?`
-    const confirmed = await confirm({
-      title: 'Подтверждение',
-      confirmationText: 'Удалить',
-      cancellationText: 'Не удалять',
-      content: content
-    })
-
-    if (confirmed) {
-      try {
-        await registersStore.remove(item.id)
-      } catch (err) {
-        alertStore.error(
-          `Ошибка при удалении ${registerNouns.value.genitiveSingular}` +
-            (err.message ? `: ${err.message}` : '')
-        )
-      }
-    }
-  } finally {
-    runningAction.value = false
-  }
-}
-
 defineExpose({
   validationState,
   progressPercent,
@@ -376,7 +354,7 @@ defineExpose({
       <h1 class="primary-heading">{{ registerNouns.plural }}</h1>
       <div class="header-actions-bar">
         <div
-          v-if="runningAction || loading || isInitializing"
+          v-if="!deleteDialog.show && (runningAction || loading || isInitializing)"
           class="header-actions header-actions-group"
         >
           <span class="spinner-border spinner-border-m"></span>
@@ -477,6 +455,7 @@ defineExpose({
       @update:show="showParcelStatusBulkDialog = $event"
       @updated="handleParcelStatusBulkUpdated"
     />
+    <ActionDialog :action-dialog="deleteDialog" />
   </div>
 </template>
 

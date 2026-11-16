@@ -47,7 +47,7 @@ const host = defineComponent({
       print: (target) => printing.value?.printParcel(target)
     })
     return { printing, job: ref(42), user: ref(9), active: ref(true), disabled: ref(false),
-      box: { id: 17, companyId: 2, boxSticker: '$1:1:17:362877', printableTemplates: ['WBR_BOX'] },
+      box: reactive({ id: 17, companyId: 2, boxSticker: '$1:1:17:362877', printableTemplates: ['WBR_BOX'] }),
       parcel: reactive({ id: 7, printableTemplates: ['WBRN', 'OZON'] }) }
   }
 })
@@ -156,6 +156,26 @@ it.each([{ kind: 'parcel', fails: false }])(
     expect(store.state.mode).toBe('KGT')
   }
 )
+
+it('shows one error for a rejected Ozon box label and retries the same box on click', async () => {
+  await flushPromises()
+  Object.assign(wrapper.vm.box, { companyId: 1, boxSticker: '%301%17', printableTemplates: ['OZON_BOX'] })
+  await flushPromises()
+  env.label.mockRejectedValueOnce({ data: { code: 'InvalidData', msg: 'Некорректные данные стикера коробки' } })
+
+  const button = wrapper.get('[data-testid="box-print-label"]')
+  await button.trigger('click')
+  await flushPromises()
+  expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+  expect(wrapper.get('[role="alert"]').text()).toContain('Некорректные данные стикера коробки')
+  expect(errorSpy).toHaveBeenCalledOnce()
+  expect(env.qz.submit).not.toHaveBeenCalled()
+
+  await button.trigger('click')
+  await flushPromises()
+  expect(env.label.mock.calls).toEqual(Array.from({ length: 2 }, () => [{ boxId: 17, template: 'OZON_BOX', scanJobId: 42 }]))
+  expect(env.qz.submit).toHaveBeenCalledOnce()
+})
 
 it('shares pending discovery with a replacement scope and reports only to the live owner', async () => {
   await flushPromises()

@@ -68,6 +68,7 @@ const registerHeading = computed(() => registerMode ? buildParcelListHeading(
 ) : '')
 const canDelete = computed(() => registerMode && authStore.isShiftLeadPlus)
 const displayedFilterKey = ref(null)
+const expandedDecisionId = ref(null)
 const deleteDisabled = computed(() => deleting.value || summary.value?.register?.readOnly !== false ||
   displayedFilterKey.value !== decisionFilterKey.value)
 const localSearch = ref(customsdecisions_search.value || '')
@@ -119,6 +120,14 @@ const headingText = computed(() => {
 function formatProcedureForHeading(value) {
   const text = String(value ?? '').trim()
   return text.replace(/^([А-ЯЁ]{2})\s+(\d+)$/u, '$1$2')
+}
+
+function hasAltaGoods(item) {
+  return registerMode && Array.isArray(item.items) && item.items.length > 0
+}
+
+function toggleGoods(id) {
+  expandedDecisionId.value = expandedDecisionId.value === id ? null : id
 }
 
 function isParcelRowClickable(item) {
@@ -302,6 +311,7 @@ const headers = computed(() => {
   const sortable = ['id', 'dTag', 'parcelNumber', 'processingResult']
   return [
     ...(canDelete.value ? [{ title: '', key: 'actions', sortable: false }] : []),
+    ...(decisions.value.some(hasAltaGoods) ? [{ title: '', key: 'goods', sortable: false }] : []),
     ...visible.map(header => ({ ...header, sortable: !deleting.value && sortable.includes(header.key) }))
   ]
 })
@@ -364,6 +374,10 @@ function selectDec(id) {
 const decisionFilterKey = computed(() => JSON.stringify([
   localSearch.value, customsdecisions_page.value, customsdecisions_per_page.value, customsdecisions_sort_by.value
 ]))
+
+watch([decisionFilterKey, () => props.registerId, () => props.decId, accountVersion], () => {
+  expandedDecisionId.value = null
+}, { flush: 'sync' })
 
 function deleteDecisions(decision) {
   if (deleteDisabled.value || loading.value) return
@@ -533,6 +547,18 @@ function closeReport() {
             >
               <ActionButton v-if="col.key === 'actions'" :item="item" icon="fa-solid fa-trash-can"
                 tooltip-text="Удалить решение" aria-label="Удалить решение" :disabled="deleteDisabled || loading" @click="deleteDecisions" />
+              <template v-else-if="col.key === 'goods'">
+                <v-btn
+                  v-if="hasAltaGoods(item)"
+                  variant="text"
+                  size="small"
+                  :aria-expanded="expandedDecisionId === item.id"
+                  :disabled="loading || displayedFilterKey !== decisionFilterKey"
+                  @click="toggleGoods(item.id)"
+                >
+                  Товары
+                </v-btn>
+              </template>
               <ClickableCell v-else
                 :item="item"
                 cell-class="clickable-cell"
@@ -543,7 +569,7 @@ function closeReport() {
                 <template v-if="col.key === 'dTag'">
                   <div class="two-line-cell">
                     <div class="primary-line">{{ item.dTag }}</div>
-                    <div class="secondary-line">Позиция {{ item.rowNumber }}</div>
+                    <div v-if="!hasAltaGoods(item)" class="secondary-line">Позиция {{ item.rowNumber }}</div>
                   </div>
                 </template>
 
@@ -595,6 +621,32 @@ function closeReport() {
                   {{ item[col.key] }}
                 </template>
               </ClickableCell>
+            </td>
+          </tr>
+          <tr v-if="hasAltaGoods(item) && expandedDecisionId === item.id">
+            <td :colspan="columns.length">
+              <div class="app-table-scroll">
+                <table class="app-table interlaced-table" aria-label="Товары">
+                  <thead>
+                    <tr>
+                      <th scope="col">Описание</th>
+                      <th scope="col">Код ТН ВЭД</th>
+                      <th scope="col">Предшествующий код</th>
+                      <th scope="col">Количество</th>
+                      <th scope="col">Общая стоимость</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(goods, index) in item.items" :key="index">
+                      <td>{{ goods.description }}</td>
+                      <td>{{ goods.tnVed }}</td>
+                      <td>{{ goods.prevTnVed }}</td>
+                      <td>{{ goods.quantity }}</td>
+                      <td>{{ goods.totalCost }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </td>
           </tr>
         </template>

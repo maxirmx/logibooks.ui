@@ -412,18 +412,18 @@ describe('CustomsDecisions_List.vue', () => {
     expect(wrapper.getComponent(CustomsDecisionsList).props()).toMatchObject({ reportId: 5, masterInvoice: 'MAWB-42' })
   })
 
-  function setupRegister({ locked = false } = {}) {
-    authStoreMock.isShiftLeadPlus = true
+  function setupRegister({ locked = false, canDelete = true, decisions = [createFullDecision()], appliedCount = 1 } = {}) {
+    authStoreMock.isShiftLeadPlus = canDelete
     registerOpsMock.mockResolvedValue(undefined)
     deleteCustomsMock.mockReset().mockResolvedValue(undefined)
     confirmCustomsMock.mockReset().mockResolvedValue(true)
     getCustomsMock.mockReset().mockImplementation(async url => url.endsWith('/decs')
       ? {
           register: { id: 11, dealNumber: 'A-11', invoiceNumber: '123', transportationTypeCode: 1, readOnly: locked },
-          items: [{ id: 21, number: '100/010826/200', decisionCount: 1, appliedCount: 1, notAppliedCount: 0 }]
+          items: [{ id: 21, number: '100/010826/200', decisionCount: 1, appliedCount, notAppliedCount: 0 }]
         }
       : {
-          items: [createFullDecision()],
+          items: decisions,
           pagination: { currentPage: 1, totalCount: 1 },
           columns: fullColumnKeys,
           customsProcedure: 'ЭК 10'
@@ -476,14 +476,93 @@ describe('CustomsDecisions_List.vue', () => {
     expect(routerPushMock).toHaveBeenLastCalledWith({ name: 'ДТЭГ/ПТДЭГ реестра', params: { registerId: 11 } })
   })
 
+  it.each([false, true])('shows Alta goods separately from parcel links (%s)', async (singleLink) => {
+    const alta = {
+      id: 21, dTag: 'DEC-21', parcelNumber: '00042', rowNumber: 0,
+      processingResult: singleLink ? 'Выпущено' : 'Ошибка сопоставления товаров',
+      parcelId: singleLink ? 31 : undefined, registerId: singleLink ? 11 : undefined,
+      items: [
+        { description: 'Чай', tnVed: '1234567890', prevTnVed: '0987654321', quantity: '3', totalCost: '10.00' },
+        { description: 'Кофе', quantity: '1', totalCost: '9007199254740993.0001' },
+        { description: 'Какао', quantity: '1', totalCost: '0' }
+      ]
+    }
+    setupRegister({ locked: true, canDelete: false, decisions: [alta] })
+    wrapper = mount(RegisterCustomsDecisionsView, {
+      props: { registerId: 11 },
+      global: { stubs: { ...testStubs, 'v-btn': { template: '<button type="button"><slot /></button>' } } }
+    })
+    await flushPromises()
+    const button = () => wrapper.get('[data-column-key="goods"] [aria-expanded]')
+    expect(button().attributes('aria-expanded')).toBe('false')
+    expect(wrapper.text()).not.toContain('Позиция 0')
+    expect(action('Удалить решение')).toBeUndefined()
+    expect(wrapper.getComponent({ name: 'v-data-table-server' }).props('itemsLength')).toBe(1)
+
+    await button().trigger('click')
+    expect(button().attributes('aria-expanded')).toBe('true')
+    const goods = wrapper.get('table[aria-label="Товары"]')
+    expect(goods.findAll('tbody tr').map(row => row.findAll('td').map(cell => cell.text()))).toEqual([
+      ['Чай', '1234567890', '0987654321', '3', '10.00'],
+      ['Кофе', '', '', '1', '9007199254740993.0001'],
+      ['Какао', '', '', '1', '0']
+    ])
+    expect(routerPushMock).not.toHaveBeenCalled()
+    expect(deleteCustomsMock).not.toHaveBeenCalled()
+    await button().trigger('click')
+    expect(wrapper.find('table[aria-label="Товары"]').exists()).toBe(false)
+    await button().trigger('click')
+    accountVersionRef.value++
+    await flushPromises()
+    expect(wrapper.find('table[aria-label="Товары"]').exists()).toBe(false)
+  })
+
+  it('does not restore expanded goods from a previous DEC filter', async () => {
+    const initial = { ...createFullDecision(), items: [{ description: 'Первый товар', quantity: '1', totalCost: '0' }] }
+    setupRegister({ decisions: [initial] })
+    const load = getCustomsMock.getMockImplementation()
+    let returnOldDec
+    const oldDec = new Promise(resolve => { returnOldDec = resolve })
+    getCustomsMock.mockImplementation(url => url.includes('decId=21') ? oldDec : load(url))
+    wrapper = mount(CustomsDecisionsList, {
+      props: { registerId: 11 },
+      global: { stubs: { ...testStubs, 'v-btn': { template: '<button type="button"><slot /></button>' } } }
+    })
+    await flushPromises()
+    await wrapper.get('[data-column-key="goods"] button').trigger('click')
+    expect(wrapper.find('table[aria-label="Товары"]').exists()).toBe(true)
+
+    await wrapper.setProps({ decId: 21 })
+    await flushPromises()
+    expect(getCustomsMock).toHaveBeenCalledWith(expect.stringContaining('decId=21'))
+    await wrapper.setProps({ decId: 22 })
+    await flushPromises()
+    returnOldDec({
+      ...await load('customs-decisions'),
+      items: [{ ...initial, parcelNumber: 'OLD-NUMBER', items: [{ description: 'Прежний товар' }] }]
+    })
+    await flushPromises()
+
+    expect(wrapper.find('table[aria-label="Товары"]').exists()).toBe(false)
+    expect(wrapper.text()).toContain(initial.parcelNumber)
+    expect(wrapper.text()).not.toContain('OLD-NUMBER')
+    await wrapper.get('[data-column-key="goods"] button').trigger('click')
+    expect(wrapper.get('table[aria-label="Товары"]').text()).toContain('Первый товар')
+  })
+
   it('shows the DEC count table, opens its filter and handles a failed bulk delete once', async () => {
-    setupRegister()
+    setupRegister({ appliedCount: 3 })
     wrapper = mount(RegisterDecsList, {
       props: { registerId: 11 }, global: { stubs: testStubs }
     })
     await flushPromises()
     expect(wrapper.text()).toContain('100/010826/200')
     expect(wrapper.text()).toContain('Всего решений')
+    expect(wrapper.text()).toContain('Применено')
+    expect(wrapper.text()).toContain('Не применено')
+    expect(wrapper.getComponent({ name: 'v-data-table' }).props('items')[0]).toMatchObject({
+      decisionCount: 1, appliedCount: 3, notAppliedCount: 0
+    })
     const dec = { id: 21, number: '100/010826/200' }
     action('Список решений').vm.$emit('click', dec)
     await flushPromises()

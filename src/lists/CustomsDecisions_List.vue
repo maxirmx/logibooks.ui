@@ -625,27 +625,29 @@ function closeReport() {
           </tr>
           <tr v-if="hasAltaGoods(item) && expandedDecisionId === item.id">
             <td :colspan="columns.length">
-              <div class="app-table-scroll">
-                <table class="app-table interlaced-table" aria-label="Товары">
-                  <thead>
-                    <tr>
-                      <th scope="col">Описание</th>
-                      <th scope="col">Код ТН ВЭД</th>
-                      <th scope="col">Предшествующий код</th>
-                      <th scope="col">Количество</th>
-                      <th scope="col">Общая стоимость</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="(goods, index) in item.items" :key="index">
-                      <td>{{ goods.description }}</td>
-                      <td>{{ goods.tnVed }}</td>
-                      <td>{{ goods.prevTnVed }}</td>
-                      <td>{{ goods.quantity }}</td>
-                      <td>{{ goods.totalCost }}</td>
-                    </tr>
-                  </tbody>
-                </table>
+              <div class="table-card app-table-card">
+                <div class="app-table-scroll">
+                  <table class="app-table interlaced-table" aria-label="Товары">
+                    <thead>
+                      <tr>
+                        <th scope="col">Описание</th>
+                        <th scope="col">Код ТН ВЭД</th>
+                        <th scope="col">Предшествующий код</th>
+                        <th scope="col">Количество</th>
+                        <th scope="col">Общая стоимость</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="(goods, index) in item.items" :key="index">
+                        <td>{{ goods.description }}</td>
+                        <td>{{ goods.tnVed }}</td>
+                        <td>{{ goods.prevTnVed }}</td>
+                        <td>{{ goods.quantity }}</td>
+                        <td>{{ goods.totalCost }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </td>
           </tr>

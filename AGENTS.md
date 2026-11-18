@@ -48,6 +48,10 @@ These instructions apply to the entire repository. Follow them for every new fea
 - On every modal close path, including unmount, dismiss alerts owned by that modal by their notification ID. Preserve alerts from the parent page or another dialog. Guard asynchronous work against publishing alerts after the modal closes.
 - Successful route changes must clear the active alert so messages from the previous page are not retained.
 
+## Register history labels
+
+- When adding a field or event to register history, give it a Russian display label that uses the terminology familiar to Logibooks users. Add field labels to the mapping in `src/lists/RegisterHistory_List.vue`.
+
 ## Boolean flags and nullable strings
 
 - Use the existing checkbox pattern for settings flags such as `exportTo1C` and `monitorInAlta`. Start new forms with `false`, load the saved value for edits, and submit actual booleans, including `false` when unchecked.

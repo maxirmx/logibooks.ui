@@ -118,6 +118,7 @@ const fieldLabels = {
   DTime: 'Дата загрузки',
   DealNumber: 'Номер сделки',
   CustomerOrderNumber: 'Номер заказа клиента',
+  AltaDatabaseName: 'База данных реестра в Альта-Софт',
   CompanyId: 'Компания',
   RegisterType: 'Тип реестра',
   StatusId: 'Статус',

@@ -49,6 +49,7 @@ const router = createRouter({
     { path: '/user/edit/:id', component: { template: '<div>User Edit</div>' } },
     { path: '/users', component: { template: '<div>Users</div>' } },
     { path: '/customs-reports', component: { template: '<div>Customs Reports</div>' } },
+    { path: '/alta-sync', component: { template: '<div>Alta sync</div>' } },
     { path: '/countries', component: { template: '<div>Countries</div>' } },
     { path: '/feacn/codes', component: { template: '<div>FEACN Codes</div>' } },
     { path: '/feacn/orders', component: { template: '<div>FEACN Orders</div>' } },
@@ -112,7 +113,7 @@ describe('App navigation for registers', () => {
               '<div class="nav-drawer"><slot name="prepend" /><slot /><slot name="append" /></div>'
           },
           'v-list': { template: '<ul><slot /></ul>' },
-          'v-list-item': { template: '<li><slot /></li>' },
+          'v-list-item': { template: '<li><slot name="title" /><slot /></li>' },
           'v-list-group': {
             template: '<div class="list-group"><slot name="activator" :props="{}" /><slot /></div>'
           },
@@ -121,7 +122,6 @@ describe('App navigation for registers', () => {
             template:
               '<div class="v-tooltip-stub"><slot name="activator" :props="{}" /><slot /></div>'
           },
-          'font-awesome-icon': { template: '<span class="fa-icon-stub"></span>' },
           ActionDialog: {
             props: ['actionDialog'],
             template: '<div class="action-dialog-stub" :data-show="actionDialog?.show"></div>'
@@ -130,6 +130,14 @@ describe('App navigation for registers', () => {
       }
     })
   }
+
+  it('renders the handshake icon immediately after the Alta Soft menu title', () => {
+    const wrapper = mountApp()
+    const icon = wrapper.get('.nav-drawer svg[data-prefix="fas"][data-icon="handshake"]')
+
+    expect(icon.element.previousElementSibling?.textContent).toBe('Альта Софт')
+    wrapper.unmount()
+  })
 
   it('routes to the single settings page after scanning in the warehouse menu', async () => {
     const wrapper = mountApp()

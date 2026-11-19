@@ -139,6 +139,20 @@ describe('App navigation for registers', () => {
     wrapper.unmount()
   })
 
+  it('opens the Alta synchronization journal for users with menu access', async () => {
+    const wrapper = mountApp()
+    const journal = wrapper.get('a[href="/alta-sync"]')
+    expect(journal.text()).toBe('Журнал синхронизации')
+    await journal.trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.path).toBe('/alta-sync')
+
+    authStore.user = { ...authStore.user, roles: [roleLogist] }
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('a[href="/alta-sync"]').exists()).toBe(false)
+    wrapper.unmount()
+  })
+
   it('routes to the single settings page after scanning in the warehouse menu', async () => {
     const wrapper = mountApp()
     expect(wrapper.findAll('[data-testid="print-settings-menu"]')).toHaveLength(1)

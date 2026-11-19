@@ -583,7 +583,7 @@ function closeReport() {
                 <template v-else-if="DATE_TIME_COLUMNS.has(col.key)">
                   <div class="two-line-cell">
                     <div
-                      v-for="(line, index) in formatDateTimeLines(item[col.key])"
+                      v-for="(line, index) in formatDateTimeLines(item[col.key], 'Europe/Moscow')"
                       :key="index"
                       :class="index === 0 ? 'primary-line' : 'secondary-line'"
                     >

@@ -58,11 +58,25 @@ export function formatTime(dateValue) {
 /**
  * Format date-time value as local date and local time lines.
  * @param {string|Date|null} dateValue - Date-time string or Date object to format
+ * @param {string} [timeZone] - Time zone for displaying timestamp values
  * @returns {string[]} Date and time lines, or a single fallback line for invalid values
  */
-export function formatDateTimeLines(dateValue) {
+export function formatDateTimeLines(dateValue, timeZone) {
   if (!dateValue) return []
-  const d = parseDateValue(dateValue)
+  // Legacy report values without an offset already represent a display date and time.
+  const legacy = timeZone && typeof dateValue === 'string' &&
+    /^\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?)?$/.test(dateValue)
+  const normalized = legacy
+    ? (dateValue.length === 10 ? `${dateValue}T00:00:00Z` : `${dateValue.replace(' ', 'T')}Z`)
+    : dateValue
+  const d = parseDateValue(normalized)
   if (!d) return [fallbackDateValue(dateValue)]
+  if (timeZone) {
+    const displayTimeZone = legacy ? 'UTC' : timeZone
+    return [
+      d.toLocaleDateString('ru-RU', { timeZone: displayTimeZone }),
+      d.toLocaleTimeString('ru-RU', { timeZone: displayTimeZone })
+    ]
+  }
   return [formatParsedDate(d), d.toLocaleTimeString('ru-RU')]
 }

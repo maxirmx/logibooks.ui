@@ -122,8 +122,8 @@ function formatProcedureForHeading(value) {
   return text.replace(/^([А-ЯЁ]{2})\s+(\d+)$/u, '$1$2')
 }
 
-function hasAltaGoods(item) {
-  return registerMode && Array.isArray(item.items) && item.items.length > 0
+function hasExpandableGoods(item) {
+  return registerMode && (item.items?.length ?? 0) > 1
 }
 
 function toggleGoods(id) {
@@ -311,7 +311,7 @@ const headers = computed(() => {
   const sortable = ['id', 'dTag', 'parcelNumber', 'processingResult']
   return [
     ...(canDelete.value ? [{ title: '', key: 'actions', sortable: false }] : []),
-    ...(decisions.value.some(hasAltaGoods) ? [{ title: '', key: 'goods', sortable: false }] : []),
+    ...(decisions.value.some(hasExpandableGoods) ? [{ title: '', key: 'goods', sortable: false }] : []),
     ...visible.map(header => ({ ...header, sortable: !deleting.value && sortable.includes(header.key) }))
   ]
 })
@@ -548,16 +548,15 @@ function closeReport() {
               <ActionButton v-if="col.key === 'actions'" :item="item" icon="fa-solid fa-trash-can"
                 tooltip-text="Удалить решение" aria-label="Удалить решение" :disabled="deleteDisabled || loading" @click="deleteDecisions" />
               <template v-else-if="col.key === 'goods'">
-                <v-btn
-                  v-if="hasAltaGoods(item)"
-                  variant="text"
-                  size="small"
+                <ActionButton
+                  v-if="hasExpandableGoods(item)"
+                  icon="fa-solid fa-boxes-stacked"
+                  tooltip-text="Товары"
+                  aria-label="Товары"
                   :aria-expanded="expandedDecisionId === item.id"
                   :disabled="loading || displayedFilterKey !== decisionFilterKey"
                   @click="toggleGoods(item.id)"
-                >
-                  Товары
-                </v-btn>
+                />
               </template>
               <ClickableCell v-else
                 :item="item"
@@ -569,7 +568,7 @@ function closeReport() {
                 <template v-if="col.key === 'dTag'">
                   <div class="two-line-cell">
                     <div class="primary-line">{{ item.dTag }}</div>
-                    <div v-if="!hasAltaGoods(item)" class="secondary-line">Позиция {{ item.rowNumber }}</div>
+                    <div v-if="!item.items?.length || item.rowNumber" class="secondary-line">Позиция {{ item.rowNumber }}</div>
                   </div>
                 </template>
 
@@ -623,7 +622,7 @@ function closeReport() {
               </ClickableCell>
             </td>
           </tr>
-          <tr v-if="hasAltaGoods(item) && expandedDecisionId === item.id">
+          <tr v-if="hasExpandableGoods(item) && expandedDecisionId === item.id">
             <td :colspan="columns.length">
               <div class="table-card app-table-card">
                 <div class="app-table-scroll">

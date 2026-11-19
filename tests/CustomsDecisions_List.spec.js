@@ -490,10 +490,12 @@ describe('CustomsDecisions_List.vue', () => {
     setupRegister({ locked: true, canDelete: false, decisions: [alta] })
     wrapper = mount(RegisterCustomsDecisionsView, {
       props: { registerId: 11 },
-      global: { stubs: { ...testStubs, 'v-btn': { template: '<button type="button"><slot /></button>' } } }
+      global: { stubs: testStubs }
     })
     await flushPromises()
     const button = () => wrapper.get('[data-column-key="goods"] [aria-expanded]')
+    expect(action('Товары').props('icon')).toBe('fa-solid fa-boxes-stacked')
+    expect(button().attributes('aria-label')).toBe('Товары')
     expect(button().attributes('aria-expanded')).toBe('false')
     expect(wrapper.text()).not.toContain('Позиция 0')
     expect(action('Удалить решение')).toBeUndefined()
@@ -517,8 +519,32 @@ describe('CustomsDecisions_List.vue', () => {
     expect(wrapper.find('table[aria-label="Товары"]').exists()).toBe(false)
   })
 
+  it('shows single-item Alta goods inline without an expansion column', async () => {
+    const goods = { description: 'Чай', tnVed: '1234567890', prevTnVed: '0987654321', quantity: '3', totalCost: '10.00' }
+    setupRegister({ decisions: [{ ...createFullDecision(), ...goods, items: [goods] }] })
+    wrapper = mount(RegisterCustomsDecisionsView, {
+      props: { registerId: 11 },
+      global: { stubs: testStubs }
+    })
+    await flushPromises()
+
+    expect(wrapper.findAll('.v-data-table-row')).toHaveLength(1)
+    expect(wrapper.get('[data-column-key="description"]').text()).toBe('Чай')
+    expect(wrapper.get('[data-column-key="tnVed"]').text()).toContain('0987654321')
+    expect(wrapper.get('[data-column-key="quantity"]').text()).toBe('3')
+    expect(wrapper.get('[data-column-key="totalCost"]').text()).toContain('10.00')
+    expect(wrapper.get('[data-column-key="dTag"]').text()).toContain('Позиция 9')
+    expect(action('Товары')).toBeUndefined()
+    expect(wrapper.find('[data-column-key="goods"]').exists()).toBe(false)
+    expect(wrapper.find('table[aria-label="Товары"]').exists()).toBe(false)
+  })
+
   it('does not restore expanded goods from a previous DEC filter', async () => {
-    const initial = { ...createFullDecision(), items: [{ description: 'Первый товар', quantity: '1', totalCost: '0' }] }
+    const initial = {
+      ...createFullDecision(),
+      items: [{ description: 'Первый товар', quantity: '1', totalCost: '0' },
+        { description: 'Второй товар', quantity: '1', totalCost: '0' }]
+    }
     setupRegister({ decisions: [initial] })
     const load = getCustomsMock.getMockImplementation()
     let returnOldDec
@@ -526,7 +552,7 @@ describe('CustomsDecisions_List.vue', () => {
     getCustomsMock.mockImplementation(url => url.includes('decId=21') ? oldDec : load(url))
     wrapper = mount(CustomsDecisionsList, {
       props: { registerId: 11 },
-      global: { stubs: { ...testStubs, 'v-btn': { template: '<button type="button"><slot /></button>' } } }
+      global: { stubs: testStubs }
     })
     await flushPromises()
     await wrapper.get('[data-column-key="goods"] button').trigger('click')

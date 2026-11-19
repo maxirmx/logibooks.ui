@@ -59,6 +59,7 @@ vi.mock('@/views/ParcelStatus_CreateView.vue', () => ({ default: { template: '<d
 vi.mock('@/views/RegisterStatus_CreateView.vue', () => ({ default: { template: '<div />' } }))
 vi.mock('@/views/HotKeyActionScheme_CreateView.vue', () => ({ default: { template: '<div />' } }))
 vi.mock('@/views/CustomsDecisions_View.vue', () => ({ default: { template: '<div />' } }))
+vi.mock('@/views/AltaSyncJournal_View.vue', () => ({ default: { template: '<div />' } }))
 vi.mock('@/lists/RegisterDecs_List.vue', () => ({ default: { template: '<div />' } }))
 vi.mock('@/views/RegisterCustomsDecisions_View.vue', () => ({ default: { template: '<div />' } }))
 
@@ -71,6 +72,18 @@ async function resetRouter(to = '/recover') {
 
 describe('router guards', () => {
   let originalConsoleError
+
+  it('guards access to the Alta synchronization journal from a direct URL', async () => {
+    authStore.user = { id: 1 }
+    authStore.isSrLogistPlus = true
+    await router.push('/alta-sync')
+    expect(router.currentRoute.value.name).toBe('Журнал синхронизации Альта Софт')
+
+    await router.push('/recover')
+    authStore.isSrLogistPlus = false
+    await router.push('/alta-sync')
+    expect(router.currentRoute.value.path).toBe('/login')
+  })
 
   it('loads the decisions view for the current report and keeps its role guard', async () => {
     authStore.user = { id: 1 }

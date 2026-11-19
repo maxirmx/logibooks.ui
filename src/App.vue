@@ -7,6 +7,8 @@ import { RouterLink, RouterView, useRoute } from 'vue-router'
 import { version } from '@/../package'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { mdiChevronDown, mdiChevronUp } from '@mdi/js'
+import { faHandshake } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { useStatusStore } from '@/stores/status.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE, getRegisterNouns } from '@/helpers/op.mode.js'
@@ -314,10 +316,23 @@ function getUserName() {
           </v-list-item>
         </v-list-group>
 
-        <!-- Отчёты -->
-        <v-list-item v-if="authStore.isSrLogistPlus">
-          <RouterLink to="/customs-reports" class="link">Отчёты</RouterLink>
-        </v-list-item>
+        <!-- Интеграция с Альта Софт -->
+        <v-list-group v-if="authStore.isSrLogistPlus">
+          <template v-slot:activator="{ props }">
+            <v-list-item v-bind="props">
+              <template #title>
+                <span>Альта Софт</span>
+                <FontAwesomeIcon :icon="faHandshake" size="sm" class="ms-2" />
+              </template>
+            </v-list-item>
+          </template>
+          <v-list-item>
+            <RouterLink to="/customs-reports" class="link">Отчёты</RouterLink>
+          </v-list-item>
+          <v-list-item>
+            <RouterLink to="/alta-sync" class="link">Журнал синхронизации</RouterLink>
+          </v-list-item>
+        </v-list-group>
 
         <!-- Пользователи -->
         <v-list-item v-if="!authStore.isAdmin">

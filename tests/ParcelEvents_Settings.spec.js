@@ -247,7 +247,7 @@ describe('ParcelEvents_Settings.vue', () => {
   })
 
   it('forces no status or zone change for a speech-only event and saves its phrase', async () => {
-    Object.assign(mockEvents.value[1], { speachOnly: true, eventId: 81 })
+    Object.assign(mockEvents.value[1], { speechOnly: true, eventId: 81 })
     const wrapper = mountComponent()
     await resolveAll()
 

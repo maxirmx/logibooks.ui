@@ -28,7 +28,8 @@ export function useManualScan({ registerId, job = null, disabled = false, target
   const completedBatchIds = ref([])
   const constants = computed(() => {
     const values = store.ops.constants
-    return values && [values.inProgressStatus, values[scanTarget.value.incompatibleType], values.lookupOperation].every(Number.isInteger) ? values : null
+    const requiredConstants = ['inProgressStatus', 'lookupOperation', 'boxOnlyType', scanTarget.value.incompatibleType]
+    return values && requiredConstants.every(key => Number.isInteger(values[key])) ? values : null
   })
   const jobs = computed(() => (job ? [toValue(job)] : activeJobs.value)
     .filter(candidate => candidate && constants.value && Number(candidate.status) === constants.value.inProgressStatus))

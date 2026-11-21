@@ -707,6 +707,13 @@ describe('Registers_List.vue', () => {
         ]
       })
 
+      it('offers Open XML workbooks and archives for register uploads', async () => {
+        mockIsSrLogistPlus.value = true
+        await wrapper.vm.$nextTick()
+
+        expect(wrapper.getComponent(vuetifyStubs['v-file-input']).props('accept')).toBe('.xlsx,.xlsm,.zip,.rar')
+      })
+
       it('keeps selected upload type when no file input is mounted', async () => {
         wrapper.vm.fileInput = null
 

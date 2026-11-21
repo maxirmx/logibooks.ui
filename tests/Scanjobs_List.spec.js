@@ -4,7 +4,7 @@
 // This file is a part of Logibooks ui application
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import ScanjobsList from '@/lists/Scanjobs_List.vue'
 import { defaultGlobalStubs } from './helpers/test-utils'
@@ -81,6 +81,7 @@ const mockScanjobsPage = ref(1)
 const mockTotalCount = ref(1)
 
 const mockAlert = ref(null)
+const mockIsAdmin = ref(true)
 const getAllScanjobs = vi.hoisted(() => vi.fn())
 const ensureOpsLoaded = vi.hoisted(() => vi.fn())
 const ensureRegisterOpsLoaded = vi.hoisted(() => vi.fn())
@@ -242,7 +243,7 @@ vi.mock('@/stores/alert.store.js', () => ({
 
 vi.mock('@/stores/auth.store.js', () => ({
   useAuthStore: () => ({
-    isAdmin: true,
+    isAdmin: mockIsAdmin.value,
     isShiftLeadPlus: true,
     isWhManagerPlus: true,
     hasWhRole: true,
@@ -444,52 +445,137 @@ describe('Scanjobs_List.vue', () => {
     expect(deleteScanjobFn).not.toHaveBeenCalled()
   })
 
-  it('shows conflict error when delete fails with 409', async () => {
-    deleteScanjobFn.mockRejectedValueOnce(new Error('409 Conflict'))
-    const wrapper = mount(ScanjobsList, {
-      global: {
-        stubs: testStubs
-      }
-    })
+  describe('deleting a job from a read-only register', () => {
+    const deleteButton = 'button[aria-label="Удалить задание на сканирование"]'
+    let originalJobs
+    let wrapper
 
-    await wrapper.vm.deleteScanjob({ id: 1, name: 'Сканирование приемки' })
-
-    expect(errorFn).toHaveBeenCalledWith(
-      'Нельзя удалить задание на сканирование, у которого есть связанные записи'
-    )
-  })
-
-  it('shows generic error when delete fails without conflict', async () => {
-    deleteScanjobFn.mockRejectedValueOnce(new Error('Server error'))
-    const wrapper = mount(ScanjobsList, {
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    await wrapper.vm.deleteScanjob({ id: 1, name: 'Сканирование приемки' })
-
-    expect(errorFn).toHaveBeenCalledWith('Ошибка при удалении задания на сканирование')
-  })
-  it('does not delete scanjob when confirmation is declined', async () => {
-    confirmMock.mockResolvedValue(false)
-
-    const wrapper = mount(ScanjobsList, {
-      global: {
-        stubs: {
-          ...testStubs,
-          'v-data-table-server': {
-            template: `<div><slot name="item.actions" :item="{ id: 1, name: 'Сканирование приемки' }"></slot></div>`
+    function mountList() {
+      wrapper = mount(ScanjobsList, {
+        global: {
+          stubs: {
+            ...testStubs,
+            'v-tooltip': { template: '<div><slot name="activator" :props="{}" /><slot /></div>' }
           }
         }
+      })
+      return wrapper
+    }
+
+    beforeEach(() => {
+      originalJobs = mockScanjobs.value
+      mockScanjobs.value = [{ ...originalJobs[0], readOnly: true }]
+      deleteScanjobFn.mockResolvedValue(true)
+    })
+
+    afterEach(() => {
+      wrapper?.unmount()
+      wrapper = null
+      mockScanjobs.value = originalJobs
+      mockIsAdmin.value = true
+    })
+
+    it.each([true, false])('uses confirmation before deleting, accepted: %s', async (confirmed) => {
+      confirmMock.mockResolvedValueOnce(confirmed)
+      const button = mountList().get(deleteButton)
+
+      expect(button.element.disabled).toBe(false)
+      await button.trigger('click')
+      await flushPromises()
+
+      expect(confirmMock).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          confirmationText: 'Удалить',
+          content: expect.stringContaining(mockScanjobs.value[0].name)
+        })
+      )
+      expect(deleteScanjobFn.mock.calls).toEqual(confirmed ? [[1]] : [])
+    })
+
+    it('hides deletion from a warehouse user without administrator rights', () => {
+      mockIsAdmin.value = false
+      const list = mountList()
+      expect(list.get('.v-data-table-row').text()).toContain(mockScanjobs.value[0].name)
+      expect(list.find(deleteButton).exists()).toBe(false)
+    })
+
+    it('shows the server conflict once, retains the row, and allows retry', async () => {
+      const message = 'Для реестра выполняется сверка с манифестом. Дождитесь её завершения и повторите действие.'
+      deleteScanjobFn.mockRejectedValueOnce(Object.assign(new Error(message), {
+        status: 409,
+        data: { msg: message }
+      }))
+      const list = mountList()
+      const button = list.get(deleteButton)
+
+      await button.trigger('click')
+      await flushPromises()
+
+      const alerts = list.findAll('[data-testid="page-alert-region"] [role="alert"]')
+      expect(alerts).toHaveLength(1)
+      expect(alerts[0].text()).toContain(message)
+      expect(list.get('.v-data-table-row').text()).toContain(mockScanjobs.value[0].name)
+      expect(button.element.disabled).toBe(false)
+      expect(mockPush).not.toHaveBeenCalled()
+
+      await button.trigger('click')
+      await flushPromises()
+
+      expect(deleteScanjobFn.mock.calls).toEqual([[1], [1]])
+      expect(errorFn).toHaveBeenCalledTimes(1)
+    })
+
+    it.each([
+      new Error('Network failure'),
+      Object.assign(new Error('Ошибка 404'), { status: 404 }),
+      Object.assign(new Error('Unexpected exception'), { status: 500 })
+    ])('uses a Russian fallback for a technical failure and records the exception', async (error) => {
+      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+      try {
+        deleteScanjobFn.mockRejectedValueOnce(error)
+        const list = mountList()
+        await list.get(deleteButton).trigger('click')
+        await flushPromises()
+
+        expect(list.get('[data-testid="page-alert-region"]').text())
+          .toContain('Ошибка при удалении задания на сканирование')
+        expect(consoleError).toHaveBeenCalledExactlyOnceWith('[scan job deletion]', error)
+      } finally {
+        consoleError.mockRestore()
       }
     })
 
-    const scanjob = { id: 1, name: 'Сканирование приемки' }
-    await wrapper.vm.deleteScanjob(scanjob)
+    it('suppresses a late deletion alert after leaving the list', async () => {
+      let rejectDeletion
+      deleteScanjobFn.mockImplementationOnce(() => new Promise((_, reject) => { rejectDeletion = reject }))
+      const list = mountList()
+      await list.get(deleteButton).trigger('click')
+      await flushPromises()
 
-    expect(confirmMock).toHaveBeenCalled()
-    expect(deleteScanjobFn).not.toHaveBeenCalled()
+      list.unmount()
+      wrapper = null
+      rejectDeletion(Object.assign(new Error('Доступ запрещён'), {
+        status: 403,
+        data: { msg: 'Доступ запрещён' }
+      }))
+      await flushPromises()
+
+      expect(errorFn).not.toHaveBeenCalled()
+    })
+
+    it('skips deletion if confirmation resolves after leaving the list', async () => {
+      let resolveConfirmation
+      confirmMock.mockImplementationOnce(() => new Promise((resolve) => { resolveConfirmation = resolve }))
+      const list = mountList()
+      await list.get(deleteButton).trigger('click')
+
+      list.unmount()
+      wrapper = null
+      resolveConfirmation(true)
+      await flushPromises()
+
+      expect(deleteScanjobFn).not.toHaveBeenCalled()
+    })
   })
 
   it('stops live monitor on unmount and swallows stop errors', async () => {

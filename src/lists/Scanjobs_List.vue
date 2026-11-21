@@ -19,7 +19,7 @@ import { useScanjobFinishConfirmation } from '@/composables/useScanjobFinishConf
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync.js'
 import { mdiMagnify } from '@mdi/js'
-import { reportError } from '@/helpers/error.helpers.js'
+import { getErrorMessage, reportError } from '@/helpers/error.helpers.js'
 
 import RegisterInvoiceCell from '@/components/RegisterInvoiceCell.vue'
 import SenderRecipientCell from '@/components/SenderRecipientCell.vue'
@@ -80,7 +80,7 @@ function openScanjobMonitor(scanJob) {
 }
 
 async function deleteScanjob(scanJob) {
-  if (runningAction.value || scanJob?.readOnly) return
+  if (runningAction.value) return
   runningAction.value = true
   try {
     const content = 'Удалить задание на сканирование "' + scanJob.name + '" ?'
@@ -91,18 +91,19 @@ async function deleteScanjob(scanJob) {
       content: content
     })
 
-    if (confirmed) {
-      try {
-        await scanJobsStore.remove(scanJob.id)
-      } catch (error) {
-        if (error.message?.includes('409')) {
-          alertStore.error(
-            'Нельзя удалить задание на сканирование, у которого есть связанные записи'
-          )
-        } else {
-          alertStore.error('Ошибка при удалении задания на сканирование')
-        }
-      }
+    if (confirmed && isComponentMounted.value) {
+      await scanJobsStore.remove(scanJob.id)
+    }
+  } catch (error) {
+    const isClientError = error?.status >= 400 && error.status < 500
+    const fallback = 'Ошибка при удалении задания на сканирование'
+    const message = getErrorMessage(isClientError ? error.data?.msg : null, fallback)
+    if (message === fallback) {
+      reportError(error, { context: 'scan job deletion' })
+    }
+    // The list owns this alert only while it is mounted.
+    if (isComponentMounted.value) {
+      alertStore.error(message)
     }
   } finally {
     runningAction.value = false
@@ -380,8 +381,9 @@ defineExpose({
               :item="item"
               icon="fa-solid fa-trash-can"
               tooltip-text="Удалить задание на сканирование"
+              aria-label="Удалить задание на сканирование"
               @click="deleteScanjob"
-              :disabled="runningAction || loading || item.readOnly"
+              :disabled="runningAction || loading"
               v-if="authStore.isAdmin"
             />
           </div>

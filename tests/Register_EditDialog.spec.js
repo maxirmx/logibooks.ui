@@ -1383,50 +1383,64 @@ describe('Register_EditDialog', () => {
     expect(getReportValue(wrapper, 'Дубликатов')).toBe('4')
   })
 
-  it('passes checkForDuplicates=true to upload when provided', async () => {
-    registersStore.uploadFile.value = new File(['data'], 'test.xlsx')
-    mockItem.value = {
-      ...baseRegisterItem,
-      fileName: 'test.xlsx',
-      customerOrderNumber: null,
-      companyId: 3,
-      registerType: 3
-    }
-    const Parent = {
-      template: '<Suspense><RegisterEditDialog :create="true" /></Suspense>',
-      components: { RegisterEditDialog }
-    }
-    const wrapper = mount(Parent, {
-      global: {
-        stubs: {
-          ...defaultGlobalStubs,
-          Form: FormStub,
-          Field: FieldStub,
-          ErrorDialog: ErrorDialogStub
-        }
+  it.each([true, false, undefined])(
+    'passes upload options and shows a fill warning only when unreadable fills are reported (%s)',
+    async (hasUnreadableFillColors) => {
+      upload.mockResolvedValueOnce({ success: true, registerId: 42, hasUnreadableFillColors })
+      router.push.mockImplementationOnce(async () => useAlertStore().clear())
+      registersStore.uploadFile.value = new File(['data'], 'test.xlsx')
+      mockItem.value = {
+        ...baseRegisterItem,
+        fileName: 'test.xlsx',
+        customerOrderNumber: null,
+        companyId: 3,
+        registerType: 3
       }
-    })
+      const Parent = {
+        template: '<Suspense><RegisterEditDialog :create="true" /></Suspense>',
+        components: { RegisterEditDialog }
+      }
+      const wrapper = mount(Parent, {
+        global: {
+          stubs: {
+            ...defaultGlobalStubs,
+            Form: FormStub,
+            Field: FieldStub,
+            ErrorDialog: ErrorDialogStub
+          }
+        }
+      })
 
-    await resolveAll()
+      await resolveAll()
 
-    const dialog = wrapper.findComponent(RegisterEditDialog)
-    await dialog.vm.onSubmit({ checkForDuplicates: true }, { setErrors: () => {} })
-    await resolveAll()
+      const dialog = wrapper.findComponent(RegisterEditDialog)
+      await dialog.vm.onSubmit({ checkForDuplicates: true }, { setErrors: () => {} })
+      await resolveAll()
 
-    expect(upload).toHaveBeenCalledWith(
-      registersStore.uploadFile.value,
-      mockItem.value.companyId,
-      mockItem.value.customsProcedureCode,
-      true,
-      false,
-      null,
-      2
-    )
-    expect(update).toHaveBeenCalledWith(
-      42,
-      expect.objectContaining({ customerOrderNumber: null })
-    )
-  })
+      expect(upload).toHaveBeenCalledWith(
+        registersStore.uploadFile.value,
+        mockItem.value.companyId,
+        mockItem.value.customsProcedureCode,
+        true,
+        false,
+        null,
+        2
+      )
+      expect(update).toHaveBeenCalledWith(
+        42,
+        expect.objectContaining({ customerOrderNumber: null })
+      )
+      expect(router.push).toHaveBeenCalledWith('/registers?mode=modePaperwork')
+      if (hasUnreadableFillColors) {
+        const warning = wrapper.get('.page-alert-region .alert-warning')
+        expect(warning.attributes('role')).toBe('status')
+        expect(warning.text()).toContain('Статусы посылок могут быть частично не восстановлены.')
+        expect(wrapper.findAll('.alert-warning')).toHaveLength(1)
+        await warning.get('button').trigger('click')
+      }
+      expect(wrapper.find('.alert-warning').exists()).toBe(false)
+    }
+  )
 
   it('asks for a currency and retries the same upload with the selection', async () => {
     upload
@@ -1531,6 +1545,42 @@ describe('Register_EditDialog', () => {
     await resolveAll()
 
     expect(upload).toHaveBeenCalledTimes(1)
+    expect(update).not.toHaveBeenCalled()
+    expect(router.push).not.toHaveBeenCalled()
+  })
+
+  it('keeps the upload form open and suppresses the fill warning when data cannot be read', async () => {
+    const message = 'Не удалось прочитать данные файла реестра'
+    upload.mockRejectedValueOnce(new Error(message))
+    registersStore.uploadFile.value = new File(['data'], 'upload.xlsx')
+    mockItem.value = { ...baseRegisterItem, fileName: 'upload.xlsx', companyId: 5 }
+    const wrapper = mount({
+      components: { RegisterEditDialog },
+      template: '<Suspense><RegisterEditDialog :create="true" /></Suspense>'
+    }, {
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          Form: FormStub,
+          Field: FieldStub,
+          ErrorDialog: {
+            props: ['show', 'message'],
+            emits: ['close'],
+            template: '<button v-if="show" data-testid="upload-error" @click="$emit(\'close\')">{{ message }}</button>'
+          }
+        }
+      }
+    })
+    await resolveAll()
+
+    const dialog = wrapper.findComponent(RegisterEditDialog)
+    const submission = dialog.vm.onSubmit({}, { setErrors: vi.fn() })
+    await vi.waitFor(() => expect(wrapper.get('[data-testid="upload-error"]').text()).toContain(message))
+    await wrapper.get('[data-testid="upload-error"]').trigger('click')
+    await submission
+
+    expect(registersStore.uploadFile.value.name).toBe('upload.xlsx')
+    expect(wrapper.find('.alert-warning').exists()).toBe(false)
     expect(update).not.toHaveBeenCalled()
     expect(router.push).not.toHaveBeenCalled()
   })
@@ -1896,6 +1946,7 @@ describe('Register_EditDialog', () => {
     })
 
     it.each(['fails', 'is declined'])('keeps blank weight valid when metadata saving %s and retries without re-upload', async (outcome) => {
+      upload.mockResolvedValueOnce({ success: true, registerId: 42, hasUnreadableFillColors: true })
       const visibleErrorDialog = {
         props: ['show', 'message'],
         emits: ['close'],
@@ -1931,6 +1982,7 @@ describe('Register_EditDialog', () => {
         await creation.get('[data-testid="recovery-error"] button').trigger('click')
       }
       await vi.waitFor(() => expect(router.push).toHaveBeenCalledWith('/register/edit/42?mode=modePaperwork'))
+      await vi.waitFor(() => expect(creation.get('.alert-warning').text()).toContain('Статусы посылок могут быть частично не восстановлены.'))
       creation.unmount()
       getById.mockImplementationOnce(async () => {
         mockItem.value = { ...baseRegisterItem, id: 42, realWeightKg: null }

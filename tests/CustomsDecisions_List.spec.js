@@ -502,6 +502,7 @@ describe('CustomsDecisions_List.vue', () => {
     expect(wrapper.getComponent({ name: 'v-data-table-server' }).props('itemsLength')).toBe(1)
 
     await button().trigger('click')
+    expect(action('Товары').emitted('click')).toEqual([[alta.id]])
     expect(button().attributes('aria-expanded')).toBe('true')
     const goods = wrapper.get('table[aria-label="Товары"]')
     expect(goods.findAll('tbody tr').map(row => row.findAll('td').map(cell => cell.text()))).toEqual([

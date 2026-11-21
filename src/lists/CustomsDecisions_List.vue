@@ -550,12 +550,13 @@ function closeReport() {
               <template v-else-if="col.key === 'goods'">
                 <ActionButton
                   v-if="hasExpandableGoods(item)"
+                  :item="item.id"
                   icon="fa-solid fa-boxes-stacked"
                   tooltip-text="Товары"
                   aria-label="Товары"
                   :aria-expanded="expandedDecisionId === item.id"
                   :disabled="loading || displayedFilterKey !== decisionFilterKey"
-                  @click="toggleGoods(item.id)"
+                  @click="toggleGoods"
                 />
               </template>
               <ClickableCell v-else

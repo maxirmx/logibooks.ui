@@ -89,7 +89,7 @@ beforeEach(() => {
   rows.value = boxes.map(box => ({ ...box, boxId: box.id, boxCode: box.code, area: 1 }))
   register.value = { id: 1, dealNumber: 'TEST', companyId: 2 }
   loading.value = false
-  api.ops = reactive({ constants: { inProgressStatus: 15, parcelOnlyType: 10, lookupOperation: 30 } })
+  api.ops = reactive({ constants: { inProgressStatus: 15, parcelOnlyType: 10, boxOnlyType: 20, lookupOperation: 30 } })
   api.ensureOpsLoaded.mockResolvedValue(true)
   api.getInProgress.mockResolvedValue([job])
   api.createScanJobsListChannel.mockReturnValue({ start: vi.fn().mockResolvedValue(true), stop: vi.fn().mockResolvedValue(true) })
@@ -138,6 +138,14 @@ describe('manual box workflow', () => {
     expect(button.element.disabled).toBe(disabled)
     if (menu) expect(wrapper.findComponent(ActionButton2L).props('options').map(option => option.label)).toEqual([job.name, job.name])
   })
+  it('disables a pre-existing boxes-only Lookup job on the monitor', async () => {
+    const { wrapper, scan } = harness({ monitor: true, actions: true, candidate: { ...job, type: 20, operation: 30 } })
+    await flushPromises()
+    expect(wrapper.get('[data-testid="manual-box-scan"]').element.disabled).toBe(true)
+    expect(await scan.run([boxes[0]], 7)).toBe(false)
+    expect(api.scanBox).not.toHaveBeenCalled()
+  })
+
   it('keeps scanning unavailable when Core has not supplied the parcel-only type', async () => {
     delete api.ops.constants.parcelOnlyType
     const { wrapper } = harness({ actions: true })

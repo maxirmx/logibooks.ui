@@ -1047,6 +1047,16 @@ function cancelEditing() {
   return router.push(returnUrl.value)
 }
 
+async function navigateAfterUpload(path, hasUnreadableFillColors) {
+  const navigationFailure = await router.push(path)
+  if (hasUnreadableFillColors === true && (!navigationFailure || isComponentMounted.value)) {
+    alertStore.warning(
+      'Реестр загружен. Не удалось прочитать цветовую заливку из файла Excel. Статусы посылок могут быть частично не восстановлены.',
+      { timeout: null }
+    )
+  }
+}
+
 async function onSubmit(values, { setErrors } = {}) {
   if (!isComponentMounted.value) return
   if (!canSubmit.value) return
@@ -1114,7 +1124,10 @@ async function onSubmit(values, { setErrors } = {}) {
       if (!await saveWithRestrictionConfirmation(result.registerId, payload)) {
         // Upload already created the register; recover without uploading a second copy.
         if (isComponentMounted.value) {
-          await router.push(`/register/edit/${result.registerId}?mode=${props.mode}`)
+          await navigateAfterUpload(
+            `/register/edit/${result.registerId}?mode=${props.mode}`,
+            result.hasUnreadableFillColors
+          )
         }
         return
       }
@@ -1125,13 +1138,18 @@ async function onSubmit(values, { setErrors } = {}) {
           `Откройте созданный ${registerNouns.value.accusative} и повторите сохранение.`
       )
       if (isComponentMounted.value) {
-        await router.push(`/register/edit/${result.registerId}?mode=${props.mode}`)
+        await navigateAfterUpload(
+          `/register/edit/${result.registerId}?mode=${props.mode}`,
+          result.hasUnreadableFillColors
+        )
       }
       return
     }
 
     clearRegisterUploadDraft(result.registerId)
-    if (isComponentMounted.value) await router.push(returnUrl.value)
+    if (isComponentMounted.value) {
+      await navigateAfterUpload(returnUrl.value, result.hasUnreadableFillColors)
+    }
   } catch (error) {
     if (!isComponentMounted.value) return
 

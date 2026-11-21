@@ -12,6 +12,9 @@ export function boxScanId(box) {
 
 export function boxScanDisabledReason(job, constants) {
   if (!job || !constants || Number(job.status) !== constants.inProgressStatus) return 'Нет активного задания сканирования'
+  if (Number(job.operation) === constants.lookupOperation && Number(job.type) === constants.boxOnlyType) {
+    return 'Задание поиска требует сканирования отдельных посылок'
+  }
   return Number(job.type) === constants.parcelOnlyType ? 'Задание поддерживает только сканирование посылок' : ''
 }
 

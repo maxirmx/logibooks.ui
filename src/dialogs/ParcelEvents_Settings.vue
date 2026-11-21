@@ -187,8 +187,8 @@ async function saveSettings() {
   try {
     const payload = events.value.map((item) => ({
       id: item.id,
-      parcelStatusId: statusSelections.value[item.id] ?? null,
-      zone: zoneSelections.value[item.id] ?? null,
+      parcelStatusId: item.speachOnly ? 0 : (statusSelections.value[item.id] ?? null),
+      zone: item.speachOnly ? 0 : (zoneSelections.value[item.id] ?? null),
       extData: extDataSelections.value[item.id] ?? null
     }))
 
@@ -284,8 +284,8 @@ onMounted(async () => {
               <select
                 class="form-control input-0"
                 :id="`status-select-${item.id}`"
-                :value="statusSelections[item.id] ?? '0'"
-                :disabled="!canSave"
+                :value="item.speachOnly ? '0' : (statusSelections[item.id] ?? '0')"
+                :disabled="item.speachOnly || !canSave"
                 @change="onStatusChange(item.id, $event.target.value)"
                 :data-testid="`status-select-${item.id}`"
               >
@@ -299,8 +299,8 @@ onMounted(async () => {
               <select
                 class="form-control input-0"
                 :id="`zone-select-${item.id}`"
-                :value="zoneSelections[item.id] ?? '0'"
-                :disabled="!canSave"
+                :value="item.speachOnly ? '0' : (zoneSelections[item.id] ?? '0')"
+                :disabled="item.speachOnly || !canSave"
                 @change="onZoneChange(item.id, $event.target.value)"
                 :data-testid="`zone-select-${item.id}`"
               >

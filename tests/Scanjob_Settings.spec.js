@@ -221,6 +221,7 @@ describe('Scanjob_Settings.vue', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    mockOps.value.types = [{ value: 1, name: 'Type 1' }]
     mockOps.value.operations = [...scanjobOperations]
     ensureOpsLoaded.mockResolvedValue(mockOps.value)
     ensureLoaded.mockResolvedValue()
@@ -496,6 +497,34 @@ describe('Scanjob_Settings.vue', () => {
       '1010', '0001-002', 'OZON-ID', 'BARCODE', '1011', '—', '—', '—'
     ])
     expect(wrapper.get('#lookupParcelIds').element.disabled).toBe(true)
+  })
+
+  it('excludes the boxes-only type for both Lookup target sources', async () => {
+    mockOps.value.types = [
+      { value: 10, name: 'Посылка' },
+      { value: 20, name: 'Коробка' },
+      { value: 30, name: 'Коробка/Посылка' }
+    ]
+    const wrapper = mountComponent({ mode: 'create', registerId: 22, warehouseId: 11, dealNumber: 'ABC-1' })
+    await resolveAll()
+    const boxesOnly = () => wrapper.find('#type option[value="20"]')
+    expect(boxesOnly().exists()).toBe(true)
+    await wrapper.get('#type').setValue('20')
+
+    await wrapper.get('#operation').setValue('30')
+    expect(boxesOnly().exists()).toBe(false)
+    await wrapper.get('#lookupStatusId').setValue('101')
+    await wrapper.vm.$.setupState.onSubmit()
+    expect(create).not.toHaveBeenCalled()
+    expect(wrapper.text()).toContain('Выберите «Посылка» или «Коробка/Посылка»')
+    await wrapper.get('#lookupTargetSource').setValue('list')
+    expect(boxesOnly().exists()).toBe(false)
+    await wrapper.get('#lookupTargetSource').setValue('status')
+    expect(boxesOnly().exists()).toBe(false)
+
+    await wrapper.get('#operation').setValue('10')
+    expect(boxesOnly().exists()).toBe(true)
+    wrapper.unmount()
   })
 
   it('discards the list draft when the register changes', async () => {

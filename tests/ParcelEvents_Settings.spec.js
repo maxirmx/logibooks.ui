@@ -246,6 +246,30 @@ describe('ParcelEvents_Settings.vue', () => {
     updateMany.mockResolvedValue()
   })
 
+  it('forces no status or zone change for a speech-only event and saves its phrase', async () => {
+    Object.assign(mockEvents.value[1], { speachOnly: true, eventId: 81 })
+    const wrapper = mountComponent()
+    await resolveAll()
+
+    const status = wrapper.get('#status-select-2001').element
+    const zone = wrapper.get('#zone-select-2001').element
+    expect(status.disabled).toBe(true)
+    expect(status.selectedOptions[0].text).toBe('Не менять')
+    expect(zone.disabled).toBe(true)
+    expect(zone.selectedOptions[0].text).toBe('Не менять')
+    expect(wrapper.get('#status-select-1001').element.disabled).toBe(false)
+    const phrase = wrapper.get('#extdata-input-2001')
+    expect(phrase.element.disabled).toBe(false)
+    await phrase.setValue('Проверьте коробку')
+    await wrapper.get('[data-testid="save-button"]').trigger('click')
+    await resolveAll()
+
+    expect(updateMany).toHaveBeenCalledWith(expect.arrayContaining([
+      { id: 2001, parcelStatusId: 0, zone: 0, extData: 'Проверьте коробку' }
+    ]))
+    wrapper.unmount()
+  })
+
   it('updates selections and saves changes', async () => {
     const wrapper = mountComponent()
     await resolveAll()

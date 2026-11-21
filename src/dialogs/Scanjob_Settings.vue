@@ -112,10 +112,14 @@ function resolveLookupOperationValue() {
   return lookupOperation?.value == null ? null : Number(lookupOperation.value)
 }
 
+const boxOnlyType = 20
 const selectLookupParcelsMessage = 'Выберите посылки для поиска'
 
 function getLookupTargetError(values) {
   if (Number(values.operation) !== Number(resolveLookupOperationValue())) return null
+  if (Number(values.type) === boxOnlyType) {
+    return { path: 'type', message: 'Выберите «Посылка» или «Коробка/Посылка»' }
+  }
   if (values.lookupTargetSource === 'list') {
     return values.lookupParcelIds?.length ? null : {
       path: 'lookupParcelIds', message: selectLookupParcelsMessage
@@ -180,7 +184,6 @@ const lookupParcelRows = computed(() => {
   return (lookupParcelIds.value ?? []).map(parcelId => savedRows.get(parcelId) ?? { parcelId })
 })
 const createdStatus = 10
-const boxOnlyType = 20
 const boxesAndParcelsType = 30
 const isListLookup = computed(() => isLookupOperation.value && lookupTargetSource.value === 'list')
 const lookupSelectionRequired = computed(() => isListLookup.value && !lookupParcelIds.value?.length)
@@ -190,7 +193,7 @@ const lookupSettingsLocked = computed(() => savedListLookup.value && !canChooseL
 const lookupSettingsDisabled = computed(() => settingsBusy.value || readOnly.value ||
   isLookupOnlyRegisterType.value || lookupSettingsLocked.value)
 const scanTypeOptions = computed(() => (ops.value?.types ?? []).filter(item =>
-  !isListLookup.value || Number(item.value) !== boxOnlyType
+  !isLookupOperation.value || Number(item.value) !== boxOnlyType
 ))
 
 const currentRegister = ref(null)

@@ -146,6 +146,19 @@ describe('manual box workflow', () => {
     expect(api.scanBox).not.toHaveBeenCalled()
   })
 
+  it('blocks manual box scans for a boxes-only Lookup when boxOnlyType is missing', async () => {
+    delete api.ops.constants.boxOnlyType
+    const { wrapper, scan } = harness({ monitor: true, actions: true, candidate: { ...job, type: 20, operation: 30 } })
+    await flushPromises()
+
+    expect(wrapper.get('[data-testid="manual-box-scan"]').element.disabled).toBe(true)
+    expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось загрузить параметры сканирования')
+    expect(await scan.run([boxes[0]], 7)).toBe(false)
+    expect(await scan.run([boxes[0]], 7, true)).toBe(false)
+    expect(api.scanBox).not.toHaveBeenCalled()
+    expect(api.scanBoxes).not.toHaveBeenCalled()
+  })
+
   it('keeps scanning unavailable when Core has not supplied the parcel-only type', async () => {
     delete api.ops.constants.parcelOnlyType
     const { wrapper } = harness({ actions: true })

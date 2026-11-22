@@ -6,6 +6,7 @@ import { ozonRegisterColumnTitles } from '@/helpers/ozon.register.mapping.js'
 import { scanjobCheckStatusText } from '@/helpers/scanjob.check-status.helpers.js'
 import { wbrRegisterColumnTitles } from '@/helpers/wbr.register.mapping.js'
 import { wbrnRegisterColumnTitles } from '@/helpers/wbrn.register.mapping.js'
+import { OZON_COMPANY_ID, WBR_COMPANY_ID, WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
 
 export const scanjobParcelsProgressTitle = 'Посылки всего / сканировано / не сканировано / запретов'
 
@@ -82,7 +83,13 @@ export const scanjobMonitorArea = {
   Boxes: 0,
   Box: 1,
   Unassigned: 2,
-  NotInRegister: 3
+  NotInRegister: 3,
+  Lookup: 4
+}
+
+export function supportsLookupMonitor(job) {
+  return Number(job?.operation) === 30 &&
+    [OZON_COMPANY_ID, WBR_COMPANY_ID, WBRN_REGISTER_ID].includes(Number(job.registerType))
 }
 
 export const scanjobMonitorTargetKind = {

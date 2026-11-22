@@ -117,11 +117,13 @@ const itemsPerPageModel = computed({
 
 const rangeStart = computed(() => {
   if (!safeTotalCount.value) return 0
+  if (props.itemsPerPage === -1) return 1
   return Math.min((props.page - 1) * props.itemsPerPage + 1, safeTotalCount.value)
 })
 
 const rangeEnd = computed(() => {
   if (!safeTotalCount.value) return 0
+  if (props.itemsPerPage === -1) return safeTotalCount.value
   return Math.min(props.page * props.itemsPerPage, safeTotalCount.value)
 })
 

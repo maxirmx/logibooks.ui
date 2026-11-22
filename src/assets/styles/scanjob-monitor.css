@@ -217,3 +217,9 @@ This file is a part of Logibooks ui application
 .scanjob-monitor-parcel-progress-restricted .scanjob-monitor-parcel-progress-label {
   color: inherit;
 }
+.scanjob-monitor-view-switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}

@@ -480,6 +480,57 @@ describe('scanjobs store', () => {
       box: null
     }
 
+    it('loads filtered Lookup pages through the monitor endpoint and propagates failures', async () => {
+      const store = useScanjobsStore()
+      const page = { ...monitorSnapshot, area: 4, lookupPage: { page: 2, totalCount: 80, items: [] } }
+      const query = { page: '2', stickerPrefix: '000+1' }
+      fetchWrapper.get.mockResolvedValueOnce(page)
+      await expect(store.loadLookupMonitorPage(42, query)).resolves.toEqual(page)
+      expect(fetchWrapper.get).toHaveBeenLastCalledWith(`${apiUrl}/scanjobs/42/monitor?page=2&stickerPrefix=000%2B1&area=4`)
+      expect(store.monitorSnapshot).toBe(null)
+
+      const error = new Error('Query failure')
+      fetchWrapper.get.mockRejectedValueOnce(error)
+      await expect(store.loadLookupMonitorPage(42, query)).rejects.toBe(error)
+      expect(store.monitorError).toBe(null)
+    })
+
+    it('observes the Lookup area in its own channel and forwards live and reconnect events', async () => {
+      const store = useScanjobsStore()
+      await store.startMonitor(42)
+      const onError = vi.fn()
+      const onSnapshot = vi.fn()
+      const onClosed = vi.fn()
+      const lookup = store.createLookupMonitorChannel(onError)
+      await lookup.start(42, { onSnapshot, onClosed })
+      const connection = signalRConnections[1]
+      expect(connection.invoke).toHaveBeenCalledWith('ObserveScanJob', { scanJobId: 42, area: 4 })
+
+      const signal = { scanJobId: 42, area: 4 }
+      connection.handlers.ScanJobMonitorSnapshot(signal)
+      connection.handlers.ScanJobMonitorClosed(42, 20)
+      expect(onSnapshot).toHaveBeenCalledWith(signal)
+      expect(onClosed).toHaveBeenCalledWith(42, 20)
+      expect(store.monitorSnapshot).toBe(null)
+      expect(store.monitorClosed).toBe(null)
+
+      const error = new Error('Reconnect failure')
+      connection.invoke.mockRejectedValueOnce(error)
+      connection.handlers.onreconnected()
+      await Promise.resolve()
+      expect(onError).toHaveBeenCalledWith(error)
+      connection.handlers.onclose(error)
+      expect(onError).toHaveBeenCalledTimes(2)
+      connection.handlers.onclose()
+      expect(onError).toHaveBeenLastCalledWith(expect.objectContaining({ message: 'Соединение с монитором сканирования закрыто' }))
+      await lookup.stop()
+      connection.handlers.onclose()
+      expect(onError).toHaveBeenCalledTimes(3)
+      expect(connection.stop).toHaveBeenCalledOnce()
+      expect(connection.invoke).not.toHaveBeenCalledWith('ClearScanJobMonitor')
+      expect(signalRConnections[0].stop).not.toHaveBeenCalled()
+    })
+
     it('loads box monitor snapshot with box id', async () => {
       fetchWrapper.get.mockResolvedValue({ ...monitorSnapshot, area: 1 })
       const store = useScanjobsStore()

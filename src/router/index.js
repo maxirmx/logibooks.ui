@@ -220,6 +220,13 @@ const router = createRouter({
       meta: { reqWhRole: true }
     },
     {
+      path: '/scanjobs/:id/monitor/lookup',
+      name: 'scanjob-monitor-lookup',
+      component: () => import('@/views/Scanjob_LookupMonitor_View.vue'),
+      props: (route) => ({ id: Number(route.params.id) }),
+      meta: { reqWhRole: true }
+    },
+    {
       path: '/scanjobs/:id/monitor/boxes/:boxId',
       name: 'scanjob-monitor-box',
       component: () => import('@/views/Scanjob_Monitor_View.vue'),

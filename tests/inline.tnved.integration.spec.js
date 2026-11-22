@@ -31,6 +31,7 @@ const row = {
 }
 const register = { id: 12, customsFee: 40, customsDuty: 0, derivedTotalsPending: false }
 let wrapper
+let warnings
 
 function deferred() {
   let resolve, reject
@@ -106,6 +107,7 @@ async function startList() {
     }
   }), {
     global: {
+      config: { warnHandler: message => warnings.push(message) },
       stubs: {
         VTooltip: {
           props: ['location', 'contentClass', 'maxWidth'],
@@ -121,6 +123,7 @@ async function startList() {
 }
 
 beforeEach(() => {
+  warnings = []
   setActivePinia(createPinia())
   vi.resetAllMocks()
   Object.assign(auth, {
@@ -138,6 +141,7 @@ afterEach(() => {
   wrapper = null
   vi.useRealTimers()
   vi.restoreAllMocks()
+  expect(warnings).toEqual([])
 })
 
 describe('inline TN VED through a suggested-code click', () => {

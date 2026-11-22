@@ -77,6 +77,10 @@ describe('PaginationFooter', () => {
   })
 
   describe('Edge Cases', () => {
+    it('shows the full range when all rows are selected', async () => {
+      await wrapper.setProps({ itemsPerPage: -1, maxPage: 1 })
+      expect(wrapper.text()).toContain('1-200 из 200')
+    })
     it('handles undefined/null totalCount', async () => {
       await wrapper.setProps({ totalCount: null })
       const component = wrapper.vm

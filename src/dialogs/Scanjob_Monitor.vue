@@ -36,7 +36,8 @@ import {
 import {
   isUnassignedMonitorBox,
   scanjobMonitorArea,
-  scanjobMonitorTargetKind
+  scanjobMonitorTargetKind,
+  supportsLookupMonitor
 } from '@/helpers/scanjob.monitor.helpers.js'
 import '@/assets/styles/scanjob-monitor.css'
 
@@ -1099,6 +1100,10 @@ defineExpose({
     <hr class="hr" />
 
     <PageAlertRegion />
+    <nav v-if="supportsLookupMonitor(scanjob)" class="scanjob-monitor-view-switch" aria-label="Режим монитора сканирования">
+      <v-btn :to="{ name: 'scanjob-monitor-register', params: { id: props.scanjobId } }" :disabled="controlsBusy">Коробки</v-btn>
+      <v-btn :to="{ name: 'scanjob-monitor-lookup', params: { id: props.scanjobId } }" :disabled="controlsBusy">Посылки для поиска</v-btn>
+    </nav>
     <div v-if="readOnly" class="alert alert-warning read-only-notice">
       Изменения и операции сканирования запрещены. Мониторинг и просмотр посылок доступны.
     </div>

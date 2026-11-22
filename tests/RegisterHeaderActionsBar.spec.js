@@ -8,14 +8,21 @@ import { vi } from 'vitest'
 import RegisterHeaderActionsBar from '@/components/RegisterHeaderActionsBar.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import ActionButton2L from '@/components/ActionButton2L.vue'
-import { WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
+import { GTC_COMPANY_ID, WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
 import { InvoiceParcelSelection } from '@/models/invoice.parcel.selection.js'
-import { CUSTOMS_PROCEDURE_EXPORT, CUSTOMS_PROCEDURE_IMPORT } from '@/helpers/customs.procedure.helpers.js'
+import {
+  CUSTOMS_PROCEDURE_EXPORT,
+  CUSTOMS_PROCEDURE_IMPORT,
+  CUSTOMS_PROCEDURE_REEXPORT,
+  CUSTOMS_PROCEDURE_REIMPORT,
+  CUSTOMS_PROCEDURE_RETURN
+} from '@/helpers/customs.procedure.helpers.js'
 import { vuetifyStubs } from './helpers/test-utils.js'
 
 const pushMock = vi.fn()
 const authRefs = vi.hoisted(() => ({
   hasLogistRole: { __v_isRef: true, value: true },
+  isAdmin: { __v_isRef: true, value: false },
   isSrLogistPlus: { __v_isRef: true, value: true },
   isShiftLeadPlus: { __v_isRef: true, value: true }
 }))
@@ -74,10 +81,17 @@ describe('RegisterHeaderActionsBar', () => {
     return options.map(({ label, icon, color }) => ({ label, icon, color }))
   }
 
+  function findManifestOption(wrapper) {
+    return findActionMenuByTooltip(wrapper, 'Сформировать документы')
+      .props('options')
+      .find((option) => option.label === 'манифест для Таджикистана (все)')
+  }
+
   beforeEach(() => {
     setActivePinia(createPinia())
     pushMock.mockClear()
     authRefs.hasLogistRole.value = true
+    authRefs.isAdmin.value = false
     authRefs.isSrLogistPlus.value = true
     authRefs.isShiftLeadPlus.value = true
   })
@@ -217,28 +231,73 @@ describe('RegisterHeaderActionsBar', () => {
   })
 
   it.each([
-    { disabled: true, loading: false }
-  ])('does not download the Tajikistan manifest when actions are unavailable', async (state) => {
+    [WBRN_REGISTER_ID, CUSTOMS_PROCEDURE_EXPORT, 762, true],
+    [WBRN_REGISTER_ID, CUSTOMS_PROCEDURE_REIMPORT, 762, true],
+    [String(WBRN_REGISTER_ID), String(CUSTOMS_PROCEDURE_REIMPORT), '762', true],
+    [WBRN_REGISTER_ID, CUSTOMS_PROCEDURE_IMPORT, 762, false],
+    [WBRN_REGISTER_ID, CUSTOMS_PROCEDURE_REEXPORT, 762, false],
+    [WBRN_REGISTER_ID, CUSTOMS_PROCEDURE_RETURN, 762, false],
+    [WBRN_REGISTER_ID, CUSTOMS_PROCEDURE_REIMPORT, 860, false],
+    [WBRN_REGISTER_ID, CUSTOMS_PROCEDURE_REIMPORT, null, false],
+    [GTC_COMPANY_ID, CUSTOMS_PROCEDURE_REIMPORT, 762, false]
+  ])('shows the Tajikistan manifest for eligible registers (%s, %s, %s)', (registerType, customsProcedureCode, theOtherCountryCode, visible) => {
     const wrapper = mount(RegisterHeaderActionsBar, {
       props: {
         ...baseProps,
-        ...state,
+        item: { ...baseProps.item, registerType, customsProcedureCode, theOtherCountryCode }
+      },
+      global: { stubs: vuetifyStubs }
+    })
+
+    expect(Boolean(findManifestOption(wrapper))).toBe(visible)
+    wrapper.unmount()
+  })
+
+  it.each([
+    [CUSTOMS_PROCEDURE_EXPORT, true],
+    [CUSTOMS_PROCEDURE_EXPORT, false],
+    [CUSTOMS_PROCEDURE_REIMPORT, true],
+    [CUSTOMS_PROCEDURE_REIMPORT, false]
+  ])('requires document permissions for procedure %s without a logistics role (administrator: %s)', (customsProcedureCode, isAdmin) => {
+    authRefs.hasLogistRole.value = false
+    authRefs.isAdmin.value = isAdmin
+    const wrapper = mount(RegisterHeaderActionsBar, {
+      props: {
+        ...baseProps,
+        item: { ...baseProps.item, registerType: WBRN_REGISTER_ID, customsProcedureCode, theOtherCountryCode: 762 }
+      },
+      global: { stubs: vuetifyStubs }
+    })
+
+    expect(Boolean(findManifestOption(wrapper))).toBe(isAdmin)
+    wrapper.unmount()
+  })
+
+  it.each([
+    [true, false],
+    [false, true]
+  ])('blocks manifest downloads when actions are disabled (%s) or totals are pending (%s)', async (disabled, derivedTotalsPending) => {
+    const wrapper = mount(RegisterHeaderActionsBar, {
+      props: {
+        ...baseProps,
+        disabled,
         item: {
           ...baseProps.item,
           registerType: WBRN_REGISTER_ID,
-          customsProcedureCode: CUSTOMS_PROCEDURE_EXPORT,
-          theOtherCountryCode: 762
+          customsProcedureCode: CUSTOMS_PROCEDURE_REIMPORT,
+          theOtherCountryCode: 762,
+          derivedTotalsPending
         }
       },
       global: { stubs: vuetifyStubs }
     })
-    const option = findActionMenuByTooltip(wrapper, 'Сформировать документы')
-      .props('options')
-      .find((candidate) => candidate.label === 'манифест для Таджикистана (все)')
+    const option = findManifestOption(wrapper)
+    if (derivedTotalsPending) expect(option.disabled).toBe(true)
 
     await option.action()
 
     expect(wrapper.emitted('download-tajikistan-manifest')).toBeUndefined()
+    wrapper.unmount()
   })
 
   it('shows CMR only for Auto registers and routes to CMR settings', async () => {

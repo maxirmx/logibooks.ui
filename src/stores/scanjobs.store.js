@@ -109,7 +109,9 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     syncSnapshot = false,
     syncClosed = false,
     syncLoading = false,
-    syncErrors = false
+    syncErrors = false,
+    clearOnStop = true,
+    onConnectionError = null
   } = {}) {
     let connection = null
     let startPromise = null
@@ -161,6 +163,9 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
         if (err && syncErrors) {
           monitorError.value = err
         }
+        if (connection === currentConnection && onConnectionError) {
+          onConnectionError(err ?? new Error('Соединение с монитором сканирования закрыто'))
+        }
       })
 
       currentConnection.onreconnected?.(() => {
@@ -169,6 +174,7 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
             if (syncErrors) {
               monitorError.value = err
             }
+            if (connection === currentConnection) onConnectionError?.(err)
           })
         }
 
@@ -232,9 +238,11 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
       closedHandler = onClosed
 
       try {
-        lastObserveRequest = buildMonitorRequest(scanJobId, area, boxId, bucketIndex)
+        const request = buildMonitorRequest(scanJobId, area, boxId, bucketIndex)
+        lastObserveRequest = request
         const currentConnection = await ensureStarted()
-        await currentConnection.invoke('ObserveScanJob', lastObserveRequest)
+        if (connection !== currentConnection || lastObserveRequest !== request) return true
+        await currentConnection.invoke('ObserveScanJob', request)
         return true
       } catch (err) {
         if (syncErrors) {
@@ -324,7 +332,7 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
       }
 
       try {
-        if (currentConnection.state === signalR.HubConnectionState.Connected) {
+        if (clearOnStop && currentConnection.state === signalR.HubConnectionState.Connected) {
           await currentConnection.invoke('ClearScanJobMonitor')
           await currentConnection.invoke('ClearScanJobFollowUser')
         }
@@ -356,6 +364,20 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     syncLoading: true,
     syncErrors: true
   })
+
+  function createLookupMonitorChannel(onConnectionError) {
+    const channel = createMonitorChannel({ clearOnStop: false, onConnectionError })
+    return {
+      start: (scanJobId, handlers) => channel.start(scanJobId, { ...handlers, area: scanjobMonitorArea.Lookup }),
+      stop: channel.stop
+    }
+  }
+
+  async function loadLookupMonitorPage(scanJobId, query) {
+    const params = new URLSearchParams(query)
+    params.set('area', scanjobMonitorArea.Lookup)
+    return fetchWrapper.get(`${baseUrl}/${scanJobId}/monitor?${params.toString()}`)
+  }
 
   async function loadMonitorSnapshot(
     scanJobId,
@@ -891,6 +913,8 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     getOpsLabel,
     getScanJobLabel,
     loadMonitorSnapshot,
+    loadLookupMonitorPage,
+    createLookupMonitorChannel,
     resolveMonitorTarget,
     loadMonitorFollowUsers,
     startMonitor,

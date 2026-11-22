@@ -558,6 +558,17 @@ describe('Scanjob_Monitor.vue', () => {
     })
   })
 
+  it('shows both monitor views for Lookup jobs on supported registers', async () => {
+    mockScanjob.value = { ...mockScanjob.value, registerType: 1 }
+    getById.mockResolvedValue(mockScanjob.value)
+    const wrapper = mount(ScanjobMonitor, { props: { scanjobId: 42 }, global: { stubs: monitorGlobalStubs } })
+    await flushPromises()
+    const nav = wrapper.get('nav[aria-label="Режим монитора сканирования"]')
+    expect(nav.text()).toContain('Коробки')
+    expect(nav.text()).toContain('Посылки для поиска')
+    wrapper.unmount()
+  })
+
   it('preserves jump input on a resolved navigation failure and allows retry', async () => {
     const navigationRouter = createRouter({ history: createMemoryHistory(), routes: [{ path: '/', component: {} }, { path: '/blocked', component: {} }] })
     await navigationRouter.push('/')

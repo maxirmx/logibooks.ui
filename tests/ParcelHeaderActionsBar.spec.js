@@ -259,7 +259,7 @@ describe('ParcelHeaderActionsBar', () => {
     expect(wrapper.emitted()).toEqual({})
   })
 
-  it('respects downloadDisabled for download hotkeys', async () => {
+  it('shows a disabled download button and blocks its hotkey', async () => {
     getByIdMock.mockResolvedValue({
       id: 1,
       name: 'Download Scheme',
@@ -288,6 +288,10 @@ describe('ParcelHeaderActionsBar', () => {
       })
     )
     await wrapper.vm.$nextTick()
+    expect(wrapper.emitted()['download']).toBeUndefined()
+    const button = wrapper.get('[data-icon="fa-solid fa-upload"]')
+    expect(button.element.disabled).toBe(true)
+    await button.trigger('click')
     expect(wrapper.emitted()['download']).toBeUndefined()
   })
 

@@ -97,6 +97,40 @@ describe('RegisterHeaderActionsBar', () => {
     expect(wrapper.emitted('download')).toEqual([['generic'], ['company']])
   })
 
+  it.each([31, 40])('shows deferred customs actions as disabled for WBR-N procedure %i', async (customsProcedureCode) => {
+    const wrapper = mount(RegisterHeaderActionsBar, {
+      props: { ...baseProps, item: {
+        ...baseProps.item, registerType: WBRN_REGISTER_ID, customsProcedureCode,
+        transportationTypeCode: 0, warehouseId: 1
+      } },
+      global: { stubs: vuetifyStubs }
+    })
+    const xml = findActionMenuByTooltip(wrapper, 'Выгрузить XML накладные')
+    expect(xml.props('disabled')).toBe(true)
+    for (const option of xml.props('options')) await option.action()
+    expect(wrapper.emitted('export-ordinary')).toBeUndefined()
+    expect(wrapper.emitted('export-excise')).toBeUndefined()
+    expect(wrapper.emitted('export-notifications')).toBeUndefined()
+
+    expect(findActionButtonByTooltip(wrapper, 'Экспортировать реестр').props('disabled')).toBe(false)
+    const documents = findActionMenuByTooltip(wrapper, 'Сформировать документы').props('options')
+    expect(documents.find((option) => option.label === 'packing list').disabled).toBe(false)
+    const invoices = documents.filter((option) => option.label.startsWith('инвойс-манифест'))
+    expect(invoices).toHaveLength(4)
+    const do1 = documents.find((option) => option.label.startsWith('отчёт ДО1'))
+    if (customsProcedureCode === 40) {
+      expect(do1.disabled).toBe(true)
+      await do1.action()
+    } else {
+      expect(do1).toBeUndefined()
+    }
+    for (const option of invoices) {
+      expect(option.disabled).toBe(true)
+      await option.action()
+    }
+    expect(pushMock).not.toHaveBeenCalled()
+  })
+
   it('navigates to invoice settings with selected scope when invoice action option is used', async () => {
     const wrapper = mount(RegisterHeaderActionsBar, {
       props: { ...baseProps },

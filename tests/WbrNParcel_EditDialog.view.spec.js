@@ -288,7 +288,7 @@ const stubs = {
         <button data-testid="save" :disabled="disabled || actionsDisabled" @click="$emit('save')"></button>
         <button data-testid="lookup" :disabled="disabled || actionsDisabled" @click="$emit('lookup')"></button>
         <button data-testid="cancel" :disabled="disabled" @click="$emit('cancel')"></button>
-        <button data-testid="download" :disabled="disabled || actionsDisabled" @click="$emit('download')"></button>
+        <button data-testid="download" :disabled="disabled || actionsDisabled || downloadDisabled" @click="$emit('download')"></button>
       </div>
     `
   },
@@ -631,6 +631,15 @@ describe('WbrNParcel_EditDialog.vue', () => {
     await resolveAll()
   })
 
+  it.each([31, 40])('shows disabled parcel XML generation for WBR-N procedure %i', async (procedure) => {
+    registerItem.value = { ...registerItem.value, customsProcedureCode: procedure }
+    const wrapper = await mountDialog()
+    expect(wrapper.get('[data-testid="download"]').element.disabled).toBe(true)
+    registerItem.value = { ...registerItem.value, customsProcedureCode: 10 }
+    await nextTick()
+    expect(wrapper.get('[data-testid="download"]').element.disabled).toBe(false)
+  })
+
   it('keeps the editor open when an excluded single-parcel status is cancelled', async () => {
     formValues.statusId = 6
     confirmMock.mockResolvedValue(false)
@@ -885,6 +894,9 @@ describe('WbrNParcel_EditDialog.vue', () => {
     await wrapper.get('.alert .close').trigger('click')
     expect(alertDismiss).toHaveBeenCalledWith(17)
 
+    parcelItem.value = { ...baseParcel }
+    registerItem.value = { ...registerItem.value, customsProcedureCode: 10 }
+    await nextTick()
     generateXml.mockRejectedValueOnce(new Error('xml failed'))
     await wrapper.get('[data-testid="download"]').trigger('click')
     await resolveAll()

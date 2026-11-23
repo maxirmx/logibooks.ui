@@ -36,6 +36,7 @@ export const useRegistersStore = defineStore('registers', () => {
   let registerSnapshotArrival = 0
   const derivedRefreshes = new Map()
   const uploadFile = ref(null)
+  const wbrnImportReexportUpload = ref(false)
   const loading = ref(false)
   const error = ref(null)
   const totalCount = ref(0)
@@ -1348,6 +1349,7 @@ export const useRegistersStore = defineStore('registers', () => {
     nextParcels,
     remove,
     uploadFile,
+    wbrnImportReexportUpload,
     getOps,
     ensureOpsLoaded,
     getOpsLabel,

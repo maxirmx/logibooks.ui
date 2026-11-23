@@ -132,6 +132,16 @@ describe('Invoice_Settings.vue', () => {
     expect(router.go).toHaveBeenCalledWith(-1)
   })
 
+  it('guards a direct invoice settings visit for WBR-N ИМ 40', async () => {
+    itemRef.value = { id: 77, registerType: 2097154, customsProcedureCode: 40 }
+    const wrapper = mountDialog()
+    await resolveAll()
+    const comp = wrapper.findComponent(InvoiceSettings).vm.$.setupState
+    expect(comp.isFormDisabled).toBe(true)
+    await comp.onSubmit()
+    expect(downloadInvoiceFileMock).not.toHaveBeenCalled()
+  })
+
   it('does not submit previous DTEG optional column for reexport registers', async () => {
     itemRef.value = {
       id: 77,

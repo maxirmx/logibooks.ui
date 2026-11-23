@@ -4,6 +4,8 @@
 
 export const CUSTOMS_PROCEDURE_ALL = 'all'
 
+import { WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
+
 export const CUSTOMS_PROCEDURE = Object.freeze({
   Return: 1,
   Export: 10,
@@ -61,6 +63,22 @@ export function isReimportCustomsProcedure(value) {
 export function isImportOrReexportCustomsProcedure(value) {
   const code = normalizeCustomsProcedureCode(value)
   return code === CUSTOMS_PROCEDURE_IMPORT || code === CUSTOMS_PROCEDURE_REEXPORT
+}
+
+export function isWbrNImportOrReexport(register) {
+  return Number(register?.registerType) === WBRN_REGISTER_ID &&
+    isImportOrReexportCustomsProcedure(register?.customsProcedureCode)
+}
+
+export function supportsWbrNImportReexport(procedures) {
+  return Array.isArray(procedures) &&
+    [CUSTOMS_PROCEDURE_IMPORT, CUSTOMS_PROCEDURE_REEXPORT].every((code) =>
+      procedures.some((procedure) =>
+        normalizeCustomsProcedureCode(procedure.value) === code &&
+        Array.isArray(procedure.allowedRegisterTypes) &&
+        procedure.allowedRegisterTypes.map(Number).includes(WBRN_REGISTER_ID)
+      )
+    )
 }
 
 export function isCustomsChargesCalculationProcedure(value) {

@@ -99,6 +99,7 @@ const removeFn = vi.fn()
 const confirmMock = vi.fn()
 const mockIsShiftLeadPlus = ref(false)
 const mockIsSrLogistPlus = ref(false)
+const mockHasWhRole = ref(false)
 const mockPaperworkRegistersProcedure = ref('all')
 const mockPaperworkRegistersStatus = ref(REGISTER_STATUS_FILTER_IN_PROGRESS)
 const mockUser = ref({ id: 1 })
@@ -268,7 +269,7 @@ vi.mock('@/stores/auth.store.js', () => ({
     isShiftLeadPlus: mockIsShiftLeadPlus,
     isSrLogistPlus: mockIsSrLogistPlus,
     isWhManagerPlus: ref(false),
-    hasWhRole: ref(false)
+    hasWhRole: mockHasWhRole
   })
 }))
 
@@ -311,6 +312,7 @@ describe('Registers_List.vue', () => {
     mockAlert.value = null
     mockIsShiftLeadPlus.value = false
     mockIsSrLogistPlus.value = false
+    mockHasWhRole.value = false
     mockPaperworkRegistersProcedure.value = 'all'
     mockPaperworkRegistersStatus.value = REGISTER_STATUS_FILTER_IN_PROGRESS
     getAirportsAll.mockClear()
@@ -319,6 +321,30 @@ describe('Registers_List.vue', () => {
     setRegisterStatusFn.mockReset()
     getRegisterStatusByIdFn.mockClear()
     ensureOpsLoadedFn.mockClear()
+  })
+
+  it('puts the warehouse toggle in its own group after the register upload group', async () => {
+    mockIsSrLogistPlus.value = true
+    mockHasWhRole.value = true
+    const wrapper = mount(RegistersList, { global: { stubs: vuetifyStubs } })
+    await flushPromises()
+
+    const toggle = wrapper.get('button[aria-label="Склад"]')
+    const group = toggle.element.closest('.header-actions-group')
+    expect(group).toBe(wrapper.get('.header-actions-bar').element.lastElementChild)
+    expect(Array.from(group.querySelectorAll('button'))).toEqual([toggle.element])
+    expect(group.previousElementSibling.querySelector('[data-icon="fa-solid fa-file-import"]')).not.toBeNull()
+
+    await toggle.trigger('click')
+    await flushPromises()
+    expect(router.push).toHaveBeenCalledExactlyOnceWith({ path: '/registers', query: { mode: 'modeWarehouse' } })
+
+    mockIsSrLogistPlus.value = false
+    mockHasWhRole.value = false
+    await wrapper.vm.$nextTick()
+    expect(group.previousElementSibling).toBeNull()
+    expect(toggle.element.disabled).toBe(true)
+    wrapper.unmount()
   })
 
   describe('getRegisterTypeName function', () => {

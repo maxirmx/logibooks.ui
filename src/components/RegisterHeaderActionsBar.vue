@@ -8,6 +8,7 @@ import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import ActionButton from '@/components/ActionButton.vue'
 import ActionButton2L from '@/components/ActionButton2L.vue'
+import RegisterViewToggle from '@/components/RegisterViewToggle.vue'
 import { InvoiceParcelSelection } from '@/models/invoice.parcel.selection.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import {
@@ -16,7 +17,8 @@ import {
   isImportCustomsProcedure,
   isWbrNImportOrReexport
 } from '@/helpers/customs.procedure.helpers.js'
-import { WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
+import { GTC_COMPANY_ID, WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
+import { OP_MODE_PAPERWORK } from '@/helpers/op.mode.js'
 import { canReconcileRegister, canSplitRegister } from '@/helpers/register.reconciliation.helpers.js'
 import { canChangeParcelWeights } from '@/helpers/weight.correction.helpers.js'
 
@@ -119,6 +121,7 @@ const canDownloadTajikistanManifest = computed(
     Number(props.item?.theOtherCountryCode) === TAJIKISTAN_ISO_NUMERIC
 )
 const customsDocumentsAvailable = computed(() => !isWbrNImportOrReexport(props.item))
+const hasWarehouse = computed(() => Number(props.item?.warehouseId) > 0)
 
 const documentOptions = computed(() => {
   const options = [
@@ -179,7 +182,7 @@ const documentOptions = computed(() => {
   if (
     props.item?.transportationTypeCode != null &&
     Number(props.item.transportationTypeCode) === 0 &&
-    Number(props.item?.warehouseId) > 0
+    hasWarehouse.value
   ) {
     options.push({
       label: 'packing list',
@@ -391,7 +394,7 @@ function openCmrSettings() {
         :options="documentOptions"
       />
     </div>
-    <div class="header-actions header-actions-group">
+    <div v-if="isSrLogistPlus || isShiftLeadPlus" class="header-actions header-actions-group">
       <ActionButton
         v-if="isSrLogistPlus && showWeightUpdate"
         :item="item"
@@ -447,6 +450,14 @@ function openCmrSettings() {
         :iconSize="iconSize"
         :disabled="disabled || mutationDisabled"
         @click="run('freeze-tnved-order')"
+      />
+    </div>
+    <div class="header-actions header-actions-group">
+      <RegisterViewToggle
+        :mode="OP_MODE_PAPERWORK"
+        :register-id="item?.id"
+        :icon-size="iconSize"
+        :disabled="disabled || loading || !item?.id || !hasWarehouse || item.registerType === GTC_COMPANY_ID"
       />
       <ActionButton
         :item="item"

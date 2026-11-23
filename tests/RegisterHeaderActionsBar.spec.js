@@ -8,13 +8,14 @@ import { vi } from 'vitest'
 import RegisterHeaderActionsBar from '@/components/RegisterHeaderActionsBar.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import ActionButton2L from '@/components/ActionButton2L.vue'
-import { WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
+import { GTC_COMPANY_ID, WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
 import { InvoiceParcelSelection } from '@/models/invoice.parcel.selection.js'
 import { CUSTOMS_PROCEDURE_EXPORT, CUSTOMS_PROCEDURE_IMPORT } from '@/helpers/customs.procedure.helpers.js'
 import { vuetifyStubs } from './helpers/test-utils.js'
 
 const pushMock = vi.fn()
 const authRefs = vi.hoisted(() => ({
+  hasWhRole: { __v_isRef: true, value: true },
   hasLogistRole: { __v_isRef: true, value: true },
   isSrLogistPlus: { __v_isRef: true, value: true },
   isShiftLeadPlus: { __v_isRef: true, value: true }
@@ -80,6 +81,54 @@ describe('RegisterHeaderActionsBar', () => {
     authRefs.hasLogistRole.value = true
     authRefs.isSrLogistPlus.value = true
     authRefs.isShiftLeadPlus.value = true
+  })
+
+  it('groups the warehouse toggle and Close separately and disables the toggle when the warehouse view is unavailable', async () => {
+    const item = { ...baseProps.item, registerType: WBRN_REGISTER_ID, warehouseId: 5 }
+    const wrapper = mount(RegisterHeaderActionsBar, {
+      props: { ...baseProps, item }, global: { stubs: vuetifyStubs }
+    })
+    const toggle = wrapper.get('button[aria-label="Склад"]')
+    const close = wrapper.get('button[aria-label="Закрыть"]')
+    const navigationGroup = toggle.element.closest('.header-actions-group')
+    expect(navigationGroup).toBe(wrapper.element.lastElementChild)
+    expect(Array.from(navigationGroup.querySelectorAll('button'))).toEqual([toggle.element, close.element])
+    expect(navigationGroup.previousElementSibling.querySelector('[data-icon="fa-solid fa-arrows-to-eye"]')).not.toBeNull()
+    expect(toggle.element.disabled).toBe(false)
+
+    await wrapper.setProps({ item: { ...item, registerType: GTC_COMPANY_ID } })
+    expect(toggle.element.disabled).toBe(true)
+    await wrapper.setProps({ item: { registerType: WBRN_REGISTER_ID } })
+    expect(toggle.element.disabled).toBe(true)
+    await wrapper.setProps({ item, loading: true })
+    expect(toggle.element.disabled).toBe(true)
+    await wrapper.setProps({ loading: false, disabled: true })
+    expect(toggle.element.disabled).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('omits the register action group for users without register actions', () => {
+    authRefs.isSrLogistPlus.value = false
+    authRefs.isShiftLeadPlus.value = false
+    const wrapper = mount(RegisterHeaderActionsBar, { props: baseProps, global: { stubs: vuetifyStubs } })
+    const groups = wrapper.findAll('.header-actions-group')
+    expect(groups).toHaveLength(2)
+    expect(groups[0].find('[data-icon="fa-solid fa-file-export"]').exists()).toBe(true)
+    expect(groups[1].get('button[aria-label="Закрыть"]').exists()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it.each([undefined, null, 0])('disables switching to warehouse when the register warehouse ID is %s', async (warehouseId) => {
+    const item = { ...baseProps.item, registerType: WBRN_REGISTER_ID, warehouseId }
+    const wrapper = mount(RegisterHeaderActionsBar, {
+      props: { ...baseProps, item }, global: { stubs: vuetifyStubs }
+    })
+    const toggle = wrapper.get('button[aria-label="Склад"]')
+    expect(toggle.element.disabled).toBe(true)
+
+    await wrapper.setProps({ item: { ...item, warehouseId: 5 } })
+    expect(toggle.element.disabled).toBe(false)
+    wrapper.unmount()
   })
 
   it('shows two export choices only when the company format is applicable', async () => {

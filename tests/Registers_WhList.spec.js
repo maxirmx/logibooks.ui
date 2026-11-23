@@ -10,7 +10,7 @@ import RegistersWhList from '@/lists/Registers_WhList.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import { getErrorMessage } from '@/helpers/error.helpers.js'
 import { vuetifyStubs } from './helpers/test-utils.js'
-import { OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
+import { OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 import { REGISTER_STATUS_FILTER_IN_PROGRESS } from '@/helpers/register.status.filter.helpers.js'
 import { formatZoneCount, isReturnRegister } from '@/helpers/warehouse.registers.table.helpers.js'
 
@@ -211,7 +211,8 @@ vi.mock('@/stores/auth.store.js', () => ({
     isShiftLeadPlus: mockIsShiftLeadPlus,
     isSrLogistPlus: mockIsSrLogistPlus,
     isWhManagerPlus: mockIsWhManagerPlus,
-    hasWhRole: mockHasWhRole
+    hasWhRole: mockHasWhRole,
+    hasLogistRole: true
   })
 }))
 
@@ -426,7 +427,7 @@ describe('Registers_WhList.vue', () => {
     }
   })
 
-  it('shows return-register action and routes to creation view', async () => {
+  it('places the customs toggle in its own group after the return-register action', async () => {
     const wrapper = createWrapper()
     await flushPromises()
     await wrapper.vm.$nextTick()
@@ -436,11 +437,30 @@ describe('Registers_WhList.vue', () => {
       (button) => button.props('tooltipText') === 'Создать реестр возврата'
     )
 
-    expect(returnButton).toBeTruthy()
+    const toggle = wrapper.get('button[aria-label="Оформление"]')
+    const group = toggle.element.closest('.header-actions-group')
+    expect(group).toBe(wrapper.get('.header-actions-bar').element.lastElementChild)
+    expect(Array.from(group.querySelectorAll('button'))).toEqual([toggle.element])
+    expect(group.previousElementSibling).toBe(returnButton.element.closest('.header-actions-group'))
 
     const router = (await import('@/router')).default
     await returnButton.find('button').trigger('click')
     expect(router.push).toHaveBeenCalledWith('/register/return')
+    wrapper.unmount()
+  })
+
+  it('switches to customs even when the return-register action is unavailable', async () => {
+    mockIsWhManagerPlus.value = false
+    const wrapper = createWrapper()
+    await flushPromises()
+    const toggle = wrapper.get('button[aria-label="Оформление"]')
+    expect(toggle.element.closest('.header-actions-group').previousElementSibling).toBeNull()
+
+    await toggle.trigger('click')
+    await flushPromises()
+    const router = (await import('@/router')).default
+    expect(router.push).toHaveBeenCalledExactlyOnceWith({ path: '/registers', query: { mode: OP_MODE_PAPERWORK } })
+    wrapper.unmount()
   })
 
   it('updates search and table controls through rendered v-model bindings', async () => {

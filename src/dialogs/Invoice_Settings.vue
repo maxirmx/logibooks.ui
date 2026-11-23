@@ -20,7 +20,7 @@ import { InvoiceOptionalColumns } from '@/models/invoice.optional.columns.js'
 import { InvoiceParcelSelection } from '@/models/invoice.parcel.selection.js'
 import { useActionDialog } from '@/composables/useActionDialog.js'
 import { getWeightCorrection } from '@/helpers/weight.correction.helpers.js'
-import { isReexportCustomsProcedure } from '@/helpers/customs.procedure.helpers.js'
+import { isReexportCustomsProcedure, isWbrNImportOrReexport } from '@/helpers/customs.procedure.helpers.js'
 
 const props = defineProps({
   id: { type: Number, required: true },
@@ -105,7 +105,8 @@ const invoiceWeightCorrectionLabel = computed(() =>
     ? `Применить поправочный коэффициент ${invoiceWeightCorrection.value.coefficientText} к весу посылок.`
     : ''
 )
-const isFormDisabled = computed(() => isSubmitting.value || loading.value || !currentRegister.value || currentRegister.value.derivedTotalsPending === true)
+const isFormDisabled = computed(() => isSubmitting.value || loading.value || !currentRegister.value ||
+  currentRegister.value.derivedTotalsPending === true || isWbrNImportOrReexport(currentRegister.value))
 
 watch(
   () => currentRegister.value?.id,

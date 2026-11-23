@@ -13,7 +13,8 @@ import { useAuthStore } from '@/stores/auth.store.js'
 import {
   CUSTOMS_PROCEDURE_EXPORT,
   isCustomsChargesCalculationProcedure,
-  isImportCustomsProcedure
+  isImportCustomsProcedure,
+  isWbrNImportOrReexport
 } from '@/helpers/customs.procedure.helpers.js'
 import { WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
 import { canReconcileRegister, canSplitRegister } from '@/helpers/register.reconciliation.helpers.js'
@@ -96,7 +97,8 @@ const reconciliationOptions = computed(() => [
   { label: 'Разделить реестр', disabled: !splitEligible.value, action: () => run('split-register') }
 ])
 const derivedTotalsPending = computed(() => props.item?.derivedTotalsPending === true)
-const derivedOutputEvents = new Set(['export-ordinary', 'export-excise', 'export-notifications', 'download',
+const xmlExportEvents = ['export-ordinary', 'export-excise', 'export-notifications']
+const derivedOutputEvents = new Set([...xmlExportEvents, 'download',
   'download-packing-list', 'download-tajikistan-manifest', 'download-additional-restrictions'])
 const weightChangesAllowed = computed(() => canChangeParcelWeights(props.item))
 const restrictionCountryMissing = computed(() => props.item?.theOtherCountryCode == null)
@@ -116,6 +118,7 @@ const canDownloadTajikistanManifest = computed(
     Number(props.item?.customsProcedureCode) === CUSTOMS_PROCEDURE_EXPORT &&
     Number(props.item?.theOtherCountryCode) === TAJIKISTAN_ISO_NUMERIC
 )
+const customsDocumentsAvailable = computed(() => !isWbrNImportOrReexport(props.item))
 
 const documentOptions = computed(() => {
   const options = [
@@ -143,7 +146,7 @@ const documentOptions = computed(() => {
       color: 'no-issues',
       action: () => openInvoiceSettings(InvoiceParcelSelection.Ordinal)
     }
-  ]
+  ].map(option => ({ ...option, disabled: !customsDocumentsAvailable.value }))
 
   if (canDownloadTajikistanManifest.value) {
     options.push({
@@ -159,6 +162,7 @@ const documentOptions = computed(() => {
       label: 'отчёт ДО1 (все)',
       icon: 'fa-solid fa-check-to-slot',
       color: 'not-checked',
+      disabled: !customsDocumentsAvailable.value,
       action: openDo1Settings
     })
   }
@@ -210,6 +214,7 @@ function run(evt, format) {
     (['reconcile-register', 'split-register'].includes(evt) && (!reconciliationEligible.value || props.item?.readOnly === true)) ||
     (evt === 'split-register' && !splitEligible.value) ||
     props.disabled ||
+    (!customsDocumentsAvailable.value && xmlExportEvents.includes(evt)) ||
     (derivedTotalsPending.value && derivedOutputEvents.has(evt)) ||
     props.loading ||
     (props.mutationDisabled && mutationEvents.has(evt)) ||
@@ -221,7 +226,7 @@ function run(evt, format) {
 }
 
 function openInvoiceSettings(selection = InvoiceParcelSelection.All) {
-  if (props.disabled || derivedTotalsPending.value) return
+  if (!customsDocumentsAvailable.value || props.disabled || derivedTotalsPending.value) return
   const registerId = props.item?.id
   if (!registerId) return
   router.push({
@@ -232,7 +237,8 @@ function openInvoiceSettings(selection = InvoiceParcelSelection.All) {
 }
 
 function openDo1Settings() {
-  if (props.disabled || derivedTotalsPending.value || !isImportCustomsProcedure(props.item?.customsProcedureCode)) return
+  if (!customsDocumentsAvailable.value || props.disabled || derivedTotalsPending.value ||
+      !isImportCustomsProcedure(props.item?.customsProcedureCode)) return
   const registerId = props.item?.id
   if (!registerId) return
   router.push({
@@ -333,7 +339,7 @@ function openCmrSettings() {
         icon="fa-solid fa-upload"
         tooltip-text="Выгрузить XML накладные"
         :iconSize="iconSize"
-        :disabled="disabled || derivedTotalsPending"
+        :disabled="!customsDocumentsAvailable || disabled || derivedTotalsPending"
         :options="[
           {
             label: 'С акцизом',

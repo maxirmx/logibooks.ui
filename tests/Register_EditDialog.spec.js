@@ -114,6 +114,7 @@ const registersStore = createMockStore({
   update,
   upload,
   uploadFile: ref(null),
+  wbrnImportReexportUpload: ref(false),
   ops: mockOps,
   ensureOpsLoaded: vi.fn(() => Promise.resolve()),
   getTransportationDocument: vi.fn((id) => {
@@ -197,6 +198,7 @@ vi.mock('pinia', async () => {
         return {
           item: mockItem,
           uploadFile: registersStore.uploadFile,
+          wbrnImportReexportUpload: registersStore.wbrnImportReexportUpload,
           items: registersStore.items,
           ops: mockOps
         }
@@ -372,6 +374,8 @@ describe('Register_EditDialog', () => {
     vi.clearAllMocks()
     restrictionConfirm.mockReset().mockResolvedValue(true)
     upload.mockResolvedValue({ success: true, registerId: 42 })
+    registersStore.uploadFile.value = new File(['data'], 'register.xlsx')
+    registersStore.wbrnImportReexportUpload.value = false
     update.mockResolvedValue()
     Object.keys(__fieldValueMap).forEach((key) => delete __fieldValueMap[key])
     // Create a fresh copy of baseRegisterItem to avoid reference issues
@@ -1943,6 +1947,49 @@ describe('Register_EditDialog', () => {
       expect(wrapper.get('#transfer2Re').element.checked).toBe(false)
       await dialog.vm.onSubmit({ checkForDuplicates: false }, { setErrors: vi.fn() })
       expect(upload.mock.calls[0][4]).toBe(false)
+    })
+
+    it('limits the new WBR-N layout to ИМ 40 and ЭК 31 and restoration is opt-in', async () => {
+      registersStore.wbrnImportReexportUpload.value = true
+      mockItem.value = { ...baseRegisterItem, registerType: WBRN_REGISTER_ID, customsProcedureCode: null }
+      mockOps.value.customsProcedures = [
+        { value: 10, name: 'Экспорт', isExport: true, allowedRegisterTypes: [WBRN_REGISTER_ID] },
+        { value: 31, name: 'Реэкспорт', isRe: true, isExport: true, allowedRegisterTypes: [WBRN_REGISTER_ID] },
+        { value: 40, name: 'Импорт', allowedRegisterTypes: [WBRN_REGISTER_ID] }
+      ]
+      const { wrapper, dialog } = await mountUploadEditor()
+      expect(dialog.vm.filteredCustomsProcedures.map((procedure) => procedure.value)).toEqual([31, 40])
+      expect(mockItem.value.customsProcedureCode).toBe(40)
+      dialog.vm.handleProcedureChange({ target: { value: '31' } })
+      await nextTick()
+      expect(wrapper.get('#transfer2Re').element.checked).toBe(false)
+      await wrapper.get('#transfer2Re').setValue(true)
+      dialog.vm.handleProcedureChange({ target: { value: '40' } })
+      dialog.vm.handleProcedureChange({ target: { value: '31' } })
+      await nextTick()
+      expect(wrapper.get('#transfer2Re').element.checked).toBe(false)
+      await dialog.vm.onSubmit({})
+      expect(upload.mock.calls[0].slice(1, 5)).toEqual([WBRN_REGISTER_ID, 31, true, false])
+      wrapper.unmount()
+      expect(registersStore.uploadFile.value).toBeNull()
+      expect(registersStore.wbrnImportReexportUpload.value).toBe(false)
+    })
+
+    it('blocks a new-layout upload without explicit Core support or a selected file', async () => {
+      registersStore.wbrnImportReexportUpload.value = true
+      mockItem.value = { ...baseRegisterItem, registerType: WBRN_REGISTER_ID, customsProcedureCode: 40 }
+      const { wrapper, dialog } = await mountUploadEditor()
+      expect(dialog.vm.filteredCustomsProcedures).toEqual([])
+      await dialog.vm.onSubmit({})
+      expect(upload).not.toHaveBeenCalled()
+      mockOps.value.customsProcedures = [
+        { value: 31, allowedRegisterTypes: [WBRN_REGISTER_ID] },
+        { value: 40, allowedRegisterTypes: [WBRN_REGISTER_ID] }
+      ]
+      registersStore.uploadFile.value = null
+      await dialog.vm.onSubmit({})
+      expect(upload).not.toHaveBeenCalled()
+      wrapper.unmount()
     })
 
     it.each(['fails', 'is declined'])('keeps blank weight valid when metadata saving %s and retries without re-upload', async (outcome) => {

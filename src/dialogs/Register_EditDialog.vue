@@ -38,7 +38,12 @@ import AirportSelectField from '@/components/AirportSelectField.vue'
 import { OP_MODE_PAPERWORK, getRegisterNouns } from '@/helpers/op.mode.js'
 import { formatDate, formatTime } from '@/helpers/date.formatters.js'
 import { formatWeight } from '@/helpers/number.formatters.js'
-import { CUSTOMS_PROCEDURE_RETURN } from '@/helpers/customs.procedure.helpers.js'
+import {
+  CUSTOMS_PROCEDURE_IMPORT,
+  CUSTOMS_PROCEDURE_RETURN,
+  isImportOrReexportCustomsProcedure,
+  supportsWbrNImportReexport
+} from '@/helpers/customs.procedure.helpers.js'
 import RegisterStatusSelect from '@/components/RegisterStatusSelect.vue'
 import { rememberRegisterUploadDraft, getRegisterUploadDraft, clearRegisterUploadDraft } from '@/helpers/register.upload.recovery.js'
 
@@ -56,7 +61,7 @@ const alertStore = useAlertStore()
 
 const authStore = useAuthStore()
 const registersStore = useRegistersStore()
-const { item, uploadFile, ops } = storeToRefs(registersStore)
+const { item, uploadFile, ops, wbrnImportReexportUpload } = storeToRefs(registersStore)
 
 const countriesStore = useCountriesStore()
 const { countries } = storeToRefs(countriesStore)
@@ -129,7 +134,7 @@ function cancelCurrencySelection() {
 // Id = 1 --> Code = 10 (Экспорт)
 const isExport = ref(true)
 const isRe = ref(false)
-const restorePreviousData = ref(true)
+const restorePreviousData = ref(!props.create || !wbrnImportReexportUpload?.value)
 const procedureCodeLoaded = ref(false)
 const isComponentMounted = ref(true)
 const isInitializing = ref(true)
@@ -328,6 +333,11 @@ function isMissingCustomsProcedureCode(value) {
 }
 
 function getDefaultCustomsProcedureCode() {
+  if (props.create && wbrnImportReexportUpload?.value &&
+      filteredCustomsProcedures.value.some((procedure) => Number(procedure.value) === CUSTOMS_PROCEDURE_IMPORT)) {
+    return CUSTOMS_PROCEDURE_IMPORT
+  }
+
   return parseNumber(filteredCustomsProcedures.value[0]?.value, null)
 }
 
@@ -358,9 +368,16 @@ const filteredCustomsProcedures = computed(() => {
   const all = ops.value?.customsProcedures
   if (!Array.isArray(all)) return []
   const registerType = item.value?.registerType
+  const newWbrnUpload = props.create && wbrnImportReexportUpload?.value
+  if (newWbrnUpload && (!isWbrNRegister.value || !supportsWbrNImportReexport(all))) return []
+
   return all.filter((procedure) => {
     const procedureCode = parseNumber(procedure.value, null)
     if (procedureCode === null || procedureCode === 0) {
+      return false
+    }
+    if (props.create && isWbrNRegister.value &&
+        isImportOrReexportCustomsProcedure(procedureCode) !== Boolean(newWbrnUpload)) {
       return false
     }
 
@@ -599,6 +616,10 @@ onMounted(initializeDependencies)
 
 onUnmounted(() => {
   isComponentMounted.value = false
+  if (props.create) {
+    uploadFile.value = null
+    if (wbrnImportReexportUpload) wbrnImportReexportUpload.value = false
+  }
   if (resolveCurrencySelection) {
     finishCurrencySelection(null)
   }
@@ -751,7 +772,8 @@ const canSubmit = computed(
     !isInitializing.value &&
     !registerLoadFailed.value &&
     typesLoaded.value &&
-    canChangeStatus.value
+    canChangeStatus.value &&
+    (!props.create || Boolean(uploadFile.value) && proceduresLoaded.value)
 )
 
 const registerStatusesLoaded = computed(
@@ -814,6 +836,7 @@ function handleProcedureChange(e, setFieldValue, handleChange) {
     e.target.value = procedureCode === null ? '' : String(procedureCode)
   }
   item.value.customsProcedureCode = procedureCode
+  if (props.create && wbrnImportReexportUpload?.value) restorePreviousData.value = false
   if (props.create && !isRegisterStatusEdited.value) {
     ensureDefaultRegisterStatus({ force: true })
     if (setFieldValue && typeof setFieldValue === 'function') {
@@ -1077,6 +1100,8 @@ async function onSubmit(values, { setErrors } = {}) {
       if (isComponentMounted.value) await router.push(returnUrl.value)
       return
     }
+
+    if (!filteredCustomsProcedures.value.some((procedure) => Number(procedure.value) === payload.customsProcedureCode)) return
 
     showActionDialog('upload-register')
     const uploadArgs = [

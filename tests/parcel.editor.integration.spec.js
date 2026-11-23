@@ -88,7 +88,7 @@ function parcel(id = 3, extra = {}) {
     ...extra
   }
 }
-let pinia, registerCountry, registerType, registerWeights, requiredFailure, parcelRequests, historyRequests, neighbors, previous
+let pinia, registerCountry, registerType, registerProcedure, registerWeights, requiredFailure, parcelRequests, historyRequests, neighbors, previous
 function mountEditor(component = ParcelEditView, props = {}) {
   const wrapper = mount(component, {
     props: { registerId: 12, id: 3, ...props },
@@ -114,6 +114,7 @@ beforeEach(() => {
   signalR.connections.length = 0
   registerCountry = 156
   registerType = OZON_COMPANY_ID
+  registerProcedure = 40
   registerWeights = null
   confirm.mockResolvedValue(true)
   requiredFailure = null
@@ -137,10 +138,10 @@ beforeEach(() => {
       passportCheckStatuses: [{ value: 0, code: 'NotChecked', name: 'Не проверен' }, { value: 30, code: 'Checked', name: 'Проверен' }]
     }
     if (/\/registers\/nextparcels\//.test(url)) return neighbors
-    if (/\/registers\/\d+$/.test(url)) return { id: Number(url.split('/').at(-1)), registerType, customsProcedureCode: 40, theOtherCountryCode: registerCountry, ...registerWeights }
+    if (/\/registers\/\d+$/.test(url)) return { id: Number(url.split('/').at(-1)), registerType, customsProcedureCode: registerProcedure, theOtherCountryCode: registerCountry, ...registerWeights }
     if (url.endsWith('/hotkeyactionschemes/ops')) return { actions: [] }
     if (url.endsWith('/countries/compact')) return [{ id: 1, isoNumeric: 156, nameRuOfficial: 'Китай' }]
-    if (/\/(stopwords|keywords|feacnprefixes|feacnorders\/orders)$/.test(url)) return []
+    if (/\/(stopwords|keywords|feacnprefixes|feacnorders\/orders|exportfees)$/.test(url)) return []
     throw new Error(`Unexpected GET ${url}`)
   })
   transport.post.mockImplementation(async (url) => {
@@ -157,20 +158,24 @@ describe.each(editors)('%s editor with real forms and stores', (_name, component
 
   it('blocks pending XML export visibly and preserves the draft for a corrected retry', async () => {
     registerType = type
+    if (type === WBRN_REGISTER_ID) registerProcedure = 10
     registerWeights = { realWeightKg: 5, totalWeightKgToRelease: 10, derivedTotalsPending: true }
     const wrapper = mountEditor(component)
     await settle()
     await input(wrapper).setValue('Draft for XML')
     const refresh = vi.spyOn(useParcelsStore(), 'getById')
     const warning = vi.spyOn(useAlertStore(), 'warning')
+    const error = vi.spyOn(useAlertStore(), 'error')
     await action(wrapper, 'Сохранить и выгрузить XML накладную').trigger('click')
     await settle()
     expect(transport.downloadFile).not.toHaveBeenCalled()
     expect(confirm).not.toHaveBeenCalled()
     expect(refresh).not.toHaveBeenCalled()
     expect(warning).toHaveBeenCalledTimes(1)
+    expect(warning).toHaveBeenCalledWith('Итоги реестра пересчитываются. Повторите выгрузку XML после завершения пересчёта.')
+    expect(error).not.toHaveBeenCalled()
     expect(wrapper.findAll('[data-testid="page-alert-region"]')).toHaveLength(1)
-    expect(wrapper.get('[role="status"]').text()).toContain('Итоги реестра пересчитываются')
+    expect(wrapper.get('[data-testid="page-alert-region"]').text()).toContain('Итоги реестра пересчитываются')
     expect(input(wrapper).element.value).toBe('Draft for XML')
     expect(router.push).not.toHaveBeenCalled()
     expect(router.replace).not.toHaveBeenCalled()

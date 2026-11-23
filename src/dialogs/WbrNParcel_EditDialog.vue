@@ -30,7 +30,7 @@ import {
 } from '@/helpers/wbrn.register.mapping.js'
 import { getCheckStatusInfo, getCheckStatusClass } from '@/helpers/parcels.check.helpers.js'
 import { CheckStatusCode } from '@/helpers/check.status.code.js'
-import { isImportCustomsProcedure } from '@/helpers/customs.procedure.helpers.js'
+import { isImportCustomsProcedure, isImportOrReexportCustomsProcedure } from '@/helpers/customs.procedure.helpers.js'
 import {
   isPassportCheckInProgress,
   resolveEffectivePassportCheckStatus
@@ -593,6 +593,7 @@ async function onLookup(values, setFieldValue) {
           :actions-disabled="!editorReady || markedByPartnerActionsDisabled"
           :mutation-disabled="!editorReady || readOnly"
           :download-disabled="
+            isImportOrReexportCustomsProcedure(registerItem?.customsProcedureCode) ||
             isSubmitting ||
             runningAction ||
             loading ||

@@ -32,7 +32,8 @@ import { useAuthStore } from '@/stores/auth.store.js'
 import { OP_MODE_PAPERWORK, getRegisterNouns } from '@/helpers/op.mode.js'
 import {
   CUSTOMS_PROCEDURE_ALL,
-  buildRegisterProcedureFilterOptions
+  buildRegisterProcedureFilterOptions,
+  supportsWbrNImportReexport
 } from '@/helpers/customs.procedure.helpers.js'
 import {
   buildRegisterStatusFilterOptions,
@@ -92,6 +93,7 @@ const {
 
 const fileInput = ref(null)
 const selectedRegisterType = ref(null)
+const selectedWbrNImportReexport = ref(false)
 const parcelStatusBulkDialogRegisterId = ref(null)
 const showParcelStatusBulkDialog = ref(false)
 const parcelStatusBulkDialogRegister = computed(() => {
@@ -145,6 +147,12 @@ const uploadMenuOptions = computed(() => {
       label: getRegisterTypeName(WBRN_REGISTER_ID),
       action: () => startRegisterUpload(WBRN_REGISTER_ID)
     })
+    if (supportsWbrNImportReexport(unref(registersStore.ops)?.customsProcedures)) {
+      list.push({
+        label: 'ООО «РВБ» ИМ40/ЭК31',
+        action: () => startRegisterUpload(WBRN_REGISTER_ID, true)
+      })
+    }
   }
   return list
 })
@@ -255,6 +263,7 @@ async function fileSelected(files) {
     companyId: customerId
   }
   registersStore.uploadFile = file
+  registersStore.wbrnImportReexportUpload = selectedWbrNImportReexport.value
   router.push('/register/load')
 
   if (fileInput.value) {
@@ -262,13 +271,14 @@ async function fileSelected(files) {
   }
 }
 
-function startRegisterUpload(registerType) {
+function startRegisterUpload(registerType, wbrnImportReexport = false) {
   if (!registerType) {
     alertStore.error(`Не выбран тип ${registerNouns.value.genitiveSingular} для загрузки`)
     return
   }
 
   selectedRegisterType.value = registerType
+  selectedWbrNImportReexport.value = wbrnImportReexport
   const input = fileInput.value
   if (input && typeof input.click === 'function') {
     input.click()

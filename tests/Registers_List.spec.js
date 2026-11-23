@@ -827,6 +827,26 @@ describe('Registers_List.vue', () => {
         expect(mockClick).toHaveBeenCalled()
       })
 
+      it('offers the separate layout only after Core enables both WBR-N procedures', async () => {
+        mockCompanies.value = [{ id: WBR_COMPANY_ID, shortName: 'РВБ' }]
+        const label = 'ООО «РВБ» ИМ40/ЭК31'
+        mockOps.value = { customsProcedures: [
+          { value: 40, allowedRegisterTypes: [WBRN_REGISTER_ID] },
+          { value: 31, allowedRegisterTypes: [OZON_COMPANY_ID] }
+        ] }
+        expect(wrapper.vm.uploadMenuOptions.map(({ label }) => label)).not.toContain(label)
+        mockOps.value.customsProcedures[1].allowedRegisterTypes = [WBRN_REGISTER_ID]
+        const choice = wrapper.vm.uploadMenuOptions.find((option) => option.label === label)
+        choice.action()
+        const file = new File(['data'], 'customs.xlsx')
+        await wrapper.vm.fileSelected([file])
+        expect(registersStore.item.registerType).toBe(WBRN_REGISTER_ID)
+        expect(registersStore.wbrnImportReexportUpload).toBe(true)
+        wrapper.vm.startRegisterUpload(WBRN_REGISTER_ID)
+        await wrapper.vm.fileSelected([file])
+        expect(registersStore.wbrnImportReexportUpload).toBe(false)
+      })
+
     })
   })
 

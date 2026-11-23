@@ -34,6 +34,7 @@ vi.mock('@/stores/alert.store.js', () => ({
 
 vi.mock('@/stores/auth.store.js', () => ({
   useAuthStore: () => ({
+    hasLogistRole: true,
     isWhManagerPlus,
     isSrLogistPlus
   })
@@ -170,6 +171,37 @@ describe('RegisterWhHeaderActionBar.vue', () => {
 
     await wrapper.get('[data-testid="close-btn"]').trigger('click')
     expect(wrapper.emitted('close')?.length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('groups the customs toggle and Close separately and allows switching a read-only register', async () => {
+    const wrapper = mountHeaderActionBar({ register: { id: 55, readOnly: true } })
+    const toggle = wrapper.get('button[aria-label="Оформление"]')
+    const close = wrapper.get('[data-testid="close-btn"]')
+    const bulk = wrapper.get('[data-testid="bulk-status-btn"]')
+    const navigationGroup = toggle.element.closest('.header-actions-group')
+    expect(navigationGroup).toBe(wrapper.element.lastElementChild)
+    expect(Array.from(navigationGroup.querySelectorAll('button'))).toEqual([toggle.element, close.element])
+    expect(navigationGroup.previousElementSibling).toBe(bulk.element.closest('.header-actions-group'))
+    expect(toggle.element.disabled).toBe(false)
+    expect(bulk.element.disabled).toBe(true)
+
+    await wrapper.setProps({ loading: true })
+    expect(toggle.element.disabled).toBe(true)
+    await wrapper.setProps({ loading: false, disabled: true })
+    expect(toggle.element.disabled).toBe(true)
+    await wrapper.setProps({ disabled: false, register: {} })
+    expect(toggle.element.disabled).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('omits the bulk-status action group when the user cannot change parcel status', () => {
+    isSrLogistPlus = false
+    const wrapper = mountHeaderActionBar({ register: { id: 55 } })
+    const groups = wrapper.findAll('.header-actions-group')
+    expect(groups).toHaveLength(2)
+    expect(groups[0].get('[data-testid="export-btn"]').exists()).toBe(true)
+    expect(groups[1].get('[data-testid="close-btn"]').exists()).toBe(true)
+    wrapper.unmount()
   })
 
 })

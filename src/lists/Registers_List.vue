@@ -47,6 +47,7 @@ import router from '@/router'
 import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync.js'
 import { useRegisterDeletion } from '@/composables/useRegisterDeletion.js'
 import ActionButton2L from '@/components/ActionButton2L.vue'
+import RegisterViewToggle from '@/components/RegisterViewToggle.vue'
 import CustomsProcessingRegistersTable from '@/components/CustomsProcessingRegistersTable.vue'
 import RegisterStatusSelect from '@/components/RegisterStatusSelect.vue'
 import ResponsiveFilterBar from '@/components/ResponsiveFilterBar.vue'
@@ -369,7 +370,7 @@ defineExpose({
         >
           <span class="spinner-border spinner-border-m"></span>
         </div>
-        <div class="header-actions header-actions-group" v-if="isSrLogistPlus">
+        <div v-if="isSrLogistPlus" class="header-actions header-actions-group">
           <ActionButton2L
             :item="{}"
             icon="fa-solid fa-file-import"
@@ -377,6 +378,12 @@ defineExpose({
             iconSize="2x"
             :disabled="runningAction || loading || isInitializing || isUploadDisabled"
             :options="uploadMenuOptions"
+          />
+        </div>
+        <div class="header-actions header-actions-group">
+          <RegisterViewToggle
+            :mode="OP_MODE_PAPERWORK"
+            :disabled="runningAction || loading || isInitializing"
           />
         </div>
       </div>

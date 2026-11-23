@@ -7,10 +7,12 @@ import { computed, ref, unref, watch } from 'vue'
 import { useAppConfirm } from '@/composables/useAppConfirm.js'
 import ActionButton from '@/components/ActionButton.vue'
 import ActionButton2L from '@/components/ActionButton2L.vue'
+import RegisterViewToggle from '@/components/RegisterViewToggle.vue'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useRegisterDownloadFlow } from '@/composables/useRegisterDownloadFlow.js'
+import { OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 import {
   chooseOutputWeightCorrection,
   WEIGHT_CORRECTION_CHOICE
@@ -37,19 +39,13 @@ const confirm = useAppConfirm()
 const canExport = computed(() => Boolean(unref(authStore.isWhManagerPlus)))
 const canBulkChangeParcelStatus = computed(() => Boolean(unref(authStore.isSrLogistPlus)))
 const exportPending = ref(false)
+const registerActionsDisabled = computed(() => props.disabled || props.loading || !props.register?.id)
 const exportDisabled = computed(() =>
-  props.disabled ||
-  props.loading ||
+  registerActionsDisabled.value ||
   exportPending.value ||
-  props.register?.derivedTotalsPending === true ||
-  !props.register?.id
+  props.register?.derivedTotalsPending === true
 )
-const actionDisabled = computed(() =>
-  props.disabled ||
-  props.loading ||
-  props.register?.readOnly === true ||
-  !props.register?.id
-)
+const actionDisabled = computed(() => registerActionsDisabled.value || props.register?.readOnly === true)
 
 function normalizeZoneName(name) {
   if (!name || !name.trim()) {
@@ -135,15 +131,22 @@ const exportOptions = computed(() => {
           :options="exportOptions"
         />
     </div>
-    <div class="header-actions header-actions-group">
+    <div v-if="canBulkChangeParcelStatus" class="header-actions header-actions-group">
         <ActionButton
-          v-if="canBulkChangeParcelStatus"
           :item="register"
           icon="fa-solid fa-pen-to-square"
           tooltip-text="Выбрать посылки и изменить статус"
           :icon-size="iconSize"
           :disabled="actionDisabled"
           @click="emit('bulk-change-parcel-status')"
+        />
+    </div>
+    <div class="header-actions header-actions-group">
+        <RegisterViewToggle
+          :mode="OP_MODE_WAREHOUSE"
+          :register-id="register?.id"
+          :icon-size="iconSize"
+          :disabled="registerActionsDisabled"
         />
         <ActionButton
           :item="register"

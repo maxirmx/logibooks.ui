@@ -40,6 +40,7 @@ import router from '@/router'
 import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync.js'
 import { useRegisterDeletion } from '@/composables/useRegisterDeletion.js'
 import ActionButton from '@/components/ActionButton.vue'
+import RegisterViewToggle from '@/components/RegisterViewToggle.vue'
 import WarehouseRegistersTable from '@/components/WarehouseRegistersTable.vue'
 import RegisterStatusSelect from '@/components/RegisterStatusSelect.vue'
 import ResponsiveFilterBar from '@/components/ResponsiveFilterBar.vue'
@@ -297,7 +298,7 @@ defineExpose({
         >
           <span class="spinner-border spinner-border-m"></span>
         </div>
-        <div class="header-actions header-actions-group" v-if="isWhManagerPlus">
+        <div v-if="isWhManagerPlus" class="header-actions header-actions-group">
           <ActionButton
             :item="{}"
             icon="fa-solid fa-person-walking-arrow-loop-left"
@@ -305,6 +306,12 @@ defineExpose({
             iconSize="2x"
             :disabled="runningAction || loading || isInitializing"
             @click="openReturnRegisterCreate"
+          />
+        </div>
+        <div class="header-actions header-actions-group">
+          <RegisterViewToggle
+            :mode="OP_MODE_WAREHOUSE"
+            :disabled="runningAction || loading || isInitializing"
           />
         </div>
       </div>

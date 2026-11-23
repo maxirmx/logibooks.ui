@@ -107,7 +107,10 @@ async function startList() {
   }), {
     global: {
       stubs: {
-        VTooltip: { template: '<slot name="activator" :props="{}" />' },
+        VTooltip: {
+          props: ['location', 'contentClass', 'maxWidth'],
+          template: '<slot name="activator" :props="{}" />'
+        },
         FontAwesomeIcon: true
       }
     }

@@ -98,6 +98,7 @@ These instructions apply to the entire repository. Follow them for every new fea
 
 ## Testing requirements
 
+- Vue's `<Suspense> is an experimental feature and its API will likely change.` notice is the only acceptable warning in test output. Keep it visible and fix the source of every other warning.
 - Maintain at least 95% patch coverage for all new or modified code, measured against the target branch.
 - Add a rejection-path test whenever an asynchronous operation is added or changed.
 - Verify both propagation and visible presentation, not merely that an alert-store mock was called.

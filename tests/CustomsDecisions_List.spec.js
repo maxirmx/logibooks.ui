@@ -15,7 +15,7 @@ import ClickableCell from '@/components/ClickableCell.vue'
 import PaginationFooter from '@/components/PaginationFooter.vue'
 import { defaultGlobalStubs } from './helpers/test-utils.js'
 import { OP_MODE_PAPERWORK } from '@/helpers/op.mode.js'
-import { getErrorMessage } from '@/helpers/error.helpers.js'
+import * as errorHelpers from '@/helpers/error.helpers.js'
 
 const decisionsRef = ref([])
 const decisionSourcesRef = ref(null)
@@ -327,6 +327,7 @@ describe('CustomsDecisions_List.vue', () => {
       wrapper.unmount()
       wrapper = null
     }
+    vi.restoreAllMocks()
   })
 
   beforeEach(() => {
@@ -370,7 +371,7 @@ describe('CustomsDecisions_List.vue', () => {
       },
       dismiss: dismissMock,
       error: alertErrorMock.mockImplementation((error, options) => {
-        alertRef.value = { id: 1, severity: 'error', message: getErrorMessage(error, options?.fallback) }
+        alertRef.value = { id: 1, severity: 'error', message: errorHelpers.getErrorMessage(error, options?.fallback) }
         return 1
       })
     }
@@ -632,6 +633,8 @@ describe('CustomsDecisions_List.vue', () => {
   })
 
   it('does not publish a failed summary for a previous register', async () => {
+    const diagnostic = vi.spyOn(errorHelpers, 'reportError').mockImplementationOnce(() => {})
+    const failure = new Error('previous register')
     setupRegister()
     let rejectOldSummary
     getCustomsMock.mockImplementationOnce(() => new Promise((_, reject) => { rejectOldSummary = reject }))
@@ -640,10 +643,13 @@ describe('CustomsDecisions_List.vue', () => {
     })
     await wrapper.setProps({ registerId: 12 })
     await flushPromises()
-    rejectOldSummary(new Error('previous register'))
+    rejectOldSummary(failure)
     await flushPromises()
     expect(getCustomsMock).toHaveBeenCalledWith(expect.stringContaining('/registers/12/decs'))
     expect(wrapper.find('[role=alert]').exists()).toBe(false)
+    expect(diagnostic).toHaveBeenCalledExactlyOnceWith(failure, {
+      context: 'register customs summary after scope change'
+    })
   })
 
   it('keeps a cancelled or expired confirmation from deleting decisions', async () => {
@@ -713,15 +719,20 @@ describe('CustomsDecisions_List.vue', () => {
   })
 
   it('ignores a late decision error from the previous report', async () => {
+    const diagnostic = vi.spyOn(errorHelpers, 'reportError').mockImplementationOnce(() => {})
+    const failure = new Error('Ошибка предыдущего отчёта')
     const previous = Promise.withResolvers()
     getDecisionsMock.mockReturnValueOnce(previous.promise)
     wrapper = mount(CustomsDecisionsList, { props: { reportId: 5 }, global: { stubs: testStubs } })
     await wrapper.setProps({ reportId: 6 })
-    previous.reject(new Error('Ошибка предыдущего отчёта'))
+    previous.reject(failure)
     await flushPromises()
 
     expect(getDecisionsMock.mock.calls).toEqual([[5], [6]])
     expect(alertErrorMock).not.toHaveBeenCalled()
+    expect(diagnostic).toHaveBeenCalledExactlyOnceWith(failure, {
+      context: 'customs decisions after their scope changed'
+    })
   })
 
   it('renders decisions', async () => {
@@ -854,6 +865,8 @@ describe('CustomsDecisions_List.vue', () => {
   })
 
   it.each(['account change', 'unmount'])('ignores a stale ops failure after %s', async (change) => {
+    const diagnostic = vi.spyOn(errorHelpers, 'reportError').mockImplementationOnce(() => {})
+    const failure = new Error('Устаревшая ошибка')
     let failOps
     ensureOpsLoadedMock.mockImplementationOnce(() => new Promise((resolve, reject) => { failOps = reject }))
     wrapper = mount(CustomsDecisionsList, { props: { reportId: 5 }, global: { stubs: testStubs } })
@@ -867,9 +880,12 @@ describe('CustomsDecisions_List.vue', () => {
       expect(ensureOpsLoadedMock).toHaveBeenCalledTimes(2)
     }
 
-    failOps(new Error('Устаревшая ошибка'))
+    failOps(failure)
     await flushPromises()
     expect(alertErrorMock).not.toHaveBeenCalled()
+    expect(diagnostic).toHaveBeenCalledExactlyOnceWith(failure, {
+      context: 'customs decision sources after their scope changed'
+    })
   })
 
   it('resets hidden sort column after metadata loads', async () => {

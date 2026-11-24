@@ -1091,8 +1091,11 @@ describe('Register_EditDialog', () => {
       } }))
       await wrapper.get('form').trigger('submit')
       await resolveAll()
-      const errors = wrapper.findAll('[role="alert"]').filter(node => node.text() === message)
-      expect(errors).toHaveLength(1)
+      const errors = await vi.waitFor(() => {
+        const visibleErrors = wrapper.findAll('[role="alert"]').filter(node => node.text() === message)
+        expect(visibleErrors).toHaveLength(1)
+        return visibleErrors
+      })
       expect(errors[0].isVisible()).toBe(true)
       expect(select.element.value).toBe('Alta-East')
       expect(wrapper.get('#dealNumber').element.value).toBe('new reference')
@@ -1157,8 +1160,11 @@ describe('Register_EditDialog', () => {
       expect(wrapper.get('#register-additional-info-body').isVisible()).toBe(false)
       await dialog.vm.onSubmit({ cargoPlacesTotal: '13' }, { setErrors: form.setErrors })
       await resolveAll()
-      const errors = wrapper.findAll('[role="alert"]').filter(node => node.text() === message)
-      expect(errors).toHaveLength(1)
+      const errors = await vi.waitFor(() => {
+        const visibleErrors = wrapper.findAll('[role="alert"]').filter(node => node.text() === message)
+        expect(visibleErrors).toHaveLength(1)
+        return visibleErrors
+      })
       expect(wrapper.get('#register-additional-info-body').isVisible()).toBe(true)
       expect(errors[0].element.parentElement).toBe(input.element.parentElement)
       expect(input.element.value).toBe('13')

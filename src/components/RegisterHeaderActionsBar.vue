@@ -13,6 +13,7 @@ import { InvoiceParcelSelection } from '@/models/invoice.parcel.selection.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import {
   CUSTOMS_PROCEDURE_EXPORT,
+  CUSTOMS_PROCEDURE_REIMPORT,
   isCustomsChargesCalculationProcedure,
   isImportCustomsProcedure,
   isWbrNImportOrReexport
@@ -84,6 +85,8 @@ const mutationEvents = new Set([
 const router = useRouter()
 
 const {
+  hasLogistRole,
+  isAdmin,
   isSrLogistPlus,
   isShiftLeadPlus
 } = storeToRefs(authStore)
@@ -114,12 +117,13 @@ const weightUpdateTooltip = computed(() =>
     ? 'Обновить веса из файла реестра'
     : 'Обновление весов недоступно: задан фактический вес к оформлению'
 )
-const canDownloadTajikistanManifest = computed(
-  () =>
-    Number(props.item?.registerType) === WBRN_REGISTER_ID &&
-    Number(props.item?.customsProcedureCode) === CUSTOMS_PROCEDURE_EXPORT &&
+const canDownloadTajikistanManifest = computed(() => {
+  if (!hasLogistRole?.value && !isAdmin?.value) return false
+  const procedure = Number(props.item?.customsProcedureCode)
+  return Number(props.item?.registerType) === WBRN_REGISTER_ID &&
+    (procedure === CUSTOMS_PROCEDURE_EXPORT || procedure === CUSTOMS_PROCEDURE_REIMPORT) &&
     Number(props.item?.theOtherCountryCode) === TAJIKISTAN_ISO_NUMERIC
-)
+})
 const customsDocumentsAvailable = computed(() => !isWbrNImportOrReexport(props.item))
 const hasWarehouse = computed(() => Number(props.item?.warehouseId) > 0)
 

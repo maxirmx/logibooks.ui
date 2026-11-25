@@ -54,7 +54,7 @@ const globals = () => ({
 })
 function harness({ monitor = false, candidate = job, options = {}, actions = false, readOnly = false } = {}) {
   let scan
-  const opts = { registerId: ref(1), job: monitor ? ref(candidate) : null,
+  const opts = { registerId: ref(1), job: monitor ? ref(candidate) : null, readOnly,
     refresh: vi.fn().mockResolvedValue(true), scopeKey: ref('boxes'), ...options }
   const snapshot = ref({ scanJobId: 7 })
   const wrapper = mount(defineComponent({
@@ -176,10 +176,41 @@ describe('manual box workflow', () => {
 })
 
 describe.each(['party', 'monitor'])('box selection in %s', location => {
-  function render() { return location === 'party' ? renderList() : harness({ monitor: true }).wrapper }
+  function render(readOnly = false) {
+    if (location === 'monitor') return harness({ monitor: true, readOnly }).wrapper
+    register.value.readOnly = readOnly
+    return renderList()
+  }
   function action(name) {
     return document.body.querySelector(`[data-testid="${name}"]`)
   }
+
+  it.each([
+    ['administrator', true], ['wh-operator', false]
+  ])('blocks row and context scans in a read-only register for %s', async (role, canExport) => {
+    useAuthStore().user = { id: 1, roles: [role] }
+    const wrapper = render(true)
+    await flushPromises()
+
+    const button = wrapper.get('button[data-testid="manual-box-scan"]')
+    expect(button.element.disabled).toBe(true)
+    await button.trigger('click')
+    await wrapper.get('tbody tr').trigger('contextmenu')
+    await flushPromises()
+
+    expect(action('selected-boxes-scan')).toBeNull()
+    expect(confirm).not.toHaveBeenCalled()
+    expect(api.scanBox).not.toHaveBeenCalled()
+    expect(api.scanBoxes).not.toHaveBeenCalled()
+    const exportAction = action('selected-boxes-export-stickers')
+    expect(Boolean(exportAction)).toBe(canExport)
+    if (canExport) {
+      exportAction.click()
+      await flushPromises()
+      expect(downloadSelectedStickers).toHaveBeenCalledExactlyOnceWith(1, [3])
+    }
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+  })
 
   it('highlights rows selected by Ctrl-click and Shift-click with the shared table styles', async () => {
     const style = document.createElement('style')

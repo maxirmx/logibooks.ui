@@ -172,7 +172,7 @@ vi.mock('@/stores/parcel.statuses.store.js', () => ({
 
 vi.mock('@/stores/registers.store.js', () => ({
   useRegistersStore: () => ({
-    item: registerItem,
+    get item() { return registerItem.value },
     ops: { customsProcedures: [], transportationTypes: [] },
     getById,
     ensureOpsLoaded: vi.fn().mockResolvedValue(),
@@ -568,6 +568,25 @@ describe('WbrParcels_WhList.vue', () => {
     expect(manualScanApi.scanParcel).not.toHaveBeenCalled()
     expect(header.props('loading')).toBe(false)
     expect(header.props('disabled')).toBe(false)
+  })
+
+  it('disables row and right-click scans in a read-only party', async () => {
+    isAdmin.value = true
+    registerItem.value.readOnly = true
+    manualScanApi.getInProgress.mockResolvedValue([{ id: 7, registerId: 1, status: 15, type: 30, operation: 10 }])
+    const wrapper = mount(WbrParcelsWhList, { props: { registerId: 1 }, global: { stubs: globalStubs } })
+    await resolveAll()
+
+    const button = wrapper.get('button[data-testid="manual-parcel-scan"]')
+    expect(button.element.disabled).toBe(true)
+    await button.trigger('click')
+    wrapper.getComponent({ name: 'v-data-table-server' }).vm.$emit('contextmenu:row',
+      { preventDefault: vi.fn() }, { item: mockItems.value[0] })
+    await resolveAll()
+
+    expect(manualScanConfirm).not.toHaveBeenCalled()
+    expect(manualScanApi.scanParcel).not.toHaveBeenCalled()
+    expect(manualScanApi.scanParcels).not.toHaveBeenCalled()
   })
 
 })

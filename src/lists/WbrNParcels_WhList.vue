@@ -116,6 +116,7 @@ const scanScopeKey = computed(() => JSON.stringify([
 const manualScan = useManualParcelScan({
   registerId: () => props.registerId,
   scopeKey: scanScopeKey,
+  readOnly,
   disabled: () => loading.value || isInitializing.value || runningAction.value,
   refresh: async () => {
     const scope = scanScopeKey.value

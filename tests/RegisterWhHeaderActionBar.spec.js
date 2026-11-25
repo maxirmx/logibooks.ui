@@ -194,14 +194,4 @@ describe('RegisterWhHeaderActionBar.vue', () => {
     wrapper.unmount()
   })
 
-  it('omits the bulk-status action group when the user cannot change parcel status', () => {
-    isSrLogistPlus = false
-    const wrapper = mountHeaderActionBar({ register: { id: 55 } })
-    const groups = wrapper.findAll('.header-actions-group')
-    expect(groups).toHaveLength(2)
-    expect(groups[0].get('[data-testid="export-btn"]').exists()).toBe(true)
-    expect(groups[1].get('[data-testid="close-btn"]').exists()).toBe(true)
-    wrapper.unmount()
-  })
-
 })

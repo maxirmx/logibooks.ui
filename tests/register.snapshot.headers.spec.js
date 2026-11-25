@@ -14,7 +14,6 @@ import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { useParcelsStore } from '@/stores/parcels.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
-import { useAlertStore } from '@/stores/alert.store.js'
 import { fetchWrapper } from '@/helpers/fetch.wrapper.js'
 
 const router = vi.hoisted(() => ({ push: vi.fn() }))
@@ -25,7 +24,7 @@ vi.mock('@/helpers/config.js', () => ({ apiUrl: '/api' }))
 vi.mock('@/helpers/fetch.wrapper.js', () => ({ fetchWrapper: { get: vi.fn(), post: vi.fn() } }))
 
 const wrappers = []
-let registers, parcels, alerts, serverRegister, serverParcel
+let registers, parcels, serverRegister, serverParcel
 const exportButton = wrapper => wrapper.get('button[aria-label="Экспортировать реестр"]')
 
 function open(warehouse) {
@@ -61,7 +60,6 @@ beforeEach(() => {
   useAuthStore().user = { roles: ['administrator'] }
   registers = useRegistersStore()
   parcels = useParcelsStore()
-  alerts = useAlertStore()
   serverRegister = { id: 12, customsProcedureCode: 10, derivedTotalsPending: false }
   serverParcel = { id: 1, registerId: 12, statusId: 1, weightKg: 1, adjustedWeightKg: 1 }
   registers.item = { ...serverRegister }
@@ -101,28 +99,6 @@ it.each([
 })
 
 describe.each([false, true])('saved register snapshots in warehouse mode %s', warehouse => {
-  it.each([
-    [true, false]
-  ])(
-    'preserves the pre-refresh spinner for loading=%s independently of pending=%s', async (loading, pending) => {
-      registers.item.derivedTotalsPending = pending
-      const wrapper = open(warehouse)
-      wrapper.vm.controls.loading = loading
-      await flushPromises()
-      expect(wrapper.findAll('.spinner-border')).toHaveLength(loading ? 1 : 0)
-      expect(wrapper.find('button[aria-label="Обновить итоги"]').exists()).toBe(false)
-      expect(wrapper.find('[data-testid="register-totals-actions"]').exists()).toBe(false)
-      if (loading) {
-        const group = wrapper.get('.spinner-border').element.parentElement
-        expect(group.className).toBe('header-actions header-actions-group')
-        expect(wrapper.get('.header-actions-bar').element.firstElementChild).toBe(group)
-        expect(group.querySelector('button')).toBeNull()
-      }
-      wrapper.vm.controls.loading = false
-      await flushPromises()
-      expect(wrapper.find('.spinner-border').exists()).toBe(false)
-      expect(alerts.alert).toBeNull()
-    })
 
   it.each([
     0

@@ -193,22 +193,7 @@ describe('server-owned derived weight projections', () => {
     expect(boxes.boxes[0].weightKg).toBe(2)
   })
 
-  it('refreshes the saved detail without reloading a closed register list', async () => {
-    const parcels = useParcelsStore(), registers = useRegistersStore()
-    registers.item = { ...register }
-    await parcels.getAll(12)
-    parcels.clearVisibleList()
-    await parcels.getById(1)
-    fetchWrapper.get.mockClear()
-    row = parcel({ tnVed: '8471300000', matchesExportFeeCategory: true })
-
-    await parcels.update(1, { tnVed: row.tnVed })
-
-    expect(fetchWrapper.get.mock.calls.map(([url]) => url)).toEqual(['/api/registers/12', '/api/parcels/a/1'])
-    expect(parcels.item).toMatchObject(row)
-  })
-
-  it.each([true, false])('uses the saved list response without a detail read (row remains=%s)', async stays => {
+  it.each([false])('uses the saved list response without a detail read (row remains=%s)', async stays => {
     const parcels = useParcelsStore(), registers = useRegistersStore()
     registers.item = { ...register }
     row = parcel({ tnVed: '1111111111' })

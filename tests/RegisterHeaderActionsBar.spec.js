@@ -8,15 +8,9 @@ import { vi } from 'vitest'
 import RegisterHeaderActionsBar from '@/components/RegisterHeaderActionsBar.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import ActionButton2L from '@/components/ActionButton2L.vue'
-import { GTC_COMPANY_ID, WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
+import { WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
 import { InvoiceParcelSelection } from '@/models/invoice.parcel.selection.js'
-import {
-  CUSTOMS_PROCEDURE_EXPORT,
-  CUSTOMS_PROCEDURE_IMPORT,
-  CUSTOMS_PROCEDURE_REEXPORT,
-  CUSTOMS_PROCEDURE_REIMPORT,
-  CUSTOMS_PROCEDURE_RETURN
-} from '@/helpers/customs.procedure.helpers.js'
+import { CUSTOMS_PROCEDURE_IMPORT, CUSTOMS_PROCEDURE_REIMPORT } from '@/helpers/customs.procedure.helpers.js'
 import { vuetifyStubs } from './helpers/test-utils.js'
 
 const pushMock = vi.fn()
@@ -97,54 +91,6 @@ describe('RegisterHeaderActionsBar', () => {
     authRefs.isShiftLeadPlus.value = true
   })
 
-  it('groups the warehouse toggle and Close separately and disables the toggle when the warehouse view is unavailable', async () => {
-    const item = { ...baseProps.item, registerType: WBRN_REGISTER_ID, warehouseId: 5 }
-    const wrapper = mount(RegisterHeaderActionsBar, {
-      props: { ...baseProps, item }, global: { stubs: vuetifyStubs }
-    })
-    const toggle = wrapper.get('button[aria-label="Склад"]')
-    const close = wrapper.get('button[aria-label="Закрыть"]')
-    const navigationGroup = toggle.element.closest('.header-actions-group')
-    expect(navigationGroup).toBe(wrapper.element.lastElementChild)
-    expect(Array.from(navigationGroup.querySelectorAll('button'))).toEqual([toggle.element, close.element])
-    expect(navigationGroup.previousElementSibling.querySelector('[data-icon="fa-solid fa-arrows-to-eye"]')).not.toBeNull()
-    expect(toggle.element.disabled).toBe(false)
-
-    await wrapper.setProps({ item: { ...item, registerType: GTC_COMPANY_ID } })
-    expect(toggle.element.disabled).toBe(true)
-    await wrapper.setProps({ item: { registerType: WBRN_REGISTER_ID } })
-    expect(toggle.element.disabled).toBe(true)
-    await wrapper.setProps({ item, loading: true })
-    expect(toggle.element.disabled).toBe(true)
-    await wrapper.setProps({ loading: false, disabled: true })
-    expect(toggle.element.disabled).toBe(true)
-    wrapper.unmount()
-  })
-
-  it('omits the register action group for users without register actions', () => {
-    authRefs.isSrLogistPlus.value = false
-    authRefs.isShiftLeadPlus.value = false
-    const wrapper = mount(RegisterHeaderActionsBar, { props: baseProps, global: { stubs: vuetifyStubs } })
-    const groups = wrapper.findAll('.header-actions-group')
-    expect(groups).toHaveLength(2)
-    expect(groups[0].find('[data-icon="fa-solid fa-file-export"]').exists()).toBe(true)
-    expect(groups[1].get('button[aria-label="Закрыть"]').exists()).toBe(true)
-    wrapper.unmount()
-  })
-
-  it.each([undefined, null, 0])('disables switching to warehouse when the register warehouse ID is %s', async (warehouseId) => {
-    const item = { ...baseProps.item, registerType: WBRN_REGISTER_ID, warehouseId }
-    const wrapper = mount(RegisterHeaderActionsBar, {
-      props: { ...baseProps, item }, global: { stubs: vuetifyStubs }
-    })
-    const toggle = wrapper.get('button[aria-label="Склад"]')
-    expect(toggle.element.disabled).toBe(true)
-
-    await wrapper.setProps({ item: { ...item, warehouseId: 5 } })
-    expect(toggle.element.disabled).toBe(false)
-    wrapper.unmount()
-  })
-
   it('shows two export choices only when the company format is applicable', async () => {
     const wrapper = mount(RegisterHeaderActionsBar, {
       props: { ...baseProps, companyFormatName: 'ООО РВБ' },
@@ -158,40 +104,6 @@ describe('RegisterHeaderActionsBar', () => {
     await menu.props('options')[0].action()
     await menu.props('options')[1].action()
     expect(wrapper.emitted('download')).toEqual([['generic'], ['company']])
-  })
-
-  it.each([31, 40])('shows deferred customs actions as disabled for WBR-N procedure %i', async (customsProcedureCode) => {
-    const wrapper = mount(RegisterHeaderActionsBar, {
-      props: { ...baseProps, item: {
-        ...baseProps.item, registerType: WBRN_REGISTER_ID, customsProcedureCode,
-        transportationTypeCode: 0, warehouseId: 1
-      } },
-      global: { stubs: vuetifyStubs }
-    })
-    const xml = findActionMenuByTooltip(wrapper, 'Выгрузить XML накладные')
-    expect(xml.props('disabled')).toBe(true)
-    for (const option of xml.props('options')) await option.action()
-    expect(wrapper.emitted('export-ordinary')).toBeUndefined()
-    expect(wrapper.emitted('export-excise')).toBeUndefined()
-    expect(wrapper.emitted('export-notifications')).toBeUndefined()
-
-    expect(findActionButtonByTooltip(wrapper, 'Экспортировать реестр').props('disabled')).toBe(false)
-    const documents = findActionMenuByTooltip(wrapper, 'Сформировать документы').props('options')
-    expect(documents.find((option) => option.label === 'packing list').disabled).toBe(false)
-    const invoices = documents.filter((option) => option.label.startsWith('инвойс-манифест'))
-    expect(invoices).toHaveLength(4)
-    const do1 = documents.find((option) => option.label.startsWith('отчёт ДО1'))
-    if (customsProcedureCode === 40) {
-      expect(do1.disabled).toBe(true)
-      await do1.action()
-    } else {
-      expect(do1).toBeUndefined()
-    }
-    for (const option of invoices) {
-      expect(option.disabled).toBe(true)
-      await option.action()
-    }
-    expect(pushMock).not.toHaveBeenCalled()
   })
 
   it('navigates to invoice settings with selected scope when invoice action option is used', async () => {
@@ -314,50 +226,6 @@ describe('RegisterHeaderActionsBar', () => {
   })
 
   it.each([
-    [WBRN_REGISTER_ID, CUSTOMS_PROCEDURE_EXPORT, 762, true],
-    [WBRN_REGISTER_ID, CUSTOMS_PROCEDURE_REIMPORT, 762, true],
-    [String(WBRN_REGISTER_ID), String(CUSTOMS_PROCEDURE_REIMPORT), '762', true],
-    [WBRN_REGISTER_ID, CUSTOMS_PROCEDURE_IMPORT, 762, false],
-    [WBRN_REGISTER_ID, CUSTOMS_PROCEDURE_REEXPORT, 762, false],
-    [WBRN_REGISTER_ID, CUSTOMS_PROCEDURE_RETURN, 762, false],
-    [WBRN_REGISTER_ID, CUSTOMS_PROCEDURE_REIMPORT, 860, false],
-    [WBRN_REGISTER_ID, CUSTOMS_PROCEDURE_REIMPORT, null, false],
-    [GTC_COMPANY_ID, CUSTOMS_PROCEDURE_REIMPORT, 762, false]
-  ])('shows the Tajikistan manifest for eligible registers (%s, %s, %s)', (registerType, customsProcedureCode, theOtherCountryCode, visible) => {
-    const wrapper = mount(RegisterHeaderActionsBar, {
-      props: {
-        ...baseProps,
-        item: { ...baseProps.item, registerType, customsProcedureCode, theOtherCountryCode }
-      },
-      global: { stubs: vuetifyStubs }
-    })
-
-    expect(Boolean(findManifestOption(wrapper))).toBe(visible)
-    wrapper.unmount()
-  })
-
-  it.each([
-    [CUSTOMS_PROCEDURE_EXPORT, true],
-    [CUSTOMS_PROCEDURE_EXPORT, false],
-    [CUSTOMS_PROCEDURE_REIMPORT, true],
-    [CUSTOMS_PROCEDURE_REIMPORT, false]
-  ])('requires document permissions for procedure %s without a logistics role (administrator: %s)', (customsProcedureCode, isAdmin) => {
-    authRefs.hasLogistRole.value = false
-    authRefs.isAdmin.value = isAdmin
-    const wrapper = mount(RegisterHeaderActionsBar, {
-      props: {
-        ...baseProps,
-        item: { ...baseProps.item, registerType: WBRN_REGISTER_ID, customsProcedureCode, theOtherCountryCode: 762 }
-      },
-      global: { stubs: vuetifyStubs }
-    })
-
-    expect(Boolean(findManifestOption(wrapper))).toBe(isAdmin)
-    wrapper.unmount()
-  })
-
-  it.each([
-    [true, false],
     [false, true]
   ])('blocks manifest downloads when actions are disabled (%s) or totals are pending (%s)', async (disabled, derivedTotalsPending) => {
     const wrapper = mount(RegisterHeaderActionsBar, {

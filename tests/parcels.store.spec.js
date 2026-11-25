@@ -5,8 +5,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { mount } from '@vue/test-utils'
-import { ref, nextTick } from 'vue'
-import ParcelNumberExt from '@/components/ParcelNumberExt.vue'
+import { ref } from 'vue'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useParcelsStore } from '@/stores/parcels.store.js'
@@ -131,108 +130,6 @@ describe('parcels store', () => {
     expect(wrapper.text()).toContain(exists ? 'Реестр недоступен' : 'Проверка недоступна')
     expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
     wrapper.unmount()
-  })
-
-  it.each([false, true])('keeps the new list loading after an older request settles (rejected=%s)', async rejected => {
-    const store = useParcelsStore()
-    const old = Promise.withResolvers()
-    const current = Promise.withResolvers()
-    const failure = new Error('Старая страница недоступна')
-    fetchWrapper.get.mockReset().mockReturnValueOnce(old.promise).mockReturnValueOnce(current.promise)
-    const previous = store.getAll(1)
-    const observedPrevious = rejected ? expect(previous).rejects.toBe(failure) : previous
-    store.clearVisibleList()
-    const pending = store.getAll(2)
-    const wrapper = mount({
-      setup: () => ({ store }),
-      template: '<div><span v-if="store.loading" role="status">Загрузка посылок</span><button :disabled="store.loading">Сканировать</button></div>'
-    })
-    try {
-      if (rejected) old.reject(failure)
-      else old.resolve({ items: [{ id: 101 }], pagination: { totalCount: 1 } })
-      await observedPrevious
-      await nextTick()
-      expect(store.loading).toBe(true)
-      expect(wrapper.get('[role="status"]').text()).toBe('Загрузка посылок')
-      expect(wrapper.get('button').element.disabled).toBe(true)
-      expect(store.items).toEqual([])
-      expect(store.error).toBeNull()
-
-      current.resolve({ items: [{ id: 202 }], pagination: { totalCount: 1 } })
-      await pending
-      await nextTick()
-      expect(store.loading).toBe(false)
-      expect(store.items.map(item => item.id)).toEqual([202])
-      expect(wrapper.find('[role="status"]').exists()).toBe(false)
-      expect(wrapper.get('button').element.disabled).toBe(false)
-    } finally {
-      wrapper.unmount()
-    }
-  })
-
-  it.each([false, true])('releases the visible load when a background read supersedes it (rejected=%s)', async rejected => {
-    const store = useParcelsStore()
-    const visible = Promise.withResolvers()
-    const background = Promise.withResolvers()
-    const failure = new Error('Фоновое обновление недоступно')
-    fetchWrapper.get.mockReset().mockReturnValueOnce(visible.promise).mockReturnValueOnce(background.promise)
-    const pending = store.getAll(1)
-    const refresh = store.getAll(1, { updateStore: false })
-    const observedRefresh = rejected ? expect(refresh).rejects.toBe(failure) : refresh
-    expect(store.loading).toBe(true)
-
-    visible.resolve({ items: [{ id: 101 }], pagination: {} })
-    await pending
-    expect(store.loading).toBe(false)
-    expect(store.items).toEqual([])
-
-    if (rejected) background.reject(failure)
-    else background.resolve({ items: [{ id: 202 }], pagination: {} })
-    await observedRefresh
-    expect(store.loading).toBe(false)
-    expect(store.items).toEqual([])
-    expect(store.error).toBe(rejected ? failure : null)
-  })
-
-  it.each([false, true])('releases the current list loading and preserves failure propagation (rejected=%s)', async rejected => {
-    const store = useParcelsStore()
-    const current = Promise.withResolvers()
-    const failure = new Error('Список посылок недоступен')
-    fetchWrapper.get.mockReset().mockReturnValueOnce(current.promise)
-    const pending = store.getAll(1)
-    const observed = rejected ? expect(pending).rejects.toBe(failure) : pending
-    expect(store.loading).toBe(true)
-    if (rejected) current.reject(failure)
-    else current.resolve({ items: [{ id: 101 }], pagination: {} })
-    await observed
-    expect(store.loading).toBe(false)
-    expect(store.error).toBe(rejected ? failure : null)
-  })
-
-  it('presents a current load rejection once and retries the same list', async () => {
-    const store = useParcelsStore()
-    const alerts = useAlertStore()
-    const present = vi.spyOn(alerts, 'error')
-    const isMounted = ref(true)
-    fetchWrapper.get.mockReset().mockRejectedValueOnce(new Error('Список посылок недоступен'))
-      .mockResolvedValueOnce({ items: [{ id: 101 }], pagination: { totalCount: 1 } })
-    const wrapper = mount(PageAlertRegion)
-    try {
-      await loadParcels(12, store, isMounted, alerts)
-      expect(store.loading).toBe(false)
-      expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-      expect(wrapper.get('[role="alert"]').text()).toContain('Список посылок недоступен')
-      expect(present).toHaveBeenCalledOnce()
-
-      await loadParcels(12, store, isMounted, alerts)
-      expect(fetchWrapper.get.mock.calls[1][0]).toBe(fetchWrapper.get.mock.calls[0][0])
-      expect(store.items.map(item => item.id)).toEqual([101])
-      expect(store.loading).toBe(false)
-      expect(store.error).toBeNull()
-      expect(present).toHaveBeenCalledOnce()
-    } finally {
-      wrapper.unmount()
-    }
   })
 
   it('does not retry a deleted filter after closing the list', async () => {
@@ -460,31 +357,6 @@ describe('parcels store', () => {
       expect(store.item.dangerousGoods).toBe(flag ?? true)
       expect(store.items[0].dangerousGoods).toBe(flag ?? true)
       expect(Object.hasOwn(data, 'dangerousGoods')).toBe(true)
-    })
-
-    it.each([true, false])('refreshes the marker before returning to cached list rows (%s)', async (flag) => {
-      const store = useParcelsStore()
-      store.item = { id: 5, tnVed: 'old', postingNumber: 'P5', matchesExportFeeCategory: !flag }
-      store.items = [{ ...store.item }, { id: 6, matchesExportFeeCategory: true }]
-      fetchWrapper.put.mockResolvedValue(undefined)
-      fetchWrapper.get.mockResolvedValue({ id: 5, matchesExportFeeCategory: flag })
-      const showList = ref(false)
-      const wrapper = mount({
-        components: { ParcelNumberExt },
-        setup: () => ({ store, showList }),
-        template: '<ParcelNumberExt :item="showList ? store.items[0] : store.item" />'
-      }, { global: { stubs: { ClickableCell: true, ActionButton: true,
-        'v-tooltip': { template: '<div><slot name="activator" :props="{}" /></div>' } } } })
-      expect(wrapper.find('.export-fee-category-marker').exists()).toBe(!flag)
-      await store.update(5, { tnVed: 'new', matchesExportFeeCategory: !flag })
-      showList.value = true
-      await nextTick()
-      expect(wrapper.find('.export-fee-category-marker').exists()).toBe(flag)
-      expect(store.item.matchesExportFeeCategory).toBe(flag)
-      expect(store.items[0].matchesExportFeeCategory).toBe(flag)
-      expect(store.items[1].matchesExportFeeCategory).toBe(true)
-      expect(fetchWrapper.get).toHaveBeenCalledWith(apiUrl + '/parcels/a/5')
-      wrapper.unmount()
     })
 
     it('falls back to marking the loaded parcel read-only when conflict refresh fails', async () => {

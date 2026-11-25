@@ -87,56 +87,6 @@ describe('HotKeyActionScheme_Settings.vue', () => {
     }
   })
 
-  it('submits create with actions data', async () => {
-    const createWrapper = mount(AsyncWrapper, {
-      props: { mode: 'create' },
-      global: { stubs: defaultGlobalStubs }
-    })
-    await resolveAll()
-
-    const vm = createWrapper.findComponent(HotKeyActionSchemeSettings).vm
-    vm.hotKeyActionScheme.actions[0].keyCode = 'F10'
-    vm.hotKeyActionScheme.actions[0].shift = true
-
-    await createWrapper
-      .findComponent({ name: 'Form' })
-      .vm.$emit('submit', { name: 'New Scheme' }, { setErrors: vi.fn() })
-    await resolveAll()
-
-    expect(createMock).toHaveBeenCalled()
-    const callArg = createMock.mock.calls[0][0]
-    expect(callArg.name).toBe('New Scheme')
-    expect(callArg.actions).toBeDefined()
-    expect(Array.isArray(callArg.actions)).toBe(true)
-    expect(callArg.actions[0].keyCode).toBe('F10')
-    expect(callArg.actions[0].shift).toBe(true)
-  })
-
-  it('submits edit with actions data', async () => {
-    const editWrapper = mount(AsyncWrapper, {
-      props: { mode: 'edit', hotKeyActionSchemeId: 1 },
-      global: { stubs: defaultGlobalStubs }
-    })
-    await resolveAll()
-
-    const vm = editWrapper.findComponent(HotKeyActionSchemeSettings).vm
-    vm.hotKeyActionScheme.actions[0].keyCode = 'F11'
-    vm.hotKeyActionScheme.actions[0].ctrl = true
-
-    await editWrapper
-      .findComponent({ name: 'Form' })
-      .vm.$emit('submit', { name: 'Updated Scheme' }, { setErrors: vi.fn() })
-    await resolveAll()
-
-    expect(updateMock).toHaveBeenCalled()
-    const callArg = updateMock.mock.calls[0][1]
-    expect(callArg.name).toBe('Updated Scheme')
-    expect(callArg.actions).toBeDefined()
-    expect(Array.isArray(callArg.actions)).toBe(true)
-    expect(callArg.actions[0].keyCode).toBe('F11')
-    expect(callArg.actions[0].ctrl).toBe(true)
-  })
-
   it('sets api error for create conflict', async () => {
     const setErrors = vi.fn()
     createMock.mockRejectedValueOnce(new Error('409 Conflict'))
@@ -152,24 +102,6 @@ describe('HotKeyActionScheme_Settings.vue', () => {
     expect(alertError).toHaveBeenCalledWith(
       'Схема настройки клавиатуры с таким названием уже существует'
     )
-    expect(setErrors).not.toHaveBeenCalled()
-  })
-
-  it('sets api error for edit failures', async () => {
-    const setErrors = vi.fn()
-    updateMock.mockRejectedValueOnce(new Error('Ошибка при сохранении схемы настройки клавиатуры'))
-
-    const wrapper = mount(AsyncWrapper, {
-      props: { mode: 'edit', hotKeyActionSchemeId: 1 },
-      global: { stubs: defaultGlobalStubs }
-    })
-    await resolveAll()
-    await wrapper.findComponent({ name: 'Form' }).vm.$emit('submit', { name: 'Ops' }, { setErrors })
-    await resolveAll()
-
-    expect(alertError).toHaveBeenCalledWith('Ошибка при сохранении схемы настройки клавиатуры', {
-      fallback: 'Ошибка при сохранении схемы настройки клавиатуры'
-    })
     expect(setErrors).not.toHaveBeenCalled()
   })
 

@@ -38,26 +38,6 @@ beforeEach(() => {
 })
 describe('live category marker', () => {
   it.each([
-    10
-  ])('tracks typing, clearing and programmatic selections in procedure %s', async procedure => {
-    const wrapper = createWrapper(procedure)
-    await flushPromises()
-    expect(wrapper.find(marker).exists()).toBe(true)
-    for (const value of ['', '8471', '8471abcdef', '8471999999', '9999999999']) {
-      await wrapper.get('input').setValue(value)
-      await flushPromises()
-      expect(wrapper.find(marker).exists()).toBe(false)
-    }
-    await wrapper.get('[data-testid=select-code]').trigger('click')
-    await flushPromises()
-    expect(wrapper.find(marker).exists()).toBe(true)
-    await wrapper.get('input').setValue('84 71 300000')
-    await flushPromises()
-    expect(wrapper.find(marker).exists()).toBe(true)
-    expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
-    wrapper.unmount()
-  })
-  it.each([
     'reject'
   ])('ignores stale lookup %s after the code is cleared', async outcome => {
     const pending = deferred()

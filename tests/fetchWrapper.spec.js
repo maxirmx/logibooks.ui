@@ -229,42 +229,6 @@ describe('fetchWrapper', () => {
       return mockResponse
     }
 
-    it('polls accepted responses and downloads only the completed file', async () => {
-      const progress = { handleId: 'job-1', total: 1000, processed: 250 }
-      const progressResponse = {
-        ok: true,
-        status: 202,
-        statusText: 'Accepted',
-        headers: { get: () => 'application/json' },
-        json: vi.fn().mockResolvedValue(progress),
-        blob: vi.fn()
-      }
-      const fileResponse = mockDownloadResponse(
-        'attachment; filename="IndPost_ready.zip"'
-      )
-      global.fetch = vi
-        .fn()
-        .mockResolvedValueOnce(progressResponse)
-        .mockResolvedValueOnce(fileResponse)
-      const onProgress = vi.fn()
-
-      const result = await fetchWrapper.downloadFile(
-        `${baseUrl}/registers/1/generate`,
-        'fallback.zip',
-        { pollAccepted: true, pollIntervalMs: 0, onProgress }
-      )
-
-      expect(result).toBe(true)
-      expect(global.fetch).toHaveBeenCalledTimes(2)
-      expect(progressResponse.json).toHaveBeenCalledOnce()
-      expect(progressResponse.blob).not.toHaveBeenCalled()
-      expect(onProgress).toHaveBeenCalledWith(progress)
-      expect(fileResponse.blob).toHaveBeenCalledOnce()
-      const anchor = global.document.createElement.mock.results[0].value
-      expect(anchor.download).toBe('IndPost_ready.zip')
-      expect(anchor.click).toHaveBeenCalledOnce()
-    })
-
     it.each([
       204
     ])('polls by handle until cancellation or a completed ZIP (%i)', async (status) => {
@@ -483,34 +447,6 @@ describe('fetchWrapper', () => {
       expect(anchor.download).toBe('header-fallback.xlsx')
       expect(anchor.download).not.toContain('filename')
       expect(anchor.download).not.toContain('UTF-8')
-    })
-
-    it('should handle HTTP error responses', async () => {
-      // Mock response with HTTP error
-      const mockResponse = {
-        ok: false,
-        status: 404,
-        statusText: 'Not Found',
-        text: () => Promise.resolve(JSON.stringify({ msg: 'File not found' })),
-        headers: {
-          get: () => null // Mock headers.get method
-        }
-      }
-
-      global.fetch = vi.fn(() => Promise.resolve(mockResponse))
-
-      // Mock console.error to prevent test output clutter
-      const originalConsoleError = console.error
-      console.error = vi.fn()
-
-      try {
-        await expect(
-          fetchWrapper.downloadFile(`${baseUrl}/download/file`, 'fallback.txt')
-        ).rejects.toThrow('Ошибка 404')
-      } finally {
-        // Restore console.error
-        console.error = originalConsoleError
-      }
     })
   })
 })

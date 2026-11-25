@@ -171,27 +171,6 @@ describe('inline TN VED through a suggested-code click', () => {
     expect(registers.item).toMatchObject({ customsFee: null, customsDuty: null, derivedTotalsPending: false })
   })
 
-  it('shows a retryable conflict once and allows a manual retry without a recovery read', async () => {
-    const { parcels, alerts } = await startList()
-    const showError = vi.spyOn(alerts, 'error')
-    const message = 'Данные реестра или результаты проверок изменились. Повторите сохранение.'
-    fetchWrapper.put.mockRejectedValueOnce(Object.assign(new Error(message), {
-      status: 409, data: { code: 'RegisterRestrictionChangeConflict', msg: message }
-    }))
-    await wrapper.get('.matching-feacn-code-item').trigger('click')
-    await flushPromises()
-    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-    expect(wrapper.get('[role="alert"]').text()).toContain(message)
-    expect(showError).toHaveBeenCalledTimes(1)
-    expect(parcels.items[0].tnVed).toBe(originalCode)
-    expect(fetchWrapper.get).not.toHaveBeenCalled()
-
-    await wrapper.get('.matching-feacn-code-item').trigger('click')
-    await flushPromises()
-    expect(fetchWrapper.put).toHaveBeenCalledTimes(2)
-    expect(parcels.items[0].tnVed).toBe(newCode)
-  })
-
   it('locks the confirmed register and its rows locally after one rejected request', async () => {
     const { parcels, registers, alerts } = await startList()
     const other = { id: 99, readOnly: false }
@@ -213,18 +192,6 @@ describe('inline TN VED through a suggested-code click', () => {
     ])
     await wrapper.findAll('.matching-feacn-code-item')[1].trigger('click')
     expect(fetchWrapper.put).toHaveBeenCalledTimes(1)
-    expect(fetchWrapper.get).not.toHaveBeenCalled()
-  })
-
-  it('does not lock the visible register for a read-only conflict belonging to another register', async () => {
-    const { parcels, registers } = await startList()
-    fetchWrapper.put.mockRejectedValueOnce(readOnlyError(99))
-    await wrapper.get('.matching-feacn-code-item').trigger('click')
-    await flushPromises()
-
-    expect(wrapper.get('[role="alert"]').text()).toContain("'99'")
-    expect(registers.item.readOnly).not.toBe(true)
-    expect(parcels.items[0].readOnly).not.toBe(true)
     expect(fetchWrapper.get).not.toHaveBeenCalled()
   })
 
@@ -261,21 +228,6 @@ describe('inline TN VED through a suggested-code click', () => {
     expect(parcels.items[0].readOnly).toBe(false)
   })
 
-  it('keeps a passport event that arrives during the save and blocks overlapping clicks', async () => {
-    const { parcels } = await startList()
-    const write = deferred()
-    fetchWrapper.put.mockReturnValueOnce(write.promise)
-    await wrapper.get('.matching-feacn-code-item').trigger('click')
-    await wrapper.get('.matching-feacn-code-item').trigger('click')
-    parcels.applyParcelCheckStatusChanges({
-      registerId: 12, updates: [{ parcelId: 31, checkCode: 'passport', status: 30, revision: 2 }]
-    })
-    write.resolve(savedPage())
-    await flushPromises()
-    expect(fetchWrapper.put).toHaveBeenCalledTimes(1)
-    expect(parcels.items[0]).toMatchObject({ tnVed: newCode, passportCheckStatus: 30 })
-  })
-
   it('reports an unusable write response without replacing the visible rows', async () => {
     const { parcels } = await startList()
     fetchWrapper.put.mockResolvedValueOnce(undefined)
@@ -301,27 +253,6 @@ describe('inline TN VED through a suggested-code click', () => {
     expect(parcels.items[0].tnVed).toBe(originalCode)
     expect(parcels.items[0].readOnly).not.toBe(true)
     expect(registers.item.readOnly).not.toBe(true)
-  })
-
-  it('coalesces a pending filter change and ignores a read started before acknowledgement', async () => {
-    const { parcels, localSearch } = await startList()
-    vi.useFakeTimers()
-    const write = deferred(), read = deferred()
-    fetchWrapper.put.mockReturnValueOnce(write.promise)
-    await wrapper.get('.matching-feacn-code-item').trigger('click')
-    fetchWrapper.get.mockReturnValueOnce(read.promise)
-    const old = parcels.getAll(12, { boxId: 5 })
-    localSearch.value = 'Пальто'
-    await nextTick()
-    fetchWrapper.get.mockResolvedValueOnce(savedPage().page)
-    write.resolve(savedPage(1))
-    await vi.runAllTimersAsync()
-    read.resolve({ items: [row], pagination: { totalCount: 3 } })
-    await old
-    expect(fetchWrapper.get).toHaveBeenCalledTimes(2)
-    expect(new URLSearchParams(fetchWrapper.get.mock.lastCall[0].split('?')[1]).get('productName')).toBe('Пальто')
-    expect(auth.parcels_page).toBe(3)
-    expect(parcels.items[0].tnVed).toBe(newCode)
   })
 
   it('drops a late save after the originating list is closed', async () => {

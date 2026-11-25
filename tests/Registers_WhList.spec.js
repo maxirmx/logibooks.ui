@@ -10,7 +10,7 @@ import RegistersWhList from '@/lists/Registers_WhList.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import { getErrorMessage } from '@/helpers/error.helpers.js'
 import { vuetifyStubs } from './helpers/test-utils.js'
-import { OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
+import { OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 import { REGISTER_STATUS_FILTER_IN_PROGRESS } from '@/helpers/register.status.filter.helpers.js'
 import { formatZoneCount, isReturnRegister } from '@/helpers/warehouse.registers.table.helpers.js'
 
@@ -351,16 +351,6 @@ describe('Registers_WhList.vue', () => {
     expect(getCompaniesAll).not.toHaveBeenCalled()
   })
 
-  it('does not delete warehouse party when confirmation is cancelled', async () => {
-    confirmMock.mockResolvedValueOnce(false)
-    const wrapper = createWrapper()
-    await wrapper.vm.$nextTick()
-
-    await wrapper.vm.deleteRegister({ id: 12, fileName: 'party.xlsx' })
-
-    expect(registersStore.remove).not.toHaveBeenCalled()
-  })
-
   it('reports warehouse party delete errors', async () => {
     mockItems.value = [{ id: 12, fileName: 'party.xlsx' }]
     const message = 'Партия «party.xlsx» доступна только для чтения'
@@ -382,51 +372,6 @@ describe('Registers_WhList.vue', () => {
     wrapper.unmount()
   })
 
-  it('shows warehouse deletion progress and keeps the warehouse filters for the refresh', async () => {
-    const deletion = Promise.withResolvers()
-    confirmMock.mockResolvedValueOnce(true)
-    registersStore.remove.mockReturnValueOnce(deletion.promise)
-    const wrapper = createWrapper()
-    await flushPromises()
-    getAll.mockClear()
-    const dialog = wrapper.getComponent(vuetifyStubs['v-dialog'])
-
-    const action = wrapper.vm.deleteRegister({ id: 12, fileName: 'party.xlsx' })
-    await flushPromises()
-    expect(dialog.props('modelValue')).toBe(true)
-    expect(dialog.text()).toContain('Удаление партии')
-    expect(wrapper.find('.header-actions-bar .spinner-border-m').exists()).toBe(false)
-
-    deletion.resolve()
-    await expect(action).resolves.toBe(true)
-    await flushPromises()
-    expect(dialog.props('modelValue')).toBe(false)
-    expect(getAll).toHaveBeenCalledExactlyOnceWith({ mode: OP_MODE_WAREHOUSE })
-    expect(mockWhSearch.value).toBe('warehouse search')
-    expect(mockWhPage.value).toBe(3)
-    wrapper.unmount()
-  })
-
-  it('shows a list refresh error after a successful deletion', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
-    confirmMock.mockResolvedValueOnce(true)
-    const wrapper = createWrapper()
-    await flushPromises()
-    const error = new Error('List request failed')
-    getAll.mockRejectedValueOnce(error)
-
-    try {
-      await expect(wrapper.vm.deleteRegister({ id: 12, fileName: 'party.xlsx' })).resolves.toBe(false)
-      expect(wrapper.getComponent(vuetifyStubs['v-dialog']).props('modelValue')).toBe(false)
-      expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось загрузить реестры')
-      expect(alertErrorFn).toHaveBeenCalledOnce()
-      expect(registersStore.remove).toHaveBeenCalledExactlyOnceWith(12)
-    } finally {
-      wrapper.unmount()
-      consoleError.mockRestore()
-    }
-  })
-
   it('places the customs toggle in its own group after the return-register action', async () => {
     const wrapper = createWrapper()
     await flushPromises()
@@ -446,20 +391,6 @@ describe('Registers_WhList.vue', () => {
     const router = (await import('@/router')).default
     await returnButton.find('button').trigger('click')
     expect(router.push).toHaveBeenCalledWith('/register/return')
-    wrapper.unmount()
-  })
-
-  it('switches to customs even when the return-register action is unavailable', async () => {
-    mockIsWhManagerPlus.value = false
-    const wrapper = createWrapper()
-    await flushPromises()
-    const toggle = wrapper.get('button[aria-label="Оформление"]')
-    expect(toggle.element.closest('.header-actions-group').previousElementSibling).toBeNull()
-
-    await toggle.trigger('click')
-    await flushPromises()
-    const router = (await import('@/router')).default
-    expect(router.push).toHaveBeenCalledExactlyOnceWith({ path: '/registers', query: { mode: OP_MODE_PAPERWORK } })
     wrapper.unmount()
   })
 

@@ -179,7 +179,7 @@ describe('Scanjob parcel monitor typed tables', () => {
     isShiftLead.value = false
   })
 
-  it('renders Ozon scan and WH columns without box number', () => {
+  it('renders Ozon scan and WH columns without box number', async () => {
     const wrapper = mount(ScanjobOzonParcelsMonitorTable, {
       props: {
         parcels: [
@@ -189,6 +189,7 @@ describe('Scanjob parcel monitor typed tables', () => {
             scannedUserName: 'Operator',
             scannedTime: '2026-01-02T10:00:00',
             postingNumber: 'POST-11',
+            ozonId: '001-OZON',
             barcode: 'BAR-11',
             productName: 'Very long Ozon product name',
             weightKg: 1.23,
@@ -211,6 +212,7 @@ describe('Scanjob parcel monitor typed tables', () => {
       'statusId',
       'scannedInfo',
       'postingNumber',
+      'ozonId',
       'barcode',
       'productName',
       'weightKg',
@@ -228,7 +230,16 @@ describe('Scanjob parcel monitor typed tables', () => {
     ])
     expect(scannedInfo.text()).not.toContain('/')
     expect(wrapper.text()).toContain('POST-11')
-    expect(wrapper.text()).toContain('BAR-11')
+    const titles = wrapper.findAll('.v-data-table-header-cell').map((header) => header.text())
+    const barcodeIndex = titles.indexOf('Штрихкод')
+    expect(barcodeIndex).toBeGreaterThan(0)
+    expect(titles[barcodeIndex - 1]).toBe('ID отправления')
+    const cells = wrapper.get('.v-data-table-row').findAll('.v-data-table-cell')
+    const ozonIdCell = cells[barcodeIndex - 1].get('.clickable-cell')
+    expect(ozonIdCell.text()).toBe('001-OZON')
+    expect(cells[barcodeIndex].text()).toBe('BAR-11')
+    await ozonIdCell.trigger('click')
+    expect(wrapper.emitted('edit-parcel')).toEqual([[wrapper.props('parcels')[0]]])
     expect(wrapper.text()).toContain('Ready')
     expect(wrapper.text()).toContain('Не проверено')
   })

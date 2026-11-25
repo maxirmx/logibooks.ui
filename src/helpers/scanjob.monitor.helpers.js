@@ -50,6 +50,7 @@ export const scanjobParcelHeaders = [
 export const scanjobOzonParcelHeaders = [
   ...scanjobParcelScanHeaders,
   { title: ozonRegisterColumnTitles.postingNumber, key: 'postingNumber', align: 'start' },
+  { title: ozonRegisterColumnTitles.ozonId, key: 'ozonId', align: 'start' },
   { title: ozonRegisterColumnTitles.barcode, key: 'barcode', align: 'start' },
   { title: ozonRegisterColumnTitles.productName, key: 'productName', align: 'start' },
   { title: ozonRegisterColumnTitles.weightKg, key: 'weightKg', align: 'start' },

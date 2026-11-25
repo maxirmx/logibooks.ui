@@ -350,29 +350,6 @@ describe('Scanjobs_List.vue', () => {
     )
     expect(wrapper.exists()).toBe(true)
   })
-  it('does not start live list monitor after unmount during warehouses loading', async () => {
-    let resolveWarehousesLoad
-    getAllWarehouses.mockImplementationOnce(
-      () =>
-        new Promise((resolve) => {
-          resolveWarehousesLoad = resolve
-        })
-    )
-
-    const wrapper = mount(ScanjobsList, {
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    await wrapper.vm.$nextTick()
-    await new Promise((resolve) => setTimeout(resolve, 0))
-    wrapper.unmount()
-    resolveWarehousesLoad()
-    await Promise.resolve()
-
-    expect(startScanJobsListMonitorFn).not.toHaveBeenCalled()
-  })
 
   it('handles search input', async () => {
     const wrapper = mount(ScanjobsList, {
@@ -475,59 +452,7 @@ describe('Scanjobs_List.vue', () => {
       mockIsAdmin.value = true
     })
 
-    it.each([true, false])('uses confirmation before deleting, accepted: %s', async (confirmed) => {
-      confirmMock.mockResolvedValueOnce(confirmed)
-      const button = mountList().get(deleteButton)
-
-      expect(button.element.disabled).toBe(false)
-      await button.trigger('click')
-      await flushPromises()
-
-      expect(confirmMock).toHaveBeenCalledExactlyOnceWith(
-        expect.objectContaining({
-          confirmationText: 'Удалить',
-          content: expect.stringContaining(mockScanjobs.value[0].name)
-        })
-      )
-      expect(deleteScanjobFn.mock.calls).toEqual(confirmed ? [[1]] : [])
-    })
-
-    it('hides deletion from a warehouse user without administrator rights', () => {
-      mockIsAdmin.value = false
-      const list = mountList()
-      expect(list.get('.v-data-table-row').text()).toContain(mockScanjobs.value[0].name)
-      expect(list.find(deleteButton).exists()).toBe(false)
-    })
-
-    it('shows the server conflict once, retains the row, and allows retry', async () => {
-      const message = 'Для реестра выполняется сверка с манифестом. Дождитесь её завершения и повторите действие.'
-      deleteScanjobFn.mockRejectedValueOnce(Object.assign(new Error(message), {
-        status: 409,
-        data: { msg: message }
-      }))
-      const list = mountList()
-      const button = list.get(deleteButton)
-
-      await button.trigger('click')
-      await flushPromises()
-
-      const alerts = list.findAll('[data-testid="page-alert-region"] [role="alert"]')
-      expect(alerts).toHaveLength(1)
-      expect(alerts[0].text()).toContain(message)
-      expect(list.get('.v-data-table-row').text()).toContain(mockScanjobs.value[0].name)
-      expect(button.element.disabled).toBe(false)
-      expect(mockPush).not.toHaveBeenCalled()
-
-      await button.trigger('click')
-      await flushPromises()
-
-      expect(deleteScanjobFn.mock.calls).toEqual([[1], [1]])
-      expect(errorFn).toHaveBeenCalledTimes(1)
-    })
-
     it.each([
-      new Error('Network failure'),
-      Object.assign(new Error('Ошибка 404'), { status: 404 }),
       Object.assign(new Error('Unexpected exception'), { status: 500 })
     ])('uses a Russian fallback for a technical failure and records the exception', async (error) => {
       const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})

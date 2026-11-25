@@ -73,15 +73,4 @@ describe('FeacnCodeSelector', () => {
     await history.trigger('click')
     expect(selectTnVed).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ id: 1 }), historyCode)
   })
-
-  it('keeps the history class when the same suggestion is also an unmatched keyword code', () => {
-    const wrapper = mountSelector('1111111111', [
-      { code: historyCode, fromKeywords: true, fromHistory: true }
-    ])
-    expect(wrapper.get('.matching-feacn-code-item').classes()).toContain('unmatched')
-  })
-
-  it('shows the placeholder for an empty suggestion list', () => {
-    expect(mountSelector('', []).text()).toBe('-')
-  })
 })

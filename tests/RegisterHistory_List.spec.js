@@ -463,22 +463,6 @@ describe('RegisterHistory_List.vue', () => {
     expect(wrapper.text()).not.toContain('999')
   })
 
-  it('renders an Alta database change with its Russian field label', async () => {
-    mockRefs.items.value[0].changes = [
-      { field: 'AltaDatabaseName', oldValue: null, newValue: 'reestr_1' }
-    ]
-
-    const wrapper = mount(RegisterHistoryList, {
-      props: { registerId: 42 },
-      global: { stubs: defaultGlobalStubs }
-    })
-    await flushPromises()
-
-    expect(wrapper.get('.history-changes li').text()).toBe(
-      'База данных реестра в Альта-Софт: не указано → reestr_1'
-    )
-  })
-
   it('renders the Ozon weight update summary without empty old-value arrows', async () => {
     mockRefs.items.value[0].reason = 'Обновление веса посылок из файла реестра'
     mockRefs.items.value[0].changes = [

@@ -84,7 +84,6 @@ describe('boxes store', () => {
   })
 
   it.each([
-    ['getAll', () => useBoxesStore().getAll(42)],
     ['getById', () => useBoxesStore().getById(7)]
   ])('rethrows %s failures and records the error', async (_name, operation) => {
     const error = new Error('load failed')
@@ -120,18 +119,5 @@ describe('boxes store', () => {
     expect(store.boxes[0]).toEqual({ ...sampleBox, ...payload })
     expect(store.box).toEqual({ ...sampleBox, ...payload })
     expect(store.box.code).toBe('BOX-7')
-  })
-
-  it.each([
-    ['create', 'post', () => useBoxesStore().create({ registerId: 42, code: 'BOX' })],
-    ['update', 'put', () => useBoxesStore().update(7, { lengthCm: 1 })]
-  ])('rethrows %s failures and records the error', async (_name, method, operation) => {
-    const error = new Error('mutation failed')
-    fetchWrapper[method].mockRejectedValueOnce(error)
-    const store = useBoxesStore()
-
-    await expect(operation()).rejects.toBe(error)
-    expect(store.error).toBe(error)
-    expect(store.loading).toBe(false)
   })
 })

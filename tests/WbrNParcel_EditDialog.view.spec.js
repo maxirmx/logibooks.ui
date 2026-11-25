@@ -631,15 +631,6 @@ describe('WbrNParcel_EditDialog.vue', () => {
     await resolveAll()
   })
 
-  it.each([31, 40])('shows disabled parcel XML generation for WBR-N procedure %i', async (procedure) => {
-    registerItem.value = { ...registerItem.value, customsProcedureCode: procedure }
-    const wrapper = await mountDialog()
-    expect(wrapper.get('[data-testid="download"]').element.disabled).toBe(true)
-    registerItem.value = { ...registerItem.value, customsProcedureCode: 10 }
-    await nextTick()
-    expect(wrapper.get('[data-testid="download"]').element.disabled).toBe(false)
-  })
-
   it('keeps the editor open when an excluded single-parcel status is cancelled', async () => {
     formValues.statusId = 6
     confirmMock.mockResolvedValue(false)

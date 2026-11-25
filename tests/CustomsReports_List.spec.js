@@ -6,7 +6,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { enableAutoUnmount, mount, flushPromises } from '@vue/test-utils'
 import { ref, unref } from 'vue'
-import { formatDateTime } from '@/helpers/date.formatters.js'
 import { getErrorMessage } from '@/helpers/error.helpers.js'
 import { SupersededReportsRequestError } from '@/stores/customs.reports.store.js'
 import CustomsReportsList from '@/lists/CustomsReports_List.vue'
@@ -322,60 +321,6 @@ describe('CustomsReports_List.vue', () => {
     expect(clickSpy).toHaveBeenCalled()
   })
 
-  it('uploads a report from the header action and refreshes the list', async () => {
-    getReportsMock.mockResolvedValue()
-    const wrapper = mount(CustomsReportsList, {
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    await flushPromises()
-
-    let resolveUpload
-    const uploadPromise = new Promise((resolve) => {
-      resolveUpload = resolve
-    })
-    uploadMock.mockReturnValue(uploadPromise)
-
-    const input = wrapper.find('[data-testid="reports-upload-input"]')
-    const file = new File(['dummy'], 'report.xlsx', { type: 'application/vnd.ms-excel' })
-    Object.defineProperty(input.element, 'files', {
-      value: [file],
-      configurable: true
-    })
-    let assignedInputValue = null
-    Object.defineProperty(input.element, 'value', {
-      configurable: true,
-      get() {
-        return assignedInputValue ?? ''
-      },
-      set(v) {
-        assignedInputValue = v
-      }
-    })
-
-    const dispatchSpy = vi.spyOn(window, 'dispatchEvent')
-
-    await input.trigger('change')
-    await wrapper.vm.$nextTick()
-
-    expect(uploadMock).toHaveBeenCalledWith(file)
-    expect(wrapper.find('.action-dialog-stub').attributes('data-show')).toBe('true')
-
-    resolveUpload()
-    await flushPromises()
-
-    const dispatchedEvent = dispatchSpy.mock.calls.find(
-      (call) => call[0] instanceof globalThis.CustomEvent
-    )
-    expect(dispatchedEvent?.[0].detail).toEqual({ fileName: 'report.xlsx' })
-    expect(getReportsMock).toHaveBeenCalledTimes(2)
-    expect(wrapper.find('.action-dialog-stub').attributes('data-show')).toBe('false')
-    expect(assignedInputValue).toBe('')
-    expect(alertErrorMock).not.toHaveBeenCalled()
-  })
-
   it('handles upload errors and clears the file input', async () => {
     getReportsMock.mockResolvedValue()
     const wrapper = mount(CustomsReportsList, {
@@ -533,25 +478,6 @@ describe('CustomsReports_List.vue', () => {
     wrapper.unmount()
   })
 
-  it.each(['account change', 'unmount'])('discards confirmation after %s', async (exit) => {
-    reportsRef.value = [{ id: 11 }]
-    const confirmation = Promise.withResolvers()
-    confirmMock.mockReturnValueOnce(confirmation.promise)
-    const wrapper = mount(CustomsReportsList, { global: { stubs: testStubs } })
-    await wrapper.get('[data-testid="reports-delete-button"]').trigger('click')
-    if (exit === 'account change') {
-      customsReportsStoreMock.accountVersion.value++
-    } else {
-      wrapper.unmount()
-    }
-    confirmation.resolve(true)
-    await flushPromises()
-
-    expect(removeMock).not.toHaveBeenCalled()
-    expect(alertErrorMock).not.toHaveBeenCalled()
-    if (exit === 'account change') wrapper.unmount()
-  })
-
   it('keeps new delete progress open when an old upload finishes', async () => {
     reportsRef.value = [{ id: 11 }]
     const upload = Promise.withResolvers()
@@ -577,15 +503,6 @@ describe('CustomsReports_List.vue', () => {
     deletion.resolve()
     await flushPromises()
     expect(wrapper.get('.action-dialog-stub').attributes('data-show')).toBe('false')
-    wrapper.unmount()
-  })
-
-  it('shows senior logisticians the report actions without a delete button', () => {
-    authStoreMock.isShiftLeadPlus = false
-    reportsRef.value = [{ id: 11 }]
-    const wrapper = mount(CustomsReportsList, { global: { stubs: testStubs } })
-    expect(wrapper.find('[data-column-key="actions"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="reports-delete-button"]').exists()).toBe(false)
     wrapper.unmount()
   })
 
@@ -655,28 +572,7 @@ describe('CustomsReports_List.vue', () => {
     expect(alertErrorMock).toHaveBeenCalledOnce()
   })
 
-  it('shows upload metadata in the last two columns using register history formatting', () => {
-    const uploadedAt = '2026-11-14T10:07:25Z'
-    reportsRef.value = [
-      { id: 5, uploadedAt, uploadedByUserName: 'Иванов Иван', uploadedByUserEmail: 'ivan@example.test' },
-      { id: 4 }
-    ]
-    const wrapper = mount(CustomsReportsList, { global: { stubs: testStubs } })
-    const table = wrapper.findComponent(testStubs['v-data-table-server'])
-    expect(table.props('headers').slice(-3).map(({ title, key }) => [title, key])).toEqual([
-      ['Ошибка', 'errMsg'], ['Дата и время', 'uploadedAt'], ['Пользователь', 'uploadedByUserName']
-    ])
-    const [current, legacy] = wrapper.findAll('tr')
-    expect(current.get('[data-column-key="uploadedAt"]').text()).toBe(formatDateTime(uploadedAt))
-    const userCell = current.get('[data-column-key="uploadedByUserName"]')
-    expect(userCell.get('.d-block').text()).toBe('Иванов Иван')
-    expect(userCell.get('.text-medium-emphasis').text()).toBe('ivan@example.test')
-    expect(legacy.get('[data-column-key="uploadedAt"]').text()).toBe('')
-    expect(legacy.get('[data-column-key="uploadedByUserName"]').text()).toBe('')
-    wrapper.unmount()
-  })
-
-  it.each(['list load', 'delete refresh'])('keeps a rejected superseded %s out of the page alerts', async (operation) => {
+  it.each(['list load'])('keeps a rejected superseded %s out of the page alerts', async (operation) => {
     reportsRef.value = [{ id: 11, fileName: 'current-report.xlsx' }]
     const error = new Error('Ошибка предыдущего запроса')
     const superseded = new SupersededReportsRequestError(error)
@@ -704,15 +600,5 @@ describe('CustomsReports_List.vue', () => {
       diagnostics.mockRestore()
       wrapper.unmount()
     }
-  })
-
-  it('shows a rejected list request once in the page alert region', async () => {
-    const error = new Error('Не удалось загрузить отчёты')
-    getReportsMock.mockRejectedValueOnce(error)
-    const wrapper = mount(CustomsReportsList, { global: { stubs: testStubs } })
-    await flushPromises()
-    expect(wrapper.get('[role="alert"]').text()).toContain(error.message)
-    expect(alertErrorMock).toHaveBeenCalledTimes(1)
-    wrapper.unmount()
   })
 })

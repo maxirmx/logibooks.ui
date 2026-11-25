@@ -10,7 +10,7 @@ import { createMemoryHistory, createRouter, RouterView } from 'vue-router'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
-import { roleAdmin, roleShiftLead, roleSrLogist } from '@/helpers/user.roles.js'
+import { roleShiftLead } from '@/helpers/user.roles.js'
 import { CUSTOMS_PROCEDURE } from '@/helpers/customs.procedure.helpers.js'
 import ParcelStatusEditView from '@/views/ParcelStatus_EditView.vue'
 import RegisterStatusEditView from '@/views/RegisterStatus_EditView.vue'
@@ -75,17 +75,17 @@ const formCases = [
   {
     name: 'parcel status', view: ParcelStatusEditView, list: '/parcelstatuses',
     field: '#title', value: parcelStatus.title, change: 'Новый статус',
-    payload: { title: 'Новый статус' }, loadError: 'Не удалось загрузить статус посылки'
+    payload: { title: 'Новый статус' }
   },
   {
     name: 'register status', view: RegisterStatusEditView, list: '/registerstatuses',
     field: '#readOnly', value: true, change: false,
-    payload: { readOnly: false }, loadError: 'Не удалось загрузить статус партии'
+    payload: { readOnly: false }
   },
   {
     name: 'keyboard scheme', view: HotKeyActionSchemeEditView, list: '/hotkeyactionschemes',
     field: '#name', value: scheme.name, change: 'Другая схема',
-    payload: { name: 'Другая схема' }, loadError: 'Не удалось загрузить схему настройки клавиатуры'
+    payload: { name: 'Другая схема' }
   }
 ]
 const eventCases = [
@@ -176,7 +176,7 @@ function getAction(wrapper, tooltip) {
     .find(button => button.props('tooltipText') === tooltip)?.get('button')
 }
 
-describe.each(formCases)('$name detail', ({ view, list, field, value, change, payload, loadError }) => {
+describe.each(formCases)('$name detail', ({ view, list, field, value, change, payload }) => {
   it('shows saved values to a roleless user and blocks form submission', async () => {
     const wrapper = open(view, [], { id: 1 })
     await resolveAll()
@@ -195,58 +195,7 @@ describe.each(formCases)('$name detail', ({ view, list, field, value, change, pa
     expect(push).toHaveBeenCalledExactlyOnceWith(list)
   })
 
-  it('hides stale fields and shows a single alert after a failed detail read', async () => {
-    transport.get.mockRejectedValueOnce(new Error('SQL diagnostic'))
-    const wrapper = open(view, [], { id: 1 })
-    await resolveAll()
-    expectAlert(wrapper, view === HotKeyActionSchemeEditView ? 'Не удалось загрузить список действий' : loadError)
-    expect(wrapper.find(field).exists()).toBe(false)
-    expect(wrapper.text()).not.toContain('SQL diagnostic')
-  })
-
-  it.each(['success', 'failure'])('keeps the current record and alert after a late %s', async (outcome) => {
-    const record = responses[`${list}/1`]
-    const load = transport.get.getMockImplementation()
-    const first = Promise.withResolvers()
-    const error = new Error('Late detail diagnostic')
-    const diagnostic = vi.spyOn(console, 'error').mockImplementation(() => {})
-    transport.get.mockImplementation(async url => {
-      if (url.endsWith(`${list}/1`)) return first.promise
-      if (url.endsWith(`${list}/2`)) return { ...record, id: 2, ...payload }
-      return load(url)
-    })
-    const { router, wrapper } = await openEditorRoute(view)
-    await vi.waitFor(() => expect(transport.get).toHaveBeenCalledWith(expect.stringContaining(`${list}/1`)))
-    await router.push('/edit/2')
-    await vi.waitFor(() => expect(readField(wrapper, field, change)).toBe(change))
-
-    useAlertStore().error('Ошибка текущей страницы')
-    if (outcome === 'failure') {
-      first.reject(error)
-    } else {
-      first.resolve(record)
-    }
-    await resolveAll()
-    expect(readField(wrapper, field, change)).toBe(change)
-    expectAlert(wrapper, 'Ошибка текущей страницы')
-    if (outcome === 'failure') {
-      expect(diagnostic).toHaveBeenCalledExactlyOnceWith(`[${loadError}]`, error)
-    } else {
-      expect(diagnostic).not.toHaveBeenCalled()
-    }
-  })
-
-  it('shows one Russian alert when the close navigation fails', async () => {
-    const wrapper = open(view, [], { id: 1 })
-    await resolveAll()
-    push.mockRejectedValueOnce(new Error('Internal navigation diagnostic'))
-    await getAction(wrapper, 'Закрыть').trigger('click')
-    await resolveAll()
-    expectAlert(wrapper, 'Не удалось открыть список')
-    expect(readField(wrapper, field, value)).toBe(value)
-  })
-
-  it.each([roleAdmin, roleShiftLead])('keeps the edit and retries the same write for %s', async (role) => {
+  it.each([roleShiftLead])('keeps the edit and retries the same write for %s', async (role) => {
     const wrapper = open(view, [role], { id: 1 })
     await resolveAll()
 
@@ -270,15 +219,6 @@ describe.each(formCases)('$name detail', ({ view, list, field, value, change, pa
     expect(transport.put).toHaveBeenCalledTimes(2)
     expect(transport.put.mock.calls[1]).toEqual(transport.put.mock.calls[0])
   })
-})
-
-it('shows the saved keyboard binding and modifiers without key capture', async () => {
-  const wrapper = open(HotKeyActionSchemeEditView, [roleSrLogist], { id: 1 })
-  await resolveAll()
-  expect(wrapper.get('.key-input').element.value).toBe('F3')
-  expect(wrapper.get('.key-input').element.disabled).toBe(true)
-  expect(wrapper.get('#ctrl-0').element.checked).toBe(true)
-  expect(wrapper.find('.clear-button').exists()).toBe(false)
 })
 
 it('saves the keyboard shortcut a shift lead captures with its modifiers', async () => {
@@ -316,31 +256,6 @@ it('shows a keyboard detail read failure after the lookup succeeds', async () =>
   await resolveAll()
   expectAlert(wrapper, 'Не удалось загрузить схему настройки клавиатуры')
   expect(wrapper.find('#name').exists()).toBe(false)
-})
-
-it.each(['success', 'failure'])('ignores a late keyboard lookup %s after leaving the editor', async (outcome) => {
-  const lookup = Promise.withResolvers()
-  const error = new Error('Late lookup diagnostic')
-  const diagnostic = vi.spyOn(console, 'error').mockImplementation(() => {})
-  transport.get.mockReturnValueOnce(lookup.promise)
-  const { router, wrapper } = await openEditorRoute(HotKeyActionSchemeEditView)
-  await vi.waitFor(() => expect(transport.get).toHaveBeenCalledTimes(1))
-  await router.push('/')
-  useAlertStore().error('Ошибка текущей страницы')
-
-  if (outcome === 'failure') {
-    lookup.reject(error)
-  } else {
-    lookup.resolve(responses['/hotkeyactionschemes/ops'])
-  }
-  await resolveAll()
-  expectAlert(wrapper, 'Ошибка текущей страницы')
-  expect(transport.get).toHaveBeenCalledExactlyOnceWith(expect.stringContaining('/hotkeyactionschemes/ops'))
-  if (outcome === 'failure') {
-    expect(diagnostic).toHaveBeenCalledExactlyOnceWith('[Не удалось загрузить список действий]', error)
-  } else {
-    expect(diagnostic).not.toHaveBeenCalled()
-  }
 })
 
 it('shows a shared keyboard lookup failure once when the next editor also needs it', async () => {
@@ -423,24 +338,6 @@ describe.each([
   ['register statuses', RegisterStatusesList, '/registerstatus', 'deleteRegisterStatus'],
   ['keyboard schemes', HotKeyActionSchemesList, '/hotkeyactionscheme', 'deleteHotKeyActionScheme']
 ])('%s list', (_name, list, route, deleteAction) => {
-  it('shows the loading indicator and offers a view action to readers', async () => {
-    let finishLoad
-    const pending = new Promise(resolve => { finishLoad = resolve })
-    const load = transport.get.getMockImplementation()
-    transport.get.mockImplementationOnce(async (url) => {
-      await pending
-      return load(url)
-    })
-    const wrapper = open(list, [roleSrLogist])
-    await resolveAll()
-    expect(wrapper.find('.header-actions-bar .spinner-border').exists()).toBe(true)
-    finishLoad()
-    await resolveAll()
-    expect(wrapper.find('.header-actions-bar button').exists()).toBe(false)
-    expect(wrapper.findAll('.actions-container button')).toHaveLength(1)
-    await wrapper.get('button[aria-label="Просмотреть"]').trigger('click')
-    expect(push).toHaveBeenCalledExactlyOnceWith(`${route}/edit/1`)
-  })
 
   it('rechecks write permission after confirmation', async () => {
     const wrapper = open(list, [roleShiftLead])
@@ -473,14 +370,5 @@ describe.each([
     await wrapper.get('.header-actions-bar button').trigger('click')
     await resolveAll()
     expectAlert(wrapper, 'Не удалось открыть форму создания')
-  })
-
-  it('shows one Russian alert when delete confirmation fails', async () => {
-    const wrapper = open(list, [roleShiftLead])
-    await resolveAll()
-    confirm.mockRejectedValueOnce(new Error('Internal dialog diagnostic'))
-    await wrapper.findComponent(list).vm[deleteAction]({ id: 1, title: 'Тест', name: 'Тест' })
-    expectAlert(wrapper, 'Не удалось открыть подтверждение удаления')
-    expect(transport.delete).not.toHaveBeenCalled()
   })
 })

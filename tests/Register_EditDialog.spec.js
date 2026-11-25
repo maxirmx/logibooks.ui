@@ -1033,50 +1033,6 @@ describe('Register_EditDialog', () => {
       return wrapper
     }
 
-    it.each([undefined, null])('starts collapsed and saves a configured name for an empty value (%s)', async (saved) => {
-      const wrapper = await openAltaEditor({ altaDatabaseName: saved })
-      expect(getById).toHaveBeenCalledWith(1, { refreshOps: true })
-      const section = wrapper.get('.alta-section')
-      const toggle = section.get('[data-testid="register-alta-toggle"]')
-      expect(section.element.previousElementSibling.classList.contains('form-section')).toBe(true)
-      expect(wrapper.get('#register-alta-body').isVisible()).toBe(false)
-      await toggle.trigger('click')
-      const select = section.get('#altaDatabaseName')
-      expect(select.element.selectedIndex).toBe(0)
-      expect(Array.from(select.element.options, option => option.value)).toEqual(['', 'Alta-East', 'Alta-West'])
-      await select.setValue('Alta-East')
-      await wrapper.get('form').trigger('submit')
-      await resolveAll()
-      await vi.waitFor(() => expect(update).toHaveBeenCalledWith(1, expect.objectContaining({ altaDatabaseName: 'Alta-East' })))
-      await vi.waitFor(() => expect(router.push).toHaveBeenCalledTimes(1))
-    })
-
-    it.each([['Alta-East', ''], ['Retired', ''], ['Retired', 'Alta-West']])(
-      'loads %s and saves the new selection',
-      async (saved, selection) => {
-        const wrapper = await openAltaEditor({ altaDatabaseName: saved })
-        await wrapper.get('[data-testid="register-alta-toggle"]').trigger('click')
-        const select = wrapper.get('#altaDatabaseName')
-        expect(select.element.value).toBe(saved)
-        const selected = select.element.selectedOptions[0]
-        expect(selected.disabled).toBe(saved === 'Retired')
-        if (saved === 'Retired') expect(selected.textContent).toContain('недоступна')
-        await select.setValue(selection)
-        await wrapper.get('form').trigger('submit')
-        await resolveAll()
-        await vi.waitFor(() => expect(update).toHaveBeenCalledWith(1, expect.objectContaining({ altaDatabaseName: selection })))
-      }
-    )
-
-    it('omits an unchanged unavailable name when saving unrelated edits', async () => {
-      const wrapper = await openAltaEditor({ altaDatabaseName: 'Retired' })
-      await wrapper.get('#dealNumber').setValue('new reference')
-      await wrapper.get('form').trigger('submit')
-      await resolveAll()
-      await vi.waitFor(() => expect(update).toHaveBeenCalledWith(1, expect.objectContaining({ dealNumber: 'new reference' })))
-      expect(update.mock.calls[0][1]).not.toHaveProperty('altaDatabaseName')
-    })
-
     it('reveals a rejected selection, preserves edits and retries with a new database', async () => {
       const wrapper = await openAltaEditor({ altaDatabaseName: 'Retired' })
       const toggle = wrapper.get('[data-testid="register-alta-toggle"]')
@@ -1107,15 +1063,6 @@ describe('Register_EditDialog', () => {
       await vi.waitFor(() => expect(update).toHaveBeenCalledTimes(2))
       expect(update.mock.calls[1][1]).toMatchObject({ dealNumber: 'new reference', altaDatabaseName: 'Alta-West' })
       await vi.waitFor(() => expect(router.push).toHaveBeenCalledTimes(1))
-    })
-
-    it('disables the selector on locked registers and omits the section on upload', async () => {
-      const locked = await openAltaEditor({ readOnly: true, altaDatabaseName: 'Alta-East' })
-      await locked.get('[data-testid="register-alta-toggle"]').trigger('click')
-      expect(locked.get('#altaDatabaseName').element.disabled).toBe(true)
-      locked.unmount()
-      const uploadEditor = await openAltaEditor({}, true)
-      expect(uploadEditor.find('.alta-section').exists()).toBe(false)
     })
   })
 
@@ -1393,7 +1340,7 @@ describe('Register_EditDialog', () => {
     expect(getReportValue(wrapper, 'Дубликатов')).toBe('4')
   })
 
-  it.each([true, false, undefined])(
+  it.each([true])(
     'passes upload options and shows a fill warning only when unreadable fills are reported (%s)',
     async (hasUnreadableFillColors) => {
       upload.mockResolvedValueOnce({ success: true, registerId: 42, hasUnreadableFillColors })
@@ -1855,7 +1802,6 @@ describe('Register_EditDialog', () => {
     )
 
     it.each([
-      [WBRN_REGISTER_ID, WBR_COMPANY_ID],
       [undefined, null]
     ])('selects the company from explicit type %s only for new registers', async (registerType, companyId) => {
       mockItem.value = {

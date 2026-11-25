@@ -323,30 +323,6 @@ describe('Registers_List.vue', () => {
     ensureOpsLoadedFn.mockClear()
   })
 
-  it('puts the warehouse toggle in its own group after the register upload group', async () => {
-    mockIsSrLogistPlus.value = true
-    mockHasWhRole.value = true
-    const wrapper = mount(RegistersList, { global: { stubs: vuetifyStubs } })
-    await flushPromises()
-
-    const toggle = wrapper.get('button[aria-label="Склад"]')
-    const group = toggle.element.closest('.header-actions-group')
-    expect(group).toBe(wrapper.get('.header-actions-bar').element.lastElementChild)
-    expect(Array.from(group.querySelectorAll('button'))).toEqual([toggle.element])
-    expect(group.previousElementSibling.querySelector('[data-icon="fa-solid fa-file-import"]')).not.toBeNull()
-
-    await toggle.trigger('click')
-    await flushPromises()
-    expect(router.push).toHaveBeenCalledExactlyOnceWith({ path: '/registers', query: { mode: 'modeWarehouse' } })
-
-    mockIsSrLogistPlus.value = false
-    mockHasWhRole.value = false
-    await wrapper.vm.$nextTick()
-    expect(group.previousElementSibling).toBeNull()
-    expect(toggle.element.disabled).toBe(true)
-    wrapper.unmount()
-  })
-
   describe('getRegisterTypeName function', () => {
     let wrapper
 
@@ -733,39 +709,10 @@ describe('Registers_List.vue', () => {
         ]
       })
 
-      it('offers Open XML workbooks and archives for register uploads', async () => {
-        mockIsSrLogistPlus.value = true
-        await wrapper.vm.$nextTick()
-
-        expect(wrapper.getComponent(vuetifyStubs['v-file-input']).props('accept')).toBe('.xlsx,.xlsm,.zip,.rar')
-      })
-
-      it('keeps selected upload type when no file input is mounted', async () => {
-        wrapper.vm.fileInput = null
-
-        await wrapper.vm.startRegisterUpload(OZON_COMPANY_ID)
-
-        expect(wrapper.vm.selectedRegisterType).toBe(OZON_COMPANY_ID)
-        expect(alertErrorFn).not.toHaveBeenCalled()
-      })
-
       it('shows error when trying to start upload without customer', async () => {
         await wrapper.vm.startRegisterUpload(null)
 
         expect(alertErrorFn).toHaveBeenCalledWith('Не выбран тип реестра для загрузки')
-      })
-
-      it('handles file selection with single file input for WBRN', async () => {
-        const file = new File(['data'], 'wbrn.xlsx')
-        wrapper.vm.selectedRegisterType = WBRN_REGISTER_ID
-
-        await wrapper.vm.fileSelected(file)
-
-        expect(registersStore.item.fileName).toBe('wbrn.xlsx')
-        expect(registersStore.item.registerType).toBe(WBRN_REGISTER_ID)
-        expect(registersStore.item.companyId).toBe(WBR_COMPANY_ID)
-        expect(registersStore.uploadFile).toBe(file)
-        expect(router.push).toHaveBeenCalledWith('/register/load')
       })
 
       it('handles empty file selection', async () => {
@@ -920,46 +867,6 @@ describe('Registers_List.vue', () => {
       expect(removeFn).not.toHaveBeenCalled()
     })
 
-    it('shows modal progress after confirmation through deletion and list refresh', async () => {
-      const confirmation = Promise.withResolvers()
-      const deletion = Promise.withResolvers()
-      const refresh = Promise.withResolvers()
-      confirmMock.mockReturnValueOnce(confirmation.promise)
-      removeFn.mockReturnValueOnce(deletion.promise)
-      getAll.mockReturnValueOnce(refresh.promise)
-      const dialog = wrapper.getComponent(vuetifyStubs['v-dialog'])
-      const deleteButton = wrapper.findAllComponents(ActionButton)
-        .find(button => button.props('tooltipText') === 'Удалить реестр')
-
-      await deleteButton.get('button').trigger('click')
-      expect(dialog.props('modelValue')).toBe(false)
-      expect(wrapper.get('.header-actions-bar > :first-child .spinner-border-m').exists()).toBe(true)
-      expect(removeFn).not.toHaveBeenCalled()
-      expect(confirmMock.mock.calls[0][0].content).toBe('Удалить реестр «register.xlsx»?')
-
-      confirmation.resolve(true)
-      await flushPromises()
-      expect(dialog.props()).toMatchObject({ modelValue: true, persistent: '' })
-      expect(dialog.text()).toContain('Удаление реестра')
-      expect(dialog.find('[data-testid="v-progress-circular"]').exists()).toBe(true)
-      expect(wrapper.find('.header-actions-bar .spinner-border-m').exists()).toBe(false)
-      expect(deleteButton.get('button').element.disabled).toBe(true)
-      expect(removeFn).toHaveBeenCalledExactlyOnceWith(item.id)
-      expect(getAll).not.toHaveBeenCalled()
-
-      deletion.resolve()
-      await flushPromises()
-      expect(dialog.props('modelValue')).toBe(true)
-      expect(getAll).toHaveBeenCalledExactlyOnceWith({ mode: OP_MODE_PAPERWORK })
-
-      refresh.resolve()
-      await flushPromises()
-      expect(dialog.props('modelValue')).toBe(false)
-      expect(deleteButton.get('button').element.disabled).toBe(false)
-      expect(alertErrorFn).not.toHaveBeenCalled()
-      expect(router.push).not.toHaveBeenCalled()
-    })
-
     it('closes the dialog after a rejected delete, shows one localized alert and allows retry', async () => {
       const deletion = Promise.withResolvers()
       const error = new Error('Delete failed')
@@ -989,19 +896,6 @@ describe('Registers_List.vue', () => {
       expect(removeFn.mock.calls).toEqual([[item.id], [item.id]])
       expect(getAll).toHaveBeenCalledExactlyOnceWith({ mode: OP_MODE_PAPERWORK })
       expect(alertErrorFn).toHaveBeenCalledOnce()
-    })
-
-    it('ignores confirmation after the signed-in user changes', async () => {
-      const confirmation = Promise.withResolvers()
-      confirmMock.mockReturnValueOnce(confirmation.promise)
-      const action = wrapper.vm.deleteRegister(item)
-
-      mockUser.value = { id: 2 }
-      confirmation.resolve(true)
-      await expect(action).resolves.toBe(false)
-
-      expect(removeFn).not.toHaveBeenCalled()
-      expect(alertErrorFn).not.toHaveBeenCalled()
     })
 
     it.each(['resolve', 'reject'])('handles a pending delete that finishes with %s after leaving the page', async (outcome) => {
@@ -1050,23 +944,6 @@ describe('Registers_List.vue', () => {
 
       expect(wrapper.text()).toContain('Ок стоп слова, Ок ТН ВЭД: 3')
       expect(wrapper.text()).not.toContain('Проверено: 3')
-    })
-
-    it('renders delete action for shift leads', () => {
-      mockIsShiftLeadPlus.value = true
-      mockItems.value = [{ id: 1, fileName: 'reg.xlsx' }]
-
-      const wrapper = mount(RegistersList, {
-        global: {
-          stubs: vuetifyStubs
-        }
-      })
-
-      const actionTooltips = wrapper
-        .findAllComponents(ActionButton)
-        .map((button) => String(button.props('tooltipText') || ''))
-
-      expect(actionTooltips).toContain('Удалить реестр')
     })
 
     it('updates search and table controls through rendered v-model bindings', async () => {

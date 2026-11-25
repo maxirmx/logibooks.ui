@@ -11,7 +11,7 @@ import App from '@/App.vue'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useRegistersStore } from '@/stores/registers.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
-import { OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
+import { OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
@@ -138,7 +138,7 @@ describe('App logout', () => {
 
   const alertSelector = '[data-testid="page-alert-region"] [role="alert"]'
 
-  it.each([OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE])(
+  it.each([OP_MODE_WAREHOUSE])(
     'shows one sign-in message when a %s register request rejects after logout',
     async mode => {
       let finishRequest

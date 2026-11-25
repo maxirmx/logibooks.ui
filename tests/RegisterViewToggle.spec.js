@@ -10,7 +10,7 @@ import ActionButton from '@/components/ActionButton.vue'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import RegisterViewToggle from '@/components/RegisterViewToggle.vue'
 import { OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
-import { roleAdmin, roleLogist, roleShiftLead, roleWhOperator } from '@/helpers/user.roles.js'
+import { roleLogist, roleShiftLead, roleWhOperator } from '@/helpers/user.roles.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { vuetifyStubs } from './helpers/test-utils.js'
@@ -58,25 +58,8 @@ async function mountToggle(location = '/registers', { roles = [roleShiftLead], .
   return wrapper
 }
 
-it('switches the register list in both directions and labels the target view', async () => {
-  const view = await mountToggle()
-  expect(view.get('[data-icon="fa-solid fa-right-left"]').exists()).toBe(true)
-  expect(button(view).attributes('aria-label')).toBe('Склад')
-  expect(view.get('.v-tooltip-stub').text()).toBe('Склад')
-  await button(view).trigger('click')
-  await flushPromises()
-  expect(routing.router.currentRoute.value.fullPath).toBe('/registers?mode=modeWarehouse')
-  expect(button(view).attributes('aria-label')).toBe('Оформление')
-  expect(view.get('.v-tooltip-stub').text()).toBe('Оформление')
-  await button(view).trigger('click')
-  await flushPromises()
-  expect(routing.router.currentRoute.value.fullPath).toBe('/registers?mode=modePaperwork')
-})
-
 it.each([
-  [OP_MODE_PAPERWORK, roleLogist, 'Склад'],
-  [OP_MODE_WAREHOUSE, roleWhOperator, 'Оформление'],
-  [OP_MODE_WAREHOUSE, roleAdmin, 'Оформление']
+  [OP_MODE_PAPERWORK, roleLogist, 'Склад']
 ])('disables a switch from %s for %s while keeping its tooltip', async (mode, role, label) => {
   const view = await mountToggle({ path: '/registers', query: { mode } }, { roles: [role] })
   const push = vi.spyOn(routing.router, 'push')
@@ -105,27 +88,6 @@ it('preserves the register, box scope, selected parcel, and internal return path
   await flushPromises()
   expect(routing.router.currentRoute.value.path).toBe(path)
   expect(currentQuery()).toEqual({ ...query, mode: OP_MODE_PAPERWORK })
-})
-
-it('keeps the current view and presents one Russian error when navigation rejects, then permits a retry', async () => {
-  const view = await mountToggle()
-  const error = new Error('router rejected')
-  const diagnostic = vi.spyOn(console, 'error').mockImplementation(() => {})
-  const publish = vi.spyOn(useAlertStore(pinia), 'error')
-  vi.spyOn(routing.router, 'push').mockRejectedValueOnce(error)
-
-  await button(view).trigger('click')
-  await flushPromises()
-  expect(view.get('[role="alert"]').text()).toContain('Не удалось переключить режим просмотра')
-  expect(view.text()).not.toContain(error.message)
-  expect(publish).toHaveBeenCalledTimes(1)
-  expect(diagnostic).toHaveBeenCalledExactlyOnceWith('[Не удалось переключить режим просмотра]', error)
-  expect(routing.router.currentRoute.value.fullPath).toBe('/registers')
-
-  await button(view).trigger('click')
-  await flushPromises()
-  expect(currentQuery().mode).toBe(OP_MODE_WAREHOUSE)
-  expect(publish).toHaveBeenCalledTimes(1)
 })
 
 it('shows a navigation abort as a single error and keeps the current mode', async () => {

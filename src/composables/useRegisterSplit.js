@@ -5,13 +5,14 @@
 import { computed, onMounted, reactive, watch } from 'vue'
 import { canSplitRegister } from '@/helpers/register.reconciliation.helpers.js'
 import { reportError } from '@/helpers/error.helpers.js'
+import { recoverPageLoad } from '@/helpers/login.navigation.js'
 import { useAppConfirm } from '@/composables/useAppConfirm.js'
 
-export function useRegisterSplit({ store, authStore, alertStore, register, busy, runningAction, mounted,
+export function useRegisterSplit({ store, authStore, alertStore, router, register, busy, runningAction, mounted,
   refreshRegister, registerId = () => register()?.id, makeId = () => globalThis.crypto.randomUUID(),
   storage = globalThis.sessionStorage, confirm = useAppConfirm() }) {
   const state = reactive({ phase: 'idle', progress: { show: false, title: 'Разделение реестра', percent: null },
-    result: null, summaryVisible: false, refreshFailed: false, canCancel: false, cancelling: false })
+    result: null, summaryVisible: false, canCancel: false, cancelling: false })
   const locked = computed(() => ['working', 'recovery', 'unknown'].includes(state.phase))
   let operation = null
   let timer = null
@@ -51,12 +52,10 @@ export function useRegisterSplit({ store, authStore, alertStore, register, busy,
   }
   async function refresh() {
     const currentId = registerId()
-    state.refreshFailed = false
     try { await refreshRegister() }
     catch (error) {
       if (!stopped && mounted.value && currentId === registerId()) {
-        state.refreshFailed = true
-        alertStore.error(error, { fallback: 'Разделение выполнено, но не удалось обновить данные реестра' })
+        await recoverPageLoad(router, error, 'Разделение выполнено, но не удалось обновить данные реестра')
       } else reportError(error, { context: 'split refresh after navigation' })
     }
   }
@@ -117,7 +116,6 @@ export function useRegisterSplit({ store, authStore, alertStore, register, busy,
     persist(candidate)
     state.result = null
     state.summaryVisible = false
-    state.refreshFailed = false
     state.progress.percent = null
     state.progress.show = true
     setPhase('working')
@@ -160,5 +158,5 @@ export function useRegisterSplit({ store, authStore, alertStore, register, busy,
   }, { flush: 'sync' })
   onMounted(resume)
   function stop() { stopped = true; stopTimer(); state.progress.show = false; setPhase('idle') }
-  return { state, locked, start, cancel, retry, acknowledgeUnknown, refresh, stop }
+  return { state, locked, start, cancel, retry, acknowledgeUnknown, stop }
 }

@@ -506,6 +506,14 @@ describe('scanjobs store', () => {
       const connection = signalRConnections[1]
       expect(connection.invoke).toHaveBeenCalledWith('ObserveScanJob', { scanJobId: 42, area: 4 })
 
+      const onFollowEvent = vi.fn()
+      await lookup.followUser(42, 17, { onFollowEvent })
+      expect(connection.invoke).toHaveBeenCalledWith('ObserveScanJobFollowUser', { scanJobId: 42, userId: 17 })
+      const followEvent = { scanJobId: 42, userId: 17, followTarget: { parcelId: 10 } }
+      connection.handlers.ScanJobMonitorFollowEvent(followEvent)
+      expect(onFollowEvent).toHaveBeenCalledExactlyOnceWith(followEvent)
+      expect(signalRConnections[0].invoke).not.toHaveBeenCalledWith('ObserveScanJobFollowUser', expect.anything())
+
       const signal = { scanJobId: 42, area: 4 }
       connection.handlers.ScanJobMonitorSnapshot(signal)
       connection.handlers.ScanJobMonitorClosed(42, 20)
@@ -519,13 +527,22 @@ describe('scanjobs store', () => {
       connection.handlers.onreconnected()
       await Promise.resolve()
       expect(onError).toHaveBeenCalledWith(error)
+      const followError = new Error('Follow reconnect failure')
+      connection.invoke.mockResolvedValueOnce(undefined).mockRejectedValueOnce(followError)
+      connection.handlers.onreconnected()
+      await Promise.resolve()
+      expect(onError).toHaveBeenLastCalledWith(followError)
+      await lookup.clearFollowUser()
+      expect(connection.invoke).toHaveBeenLastCalledWith('ClearScanJobFollowUser')
+      connection.handlers.ScanJobMonitorFollowEvent(followEvent)
+      expect(onFollowEvent).toHaveBeenCalledOnce()
       connection.handlers.onclose(error)
-      expect(onError).toHaveBeenCalledTimes(2)
+      expect(onError).toHaveBeenCalledTimes(3)
       connection.handlers.onclose()
       expect(onError).toHaveBeenLastCalledWith(expect.objectContaining({ message: 'Соединение с монитором сканирования закрыто' }))
       await lookup.stop()
       connection.handlers.onclose()
-      expect(onError).toHaveBeenCalledTimes(3)
+      expect(onError).toHaveBeenCalledTimes(4)
       expect(connection.stop).toHaveBeenCalledOnce()
       expect(connection.invoke).not.toHaveBeenCalledWith('ClearScanJobMonitor')
       expect(signalRConnections[0].stop).not.toHaveBeenCalled()
@@ -840,14 +857,19 @@ describe('scanjobs store', () => {
       expect(store.monitorError).toBe(invokeError)
     })
 
-    it('sets monitorError when connection closes with an error', async () => {
+    it('reports terminal connection errors to the active monitor scope', async () => {
       const store = useScanjobsStore()
-      await store.startMonitor(42, { area: 0 })
+      const onConnectionError = vi.fn()
+      await store.startMonitor(42, { area: 0, onConnectionError })
 
       const closeError = new Error('Connection dropped')
       signalRHandlers.onclose(closeError)
 
       expect(store.monitorError).toBe(closeError)
+      expect(onConnectionError).toHaveBeenCalledExactlyOnceWith(closeError)
+      await store.clearMonitor()
+      signalRHandlers.onclose(closeError)
+      expect(onConnectionError).toHaveBeenCalledOnce()
     })
 
     it('does not set monitorError when connection closes cleanly', async () => {

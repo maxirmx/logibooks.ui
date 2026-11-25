@@ -13,11 +13,13 @@ function getRouteProps(path) {
 }
 
 describe('scanjob monitor routes', () => {
-  it('maps the warehouse Lookup monitor route independently from its URL filters', async () => {
+  it('maps the warehouse Lookup monitor route independently from its URL filters', () => {
     const path = '/scanjobs/42/monitor/lookup?page=2&stickerPrefix=001'
+    const route = router.resolve(path)
     expect(getRouteProps(path)).toEqual({ id: 42 })
-    expect(router.resolve(path).meta.reqWhRole).toBe(true)
-    await expect(router.resolve(path).matched.at(-1).components.default()).resolves.toHaveProperty('default')
+    expect(route.name).toBe('scanjob-monitor-lookup')
+    expect(route.meta.reqWhRole).toBe(true)
+    expect(route.matched.at(-1).components.default).toBeTypeOf('function')
   })
   it('maps unassigned monitor route to unassigned scope', () => {
     expect(getRouteProps('/scanjobs/42/monitor/unassigned/1')).toEqual({

@@ -1,15 +1,16 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { useAppConfirm } from '@/composables/useAppConfirm.js'
 import { getErrorMessage, reportError } from '@/helpers/error.helpers.js'
+import { recoverPageLoad } from '@/helpers/login.navigation.js'
 import { canReconcileRegister } from '@/helpers/register.reconciliation.helpers.js'
 import { EXCEL_FILE_ACCEPT, openExcelFilePicker, takeSelectedExcelFile } from '@/helpers/excel.file.helpers.js'
 
-export function useRegisterReconciliation({ store, authStore, alertStore, register, busy,
+export function useRegisterReconciliation({ store, authStore, alertStore, router, register, busy,
   runningAction, mounted, refreshRegister, refreshParcels, registerId = () => register()?.id, confirm = useAppConfirm(),
   makeId = () => globalThis.crypto.randomUUID() }) {
   const fileInput = ref(null)
   const state = reactive({ phase: 'idle', progress: { show: false, title: 'Сверка реестра', percent: 0 },
-    error: { show: false, message: '' }, result: null, summaryVisible: false, refreshFailed: false, canCancel: false, cancelling: false })
+    error: { show: false, message: '' }, result: null, summaryVisible: false, canCancel: false, cancelling: false })
   const locked = computed(() => ['working', 'retry-start', 'retry-status', 'unknown'].includes(state.phase))
   let operation = null
   let timer = null
@@ -75,16 +76,13 @@ export function useRegisterReconciliation({ store, authStore, alertStore, regist
   }
   async function refresh() {
     const currentId = registerId()
-    state.refreshFailed = false
     try {
       await refreshRegister()
       if (stopped || !mounted.value || registerId() !== currentId) return
-      // The existing table loader owns presentation and returns false after handling its error.
-      if (await refreshParcels() === false) state.refreshFailed = true
+      await refreshParcels()
     } catch (error) {
       if (!stopped && mounted.value && registerId() === currentId) {
-        state.refreshFailed = true
-        alertStore.error(error, { fallback: 'Сверка выполнена, но не удалось обновить данные реестра' })
+        await recoverPageLoad(router, error, 'Сверка выполнена, но не удалось обновить данные реестра')
       } else reportError(error, { context: 'reconciliation refresh after disposal or route change' })
     }
   }
@@ -161,7 +159,6 @@ export function useRegisterReconciliation({ store, authStore, alertStore, regist
     state.result = null
     state.summaryVisible = false
     state.error.show = false
-    state.refreshFailed = false
     await start()
   }
   async function retry() {
@@ -185,5 +182,5 @@ export function useRegisterReconciliation({ store, authStore, alertStore, regist
     runningAction.value = false
     // Server-side work deliberately continues; teardown never replays or cancels an import.
   }
-  return { state, locked, cancel, fileInput, accept: EXCEL_FILE_ACCEPT, openFile, selectFile, retry, acknowledgeUnknown, refresh, stop }
+  return { state, locked, cancel, fileInput, accept: EXCEL_FILE_ACCEPT, openFile, selectFile, retry, acknowledgeUnknown, stop }
 }

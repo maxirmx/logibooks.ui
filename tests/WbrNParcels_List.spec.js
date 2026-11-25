@@ -697,7 +697,8 @@ describe('WbrNParcels_List.vue', () => {
       7,
       expect.any(Object),
       expect.any(Object),
-      expect.any(Object)
+      expect.any(Object),
+      {}
     )
 
     await wrapper.get('[data-testid="assign-confirm"]').trigger('click')
@@ -886,7 +887,8 @@ describe('WbrNParcels_List.vue', () => {
       7,
       expect.any(Object),
       expect.any(Object),
-      expect.any(Object)
+      expect.any(Object),
+      {}
     )
 
     parcelsSortBy.value = [{ key: 'frozenOrder', order: 'desc' }]
@@ -1018,11 +1020,7 @@ describe('WbrNParcels_List.vue', () => {
       await wrapper.get('[data-testid="reconciliation-new-run"]').trigger('click')
       await resolveAll()
       expect(wrapper.vm.reconciliationState.phase).toBe('unknown')
-      wrapper.vm.reconciliationState.refreshFailed = true
-      await wrapper.vm.$nextTick()
-      await wrapper.get('[data-testid="reconciliation-refresh"]').trigger('click')
-      await resolveAll()
-      expect(wrapper.vm.reconciliationState.refreshFailed).toBe(false)
+      expect(wrapper.find('[data-testid="reconciliation-refresh"]').exists()).toBe(false)
     } finally { wrapper.unmount(); delete registerItem.theOtherCountryCode }
   })
 

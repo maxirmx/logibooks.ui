@@ -19,14 +19,16 @@ import { BOX_SCAN, PARCEL_SCAN } from '@/helpers/manual.scan.helpers.js'
 import LocalLabelPrinting from '@/components/LocalLabelPrinting.vue'
 import { LABEL_PRINTING_KEY } from '@/helpers/label.printing.helpers.js'
 import ActionButton from '@/components/ActionButton.vue'
+import ScanjobMonitorModeToggle from '@/components/ScanjobMonitorModeToggle.vue'
 import RegisterBoxStickerExportButton from '@/components/RegisterBoxStickerExportButton.vue'
 import { canClearParcelExtId, getClearParcelExtIdErrorMessage } from '@/helpers/parcel.ext-id.helpers.js'
 import FieldError from '@/components/FieldError.vue'
 import ScanjobBoxesMonitor from '@/dialogs/Scanjob_Boxes_Monitor.vue'
 import ScanjobParcelsMonitor from '@/dialogs/Scanjob_Parcels_Monitor.vue'
 import { formatRegisterInvoice } from '@/helpers/register.heading.helpers.js'
+import { recoverPageLoad } from '@/helpers/login.navigation.js'
 import { navigateToEditParcel } from '@/helpers/parcels.list.helpers.js'
-import { getCurrentInternalRoute } from '@/helpers/parcel.navigation.helpers.js'
+import { getCurrentInternalRoute, normalizeInternalReturnUrl } from '@/helpers/parcel.navigation.helpers.js'
 import { OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 import { getErrorMessage, reportError } from '@/helpers/error.helpers.js'
 import {
@@ -37,12 +39,15 @@ import {
   isUnassignedMonitorBox,
   scanjobMonitorArea,
   scanjobMonitorTargetKind,
+  scanjobMonitorLocation,
+  scanjobMonitorMode,
   supportsLookupMonitor
 } from '@/helpers/scanjob.monitor.helpers.js'
 import '@/assets/styles/scanjob-monitor.css'
 
 const props = defineProps({
   scanjobId: { type: Number, required: true },
+  lookupView: { type: Object, default: null },
   monitorScope: {
     type: Object,
     default: () => ({
@@ -69,8 +74,10 @@ const scanjobIdRef = computed(() => props.scanjobId)
 const { scanjobHeading, loadScanjob } = useScanjobHeading(scanjobIdRef, { isComponentMounted })
 
 const printingPanel = ref(null)
+const lookupMonitor = ref(null)
+const lookupDetailsLoaded = ref(false)
 provide(LABEL_PRINTING_KEY, {
-  busy: computed(() => manualScan.locked.value || (printingPanel.value?.busy ?? true)),
+  busy: computed(() => manualScanLocked.value || (printingPanel.value?.busy ?? true)),
   print: (target) => printingPanel.value?.printParcel(target)
 })
 
@@ -99,7 +106,7 @@ const scanjobLoaded = ref(false)
 const loadedScanjobId = ref(null)
 const jumpNumber = ref('')
 const jumpLoading = ref(false)
-const selectedParcelId = ref(null)
+const selectedParcelId = ref(toNumberOrNull(router.currentRoute.value.query?.selectedParcelId))
 const lastJumpNotificationId = ref(null)
 
 const JUMP_EMPTY_MESSAGE = 'Введите номер посылки или коробки'
@@ -111,13 +118,18 @@ let throttleTimer = null
 
 const isRegisterMode = computed(() => mode.value === MODE_REGISTER)
 const isBoxMode = computed(() => mode.value === MODE_BOX)
-const isLoading = computed(() => monitorLoading.value || switchingScope.value)
+const isLookupMode = computed(() => props.lookupView != null)
+const lookupSnapshot = computed(() => lookupMonitor.value?.snapshot)
+const monitorJob = computed(() => isLookupMode.value ? lookupSnapshot.value : scanjob.value)
+const toolbarSnapshot = computed(() => isLookupMode.value ? lookupSnapshot.value : visibleSnapshot.value)
+const isLoading = computed(() => isLookupMode.value ? lookupMonitor.value?.busy ?? true : monitorLoading.value || switchingScope.value)
 const toolbarBusy = computed(() => isLoading.value || jumpLoading.value || followUsersLoading.value ||
-  followApplyLoading.value || defectActionRunning.value || manualScan.busy.value || printingPanel.value?.operationInProgress)
+  followApplyLoading.value || defectActionRunning.value || manualScan?.busy.value || printingPanel.value?.operationInProgress)
 const printQueue = computed(() => printingPanel.value?.queueStatus ?? { queued: 0, paused: false })
 const boxes = computed(() => visibleSnapshot.value?.boxes ?? [])
 const selectedBox = computed(() => visibleSnapshot.value?.box ?? null)
 const closedInfo = computed(() => {
+  if (isLookupMode.value) return lookupMonitor.value?.closed
   if (closedStatus.value) {
     return closedStatus.value
   }
@@ -127,15 +139,15 @@ const closedInfo = computed(() => {
     : null
 })
 const scanjobStatusText = computed(() => getScanJobStatusText(scanjob.value?.status))
-const registerId = computed(() => scanjob.value?.registerId ?? null)
+const registerId = computed(() => monitorJob.value?.registerId ?? null)
 const readOnly = computed(
   () =>
-    visibleSnapshot.value?.readOnly === true ||
-    scanjob.value?.readOnly === true ||
+    toolbarSnapshot.value?.readOnly === true ||
+    monitorJob.value?.readOnly === true ||
     activeRegisterItem.value?.readOnly === true
 )
 const activeRegisterItem = computed(() => {
-  const currentRegisterId = scanjob.value?.registerId
+  const currentRegisterId = registerId.value
   const storeRegister = registersStore.item
 
   if (!currentRegisterId) return null
@@ -144,7 +156,7 @@ const activeRegisterItem = computed(() => {
 
   return storeRegister
 })
-const manualScan = useManualScan({
+const manualScan = isLookupMode.value ? null : useManualScan({
   target: computed(() => isRegisterMode.value ? BOX_SCAN : PARCEL_SCAN),
   registerId, job: scanjob,
   readOnly,
@@ -152,9 +164,10 @@ const manualScan = useManualScan({
   scopeKey: () => `${props.scanjobId}:${monitorScopeKey(props.monitorScope)}`,
   refresh: refreshCurrentScopeSnapshot
 })
-const controlsBusy = computed(() => isLoading.value || manualScan.locked.value)
+const manualScanLocked = computed(() => manualScan?.locked.value === true)
+const controlsBusy = computed(() => isLoading.value || manualScanLocked.value)
 let deferredFollowEvent = null
-watch(manualScan.locked, busy => {
+watch(manualScanLocked, busy => {
   if (!busy && deferredFollowEvent) {
     const deferred = deferredFollowEvent
     deferredFollowEvent = null
@@ -164,13 +177,15 @@ watch(manualScan.locked, busy => {
   }
 })
 const basicHeading = computed(() => {
-  if (registerLoading.value || !activeRegisterItem.value) return scanjobHeading.value
+  const heading = isLookupMode.value ? lookupSnapshot.value?.scanJobName : scanjobHeading.value
+  if (!heading || registerLoading.value || !activeRegisterItem.value) return heading
   const invoiceInfo = formatRegisterInvoice(activeRegisterItem.value, (id) =>
     registersStore.getTransportationDocument(id)
   )
-  return `${scanjobHeading.value} (${invoiceInfo || 'ТСД отсутствует'})`
+  return `${heading} (${invoiceInfo || 'ТСД отсутствует'})`
 })
 const scopeHeading = computed(() => {
+  if (isLookupMode.value) return 'Посылки для поиска'
   if (isBoxMode.value) {
     if (
       Number(selectedArea.value) === scanJobsStore.scanjobMonitorArea.Unassigned ||
@@ -185,7 +200,7 @@ const scopeHeading = computed(() => {
   return 'Коробки'
 })
 const monitorHeading = computed(
-  () => `${basicHeading.value} | ${scopeHeading.value}`
+  () => [basicHeading.value, scopeHeading.value].filter(Boolean).join(' | ')
 )
 const followUserOptions = computed(() => [
   { title: 'Не следить (Esc)', value: null },
@@ -208,24 +223,37 @@ async function handleCloseAction() {
   }
 
   if (isBoxMode.value) {
-    await navigateToRegisterMonitor({ replace: true })
+    try {
+      const returnUrl = getLookupReturnUrl()
+      const result = returnUrl ? await router.replace(returnUrl) : await navigateToRegisterMonitor({ replace: true })
+      if (isNavigationFailure(result) && !isNavigationFailure(result, NavigationFailureType.duplicated)) throw result
+    } catch (error) {
+      const fallback = 'Не удалось закрыть монитор коробки'
+      if (isComponentMounted.value) alertStore.error(error, { fallback })
+      reportError(error, { context: fallback })
+    }
     return
   }
 
   close()
 }
 
-function openUnregisteredParcels() {
-  if (!registerId.value || manualScan.locked.value) {
+async function openUnregisteredParcels() {
+  if (!registerId.value || manualScanLocked.value) {
     return
   }
 
-  router.push({
-    path: `/registers/${registerId.value}/unregistered-parcels`,
-    query: {
-      returnUrl: router.currentRoute.value.fullPath
-    }
-  })
+  try {
+    const failure = await router.push({
+      path: `/registers/${registerId.value}/unregistered-parcels`,
+      query: { returnUrl: router.currentRoute.value.fullPath }
+    })
+    if (failure && !isNavigationFailure(failure, NavigationFailureType.duplicated | NavigationFailureType.cancelled)) throw failure
+  } catch (error) {
+    const fallback = 'Не удалось открыть стикеры вне реестра'
+    reportError(error, { context: fallback })
+    if (isComponentMounted.value) alertStore.error(error, { fallback })
+  }
 }
 
 function getFollowUserLabel(user) {
@@ -257,7 +285,7 @@ async function applyFollowUserSelection() {
   followApplyLoading.value = true
   selectedFollowUserId.value = toNumberOrNull(draftFollowUserId.value)
   try {
-    const applied = await startFollowUserSubscription({ subscribe: canSubscribeToMonitor(scanjob.value) })
+    const applied = await startFollowUserSubscription()
     if (applied && isComponentMounted.value) {
       authStore.setScanjobMonitorFollowUserId(selectedFollowUserId.value)
       cancelEditor()
@@ -301,14 +329,28 @@ function monitorRouteForScope(scope) {
     }
   }
 
-  return {
-    name: 'scanjob-monitor-register',
-    params
-  }
+  return scanjobMonitorLocation(props.scanjobId, scanjobMonitorMode.Boxes)
+}
+
+function getLookupReturnUrl() {
+  const returnUrl = normalizeInternalReturnUrl(router.currentRoute.value?.query?.returnUrl)
+  if (!returnUrl) return null
+
+  const lookupRoute = scanjobMonitorLocation(props.scanjobId, scanjobMonitorMode.Lookup)
+  const lookupPath = router.resolve(lookupRoute).path
+  const returnPath = returnUrl.split(/[?#]/, 1)[0].replace(/\/$/, '')
+  return returnPath === lookupPath ? returnUrl : null
 }
 
 function updateMonitorRoute(scope, { replace = false } = {}) {
   const route = monitorRouteForScope(scope)
+  if (route.params.boxId != null || route.params.bucketIndex != null) {
+    const returnUrl = isLookupMode.value ? getCurrentInternalRoute(router) : getLookupReturnUrl()
+    if (returnUrl) route.query = { returnUrl }
+  }
+  if (isLookupMode.value && selectedParcelId.value != null) {
+    route.query = { ...route.query, selectedParcelId: String(selectedParcelId.value) }
+  }
   const navigate = replace ? router.replace(route) : router.push(route)
   return Promise.resolve(navigate).catch((error) => {
     if (isNavigationFailure(error, NavigationFailureType.duplicated)) {
@@ -524,19 +566,24 @@ function toNumberOrNull(value) {
 }
 
 async function loadScanjobAndRegister() {
-  const loaded = await loadScanjob()
-  if (!isComponentMounted.value || !loaded) {
+  const id = props.scanjobId
+  const isCurrent = () => isComponentMounted.value && props.scanjobId === id
+  try {
+    const loaded = await loadScanjob()
+    if (!isCurrent()) return null
+    if (!loaded) throw new Error('Не удалось загрузить задание на сканирование')
+
+    await loadRegister(loaded)
+    if (!isCurrent()) return null
+    loadedScanjobId.value = id
+    scanjobLoaded.value = true
+    return loaded
+  } catch (error) {
+    const fallback = 'Не удалось открыть монитор задания на сканирование'
+    if (isCurrent()) await recoverPageLoad(router, error, fallback)
+    else reportError(error, { context: fallback })
     return null
   }
-
-  await loadRegister(loaded)
-  if (!isComponentMounted.value) {
-    return null
-  }
-
-  loadedScanjobId.value = props.scanjobId
-  scanjobLoaded.value = true
-  return loaded
 }
 
 async function loadFollowUsers() {
@@ -594,7 +641,7 @@ function normalizeMonitorScope(scope = {}) {
 }
 
 function getMonitorTargetErrorMessage(error) {
-  return error?.message || JUMP_FALLBACK_ERROR_MESSAGE
+  return getErrorMessage(error, JUMP_FALLBACK_ERROR_MESSAGE)
 }
 
 function showJumpError(message) {
@@ -729,12 +776,21 @@ async function startFollowUserSubscription({
 } = {}) {
   followSubscriptionActive.value = false
   try {
-    await scanJobsStore.clearMonitorFollowUser()
+    const lookupChannel = lookupMonitor.value
+    if (isLookupMode.value) await lookupChannel?.clearFollowUser()
+    else await scanJobsStore.clearMonitorFollowUser()
+
     const userId = toNumberOrNull(selectedFollowUserId.value)
-    if (!subscribe || userId == null || !canSubscribeToMonitor(scanjob.value)) return true
-    await scanJobsStore.startMonitorFollowUser(props.scanjobId, userId, {
-      onFollowEvent: (followEvent) => handleFollowEvent(followEvent, version)
-    })
+    if (!subscribe || userId == null || !canSubscribeToMonitor(monitorJob.value)) return true
+    if (!isComponentMounted.value || version !== scopeVersion.value) return false
+    const handlers = { onFollowEvent: followEvent => handleFollowEvent(followEvent, version) }
+    if (isLookupMode.value) {
+      if (!lookupChannel?.liveReady) return true
+      await lookupChannel.followUser(props.scanjobId, userId, handlers)
+      if (!lookupChannel.liveReady) return false
+    } else {
+      await scanJobsStore.startMonitorFollowUser(props.scanjobId, userId, handlers)
+    }
     if (isComponentMounted.value && version === scopeVersion.value && !closedInfo.value) {
       followSubscriptionActive.value = true
     }
@@ -748,8 +804,8 @@ async function startFollowUserSubscription({
 }
 
 async function handleFollowEvent(followEvent, version = scopeVersion.value) {
-  if (manualScan.includesCompletedScan(followEvent?.scanCodeId)) return
-  if (manualScan.locked.value) {
+  if (manualScan?.includesCompletedScan(followEvent?.scanCodeId)) return
+  if (manualScanLocked.value) {
     deferredFollowEvent = { event: followEvent, version }
     return
   }
@@ -765,8 +821,13 @@ async function handleFollowEvent(followEvent, version = scopeVersion.value) {
     return
   }
 
-  const targetScope = normalizeFollowTarget(followEvent?.followTarget)
   const targetParcelId = toNumberOrNull(followEvent?.followTarget?.parcelId)
+  if (isLookupMode.value) {
+    selectedParcelId.value = targetParcelId
+    return
+  }
+
+  const targetScope = normalizeFollowTarget(followEvent?.followTarget)
 
   if (targetScope.area === scanjobMonitorArea.Boxes) {
     selectedParcelId.value = null
@@ -845,7 +906,7 @@ function handleMonitorClosed(scanJobId, status, version) {
 }
 
 function getMonitorErrorMessage(error) {
-  if (error?.status === 400) {
+  if (!isLookupMode.value && error?.status === 400) {
     return 'Монитор доступен только для активного задания сканирования коробок и посылок'
   }
 
@@ -874,13 +935,22 @@ async function observeScope(scope, { subscribe = true } = {}) {
       await scanJobsStore.startMonitor(props.scanjobId, {
         ...scope,
         onSnapshot: (nextSnapshot) => applySnapshot(nextSnapshot, { version, source: 'live' }),
-        onClosed: (scanJobId, status) => handleMonitorClosed(scanJobId, status, version)
+        onClosed: (scanJobId, status) => handleMonitorClosed(scanJobId, status, version),
+        onConnectionError: error => {
+          if (isComponentMounted.value && version === scopeVersion.value && !closedInfo.value) {
+            void recoverPageLoad(router, error, 'Не удалось подключить обновления монитора сканирования')
+          }
+        }
       })
       await startFollowUserSubscription({ subscribe, version })
     }
   } catch (error) {
-    if (isComponentMounted.value && version === scopeVersion.value) {
+    if (!isComponentMounted.value || version !== scopeVersion.value) {
+      reportError(error, { context: 'Загрузка устаревшей области монитора сканирования' })
+    } else if (error?.status === 400) {
       alertStore.error(getMonitorErrorMessage(error))
+    } else {
+      await recoverPageLoad(router, error, 'Ошибка при загрузке монитора сканирования')
     }
   } finally {
     if (isComponentMounted.value && version === scopeVersion.value) {
@@ -942,7 +1012,27 @@ async function initializeMonitor() {
   }
 }
 
-onMounted(initializeMonitor)
+onMounted(() => {
+  if (!isLookupMode.value) void initializeMonitor()
+})
+
+watch(() => lookupSnapshot.value?.registerId, async id => {
+  if (!id) return
+
+  await Promise.all([
+    loadRegister({ registerId: id }).catch(error => {
+      if (isComponentMounted.value) alertStore.error(error, { fallback: 'Не удалось загрузить данные партии' })
+      else reportError(error, { context: 'Загрузка данных партии после закрытия монитора' })
+    }),
+    loadFollowUsers()
+  ])
+  if (isComponentMounted.value) lookupDetailsLoaded.value = true
+})
+
+watch(() => lookupDetailsLoaded.value && lookupMonitor.value?.liveReady === true, ready => {
+  if (!ready) followSubscriptionActive.value = false
+  else if (selectedFollowUserId.value != null) void startFollowUserSubscription()
+})
 
 watch(
   () => monitorRouteKey(),
@@ -972,6 +1062,7 @@ watch(
 onUnmounted(() => {
   isComponentMounted.value = false
   scopeVersion.value += 1
+  if (isLookupMode.value) return
   clearPendingSnapshot()
   clearFollowUserSubscription().catch((error) => {
     reportError(error, { context: 'scan job unmount follow-user cleanup' })
@@ -990,15 +1081,15 @@ defineExpose({
 </script>
 
 <template>
-  <div class="settings table-3">
+  <div class="settings table-3" :class="{ 'list-with-filters': isLookupMode }">
     <div class="header-with-actions">
       <h1 class="primary-heading">{{ monitorHeading }}</h1>
       <div class="header-actions-bar">
         <div v-if="toolbarBusy" class="header-actions header-actions-group" data-testid="scanjob-monitor-operation-loading" role="status" aria-label="Операция выполняется">
           <span class="spinner-border spinner-border-m"></span>
         </div>
-        <LocalLabelPrinting :disabled="manualScan.locked.value" ref="printingPanel" :scan-job-id="props.scanjobId" :user-id="selectedFollowUserId"
-          :active="scanjob?.status === SCAN_JOB_STATUS_IN_PROGRESS && !closedInfo" />
+        <LocalLabelPrinting :disabled="manualScanLocked" ref="printingPanel" :scan-job-id="props.scanjobId" :user-id="selectedFollowUserId"
+          :active="monitorJob?.status === SCAN_JOB_STATUS_IN_PROGRESS && !closedInfo" />
         <div class="header-actions header-actions-group scanjob-monitor-navigation">
           <form v-if="activeEditor === 'jump'" class="scanjob-monitor-editor" data-testid="scanjob-monitor-jump" @submit.prevent="handleJumpToNumber">
             <div class="scanjob-monitor-editor-row">
@@ -1041,7 +1132,7 @@ defineExpose({
             tooltip-text="Стикеры не в реестре"
             aria-label="Стикеры не в реестре"
             data-testid="scanjob-monitor-unregistered-action"
-            :disabled="!registerId || manualScan.locked.value"
+            :disabled="!registerId || manualScanLocked"
             @click="openUnregisteredParcels"
           />
         </div>
@@ -1075,11 +1166,17 @@ defineExpose({
           <ActionButton v-else :item="{}" icon="fa-solid fa-magnifying-glass-plus" icon-size="2x"
             :variant="followSubscriptionActive ? 'green' : 'default'"
             tooltip-text="Следить за сканером" aria-label="Следить за сканером" data-testid="scanjob-monitor-follow-user-open"
-            :disabled="controlsBusy || followUsersLoading || jumpLoading" @click="startEditor('follow')" />
+            :disabled="controlsBusy || followUsersLoading || jumpLoading || (isLookupMode && !lookupDetailsLoaded)" @click="startEditor('follow')" />
+          <ScanjobMonitorModeToggle
+            v-if="supportsLookupMonitor(monitorJob)"
+            :scanjob-id="props.scanjobId"
+            :mode="isLookupMode ? scanjobMonitorMode.Lookup : scanjobMonitorMode.Boxes"
+            :disabled="controlsBusy || toolbarBusy"
+          />
         </div>
         <div class="header-actions header-actions-group">
           <RegisterBoxStickerExportButton
-            v-if="isRegisterMode && visibleSnapshot && !closedInfo && !monitorStatusOnly"
+            v-if="isRegisterMode && toolbarSnapshot && !closedInfo && !monitorStatusOnly"
             :key="props.scanjobId"
             :register-id="registerId"
             :disabled="controlsBusy"
@@ -1101,15 +1198,19 @@ defineExpose({
     <hr class="hr" />
 
     <PageAlertRegion />
-    <nav v-if="supportsLookupMonitor(scanjob)" class="scanjob-monitor-view-switch" aria-label="Режим монитора сканирования">
-      <v-btn :to="{ name: 'scanjob-monitor-register', params: { id: props.scanjobId } }" :disabled="controlsBusy">Коробки</v-btn>
-      <v-btn :to="{ name: 'scanjob-monitor-lookup', params: { id: props.scanjobId } }" :disabled="controlsBusy">Посылки для поиска</v-btn>
-    </nav>
     <div v-if="readOnly" class="alert alert-warning read-only-notice">
       Изменения и операции сканирования запрещены. Мониторинг и просмотр посылок доступны.
     </div>
 
-    <div class="scanjob-monitor-panel">
+    <component
+      v-if="isLookupMode"
+      :is="props.lookupView"
+      ref="lookupMonitor"
+      :scanjob-id="props.scanjobId"
+      :selected-parcel-id="selectedParcelId"
+      :navigate-to-box="navigateToBoxMonitor"
+    />
+    <div v-else class="scanjob-monitor-panel">
       <div
         v-if="isLoading && !visibleSnapshot"
         class="monitor-empty"
@@ -1138,9 +1239,7 @@ defineExpose({
         v-else-if="monitorError && !visibleSnapshot"
         class="monitor-empty"
         data-testid="scanjob-monitor-unavailable"
-      >
-        {{ getMonitorErrorMessage(monitorError) }}
-      </div>
+      />
 
       <template v-else>
         <ScanjobBoxesMonitor

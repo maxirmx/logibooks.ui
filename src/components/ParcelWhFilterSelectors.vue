@@ -9,9 +9,9 @@ import ResponsiveFilterBar from '@/components/ResponsiveFilterBar.vue'
 import ParcelSavedFilterSelector from '@/components/ParcelSavedFilterSelector.vue'
 
 const props = defineProps({
-  statusOptions: { type: Array, required: true },
-  checkStatusProjectionOptions: { type: Array, required: true },
-  zoneOptions: { type: Array, required: true },
+  statusOptions: { type: Array, default: null },
+  checkStatusProjectionOptions: { type: Array, default: null },
+  zoneOptions: { type: Array, default: null },
   numberLabel: { type: String, default: 'Номер отправления' },
   runningAction: { type: Boolean, default: false },
   loading: { type: Boolean, default: false },
@@ -92,6 +92,7 @@ const localProductNameSearchModel = computed({
   >
     <ParcelSavedFilterSelector :disabled="disabledState.selectsDisabled" />
     <v-select
+      v-if="checkStatusProjectionOptions"
       v-model="parcelsWhCheckStatusProjectionModel"
       :items="checkStatusProjectionOptions"
       item-title="title"
@@ -103,6 +104,7 @@ const localProductNameSearchModel = computed({
       :disabled="disabledState.selectsDisabled"
     />
     <v-select
+      v-if="zoneOptions"
       v-model="parcelsWhZoneModel"
       :items="zoneOptions"
       item-title="title"
@@ -114,6 +116,7 @@ const localProductNameSearchModel = computed({
       :disabled="disabledState.selectsDisabled"
     />
     <v-select
+      v-if="statusOptions"
       v-model="parcelsWhStatusModel"
       :items="statusOptions"
       item-title="title"

@@ -16,17 +16,15 @@ import BoxStickerContextMenu from '@/components/BoxStickerContextMenu.vue'
 import ScanjobMonitorSummary from '@/components/ScanjobMonitorSummary.vue'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import {
+  buildScanjobProgressCards,
   formatBoxDimensions,
   formatBoxWeight,
-  formatCount,
-  formatParcelProgress,
   formatScanTime,
   getLookupParcelProgressStats,
   getParcelProgressStats,
   monitorBoxStickerClass,
   monitorBoxStickerText,
   scanjobBoxHeaders,
-  scanjobParcelsProgressTitle,
   valueOrDash
 } from '@/helpers/scanjob.monitor.helpers.js'
 import '@/assets/styles/scanjob-monitor.css'
@@ -64,26 +62,9 @@ const summaryCards = computed(() => {
   const snapshot = props.snapshot
   if (!snapshot) return []
 
-  const { lookupRemainingCount, lookupFoundCount, lookupNotFoundCount } = snapshot
-  const hasLookupStats = lookupRemainingCount != null || lookupFoundCount != null || lookupNotFoundCount != null
+  const { lookupRemainingCount, lookupNotFoundCount } = snapshot
   return [
-    {
-      key: 'boxes',
-      label: 'Коробки всего / сканировано / не сканировано',
-      value: `${snapshot.totalBoxes ?? 0} / ${snapshot.boxesWithStickerScanned ?? 0} / ${snapshot.boxesWithStickerNotScanned ?? 0}`,
-    },
-    {
-      key: 'parcels',
-      label: scanjobParcelsProgressTitle,
-      value: formatParcelProgress(snapshot),
-    },
-    ...(hasLookupStats ? [{
-      key: 'lookupProgress',
-      label: 'Найдено / Не найдено',
-      value: [lookupFoundCount, lookupNotFoundCount]
-        .map(count => count == null ? '—' : formatCount(count))
-        .join(' / ')
-    }] : []),
+    ...buildScanjobProgressCards(snapshot),
     {
       key: 'unregistered',
       label: 'Стикеры не в реестре',

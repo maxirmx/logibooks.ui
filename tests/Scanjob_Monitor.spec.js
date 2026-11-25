@@ -9,6 +9,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import ScanjobMonitor from '@/dialogs/Scanjob_Monitor.vue'
 import { defaultGlobalStubs } from './helpers/test-utils'
+import { getErrorMessage } from '@/helpers/error.helpers.js'
 import { OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 import { useLabelPrintingStore } from '@/stores/label.printing.store.js'
 
@@ -27,6 +28,8 @@ vi.mock('@/services/qz.printing.js', async (original) => {
 const mockBack = vi.hoisted(() => vi.fn())
 const mockPush = vi.hoisted(() => vi.fn())
 const mockReplace = vi.hoisted(() => vi.fn())
+const clearSession = vi.hoisted(() => vi.fn())
+const mockResolve = vi.hoisted(() => vi.fn())
 const mockCurrentRoute = vi.hoisted(() => ({
   value: { fullPath: '/scanjobs/42/monitor' }
 }))
@@ -83,6 +86,7 @@ const stopMonitor = vi.hoisted(() => vi.fn())
 const startMonitorFollowUser = vi.hoisted(() => vi.fn())
 const clearMonitorFollowUser = vi.hoisted(() => vi.fn())
 const setScanjobMonitorFollowUserId = vi.hoisted(() => vi.fn())
+const setScanjobMonitorMode = vi.hoisted(() => vi.fn())
 const persistedFollowUserId = vi.hoisted(() => ({
   __v_isRef: true,
   value: null
@@ -327,6 +331,7 @@ vi.mock(
       back: mockBack,
       push: mockPush,
       replace: mockReplace,
+      resolve: mockResolve,
       currentRoute: mockCurrentRoute
     }
   }),
@@ -401,6 +406,8 @@ vi.mock('@/stores/auth.store.js', () => ({
       return persistedFollowUserId.value
     },
     setScanjobMonitorFollowUserId,
+    clearSession,
+    setScanjobMonitorMode,
     hasLogistRole,
     isAdmin,
     isWhManager,
@@ -516,6 +523,7 @@ describe('Scanjob_Monitor.vue', () => {
     vi.clearAllMocks()
     manualConfirm.mockReset().mockResolvedValue(true)
     mockCurrentRoute.value = { fullPath: '/scanjobs/42/monitor' }
+    mockResolve.mockReturnValue({ path: '/scanjobs/42/monitor/lookup' })
     mockAlert.value = null
     alertError.mockImplementation((error) => {
       mockAlert.value = { id: 71, severity: 'error', message: error?.message || String(error) }
@@ -558,15 +566,68 @@ describe('Scanjob_Monitor.vue', () => {
     })
   })
 
-  it('shows both monitor views for Lookup jobs on supported registers', async () => {
+  it('switches a Lookup job from the header and saves the mode after navigation succeeds', async () => {
     mockScanjob.value = { ...mockScanjob.value, registerType: 1 }
+    getById.mockResolvedValue(mockScanjob.value)
+    let finishNavigation
+    mockReplace.mockImplementationOnce(location => new Promise(resolve => {
+      finishNavigation = () => {
+        mockCurrentRoute.value = { ...location, fullPath: '/scanjobs/42/monitor/lookup' }
+        resolve()
+      }
+    }))
+    const wrapper = mount(ScanjobMonitor, { props: { scanjobId: 42 }, global: { stubs: monitorGlobalStubs } })
+    await flushPromises()
+
+    const button = wrapper.get('.header-actions-bar [data-testid="scanjob-monitor-mode-toggle"]')
+    expect(button.attributes('aria-label')).toBe('Монитор поиска')
+    expect(button.get('.fa-stub').attributes('data-icon')).toBe('fa-solid fa-filter')
+    expect(button.classes()).not.toContain('anti-btn-green')
+    expect(wrapper.find('nav[aria-label="Режим монитора сканирования"]').exists()).toBe(false)
+    const follow = wrapper.get('[data-testid="scanjob-monitor-follow-user-open"]')
+    expect(follow.isVisible()).toBe(true)
+    expect(button.element.closest('.header-actions-group')).toBe(follow.element.closest('.header-actions-group'))
+    await button.trigger('click')
+    expect(button.element.disabled).toBe(true)
+    expect(mockReplace).toHaveBeenCalledExactlyOnceWith({ name: 'scanjob-monitor-lookup', params: { id: 42 } })
+    expect(setScanjobMonitorMode).not.toHaveBeenCalled()
+    finishNavigation()
+    await flushPromises()
+    expect(setScanjobMonitorMode).toHaveBeenCalledExactlyOnceWith('lookup')
+    wrapper.unmount()
+  })
+
+  it.each([
+    { operation: 10, registerType: 1 }, { operation: 30, registerType: 4 }
+  ])('hides the mode switch for unsupported jobs (%j)', async (job) => {
+    mockScanjob.value = { ...mockScanjob.value, ...job }
     getById.mockResolvedValue(mockScanjob.value)
     const wrapper = mount(ScanjobMonitor, { props: { scanjobId: 42 }, global: { stubs: monitorGlobalStubs } })
     await flushPromises()
-    const nav = wrapper.get('nav[aria-label="Режим монитора сканирования"]')
-    expect(nav.text()).toContain('Коробки')
-    expect(nav.text()).toContain('Посылки для поиска')
+    expect(wrapper.find('[data-testid="scanjob-monitor-mode-toggle"]').exists()).toBe(false)
     wrapper.unmount()
+  })
+
+  it('shows a rejected mode switch once and keeps the current preference', async () => {
+    mockScanjob.value = { ...mockScanjob.value, registerType: 1 }
+    getById.mockResolvedValue(mockScanjob.value)
+    const failure = new Error('Failed to load route chunk')
+    mockReplace.mockRejectedValueOnce(failure)
+    const report = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const wrapper = mount(ScanjobMonitor, { props: { scanjobId: 42 }, global: { stubs: monitorGlobalStubs } })
+    try {
+      await flushPromises()
+      await wrapper.get('button[data-testid="scanjob-monitor-mode-toggle"]').trigger('click')
+      await flushPromises()
+      expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+      expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось переключить режим монитора')
+      expect(wrapper.get('[role="alert"]').text()).not.toContain(failure.message)
+      expect(report).toHaveBeenCalledWith('[Не удалось переключить режим монитора]', failure)
+      expect(setScanjobMonitorMode).not.toHaveBeenCalled()
+    } finally {
+      wrapper.unmount()
+      report.mockRestore()
+    }
   })
 
   it('preserves jump input on a resolved navigation failure and allows retry', async () => {
@@ -583,7 +644,7 @@ describe('Scanjob_Monitor.vue', () => {
     await wrapper.get('[data-testid="scanjob-monitor-jump-action"]').trigger('click')
     await flushPromises()
     expect(wrapper.get('[data-testid="scanjob-monitor-jump-input"]').element.value).toBe('BOX-7')
-    expect(wrapper.get('[role="alert"]').text()).toContain(failure.message)
+    expect(wrapper.get('[role="alert"]').text()).toContain('Операция отменена.')
     expect(alertError).toHaveBeenCalledOnce()
     await wrapper.get('[data-testid="scanjob-monitor-jump-action"]').trigger('click')
     await flushPromises()
@@ -613,7 +674,7 @@ describe('Scanjob_Monitor.vue', () => {
 
   it.each([
     ''
-  ])('uses the existing heading fallback for an unnamed scanjob: %j', async (name) => {
+  ])('shows only the scope for an unnamed scanjob: %j', async (name) => {
     mockScanjob.value = { ...mockScanjob.value, name }
     getById.mockResolvedValue(mockScanjob.value)
     const wrapper = mount(ScanjobMonitor, {
@@ -623,10 +684,46 @@ describe('Scanjob_Monitor.vue', () => {
     await flushPromises()
 
     expect(wrapper.get('.primary-heading').text()).toBe(
-      'Результаты сканирования (Авианакладная INV-101) | Коробки'
+      'Коробки'
     )
     wrapper.unmount()
     await flushPromises()
+  })
+
+  it.each(['job', 'snapshot', 'connection'])('returns to login on a terminal %s error', async source => {
+    const error = new Error('Invalid monitor response')
+    if (source === 'job') getById.mockRejectedValueOnce(error)
+    if (source === 'snapshot') loadMonitorSnapshot.mockRejectedValueOnce(error)
+    mockReplace.mockImplementationOnce(async () => {
+      mockCurrentRoute.value = { path: '/login', fullPath: '/login' }
+    })
+    alertError.mockImplementationOnce((failure, { fallback }) => {
+      mockAlert.value = { id: 71, severity: 'error', message: getErrorMessage(failure, fallback) }
+      return 71
+    })
+    const diagnostics = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    try {
+      const wrapper = mount(ScanjobMonitor, {
+        props: { scanjobId: 42 },
+        global: { stubs: monitorGlobalStubs }
+      })
+      await flushPromises()
+      if (source === 'connection') {
+        const { onConnectionError } = startMonitor.mock.lastCall[1]
+        onConnectionError(error)
+        onConnectionError(error)
+        await flushPromises()
+      }
+      if (source === 'job') expect(wrapper.get('.primary-heading').text()).toBe('Коробки')
+      expect(mockReplace).toHaveBeenCalledExactlyOnceWith('/login')
+      expect(clearSession).toHaveBeenCalledOnce()
+      expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+      expect(wrapper.get('[role="alert"]').text()).toMatch(/Не удалось|Ошибка при загрузке/)
+      expect(wrapper.text()).not.toContain(error.message)
+      wrapper.unmount()
+    } finally {
+      diagnostics.mockRestore()
+    }
   })
 
   it.each([
@@ -1118,7 +1215,7 @@ describe('Scanjob_Monitor.vue', () => {
     await flushPromises()
 
     expect(loadMonitorSnapshot).not.toHaveBeenCalled()
-    expect(wrapper.get('.primary-heading').text()).toBe('Загрузка задания на сканирование... | Коробки')
+    expect(wrapper.get('.primary-heading').text()).toBe('Коробки')
 
     resolveScanjob({ id: 42, name: 'Scanjob A', type: 30, operation: 30, status: 15, registerId: 101 })
     await flushPromises()
@@ -1153,11 +1250,14 @@ describe('Scanjob_Monitor.vue', () => {
     )
   })
 
-  it('shows status-only panel when scanjob id changes and ignores closed state from the previous scanjob', async () => {
+  it('shows status-only panel when scanjob id changes and ignores closed state from the previous scanjob', async ({ onTestFinished }) => {
+    const diagnostics = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    onTestFinished(() => diagnostics.mockRestore())
     const wrapper = mount(ScanjobMonitor, {
       props: { scanjobId: 42 },
       global: { stubs: monitorGlobalStubs }
     })
+    onTestFinished(() => wrapper.unmount())
 
     await flushPromises()
 
@@ -1172,6 +1272,11 @@ describe('Scanjob_Monitor.vue', () => {
     expect(loadMonitorSnapshot).not.toHaveBeenCalled()
     expect(wrapper.find('[data-testid="scanjob-monitor-closed"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="scanjob-monitor-status-only"]').exists()).toBe(true)
+    expect(diagnostics).toHaveBeenCalledExactlyOnceWith(
+      '[Не удалось открыть монитор задания на сканирование]',
+      expect.objectContaining({ message: 'Не удалось загрузить задание на сканирование' })
+    )
+    expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось загрузить задание на сканирование')
   })
 
   it('throttles live snapshots and commits only the latest', async () => {
@@ -1262,6 +1367,54 @@ describe('Scanjob_Monitor.vue', () => {
     })
   })
 
+  it('restores the exact Lookup URL when the box closes and retries if navigation fails', async () => {
+    const returnUrl = '/scanjobs/42/monitor/lookup?page=3&pageSize=10&sortBy=shk&sortOrder=desc&parcelFilterId=9&stickerPrefix=00'
+    const error = new Error('Failed to return to Lookup')
+    mockCurrentRoute.value = { query: { returnUrl } }
+    loadMonitorSnapshot.mockResolvedValueOnce(boxSnapshot)
+    mockReplace.mockRejectedValueOnce(error)
+    alertError.mockImplementationOnce((failure, { fallback }) => {
+      mockAlert.value = { id: 71, severity: 'error', message: getErrorMessage(failure, fallback) }
+      return 71
+    })
+    const diagnostics = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    try {
+      const wrapper = mount(ScanjobMonitor, {
+        props: { scanjobId: 42, monitorScope: box7MonitorScope },
+        global: { stubs: monitorGlobalStubs }
+      })
+      await flushPromises()
+      const close = wrapper.get('[data-testid="scanjob-monitor-close-action"]')
+      await close.trigger('click')
+      await flushPromises()
+      expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+      expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось закрыть монитор коробки')
+      expect(wrapper.text()).not.toContain(error.message)
+      expect(wrapper.get('[data-testid="scanjob-monitor-box"]').exists()).toBe(true)
+      await close.trigger('click')
+      await flushPromises()
+      expect(mockReplace.mock.calls).toEqual([[returnUrl], [returnUrl]])
+      expect(mockBack).not.toHaveBeenCalled()
+      wrapper.unmount()
+    } finally {
+      diagnostics.mockRestore()
+    }
+  })
+
+  it.each(['//example.com', '/scanjobs/97/monitor/lookup?page=3'])('ignores unrelated box return URL %s', async returnUrl => {
+    mockCurrentRoute.value = { query: { returnUrl } }
+    loadMonitorSnapshot.mockResolvedValueOnce(boxSnapshot)
+    const wrapper = mount(ScanjobMonitor, {
+      props: { scanjobId: 42, monitorScope: box7MonitorScope },
+      global: { stubs: monitorGlobalStubs }
+    })
+    await flushPromises()
+    await wrapper.get('[data-testid="scanjob-monitor-close-action"]').trigger('click')
+    await flushPromises()
+    expect(mockReplace).toHaveBeenCalledExactlyOnceWith({ name: 'scanjob-monitor-register', params: { id: 42 } })
+    wrapper.unmount()
+  })
+
   it('refreshes register for selected user not-in-register event already on register', async () => {
     persistedFollowUserId.value = 17
 
@@ -1328,7 +1481,9 @@ describe('Scanjob_Monitor.vue', () => {
     expect(wrapper.text()).toContain('BOX-7')
   })
 
-  it('displays correct status text for each scanjob status in status-only mode', async () => {
+  it('displays correct status text for each scanjob status in status-only mode', async ({ onTestFinished }) => {
+    const diagnostics = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    onTestFinished(() => diagnostics.mockRestore())
     const statusCases = [
       { status: 10, text: 'Создано' },
       { status: 15, text: 'Выполняется' },
@@ -1340,6 +1495,7 @@ describe('Scanjob_Monitor.vue', () => {
 
     for (const { status, text } of statusCases) {
       vi.clearAllMocks()
+      mockAlert.value = null
       getById.mockResolvedValueOnce(null)
       mockScanjob.value = { id: 42, name: 'Scanjob A', type: 30, status }
       loadMonitorSnapshot.mockResolvedValue(registerSnapshot)
@@ -1352,12 +1508,18 @@ describe('Scanjob_Monitor.vue', () => {
         global: { stubs: monitorGlobalStubs }
       })
 
-      await flushPromises()
+      try {
+        await flushPromises()
 
-      const panel = wrapper.find('[data-testid="scanjob-monitor-status-only"]')
-      expect(panel.exists()).toBe(true)
-      expect(panel.text()).toContain(text)
-      wrapper.unmount()
+        expect(wrapper.get('[data-testid="scanjob-monitor-status-only"]').text()).toContain(text)
+        expect(diagnostics).toHaveBeenCalledExactlyOnceWith(
+          '[Не удалось открыть монитор задания на сканирование]',
+          expect.objectContaining({ message: 'Не удалось загрузить задание на сканирование' })
+        )
+        expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось загрузить задание на сканирование')
+      } finally {
+        wrapper.unmount()
+      }
     }
   })
 
@@ -1376,9 +1538,10 @@ describe('Scanjob_Monitor.vue', () => {
 
     const panel = wrapper.find('[data-testid="scanjob-monitor-unavailable"]')
     expect(panel.exists()).toBe(true)
-    expect(panel.text()).toContain(
+    expect(wrapper.get('[role="alert"]').text()).toContain(
       'Монитор доступен только для активного задания сканирования коробок и посылок'
     )
+    expect(mockReplace).not.toHaveBeenCalled()
   })
 
   it('ignores applySnapshot with wrong scanJobId', async () => {

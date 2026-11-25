@@ -244,9 +244,9 @@ async function fetchRegister() {
   if (isComponentMounted.value) await registersStore.getById(props.registerId)
 }
 
-async function loadParcelsWrapper() {
+async function loadParcelsWrapper(options = {}) {
   parcelsLoaded.value = false
-  parcelsLoaded.value = await loadParcels(props.registerId, parcelsStore, isComponentMounted, alertStore)
+  parcelsLoaded.value = await loadParcels(props.registerId, parcelsStore, isComponentMounted, alertStore, options)
   return parcelsLoaded.value
 }
 
@@ -303,13 +303,14 @@ const {
 })
 
 const reconciliation = useRegisterReconciliation({
-  store: registersStore, authStore, alertStore, register: () => registersStore.item,
+  store: registersStore, authStore, alertStore, router, register: () => registersStore.item,
   busy: () => generalActionsDisabled.value || isInitializing.value,
-  runningAction, mounted: isComponentMounted, registerId: () => props.registerId, refreshRegister: fetchRegister, refreshParcels: loadParcelsWrapper
+  runningAction, mounted: isComponentMounted, registerId: () => props.registerId,
+  refreshRegister: fetchRegister, refreshParcels: () => loadParcelsWrapper({ throwOnError: true })
 })
 const { state: reconciliationState, fileInput: reconciliationFileInput } = reconciliation
 const split = useRegisterSplit({
-  store: registersStore, authStore, alertStore, register: () => registersStore.item,
+  store: registersStore, authStore, alertStore, router, register: () => registersStore.item,
   busy: () => generalActionsDisabled.value || isInitializing.value,
   runningAction, mounted: isComponentMounted, registerId: () => props.registerId, refreshRegister: fetchRegister
 })
@@ -652,13 +653,12 @@ function getGenericTemplateHeaders() {
     <hr class="hr" />
 
     <PageAlertRegion v-if="!showParcelStatusBulkDialog && !xmlDialog.cancellable" />
-    <RegisterSplitDialogs :state="splitState" @cancel="split.cancel" @retry="split.retry" @acknowledge="split.acknowledgeUnknown" @refresh="split.refresh" @close="splitState.summaryVisible = false" />
+    <RegisterSplitDialogs :state="splitState" @cancel="split.cancel" @retry="split.retry" @acknowledge="split.acknowledgeUnknown" @close="splitState.summaryVisible = false" />
     <input ref="reconciliationFileInput" type="file" :accept="reconciliation.accept" hidden data-testid="reconciliation-file-input" @change="reconciliation.selectFile" />
-    <div v-if="['retry-start', 'retry-status', 'unknown'].includes(reconciliationState.phase) || reconciliationState.refreshFailed" class="header-actions-bar">
+    <div v-if="['retry-start', 'retry-status', 'unknown'].includes(reconciliationState.phase)" class="header-actions-bar">
       <v-btn v-if="reconciliationState.phase === 'retry-start'" v-bind="APP_DIALOG_BUTTON_PROPS.primary" data-testid="reconciliation-retry-start" @click="reconciliation.retry">Проверить результат отправки</v-btn>
       <v-btn v-if="reconciliationState.phase === 'retry-status'" v-bind="APP_DIALOG_BUTTON_PROPS.primary" data-testid="reconciliation-retry-status" @click="reconciliation.retry">Повторить получение результата</v-btn>
       <v-btn v-if="reconciliationState.phase === 'unknown'" v-bind="APP_DIALOG_BUTTON_PROPS.destructive" data-testid="reconciliation-new-run" @click="reconciliation.acknowledgeUnknown">Начать новую сверку</v-btn>
-      <v-btn v-if="reconciliationState.refreshFailed" v-bind="APP_DIALOG_BUTTON_PROPS.primary" data-testid="reconciliation-refresh" @click="reconciliation.refresh">Обновить данные</v-btn>
     </div>
     <RegisterReconciliationDialogs :state="reconciliationState" @cancel="reconciliation.cancel" @close-error="reconciliationState.error.show = false" @summary-visible="reconciliationState.summaryVisible = $event" />
     <div v-if="registersStore.item?.readOnly" class="alert alert-warning read-only-notice">

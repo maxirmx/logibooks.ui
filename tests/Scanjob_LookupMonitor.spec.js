@@ -5,16 +5,23 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createMemoryHistory, createRouter } from 'vue-router'
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import LookupMonitorView from '@/views/Scanjob_LookupMonitor_View.vue'
 import ParcelWhFilterSelectors from '@/components/ParcelWhFilterSelectors.vue'
 import ParcelSavedFilterSelector from '@/components/ParcelSavedFilterSelector.vue'
 import PaginationFooter from '@/components/PaginationFooter.vue'
+import LocalLabelPrinting from '@/components/LocalLabelPrinting.vue'
 import { WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
+import { scanjobMonitorArea } from '@/helpers/scanjob.monitor.helpers.js'
+import { useAlertStore } from '@/stores/alert.store.js'
 import { vuetifyStubs } from './helpers/test-utils.js'
 
 const api = vi.hoisted(() => ({ load: vi.fn(), createChannel: vi.fn(), start: vi.fn(), stop: vi.fn(),
-  filters: vi.fn(), statuses: vi.fn(), zones: vi.fn(), push: vi.fn(), replace: vi.fn(), canOpenParcel: true,
+  followUser: vi.fn(), clearFollowUser: vi.fn(), loadFollowUsers: vi.fn(), setFollowUser: vi.fn(), followUserId: null,
+  loadRegister: vi.fn(), resolveTarget: vi.fn(), exportStickers: vi.fn(),
+  filters: vi.fn(), push: vi.fn(), replace: vi.fn(), back: vi.fn(),
+  setScanjobMonitorMode: vi.fn(), clearSession: vi.fn(), canOpenParcel: true, returnUrl: null,
   route: { query: {} }, currentRoute: { value: { fullPath: '/scanjobs/8/monitor/lookup' } } }))
 
 vi.mock('vue-router', async importOriginal => ({
@@ -22,33 +29,49 @@ vi.mock('vue-router', async importOriginal => ({
   useRoute: () => api.route,
   useRouter: () => api
 }))
+vi.mock('@/router', () => ({ default: api }))
 vi.mock('@/stores/scanjobs.store.js', () => ({
-  useScanjobsStore: () => ({ loadLookupMonitorPage: api.load, createLookupMonitorChannel: api.createChannel })
+  useScanjobsStore: () => ({
+    scanjobMonitorArea,
+    loadLookupMonitorPage: api.load,
+    createLookupMonitorChannel: api.createChannel,
+    loadMonitorFollowUsers: api.loadFollowUsers,
+    resolveMonitorTarget: api.resolveTarget
+  })
 }))
-vi.mock('@/stores/auth.store.js', () => ({ useAuthStore: () => ({ hasLogistRole: api.canOpenParcel }) }))
+vi.mock('@/stores/registers.store.js', () => ({
+  useRegistersStore: () => ({ item: { id: 42 }, getById: api.loadRegister, getTransportationDocument: () => 'Авианакладная' })
+}))
+vi.mock('@/stores/boxes.store.js', () => ({
+  useBoxesStore: () => ({ downloadRegisterStickers: api.exportStickers })
+}))
+vi.mock('@/stores/auth.store.js', () => ({ useAuthStore: () => ({
+  hasLogistRole: api.canOpenParcel, isWhManagerPlus: true, setScanjobMonitorMode: api.setScanjobMonitorMode,
+  clearSession: api.clearSession, set returnUrl(value) { api.returnUrl = value },
+  scanjobmonitor_follow_user_id: api.followUserId, setScanjobMonitorFollowUserId: api.setFollowUser
+}) }))
 vi.mock('@/stores/parcel.filters.store.js', () => ({
   useParcelFiltersStore: () => ({ filters: [{ id: 9, name: 'Склад' }], getAll: api.filters })
 }))
-vi.mock('@/stores/parcel.statuses.store.js', () => ({
-  useParcelStatusesStore: () => ({ parcelStatuses: [{ id: 10, title: 'Выпуск' }], ensureLoaded: api.statuses })
-}))
-vi.mock('@/stores/warehouses.store.js', () => ({
-  useWarehousesStore: () => ({ ops: { zones: [{ value: 1, name: '' }, { value: 2, name: 'Зелёная зона' }] }, ensureOpsLoaded: api.zones })
-}))
 
-const headerTitles = ['№', 'Поиск', 'Номер отправления', 'Стикеры', 'Номер и стикер коробки',
-  'Проверка, зона, статус', 'Описание', 'Вес, кг', 'Количество']
+const trailingHeaders = ['Номер коробки', 'Статус', 'Пользователь\nВремя\nСканированный код',
+  'Описание', 'Вес, кг', 'Количество']
 
 function lookupSnapshot(overrides = {}) {
   return {
-    scanJobId: 8, scanJobName: 'Поиск пропущенных посылок', status: 15, registerId: 42, registerType: 1,
+    scanJobId: 8, scanJobName: 'Поиск пропущенных посылок', operation: 30, status: 15, registerId: 42, registerType: 1,
+    totalBoxes: 5, boxesWithStickerScanned: 2, boxesWithStickerNotScanned: 3,
+    totalParcels: 100, parcelsWithStickerScanned: 4, parcelsWithStickerNotScanned: 96,
     lookupFoundCount: 1, lookupNotFoundCount: 1,
     lookupPage: { page: 2, totalCount: 75, items: [
-      { found: true, ozonId: '000-ID', boxNumber: 'B-55', boxSticker: 'B-LABEL', boxStickerScanned: true,
+      { found: true, ozonId: '000-ID', boxId: 7, boxNumber: 'B-55', boxSticker: 'B-LABEL',
+        boxStickerScanned: true, boxFoundCount: 2, boxTargetCount: 2,
         parcel: { parcelId: 312, parcelNumber: '0001-1', barcode: '001-LABEL', productName: 'Куртка', quantity: 3,
           weightKg: 2, adjustedWeightKg: 2.3, zoneName: 'Красная зона', statusTitle: 'Выпуск',
+          stickerScanned: true, scannedUserName: 'Иванов Иван', scannedTime: '2026-11-25T14:35:00', scannedSticker: 'SCAN-01',
           checkStatusProjection: { kind: 20, title: 'Запрет', restrictionReason: 'Наименование запрещено' } } },
-      { found: false, boxNumber: 'B-56', boxStickerScanned: false, parcel: { parcelId: 313, parcelNumber: '0001-2' } }
+      { found: false, boxId: 9, boxNumber: 'B-56', boxStickerScanned: false, boxFoundCount: 0, boxTargetCount: 2,
+        parcel: { parcelId: 313, parcelNumber: '0001-2' } }
     ] },
     ...overrides
   }
@@ -59,26 +82,59 @@ let handlers
 let onConnectionError
 
 function openMonitor() {
+  const table = vuetifyStubs['v-data-table-server']
   wrapper = mount(LookupMonitorView, { props: { id: 8 }, global: {
-    stubs: { ...vuetifyStubs, 'font-awesome-icon': true, 'v-btn': { template: '<button><slot /></button>' },
+    stubs: { ...vuetifyStubs, LocalLabelPrinting: true, 'font-awesome-icon': true, 'v-btn': { template: '<button><slot /></button>' },
+      'v-data-table-server': {
+        ...table, props: [...table.props, 'rowProps'],
+        template: table.template
+          .replace('class="v-data-table-row"', 'class="v-data-table-row" v-bind="rowProps({ item })"')
+          .replace('class="v-data-table-cell"', 'class="v-data-table-cell" v-bind="header.cellProps?.({ item })"')
+      },
       'v-tooltip': { props: ['text'], template: '<div><slot name="activator" :props="{ \'aria-label\': text }"></slot><slot></slot></div>' } }
   } })
   return wrapper
 }
 
+function setLookupFilter(label, value) {
+  const field = wrapper.getComponent(ParcelWhFilterSelectors).findAll('.v-text-field-stub')
+    .find(field => field.get('span').text() === label)
+  expect(field, `Lookup filter ${label}`).toBeDefined()
+  return field.get('input').setValue(value)
+}
+
+function expectDiagnostics(...entries) {
+  const expected = entries.map(([context, error]) => [`[${context}]`, error])
+  const logError = console.error.bind(console)
+  const diagnostics = vi.spyOn(console, 'error').mockImplementation((...args) => {
+    if (!expected.some(call => call.length === args.length && call.every((arg, index) => arg === args[index]))) {
+      logError(...args)
+    }
+  })
+  onTestFinished(() => expect(diagnostics.mock.calls).toEqual(expected))
+}
+
 beforeEach(() => {
   setActivePinia(createPinia())
   vi.resetAllMocks()
-  vi.spyOn(console, 'error').mockImplementation(() => undefined)
   api.canOpenParcel = true
+  api.returnUrl = null
+  api.followUserId = null
+  api.loadRegister.mockResolvedValue(true)
+  api.loadFollowUsers.mockResolvedValue([{ id: 21, displayName: 'Оператор 21' }])
+  api.followUser.mockResolvedValue(true)
+  api.clearFollowUser.mockResolvedValue(true)
   api.route.query = { page: '2', stickerPrefix: '00', parcelFilterId: '9' }
-  api.currentRoute.value.fullPath = '/scanjobs/8/monitor/lookup?page=2&stickerPrefix=00&parcelFilterId=9'
+  api.currentRoute.value = { name: 'scanjob-monitor-lookup', params: { id: '8' },
+    fullPath: '/scanjobs/8/monitor/lookup?page=2&stickerPrefix=00&parcelFilterId=9' }
   api.load.mockResolvedValue(lookupSnapshot())
-  api.replace.mockResolvedValue(undefined)
+  api.replace.mockImplementation(async location => {
+    if (location === '/login') api.currentRoute.value = { path: '/login', fullPath: '/login' }
+  })
   api.start.mockImplementation(async (_id, callbacks) => { handlers = callbacks })
   api.createChannel.mockImplementation(callback => {
     onConnectionError = callback
-    return { start: api.start, stop: api.stop }
+    return { start: api.start, followUser: api.followUser, clearFollowUser: api.clearFollowUser, stop: api.stop }
   })
 })
 
@@ -90,49 +146,310 @@ afterEach(() => {
 })
 
 describe('Lookup monitor', () => {
-  it('renders Ozon columns, separate sticker lines, box state, customs projection and saved weights', async () => {
+  it('switches back to boxes from the header and can close directly', async () => {
     openMonitor()
     await flushPromises()
-    expect(wrapper.findAll('.v-data-table-header-cell').map(cell => cell.text())).toEqual(headerTitles)
+    const button = wrapper.get('.header-actions-bar button[data-testid="scanjob-monitor-mode-toggle"]')
+    expect(button.attributes('aria-label')).toBe('Монитор сканирования')
+    expect(button.get('font-awesome-icon-stub').attributes('icon')).toBe('fa-solid fa-sort')
+    expect(button.classes()).not.toContain('anti-btn-green')
+    expect(button.element.closest('.header-actions-group')).toBe(
+      wrapper.get('button[data-testid="scanjob-monitor-follow-user-open"]').element.closest('.header-actions-group')
+    )
+    expect(wrapper.getComponent(LocalLabelPrinting).props()).toMatchObject({ scanJobId: 8, active: true })
+    expect(wrapper.get('button[data-testid="scanjob-monitor-jump-open"]').isVisible()).toBe(true)
+    expect(wrapper.get('button[data-testid="scanjob-monitor-unregistered-action"]').isVisible()).toBe(true)
+    expect(wrapper.get('button[data-testid="register-export-stickers"]').isVisible()).toBe(true)
+    expect(wrapper.find('nav[aria-label="Режим монитора сканирования"]').exists()).toBe(false)
+    api.replace.mockImplementationOnce(async location => {
+      api.currentRoute.value = { ...location, fullPath: '/scanjobs/8/monitor' }
+    })
+    await button.trigger('click')
+    await flushPromises()
+    expect(api.replace).toHaveBeenCalledExactlyOnceWith({ name: 'scanjob-monitor-register', params: { id: 8 } })
+    expect(api.setScanjobMonitorMode).toHaveBeenCalledExactlyOnceWith('boxes')
+    await wrapper.get('.header-actions-bar button[data-testid="scanjob-monitor-close-action"]').trigger('click')
+    expect(api.back).toHaveBeenCalledOnce()
+  })
+
+  it('follows a scanner in the lookup list and retries a rejected subscription', async () => {
+    api.followUser.mockRejectedValueOnce(new Error('Invalid follow request'))
+    openMonitor()
+    await flushPromises()
+    await wrapper.get('button[data-testid="scanjob-monitor-follow-user-open"]').trigger('click')
+    const select = wrapper.findAllComponents({ name: 'v-select' }).find(component => component.props('label') === 'Следить за сканером')
+    expect(select.props('items')).toContainEqual({ title: 'Оператор 21', value: 21 })
+    select.vm.$emit('update:modelValue', 21)
+    const apply = wrapper.get('button[data-testid="scanjob-monitor-follow-user-apply"]')
+    await apply.trigger('click')
+    await flushPromises()
+    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+    expect(wrapper.get('[role="alert"]').text()).toContain('Ошибка при загрузке монитора сканирования')
+    expect(api.setFollowUser).not.toHaveBeenCalled()
+
+    await apply.trigger('click')
+    await flushPromises()
+    expect(api.followUser).toHaveBeenLastCalledWith(8, 21, expect.any(Object))
+    expect(api.setFollowUser).toHaveBeenCalledExactlyOnceWith(21)
+    expect(wrapper.getComponent(LocalLabelPrinting).props('userId')).toBe(21)
+    const followEvent = api.followUser.mock.lastCall[2].onFollowEvent
+    const scroll = vi.fn()
+    wrapper.findAll('.v-data-table-row')[1].element.scrollIntoView = scroll
+    await followEvent({ scanJobId: 8, userId: 21, followTarget: { area: 1, boxId: 7, parcelId: 313 } })
+    await nextTick()
+    expect(wrapper.get('.selected-parcel-row').text()).toContain('0001-2')
+    expect(scroll).toHaveBeenCalledWith({ block: 'nearest' })
+    await followEvent({ scanJobId: 8, userId: 21, followTarget: { area: 1, boxId: 7 } })
+    await nextTick()
+    expect(wrapper.find('.selected-parcel-row').exists()).toBe(false)
+    expect(api.push).not.toHaveBeenCalled()
+    expect(api.replace).not.toHaveBeenCalled()
+    expect(api.load).toHaveBeenCalledOnce()
+  })
+
+  it('clears the follow indicator and restores the preference when Lookup is opened again', async () => {
+    const error = new Error('Invalid connection')
+    expectDiagnostics(['Не удалось подключить обновления монитора сканирования', error])
+    api.followUserId = 21
+    openMonitor()
+    await flushPromises()
+    expect(api.followUser).toHaveBeenCalledExactlyOnceWith(8, 21, expect.any(Object))
+    const button = wrapper.get('button[data-testid="scanjob-monitor-follow-user-open"]')
+    expect(button.classes()).toContain('anti-btn-green')
+    onConnectionError(error)
+    await flushPromises()
+    expect(button.classes()).not.toContain('anti-btn-green')
+    expect(api.currentRoute.value.path).toBe('/login')
+    wrapper.unmount()
+    api.currentRoute.value = { path: '/scanjobs/8/monitor/lookup', fullPath: api.returnUrl }
+    openMonitor()
+    await flushPromises()
+    expect(api.followUser).toHaveBeenCalledTimes(2)
+    expect(wrapper.get('button[data-testid="scanjob-monitor-follow-user-open"]').classes()).toContain('anti-btn-green')
+  })
+
+  it('opens parcel details from the jump action and exports stickers from the shared toolbar', async () => {
+    api.resolveTarget.mockResolvedValue({ kind: 2, area: 1, boxId: 7, parcelId: 313 })
+    openMonitor()
+    await flushPromises()
+    await wrapper.get('button[data-testid="scanjob-monitor-jump-open"]').trigger('click')
+    await wrapper.get('input[data-testid="scanjob-monitor-jump-input"]').setValue('000-ID')
+    await wrapper.get('button[data-testid="scanjob-monitor-jump-action"]').trigger('click')
+    await flushPromises()
+    expect(api.resolveTarget).toHaveBeenCalledExactlyOnceWith(8, '000-ID')
+    expect(api.push).toHaveBeenLastCalledWith({ name: 'scanjob-monitor-box', params: { id: 8, boxId: 7 },
+      query: { returnUrl: api.currentRoute.value.fullPath, selectedParcelId: '313' } })
+    await wrapper.get('button[data-testid="register-export-stickers"]').trigger('click')
+    await flushPromises()
+    expect(api.exportStickers).toHaveBeenCalledExactlyOnceWith(42)
+    expect(api.setScanjobMonitorMode).not.toHaveBeenCalled()
+  })
+
+  it('keeps the lookup list available when loading party details or opening unregistered stickers fails', async () => {
+    const navigationError = new Error('Invalid route')
+    expectDiagnostics(['Не удалось открыть стикеры вне реестра', navigationError])
+    api.loadRegister.mockRejectedValueOnce(new Error('Invalid register response'))
+    api.push.mockRejectedValueOnce(navigationError)
+    openMonitor()
+    await flushPromises()
+    expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось загрузить данные партии')
+    expect(wrapper.findAll('.v-data-table-row')).toHaveLength(2)
+    const unregistered = wrapper.get('button[data-testid="scanjob-monitor-unregistered-action"]')
+    await unregistered.trigger('click')
+    await flushPromises()
+    expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось открыть стикеры вне реестра')
+    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+    await unregistered.trigger('click')
+    expect(api.push).toHaveBeenLastCalledWith({ path: '/registers/42/unregistered-parcels',
+      query: { returnUrl: api.currentRoute.value.fullPath } })
+  })
+
+  it('keeps the view and preference when switching is blocked, and saves on retry', async () => {
+    const navigationRouter = createRouter({ history: createMemoryHistory(), routes: [{ path: '/', component: {} }, { path: '/blocked', component: {} }] })
+    await navigationRouter.push('/')
+    navigationRouter.beforeEach(() => false)
+    const failure = await navigationRouter.push('/blocked')
+    expectDiagnostics(['Не удалось переключить режим монитора', failure])
+    api.replace.mockResolvedValueOnce(failure)
+    openMonitor()
+    await flushPromises()
+    const button = wrapper.get('button[data-testid="scanjob-monitor-mode-toggle"]')
+    await button.trigger('click')
+    await flushPromises()
+    expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось переключить режим монитора')
+    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+    expect(api.currentRoute.value.name).toBe('scanjob-monitor-lookup')
+    expect(api.setScanjobMonitorMode).not.toHaveBeenCalled()
+    expect(button.element.disabled).toBe(false)
+
+    api.replace.mockImplementationOnce(async location => { api.currentRoute.value = location })
+    await button.trigger('click')
+    await flushPromises()
+    expect(api.setScanjobMonitorMode).toHaveBeenCalledExactlyOnceWith('boxes')
+  })
+
+  it('reports a preference write failure without exposing storage details', async () => {
+    const error = new Error('Storage quota')
+    expectDiagnostics(['Не удалось сохранить режим монитора', error])
+    api.replace.mockImplementationOnce(async location => { api.currentRoute.value = location })
+    api.setScanjobMonitorMode.mockImplementationOnce(() => { throw error })
+    openMonitor()
+    await flushPromises()
+    await wrapper.get('button[data-testid="scanjob-monitor-mode-toggle"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось сохранить режим монитора')
+    expect(wrapper.get('[role="alert"]').text()).not.toContain('Storage quota')
+  })
+
+  it('leaves the preference alone when the navigation is duplicated or redirected', async () => {
+    const navigationRouter = createRouter({ history: createMemoryHistory(), routes: [{ path: '/', component: {} }] })
+    await navigationRouter.push('/')
+    api.replace.mockResolvedValueOnce(await navigationRouter.push('/'))
+    api.replace.mockImplementationOnce(async () => {
+      api.currentRoute.value = { name: 'login', params: {}, fullPath: '/login' }
+    })
+    openMonitor()
+    await flushPromises()
+    const button = wrapper.get('button[data-testid="scanjob-monitor-mode-toggle"]')
+    await button.trigger('click')
+    await flushPromises()
+    await button.trigger('click')
+    await flushPromises()
+    expect(api.replace).toHaveBeenCalledTimes(2)
+    expect(api.setScanjobMonitorMode).not.toHaveBeenCalled()
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+  })
+
+  it('renders Ozon identifiers, status, scan details, and saved weights in separate cells', async () => {
+    openMonitor()
+    await flushPromises()
+    expect(wrapper.findAll('.v-data-table-header-cell').map(cell => cell.text())).toEqual([
+      'Поиск', 'Номер отправления', 'ID отправления', 'Штрихкод', ...trailingHeaders
+    ])
     const [first, second] = wrapper.findAll('.v-data-table-row')
     expect(first.findAll('.v-data-table-cell').map(cell => cell.text())).toEqual([
-      '312', 'Найдено', '0001-1', 'Штрихкод: 001-LABELID отправления: 000-ID', 'B-55B-LABEL',
-      'ЗапретКрасная зонаВыпуск', 'Куртка', '2.0002.300', '3'
+      'Найдена', '0001-1', '000-ID', '001-LABEL', 'B-55',
+      'Выпуск', 'Иванов Иван14:35 25.11SCAN-01', 'Куртка', '2.0002.300', '3'
     ])
-    expect(first.get('[aria-label="Коробка отсканирована"]').classes()).toContain('no-issues')
-    expect(first.get('[aria-label="Наименование запрещено"]').classes()).toContain('has-issues')
-    expect(second.get('[aria-label="Коробка не отсканирована"]').classes()).toContain('lookup-box-unscanned')
-    expect(second.get('.lookup-pending').text()).toBe('Не найдено')
-    expect(wrapper.text()).toContain('Найдено 1 · Не найдено 1')
+    expect(first.findAll('.scanjob-monitor-scanned-info span').map(line => line.text())).toEqual([
+      'Иванов Иван', '14:35 25.11', 'SCAN-01'
+    ])
+    expect(second.findAll('.scanjob-monitor-scanned-info span').map(line => line.text())).toEqual(['-', '-', '-'])
+    const secondCells = second.findAll('.v-data-table-cell')
+    expect([secondCells[2].text(), secondCells[3].text(), secondCells[5].text()]).toEqual(['-', '-', '-'])
+    expect(first.get('.monitor-status-scanned').text()).toBe('Найдена')
+    expect(first.get('button[aria-label="Открыть коробку № B-55"]').classes()).toContain('monitor-status-scanned')
+    expect(second.get('button[aria-label="Открыть коробку № B-56"]').classes()).toContain('monitor-status-waiting')
+    expect(second.get('.monitor-status-waiting').text()).toBe('Не сканирована')
+    const cards = wrapper.get('[data-testid="scanjob-monitor-summary"]').findAll('.monitor-summary-item')
+    expect(cards.map(card => [card.get('.monitor-summary-label').text(), card.get('.monitor-summary-value').text()])).toEqual([
+      ['Коробки всего / сканировано / не сканировано', '5 / 2 / 3'],
+      ['Посылки всего / сканировано / не сканировано', '100 / 4 / 96'],
+      ['Найдено / Не найдено', '1 / 1']
+    ])
     expect(wrapper.findComponent(ParcelWhFilterSelectors).props('numberLabel')).toBe('Номер отправления')
     expect(api.load).toHaveBeenCalledWith(8, expect.objectContaining({ page: '2', stickerPrefix: '00', parcelFilterId: '9' }))
     expect(api.start).toHaveBeenCalledOnce()
 
-    await wrapper.get('[aria-label="Открыть посылку № 312"]').trigger('click')
+    expect(first.find('a, .link').exists()).toBe(false)
+    expect(first.attributes('tabindex')).toBe('0')
+    await first.trigger('keydown', { key: 'Tab' })
+    await first.get('button[aria-label="Открыть коробку № B-55"]').trigger('keydown', { key: 'Enter' })
+    expect(api.push).not.toHaveBeenCalled()
+    await first.trigger('keydown', { key: 'Enter' })
     await flushPromises()
     expect(api.push).toHaveBeenCalledWith(expect.objectContaining({ params: { id: 312, registerId: 42 },
       query: { mode: 'modeWarehouse', returnUrl: api.currentRoute.value.fullPath } }))
   })
 
-  it('uses SHK and WBR-N labels, includes unboxed parcels, and handles an older result', async () => {
+  it.each([false, null])('renders a WBR-N parcel without confirmation in blue (%s)', async found => {
     api.canOpenParcel = false
     api.load.mockResolvedValue(lookupSnapshot({ registerType: WBRN_REGISTER_ID, status: 20,
-      lookupFoundCount: null, lookupRemainingCount: 2,
+      lookupFoundCount: null, lookupNotFoundCount: null, lookupRemainingCount: 2,
       lookupPage: { page: 1, totalCount: 1, items: [
-        { found: null, parcel: { parcelId: 20, parcelNumber: '001', sticker: 'У01', stickerCode: 'C01',
+        { found, parcel: { parcelId: 20, parcelNumber: '001', sticker: 'У01', stickerCode: 'C01', barcode: 'BAR-01',
+          stickerScanned: true, statusTitle: 'Выпуск без уплаты',
           productName: 'Чехол', derivedTotalsPending: true } }
       ] } }))
     openMonitor()
     await flushPromises()
-    expect(wrapper.findAll('.v-data-table-header-cell').map(cell => cell.text())).toEqual(headerTitles.with(2, 'ШК'))
-    expect(wrapper.text()).toContain('Стикер (УИН): У01Код стикера: C01')
-    expect(wrapper.text()).toContain('Без коробки')
-    expect(wrapper.text()).toContain('Нет данных')
+    expect(wrapper.findAll('.v-data-table-header-cell').map(cell => cell.text())).toEqual([
+      'Поиск', 'ШК', 'Стикер (УИН)', 'Код стикера', 'Баркод', ...trailingHeaders
+    ])
+    const row = wrapper.get('.v-data-table-row')
+    expect(row.findAll('.v-data-table-cell').slice(2, 7).map(cell => cell.text())).toEqual([
+      'У01', 'C01', 'BAR-01', 'Без коробки', 'Выпуск без уплаты'
+    ])
+    expect(row.findAll('.scanjob-monitor-scanned-info span').map(line => line.text())).toEqual(['-', '-', '-'])
+    expect(wrapper.get('.monitor-status-waiting').text()).toBe('Не сканирована')
     expect(wrapper.text()).toContain('Осталось найти 2')
     expect(wrapper.text()).toContain('(пересчёт)')
-    expect(wrapper.find('button[aria-label^="Открыть посылку"]').exists()).toBe(false)
+    expect(row.attributes('tabindex')).toBeUndefined()
+    await row.trigger('click')
+    expect(api.push).not.toHaveBeenCalled()
     expect(api.replace).toHaveBeenCalledWith({ query: expect.objectContaining({ page: '1' }) })
     expect(api.start).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    { boxStickerScanned: true, boxFoundCount: 0 },
+    { boxStickerScanned: false, boxFoundCount: 1 }
+  ])('shows yellow for a partially processed box (%o)', async progress => {
+    const snapshot = lookupSnapshot()
+    Object.assign(snapshot.lookupPage.items[1], progress, { boxId: null })
+    api.load.mockResolvedValue(snapshot)
+    openMonitor()
+    await flushPromises()
+    const boxNumber = wrapper.get('span.monitor-status-partial')
+    expect(boxNumber.text()).toBe('B-56')
+    expect(boxNumber.element.closest('.lookup-box-cell-unavailable')).not.toBeNull()
+    await boxNumber.trigger('click')
+    expect(api.push).not.toHaveBeenCalled()
+  })
+
+  it('opens the parcel from the row and the box from any part of its cell', async () => {
+    const query = {
+      page: '2', pageSize: '10', sortBy: 'postingNumber', sortOrder: 'desc',
+      parcelFilterId: '9', numberPrefix: '000', boxNumberPrefix: 'B-', stickerPrefix: '00', productName: 'Куртка'
+    }
+    api.route.query = query
+    const returnUrl = `/scanjobs/8/monitor/lookup?${new URLSearchParams(query)}`
+    api.currentRoute.value.fullPath = returnUrl
+    openMonitor()
+    await flushPromises()
+    expect(api.load).toHaveBeenCalledExactlyOnceWith(8, query)
+    const row = wrapper.findAll('.v-data-table-row')[0]
+    await row.findAll('.v-data-table-cell').find(cell => cell.text() === 'Куртка').trigger('click')
+    await flushPromises()
+    expect(api.push).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ params: { id: 312, registerId: 42 },
+      query: { mode: 'modeWarehouse', returnUrl: api.currentRoute.value.fullPath } }))
+
+    api.push.mockClear()
+    await row.get('.lookup-box-cell').trigger('click')
+    await flushPromises()
+    expect(api.push).toHaveBeenCalledExactlyOnceWith({
+      name: 'scanjob-monitor-box', params: { id: 8, boxId: 7 }, query: { returnUrl }
+    })
+  })
+
+  it('presents a rejected box navigation once and retries the box route', async () => {
+    const error = new Error('Box navigation failed')
+    expectDiagnostics(['Не удалось открыть коробку', error])
+    api.push.mockRejectedValueOnce(error)
+    openMonitor()
+    await flushPromises()
+    const box = wrapper.get('button[aria-label="Открыть коробку № B-55"]')
+    await box.trigger('click')
+    await flushPromises()
+    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+    expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось открыть коробку')
+    expect(wrapper.text()).not.toContain('Box navigation failed')
+    await box.trigger('click')
+    await flushPromises()
+    const boxRoute = {
+      name: 'scanjob-monitor-box', params: { id: 8, boxId: 7 }, query: { returnUrl: api.currentRoute.value.fullPath }
+    }
+    expect(api.push.mock.calls).toEqual([[boxRoute], [boxRoute]])
   })
 
   it('coalesces live invalidations and refreshes the current filtered page again at completion', async () => {
@@ -154,6 +471,7 @@ describe('Lookup monitor', () => {
     api.load.mockResolvedValueOnce(lookupSnapshot({ status: 20 }))
     handlers.onClosed(8)
     await flushPromises()
+    expect(wrapper.getComponent(LocalLabelPrinting).props('active')).toBe(false)
     expect(api.load).toHaveBeenCalledTimes(3)
     expect(api.start).toHaveBeenCalledOnce()
     expect(api.stop).toHaveBeenCalledOnce()
@@ -168,11 +486,10 @@ describe('Lookup monitor', () => {
     wrapper.getComponent(PaginationFooter).vm.$emit('update:page', 3)
     await flushPromises()
     expect(api.load).toHaveBeenLastCalledWith(8, expect.objectContaining({ page: '3' }))
-    const filter = wrapper.getComponent(ParcelWhFilterSelectors)
-    filter.vm.$emit('update:local-parcel-number-search', '00-1')
-    filter.vm.$emit('update:local-box-number-search', '00-BOX')
-    filter.vm.$emit('update:local-sticker-search', '00-CODE')
-    filter.vm.$emit('update:local-product-name-search', 'Юбка')
+    await setLookupFilter('Номер отправления', '00-1')
+    await setLookupFilter('Номер коробки', '00-BOX')
+    await setLookupFilter('Любой из стикеров', '00-CODE')
+    await setLookupFilter('Товар', 'Юбка')
     await vi.advanceTimersByTimeAsync(250)
     api.load.mockResolvedValueOnce(lookupSnapshot({ lookupPage: { page: 1, totalCount: 0, items: [] } }))
     finishFirst(lookupSnapshot({ scanJobName: 'Устаревшее задание' }))
@@ -183,19 +500,83 @@ describe('Lookup monitor', () => {
     expect(api.replace).toHaveBeenLastCalledWith({ query: api.load.mock.calls.at(-1)[1] })
   })
 
-  it('presents a rejected page load once, preserves the route and allows retry', async () => {
-    api.load.mockRejectedValueOnce(new Error('Invalid fixture token'))
+  it('shows a rejected query update once and keeps filtering and parcel navigation usable', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
     openMonitor()
     await flushPromises()
+    const alertError = vi.spyOn(useAlertStore(), 'error')
+    const error = new Error('Invalid route update')
+    const message = 'Не удалось сохранить параметры поиска'
+    expectDiagnostics([message, error])
+    const snapshot = lookupSnapshot()
+    api.load.mockResolvedValue({ ...snapshot, lookupPage: { ...snapshot.lookupPage, page: 1 } })
+    api.replace.mockRejectedValueOnce(error)
+
+    await setLookupFilter('Любой из стикеров', '00-1')
+    await vi.advanceTimersByTimeAsync(250)
+    await flushPromises()
+    const firstQuery = { page: '1', pageSize: '50', sortBy: 'id', sortOrder: 'asc', parcelFilterId: '9', stickerPrefix: '00-1' }
+    expect(api.replace).toHaveBeenCalledExactlyOnceWith({ query: firstQuery })
+    expect(api.load).toHaveBeenLastCalledWith(8, firstQuery)
+    expect(alertError).toHaveBeenCalledExactlyOnceWith(error, { fallback: message })
+    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+    expect(wrapper.get('[role="alert"]').isVisible()).toBe(true)
+    expect(wrapper.get('[role="alert"]').text()).toContain(message)
+    expect(wrapper.text()).not.toContain(error.message)
+
+    api.replace.mockImplementationOnce(async ({ query }) => {
+      api.currentRoute.value = { ...api.currentRoute.value, fullPath: `/scanjobs/8/monitor/lookup?${new URLSearchParams(query)}` }
+    })
+    await setLookupFilter('Любой из стикеров', '00-2')
+    await vi.advanceTimersByTimeAsync(250)
+    await flushPromises()
+    const nextQuery = { ...firstQuery, stickerPrefix: '00-2' }
+    expect(api.replace).toHaveBeenLastCalledWith({ query: nextQuery })
+    expect(api.load).toHaveBeenLastCalledWith(8, nextQuery)
+    expect(alertError).toHaveBeenCalledOnce()
+
+    await wrapper.findAll('.v-data-table-row')[0].trigger('click')
+    await flushPromises()
+    expect(api.push).toHaveBeenCalledExactlyOnceWith({
+      name: 'Редактирование посылки',
+      params: { id: 312, registerId: 42 },
+      query: { mode: 'modeWarehouse', returnUrl: `/scanjobs/8/monitor/lookup?${new URLSearchParams(nextQuery)}` }
+    })
+  })
+
+  it('opens login after a rejected page load and keeps the Lookup destination', async () => {
+    const error = new Error('Invalid fixture token')
+    expectDiagnostics(['Не удалось загрузить посылки для поиска', error])
+    api.load.mockRejectedValueOnce(error)
+    const destination = api.currentRoute.value.fullPath
+    openMonitor()
+    await flushPromises()
+    expect(wrapper.get('.primary-heading').text()).toBe('Посылки для поиска')
     expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
     expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось загрузить посылки для поиска')
     expect(wrapper.text()).not.toContain('Invalid fixture token')
     expect(api.push).not.toHaveBeenCalled()
-    const retry = wrapper.findAll('button').find(button => button.text() === 'Повторить загрузку')
-    await retry.trigger('click')
+    expect(api.currentRoute.value.path).toBe('/login')
+    expect(api.clearSession).toHaveBeenCalledOnce()
+    expect(api.returnUrl).toBe(destination)
+    expect(api.load).toHaveBeenCalledOnce()
+    expect(wrapper.text()).not.toContain('Повторить загрузку')
+  })
+
+  it('shows the load error once if the login navigation rejects', async () => {
+    const loadError = new Error('Invalid page response')
+    const navigationError = new Error('Invalid navigation')
+    expectDiagnostics(
+      ['Не удалось загрузить посылки для поиска', loadError],
+      ['Переход на страницу входа после ошибки загрузки', navigationError]
+    )
+    api.load.mockRejectedValueOnce(loadError)
+    api.replace.mockRejectedValueOnce(navigationError)
+    openMonitor()
     await flushPromises()
-    expect(api.load.mock.calls[1]).toEqual(api.load.mock.calls[0])
-    expect(wrapper.findAll('.v-data-table-row')).toHaveLength(2)
+    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+    expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось загрузить посылки для поиска')
+    expect(wrapper.text()).not.toContain('Повторить загрузку')
   })
 
   it('clears a removed saved filter and reloads from the first page', async () => {
@@ -210,46 +591,58 @@ describe('Lookup monitor', () => {
     expect(wrapper.text()).toContain('Выбранный пользовательский фильтр недоступен. Фильтр сброшен.')
   })
 
-  it('hides stale parcels when loading the requested page fails and retries that page', async () => {
+  it('preserves the requested page for sign-in when a filtered page fails to load', async () => {
+    const error = new Error('Invalid page response')
+    expectDiagnostics(['Не удалось загрузить посылки для поиска', error])
     openMonitor()
     await flushPromises()
-    api.load.mockRejectedValueOnce(new Error('Invalid page response'))
+    api.load.mockRejectedValueOnce(error)
+    const destination = '/scanjobs/8/monitor/lookup?page=3&stickerPrefix=00'
+    api.replace.mockImplementationOnce(async () => {
+      api.currentRoute.value = { path: '/scanjobs/8/monitor/lookup', fullPath: destination }
+    })
     wrapper.getComponent(PaginationFooter).vm.$emit('update:page', 3)
     await flushPromises()
     expect(wrapper.findAll('.v-data-table-row')).toHaveLength(0)
     expect(wrapper.findComponent(ParcelWhFilterSelectors).exists()).toBe(true)
     expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось загрузить посылки для поиска')
-    api.load.mockResolvedValueOnce(lookupSnapshot({ lookupPage: { page: 3, totalCount: 105, items: [] } }))
-    await wrapper.findAll('button').find(button => button.text() === 'Повторить загрузку').trigger('click')
-    await flushPromises()
-    expect(api.load.mock.calls.slice(1)).toEqual(Array(2).fill([8, expect.objectContaining({ page: '3', stickerPrefix: '00' })]))
-    expect(wrapper.getComponent(PaginationFooter).props('page')).toBe(3)
+    expect(api.load.mock.calls.slice(1)).toEqual([[8, expect.objectContaining({ page: '3', stickerPrefix: '00' })]])
+    expect(wrapper.findComponent(PaginationFooter).exists()).toBe(false)
+    expect(api.returnUrl).toBe(destination)
+    expect(api.currentRoute.value.path).toBe('/login')
   })
 
-  it('combines the shared saved, check, zone and status filters with sorting and page size', async () => {
+  it('uses the saved filter and ignores obsolete check, zone and status filters from older URLs', async () => {
+    Object.assign(api.route.query, { statusId: '10', checkStatusProjectionKind: '20', zone: '2' })
     openMonitor()
     await flushPromises()
+    const filterBar = wrapper.getComponent(ParcelWhFilterSelectors)
+    expect(filterBar.findAllComponents({ name: 'v-select' }).map(select => select.props('label'))).toEqual(['Пользовательский фильтр'])
+    expect(api.load.mock.lastCall[1]).toEqual({ page: '2', pageSize: '50', sortBy: 'id', sortOrder: 'asc',
+      stickerPrefix: '00', parcelFilterId: '9' })
     api.load.mockResolvedValue(lookupSnapshot({ lookupPage: { page: 1, totalCount: 0, items: [] } }))
     const saved = wrapper.getComponent(ParcelSavedFilterSelector).getComponent({ name: 'v-select' })
     saved.vm.$emit('update:modelValue', null)
-    const filters = wrapper.getComponent(ParcelWhFilterSelectors)
-    filters.vm.$emit('update:parcels-wh-status', 10)
-    filters.vm.$emit('update:parcels-wh-check-status-projection', 20)
-    filters.vm.$emit('update:parcels-wh-zone', 2)
     wrapper.getComponent({ name: 'v-data-table-server' }).vm.$emit('update:sortBy', [{ key: 'postingNumber', order: 'desc' }])
     wrapper.getComponent(PaginationFooter).vm.$emit('update:itemsPerPage', -1)
     await flushPromises()
-    expect(api.load).toHaveBeenLastCalledWith(8, expect.objectContaining({ page: '1', pageSize: '-1',
-      sortBy: 'postingNumber', sortOrder: 'desc', statusId: '10', checkStatusProjectionKind: '20', zone: '2' }))
-    expect(api.load.mock.lastCall[1]).not.toHaveProperty('parcelFilterId')
+    const query = { page: '1', pageSize: '-1', sortBy: 'postingNumber', sortOrder: 'desc', stickerPrefix: '00' }
+    expect(api.load).toHaveBeenLastCalledWith(8, query)
+    expect(api.replace).toHaveBeenLastCalledWith({ query })
     expect(wrapper.getComponent(PaginationFooter).props('maxPage')).toBe(1)
   })
 
   it('shows the page error once when reconciliation also fails, retaining the saved page', async () => {
+    const loadError = new Error('Invalid snapshot')
+    const connectionError = new Error('Invalid connection')
+    expectDiagnostics(
+      ['Подключение обновлений монитора сканирования', connectionError],
+      ['Не удалось загрузить посылки для поиска', loadError]
+    )
     openMonitor()
     await flushPromises()
-    api.load.mockRejectedValueOnce(new Error('Invalid snapshot'))
-    onConnectionError(new Error('Invalid connection'))
+    api.load.mockRejectedValueOnce(loadError)
+    onConnectionError(connectionError)
     await flushPromises()
     expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
     expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось загрузить посылки для поиска')
@@ -257,19 +650,26 @@ describe('Lookup monitor', () => {
   })
 
   it('does not let an abandoned view report a late connection failure or failed disconnect', async () => {
+    const connectionError = new Error('Invalid late connection')
+    const disconnectError = new Error('Invalid disconnect')
+    expectDiagnostics(
+      ['Подключение закрытого монитора сканирования', connectionError],
+      ['Отключение монитора поиска посылок', disconnectError]
+    )
     openMonitor()
     await flushPromises()
-    api.stop.mockRejectedValueOnce(new Error('Invalid disconnect'))
+    api.stop.mockRejectedValueOnce(disconnectError)
     wrapper.unmount()
     wrapper = null
-    onConnectionError(new Error('Invalid late connection'))
+    onConnectionError(connectionError)
     await flushPromises()
-    expect(console.error).toHaveBeenCalledTimes(2)
     expect(api.load).toHaveBeenCalledOnce()
   })
 
   it('keeps a final saved page if the job finishes before live observation starts', async () => {
-    api.start.mockRejectedValueOnce(new Error('Invalid status'))
+    const error = new Error('Invalid status')
+    expectDiagnostics(['Подписка на остановленное задание', error])
+    api.start.mockRejectedValueOnce(error)
     api.load.mockResolvedValueOnce(lookupSnapshot()).mockResolvedValueOnce(lookupSnapshot({ status: 20 }))
     openMonitor()
     await flushPromises()
@@ -280,33 +680,40 @@ describe('Lookup monitor', () => {
     expect(wrapper.findAll('.v-data-table-row')).toHaveLength(2)
   })
 
-  it('restores live updates when the operator retries after a connection failure', async () => {
+  it('opens login after confirming a terminal connection failure for an active job', async () => {
+    const error = new Error('Invalid connection')
+    expectDiagnostics(['Не удалось подключить обновления монитора сканирования', error])
     openMonitor()
     await flushPromises()
-    onConnectionError(new Error('Invalid connection'))
+    onConnectionError(error)
     await flushPromises()
     expect(api.load).toHaveBeenCalledTimes(2)
     expect(api.start).toHaveBeenCalledOnce()
     expect(api.stop).toHaveBeenCalledOnce()
-    await wrapper.findAll('button').find(button => button.text() === 'Повторить загрузку').trigger('click')
-    await flushPromises()
-    expect(api.start).toHaveBeenCalledTimes(2)
+    expect(api.replace).toHaveBeenCalledExactlyOnceWith('/login')
+    expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось подключить обновления монитора сканирования')
     expect(wrapper.text()).not.toContain('Повторить загрузку')
   })
 
-  it.each(['start', 'connection', 'options', 'navigation'])('shows the %s failure in the page alert', async failure => {
+  it.each([
+    ['start', 'Не удалось подключить обновления монитора сканирования'],
+    ['connection', 'Не удалось подключить обновления монитора сканирования'],
+    ['options', 'Не удалось загрузить фильтры посылок'],
+    ['navigation', 'Не удалось открыть посылку']
+  ])('shows the %s failure in the page alert', async (failure, message) => {
     const error = new Error('Invalid internal message')
+    expectDiagnostics([message, error])
     if (failure === 'start') api.start.mockRejectedValueOnce(error)
-    if (failure === 'options') api.statuses.mockRejectedValueOnce(error)
+    if (failure === 'options') api.filters.mockRejectedValueOnce(error)
     if (failure === 'navigation') api.push.mockRejectedValueOnce(error)
     openMonitor()
     await flushPromises()
     if (failure === 'connection') onConnectionError(error)
-    if (failure === 'navigation') await wrapper.get('[aria-label="Открыть посылку № 312"]').trigger('click')
+    if (failure === 'navigation') await wrapper.findAll('.v-data-table-row')[0].trigger('click')
     await flushPromises()
     await nextTick()
     expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-    expect(wrapper.get('[role="alert"]').text()).toMatch(/Не удалось/)
+    expect(wrapper.get('[role="alert"]').text()).toContain(message)
     expect(wrapper.text()).not.toContain('Invalid internal message')
     if (failure === 'start') expect(api.stop).toHaveBeenCalledOnce()
   })

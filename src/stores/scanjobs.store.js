@@ -110,8 +110,7 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     syncClosed = false,
     syncLoading = false,
     syncErrors = false,
-    clearOnStop = true,
-    onConnectionError = null
+    clearOnStop = true
   } = {}) {
     let connection = null
     let startPromise = null
@@ -120,6 +119,7 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     let snapshotHandler = null
     let closedHandler = null
     let followEventHandler = null
+    let connectionErrorHandler = null
 
     function ensureConnection() {
       if (connection) {
@@ -163,8 +163,8 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
         if (err && syncErrors) {
           monitorError.value = err
         }
-        if (connection === currentConnection && onConnectionError) {
-          onConnectionError(err ?? new Error('Соединение с монитором сканирования закрыто'))
+        if (connection === currentConnection) {
+          connectionErrorHandler?.(err ?? new Error('Соединение с монитором сканирования закрыто'))
         }
       })
 
@@ -174,7 +174,7 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
             if (syncErrors) {
               monitorError.value = err
             }
-            if (connection === currentConnection) onConnectionError?.(err)
+            if (connection === currentConnection) connectionErrorHandler?.(err)
           })
         }
 
@@ -183,6 +183,7 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
             if (syncErrors) {
               monitorError.value = err
             }
+            if (connection === currentConnection) connectionErrorHandler?.(err)
           })
         }
       })
@@ -222,7 +223,8 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
         boxId = null,
         bucketIndex = null,
         onSnapshot = null,
-        onClosed = null
+        onClosed = null,
+        onConnectionError = null
       } = {}
     ) {
       if (syncLoading) {
@@ -236,6 +238,7 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
       }
       snapshotHandler = onSnapshot
       closedHandler = onClosed
+      connectionErrorHandler = onConnectionError
 
       try {
         const request = buildMonitorRequest(scanJobId, area, boxId, bucketIndex)
@@ -258,6 +261,7 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
 
     async function clear() {
       lastObserveRequest = null
+      connectionErrorHandler = null
 
       if (!connection || connection.state !== signalR.HubConnectionState.Connected) {
         return false
@@ -318,6 +322,7 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
       snapshotHandler = null
       closedHandler = null
       followEventHandler = null
+      connectionErrorHandler = null
       lastObserveRequest = null
       lastFollowRequest = null
 
@@ -366,9 +371,11 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
   })
 
   function createLookupMonitorChannel(onConnectionError) {
-    const channel = createMonitorChannel({ clearOnStop: false, onConnectionError })
+    const channel = createMonitorChannel({ clearOnStop: false })
     return {
-      start: (scanJobId, handlers) => channel.start(scanJobId, { ...handlers, area: scanjobMonitorArea.Lookup }),
+      start: (scanJobId, handlers) => channel.start(scanJobId, { ...handlers, area: scanjobMonitorArea.Lookup, onConnectionError }),
+      followUser: channel.followUser,
+      clearFollowUser: channel.clearFollowUser,
       stop: channel.stop
     }
   }
@@ -439,7 +446,8 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
       boxId = null,
       bucketIndex = null,
       onSnapshot = null,
-      onClosed = null
+      onClosed = null,
+      onConnectionError = null
     } = {}
   ) {
     return monitorChannel.start(scanJobId, {
@@ -447,7 +455,8 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
       boxId,
       bucketIndex,
       onSnapshot,
-      onClosed
+      onClosed,
+      onConnectionError
     })
   }
 

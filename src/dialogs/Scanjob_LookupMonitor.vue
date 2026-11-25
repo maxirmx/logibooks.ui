@@ -3,45 +3,51 @@
 // All rights reserved.
 // This file is a part of Logibooks UI application.
 
-import { computed, onMounted, onUnmounted, provide, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { computed, onMounted, onUnmounted, provide, ref, watch } from 'vue'
+import { isNavigationFailure, useRoute, useRouter } from 'vue-router'
 import CorrectedWeightDisplay from '@/components/CorrectedWeightDisplay.vue'
-import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import PaginationFooter from '@/components/PaginationFooter.vue'
 import ParcelWhFilterSelectors from '@/components/ParcelWhFilterSelectors.vue'
+import ScanjobMonitorSummary from '@/components/ScanjobMonitorSummary.vue'
 import { OZON_COMPANY_ID } from '@/helpers/company.constants.js'
 import { reportError } from '@/helpers/error.helpers.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
+import { recoverPageLoad } from '@/helpers/login.navigation.js'
 import { OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
+import { ozonRegisterColumnTitles } from '@/helpers/ozon.register.mapping.js'
 import { REMOVED_PARCEL_FILTER_MESSAGE } from '@/helpers/parcel.filters.js'
 import { buildParcelEditLocation, getCurrentInternalRoute, navigateParcel } from '@/helpers/parcel.navigation.helpers.js'
 import { hasParcelEditRouteAccess } from '@/helpers/parcels.list.helpers.js'
-import { getScanjobCheckStatusClass, scanjobCheckStatusProjectionKind, scanjobCheckStatusReason, scanjobCheckStatusText } from '@/helpers/scanjob.check-status.helpers.js'
-import { formatCount, scanjobMonitorArea, valueOrDash } from '@/helpers/scanjob.monitor.helpers.js'
+import {
+  buildScanjobProgressCards, formatCount, formatScannedInfoLines, scanjobMonitorArea,
+  scanjobParcelScannedInfoHeader, stickerClass, valueOrDash
+} from '@/helpers/scanjob.monitor.helpers.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { useParcelFiltersStore } from '@/stores/parcel.filters.store.js'
-import { useParcelStatusesStore } from '@/stores/parcel.statuses.store.js'
 import { useScanjobsStore } from '@/stores/scanjobs.store.js'
-import { useWarehousesStore } from '@/stores/warehouses.store.js'
 import '@/assets/styles/scanjob-monitor.css'
 
-const props = defineProps({ scanjobId: { type: Number, required: true } })
+const props = defineProps({
+  scanjobId: { type: Number, required: true },
+  selectedParcelId: { type: Number, default: null },
+  navigateToBox: { type: Function, required: true }
+})
 const route = useRoute()
 const router = useRouter()
 const store = useScanjobsStore()
 const alertStore = useAlertStore()
 const authStore = useAuthStore()
 const filterStore = useParcelFiltersStore()
-const statusStore = useParcelStatusesStore()
-const warehousesStore = useWarehousesStore()
 const inProgressStatus = 15
 const loadFailure = 'Не удалось загрузить посылки для поиска'
 
 const snapshot = ref(null)
 const busy = ref(true)
+const liveReady = ref(false)
+const closed = ref(false)
+const lookupContent = ref(null)
 const pageCurrent = ref(false)
-const pageLoadFailed = ref(false)
 const liveFailed = ref(false)
 const optionsLoading = ref(true)
 
@@ -61,9 +67,6 @@ const controls = ref({
   sortBy: sortKeys.includes(route.query.sortBy) ? route.query.sortBy : 'id',
   sortOrder: route.query.sortOrder === 'desc' ? 'desc' : 'asc',
   parcelFilterId: positiveInt(route.query.parcelFilterId),
-  checkStatusProjectionKind: positiveInt(route.query.checkStatusProjectionKind),
-  zone: positiveInt(route.query.zone),
-  statusId: route.query.statusId === '0' ? 0 : positiveInt(route.query.statusId),
   numberPrefix: textFilter(route.query.numberPrefix),
   boxNumberPrefix: textFilter(route.query.boxNumberPrefix),
   stickerPrefix: textFilter(route.query.stickerPrefix),
@@ -73,39 +76,63 @@ const controls = ref({
 const ozon = computed(() => snapshot.value?.registerType === OZON_COMPANY_ID)
 const numberKey = computed(() => ozon.value ? 'postingNumber' : 'shk')
 const headers = computed(() => [
-  { title: '№', key: 'id' },
   { title: 'Поиск', key: 'found', sortable: false },
   { title: ozon.value ? 'Номер отправления' : 'ШК', key: numberKey.value },
-  { title: 'Стикеры', key: 'stickers', sortable: false },
-  { title: 'Номер и стикер коробки', key: 'box', sortable: false },
-  { title: 'Проверка, зона, статус', key: 'checks', sortable: false },
+  ...(ozon.value ? [
+    { title: ozonRegisterColumnTitles.ozonId, key: 'ozonId', sortable: false },
+    { title: ozonRegisterColumnTitles.barcode, key: 'barcode', sortable: false }
+  ] : [
+    { title: 'Стикер (УИН)', key: 'sticker', sortable: false },
+    { title: 'Код стикера', key: 'stickerCode', sortable: false },
+    { title: 'Баркод', key: 'barcode', sortable: false }
+  ]),
+  { title: 'Номер коробки', key: 'box', sortable: false, cellProps: getBoxCellProps },
+  { title: 'Статус', key: 'statusTitle', sortable: false },
+  scanjobParcelScannedInfoHeader,
   { title: 'Описание', key: 'description', sortable: false },
   { title: 'Вес, кг', key: 'weight', sortable: false, align: 'end' },
   { title: 'Количество', key: 'quantity', sortable: false, align: 'end' }
 ])
 const sortBy = computed(() => [{ key: controls.value.sortBy, order: controls.value.sortOrder }])
 const lookupPage = computed(() => snapshot.value?.lookupPage)
+const summaryCards = computed(() => snapshot.value
+  ? buildScanjobProgressCards(snapshot.value, { includeRestrictions: false })
+  : [])
+const visibleFollowedParcelId = computed(() => {
+  const id = props.selectedParcelId
+  return pageCurrent.value && id != null && lookupPage.value?.items.some(item => item.parcel.parcelId === id) ? id : null
+})
+watch(visibleFollowedParcelId, id => {
+  if (id != null) lookupContent.value?.querySelector('.selected-parcel-row')?.scrollIntoView?.({ block: 'nearest' })
+}, { flush: 'post' })
+function getRowProps({ item }) {
+  return {
+    class: item.parcel.parcelId === visibleFollowedParcelId.value ? 'selected-parcel-row' : '',
+    ...(canOpenParcel.value ? {
+      tabindex: 0,
+      onClick: () => editParcel(item),
+      onKeydown: event => {
+        if (event.target !== event.currentTarget || (event.key !== 'Enter' && event.key !== ' ')) return
+        event.preventDefault()
+        void editParcel(item)
+      }
+    } : {})
+  }
+}
+
+function getBoxCellProps({ item }) {
+  if (!item.boxNumber) return
+  return {
+    class: item.boxId == null ? 'lookup-box-cell-unavailable' : 'lookup-box-cell',
+    onClick: event => {
+      event.stopPropagation()
+      if (item.boxId != null) void openBox(item)
+    }
+  }
+}
 const totalCount = computed(() => lookupPage.value?.totalCount ?? 0)
 const maxPage = computed(() => controls.value.pageSize === -1 ? 1 : Math.max(1, Math.ceil(totalCount.value / controls.value.pageSize)))
-const boxesRoute = computed(() => ({ name: 'scanjob-monitor-register', params: { id: props.scanjobId } }))
 const canOpenParcel = computed(() => hasParcelEditRouteAccess(authStore))
-const statusOptions = computed(() => [
-  { value: null, title: 'Все' },
-  ...statusStore.parcelStatuses.map(status => ({ value: status.id, title: status.title }))
-])
-const checkOptions = [
-  { value: null, title: 'Все' },
-  { value: scanjobCheckStatusProjectionKind.NotChecked, title: 'Не проверено' },
-  { value: scanjobCheckStatusProjectionKind.Restriction, title: 'Запрет' },
-  { value: scanjobCheckStatusProjectionKind.Defect, title: 'Брак' },
-  { value: scanjobCheckStatusProjectionKind.Checked, title: 'Проверено' }
-]
-const zoneOptions = computed(() => [
-  { value: null, title: 'Все' },
-  { value: 1, title: 'Не задана' },
-  ...warehousesStore.ops.zones.filter(zone => Number(zone.value) !== 1)
-    .map(zone => ({ value: zone.value, title: zone.name || String(zone.value) }))
-])
 
 provide('savedParcelFilter', {
   id: computed(() => controls.value.parcelFilterId),
@@ -118,7 +145,6 @@ provide('savedParcelFilter', {
 
 let active = true
 let observing = false
-let closed = false
 let version = 0
 let running = false
 let requested = false
@@ -167,7 +193,6 @@ function queueReload(delay) {
   clearTimeout(timer)
   timer = null
   if (delay === 0) {
-    pageLoadFailed.value = false
     requested = true
     void loadPage()
     return
@@ -198,14 +223,15 @@ async function loadPage() {
         const error = pendingLiveError
         pendingLiveError = null
         if (refreshed.status === inProgressStatus) {
-          showError(error, 'Не удалось подключить обновления монитора сканирования')
+          await recoverPageLoad(router, error, 'Не удалось подключить обновления монитора сканирования')
+          break
         } else {
           // The job can stop between the saved page response and live subscription.
           liveFailed.value = false
           reportError(error, { context: 'Подписка на остановленное задание' })
         }
       }
-      if (refreshed.status === inProgressStatus && !observing && !closed && !liveFailed.value) void observe()
+      if (refreshed.status === inProgressStatus && !observing && !closed.value && !liveFailed.value) void observe()
     } catch (error) {
       if (!active || currentVersion !== version) {
         reportError(error, { context: 'Ошибка устаревшего запроса посылок для поиска' })
@@ -215,12 +241,12 @@ async function loadPage() {
         await routeUpdate
         if (active && version === clearedVersion) alertStore.warning(REMOVED_PARCEL_FILTER_MESSAGE)
       } else {
-        pageLoadFailed.value = true
         if (pendingLiveError) {
           reportError(pendingLiveError, { context: 'Подключение обновлений монитора сканирования' })
           pendingLiveError = null
         }
-        showError(error, loadFailure)
+        await recoverPageLoad(router, error, loadFailure)
+        break
       }
     }
   }
@@ -229,7 +255,7 @@ async function loadPage() {
 }
 
 function handleLiveFailure(error) {
-  if (!active || closed) {
+  if (!active || closed.value) {
     // An obsolete connection cannot publish to the current page.
     reportError(error, { context: 'Подключение закрытого монитора сканирования' })
     return
@@ -238,11 +264,6 @@ function handleLiveFailure(error) {
   pendingLiveError = error
   void stopObserving()
   if (timer == null) queueReload(0)
-}
-
-function retry() {
-  liveFailed.value = false
-  queueReload(0)
 }
 
 async function observe() {
@@ -256,14 +277,16 @@ async function observe() {
       },
       onClosed: jobId => {
         if (active && jobId === props.scanjobId) {
-          closed = true
+          closed.value = true
           liveFailed.value = false
           void stopObserving()
           queueReload(0)
         }
       }
     })
+    if (!active || !observing) return
     liveFailed.value = false
+    liveReady.value = true
   } catch (error) {
     handleLiveFailure(error)
   }
@@ -271,6 +294,7 @@ async function observe() {
 
 async function stopObserving() {
   observing = false
+  liveReady.value = false
   try {
     await live.stop()
   } catch (error) {
@@ -281,7 +305,7 @@ async function stopObserving() {
 
 async function loadOptions() {
   try {
-    await Promise.all([statusStore.ensureLoaded(), warehousesStore.ensureOpsLoaded(), filterStore.getAll()])
+    await filterStore.getAll()
   } catch (error) {
     showError(error, 'Не удалось загрузить фильтры посылок')
   } finally {
@@ -289,27 +313,36 @@ async function loadOptions() {
   }
 }
 
-async function editParcel(item) {
+async function navigateFromLookup(navigate, failureMessage) {
   await routeUpdate
   if (!active || !pageCurrent.value) return
   try {
-    await navigateParcel(router, buildParcelEditLocation({
-      routeName: 'Редактирование посылки',
-      parcelId: item.parcel.parcelId,
-      registerId: snapshot.value.registerId,
-      mode: OP_MODE_WAREHOUSE,
-      returnUrl: getCurrentInternalRoute(router)
-    }))
+    const result = await navigate()
+    if (isNavigationFailure(result)) throw result
   } catch (error) {
-    showError(error, 'Не удалось открыть посылку')
+    showError(error, failureMessage)
   }
 }
 
-function stickers(item) {
-  const values = ozon.value
-    ? [['Штрихкод', item.parcel.barcode], ['ID отправления', item.ozonId]]
-    : [['Стикер (УИН)', item.parcel.sticker], ['Код стикера', item.parcel.stickerCode], ['Баркод', item.parcel.barcode]]
-  return values.filter(([, value]) => value)
+function editParcel(item) {
+  return navigateFromLookup(() => navigateParcel(router, buildParcelEditLocation({
+    routeName: 'Редактирование посылки',
+    parcelId: item.parcel.parcelId,
+    registerId: snapshot.value.registerId,
+    mode: OP_MODE_WAREHOUSE,
+    returnUrl: getCurrentInternalRoute(router)
+  })), 'Не удалось открыть посылку')
+}
+
+function openBox(item) {
+  return navigateFromLookup(() => props.navigateToBox({ area: scanjobMonitorArea.Box, boxId: item.boxId }),
+    'Не удалось открыть коробку')
+}
+
+function lookupBoxClass(item) {
+  if (item.boxTargetCount > 0 && item.boxFoundCount === item.boxTargetCount) return stickerClass(true)
+  if (item.boxStickerScanned || item.boxFoundCount > 0) return 'monitor-status monitor-status-partial'
+  return stickerClass(false)
 }
 
 onMounted(() => {
@@ -322,49 +355,27 @@ onUnmounted(() => {
   clearTimeout(timer)
   void stopObserving()
 })
+
+defineExpose({ snapshot, busy, closed, liveReady, followUser: live.followUser, clearFollowUser: live.clearFollowUser })
 </script>
 
 <template>
-  <div class="settings table-3 list-with-filters">
-    <div class="header-with-actions">
-      <h1 class="primary-heading">{{ snapshot?.scanJobName || `Задание № ${scanjobId}` }} | Посылки для поиска</h1>
-      <div v-if="busy" class="header-actions-bar">
-        <div class="header-actions header-actions-group" role="status" aria-label="Загрузка посылок">
-          <span class="spinner-border spinner-border-m"></span>
-        </div>
-      </div>
-    </div>
-    <hr class="hr" />
-    <PageAlertRegion />
-
-    <nav class="scanjob-monitor-view-switch" aria-label="Режим монитора сканирования">
-      <v-btn :to="boxesRoute">Коробки</v-btn>
-      <v-btn variant="tonal" aria-current="page" disabled>Посылки для поиска</v-btn>
-    </nav>
-
+  <div ref="lookupContent">
     <template v-if="snapshot">
-      <p v-if="snapshot.lookupFoundCount != null">
-        Найдено {{ formatCount(snapshot.lookupFoundCount) }} · Не найдено {{ formatCount(snapshot.lookupNotFoundCount) }}
-      </p>
-      <p v-else-if="snapshot.lookupRemainingCount != null">Осталось найти {{ formatCount(snapshot.lookupRemainingCount) }}</p>
+      <ScanjobMonitorSummary :cards="summaryCards">
+        <template v-if="snapshot.lookupNotFoundCount == null && snapshot.lookupRemainingCount != null" #card-lookupProgress>
+          Осталось найти {{ formatCount(snapshot.lookupRemainingCount) }}
+        </template>
+      </ScanjobMonitorSummary>
 
       <ParcelWhFilterSelectors
         class="list-filters"
         :number-label="ozon ? 'Номер отправления' : 'ШК'"
-        :status-options="statusOptions"
-        :check-status-projection-options="checkOptions"
-        :zone-options="zoneOptions"
         :is-initializing="optionsLoading"
-        :parcels-wh-status="controls.statusId"
-        :parcels-wh-check-status-projection="controls.checkStatusProjectionKind"
-        :parcels-wh-zone="controls.zone"
         :local-parcel-number-search="controls.numberPrefix"
         :local-box-number-search="controls.boxNumberPrefix"
         :local-sticker-search="controls.stickerPrefix"
         :local-product-name-search="controls.productName"
-        @update:parcels-wh-status="changeFilter('statusId', $event)"
-        @update:parcels-wh-check-status-projection="changeFilter('checkStatusProjectionKind', $event)"
-        @update:parcels-wh-zone="changeFilter('zone', $event)"
         @update:local-parcel-number-search="changeFilter('numberPrefix', $event, 250)"
         @update:local-box-number-search="changeFilter('boxNumberPrefix', $event, 250)"
         @update:local-sticker-search="changeFilter('stickerPrefix', $event, 250)"
@@ -377,6 +388,7 @@ onUnmounted(() => {
           item-value="parcel.parcelId"
           :headers="headers"
           :items="pageCurrent ? lookupPage.items : []"
+          :row-props="getRowProps"
           :items-length="pageCurrent ? totalCount : 0"
           :page="controls.page"
           :items-per-page="controls.pageSize"
@@ -388,50 +400,39 @@ onUnmounted(() => {
           no-data-text="Нет посылок по заданным условиям"
           @update:sort-by="changeSort"
         >
-          <template #[`item.id`]="{ item }">
-            <button v-if="canOpenParcel" type="button" class="link lookup-parcel-link" :aria-label="`Открыть посылку № ${item.parcel.parcelId}`" @click="editParcel(item)">
-              {{ item.parcel.parcelId }}
-            </button>
-            <span v-else>{{ item.parcel.parcelId }}</span>
+          <template #[`header.scannedInfo`]="{ column }">
+            <span class="scanjob-monitor-scanned-info-header">{{ column.title }}</span>
           </template>
           <template #[`item.found`]="{ item }">
-            <span class="status-cell" :class="item.found === true ? 'no-issues' : item.found === false ? 'lookup-pending' : ''">
-              {{ item.found === true ? 'Найдено' : item.found === false ? 'Не найдено' : 'Нет данных' }}
+            <span :class="stickerClass(item.found === true)">
+              {{ item.found === true ? 'Найдена' : 'Не сканирована' }}
             </span>
           </template>
           <template #[`item.${numberKey}`]="{ item }">{{ valueOrDash(item.parcel.parcelNumber) }}</template>
-          <template #[`item.stickers`]="{ item }">
-            <div v-for="[label, value] in stickers(item)" :key="label">{{ label }}: {{ value }}</div>
-            <span v-if="stickers(item).length === 0">—</span>
-          </template>
+          <template #[`item.ozonId`]="{ item }">{{ valueOrDash(item.ozonId) }}</template>
+          <template #[`item.sticker`]="{ item }">{{ valueOrDash(item.parcel.sticker) }}</template>
+          <template #[`item.stickerCode`]="{ item }">{{ valueOrDash(item.parcel.stickerCode) }}</template>
+          <template #[`item.barcode`]="{ item }">{{ valueOrDash(item.parcel.barcode) }}</template>
           <template #[`item.box`]="{ item }">
-            <template v-if="item.boxNumber">
-              <div>{{ item.boxNumber }}</div>
-              <v-tooltip location="top" :text="item.boxStickerScanned ? 'Коробка отсканирована' : 'Коробка не отсканирована'">
-                <template #activator="{ props: tooltipProps }">
-                  <span v-bind="tooltipProps" tabindex="0" class="status-cell" :class="item.boxStickerScanned ? 'no-issues' : 'lookup-box-unscanned'">
-                    {{ valueOrDash(item.boxSticker) }}
-                  </span>
-                </template>
-              </v-tooltip>
-            </template>
+            <v-tooltip v-if="item.boxNumber" location="top" :text="`Найдено ${formatCount(item.boxFoundCount)} из ${formatCount(item.boxTargetCount)}`">
+              <template #activator="{ props: tooltipProps }">
+                <component
+                  :is="item.boxId == null ? 'span' : 'button'"
+                  v-bind="tooltipProps"
+                  :type="item.boxId == null ? undefined : 'button'"
+                  :tabindex="item.boxId == null ? 0 : undefined"
+                  :aria-label="item.boxId == null ? undefined : `Открыть коробку № ${item.boxNumber}`"
+                  :class="lookupBoxClass(item)"
+                >{{ item.boxNumber }}</component>
+              </template>
+            </v-tooltip>
             <span v-else>Без коробки</span>
           </template>
-          <template #[`item.checks`]="{ item }">
-            <div>
-              <v-tooltip v-if="scanjobCheckStatusReason(item.parcel.checkStatusProjection)" location="top" :text="scanjobCheckStatusReason(item.parcel.checkStatusProjection)">
-                <template #activator="{ props: tooltipProps }">
-                  <span v-bind="tooltipProps" tabindex="0" class="status-cell" :class="getScanjobCheckStatusClass(item.parcel.checkStatusProjection)">
-                    {{ scanjobCheckStatusText(item.parcel.checkStatusProjection) }}
-                  </span>
-                </template>
-              </v-tooltip>
-              <span v-else class="status-cell" :class="getScanjobCheckStatusClass(item.parcel.checkStatusProjection)">
-                {{ scanjobCheckStatusText(item.parcel.checkStatusProjection) }}
-              </span>
-            </div>
-            <div>{{ valueOrDash(item.parcel.zoneName) }}</div>
-            <div>{{ valueOrDash(item.parcel.statusTitle) }}</div>
+          <template #[`item.statusTitle`]="{ item }">{{ valueOrDash(item.parcel.statusTitle) }}</template>
+          <template #[`item.scannedInfo`]="{ item }">
+            <span class="scanjob-monitor-scanned-info">
+              <span v-for="(line, index) in formatScannedInfoLines(item.parcel)" :key="index">{{ line }}</span>
+            </span>
           </template>
           <template #[`item.description`]="{ item }">{{ valueOrDash(item.parcel.productName) }}</template>
           <template #[`item.weight`]="{ item }">
@@ -454,22 +455,13 @@ onUnmounted(() => {
         </div>
       </v-card>
     </template>
-    <v-btn v-if="(pageLoadFailed || liveFailed) && !busy" @click="retry">Повторить загрузку</v-btn>
   </div>
 </template>
 
 <style scoped>
-.lookup-pending {
-  background: #fff2d6;
-  color: #6c4300;
-}
-.lookup-box-unscanned {
-  background: #eee;
-  color: #464646;
-}
-.lookup-parcel-link {
-  color: var(--primary-color);
-  font: inherit;
-  text-decoration: underline;
+/* The shared table styles set cursor: default !important on table cells. */
+:deep(.v-data-table__tr--clickable > td:not(.lookup-box-cell-unavailable)),
+:deep(td.lookup-box-cell) {
+  cursor: pointer !important;
 }
 </style>

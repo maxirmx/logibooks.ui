@@ -6,6 +6,7 @@
 - Core owns totals, adjusted weights, reconciliation, and automatic box calculations. Display saved aggregate and box values; keep pending-state guards for invalid corrected output.
 - Use existing operation-progress polling until terminal completion, including cancellation cleanup, then perform one coordinated reload of register, visible boxes, and the current parcel page. Preserve filters, pagination, and entered values.
 - Do not add totals-refresh controls, totals-retry loops, repair queues, or totals notifications. Retain request coalescing, stale-response protection, and unrelated passport/scanner subscriptions.
+- Do not offer page-level reload or retry buttons after a page load or terminal connection failure. Use the shared login recovery flow, preserve the current internal URL for sign-in, and show the failure through the login page's alert region. Operation-specific recovery controls may still check the outcome of an operation.
 - Register headers keep the standalone, leftmost spinner group with `header-actions header-actions-group` and `spinner-border spinner-border-m`. Show it during loading except while a visible operation dialog shows progress. Keep loading flags for action guards and keep spinner visibility independent of totals readiness.
 
 ## Copyright headers

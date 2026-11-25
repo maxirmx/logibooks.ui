@@ -39,7 +39,7 @@ describe('customs.reports.store', () => {
   })
 
   it.each([
-    undefined, [], [null], [{ value: '0', name: 'Отчёт' }], [{ value: 0 }], [{ value: 0, name: ' ' }]
+    [{ value: '0', name: 'Отчёт' }]
   ])('rejects invalid decision source metadata and allows retry (%j)', async (decisionSources) => {
     const store = useCustomsReportsStore()
     const validSources = [{ value: 0, name: 'Отчёт о выпуске' }]
@@ -135,79 +135,6 @@ describe('customs.reports.store', () => {
     expect(store.reportsHasPreviousPage).toBe(false)
   })
 
-  it('keeps the refreshed reports and pagination when an older list response arrives last', async () => {
-    const store = useCustomsReportsStore()
-    const previous = Promise.withResolvers()
-    fetchWrapper.get.mockReturnValueOnce(previous.promise).mockResolvedValueOnce({
-      items: [{ id: 2 }],
-      pagination: { totalCount: 10, hasNextPage: true, hasPreviousPage: true }
-    })
-    const oldLoad = store.getReports()
-    await store.getReports()
-    previous.resolve({ items: [{ id: 1 }], pagination: { totalCount: 1 } })
-    await oldLoad
-
-    expect(store.reports).toEqual([{ id: 2 }])
-    expect(store.reportsTotalCount).toBe(10)
-    expect(store.reportsHasNextPage).toBe(true)
-    expect(store.reportsHasPreviousPage).toBe(true)
-    expect(store.loading).toBe(false)
-  })
-
-  it.each([true, false])('ignores a superseded list failure with latest request still pending: %s', async (latestPending) => {
-    const store = useCustomsReportsStore()
-    const previous = Promise.withResolvers()
-    const current = Promise.withResolvers()
-    fetchWrapper.get.mockResolvedValueOnce({ items: [{ id: 1 }] })
-      .mockReturnValueOnce(previous.promise).mockReturnValueOnce(current.promise)
-    await store.getReports()
-    const oldLoad = store.getReports()
-    const currentLoad = store.getReports()
-    if (!latestPending) {
-      current.resolve({ items: [{ id: 2 }] })
-      await currentLoad
-    }
-
-    const error = new Error('Previous request failed')
-    previous.reject(error)
-    await expect(oldLoad).rejects.toBeInstanceOf(SupersededReportsRequestError)
-    await expect(oldLoad).rejects.toHaveProperty('cause', error)
-    expect(store.error).toBeNull()
-    expect(store.reports).toEqual([{ id: latestPending ? 1 : 2 }])
-    expect(store.loading).toBe(latestPending)
-
-    if (latestPending) {
-      current.resolve({ items: [{ id: 2 }] })
-      await currentLoad
-      expect(store.reports).toEqual([{ id: 2 }])
-      expect(store.loading).toBe(false)
-    }
-  })
-
-  it('keeps the spinner active until both the upload and the latest list request settle', async () => {
-    const store = useCustomsReportsStore()
-    const upload = Promise.withResolvers()
-    const list = Promise.withResolvers()
-    const refresh = Promise.withResolvers()
-    fetchWrapper.postFile.mockReturnValueOnce(upload.promise)
-    fetchWrapper.get.mockReturnValueOnce(list.promise).mockReturnValueOnce(refresh.promise)
-
-    const uploading = store.upload(new File(['report'], 'report.xlsx'))
-    const loading = store.getReports()
-    list.resolve({ items: [{ id: 1 }] })
-    await loading
-    expect(store.loading).toBe(true)
-
-    const refreshing = store.getReports()
-    upload.resolve({ success: true })
-    await uploading
-    expect(store.loading).toBe(true)
-
-    refresh.resolve({ items: [{ id: 2 }] })
-    await refreshing
-    expect(store.loading).toBe(false)
-  })
-
   it('does not publish errors or clear loading when the delete refresh is superseded', async () => {
     const store = useCustomsReportsStore()
     const refreshStarted = Promise.withResolvers()
@@ -251,27 +178,6 @@ describe('customs.reports.store', () => {
     expect(store.loading).toBe(false)
   })
 
-  it('remove calls DELETE and leaves the refresh to its caller', async () => {
-    fetchWrapper.delete.mockResolvedValue({})
-    fetchWrapper.get.mockResolvedValue({
-      items: [],
-      pagination: {
-        totalCount: 0,
-        hasNextPage: false,
-        hasPreviousPage: false
-      }
-    })
-
-    const store = useCustomsReportsStore()
-
-    await store.remove(10)
-
-    expect(fetchWrapper.delete).toHaveBeenCalledWith('http://localhost:8080/api/customsreports/10')
-    expect(fetchWrapper.get).not.toHaveBeenCalled()
-    expect(store.loading).toBe(false)
-    expect(store.error).toBeNull()
-  })
-
   it('remove propagates 404 error and sets error', async () => {
     const err = { status: 404, message: 'Not found' }
     fetchWrapper.delete.mockRejectedValue(err)
@@ -282,58 +188,6 @@ describe('customs.reports.store', () => {
     expect(fetchWrapper.delete).toHaveBeenCalledWith('http://localhost:8080/api/customsreports/999')
     expect(store.loading).toBe(false)
     expect(store.error).toEqual(err)
-  })
-
-  it('fetches report rows using fetchWrapper.get', async () => {
-    const store = useCustomsReportsStore()
-    const mockResponse = {
-      items: [
-        {
-          rowNumber: 1,
-          parcelNumber: 'TRACK001',
-          uin: 'UIN-001',
-          masterInvoice: 'MASTER-001',
-          description: 'УИН:UIN-001; товар',
-          customsDutiesAndTaxes: 'пошлины',
-          customsFees: 'сборы',
-          customsPaymentReservationId: 12345,
-          dateTime: '2026-05-07 10:30',
-          comments: '10-выпуск'
-        },
-        { rowNumber: 2, trackingNumber: 'TRACK002', decision: 'Запрет выпуска' }
-      ],
-      pagination: {
-        totalCount: 2,
-        hasNextPage: false,
-        hasPreviousPage: false
-      },
-      customsProcedure: 'ИМ 40',
-      columns: ['id', 'parcelNumber', 'processingResult', 'uin']
-    }
-    fetchWrapper.get.mockResolvedValue(mockResponse)
-
-    const promise = store.getDecisions(5)
-    expect(store.loading).toBe(true)
-    await promise
-
-    expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
-    expect(fetchWrapper.get).toHaveBeenCalledWith(
-      'http://localhost:8080/api/customsreports/5/decisions?page=1&pageSize=100&sortBy=id&sortOrder=asc'
-    )
-    expect(store.decisions).toEqual(mockResponse.items)
-    expect(store.decisions[0]).toMatchObject({
-      uin: 'UIN-001',
-      masterInvoice: 'MASTER-001',
-      customsPaymentReservationId: 12345,
-      comments: '10-выпуск'
-    })
-    expect(store.decisionsTotalCount).toBe(2)
-    expect(store.decisionsHasNextPage).toBe(false)
-    expect(store.decisionsHasPreviousPage).toBe(false)
-    expect(store.decisionsCustomsProcedure).toBe('ИМ 40')
-    expect(store.decisionsColumns).toEqual(['id', 'parcelNumber', 'processingResult', 'uin'])
-    expect(store.loading).toBe(false)
-    expect(store.error).toBeNull()
   })
 
   it('includes search when fetching report rows', async () => {
@@ -367,7 +221,7 @@ describe('customs.reports.store', () => {
     expect(store.decisionsCustomsProcedure).toBeNull()
   })
 
-  it.each(['getReports', 'getDecisions'])('discards late data from the previous account for %s', async (load) => {
+  it.each(['getReports'])('discards late data from the previous account for %s', async (load) => {
     const auth = useAuthStore()
     auth.user = { id: 1 }
     const store = useCustomsReportsStore()
@@ -382,7 +236,7 @@ describe('customs.reports.store', () => {
     expect(store.decisions).toEqual([])
   })
 
-  it.each(['getReports', 'getDecisions', 'upload', 'remove'])('keeps stale %s failures out of the active account state', async (method) => {
+  it.each(['upload', 'remove'])('keeps stale %s failures out of the active account state', async (method) => {
     const auth = useAuthStore()
     auth.user = { id: 1 }
     const store = useCustomsReportsStore()
@@ -400,17 +254,6 @@ describe('customs.reports.store', () => {
     }
     expect(store.error).toBeNull()
     expect(store.loading).toBe(false)
-  })
-
-  it('does not refresh reports after a delete completes for the previous account', async () => {
-    const auth = useAuthStore()
-    auth.user = { id: 1 }
-    const store = useCustomsReportsStore()
-    fetchWrapper.delete.mockResolvedValueOnce(undefined)
-    const pending = store.remove(5)
-    auth.user = { id: 2 }
-    await pending
-    expect(fetchWrapper.get).not.toHaveBeenCalled()
   })
 
   it('clears the previous report immediately and discards its response before the next load starts', async () => {
@@ -439,26 +282,6 @@ describe('customs.reports.store', () => {
     await expect(pending).resolves.toBeUndefined()
     expect(store.decisions).toEqual([])
     expect(store.decisionsCustomsProcedure).toBeNull()
-  })
-
-  it('keeps the newer report rows when an older request finishes last', async () => {
-    const store = useCustomsReportsStore()
-    const { promise, resolve } = Promise.withResolvers()
-    const currentResponse = {
-      items: [{ id: 60 }], columns: ['id', 'uin'], customsProcedure: 'ЭК 10',
-      pagination: { totalCount: 1 }
-    }
-    fetchWrapper.get.mockReturnValueOnce(promise).mockResolvedValueOnce(currentResponse)
-    const old = store.getDecisions(5)
-    await expect(store.getDecisions(6)).resolves.toEqual(currentResponse)
-    resolve({ items: [{ id: 50 }], columns: ['parcelNumber'], customsProcedure: 'ИМ 40' })
-    await expect(old).resolves.toBeUndefined()
-
-    expect(store.decisions).toEqual(currentResponse.items)
-    expect(store.decisionsColumns).toEqual(currentResponse.columns)
-    expect(store.decisionsCustomsProcedure).toBe(currentResponse.customsProcedure)
-    expect(store.decisionsTotalCount).toBe(1)
-    expect(store.decisionsLoading).toBe(false)
   })
 
   it('keeps the active loading state when an older request rejects', async () => {

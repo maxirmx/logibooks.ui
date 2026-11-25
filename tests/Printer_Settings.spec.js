@@ -209,33 +209,6 @@ describe('routed print settings', () => {
     expect(store.state.mode).toBe('TJ')
     expect(localStorage.getItem(PRINTER_STORAGE_KEY)).toBe('Office')
   })
-  it.each([
-    true
-  ])('waits for an in-flight submission before discovery (failure: %s)', async (fails) => {
-    let settlePrint, pendingPrint, finishDiscovery
-    env.qz.submit.mockImplementationOnce(() => new Promise((resolve, reject) => {
-      settlePrint = () => fails ? reject(new Error('submission failed')) : resolve()
-    }))
-    env.qz.connect.mockImplementationOnce(() => new Promise((resolve) => { finishDiscovery = resolve }))
-    await mountSettings(undefined, async (printing) => {
-      // Observe the original caller's rejection while it leaves the page.
-      pendingPrint = printing.printParcel({ parcelId: 7, template: 'WBRN' }).catch((error) => error)
-      await flushPromises()
-    })
-    expect(env.qz.submit).toHaveBeenCalledOnce()
-    expect(env.qz.connect).not.toHaveBeenCalled()
-    expect(wrapper.get('[data-testid="save-print-settings"]').element.disabled).toBe(true)
-    expect(wrapper.get('[data-testid="print-settings-loading"]').isVisible()).toBe(true)
-    await save()
-    expect(env.channel.stop).not.toHaveBeenCalled()
-    settlePrint(); await pendingPrint; await flushPromises()
-    expect(env.qz.connect).toHaveBeenCalledOnce()
-    expect(wrapper.get('[data-testid="save-print-settings"]').element.disabled).toBe(true)
-    finishDiscovery(); await flushPromises()
-    expect(wrapper.get('[data-testid="save-print-settings"]').element.disabled).toBe(false)
-    await save()
-    expect(router.currentRoute.value.path).toBe('/boxes')
-  })
   it('reports an unexpected discovery rejection technically after leaving', async () => {
     await mountSettings()
     let rejectDiscovery

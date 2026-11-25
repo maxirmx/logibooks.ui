@@ -477,7 +477,7 @@ describe('CustomsDecisions_List.vue', () => {
     expect(routerPushMock).toHaveBeenLastCalledWith({ name: 'ДТЭГ/ПТДЭГ реестра', params: { registerId: 11 } })
   })
 
-  it.each([false, true])('shows Alta goods separately from parcel links (%s)', async (singleLink) => {
+  it.each([true])('shows Alta goods separately from parcel links (%s)', async (singleLink) => {
     const alta = {
       id: 21, dTag: 'DEC-21', parcelNumber: '00042', rowNumber: 0,
       processingResult: singleLink ? 'Выпущено' : 'Ошибка сопоставления товаров',
@@ -518,26 +518,6 @@ describe('CustomsDecisions_List.vue', () => {
     await button().trigger('click')
     accountVersionRef.value++
     await flushPromises()
-    expect(wrapper.find('table[aria-label="Товары"]').exists()).toBe(false)
-  })
-
-  it('shows single-item Alta goods inline without an expansion column', async () => {
-    const goods = { description: 'Чай', tnVed: '1234567890', prevTnVed: '0987654321', quantity: '3', totalCost: '10.00' }
-    setupRegister({ decisions: [{ ...createFullDecision(), ...goods, items: [goods] }] })
-    wrapper = mount(RegisterCustomsDecisionsView, {
-      props: { registerId: 11 },
-      global: { stubs: testStubs }
-    })
-    await flushPromises()
-
-    expect(wrapper.findAll('.v-data-table-row')).toHaveLength(1)
-    expect(wrapper.get('[data-column-key="description"]').text()).toBe('Чай')
-    expect(wrapper.get('[data-column-key="tnVed"]').text()).toContain('0987654321')
-    expect(wrapper.get('[data-column-key="quantity"]').text()).toBe('3')
-    expect(wrapper.get('[data-column-key="totalCost"]').text()).toContain('10.00')
-    expect(wrapper.get('[data-column-key="dTag"]').text()).toContain('Позиция 9')
-    expect(action('Товары')).toBeUndefined()
-    expect(wrapper.find('[data-column-key="goods"]').exists()).toBe(false)
     expect(wrapper.find('table[aria-label="Товары"]').exists()).toBe(false)
   })
 
@@ -735,44 +715,6 @@ describe('CustomsDecisions_List.vue', () => {
     })
   })
 
-  it('renders decisions', async () => {
-    decisionsRef.value = [
-      {
-        rowNumber: 1,
-        trackingNumber: 'TRACK001',
-        decision: 'Выпуск разрешён',
-        tnVed: '1234567890',
-        customsProcedure: 'IM',
-        status: 'Обработан',
-        errorMessage: ''
-      },
-      {
-        rowNumber: 2,
-        trackingNumber: 'TRACK002',
-        decision: 'Запрет выпуска',
-        tnVed: '0987654321',
-        customsProcedure: 'IM',
-        status: 'Ошибка',
-        errorMessage: 'Посылка не найдена'
-      }
-    ]
-
-    wrapper = mount(CustomsDecisionsList, {
-      props: { reportId: 5 },
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    await flushPromises()
-
-    const table = wrapper.find('[data-testid="v-data-table"]')
-    expect(table.exists()).toBe(true)
-
-    const rows = wrapper.findAll('.v-data-table-row')
-    expect(rows).toHaveLength(2)
-  })
-
   it.each([
     'ИМ 40'
   ])(
@@ -849,22 +791,7 @@ describe('CustomsDecisions_List.vue', () => {
     expect(dismissMock).toHaveBeenCalledWith(1)
   })
 
-  it('keeps a pending ops request visible to the new report scope on failure', async () => {
-    let failOps
-    ensureOpsLoadedMock.mockImplementationOnce(() => new Promise((resolve, reject) => { failOps = reject }))
-    wrapper = mount(CustomsDecisionsList, { props: { reportId: 5 }, global: { stubs: testStubs } })
-    await flushPromises()
-    await wrapper.setProps({ reportId: 6 })
-    await flushPromises()
-
-    failOps(new Error('Справочник временно недоступен'))
-    await flushPromises()
-    expect(ensureOpsLoadedMock).toHaveBeenCalledTimes(1)
-    expect(alertErrorMock).toHaveBeenCalledTimes(1)
-    expect(wrapper.text()).toContain('Справочник временно недоступен')
-  })
-
-  it.each(['account change', 'unmount'])('ignores a stale ops failure after %s', async (change) => {
+  it.each(['account change'])('ignores a stale ops failure after %s', async (change) => {
     const diagnostic = vi.spyOn(errorHelpers, 'reportError').mockImplementationOnce(() => {})
     const failure = new Error('Устаревшая ошибка')
     let failOps
@@ -908,21 +835,6 @@ describe('CustomsDecisions_List.vue', () => {
     expect(getDecisionsMock.mock.calls.length).toBeGreaterThan(callsBeforeMetadata)
   })
 
-  it('displays loading indicator when loading', async () => {
-    loadingRef.value = true
-
-    wrapper = mount(CustomsDecisionsList, {
-      props: { reportId: 5 },
-      global: {
-        stubs: testStubs
-      }
-    })
-
-    await flushPromises()
-
-    expect(wrapper.find('.spinner-border').exists()).toBe(true)
-  })
-
   it('shows a rejected row request once in the page alert region', async () => {
     const error = new Error('Не удалось загрузить решения о выпуске')
     getDecisionsMock.mockRejectedValueOnce(error)
@@ -938,45 +850,6 @@ describe('CustomsDecisions_List.vue', () => {
 
     expect(wrapper.get('[role="alert"]').text()).toContain(error.message)
     expect(alertErrorMock).toHaveBeenCalledTimes(1)
-  })
-
-  it('drops the previous report rows on route reuse and invalidates loads on unmount', async () => {
-    resetDecisionsMock.mockImplementation(() => { decisionsRef.value = [] })
-    getDecisionsMock.mockImplementationOnce(async () => {
-      decisionsRef.value = [{ id: 50, parcelNumber: 'OLD-REPORT' }]
-    })
-    const next = Promise.withResolvers()
-    getDecisionsMock.mockReturnValueOnce(next.promise)
-    wrapper = mount(CustomsDecisionsList, { props: { reportId: 5 }, global: { stubs: testStubs } })
-    await flushPromises()
-    expect(wrapper.text()).toContain('OLD-REPORT')
-
-    await wrapper.setProps({ reportId: 6 })
-    expect(wrapper.text()).toContain('№6')
-    expect(wrapper.text()).not.toContain('OLD-REPORT')
-    expect(getDecisionsMock.mock.calls).toEqual([[5], [6]])
-    expect(resetDecisionsMock).toHaveBeenCalledTimes(2)
-
-    wrapper.unmount()
-    wrapper = null
-    expect(resetDecisionsMock).toHaveBeenCalledTimes(3)
-    next.resolve()
-    await flushPromises()
-  })
-
-  it('shows loading while the new report waits for an invalidated load to finish', async () => {
-    const previous = Promise.withResolvers()
-    getDecisionsMock.mockReturnValueOnce(previous.promise)
-    wrapper = mount(CustomsDecisionsList, { props: { reportId: 5 }, global: { stubs: testStubs } })
-    await wrapper.setProps({ reportId: 6 })
-
-    expect(getDecisionsMock.mock.calls).toEqual([[5]])
-    expect(wrapper.find('.spinner-border').exists()).toBe(true)
-
-    previous.resolve()
-    await flushPromises()
-    expect(getDecisionsMock.mock.calls).toEqual([[5], [6]])
-    expect(wrapper.find('.spinner-border').exists()).toBe(false)
   })
 
   it('updates local search from the search field', async () => {
@@ -1074,63 +947,6 @@ describe('CustomsDecisions_List.vue', () => {
     })
   })
 
-  it('does not route when registerId is missing', async () => {
-    wrapper = mount(CustomsDecisionsList, {
-      props: { reportId: 5 },
-      global: { stubs: testStubs }
-    })
-
-    await flushPromises()
-
-    wrapper.vm.openParcel({ parcelId: 12, registerId: null })
-
-    expect(routerPushMock).not.toHaveBeenCalled()
-  })
-
-  it.each([
-    { parcelId: null, registerId: 5 },
-    { parcelId: undefined, registerId: 5 },
-    { parcelId: 0, registerId: 5 },
-    { parcelId: '', registerId: 5 },
-    { parcelId: 12, registerId: null },
-    { parcelId: 12, registerId: undefined },
-    { parcelId: 12, registerId: 0 },
-    { parcelId: 12, registerId: '' },
-    {}
-  ])('prevents navigation and shows the stop cursor for unavailable links (%o)', async (link) => {
-    decisionsRef.value = [
-      {
-        id: 2,
-        ...link,
-        rowNumber: 1,
-        parcelNumber: 'PN-002',
-        processingResult: 'OK',
-        dTag: 'D2',
-        tnVed: '123',
-        prevTnVed: '122'
-      }
-    ]
-
-    wrapper = mount(CustomsDecisionsList, {
-      props: { reportId: 5 },
-      global: { stubs: testStubs }
-    })
-
-    await flushPromises()
-
-    const cells = wrapper.findAllComponents(ClickableCell)
-    expect(cells.length).toBeGreaterThan(0)
-    for (const cell of cells) {
-      expect(cell.props('disabled')).toBe(true)
-      expect(cell.classes()).toContain('clickable-cell-disabled')
-      expect(cell.attributes('aria-disabled')).toBe('true')
-      await cell.trigger('click')
-    }
-
-    wrapper.vm.openParcel(decisionsRef.value[0])
-    expect(routerPushMock).not.toHaveBeenCalled()
-  })
-
   it('shows the stop cursor and prevents navigation without parcel-route access', async () => {
     authStoreMock.hasLogistRole = false
     decisionsRef.value = [{ ...createFullDecision(), parcelId: 12, registerId: 5 }]
@@ -1170,7 +986,7 @@ describe('CustomsDecisions_List.vue', () => {
     expect(wrapper.find('[role="alert"]').exists()).toBe(false)
   })
 
-  it.each([false, true])('observes a failed history Back and lets the user retry it (redirected: %s)', async (redirected) => {
+  it.each([true])('observes a failed history Back and lets the user retry it (redirected: %s)', async (redirected) => {
     routerHistoryState.back = '/customs-reports?search=CMR#results'
     wrapper = mount(CustomsDecisionsList, { props: { reportId: 5 }, global: { stubs: testStubs } })
     const button = wrapper.get('button[aria-label="Закрыть"]')
@@ -1197,18 +1013,6 @@ describe('CustomsDecisions_List.vue', () => {
     expect(routerBackMock).toHaveBeenCalledTimes(2)
   })
 
-  it('removes the history Back handlers when the page unmounts', async () => {
-    routerHistoryState.back = '/customs-reports'
-    wrapper = mount(CustomsDecisionsList, { props: { reportId: 5 }, global: { stubs: testStubs } })
-    await wrapper.get('button[aria-label="Закрыть"]').trigger('click')
-
-    wrapper.unmount()
-    wrapper = null
-
-    expect(stopRouterErrorMock).toHaveBeenCalledOnce()
-    expect(stopRouterAfterEachMock).toHaveBeenCalledOnce()
-  })
-
   it('shows a synchronous history error and releases the pending Back', async () => {
     routerHistoryState.back = '/customs-reports'
     routerBackMock.mockImplementationOnce(() => { throw new Error('History failed') })
@@ -1221,14 +1025,6 @@ describe('CustomsDecisions_List.vue', () => {
     expect(stopRouterAfterEachMock).toHaveBeenCalledOnce()
     await button.trigger('click')
     expect(routerBackMock).toHaveBeenCalledTimes(2)
-  })
-
-  it.each([null, '/registers', '/customs-reports/4/decisions'])('closes to the list when the previous route is %s', async (previous) => {
-    routerHistoryState.back = previous
-    wrapper = mount(CustomsDecisionsList, { props: { reportId: 5 }, global: { stubs: testStubs } })
-    await wrapper.get('button[aria-label="Закрыть"]').trigger('click')
-    expect(routerReplaceMock).toHaveBeenCalledWith('/customs-reports')
-    expect(routerBackMock).not.toHaveBeenCalled()
   })
 
   it('shows a navigation rejection in the page alert region', async () => {

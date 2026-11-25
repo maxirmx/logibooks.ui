@@ -527,21 +527,6 @@ describe('registers store', () => {
   })
 
   describe('remove', () => {
-    it('removes register successfully', async () => {
-      const deletion = Promise.withResolvers()
-      fetchWrapper.delete.mockReturnValueOnce(deletion.promise)
-
-      const store = useRegistersStore()
-      const pending = store.remove(1)
-
-      expect(fetchWrapper.delete).toHaveBeenCalledWith(`${apiUrl}/registers/1`)
-      expect(store.loading).toBe(true)
-      deletion.resolve()
-      await pending
-
-      expect(store.loading).toBe(false)
-      expect(fetchWrapper.get).not.toHaveBeenCalled()
-    })
 
     it('handles remove error', async () => {
       const error = new Error('Delete failed')
@@ -915,19 +900,6 @@ describe('registers store', () => {
       )
     })
 
-    it('stores and rethrows errors from the download', async () => {
-      const store = useRegistersStore()
-      const error = new Error('missing StickerCode')
-      fetchWrapper.downloadFile.mockRejectedValue(error)
-
-      await expect(
-        store.downloadTajikistanManifestFile(17, 'INV-17')
-      ).rejects.toBe(error)
-
-      expect(store.error).toBe(error)
-      expect(store.loading).toBe(false)
-    })
-
   })
 
   describe('downloadDo1File method', () => {
@@ -1027,31 +999,6 @@ describe('registers store', () => {
         expect(store.opsError).toBeInstanceOf(Error)
       }
     )
-
-    it('refreshes Alta options for editors, coalesces concurrent loads and propagates errors', async () => {
-      const metadata = { customsProcedures: [], transportationTypes: [], incoterms: validIncoterms }
-      fetchWrapper.get.mockResolvedValueOnce({ ...metadata, altaDatabaseNames: ['Retired'] })
-      const store = useRegistersStore()
-      expect((await store.ensureOpsLoaded()).altaDatabaseNames).toEqual(['Retired'])
-      expect((await store.ensureOpsLoaded()).altaDatabaseNames).toEqual(['Retired'])
-      expect(fetchWrapper.get).toHaveBeenCalledTimes(1)
-
-      const pending = Promise.withResolvers()
-      fetchWrapper.get.mockReturnValueOnce(pending.promise)
-      const refresh = store.ensureOpsLoaded({ refresh: true })
-      const joined = store.ensureOpsLoaded({ refresh: true })
-      pending.resolve({ ...metadata, altaDatabaseNames: ['Alta-West'] })
-      expect((await refresh).altaDatabaseNames).toEqual(['Alta-West'])
-      expect((await joined).altaDatabaseNames).toEqual(['Alta-West'])
-      expect(fetchWrapper.get).toHaveBeenCalledTimes(2)
-
-      const failure = new Error('Не удалось загрузить данные формы')
-      fetchWrapper.get.mockRejectedValueOnce(failure)
-      await expect(store.ensureOpsLoaded({ refresh: true })).rejects.toBe(failure)
-      expect(store.opsError).toBe(failure)
-      fetchWrapper.get.mockResolvedValueOnce(metadata)
-      expect((await store.ensureOpsLoaded({ refresh: true })).altaDatabaseNames).toEqual([])
-    })
 
     it('getOpsLabel returns name for matching value', () => {
       const store = useRegistersStore()

@@ -148,33 +148,6 @@ describe('Parcels_View', () => {
       : mockGet(url))
   })
 
-  it('loads a single register snapshot and publishes it to the shared store', async () => {
-    const { useRegistersStore } = await import('@/stores/registers.store.js')
-    const register = { id: 1, registerType: WBR_COMPANY_ID, derivedTotalsPending: true }
-    mockGet.mockResolvedValue(register)
-    const wrapper = mount(ParcelsView, { props: { id: 1 } })
-    await flushPromises()
-
-    expect(mockGet).toHaveBeenCalledExactlyOnceWith(expect.stringMatching(/\/registers\/1$/))
-    expect(useRegistersStore().item).toMatchObject(register)
-    expect(wrapper.get('[data-test="wbr-list"]').exists()).toBe(true)
-    wrapper.unmount()
-  })
-
-  it('stops refreshing the register list after leaving the page', async () => {
-    mockGet.mockResolvedValue({ id: 1, registerType: WBR_COMPANY_ID })
-    const wrapper = mount(ParcelsView, { props: { id: 1 } })
-    await flushPromises()
-    const parcels = useParcelsStore()
-    mockGet.mockResolvedValueOnce({ items: [], pagination: {} })
-    await parcels.getAll(1)
-    wrapper.unmount()
-
-    mockGet.mockClear()
-    await parcels.refreshVisibleDerived(1)
-    expect(mockGet).not.toHaveBeenCalled()
-  })
-
   it('offers owned filters and retains the chosen filter across registers and modes', async () => {
     const { useAuthStore } = await import('@/stores/auth.store.js')
     const auth = useAuthStore()

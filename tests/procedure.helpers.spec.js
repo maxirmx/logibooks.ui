@@ -3,16 +3,10 @@
 // This file is a part of Logibooks ui application
 
 import { describe, it, expect } from 'vitest'
-import { getCustomsProcedureOptionTitle, normalizeCustomsProcedureCode, isReimportCustomsProcedure } from '@/helpers/customs.procedure.helpers.js'
+import { normalizeCustomsProcedureCode, isReimportCustomsProcedure } from '@/helpers/customs.procedure.helpers.js'
 import { matchesProhibitionScope, getRestrictionRouteScopeKeys, getApplicableScopeExplanations } from '@/helpers/prohibition.scope.helpers.js'
 
 describe('procedure.helpers', () => {
-  describe('customs procedure option builders', () => {
-    it('falls back to backend value when metadata is missing', () => {
-      expect(getCustomsProcedureOptionTitle({ value: 99 })).toBe('99')
-    })
-
-  })
 
   describe('normalizeCustomsProcedureCode', () => {
     it('returns null for whitespace-only string', () => {

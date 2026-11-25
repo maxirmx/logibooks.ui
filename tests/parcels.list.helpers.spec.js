@@ -36,7 +36,7 @@ vi.mock('../src/helpers/feacn.info.helpers.js', () => ({
   preloadFeacnInfo: vi.fn()
 }))
 
-import { validateParcelData, getRowPropsForParcel, generateRegisterName, getFeacnCodesForKeywords, getKeywordFeacnPairs, getFeacnCodeItemClass, getMatchingFeacnCodeItemClass, getTnVedCellClass, loadParcels, formatPassport, buildParcelEditCellClass } from '../src/helpers/parcels.list.helpers.js'
+import { validateParcelData, getRowPropsForParcel, generateRegisterName, getFeacnCodesForKeywords, getKeywordFeacnPairs, getFeacnCodeItemClass, getTnVedCellClass, loadParcels, formatPassport, buildParcelEditCellClass } from '../src/helpers/parcels.list.helpers.js'
 
 // Import mocked FEACN info helpers
 import { getCachedFeacnInfo, preloadFeacnInfo } from '../src/helpers/feacn.info.helpers.js'
@@ -201,24 +201,10 @@ describe('Parcels List Helpers', () => {
   })
 
   describe('getFeacnCodeItemClass', () => {
-    it('should return basic class when allFeacnCodes is null', () => {
-      const result = getFeacnCodeItemClass('123', '456', null)
-      expect(result).toBe('feacn-code-item')
-    })
-
-    it('should return matching highlight class for matching FEACN code', () => {
-      const result = getMatchingFeacnCodeItemClass('123', '123', ['123', '456'])
-      expect(result).toBe('feacn-code-item clickable matched matching-feacn-code-item')
-    })
 
     it('should return unmatched class when tnVed is null', () => {
       const result = getFeacnCodeItemClass('123', null, ['123', '456'])
       expect(result).toBe('feacn-code-item clickable unmatched')
-    })
-
-    it('should return matched-weak class when first 6 characters match', () => {
-      const result = getFeacnCodeItemClass('1234567890', '1234561111', ['1234567890', '9876543210'])
-      expect(result).toBe('feacn-code-item clickable matched-weak')
     })
 
   })

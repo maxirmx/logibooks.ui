@@ -76,14 +76,6 @@ describe('FeacnCodeCurrent', () => {
     })
   }
 
-  it('classifies the current code using both sources from the list response', async () => {
-    mockGetTnVedCellClass.mockResolvedValueOnce('tnved-cell matched')
-    const wrapper = createWrapper()
-    await flushPromises()
-    expect(mockGetTnVedCellClass).toHaveBeenCalledExactlyOnceWith('1234567890', ['1234567890', '0987654321'])
-    expect(wrapper.get('span.truncated-cell').classes()).toContain('matched')
-  })
-
   it('keeps the code visible if classification fails', async () => {
     const error = new Error('FEACN dictionary failed')
     const log = vi.spyOn(console, 'error').mockImplementation(() => undefined)

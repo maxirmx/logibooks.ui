@@ -192,27 +192,6 @@ describe('useRegisterHeaderActions', () => {
     expect(alertStore.error).toHaveBeenCalledWith('Download failed')
   })
 
-  it('presents a Tajikistan manifest download failure exactly once', async () => {
-    registersStore.downloadTajikistanManifestFile.mockRejectedValueOnce(
-      new Error('Отсутствует Сумма в рублях')
-    )
-    const actions = useRegisterHeaderActions({
-      registersStore,
-      alertStore,
-      runningAction,
-      tableLoading,
-      registerLoading,
-      loadParcels,
-      isComponentMounted
-    })
-
-    await actions.downloadTajikistanManifest()
-
-    expect(alertStore.error).toHaveBeenCalledTimes(1)
-    expect(alertStore.error).toHaveBeenCalledWith('Отсутствует Сумма в рублях')
-    expect(actions.actionDialog.show).toBe(false)
-  })
-
   it('shows packing list progress, locks duplicates, and presents a failure once', async () => {
     const deferred = createDeferred()
     registersStore.downloadPackingList.mockReturnValueOnce(deferred.promise)

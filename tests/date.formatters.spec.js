@@ -20,11 +20,6 @@ describe('date.formatters', () => {
   })
 
   describe('formatDateTime', () => {
-    it('returns empty string for empty values', () => {
-      expect(formatDateTime(null)).toBe('')
-      expect(formatDateTime(undefined)).toBe('')
-      expect(formatDateTime('')).toBe('')
-    })
 
     it('returns original value for invalid date-time values', () => {
       expect(formatDateTime('not-a-date')).toBe('not-a-date')

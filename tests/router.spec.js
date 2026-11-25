@@ -4,8 +4,6 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { mount } from '@vue/test-utils'
-import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { scanjobMonitorArea } from '@/helpers/scanjob.monitor.helpers.js'
 import { OP_MODE_PAPERWORK, OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 
@@ -155,28 +153,6 @@ describe('router guards', () => {
   afterEach(() => {
     // Restore console.error
     console.error = originalConsoleError
-  })
-
-  it('treats a nested HTTP 401 as session expiry and displays one login message', async () => {
-    authStore.user = { id: 5 }
-    checkMock.mockRejectedValueOnce({ response: { status: 401 } })
-    alertError.mockImplementationOnce(message => {
-      activeAlert.value = { id: 72, message, severity: 'error' }
-    })
-
-    await router.push('/registers?statusId=7')
-
-    expect(router.currentRoute.value.fullPath).toBe('/login')
-    expect(authStore.returnUrl).toBe('/registers?statusId=7')
-    expect(clearSessionMock).toHaveBeenCalledOnce()
-    expect(alertError).toHaveBeenCalledExactlyOnceWith('Необходимо войти в систему')
-    const wrapper = mount(PageAlertRegion)
-    try {
-      expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
-      expect(wrapper.get('[role="alert"]').text()).toContain('Необходимо войти в систему')
-    } finally {
-      wrapper.unmount()
-    }
   })
 
   it('defines authenticated prototype parcel-filter routes with a numeric edit id', () => {

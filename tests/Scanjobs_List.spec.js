@@ -6,6 +6,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { ref } from 'vue'
+import { createMemoryHistory, createRouter } from 'vue-router'
 import ScanjobsList from '@/lists/Scanjobs_List.vue'
 import { defaultGlobalStubs } from './helpers/test-utils'
 
@@ -75,6 +76,7 @@ const mockCompanies = ref([
 ])
 
 const mockScanjobsPerPage = ref(10)
+const preferredMonitorMode = ref('boxes')
 const mockScanjobsSearch = ref('')
 const mockScanjobsSortBy = ref([{ key: 'id', order: 'desc' }])
 const mockScanjobsPage = ref(1)
@@ -248,6 +250,7 @@ vi.mock('@/stores/auth.store.js', () => ({
     isWhManagerPlus: true,
     hasWhRole: true,
     isSrLogistPlus: true,
+    get scanjobmonitor_mode() { return preferredMonitorMode.value },
     scanjobs_per_page: mockScanjobsPerPage,
     scanjobs_search: mockScanjobsSearch,
     scanjobs_sort_by: mockScanjobsSortBy,
@@ -286,6 +289,7 @@ describe('Scanjobs_List.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockScanjobsPerPage.value = 10
+    preferredMonitorMode.value = 'boxes'
     mockScanjobsSearch.value = ''
     mockScanjobsSortBy.value = [{ key: 'id', order: 'desc' }]
     mockScanjobsPage.value = 1
@@ -385,16 +389,48 @@ describe('Scanjobs_List.vue', () => {
     expect(mockScanjobsSortBy.value).toEqual([{ key: 'senderRecipient', order: 'asc' }])
   })
 
-  it('routes to scanjob monitor with scanjob id', async () => {
-    const wrapper = mount(ScanjobsList, {
-      global: {
-        stubs: testStubs
-      }
-    })
+  it.each([
+    ['boxes', 30, 1, 'scanjob-monitor-register'],
+    ['lookup', 30, 1, 'scanjob-monitor-lookup'],
+    ['lookup', 10, 1, 'scanjob-monitor-register'],
+    ['lookup', 30, 4, 'scanjob-monitor-register']
+  ])('opens the preferred %s monitor only for supported Lookup jobs (operation %s, register %s)', async (mode, operation, registerType, name) => {
+    preferredMonitorMode.value = mode
+    const wrapper = mount(ScanjobsList, { global: { stubs: testStubs } })
+    await wrapper.vm.openScanjobMonitor({ id: 7, registerId: 22, operation, registerType })
+    expect(mockPush).toHaveBeenCalledExactlyOnceWith({ name, params: { id: 7 } })
+    expect(preferredMonitorMode.value).toBe(mode)
+    wrapper.unmount()
+  })
 
-    wrapper.vm.openScanjobMonitor({ id: 7, registerId: 22 })
+  it('shows a monitor navigation failure once and opens the preferred view on retry', async () => {
+    const report = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    preferredMonitorMode.value = 'lookup'
+    const navigationRouter = createRouter({ history: createMemoryHistory(), routes: [{ path: '/', component: {} }, { path: '/blocked', component: {} }] })
+    await navigationRouter.push('/')
+    mockPush.mockResolvedValueOnce(await navigationRouter.push('/'))
+    navigationRouter.beforeEach(() => false)
+    mockPush.mockResolvedValueOnce(await navigationRouter.push('/blocked'))
+    const wrapper = mount(ScanjobsList, { global: { stubs: testStubs } })
+    const job = { id: 7, operation: 30, registerType: 1 }
 
-    expect(mockPush).toHaveBeenCalledWith('/scanjobs/7/monitor')
+    try {
+      await wrapper.vm.openScanjobMonitor(job)
+      expect(errorFn).not.toHaveBeenCalled()
+      await wrapper.vm.openScanjobMonitor(job)
+      await flushPromises()
+      expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось открыть монитор сканирования')
+      expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+      expect(errorFn).toHaveBeenCalledOnce()
+
+      mockPush.mockResolvedValueOnce(undefined)
+      await wrapper.vm.openScanjobMonitor(job)
+      expect(mockPush).toHaveBeenLastCalledWith({ name: 'scanjob-monitor-lookup', params: { id: 7 } })
+      expect(errorFn).toHaveBeenCalledOnce()
+    } finally {
+      report.mockRestore()
+      wrapper.unmount()
+    }
   })
 
   it('routes to scanjob edit with scanjob id', async () => {

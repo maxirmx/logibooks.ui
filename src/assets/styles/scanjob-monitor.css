@@ -84,6 +84,12 @@ This file is a part of Logibooks ui application
   border: 1px solid rgba(33, 150, 243, 0.3);
 }
 
+.monitor-status-partial {
+  background-color: #fff2d6;
+  color: #6c4300;
+  border: 1px solid #ffeaa7;
+}
+
 .monitor-status-not-found {
   background-color: rgba(244, 67, 54, 0.25);
   color: #d32f2f;
@@ -216,10 +222,4 @@ This file is a part of Logibooks ui application
 
 .scanjob-monitor-parcel-progress-restricted .scanjob-monitor-parcel-progress-label {
   color: inherit;
-}
-.scanjob-monitor-view-switch {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 12px;
 }

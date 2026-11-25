@@ -100,6 +100,46 @@ describe('auth store', () => {
       expect(localStorage.removeItem).toHaveBeenCalledWith('scanjobmonitor_follow_user_id')
     })
 
+    it('restores the monitor mode after reloading and switching accounts', () => {
+      localStorage.setItem('user', JSON.stringify({ id: 23 }))
+      const store = useAuthStore()
+      expect(store.scanjobmonitor_mode).toBe('boxes')
+      store.setScanjobMonitorMode('lookup')
+      expect(store.scanjobmonitor_mode).toBe('lookup')
+      expect(localStorage.getItem('scanjobmonitor_mode.23')).toBe('lookup')
+
+      setActivePinia(createPinia())
+      const reloaded = useAuthStore()
+      expect(reloaded.scanjobmonitor_mode).toBe('lookup')
+      localStorage.setItem('scanjobmonitor_mode.24', 'unknown')
+      reloaded.user = { id: 24 }
+      expect(reloaded.scanjobmonitor_mode).toBe('boxes')
+      reloaded.user = { id: 23 }
+      expect(reloaded.scanjobmonitor_mode).toBe('lookup')
+      reloaded.setScanjobMonitorMode('boxes')
+      expect(localStorage.getItem('scanjobmonitor_mode.23')).toBe('boxes')
+      reloaded.clearSession()
+      reloaded.setScanjobMonitorMode('lookup')
+      expect(reloaded.scanjobmonitor_mode).toBe('boxes')
+    })
+
+    it('defaults to boxes and reports a storage read failure', () => {
+      localStorage.setItem('user', JSON.stringify({ id: 23 }))
+      const getItem = localStorage.getItem.getMockImplementation()
+      const failure = new Error('Storage unavailable')
+      localStorage.getItem.mockImplementation(key => {
+        if (key === 'scanjobmonitor_mode.23') throw failure
+        return getItem(key)
+      })
+      const report = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+      try {
+        expect(useAuthStore().scanjobmonitor_mode).toBe('boxes')
+        expect(report).toHaveBeenCalledWith('[restore saved scan job monitor mode]', failure)
+      } finally {
+        report.mockRestore()
+      }
+    })
+
   })
 
   describe('actions', () => {

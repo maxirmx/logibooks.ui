@@ -244,7 +244,7 @@ describe('Scanjob parcel monitor typed tables', () => {
     expect(wrapper.text()).toContain('Не проверено')
   })
 
-  it('renders corrected monitor parcel weights from register correction data', () => {
+  it('renders the WBR-N monitor columns and corrected parcel weights', () => {
     const wrapper = mount(ScanjobWbrNParcelsMonitorTable, {
       props: {
         register: {
@@ -257,6 +257,7 @@ describe('Scanjob parcel monitor typed tables', () => {
             weightCorrectionEligible: true,
             stickerScanned: true,
             shk: 'SHK-41',
+            article: 'ARTICLE-41',
             productName: 'Corrected product',
             weightKg: 2.4,
             adjustedWeightKg: 1.201,
@@ -275,6 +276,11 @@ describe('Scanjob parcel monitor typed tables', () => {
       },
       global: globalWithFontAwesome
     })
+
+    const titles = wrapper.findAll('.v-data-table-header-cell').map(header => header.text())
+    expect(titles).not.toContain('Артикул')
+    expect(titles[titles.indexOf('ШК') + 1]).toBe('Стикер (УИН)')
+    expect(wrapper.text()).not.toContain('ARTICLE-41')
 
     const corrected = wrapper.get('.corrected-weight-display')
     expect(corrected.text()).toContain('2.400')

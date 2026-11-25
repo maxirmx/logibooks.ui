@@ -11,6 +11,7 @@ import { useStatusStore } from '@/stores/status.store.js'
 import { reportError } from '@/helpers/error.helpers.js'
 import { AUTH_LIST_SCHEMA } from '@/helpers/auth.list.state.js'
 import { createListRefs } from '@/helpers/list.state.helpers.js'
+import { scanjobMonitorMode } from '@/helpers/scanjob.monitor.helpers.js'
 import { useListStateStore } from '@/stores/list.state.store.js'
 import {
   roleShiftLead,
@@ -24,6 +25,7 @@ import {
 
 const baseUrl = `${apiUrl}/auth`
 const scanjobMonitorFollowUserStorageKey = 'scanjobmonitor_follow_user_id'
+const scanjobMonitorModeStorageKey = userId => `scanjobmonitor_mode.${userId}`
 const parcelFilterStorageKey = 'logibooks.parcelFilter'
 
 function readParcelFilterId(userId) {
@@ -41,6 +43,10 @@ function readScanjobMonitorFollowUserId() {
   const raw = localStorage.getItem(scanjobMonitorFollowUserStorageKey)
   const parsed = Number(raw)
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null
+}
+
+function normalizeScanjobMonitorMode(mode) {
+  return mode === scanjobMonitorMode.Lookup ? scanjobMonitorMode.Lookup : scanjobMonitorMode.Boxes
 }
 
 export const useAuthStore = defineStore('auth', () => {
@@ -86,6 +92,17 @@ export const useAuthStore = defineStore('auth', () => {
   const listRefs = createListRefs(AUTH_LIST_SCHEMA)
   const { parcels_page, parcels_wh_page } = listRefs
   const scanjobmonitor_follow_user_id = ref(readScanjobMonitorFollowUserId())
+  const scanjobmonitor_mode = ref(scanjobMonitorMode.Boxes)
+  watch(() => user.value?.id, id => {
+    scanjobmonitor_mode.value = scanjobMonitorMode.Boxes
+    if (id == null) return
+    try {
+      const saved = localStorage.getItem(scanjobMonitorModeStorageKey(id))
+      scanjobmonitor_mode.value = normalizeScanjobMonitorMode(saved)
+    } catch (error) {
+      reportError(error, { context: 'restore saved scan job monitor mode' })
+    }
+  }, { immediate: true, flush: 'sync' })
   const selectedOrderId = ref(null)
   const selectedParcelId = ref(null)
   const returnUrl = ref(null)
@@ -195,6 +212,14 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.setItem(scanjobMonitorFollowUserStorageKey, String(normalized))
   }
 
+  function setScanjobMonitorMode(mode) {
+    const id = user.value?.id
+    if (id == null) return
+    const selectedMode = normalizeScanjobMonitorMode(mode)
+    localStorage.setItem(scanjobMonitorModeStorageKey(id), selectedMode)
+    scanjobmonitor_mode.value = selectedMode
+  }
+
   const listStateStore = useListStateStore()
   listStateStore.setUser(user.value?.id)
   const { stop } = listStateStore.bind('auth', listRefs, AUTH_LIST_SCHEMA)
@@ -210,6 +235,7 @@ export const useAuthStore = defineStore('auth', () => {
     // state
     user,
     scanjobmonitor_follow_user_id,
+    scanjobmonitor_mode,
     selectedOrderId,
     selectedParcelId,
     returnUrl,
@@ -237,6 +263,7 @@ export const useAuthStore = defineStore('auth', () => {
     login,
     clearSession,
     logout,
-    setScanjobMonitorFollowUserId
+    setScanjobMonitorFollowUserId,
+    setScanjobMonitorMode
   }
 })

@@ -147,6 +147,7 @@ const activeRegisterItem = computed(() => {
 const manualScan = useManualScan({
   target: computed(() => isRegisterMode.value ? BOX_SCAN : PARCEL_SCAN),
   registerId, job: scanjob,
+  readOnly,
   disabled: () => isLoading.value || defectActionRunning.value || Boolean(closedInfo.value),
   scopeKey: () => `${props.scanjobId}:${monitorScopeKey(props.monitorScope)}`,
   refresh: refreshCurrentScopeSnapshot

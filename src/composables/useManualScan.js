@@ -10,7 +10,7 @@ import { useAppConfirm } from '@/composables/useAppConfirm.js'
 import { APP_DIALOG_BUTTON_PROPS } from '@/helpers/dialog.helpers.js'
 import { getErrorMessage, reportError } from '@/helpers/error.helpers.js'
 
-export function useManualScan({ registerId, job = null, disabled = false, target = PARCEL_SCAN,
+export function useManualScan({ registerId, job = null, readOnly = false, disabled = false, target = PARCEL_SCAN,
   scopeKey = null, refresh }) {
   const scanTarget = computed(() => toValue(target))
   const store = useScanjobsStore()
@@ -33,6 +33,8 @@ export function useManualScan({ registerId, job = null, disabled = false, target
   })
   const jobs = computed(() => (job ? [toValue(job)] : activeJobs.value)
     .filter(candidate => candidate && constants.value && Number(candidate.status) === constants.value.inProgressStatus))
+  const isReadOnly = computed(() => toValue(readOnly) || jobs.value.some(candidate => candidate.readOnly === true))
+  const isDisabled = computed(() => isReadOnly.value || toValue(disabled) || uncertainOutcome.value)
   const canScan = computed(() => [auth.isAdmin, auth.isWhManager, auth.isWhOperator].some(value => Boolean(toValue(value))))
   let mounted = true
   let version = 0
@@ -40,6 +42,7 @@ export function useManualScan({ registerId, job = null, disabled = false, target
   let completedScanCodes = new Set()
 
   function disabledReason(candidate) {
+    if (isReadOnly.value) return 'Партия доступна только для просмотра'
     return scanTarget.value.disabledReason(candidate, constants.value)
   }
 
@@ -84,7 +87,7 @@ export function useManualScan({ registerId, job = null, disabled = false, target
   }
 
   async function run(parcels, jobId, bulk = false) {
-    if (!mounted || !canScan.value || locked.value || uncertainOutcome.value || toValue(disabled) || !parcels.length) return false
+    if (!mounted || !canScan.value || locked.value || isDisabled.value || !parcels.length) return false
     const adapter = scanTarget.value
     const runVersion = version
     const current = () => mounted && runVersion === version
@@ -111,7 +114,7 @@ export function useManualScan({ registerId, job = null, disabled = false, target
         },
         confirmationText: 'Отметить как отсканированные', cancellationText: 'Отмена',
         confirmationButtonProps: APP_DIALOG_BUTTON_PROPS.primary })) return false
-      if (!current()) return false
+      if (!current() || isReadOnly.value) return false
       targetJob = candidates.find(item => Number(item.id) === Number(choice.jobId))
       jobId = targetJob.id
       const lookup = Number(targetJob.operation) === constants.value.lookupOperation
@@ -216,7 +219,7 @@ export function useManualScan({ registerId, job = null, disabled = false, target
     includesCompletedScan: scanCodeId => completedScanCodes.has(scanCodeId),
     jobLabel,
     scopeKey: computed(() => toValue(scopeKey)),
-    disabled: computed(() => toValue(disabled) || uncertainOutcome.value) }
+    disabled: isDisabled }
   provide(MANUAL_SCAN_KEY, context)
   return context
 }

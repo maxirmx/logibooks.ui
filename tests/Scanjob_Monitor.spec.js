@@ -924,8 +924,8 @@ describe('Scanjob_Monitor.vue', () => {
   })
 
   it.each([
-    'snapshot'
-  ])('allows parcel printing with a read-only %s while blocking parcel changes', async (source) => {
+    'snapshot', 'scanjob', 'register'
+  ])('allows parcel printing with a read-only %s while blocking parcel changes and scanning', async (source) => {
     isAdmin.value = true
     const parcel = { ...boxSnapshot.box.parcels[0], extId: '77', printableTemplates: ['WBRN', 'TJ_EXPORT'] }
     const snapshot = { ...boxSnapshot, readOnly: source === 'snapshot', box: { ...boxSnapshot.box, parcels: [parcel] } }
@@ -939,6 +939,15 @@ describe('Scanjob_Monitor.vue', () => {
     })
     await flushPromises()
     expect(wrapper.get('.read-only-notice').isVisible()).toBe(true)
+    const scanButton = wrapper.get('button[data-testid="manual-parcel-scan"]')
+    expect(scanButton.element.disabled).toBe(true)
+    await scanButton.trigger('click')
+    const table = wrapper.getComponent({ name: 'v-data-table' })
+    table.vm.$emit('contextmenu:row', { preventDefault: vi.fn() }, { item: parcel })
+    await flushPromises()
+    expect(manualConfirm).not.toHaveBeenCalled()
+    expect(manualScanParcel).not.toHaveBeenCalled()
+    expect(manualScanParcels).not.toHaveBeenCalled()
     for (const id of ['scanjob-clear-ext-id-action', 'scanjob-set-defect-action', 'scanjob-clear-defect-action']) {
       const action = wrapper.get(`button[data-testid="${id}"]`)
       expect(action.element.disabled).toBe(true)

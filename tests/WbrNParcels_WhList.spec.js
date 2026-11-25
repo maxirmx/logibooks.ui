@@ -363,6 +363,7 @@ function resetState() {
   parcelsWhSticker.value = ''
   parcelsWhProductName.value = ''
   isAdmin.value = false
+  delete registerItem.readOnly
   editCellDisabled.value = false
   parcelEditAccessOptions = null
   ensureRegisterOpsLoaded.mockResolvedValue()
@@ -678,6 +679,26 @@ describe('WbrNParcels_WhList.vue', () => {
         fallback: 'Ошибка при инициализации компонента'
       })
     )
+  })
+
+  it('disables row and right-click scans in a read-only party', async () => {
+    isAdmin.value = true
+    registerItem.readOnly = true
+    manualScanApi.getInProgress.mockResolvedValue([{ id: 7, registerId: 9, status: 15, type: 30, operation: 10 }])
+    const wrapper = mount(WbrNParcelsWhList, { props: { registerId: 9 }, global: { stubs: globalStubs } })
+    await resolveAll()
+
+    const button = wrapper.get('button[data-testid="manual-parcel-scan"]')
+    expect(button.element.disabled).toBe(true)
+    await button.trigger('click')
+    wrapper.getComponent({ name: 'v-data-table-server' }).vm.$emit('contextmenu:row',
+      { preventDefault: vi.fn() }, { item: mockItems.value[0] })
+    await resolveAll()
+
+    expect(manualScanConfirm).not.toHaveBeenCalled()
+    expect(manualScanApi.scanParcel).not.toHaveBeenCalled()
+    expect(manualScanApi.scanParcels).not.toHaveBeenCalled()
+    wrapper.unmount()
   })
 
   it('preserves the selected batch and displays one error when a batch scan rejects', async () => {

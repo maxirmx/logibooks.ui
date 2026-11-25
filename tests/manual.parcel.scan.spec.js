@@ -75,6 +75,26 @@ describe('manual parcel scan eligibility', () => {
 })
 
 describe('manual parcel scan workflow', () => {
+  it('stops a confirmed batch without a request or error if the party becomes read-only', async () => {
+    const readOnly = ref(false)
+    let accept
+    confirm.mockImplementationOnce(() => new Promise(resolve => { accept = resolve }))
+    const { scan, wrapper, opts } = harness({ readOnly })
+    await flushPromises()
+
+    const result = scan.run(parcels, 7, true)
+    expect(confirm).toHaveBeenCalledOnce()
+    readOnly.value = true
+    accept(true)
+
+    expect(await result).toBe(false)
+    expect(api.scanParcels).not.toHaveBeenCalled()
+    expect(opts.refresh).not.toHaveBeenCalled()
+    expect(scan.pendingBatch.value).toBeNull()
+    expect(scan.locked.value).toBe(false)
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+  })
+
   it('chooses a compatible job in the shared confirmation for a context-menu bulk action', async () => {
     api.getInProgress.mockResolvedValue([{ ...job, id: 8, type: 20 }, job, { ...job, id: 9, name: 'Поиск посылок' }])
     confirm.mockImplementationOnce(async options => {
@@ -195,19 +215,36 @@ describe('manual parcel scan workflow', () => {
 })
 
 describe('shared scan action controls', () => {
+  it('disables scans when active-job data identifies a read-only party', async () => {
+    api.getInProgress.mockResolvedValue([{ ...job, readOnly: true }])
+    const { wrapper } = harness({}, true)
+    await flushPromises()
+
+    const button = wrapper.get('button[data-testid="manual-parcel-scan"]')
+    expect(button.element.disabled).toBe(true)
+    expect(button.attributes('aria-label')).toBe('Партия доступна только для просмотра')
+    await button.trigger('click')
+    await wrapper.get('[data-testid="selectable-row"]').trigger('contextmenu')
+    await flushPromises()
+
+    expect(confirm).not.toHaveBeenCalled()
+    expect(api.scanParcel).not.toHaveBeenCalled()
+    expect(api.scanParcels).not.toHaveBeenCalled()
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+  })
+
   it('keeps Lookup jobs available for mixed parcel statuses and lets Core decide the result', async () => {
     const boxJob = { ...job, id: 8, name: 'Только коробки', type: 20 }
     const lookupFive = { ...job, id: 9, name: 'Поиск статуса 5', operation: 30, lookupStatusId: 5 }
     const lookupSix = { ...job, id: 10, name: 'Поиск статуса 6', operation: 30, lookupStatusId: 6 }
-    const lockedJob = { ...job, id: 11, readOnly: true }
     const invalidLookup = { ...job, id: 12, operation: 30 }
-    api.getInProgress.mockResolvedValue([boxJob, lookupSix, lookupFive, lockedJob, invalidLookup, job])
+    api.getInProgress.mockResolvedValue([boxJob, lookupSix, lookupFive, invalidLookup, job])
     const { wrapper, scan, selection, parcels: renderedParcels } = harness({}, true)
     await flushPromises()
-    expect(scan.compatibleJobs().map(candidate => candidate.id)).toEqual([10, 9, 11, 12, 7])
+    expect(scan.compatibleJobs().map(candidate => candidate.id)).toEqual([10, 9, 12, 7])
     const rowAction = wrapper.findAllComponents(ParcelScanAction)[0]
     expect(rowAction.findComponent(ActionButton2L).props('options').map(option => option.label)).toEqual([
-      'Поиск статуса 6', 'Поиск статуса 5', 'Приёмка', 'Приёмка', 'Приёмка'
+      'Поиск статуса 6', 'Поиск статуса 5', 'Приёмка', 'Приёмка'
     ])
     const bulkAction = wrapper.findAllComponents(ParcelScanAction)[1]
     expect(bulkAction.get('[data-testid="manual-parcel-scan-menu"]').attributes('disabled')).toBeUndefined()

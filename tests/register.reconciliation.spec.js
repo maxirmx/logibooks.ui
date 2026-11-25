@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, onUnmounted, reactive, ref } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
+import { createMemoryHistory, createRouter } from 'vue-router'
 import { useRegisterReconciliation } from '@/composables/useRegisterReconciliation.js'
 import { canReconcileRegister } from '@/helpers/register.reconciliation.helpers.js'
 import { EXCEL_FILE_ACCEPT, EXCEL_ARCHIVE_FILE_ACCEPT, openExcelFilePicker, resetExcelFileInput, takeSelectedExcelFile } from '@/helpers/excel.file.helpers.js'
@@ -37,9 +38,13 @@ function harness(options = {}) {
   const refreshRegister = vi.fn().mockResolvedValue(undefined)
   const refreshParcels = vi.fn().mockResolvedValue(true)
   const confirm = vi.fn().mockResolvedValue(false)
+  const router = createRouter({ history: createMemoryHistory(), routes: [
+    { path: '/registers/7/parcels', component: { template: '<div />' } },
+    { path: '/login', component: { template: '<div />' } }
+  ] })
   let flow
   const component = defineComponent({ components: { PageAlertRegion, RegisterReconciliationDialogs }, setup() {
-    flow = useRegisterReconciliation({ store, alertStore, authStore, register: () => register, busy: () => false,
+    flow = useRegisterReconciliation({ store, alertStore, authStore, router, register: () => register, busy: () => false,
       runningAction, mounted, refreshRegister, refreshParcels, confirm, makeId: () => 'op-1', ...options })
     onUnmounted(flow.stop)
     return { flow }
@@ -52,7 +57,7 @@ function harness(options = {}) {
   wrappers.push(wrapper)
   const file = new File(['manifest'], 'manifest.xlsx')
   const event = { target: { value: 'selected', files: [file] } }
-  return { wrapper, flow, store, register, authStore, runningAction, mounted, refreshRegister, refreshParcels, confirm, notify, file, event }
+  return { wrapper, flow, store, register, authStore, router, runningAction, mounted, refreshRegister, refreshParcels, confirm, notify, file, event }
 }
 
 beforeEach(() => { setActivePinia(createPinia()); wrappers = [] })
@@ -169,19 +174,20 @@ describe('register reconciliation', () => {
     expect(h.store.startReconciliation).toHaveBeenCalledOnce()
   })
 
-  it.each(['register', 'table'])('retains confirmed statistics after %s refresh failure and retries only refresh', async where => {
+  it.each(['register', 'table'])('opens login after a confirmed reconciliation and failed %s refresh', async where => {
     const h = harness()
-    if (where === 'register') h.refreshRegister.mockRejectedValueOnce(new Error('Ошибка обновления реестра'))
-    else h.refreshParcels.mockImplementationOnce(async () => { useAlertStore().error('Ошибка загрузки посылок'); return false })
+    await h.router.push('/registers/7/parcels')
+    const refresh = where === 'register' ? h.refreshRegister : h.refreshParcels
+    refresh.mockRejectedValueOnce(new Error('Invalid refresh'))
     await h.flow.selectFile(h.event)
     await flushPromises()
     expect(h.flow.state.result).toEqual(statistics)
     expect(h.wrapper.get('[data-testid="reconciliation-statistics"]').isVisible()).toBe(true)
-    expect(h.flow.state.refreshFailed).toBe(true)
+    expect(h.router.currentRoute.value.path).toBe('/login')
     expect(h.notify).toHaveBeenCalledOnce()
     expect(h.wrapper.findAll('[role="alert"]')).toHaveLength(1)
-    await h.flow.refresh()
-    expect(h.flow.state.refreshFailed).toBe(false)
+    expect(h.wrapper.get('[role="alert"]').text()).toContain('Сверка выполнена, но не удалось обновить данные реестра')
+    expect(refresh).toHaveBeenCalledOnce()
     expect(h.store.startReconciliation).toHaveBeenCalledOnce()
   })
 

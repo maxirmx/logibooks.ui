@@ -33,6 +33,7 @@ const stubs = { ...vuetifyStubs,
 function makeRouter() {
   return createRouter({ history: createMemoryHistory(), routes: [
     { path: '/', component: { template: '<div />' } },
+    { path: '/login', component: { template: '<div />' } },
     { path: '/registers/:id/parcels', component: { template: '<div />' } }
   ] })
 }
@@ -48,14 +49,14 @@ function harness(options = {}) {
   const refreshRegister = vi.fn().mockResolvedValue(undefined)
   const notify = vi.spyOn(alertStore, 'error')
   const confirm = vi.fn().mockResolvedValue(false)
+  const router = makeRouter()
   let flow
   const component = defineComponent({ components: { PageAlertRegion, RegisterSplitDialogs }, setup() {
-    flow = useRegisterSplit({ store, authStore, alertStore, register: () => register, busy: () => false,
+    flow = useRegisterSplit({ store, authStore, alertStore, router, register: () => register, busy: () => false,
       registerId: () => registerId.value, runningAction, mounted, refreshRegister, makeId: () => 'operation', confirm, ...options })
     onUnmounted(flow.stop)
     return { flow }
-  }, template: '<main><hr><PageAlertRegion/><RegisterSplitDialogs :state="flow.state" @retry="flow.retry" @acknowledge="flow.acknowledgeUnknown" @refresh="flow.refresh" @close="flow.state.summaryVisible = false" /></main>' })
-  const router = makeRouter()
+  }, template: '<main><hr><PageAlertRegion/><RegisterSplitDialogs :state="flow.state" @retry="flow.retry" @acknowledge="flow.acknowledgeUnknown" @close="flow.state.summaryVisible = false" /></main>' })
   const wrapper = mount(component, { global: { stubs, plugins: [router] } })
   wrappers.push(wrapper)
   return { flow, store, wrapper, router, authStore, register, registerId, runningAction, mounted, alertStore, refreshRegister, notify, confirm }
@@ -111,16 +112,18 @@ describe('register splitting', () => {
     expect(sessionStorage.getItem('register-split:42:7')).toBeNull()
     expect(h.notify).toHaveBeenCalledOnce()
   })
-  it('retains completion when source refresh fails, and retries refresh without replay', async () => {
+  it('redirects after a failed source refresh without replaying the split', async () => {
     const h = harness()
-    h.refreshRegister.mockRejectedValueOnce(failure(404))
+    await h.router.push('/registers/7/parcels?mode=modePaperwork')
+    h.refreshRegister.mockRejectedValueOnce(new Error('Invalid refresh'))
     await h.flow.start()
     expect(h.flow.state.result).toEqual(result)
-    expect(h.flow.state.refreshFailed).toBe(true)
-    await h.wrapper.get('[data-testid="split-refresh"]').trigger('click')
-    await flushPromises()
-    expect(h.flow.state.refreshFailed).toBe(false)
+    expect(h.router.currentRoute.value.path).toBe('/login')
+    expect(useAuthStore().returnUrl).toBe('/registers/7/parcels?mode=modePaperwork')
+    expect(h.wrapper.get('[role="alert"]').text()).toContain('Разделение выполнено, но не удалось обновить данные реестра')
+    expect(h.wrapper.find('[data-testid="split-refresh"]').exists()).toBe(false)
     expect(h.store.startSplit).toHaveBeenCalledOnce()
+    expect(h.refreshRegister).toHaveBeenCalledOnce()
   })
   it('resumes from storage even before source data loads and marks deleted outputs unavailable', async () => {
     sessionStorage.setItem('register-split:42:7', JSON.stringify({ id: 'operation', registerId: 7, userId: 42 }))

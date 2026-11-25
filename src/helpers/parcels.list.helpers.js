@@ -367,7 +367,7 @@ export async function loadParcels(
   parcelsStore,
   isComponentMounted,
   alertStore,
-  options = {}
+  { throwOnError = false, ...options } = {}
 ) {
   if (isComponentMounted.value) {
     try {
@@ -402,6 +402,7 @@ export async function loadParcels(
       parcelsStore.updateItems(response)
       return true
     } catch (error) {
+      if (throwOnError) throw error
       if (isComponentMounted.value) {
         const message =
           error?.response?.data?.message || error?.message || 'Ошибка при загрузке данных'

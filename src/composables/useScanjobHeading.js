@@ -2,54 +2,28 @@
 // All rights reserved.
 // This file is a part of Logibooks UI application
 
-import { computed, ref, unref } from 'vue'
-import { storeToRefs } from 'pinia'
-import { useAlertStore } from '@/stores/alert.store.js'
+import { computed, shallowRef, unref } from 'vue'
 import { useScanjobsStore } from '@/stores/scanjobs.store.js'
 
 export function useScanjobHeading(scanjobId, options = {}) {
   const scanjobsStore = useScanjobsStore()
-  const alertStore = useAlertStore()
-  const { scanjob } = storeToRefs(scanjobsStore)
-
-  const scanjobLoading = ref(true)
-
-  const isActive = () => !options.isComponentMounted || options.isComponentMounted.value
-
-  const scanjobHeading = computed(() => {
-    if (scanjobLoading.value) return 'Загрузка задания на сканирование...'
-    if (scanjob.value?.name) return `${scanjob.value.name}`
-    return 'Результаты сканирования'
-  })
+  const loadedJob = shallowRef(null)
+  const scanjobHeading = computed(() =>
+    Number(loadedJob.value?.id) === Number(unref(scanjobId)) ? loadedJob.value.name ?? '' : ''
+  )
 
   async function loadScanjob() {
-    if (isActive()) {
-      scanjobLoading.value = true
+    loadedJob.value = null
+    const id = unref(scanjobId)
+    const loaded = await scanjobsStore.getById(id)
+    if (id === unref(scanjobId) && (!options.isComponentMounted || options.isComponentMounted.value)) {
+      loadedJob.value = loaded
     }
-
-    try {
-      const loaded = await scanjobsStore.getById(unref(scanjobId))
-      if (!loaded && isActive()) {
-        alertStore.error('Не удалось загрузить задание на сканирование')
-      }
-      return loaded
-    } catch (error) {
-      if (isActive()) {
-        alertStore.error(error, {
-          fallback: 'Ошибка при загрузке данных'
-        })
-      }
-      return null
-    } finally {
-      if (isActive()) {
-        scanjobLoading.value = false
-      }
-    }
+    return loaded
   }
 
   return {
     scanjobHeading,
-    scanjobLoading,
     loadScanjob
   }
 }

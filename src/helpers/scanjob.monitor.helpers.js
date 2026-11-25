@@ -8,9 +8,17 @@ import { wbrRegisterColumnTitles } from '@/helpers/wbr.register.mapping.js'
 import { wbrnRegisterColumnTitles } from '@/helpers/wbrn.register.mapping.js'
 import { OZON_COMPANY_ID, WBR_COMPANY_ID, WBRN_REGISTER_ID } from '@/helpers/company.constants.js'
 
-export const scanjobParcelsProgressTitle = 'Посылки всего / сканировано / не сканировано / запретов'
+const parcelScanProgressTitle = 'Посылки всего / сканировано / не сканировано'
+export const scanjobParcelsProgressTitle = `${parcelScanProgressTitle} / запретов`
 
 const scanjobParcelActionsHeader = { title: '', key: 'actions', align: 'center', sortable: false, width: '144px' }
+
+export const scanjobParcelScannedInfoHeader = {
+  title: 'Пользователь\nВремя\nСканированный код',
+  key: 'scannedInfo',
+  align: 'start',
+  sortable: false
+}
 
 export const scanjobBoxHeaders = [
   { title: '', key: 'actions', align: 'center', sortable: false, width: '104px' },
@@ -35,14 +43,14 @@ export const scanjobParcelScanHeaders = [
   },
   { title: 'Зона', key: 'zone', align: 'start' },
   { title: 'Статус', key: 'statusId', align: 'start' },
-  { title: 'Пользователь\nВремя\nСканированный код', key: 'scannedInfo', align: 'start', sortable: false }
+  scanjobParcelScannedInfoHeader
 ]
 
 export const scanjobParcelHeaders = [
   scanjobParcelActionsHeader,
   { title: '', key: 'stickerScanned', align: 'start' },
   { title: 'Посылка', key: 'parcelNumber', align: 'start' },
-  { title: 'Пользователь\nВремя\nСканированный код', key: 'scannedInfo', align: 'start', sortable: false },
+  scanjobParcelScannedInfoHeader,
   { title: 'Зона', key: 'zoneName', align: 'start' },
   { title: 'Статус', key: 'statusTitle', align: 'start' }
 ]
@@ -73,7 +81,6 @@ export const scanjobWbrNParcelHeaders = [
   ...scanjobParcelScanHeaders,
   { title: wbrnRegisterColumnTitles.extId, key: 'extId', align: 'start' },
   { title: wbrnRegisterColumnTitles.shk, key: 'shk', align: 'start' },
-  { title: wbrnRegisterColumnTitles.article, key: 'article', align: 'start' },
   { title: wbrnRegisterColumnTitles.sticker, key: 'sticker', align: 'start' },
   { title: wbrnRegisterColumnTitles.stickerCode, key: 'stickerCode', align: 'start' },
   { title: wbrnRegisterColumnTitles.productName, key: 'productName', align: 'start' },
@@ -86,6 +93,18 @@ export const scanjobMonitorArea = {
   Unassigned: 2,
   NotInRegister: 3,
   Lookup: 4
+}
+
+export const scanjobMonitorMode = {
+  Boxes: 'boxes',
+  Lookup: 'lookup'
+}
+
+export function scanjobMonitorLocation(scanjobId, mode) {
+  return {
+    name: mode === scanjobMonitorMode.Lookup ? 'scanjob-monitor-lookup' : 'scanjob-monitor-register',
+    params: { id: scanjobId }
+  }
 }
 
 export function supportsLookupMonitor(job) {
@@ -134,13 +153,38 @@ export function formatBoxWeight(value) {
   })} кг`
 }
 
-export function formatParcelProgress(item) {
-  return [
+export function formatParcelProgress(item, includeRestrictions = true) {
+  const counts = [
     item?.totalParcels,
     item?.parcelsWithStickerScanned,
-    item?.parcelsWithStickerNotScanned,
-    item?.restrictedParcels
-  ].map(formatCount).join(' / ')
+    item?.parcelsWithStickerNotScanned
+  ]
+  if (includeRestrictions) counts.push(item?.restrictedParcels)
+  return counts.map(formatCount).join(' / ')
+}
+
+export function buildScanjobProgressCards(snapshot, { includeRestrictions = true } = {}) {
+  const { lookupRemainingCount, lookupFoundCount, lookupNotFoundCount } = snapshot
+  const hasLookupStats = lookupRemainingCount != null || lookupFoundCount != null || lookupNotFoundCount != null
+  return [
+    {
+      key: 'boxes',
+      label: 'Коробки всего / сканировано / не сканировано',
+      value: `${snapshot.totalBoxes ?? 0} / ${snapshot.boxesWithStickerScanned ?? 0} / ${snapshot.boxesWithStickerNotScanned ?? 0}`
+    },
+    {
+      key: 'parcels',
+      label: includeRestrictions ? scanjobParcelsProgressTitle : parcelScanProgressTitle,
+      value: formatParcelProgress(snapshot, includeRestrictions)
+    },
+    ...(hasLookupStats ? [{
+      key: 'lookupProgress',
+      label: 'Найдено / Не найдено',
+      value: [lookupFoundCount, lookupNotFoundCount]
+        .map(count => count == null ? '—' : formatCount(count))
+        .join(' / ')
+    }] : [])
+  ]
 }
 
 export function getLookupParcelProgressStats(item) {

@@ -248,6 +248,17 @@ describe('Parcels List Helpers', () => {
   })
 
   describe('loadParcels', () => {
+    it('lets a caller own presentation when the page load fails', async () => {
+      const error = new Error('Invalid response')
+      const store = { getAll: vi.fn().mockRejectedValue(error), updateItems: vi.fn() }
+      const alerts = { error: vi.fn() }
+
+      await expect(loadParcels(123, store, { value: true }, alerts, { throwOnError: true })).rejects.toBe(error)
+      expect(alerts.error).not.toHaveBeenCalled()
+      expect(store.getAll).toHaveBeenCalledExactlyOnceWith(123, { updateStore: false })
+      expect(store.updateItems).not.toHaveBeenCalled()
+    })
+
     it('should not load parcels when component is not mounted', async () => {
       const mockParcelsStore = {
         getAll: vi.fn(),

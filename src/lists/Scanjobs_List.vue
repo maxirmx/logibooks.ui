@@ -5,6 +5,7 @@
 
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { onMounted, onUnmounted, ref, watch } from 'vue'
+import { isNavigationFailure, NavigationFailureType } from 'vue-router'
 import router from '@/router'
 import { storeToRefs } from 'pinia'
 import { useScanjobsStore } from '@/stores/scanjobs.store.js'
@@ -20,6 +21,7 @@ import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { useDebouncedFilterSync } from '@/composables/useDebouncedFilterSync.js'
 import { mdiMagnify } from '@mdi/js'
 import { getErrorMessage, reportError } from '@/helpers/error.helpers.js'
+import { scanjobMonitorLocation, scanjobMonitorMode, supportsLookupMonitor } from '@/helpers/scanjob.monitor.helpers.js'
 
 import RegisterInvoiceCell from '@/components/RegisterInvoiceCell.vue'
 import SenderRecipientCell from '@/components/SenderRecipientCell.vue'
@@ -75,8 +77,20 @@ function openEditDialog(scanJob) {
   router.push('/scanjob/edit/' + scanJob.id)
 }
 
-function openScanjobMonitor(scanJob) {
-  router.push(`/scanjobs/${scanJob.id}/monitor`)
+async function openScanjobMonitor(scanJob) {
+  const mode = supportsLookupMonitor(scanJob) ? authStore.scanjobmonitor_mode : scanjobMonitorMode.Boxes
+  try {
+    const failure = await router.push(scanjobMonitorLocation(scanJob.id, mode))
+    if (isNavigationFailure(failure, NavigationFailureType.cancelled | NavigationFailureType.duplicated)) {
+      // The monitor is already open, or another navigation is in progress.
+      return
+    }
+    if (failure) throw failure
+  } catch (error) {
+    const message = 'Не удалось открыть монитор сканирования'
+    reportError(error, { context: message })
+    if (isComponentMounted.value) alertStore.error(message)
+  }
 }
 
 async function deleteScanjob(scanJob) {

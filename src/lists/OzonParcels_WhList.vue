@@ -163,6 +163,7 @@ const headers = computed(() => [
   { title: 'Зона', key: 'zone', align: 'start' },
   { title: ozonRegisterColumnTitles.statusId, key: 'statusId', align: 'start' },
   { title: ozonRegisterColumnTitles.postingNumber, key: 'postingNumber', align: 'start' },
+  { title: ozonRegisterColumnTitles.ozonId, key: 'ozonId', align: 'start', sortable: false },
   { title: ozonRegisterColumnTitles.barcode, key: 'barcode', align: 'start', sortable: false },
   { title: ozonRegisterColumnTitles.boxNumber, key: 'boxNumber', align: 'start', sortable: false },
   {

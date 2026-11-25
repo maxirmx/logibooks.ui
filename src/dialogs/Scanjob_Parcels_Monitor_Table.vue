@@ -373,6 +373,10 @@ watch(
       <ClickableCell :item="item" :display-value="valueOrDash(item.postingNumber)" :cell-class="parcelCellClass()" :disabled="isParcelCellDisabled" @click="editParcel(item)" />
     </template>
 
+    <template #[`item.ozonId`]="{ item }">
+      <ClickableCell :item="item" :display-value="valueOrDash(item.ozonId)" :cell-class="parcelCellClass()" :disabled="isParcelCellDisabled" @click="editParcel(item)" />
+    </template>
+
     <template #[`item.barcode`]="{ item }">
       <ClickableCell :item="item" :display-value="valueOrDash(item.barcode)" :cell-class="parcelCellClass()" :disabled="isParcelCellDisabled" @click="editParcel(item)" />
     </template>

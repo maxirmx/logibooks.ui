@@ -48,8 +48,12 @@ provide(LABEL_PRINTING_KEY, {
   print: (target) => printingPanel.value?.printParcel(target)
 })
 const loading = computed(() => boxesLoading.value || registerLoading.value)
+const readOnly = computed(() => register.value?.readOnly === true)
 const manualScan = useManualBoxScan({
-  registerId: () => props.registerId, disabled: loading, refresh: () => boxesStore.getAll(props.registerId)
+  registerId: () => props.registerId,
+  readOnly,
+  disabled: loading,
+  refresh: () => boxesStore.getAll(props.registerId)
 })
 const controlsBusy = computed(() => loading.value || manualScan.locked.value)
 const contextMenu = ref(null)
@@ -59,7 +63,6 @@ const scopeKey = computed(() => JSON.stringify([
 const { selection, updateDisplayedItems } = useManualScanSelection({
   scan: manualScan, loading, page: toRef(authStore, 'boxes_page'), scopeKey, contextMenu
 })
-const readOnly = computed(() => register.value?.readOnly === true)
 const registerHeading = computed(() =>
   buildParcelListHeading(
     register.value,

@@ -349,6 +349,7 @@ describe('OzonParcels_WhList.vue', () => {
 
   it('opens parcel edit from warehouse table cells', async () => {
     parcelsWhBoxNumber.value = 'STALE-PREFIX'
+    mockItems.value[0].ozonId = '001-OZON'
     const wrapper = mount(OzonParcelsWhList, {
       props: { registerId: 1, boxId: 17, boxCode: 'BOX-17' },
       global: { stubs: globalStubs }
@@ -359,12 +360,23 @@ describe('OzonParcels_WhList.vue', () => {
     expect(parcelsWhBoxNumber.value).toBe('')
     expect(wrapper.vm.localBoxNumberSearch).toBe('')
 
+    const titles = wrapper.findAll('.v-data-table-header-cell').map((header) => header.text())
+    const barcodeIndex = titles.indexOf('Штрихкод')
+    expect(barcodeIndex).toBeGreaterThan(0)
+    expect(titles[barcodeIndex - 1]).toBe('ID отправления')
+    const cells = wrapper.get('.v-data-table-row').findAll('.v-data-table-cell')
+    const ozonIdCell = cells[barcodeIndex - 1].get('.clickable-cell')
+    expect(ozonIdCell.text()).toBe('001-OZON')
+    expect(cells[barcodeIndex].text()).toBe('BAR-1')
+
     const productNameCell = wrapper.get('.warehouse-product-name-cell')
     expect(productNameCell.classes()).toContain('clickable-cell')
     expect(productNameCell.attributes('aria-disabled')).toBeUndefined()
 
     await productNameCell.trigger('click')
+    await ozonIdCell.trigger('click')
 
+    expect(navigateToEditParcel).toHaveBeenCalledTimes(2)
     expect(navigateToEditParcel).toHaveBeenCalledWith(
       expect.any(Object),
       mockItems.value[0],

@@ -171,8 +171,10 @@ export function useManualScan({ registerId, job = null, readOnly = false, disabl
           if (summary && current()) alerts[summary.level](summary.message)
         }
         catch (error) {
-          if (failureMessage || !current()) reportError(error, { context: 'manual scan failure refresh' })
-          else alerts.error(error, { fallback: 'Не удалось обновить данные после сканирования. Обновите страницу.' })
+          reportError(error, { context: 'manual scan failure refresh' })
+          if (!failureMessage && current()) {
+            alerts.error(error, { fallback: 'Не удалось обновить данные после сканирования. Обновите страницу.' })
+          }
         }
       }
       busy.value = false

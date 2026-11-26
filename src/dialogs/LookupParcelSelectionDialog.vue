@@ -30,6 +30,13 @@ const bySticker = ref(false)
 const registerType = computed(() => Number(props.register.registerType))
 const supportsStickerLookup = computed(() => supportsParcelStickerLookup(registerType.value))
 const matchedParcels = ref([])
+const foundParcelCount = computed(() => {
+  // Use Core's whitespace policy and keep each stored number as the grouping key.
+  const parcelKeys = matchedParcels.value.map(({ parcelId, parcelNumber }) =>
+    /\P{White_Space}/u.test(parcelNumber ?? '') ? parcelNumber : parcelId
+  )
+  return new Set(parcelKeys).size
+})
 const missing = ref([])
 const processedCount = ref(0)
 const busy = computed(() => activeOperation.value !== null)
@@ -154,7 +161,8 @@ function confirmSelection() {
       :disabled="disabled"
       :register="register"
       :processed-count="processedCount"
-      :found-count="matchedParcels.length"
+      :found-count="foundParcelCount"
+      :found-product-count="matchedParcels.length"
       :missing-numbers="missing"
     />
   </ParcelSelectionDialogFrame>

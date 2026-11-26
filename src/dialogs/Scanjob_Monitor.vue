@@ -127,8 +127,9 @@ const lookupSnapshot = computed(() => lookupMonitor.value?.snapshot)
 const monitorJob = computed(() => isLookupMode.value ? lookupSnapshot.value : scanjob.value)
 const toolbarSnapshot = computed(() => isLookupMode.value ? lookupSnapshot.value : visibleSnapshot.value)
 const isLoading = computed(() => isLookupMode.value ? lookupMonitor.value?.busy ?? true : monitorLoading.value || switchingScope.value)
+const contentBlocking = computed(() => isLookupMode.value ? lookupMonitor.value?.blocking ?? true : isLoading.value)
 const toolbarBusy = computed(() => isLoading.value || jumpLoading.value || followUsersLoading.value ||
-  followApplyLoading.value || defectActionRunning.value || manualScan?.busy.value || printingPanel.value?.operationInProgress)
+  followApplyLoading.value || defectActionRunning.value || manualScan.busy.value || printingPanel.value?.operationInProgress)
 const printQueue = computed(() => printingPanel.value?.queueStatus ?? { queued: 0, paused: false })
 const boxes = computed(() => visibleSnapshot.value?.boxes ?? [])
 const selectedBox = computed(() => visibleSnapshot.value?.box ?? null)
@@ -160,16 +161,22 @@ const activeRegisterItem = computed(() => {
 
   return storeRegister
 })
-const manualScan = isLookupMode.value ? null : useManualScan({
-  target: computed(() => isRegisterMode.value ? BOX_SCAN : PARCEL_SCAN),
-  registerId, job: scanjob,
-  readOnly,
-  disabled: () => isLoading.value || defectActionRunning.value || Boolean(closedInfo.value),
-  scopeKey: () => `${props.scanjobId}:${monitorScopeKey(props.monitorScope)}`,
-  refresh: refreshCurrentScopeSnapshot
+const manualScanJob = computed(() => {
+  if (!isLookupMode.value) return scanjob.value
+  const job = lookupSnapshot.value
+  return job && { id: job.scanJobId, name: job.scanJobName, status: job.status,
+    type: job.type, operation: job.operation, readOnly: job.readOnly }
 })
-const manualScanLocked = computed(() => manualScan?.locked.value === true)
-const controlsBusy = computed(() => (isLookupMode.value ? lookupMonitor.value?.blocking ?? true : isLoading.value) || manualScanLocked.value)
+const manualScan = useManualScan({
+  target: computed(() => isLookupMode.value || isBoxMode.value ? PARCEL_SCAN : BOX_SCAN),
+  registerId, job: manualScanJob,
+  readOnly,
+  disabled: () => contentBlocking.value || defectActionRunning.value || Boolean(closedInfo.value),
+  scopeKey: () => isLookupMode.value ? lookupMonitor.value?.controls : `${props.scanjobId}:${monitorScopeKey(props.monitorScope)}`,
+  refresh: () => isLookupMode.value ? lookupMonitor.value?.refreshAfterManualScan() : refreshCurrentScopeSnapshot()
+})
+const manualScanLocked = manualScan.locked
+const controlsBusy = computed(() => contentBlocking.value || manualScanLocked.value)
 const followSelectionDisabled = computed(() => controlsBusy.value ||
   (followApplyLoading.value && !lookupMonitor.value?.reconnecting) ||
   followUsersLoading.value || !monitorDetailsLoaded.value)
@@ -837,7 +844,7 @@ async function startFollowUserSubscription({
 }
 
 async function handleFollowEvent(followEvent, version = scopeVersion.value) {
-  if (manualScan?.includesCompletedScan(followEvent?.scanCodeId)) return
+  if (manualScan.includesCompletedScan(followEvent?.scanCodeId)) return
   if (manualScanLocked.value) {
     deferredFollowEvent = { event: followEvent, version }
     return

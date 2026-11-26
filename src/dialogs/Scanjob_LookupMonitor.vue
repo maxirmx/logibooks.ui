@@ -3,16 +3,19 @@
 // All rights reserved.
 // This file is a part of Logibooks UI application.
 
-import { computed, nextTick, onMounted, onUnmounted, provide, ref, watch } from 'vue'
+import { computed, inject, nextTick, onMounted, onUnmounted, provide, ref, watch } from 'vue'
 import { isNavigationFailure, NavigationFailureType, onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import CorrectedWeightDisplay from '@/components/CorrectedWeightDisplay.vue'
 import PaginationFooter from '@/components/PaginationFooter.vue'
+import ParcelScanAction from '@/components/ParcelScanAction.vue'
 import ParcelWhFilterSelectors from '@/components/ParcelWhFilterSelectors.vue'
 import ScanjobMonitorSummary from '@/components/ScanjobMonitorSummary.vue'
+import { useManualScanSelection } from '@/composables/useManualScanSelection.js'
 import { OZON_COMPANY_ID } from '@/helpers/company.constants.js'
 import { reportError } from '@/helpers/error.helpers.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
 import { recoverPageLoad } from '@/helpers/login.navigation.js'
+import { MANUAL_SCAN_KEY } from '@/helpers/manual.scan.key.js'
 import { OP_MODE_WAREHOUSE } from '@/helpers/op.mode.js'
 import { ozonRegisterColumnTitles } from '@/helpers/ozon.register.mapping.js'
 import { REMOVED_PARCEL_FILTER_MESSAGE } from '@/helpers/parcel.filters.js'
@@ -39,6 +42,7 @@ const store = useScanjobsStore()
 const alertStore = useAlertStore()
 const authStore = useAuthStore()
 const filterStore = useParcelFiltersStore()
+const manualScan = inject(MANUAL_SCAN_KEY)
 const inProgressStatus = 15
 const loadFailure = 'Не удалось загрузить посылки для поиска'
 const lookupRouteName = scanjobMonitorLocation(props.scanjobId, scanjobMonitorMode.Lookup).name
@@ -82,6 +86,7 @@ const controls = ref(readControls(route.query))
 const ozon = computed(() => snapshot.value?.registerType === OZON_COMPANY_ID)
 const numberKey = computed(() => ozon.value ? 'postingNumber' : 'shk')
 const headers = computed(() => [
+  ...(manualScan.canScan.value ? [{ title: '', key: 'actions', align: 'center', sortable: false }] : []),
   { title: 'Поиск', key: 'found', sortable: false },
   { title: ozon.value ? 'Номер отправления' : 'ШК', key: numberKey.value },
   ...(ozon.value ? [
@@ -101,6 +106,19 @@ const headers = computed(() => [
 ])
 const sortBy = computed(() => [{ key: controls.value.sortBy, order: controls.value.sortOrder }])
 const lookupPage = computed(() => snapshot.value?.lookupPage)
+const visibleItems = computed(() => pageCurrent.value ? lookupPage.value.items : [])
+const canSelectForScan = computed(() => manualScan.canScan.value && !manualScan.disabled.value &&
+  manualScan.compatibleJobs().length > 0)
+const { selection, locked: manualScanLocked } = useManualScanSelection({
+  items: computed(() => visibleItems.value.map(item => item.parcel)),
+  loading: blocking,
+  page: computed(() => controls.value.page),
+  scopeKey: controls,
+  disabled: () => !canSelectForScan.value
+})
+watch(canSelectForScan, available => {
+  if (!available) selection.clearSelection()
+})
 const summaryCards = computed(() => snapshot.value
   ? buildScanjobProgressCards(snapshot.value, { includeRestrictions: false })
   : [])
@@ -113,12 +131,22 @@ function scrollToSelection() {
   lookupContent.value?.querySelector('.monitor-followed-parcel-row')?.scrollIntoView?.({ block: 'nearest' })
 }
 
+function isSelectionClick(event) {
+  return event.shiftKey || event.ctrlKey || event.metaKey
+}
+
 function getRowProps({ item }) {
+  const row = { item: item.parcel }
   return {
-    class: item.parcel.parcelId === visibleFollowedParcelId.value ? 'monitor-followed-parcel-row' : '',
+    class: [selection.getRowProps(row).class,
+      item.parcel.parcelId === visibleFollowedParcelId.value ? 'monitor-followed-parcel-row' : ''],
+    onContextmenu: canSelectForScan.value ? event => selection.handleRowContextMenu(event, row) : undefined,
+    onClick: canOpenParcel.value || canSelectForScan.value ? event => {
+      if (isSelectionClick(event) || !canOpenParcel.value) selection.handleRowClick(event, row)
+      else void editParcel(item)
+    } : undefined,
     ...(canOpenParcel.value ? {
       tabindex: 0,
-      onClick: () => editParcel(item),
       onKeydown: event => {
         if (event.target !== event.currentTarget || (event.key !== 'Enter' && event.key !== ' ')) return
         event.preventDefault()
@@ -133,6 +161,7 @@ function getBoxCellProps({ item }) {
   return {
     class: item.boxId == null ? 'lookup-box-cell-unavailable' : 'lookup-box-cell',
     onClick: event => {
+      if (isSelectionClick(event)) return
       event.stopPropagation()
       if (item.boxId != null) void openBox(item)
     }
@@ -154,7 +183,8 @@ provide('savedParcelFilter', {
 let active = true
 let observing = false
 let version = 0
-let running = false
+let pageLoad = null
+let manualRefreshQueued = false
 let requested = false
 let timer = null
 let pendingLiveError = null
@@ -168,6 +198,10 @@ let historyNavigation = null
 let reloadAfterNavigation = false
 const stopNavigationListeners = []
 const live = store.createLookupMonitorChannel(handleLiveFailure)
+
+watch(manualScanLocked, locked => {
+  if (!locked && pendingFollow && timer == null) queueReload(0)
+})
 
 function showError(error, fallback) {
   if (active) alertStore.error(error, { fallback })
@@ -333,26 +367,57 @@ function queueReload(delay) {
   timer = null
   if (delay === 0) {
     requested = true
-    void loadPage()
+    loadRequestedPage()
     return
   }
   timer = setTimeout(() => queueReload(0), delay)
 }
 
-async function loadPage() {
-  if (running || !active) return
-  running = true
+function loadRequestedPage() {
+  if (active && requested && !pageLoad && !manualRefreshQueued) void startPageLoad()
+}
+
+function startPageLoad(manualRefresh = false) {
+  pageLoad = loadPage(manualRefresh).finally(() => {
+    pageLoad = null
+    busy.value = !pageCurrent.value && timer != null
+    loadRequestedPage()
+  })
+  return pageLoad
+}
+
+async function refreshAfterManualScan() {
+  manualRefreshQueued = true
+  try {
+    await pageLoad
+    if (!active || deferReloadForNavigation()) return
+    // The post-scan read also satisfies any pending live invalidation.
+    clearTimeout(timer)
+    timer = null
+    requested = true
+    await startPageLoad(true)
+  } finally {
+    manualRefreshQueued = false
+    loadRequestedPage()
+  }
+}
+
+async function loadPage(manualRefresh) {
   busy.value = true
-  while (active && requested) {
+  while (active && requested && (!manualRefreshQueued || manualRefresh)) {
     requested = false
     if (deferReloadForNavigation()) break
+    const operationRefresh = manualRefresh
+    manualRefresh = false
     const currentVersion = version
     let follow = null
     try {
       await routeUpdate
       if (!active || currentVersion !== version) continue
-      follow = pendingFollow
-      pendingFollow = null
+      if (!manualScanLocked.value) {
+        follow = pendingFollow
+        pendingFollow = null
+      }
       const params = queryParams()
       if (follow) params.followParcelId = String(follow.parcelId)
       const refreshed = await store.loadLookupMonitorPage(props.scanjobId, params)
@@ -384,6 +449,7 @@ async function loadPage() {
         pendingLiveError = null
         if (refreshed.status === inProgressStatus) {
           await recoverPageLoad(router, error, 'Не удалось подключить обновления монитора сканирования')
+          requested = false
           break
         } else {
           // The job can stop between the saved page response and live subscription.
@@ -404,6 +470,8 @@ async function loadPage() {
         const clearedVersion = version
         await routeUpdate
         if (active && version === clearedVersion) alertStore.warning(REMOVED_PARCEL_FILTER_MESSAGE)
+      } else if (operationRefresh && !pendingLiveError) {
+        throw error
       } else {
         if (pendingLiveError) {
           reportError(pendingLiveError, { context: 'Подключение обновлений монитора сканирования' })
@@ -421,13 +489,12 @@ async function loadPage() {
           alertStore.error(`Монитор поиска недоступен для задания «${props.scanjobId}»`)
         } else {
           await recoverPageLoad(router, error, loadFailure)
+          requested = false
         }
         break
       }
     }
   }
-  running = false
-  busy.value = !pageCurrent.value && timer != null
 }
 
 function handleLiveFailure(error) {
@@ -499,7 +566,7 @@ async function loadOptions() {
 
 async function navigateFromLookup(navigate, failureMessage) {
   await routeUpdate
-  if (!active || !pageCurrent.value) return
+  if (!active || !pageCurrent.value || manualScanLocked.value) return
   invalidateFollow({ navigating: true })
   try {
     const result = await navigate()
@@ -557,12 +624,12 @@ onUnmounted(() => {
   void stopObserving()
 })
 
-defineExpose({ snapshot, busy, blocking, closed, liveReady, reconnecting: live.reconnecting,
-  followUser: live.followUser, clearFollowUser, queueFollowEvent })
+defineExpose({ snapshot, busy, blocking, closed, controls, liveReady, reconnecting: live.reconnecting,
+  followUser: live.followUser, clearFollowUser, queueFollowEvent, refreshAfterManualScan })
 </script>
 
 <template>
-  <div ref="lookupContent">
+  <div ref="lookupContent" :inert="manualScanLocked || undefined">
     <template v-if="snapshot">
       <ScanjobMonitorSummary :cards="summaryCards">
         <template v-if="snapshot.lookupNotFoundCount == null && snapshot.lookupRemainingCount != null" #card-lookupProgress>
@@ -589,7 +656,7 @@ defineExpose({ snapshot, busy, blocking, closed, liveReady, reconnecting: live.r
           class="interlaced-table scanjob-lookup-table"
           item-value="parcel.parcelId"
           :headers="headers"
-          :items="pageCurrent ? lookupPage.items : []"
+          :items="visibleItems"
           :row-props="getRowProps"
           :items-length="pageCurrent ? totalCount : 0"
           :page="controls.page"
@@ -602,6 +669,11 @@ defineExpose({ snapshot, busy, blocking, closed, liveReady, reconnecting: live.r
           no-data-text="Нет посылок по заданным условиям"
           @update:sort-by="changeSort"
         >
+          <template #[`item.actions`]="{ item }">
+            <div class="actions-container" @click.stop @contextmenu.stop>
+              <ParcelScanAction :parcels="[item.parcel]" :selection="selection" />
+            </div>
+          </template>
           <template #[`header.scannedInfo`]="{ column }">
             <span class="scanjob-monitor-scanned-info-header">{{ column.title }}</span>
           </template>

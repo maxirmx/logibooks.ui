@@ -3,6 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
+import DataTablePaginationFooter from '@/components/DataTablePaginationFooter.vue'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { storeToRefs } from 'pinia'
 import { useCountriesStore } from '@/stores/countries.store.js'
@@ -104,9 +105,6 @@ const headers = [
     <v-card class="table-card">
       <v-data-table
         v-model:items-per-page="countries_per_page"
-        items-per-page-text="Стран на странице"
-        :items-per-page-options="itemsPerPageOptions"
-        page-text="{0}-{1} из {2}"
         v-model:page="countries_page"
         :headers="headers"
         :items="countries"
@@ -116,7 +114,14 @@ const headers = [
         density="compact"
         class="elevation-1 interlaced-table"
         fixed-header
-      />
+      >
+        <template #bottom>
+          <DataTablePaginationFooter
+            :items-per-page-options="itemsPerPageOptions"
+            items-per-page-label="Стран на странице"
+          />
+        </template>
+      </v-data-table>
     </v-card>
   </div>
 </template>

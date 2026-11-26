@@ -162,6 +162,7 @@ const extendedStubs = {
         </div>
         <slot name="top"></slot>
         <slot></slot>
+        <slot name="bottom" />
       </div>
     `,
     props: [

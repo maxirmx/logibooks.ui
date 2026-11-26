@@ -990,6 +990,121 @@ describe('Lookup monitor', () => {
     expect(wrapper.get(followedRow).text()).toContain('0001-1')
   })
 
+  it('resumes the latest external follow event when a local scan event also arrives during the request', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    api.isWhOperator = true
+    api.followUserId = 21
+    let finishScan
+    api.scanParcel.mockImplementationOnce(() => new Promise(resolve => { finishScan = resolve }))
+    openMonitor()
+    await flushPromises()
+
+    await lookupRows()[1].get(manualScanButton).trigger('click')
+    const { onFollowEvent } = api.followUser.mock.lastCall[2]
+    await onFollowEvent(scanEvent(603, 312))
+    await onFollowEvent(scanEvent(602, null))
+    await onFollowEvent(scanEvent(604, 313))
+    api.load.mockResolvedValueOnce(lookupSnapshot()).mockResolvedValueOnce(followedPage(2, 312))
+    finishScan({ id: 313, count: 1, scanCodeId: 604 })
+    await flushPromises()
+    await vi.advanceTimersByTimeAsync(150)
+    await flushPromises()
+
+    expect(api.load).toHaveBeenCalledTimes(3)
+    expect(api.load).toHaveBeenLastCalledWith(8, expect.objectContaining({ followParcelId: '312' }))
+    expect(wrapper.get(followedRow).text()).toContain('0001-1')
+  })
+
+  it('ignores delayed follow notifications from consecutive manual scans', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    api.isWhOperator = true
+    api.followUserId = 21
+    api.scanParcel.mockResolvedValueOnce({ id: 312, count: 1, scanCodeId: 603 })
+      .mockResolvedValueOnce({ id: 313, count: 1, scanCodeId: 604 })
+    openMonitor()
+    await flushPromises()
+
+    for (const row of lookupRows()) {
+      await row.get(manualScanButton).trigger('click')
+      await flushPromises()
+    }
+    expect(api.scanParcel.mock.calls).toEqual([[8, 312], [8, 313]])
+    api.load.mockResolvedValueOnce(followedPage(2, 312))
+    await sendScan(scanEvent(603, 312))
+    await sendScan(scanEvent(604, 313))
+
+    expect(api.load).toHaveBeenCalledTimes(3)
+    expect(wrapper.find(followedRow).exists()).toBe(false)
+  })
+
+  it('discards follow events queued before browser Back during a manual scan', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    api.isWhOperator = true
+    api.followUserId = 21
+    let finishScan
+    api.scanParcel.mockImplementationOnce(() => new Promise(resolve => { finishScan = resolve }))
+    const navigation = await openRoutedMonitor({ previousPath: '/scanjobs/8/monitor/lookup?page=1' })
+    await flushPromises()
+
+    await lookupRows()[1].get(manualScanButton).trigger('click')
+    await api.followUser.mock.lastCall[2].onFollowEvent(scanEvent(603, 312))
+    api.load.mockResolvedValueOnce(followedPage(1, null))
+    navigation.back()
+    await flushPromises()
+    expect(navigation.currentRoute.value.query.page).toBe('1')
+
+    await api.followUser.mock.lastCall[2].onFollowEvent(scanEvent(604, 313))
+    finishScan({ id: 313, count: 1, scanCodeId: 604 })
+    await flushPromises()
+    await vi.advanceTimersByTimeAsync(150)
+    expect(api.load).toHaveBeenCalledTimes(2)
+    expect(api.load.mock.lastCall[1]).not.toHaveProperty('followParcelId')
+    expect(wrapper.find(followedRow).exists()).toBe(false)
+  })
+
+  it.each(['read', 'navigation'])('defers a follow %s that completes during batch confirmation', async phase => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    api.isWhOperator = true
+    api.followUserId = 21
+    const navigation = await openRoutedMonitor()
+    await flushPromises()
+
+    let finishFollow
+    let removeGuard
+    const followed = followedPage(1, 312)
+    if (phase === 'read') {
+      api.load.mockImplementationOnce(() => new Promise(resolve => { finishFollow = () => resolve(followed) }))
+    } else {
+      api.load.mockResolvedValueOnce(followed)
+      removeGuard = navigation.beforeEach(to => to.query.page === '1'
+        ? new Promise(resolve => { finishFollow = resolve }) : true)
+    }
+    await sendScan(scanEvent(603, 312))
+    expect(finishFollow).toEqual(expect.any(Function))
+
+    let confirmBatch
+    api.confirm.mockImplementationOnce(() => new Promise(resolve => { confirmBatch = resolve }))
+    const [first, second] = lookupRows()
+    await first.trigger('click', { ctrlKey: true })
+    await second.trigger('click', { shiftKey: true })
+    await second.get(manualScanButton).trigger('click')
+    expect(confirmBatch).toEqual(expect.any(Function))
+
+    finishFollow()
+    await flushPromises()
+    removeGuard?.()
+    expect(navigation.currentRoute.value.query.page).toBe('2')
+    expect(wrapper.findAll('.selected-parcel-row')).toHaveLength(2)
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+
+    api.load.mockResolvedValueOnce(followed)
+    confirmBatch(false)
+    await flushPromises()
+    expect(api.scanParcels).not.toHaveBeenCalled()
+    expect(api.load).toHaveBeenLastCalledWith(8, expect.objectContaining({ followParcelId: '312' }))
+    expect(navigation.currentRoute.value.query.page).toBe('1')
+  })
+
   it.each(['кнопка', 'контекстное меню'])('scans the selected rows through %s after confirmation', async action => {
     api.isWhOperator = true
     api.confirm.mockResolvedValueOnce(false)
@@ -998,7 +1113,7 @@ describe('Lookup monitor', () => {
     await flushPromises()
     const [first, second] = lookupRows()
     await first.trigger('click', { ctrlKey: true })
-    await second.get('.lookup-box-cell').trigger('click', { shiftKey: true })
+    await second.get('button[aria-label="Открыть коробку № B-56"]').trigger('click', { shiftKey: true })
     expect(wrapper.findAll('.selected-parcel-row')).toHaveLength(2)
     expect(api.push).not.toHaveBeenCalled()
     const scan = () => action === 'кнопка' ? second.get(manualScanButton).trigger('click') : second.trigger('contextmenu')
@@ -1100,6 +1215,81 @@ describe('Lookup monitor', () => {
     expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось обновить данные после сканирования')
     expect(wrapper.text()).not.toContain(error.message)
     expect(lookupRows()).toHaveLength(2)
+    expect(api.replace).not.toHaveBeenCalled()
+  })
+
+  it('keeps the scan rejection visible when its refresh removes a deleted saved filter', async () => {
+    api.isWhOperator = true
+    api.scanParcel.mockRejectedValueOnce({ status: 422, data: { msg: 'Посылка недоступна' } })
+    openMonitor()
+    await flushPromises()
+    api.load.mockRejectedValueOnce({ status: 404, data: { code: 'parcel_filter_not_found' } })
+      .mockResolvedValueOnce(followedPage(1, null))
+
+    await lookupRows()[1].get(manualScanButton).trigger('click')
+    await flushPromises()
+    expect(api.scanParcel).toHaveBeenCalledExactlyOnceWith(8, 313)
+    expect(api.load.mock.lastCall[1]).not.toHaveProperty('parcelFilterId')
+    expect(api.replace.mock.lastCall[0].query).not.toHaveProperty('parcelFilterId')
+    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+    expect(wrapper.get('[role="alert"]').text()).toContain('Посылка недоступна')
+  })
+
+  it('invalidates an unsubmitted batch when the selected saved filter is deleted', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    api.isWhOperator = true
+    let confirmBatch
+    api.confirm.mockImplementationOnce(() => new Promise(resolve => { confirmBatch = resolve }))
+    openMonitor()
+    await flushPromises()
+
+    await lookupRows()[1].trigger('contextmenu')
+    expect(confirmBatch).toEqual(expect.any(Function))
+    api.load.mockRejectedValueOnce({ status: 404, data: { code: 'parcel_filter_not_found' } })
+      .mockResolvedValueOnce(followedPage(1, null))
+    handlers.onSnapshot({ scanJobId: 8, area: scanjobMonitorArea.Lookup })
+    await vi.advanceTimersByTimeAsync(150)
+    await flushPromises()
+    expect(api.load.mock.lastCall[1]).not.toHaveProperty('parcelFilterId')
+
+    confirmBatch(true)
+    await flushPromises()
+    expect(api.scanParcels).not.toHaveBeenCalled()
+    expect(wrapper.findAll('.selected-parcel-row')).toHaveLength(0)
+  })
+
+  it.each(['queued follow', 'live read'])('clears the rows once when a job disappears with a %s', async pending => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    api.isWhOperator = true
+    api.followUserId = 21
+    api.scanParcel.mockResolvedValueOnce({ id: 313, count: 1 })
+    openMonitor()
+    await flushPromises()
+    const error = { status: 404, data: { msg: 'Задание не найдено' } }
+    let rejectRead
+    if (pending === 'queued follow') {
+      await api.followUser.mock.lastCall[2].onFollowEvent(scanEvent(603, 312))
+    } else {
+      api.load.mockImplementationOnce(() => new Promise((_resolve, reject) => { rejectRead = reject }))
+      handlers.onSnapshot({ scanJobId: 8, area: scanjobMonitorArea.Lookup })
+      await vi.advanceTimersByTimeAsync(150)
+      expect(rejectRead).toEqual(expect.any(Function))
+    }
+    api.load.mockRejectedValue(error)
+    const alert = vi.spyOn(useAlertStore(), 'error')
+
+    await lookupRows()[1].get(manualScanButton).trigger('click')
+    await flushPromises()
+    rejectRead?.(error)
+    await flushPromises()
+    expect(api.scanParcel).toHaveBeenCalledExactlyOnceWith(8, 313)
+    expect(api.load).toHaveBeenCalledTimes(2)
+    expect(lookupRows()).toHaveLength(0)
+    expect(wrapper.find(manualScanButton).exists()).toBe(false)
+    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+    expect(wrapper.get('[role="alert"]').text()).toContain('Монитор поиска недоступен для задания «8»')
+    expect(alert).toHaveBeenCalledExactlyOnceWith('Монитор поиска недоступен для задания «8»')
+    expect(api.stop).toHaveBeenCalledOnce()
     expect(api.replace).not.toHaveBeenCalled()
   })
 

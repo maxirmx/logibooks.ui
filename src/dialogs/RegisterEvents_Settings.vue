@@ -5,6 +5,7 @@
 
 import { useListState } from '@/composables/useListState.js'
 import { scalarField } from '@/helpers/list.state.helpers.js'
+import DataTablePaginationFooter from '@/components/DataTablePaginationFooter.vue'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { computed, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
@@ -236,7 +237,6 @@ onMounted(async () => {
           <v-data-table
             v-model:items-per-page="registerevents_per_page"
             v-model:page="registerevents_page"
-            :items-per-page-options="itemsPerPageOptions"
             :headers="headers"
             :items="filteredEvents"
             item-value="id"
@@ -244,6 +244,9 @@ onMounted(async () => {
             density="compact"
             :loading="loading"
           >
+            <template #bottom>
+              <DataTablePaginationFooter :items-per-page-options="itemsPerPageOptions" />
+            </template>
             <template #[`item.eventTitle`]="{ item }">
               <span :data-testid="`register-event-row-${item.id}`">{{ getEventTitle(item) }}</span>
             </template>

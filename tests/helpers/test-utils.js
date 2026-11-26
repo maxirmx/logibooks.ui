@@ -53,6 +53,7 @@ export async function waitForTicks(ticks = 2) {
 
 // Comprehensive Vuetify component stubs that handle common props
 export const vuetifyStubs = {
+  DataTablePaginationFooter: true,
   'v-overlay': {
     name: 'VOverlay',
     props: ['modelValue'],
@@ -158,6 +159,7 @@ export const vuetifyStubs = {
           </slot>
         </div>
         <slot></slot>
+        <slot name="bottom" />
       </div>
     `,
     props: [
@@ -205,6 +207,7 @@ export const vuetifyStubs = {
           </div>
         </div>
         <slot></slot>
+        <slot name="bottom" />
       </div>
     `,
     props: [

@@ -19,6 +19,7 @@ import { useAlertStore } from '@/stores/alert.store.js'
 import router from '@/router'
 import { useRoute } from 'vue-router'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
+import { buildPageOptions } from '@/helpers/pagination.helpers.js'
 import { buildParcelListHeading } from '@/helpers/register.heading.helpers.js'
 import RegisterHeadingWithStats from '@/components/RegisterHeadingWithStats.vue'
 import { storeToRefs } from 'pinia'
@@ -201,25 +202,7 @@ const passportCheckStatusOptions = computed(() =>
 )
 
 // Provide page options for a select control. For very large page counts, return a compact set
-const pageOptions = computed(() => {
-  const mp = maxPage.value
-  const current = parcels_page.value || 1
-  if (mp <= 200) {
-    return Array.from({ length: mp }, (_, i) => ({ value: i + 1, title: String(i + 1) }))
-  }
-
-  const set = new Set()
-  // first 10
-  for (let i = 1; i <= 10; i++) set.add(i)
-  // last 10
-  for (let i = Math.max(1, mp - 9); i <= mp; i++) set.add(i)
-  // around current
-  for (let i = Math.max(1, current - 10); i <= Math.min(mp, current + 10); i++) set.add(i)
-
-  return Array.from(set)
-    .sort((a, b) => a - b)
-    .map((n) => ({ value: n, title: String(n) }))
-})
+const pageOptions = computed(() => buildPageOptions(maxPage.value, parcels_page.value))
 
 // When max page decreases (e.g. due to filters), clamp current page
 

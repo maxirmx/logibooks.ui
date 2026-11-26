@@ -38,7 +38,7 @@ function render(currentJob = job, target = null) {
     template: '<div><PageAlertRegion/><ScanjobParcelsMonitorTable :headers="headers" :parcels="rows" :selected-parcel-id="focused" :defect-action-loading="disabled"/></div>'
   }), { attachTo: document.body, global: {
     plugins: [createVuetify({ components: { VDataTable } })],
-    stubs: { ...vuetifyStubs, 'v-data-table': false, 'v-btn': false }
+    stubs: { ...vuetifyStubs, DataTablePaginationFooter: false, 'v-data-table': false, 'v-btn': false }
   } })
   return wrapper
 }

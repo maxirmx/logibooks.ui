@@ -3,6 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
+import DataTablePaginationFooter from '@/components/DataTablePaginationFooter.vue'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { onMounted, watch, computed, ref } from 'vue'
 import { storeToRefs } from 'pinia'
@@ -277,9 +278,6 @@ defineExpose({ editOrderScopes, filterOrders, orderHeaders })
     <v-card class="table-card prefixes-table">
       <v-data-table
         v-model:items-per-page="feacnprefixes_per_page"
-        items-per-page-text="Кодов на странице"
-        :items-per-page-options="itemsPerPageOptions"
-        page-text="{0}-{1} из {2}"
         v-model:page="feacnprefixes_page"
         :headers="prefixHeaders"
         :items="prefixItems"
@@ -290,6 +288,12 @@ defineExpose({ editOrderScopes, filterOrders, orderHeaders })
         class="elevation-1 interlaced-table"
         fixed-header
       >
+        <template #bottom>
+          <DataTablePaginationFooter
+            :items-per-page-options="itemsPerPageOptions"
+            items-per-page-label="Кодов на странице"
+          />
+        </template>
         <template v-for="h in prefixHeaders" :key="h.key" #[`item.${h.key}`]="{ item }">
           {{ item[h.key] || '-' }}
         </template>

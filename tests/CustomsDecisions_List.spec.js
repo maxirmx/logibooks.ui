@@ -191,6 +191,7 @@ const testStubs = {
           </template>
         </div>
         <slot></slot>
+        <slot name="bottom" />
       </div>
     `,
     methods: {

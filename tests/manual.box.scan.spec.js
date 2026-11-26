@@ -5,7 +5,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { computed, defineComponent, reactive, ref } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createVuetify } from 'vuetify'
-import { VDataTable, VDataTableFooter, VDefaultsProvider, VList, VListItem, VMenu } from 'vuetify/components'
+import { VDataTable, VList, VListItem, VMenu } from 'vuetify/components'
 import BoxesList from '@/lists/Boxes_List.vue'
 import BoxesMonitor from '@/dialogs/Scanjob_Boxes_Monitor.vue'
 import BoxScanAction from '@/components/BoxScanAction.vue'
@@ -40,9 +40,10 @@ const job = { id: 7, name: 'Поиск коробок', registerId: 1, status: 1
 const boxes = [1, 2, 3].map(id => ({ id, code: `BOX-${id}` }))
 const wrappers = []
 const globals = () => ({
-  plugins: [createVuetify({ components: { VDataTable, VDataTableFooter, VDefaultsProvider, VList, VListItem, VMenu } })],
+  plugins: [createVuetify({ components: { VDataTable, VList, VListItem, VMenu } })],
   stubs: {
     ...vuetifyStubs,
+    DataTablePaginationFooter: false,
     'v-data-table': false,
     'v-btn': false,
     'v-list': false,

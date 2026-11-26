@@ -1,7 +1,7 @@
 <template>
   <div class="pagination-footer">
     <div class="pagination-footer__section pagination-footer__items">
-      <span class="pagination-footer__label">Записей на странице:</span>
+      <span class="pagination-footer__label">{{ itemsPerPageLabel }}</span>
       <v-select
         v-model="itemsPerPageModel"
         :items="itemsPerPageOptions"
@@ -11,6 +11,7 @@
         variant="plain"
         hide-details
         class="pagination-footer__items-select"
+        :aria-label="itemsPerPageLabel"
         :disabled="controlsDisabled"
       />
     </div>
@@ -23,6 +24,7 @@
       <v-btn
         variant="text"
         icon="$first"
+        aria-label="Первая страница"
         size="small"
         :disabled="isFirstDisabled"
         @click="setPage(1)"
@@ -31,6 +33,7 @@
       <v-btn
         variant="text"
         icon="$prev"
+        aria-label="Предыдущая страница"
         size="small"
         :disabled="isPrevDisabled"
         @click="setPage(page - 1)"
@@ -39,6 +42,7 @@
       <v-btn
         variant="text"
         icon="$next"
+        aria-label="Следующая страница"
         size="small"
         :disabled="isNextDisabled"
         @click="setPage(page + 1)"
@@ -47,6 +51,7 @@
       <v-btn
         variant="text"
         icon="$last"
+        aria-label="Последняя страница"
         size="small"
         :disabled="isLastDisabled"
         @click="setPage(effectiveMaxPage)"
@@ -63,6 +68,7 @@
           variant="plain"
           hide-details
           class="pagination-footer__page-select"
+          aria-label="Страница"
           :disabled="controlsDisabled"
         />
       </div>
@@ -70,6 +76,7 @@
       <v-btn
         variant="text"
         :icon="mdiChevronTripleUp"
+        aria-label="В начало страницы"
         size="small"
         @click="scrollToTop"
         class="pagination-footer__scroll-button"
@@ -86,6 +93,7 @@
 
 import { computed } from 'vue'
 import { mdiChevronTripleUp } from '@mdi/js'
+import { buildPageOptions } from '@/helpers/pagination.helpers.js'
 
 const props = defineProps({
   page: { type: Number, required: true },
@@ -93,6 +101,7 @@ const props = defineProps({
   itemsPerPage: { type: Number, required: true },
   totalCount: { type: Number, default: 0 },
   itemsPerPageOptions: { type: Array, default: () => [] },
+  itemsPerPageLabel: { type: String, default: 'Записей на странице:' },
   pageOptions: { type: Array, default: null },
 
   showRange: { type: Boolean, default: true },
@@ -132,10 +141,7 @@ const pageSelectItems = computed(() => {
     return props.pageOptions
   }
 
-  return Array.from({ length: effectiveMaxPage.value }, (_, index) => {
-    const number = index + 1
-    return { value: number, title: String(number) }
-  })
+  return buildPageOptions(effectiveMaxPage.value, props.page)
 })
 
 const pageSelectModel = computed({
@@ -207,7 +213,8 @@ function scrollToTop() {
 }
 
 .pagination-footer__items-select {
-  width: 60px;
+  width: 5.5rem;
+  flex: 0 0 auto;
 }
 
 .pagination-footer__nav {

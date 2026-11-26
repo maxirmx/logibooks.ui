@@ -3,6 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
+import DataTablePaginationFooter from '@/components/DataTablePaginationFooter.vue'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { runWithAlert } from '@/helpers/notification.helpers.js'
 import { onMounted, ref, computed } from 'vue'
@@ -207,9 +208,6 @@ defineExpose({
     <v-card class="table-card">
       <v-data-table
         v-model:items-per-page="authStore.keywords_per_page"
-        items-per-page-text="Ключевых слов на странице"
-        :items-per-page-options="itemsPerPageOptions"
-        page-text="{0}-{1} из {2}"
         v-model:page="authStore.keywords_page"
         :headers="headers"
         :items="keyWords"
@@ -221,6 +219,12 @@ defineExpose({
         class="elevation-1 interlaced-table"
         fixed-header
       >
+        <template #bottom>
+          <DataTablePaginationFooter
+            :items-per-page-options="itemsPerPageOptions"
+            items-per-page-label="Ключевых слов на странице"
+          />
+        </template>
         <template v-slot:[`item.actions`]="{ item }">
           <div v-if="authStore.isSrLogistPlus" class="actions-container">
             <ActionButton

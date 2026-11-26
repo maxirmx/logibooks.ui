@@ -4,6 +4,7 @@
 // This file is a part of Logibooks ui application
 
 import { provide, computed, onMounted, ref, toRef } from 'vue'
+import DataTablePaginationFooter from '@/components/DataTablePaginationFooter.vue'
 import BoxScanAction from '@/components/BoxScanAction.vue'
 import { useManualBoxScan } from '@/composables/useManualBoxScan.js'
 import { useManualScanSelection } from '@/composables/useManualScanSelection.js'
@@ -238,9 +239,6 @@ defineExpose({
         :search="authStore.boxes_search"
         :custom-filter="filterBoxes"
         :loading="loading"
-        :items-per-page-options="itemsPerPageOptions"
-        items-per-page-text="Коробок на странице"
-        page-text="{0}-{1} из {2}"
         item-value="id"
         density="compact"
         class="elevation-1 interlaced-table"
@@ -248,9 +246,11 @@ defineExpose({
         data-testid="boxes-table"
       >
         <template #bottom>
-          <v-defaults-provider :defaults="{ VSelect: { disabled: manualScan.locked.value }, VPagination: { disabled: manualScan.locked.value } }">
-            <v-data-table-footer :items-per-page-options="itemsPerPageOptions" items-per-page-text="Коробок на странице" page-text="{0}-{1} из {2}" />
-          </v-defaults-provider>
+          <DataTablePaginationFooter
+            :items-per-page-options="itemsPerPageOptions"
+            items-per-page-label="Коробок на странице"
+            :disabled="manualScan.locked.value"
+          />
         </template>
 
         <template #[`item.actions`]="{ item }">

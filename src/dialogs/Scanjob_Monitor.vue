@@ -172,7 +172,7 @@ const manualScan = useManualScan({
   registerId, job: manualScanJob,
   readOnly,
   disabled: () => contentBlocking.value || defectActionRunning.value || Boolean(closedInfo.value),
-  scopeKey: () => isLookupMode.value ? lookupMonitor.value?.controls : `${props.scanjobId}:${monitorScopeKey(props.monitorScope)}`,
+  scopeKey: () => isLookupMode.value ? lookupMonitor.value?.scanScopeVersion : `${props.scanjobId}:${monitorScopeKey(props.monitorScope)}`,
   refresh: () => isLookupMode.value ? lookupMonitor.value?.refreshAfterManualScan() : refreshCurrentScopeSnapshot()
 })
 const manualScanLocked = manualScan.locked
@@ -844,10 +844,12 @@ async function startFollowUserSubscription({
 }
 
 async function handleFollowEvent(followEvent, version = scopeVersion.value) {
-  if (manualScan.includesCompletedScan(followEvent?.scanCodeId)) return
-  if (manualScanLocked.value) {
-    deferredFollowEvent = { event: followEvent, version }
-    return
+  if (!isLookupMode.value) {
+    if (manualScan.includesCompletedScan(followEvent?.scanCodeId)) return
+    if (manualScanLocked.value) {
+      deferredFollowEvent = { event: followEvent, version }
+      return
+    }
   }
   const selectedUserId = toNumberOrNull(selectedFollowUserId.value)
   if (

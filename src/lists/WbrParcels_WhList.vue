@@ -19,6 +19,7 @@ import { useAuthStore } from '@/stores/auth.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import router from '@/router'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
+import { buildPageOptions } from '@/helpers/pagination.helpers.js'
 import { buildParcelListHeading } from '@/helpers/register.heading.helpers.js'
 import { reportError } from '@/helpers/error.helpers.js'
 import { loadParcels } from '@/helpers/parcels.list.helpers.js'
@@ -140,22 +141,7 @@ const maxPage = computed(() =>
   Math.max(1, Math.ceil((totalCount.value || 0) / parcels_wh_per_page.value))
 )
 
-const pageOptions = computed(() => {
-  const mp = maxPage.value
-  const current = parcels_wh_page.value || 1
-  if (mp <= 200) {
-    return Array.from({ length: mp }, (_, i) => ({ value: i + 1, title: String(i + 1) }))
-  }
-
-  const set = new Set()
-  for (let i = 1; i <= 10; i++) set.add(i)
-  for (let i = Math.max(1, mp - 9); i <= mp; i++) set.add(i)
-  for (let i = Math.max(1, current - 10); i <= Math.min(mp, current + 10); i++) set.add(i)
-
-  return Array.from(set)
-    .sort((a, b) => a - b)
-    .map((n) => ({ value: n, title: String(n) }))
-})
+const pageOptions = computed(() => buildPageOptions(maxPage.value, parcels_wh_page.value))
 
 const parcelsLoaded = useListPageBounds(parcels_wh_page, maxPage, () => !loading.value && !isInitializing.value && !unref(parcelsStore.error))
 

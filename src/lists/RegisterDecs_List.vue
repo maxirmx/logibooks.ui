@@ -4,6 +4,7 @@
 // This file is a part of Logibooks ui application
 
 import { computed, getCurrentScope, ref, toRef } from 'vue'
+import DataTablePaginationFooter from '@/components/DataTablePaginationFooter.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { useRegisterCustoms } from '@/composables/useRegisterCustoms.js'
@@ -69,7 +70,10 @@ function close() {
     <v-card class="table-card">
       <v-data-table v-model:items-per-page="itemsPerPage" :headers="headers" :items="summary?.items ?? []"
         :loading="busy" item-value="id" density="compact" class="elevation-1 interlaced-table"
-        :items-per-page-options="itemsPerPageOptions" no-data-text="Нет ДТЭГ/ПТДЭГ">
+        no-data-text="Нет ДТЭГ/ПТДЭГ">
+        <template #bottom>
+          <DataTablePaginationFooter :items-per-page-options="itemsPerPageOptions" />
+        </template>
         <template #[`item.actions`]="{ item }">
           <div class="actions-container">
             <ActionButton :item="item" icon="fa-solid fa-list" tooltip-text="Список решений" aria-label="Список решений"

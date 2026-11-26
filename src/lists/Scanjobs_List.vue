@@ -3,6 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
+import DataTablePaginationFooter from '@/components/DataTablePaginationFooter.vue'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { onMounted, onUnmounted, ref, watch } from 'vue'
 import { isNavigationFailure, NavigationFailureType } from 'vue-router'
@@ -305,9 +306,6 @@ defineExpose({
     <v-card class="table-card">
       <v-data-table-server
         v-model:items-per-page="scanjobs_per_page"
-        items-per-page-text="Заданий на странице"
-        :items-per-page-options="itemsPerPageOptions"
-        page-text="{0}-{1} из {2}"
         v-model:page="scanjobs_page"
         v-model:sort-by="scanjobs_sort_by"
         :headers="headers"
@@ -318,6 +316,12 @@ defineExpose({
         class="elevation-1 interlaced-table"
         fixed-header
       >
+        <template #bottom>
+          <DataTablePaginationFooter
+            :items-per-page-options="itemsPerPageOptions"
+            items-per-page-label="Заданий на странице"
+          />
+        </template>
         <template v-slot:[`item.invoice`]="{ item }">
           <RegisterInvoiceCell
             :item="item"

@@ -89,9 +89,9 @@ const applyDisabled = computed(() => props.disabled || !hasChangedStatus.value)
 }
 
 .register-status-inline-editor :deep(.register-status-inline-select) {
-  width: 58px;
+  width: max-content;
   min-width: 58px;
-  max-width: 58px;
+  max-width: none;
 }
 
 .register-status-inline-editor :deep(.register-status-inline-select .v-field__input) {

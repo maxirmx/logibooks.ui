@@ -87,6 +87,13 @@ These instructions apply to the entire repository. Follow them for every new fea
 - Use `app-table-actions` for actions in plain table cells. Keep only table-specific column widths and responsive layout rules in the component.
 - In user-profile filter tables, keep the table inside the profile form. Place a label-styled heading and the create `ActionButton` in one header row, then span the table across the form width below it, as in `RestrictionScopeEditor`. Put the create action inside `header-actions-bar` and `header-actions header-actions-group`, with space above the table. Put row action buttons in the first table column, before filter data.
 
+## Table pagination
+
+- Use `src/components/PaginationFooter.vue` as the standard footer for new paginated lists and migrations of existing lists.
+- Use the server-reported total for server-side tables and the filtered row count before pagination for client-side tables. Bind the footer to the list's existing page and page-size state.
+- Preserve each list's page-size options, labels, and loading or operation locks when adopting the shared footer.
+- Keep shared footer sizing in `PaginationFooter` and scope screen-specific footer rules to that screen. When changing footer layout, verify three-digit page-size values and narrow layouts in the browser.
+
 ## Parcel navigation context
 
 - Every route that opens parcel editing must carry an explicit operation `mode`: `modePaperwork` for customs/paperwork workflows or `modeWarehouse` for warehouse workflows.

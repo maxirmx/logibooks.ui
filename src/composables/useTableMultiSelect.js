@@ -54,9 +54,9 @@ export function useTableMultiSelect({
     }
   }
 
-  function handleRowClick(event, { item }) {
+  function handleRowClick(event, { item }, { allowInteractiveTarget = false } = {}) {
     if (isDisabled() || !isItemSelectable(item) ||
-        event.target?.closest?.('button, a, input, select, textarea, [role="button"], [role="menuitem"]')) return
+        (!allowInteractiveTarget && event.target?.closest?.('button, a, input, select, textarea, [role="button"], [role="menuitem"]'))) return
     const id = getItemId(item)
     if (id == null) return
 

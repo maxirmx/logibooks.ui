@@ -6,6 +6,7 @@
 import { computed, inject, nextTick, onUnmounted, ref, watch } from 'vue'
 import { useParcelMultiSelect } from '@/composables/useParcelMultiSelect.js'
 import { MANUAL_PARCEL_SCAN_KEY, parcelScanId } from '@/helpers/parcel.scan.helpers.js'
+import DataTablePaginationFooter from '@/components/DataTablePaginationFooter.vue'
 import ParcelScanAction from '@/components/ParcelScanAction.vue'
 import { storeToRefs } from 'pinia'
 import { useAuthStore } from '@/stores/auth.store.js'
@@ -276,18 +277,17 @@ watch(
     @update:items-per-page="handleTableControlsChange"
     @update:sort-by="handleTableControlsChange"
     :inert="manualScan?.locked.value || undefined"
-    :items-per-page-options="itemsPerPageOptions"
-    items-per-page-text="Посылок на странице"
-    page-text="{0}-{1} из {2}"
     :loading="props.loading"
     density="compact"
     class="elevation-1 interlaced-table single-line-table scanjob-monitor-parcels-table"
     data-testid="scanjob-monitor-parcels-table"
   >
     <template #bottom>
-      <v-defaults-provider :defaults="{ VSelect: { disabled: manualScan?.locked.value }, VPagination: { disabled: manualScan?.locked.value } }">
-        <v-data-table-footer :items-per-page-options="itemsPerPageOptions" items-per-page-text="Посылок на странице" page-text="{0}-{1} из {2}" />
-      </v-defaults-provider>
+      <DataTablePaginationFooter
+        :items-per-page-options="itemsPerPageOptions"
+        items-per-page-label="Посылок на странице"
+        :disabled="manualScan?.locked.value"
+      />
     </template>
     <template #[`item.actions`]="{ item }">
       <div class="actions-container" @click.stop>

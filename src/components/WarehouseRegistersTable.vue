@@ -25,6 +25,7 @@ import {
   isReturnRegister,
   warehouseZoneDistribution
 } from '@/helpers/warehouse.registers.table.helpers.js'
+import DataTablePaginationFooter from '@/components/DataTablePaginationFooter.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import ClickableCell from '@/components/ClickableCell.vue'
 import RegisterInvoiceCell from '@/components/RegisterInvoiceCell.vue'
@@ -184,9 +185,6 @@ function getRegisterStatusTitle(item) {
   >
     <v-data-table-server
       v-model:items-per-page="itemsPerPageModel"
-      :items-per-page-text="`${registerNouns.genitivePluralCapitalized} на странице`"
-      :items-per-page-options="itemsPerPageOptions"
-      page-text="{0}-{1} из {2}"
       v-model:page="pageModel"
       v-model:sort-by="sortByModel"
       :headers="headers"
@@ -198,6 +196,12 @@ function getRegisterStatusTitle(item) {
       fixed-header
       data-testid="registers-table"
     >
+      <template #bottom>
+        <DataTablePaginationFooter
+          :items-per-page-options="itemsPerPageOptions"
+          :items-per-page-label="`${registerNouns.genitivePluralCapitalized} на странице`"
+        />
+      </template>
       <template v-if="selectable" #[`item.selection`]="{ item }">
         <input
           type="checkbox"

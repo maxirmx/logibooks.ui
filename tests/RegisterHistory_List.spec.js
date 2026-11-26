@@ -258,6 +258,8 @@ describe('RegisterHistory_List.vue', () => {
 
     expect(wrapper.get('.history-event-count').text()).toBe('Количество изменений: 4')
     expect(wrapper.text()).toContain('Нет данных')
+    expect(wrapper.getComponent({ name: 'DataTablePaginationFooter' }).props('itemsPerPageOptions')
+      .map(option => option.value)).toEqual([10, 50, 100])
   })
 
   it('renders register-specific selectors and requests AND-combined filters from page one', async () => {

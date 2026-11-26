@@ -39,7 +39,7 @@ export function useManualScan({ registerId, job = null, readOnly = false, disabl
   let mounted = true
   let version = 0
   let jobsVersion = 0
-  let completedScanCodes = new Set()
+  const completedScanCodes = new Set()
 
   function disabledReason(candidate) {
     if (isReadOnly.value) return 'Партия доступна только для просмотра'
@@ -128,8 +128,14 @@ export function useManualScan({ registerId, job = null, readOnly = false, disabl
         ? await store[adapter.batchMethod](jobId, ids)
         : { completed: [await store[adapter.scanMethod](jobId, ids[0])], skippedIds: [] }
       requestInFlight = false
-      if (!current()) return false
       const { completed, skippedIds } = response
+      // Monitors can receive follow notifications after the scope or the latest scan changes.
+      if (job) {
+        for (const { scanCodeId } of completed) {
+          if (Number.isInteger(scanCodeId)) completedScanCodes.add(scanCodeId)
+        }
+      }
+      if (!current()) return false
       if (skippedIds.length) {
         failureMessage = `Не удалось отсканировать позиции, которых нет в партии задания: ${skippedIds.map(id => `#${id}`).join(', ')}.`
       } else if (completed.some(result => result.lookupOutcome)) {
@@ -150,7 +156,6 @@ export function useManualScan({ registerId, job = null, readOnly = false, disabl
           message: adapter.successMessage({ completed: completed.length, matched: matches.length, lookup, empty, matchedParcels })
         }
       }
-      completedScanCodes = new Set(completed.map(item => item.scanCodeId).filter(Number.isInteger))
       if (bulk) completedBatchIds.value = completed.map(item => item.id)
       pendingBatch.value = null
     } catch (error) {

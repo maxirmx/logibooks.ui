@@ -4,6 +4,7 @@
 // This file is a part of Logibooks ui application
 
 import { computed, ref } from 'vue'
+import DataTablePaginationFooter from '@/components/DataTablePaginationFooter.vue'
 import BoxScanAction from '@/components/BoxScanAction.vue'
 import { useManualScanSelection } from '@/composables/useManualScanSelection.js'
 import { storeToRefs } from 'pinia'
@@ -116,18 +117,17 @@ function openBox(item) {
         v-else
         :headers="scanjobBoxHeaders"
         :items="props.boxes"
-        :items-per-page-options="itemsPerPageOptions"
-        items-per-page-text="Коробок на странице"
-        page-text="{0}-{1} из {2}"
         :loading="props.loading"
         density="compact"
         class="elevation-1 interlaced-table"
         data-testid="scanjob-monitor-boxes-table"
       >
         <template #bottom>
-          <v-defaults-provider :defaults="{ VSelect: { disabled: locked }, VPagination: { disabled: locked } }">
-            <v-data-table-footer :items-per-page-options="itemsPerPageOptions" items-per-page-text="Коробок на странице" page-text="{0}-{1} из {2}" />
-          </v-defaults-provider>
+          <DataTablePaginationFooter
+            :items-per-page-options="itemsPerPageOptions"
+            items-per-page-label="Коробок на странице"
+            :disabled="locked"
+          />
         </template>
 
         <template #[`item.boxCode`]="{ item }">

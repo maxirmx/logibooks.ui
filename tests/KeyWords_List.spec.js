@@ -138,6 +138,7 @@ const extendedStubs = {
           </tbody>
         </table>
         <slot></slot>
+        <slot name="bottom" />
       </div>
     `,
     props: [

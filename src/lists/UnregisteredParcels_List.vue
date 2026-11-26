@@ -5,6 +5,7 @@
 
 import { useListState } from '@/composables/useListState.js'
 import { listField, pageField, pageSizeField } from '@/helpers/list.state.helpers.js'
+import DataTablePaginationFooter from '@/components/DataTablePaginationFooter.vue'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { computed, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
@@ -169,13 +170,16 @@ function closeList() {
         :headers="headers"
         :items="items"
         :loading="loading"
-        items-per-page-text="Записей на странице"
-        :items-per-page-options="itemsPerPageOptions"
-        page-text="{0}-{1} из {2}"
         density="compact"
         class="elevation-1 interlaced-table"
         fixed-header
       >
+        <template #bottom>
+          <DataTablePaginationFooter
+            :items-per-page-options="itemsPerPageOptions"
+            items-per-page-label="Записей на странице"
+          />
+        </template>
         <template #[`item.statusId`]="{ item }">
           {{ parcelStatusStore.getStatusTitle(item.statusId) }}
         </template>

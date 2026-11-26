@@ -3,6 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
+import DataTablePaginationFooter from '@/components/DataTablePaginationFooter.vue'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { onMounted, unref } from 'vue'
 import { storeToRefs } from 'pinia'
@@ -122,9 +123,6 @@ const customKeySort = {
     <v-card class="table-card">
       <v-data-table
         v-model:items-per-page="exportfees_per_page"
-        items-per-page-text="Записей на странице"
-        :items-per-page-options="itemsPerPageOptions"
-        page-text="{0}-{1} из {2}"
         v-model:page="exportfees_page"
         :headers="headers"
         :items="fees"
@@ -136,6 +134,12 @@ const customKeySort = {
         class="elevation-1 interlaced-table"
         fixed-header
       >
+        <template #bottom>
+          <DataTablePaginationFooter
+            :items-per-page-options="itemsPerPageOptions"
+            items-per-page-label="Записей на странице"
+          />
+        </template>
         <template #[`item.description`]="{ item }">
           {{ item.description || '-' }}
         </template>

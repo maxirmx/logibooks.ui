@@ -82,6 +82,7 @@ function readControls(query) {
   }
 }
 const controls = ref(readControls(route.query))
+const scanScopeVersion = ref(0)
 
 const ozon = computed(() => snapshot.value?.registerType === OZON_COMPANY_ID)
 const numberKey = computed(() => ozon.value ? 'postingNumber' : 'shk')
@@ -161,8 +162,11 @@ function getBoxCellProps({ item }) {
   return {
     class: item.boxId == null ? 'lookup-box-cell-unavailable' : 'lookup-box-cell',
     onClick: event => {
-      if (isSelectionClick(event)) return
       event.stopPropagation()
+      if (isSelectionClick(event)) {
+        selection.handleRowClick(event, { item: item.parcel }, { allowInteractiveTarget: true })
+        return
+      }
       if (item.boxId != null) void openBox(item)
     }
   }
@@ -190,6 +194,7 @@ let timer = null
 let pendingLiveError = null
 let routeUpdate = Promise.resolve()
 let pendingFollow = null
+const deferredFollowEvents = new Map()
 let followVersion = 0
 let lastFollowScanId = null
 let automaticRoute = null
@@ -200,7 +205,18 @@ const stopNavigationListeners = []
 const live = store.createLookupMonitorChannel(handleLiveFailure)
 
 watch(manualScanLocked, locked => {
-  if (!locked && pendingFollow && timer == null) queueReload(0)
+  if (locked) return
+  let latestId = lastFollowScanId
+  let latestEvent
+  for (const [scanId, event] of deferredFollowEvents) {
+    if (scanId > latestId && !manualScan.includesCompletedScan(scanId)) {
+      latestId = scanId
+      latestEvent = event
+    }
+  }
+  deferredFollowEvents.clear()
+  if (latestEvent) queueFollowEvent(latestEvent)
+  if (pendingFollow && timer == null) queueReload(0)
 })
 
 function showError(error, fallback) {
@@ -220,10 +236,11 @@ function saveRoute() {
   })
 }
 
-function changeControls(changes, { delay = 0, updateRoute = true } = {}) {
+function changeControls(changes, { delay = 0, updateRoute = true, preserveScanScope = false } = {}) {
   if (controlsMatch(controls.value, changes)) return
   invalidateFollow({ navigating: true })
   controls.value = { ...controls.value, ...changes }
+  if (!preserveScanScope) scanScopeVersion.value++
   pageCurrent.value = false
   busy.value = true
   version++
@@ -248,6 +265,7 @@ watch(() => route.query, query => {
 
 function invalidateFollow({ navigating = false } = {}) {
   pendingFollow = null
+  deferredFollowEvents.clear()
   followVersion++
   if (navigating && automaticRoute) automaticRoute.supersededByNavigation = true
 }
@@ -255,7 +273,11 @@ function invalidateFollow({ navigating = false } = {}) {
 function queueFollowEvent(event) {
   const scanId = positiveInt(event.scanCodeId)
   if (!active || leaving || historyNavigation || closed.value || !liveReady.value || snapshot.value?.status !== inProgressStatus ||
-      scanId == null || scanId <= lastFollowScanId) return
+      scanId == null || scanId <= lastFollowScanId || manualScan.includesCompletedScan(scanId)) return
+  if (manualScanLocked.value) {
+    deferredFollowEvents.set(scanId, event)
+    return
+  }
   lastFollowScanId = scanId
   invalidateFollow()
   const parcelId = event.lookupParcelMatched === true ? positiveInt(event.followTarget?.parcelId) : null
@@ -304,6 +326,16 @@ function isCurrentRequest(currentVersion, follow) {
 
 async function positionFollow(refreshed, currentVersion, follow) {
   const { page, followedParcelId: parcelId } = refreshed.lookupPage
+  let deferred = false
+  const canPosition = () => {
+    if (!isCurrentRequest(currentVersion, follow)) return false
+    if (manualScanLocked.value && !deferred) {
+      deferred = true
+      pendingFollow = follow
+    }
+    return !deferred
+  }
+  if (!canPosition()) return deferred
   if (controls.value.page !== page) {
     const destination = { ...controls.value, page }
     const attempt = {
@@ -317,11 +349,11 @@ async function positionFollow(refreshed, currentVersion, follow) {
       controlsMatch(readControls(to.query), destination)
     const removeGuard = router.beforeResolve((to, from) => {
       if (!attempt.supersededByNavigation && from === attempt.from && isDestination(to) &&
-          !isCurrentRequest(currentVersion, follow)) return false
+          !canPosition()) return false
     })
     try {
       const result = await router.replace({ query: queryParams(destination) })
-      if (!isCurrentRequest(currentVersion, follow)) {
+      if (!canPosition()) {
         // A navigation may have finished just before the scan was superseded.
         if (!result && active && !attempt.supersededByNavigation && isDestination(router.currentRoute.value)) {
           // The URL can differ from the displayed controls after an earlier aborted filter change.
@@ -329,7 +361,7 @@ async function positionFollow(refreshed, currentVersion, follow) {
           const restored = await router.replace({ query: attempt.previousQuery, hash: attempt.from.hash })
           if (isNavigationFailure(restored, NavigationFailureType.aborted)) throw restored
         }
-        return false
+        return deferred
       }
       if (isNavigationFailure(result, NavigationFailureType.cancelled)) return false
       if (isNavigationFailure(result)) throw result
@@ -390,7 +422,7 @@ async function refreshAfterManualScan() {
   manualRefreshQueued = true
   try {
     await pageLoad
-    if (!active || deferReloadForNavigation()) return
+    if (!active || !snapshot.value || deferReloadForNavigation()) return
     // The post-scan read also satisfies any pending live invalidation.
     clearTimeout(timer)
     timer = null
@@ -466,20 +498,21 @@ async function loadPage(manualRefresh) {
         // Navigation owns the current route until it finishes.
         reportError(error, { context: loadFailure })
       } else if (controls.value.parcelFilterId != null && error?.data?.code === 'parcel_filter_not_found') {
-        changeFilter('parcelFilterId', null)
+        changeControls({ parcelFilterId: null, page: 1 }, { preserveScanScope: manualScan.busy.value })
         const clearedVersion = version
         await routeUpdate
         if (active && version === clearedVersion) alertStore.warning(REMOVED_PARCEL_FILTER_MESSAGE)
-      } else if (operationRefresh && !pendingLiveError) {
-        throw error
       } else {
+        // Core uses an uncoded 404 error envelope for unavailable scan jobs.
+        const unavailable = error?.status === 404 && typeof error.data?.msg === 'string' && !error.data.code
+        if (operationRefresh && !pendingLiveError && !unavailable) throw error
         if (pendingLiveError) {
           reportError(pendingLiveError, { context: 'Подключение обновлений монитора сканирования' })
           pendingLiveError = null
         }
-        // Core uses an uncoded 404 error envelope for unavailable scan jobs.
-        if (error?.status === 404 && typeof error.data?.msg === 'string' && !error.data.code) {
+        if (unavailable) {
           requested = false
+          invalidateFollow()
           clearTimeout(timer)
           timer = null
           pageCurrent.value = false
@@ -624,7 +657,7 @@ onUnmounted(() => {
   void stopObserving()
 })
 
-defineExpose({ snapshot, busy, blocking, closed, controls, liveReady, reconnecting: live.reconnecting,
+defineExpose({ snapshot, busy, blocking, closed, scanScopeVersion, liveReady, reconnecting: live.reconnecting,
   followUser: live.followUser, clearFollowUser, queueFollowEvent, refreshAfterManualScan })
 </script>
 

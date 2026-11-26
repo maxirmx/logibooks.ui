@@ -81,6 +81,7 @@ const testStubs = {
           </template>
         </div>
         <slot></slot>
+        <slot name="bottom" />
       </div>
     `
   },
@@ -90,11 +91,7 @@ const testStubs = {
     template:
       '<button class="action-button-stub" data-testid="action-button" v-bind="$attrs" @click="$emit(\'click\', $event)"><slot></slot></button>'
   },
-  PaginationFooter: {
-    inheritAttrs: false,
-    props: ['itemsPerPage', 'itemsPerPageOptions', 'page', 'pageOptions', 'totalCount', 'maxPage'],
-    template: '<div class="pagination-footer-stub" data-testid="pagination-footer"></div>'
-  },
+  DataTablePaginationFooter: true,
   ActionDialog: {
     props: ['actionDialog'],
     template:

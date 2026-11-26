@@ -21,6 +21,7 @@ import {
   createTransportationTypesById,
   getCountryDisplayName as getRegisterCountryDisplayName
 } from '@/helpers/warehouse.registers.table.helpers.js'
+import DataTablePaginationFooter from '@/components/DataTablePaginationFooter.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import ActionButton2L from '@/components/ActionButton2L.vue'
 import ClickableCell from '@/components/ClickableCell.vue'
@@ -164,9 +165,6 @@ function getRegisterStatusTitle(item) {
   <v-card class="table-card customs-processing-registers-table-card">
     <v-data-table-server
       v-model:items-per-page="itemsPerPageModel"
-      :items-per-page-text="`${registerNouns.genitivePluralCapitalized} на странице`"
-      :items-per-page-options="itemsPerPageOptions"
-      page-text="{0}-{1} из {2}"
       v-model:page="pageModel"
       v-model:sort-by="sortByModel"
       :headers="headers"
@@ -178,6 +176,12 @@ function getRegisterStatusTitle(item) {
       fixed-header
       data-testid="customs-processing-registers-table"
     >
+      <template #bottom>
+        <DataTablePaginationFooter
+          :items-per-page-options="itemsPerPageOptions"
+          :items-per-page-label="`${registerNouns.genitivePluralCapitalized} на странице`"
+        />
+      </template>
       <template #[`item.dealNumber`]="{ item }">
         <ClickableCell
           :item="item"

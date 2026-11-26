@@ -3,6 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
+import DataTablePaginationFooter from '@/components/DataTablePaginationFooter.vue'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
@@ -152,9 +153,6 @@ defineExpose({
     <v-card class="table-card">
       <v-data-table
         v-model:items-per-page="authStore.registerstatuses_per_page"
-        items-per-page-text="Статусов на странице"
-        :items-per-page-options="itemsPerPageOptions"
-        page-text="{0}-{1} из {2}"
         v-model:page="authStore.registerstatuses_page"
         :headers="headers"
         :items="registerStatuses"
@@ -167,6 +165,12 @@ defineExpose({
         class="elevation-1 interlaced-table"
         fixed-header
       >
+        <template #bottom>
+          <DataTablePaginationFooter
+            :items-per-page-options="itemsPerPageOptions"
+            items-per-page-label="Статусов на странице"
+          />
+        </template>
         <template v-slot:[`item.actions`]="{ item }">
           <div class="actions-container">
             <ActionButton

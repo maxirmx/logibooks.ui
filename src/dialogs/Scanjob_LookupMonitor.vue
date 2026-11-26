@@ -164,7 +164,7 @@ let followVersion = 0
 let lastFollowScanId = null
 let automaticRoute = null
 let leaving = null
-let historyDestination = null
+let historyNavigation = null
 let reloadAfterNavigation = false
 const stopNavigationListeners = []
 const live = store.createLookupMonitorChannel(handleLiveFailure)
@@ -193,7 +193,10 @@ function changeControls(changes, { delay = 0, updateRoute = true } = {}) {
   pageCurrent.value = false
   busy.value = true
   version++
-  if (updateRoute) saveRoute()
+  if (updateRoute) {
+    historyNavigation = null
+    saveRoute()
+  }
   queueReload(delay)
 }
 
@@ -204,7 +207,7 @@ function controlsMatch(values, expected) {
 watch(() => route.query, query => {
   if (route.name === lookupRouteName && Number(route.params.id) === props.scanjobId) {
     const values = readControls(query)
-    if (automaticRoute && !automaticRoute.supersededByNavigation && controlsMatch(values, automaticRoute.destination)) return
+    if (automaticRoute && !automaticRoute.supersededByNavigation && controlsMatch(values, automaticRoute.expectedControls)) return
     changeControls(values, { updateRoute: false })
   }
 }, { flush: 'sync' })
@@ -217,7 +220,7 @@ function invalidateFollow({ navigating = false } = {}) {
 
 function queueFollowEvent(event) {
   const scanId = positiveInt(event.scanCodeId)
-  if (!active || leaving || historyDestination || closed.value || !liveReady.value || snapshot.value?.status !== inProgressStatus ||
+  if (!active || leaving || historyNavigation || closed.value || !liveReady.value || snapshot.value?.status !== inProgressStatus ||
       scanId == null || scanId <= lastFollowScanId) return
   lastFollowScanId = scanId
   invalidateFollow()
@@ -228,15 +231,31 @@ function queueFollowEvent(event) {
 }
 
 function deferReloadForNavigation() {
-  if (!leaving && !historyDestination) return false
+  if (!leaving && !historyNavigation) return false
   reloadAfterNavigation = true
   return true
 }
 
 function resumeDeferredReload() {
-  if (!reloadAfterNavigation || leaving || historyDestination || route.name !== lookupRouteName) return
+  if (!reloadAfterNavigation || leaving || historyNavigation ||
+      route.name !== lookupRouteName || Number(route.params.id) !== props.scanjobId) return
   reloadAfterNavigation = false
   queueReload(0)
+}
+
+function finishNavigation(to, failure) {
+  const original = to.redirectedFrom ?? to
+  const finishedLeave = leaving?.original === original ? leaving : null
+  if (finishedLeave) leaving = null
+  // A cancelled attempt was superseded, so its result cannot release a pending history navigation.
+  if (historyNavigation && !isNavigationFailure(failure, NavigationFailureType.cancelled)) {
+    const { destination, from } = historyNavigation
+    if (finishedLeave?.history === historyNavigation || destination === original.fullPath || destination === to.fullPath ||
+        (!failure && to === router.currentRoute.value && to !== from)) {
+      historyNavigation = null
+    }
+  }
+  resumeDeferredReload()
 }
 
 function clearFollowUser() {
@@ -252,25 +271,28 @@ function isCurrentRequest(currentVersion, follow) {
 async function positionFollow(refreshed, currentVersion, follow) {
   const { page, followedParcelId: parcelId } = refreshed.lookupPage
   if (controls.value.page !== page) {
+    const destination = { ...controls.value, page }
     const attempt = {
       from: router.currentRoute.value,
       previousQuery: { ...route.query },
-      destination: { ...controls.value, page },
+      expectedControls: destination,
       supersededByNavigation: false
     }
     automaticRoute = attempt
     const isDestination = to => to.name === lookupRouteName && Number(to.params.id) === props.scanjobId &&
-      controlsMatch(readControls(to.query), attempt.destination)
+      controlsMatch(readControls(to.query), destination)
     const removeGuard = router.beforeResolve((to, from) => {
       if (!attempt.supersededByNavigation && from === attempt.from && isDestination(to) &&
           !isCurrentRequest(currentVersion, follow)) return false
     })
     try {
-      const result = await router.replace({ query: queryParams(attempt.destination) })
+      const result = await router.replace({ query: queryParams(destination) })
       if (!isCurrentRequest(currentVersion, follow)) {
         // A navigation may have finished just before the scan was superseded.
         if (!result && active && !attempt.supersededByNavigation && isDestination(router.currentRoute.value)) {
-          const restored = await router.replace({ query: attempt.previousQuery })
+          // The URL can differ from the displayed controls after an earlier aborted filter change.
+          attempt.expectedControls = readControls(attempt.previousQuery)
+          const restored = await router.replace({ query: attempt.previousQuery, hash: attempt.from.hash })
           if (isNavigationFailure(restored, NavigationFailureType.aborted)) throw restored
         }
         return false
@@ -511,23 +533,16 @@ function lookupBoxClass(item) {
 if (route.matched?.length) {
   // History can change the query within the same route record while authentication is pending.
   stopNavigationListeners.push(router.options.history.listen(to => {
-    historyDestination = to
+    historyNavigation = { destination: router.resolve(to).fullPath, from: router.currentRoute.value }
     invalidateFollow({ navigating: true })
   }))
   onBeforeRouteLeave(to => {
-    leaving = to
+    const original = to.redirectedFrom ?? to
+    if (leaving?.original !== original) leaving = { original, history: historyNavigation }
     invalidateFollow({ navigating: true })
   })
-  stopNavigationListeners.push(router.afterEach((to, _from, failure) => {
-    if (failure && to === leaving) leaving = null
-    if (to.fullPath === historyDestination) historyDestination = null
-    resumeDeferredReload()
-  }))
-  stopNavigationListeners.push(router.onError((_error, to) => {
-    if (to === leaving) leaving = null
-    if (to.fullPath === historyDestination) historyDestination = null
-    resumeDeferredReload()
-  }))
+  stopNavigationListeners.push(router.afterEach((to, _from, failure) => finishNavigation(to, failure)))
+  stopNavigationListeners.push(router.onError((error, to) => finishNavigation(to, error)))
 }
 
 onMounted(() => {

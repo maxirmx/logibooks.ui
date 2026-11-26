@@ -108,17 +108,19 @@ function openMonitor(navigation) {
   return wrapper
 }
 
-async function openRoutedMonitor() {
+async function openRoutedMonitor({ previousPath } = {}) {
   const navigation = createRouter({ history: createMemoryHistory(), routes: [
     { path: '/scanjobs/:id/monitor/lookup', name: 'scanjob-monitor-lookup', component: LookupMonitorView,
       props: route => ({ id: Number(route.params.id) }) },
     { path: '/login', component: LoginView }
   ] })
+  if (previousPath) await navigation.push(previousPath)
   await navigation.push(api.currentRoute.value.fullPath)
   api.routed = true
   api.currentRoute = navigation.currentRoute
   api.options = navigation.options
   api.replace.mockImplementation(navigation.replace)
+  api.resolve = navigation.resolve
   api.beforeResolve.mockImplementation(navigation.beforeResolve)
   api.afterEach.mockImplementation(navigation.afterEach)
   api.onError.mockImplementation(navigation.onError)
@@ -369,6 +371,44 @@ describe('Lookup monitor', () => {
     expect(api.replace).toHaveBeenCalledTimes(2)
   })
 
+  it('keeps the newest matched scan and filter when restoring a URL after an aborted filter change', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    api.followUserId = 21
+    api.currentRoute.value.fullPath += '#selection'
+    const navigation = await openRoutedMonitor()
+    await flushPromises()
+    const previous = navigation.currentRoute.value.fullPath
+    const abortFilterChange = navigation.beforeEach(to => to.query.stickerPrefix !== 'NEW')
+    api.load.mockResolvedValueOnce(followedPage(1, null))
+    await setLookupFilter('Любой из стикеров', 'NEW')
+    await vi.advanceTimersByTimeAsync(250)
+    await flushPromises()
+    abortFilterChange()
+    expect(navigation.currentRoute.value.fullPath).toBe(previous)
+    expect(wrapper.getComponent(PaginationFooter).props('page')).toBe(1)
+
+    let newerEvent
+    const captureReplacement = navigation.afterEach((to, _from, failure) => {
+      if (!failure && to.query.page === '2' && to.query.stickerPrefix === 'NEW') {
+        newerEvent = api.followUser.mock.lastCall[2].onFollowEvent(scanEvent(2, 312))
+      }
+    })
+    api.load.mockResolvedValueOnce(followedPage(2, 313)).mockResolvedValueOnce(followedPage(2, 312))
+    await sendScan(scanEvent(1, 313))
+    await newerEvent
+    captureReplacement()
+    expect(newerEvent).toBeDefined()
+    expect(navigation.currentRoute.value.fullPath).toBe(previous)
+    expect(wrapper.getComponent(PaginationFooter).props('page')).toBe(1)
+    expect(wrapper.find(followedRow).exists()).toBe(false)
+
+    await vi.advanceTimersByTimeAsync(150)
+    await flushPromises()
+    expect(api.load.mock.lastCall[1]).toMatchObject({ page: '1', stickerPrefix: 'NEW', followParcelId: '312' })
+    expect(navigation.currentRoute.value.query).toMatchObject({ page: '2', stickerPrefix: 'NEW' })
+    expect(wrapper.get(followedRow).text()).toContain('0001-1')
+  })
+
   it.each(['box scan', 'reconnecting', 'follow disabled'])('preserves the displayed URL if %s cancels a pending jump', async cancellation => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
     api.followUserId = 21
@@ -463,6 +503,131 @@ describe('Lookup monitor', () => {
     expect(navigation.currentRoute.value.query.page).toBe('2')
     expect(wrapper.getComponent(PaginationFooter).props('page')).toBe(2)
     expect(api.load.mock.lastCall[1]).not.toHaveProperty('followParcelId')
+  })
+
+  it.each(['completed', 'aborted', 'rejected'])('resumes Lookup after a redirected browser Back is %s', async outcome => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    api.followUserId = 21
+    const navigation = await openRoutedMonitor()
+    await flushPromises()
+    api.load.mockResolvedValueOnce(followedPage(1, null))
+    await navigation.push({ query: { ...navigation.currentRoute.value.query, page: '1' } })
+    await flushPromises()
+
+    const error = new Error('Redirected navigation failed')
+    const onError = vi.fn()
+    const removeErrorHandler = navigation.onError(onError)
+    const unguard = navigation.beforeEach(to => {
+      if (to.query.page === '2') return { query: { ...to.query, page: '1', stickerPrefix: 'REDIRECTED' } }
+      if (to.query.stickerPrefix === 'REDIRECTED') {
+        if (outcome === 'aborted') return false
+        if (outcome === 'rejected') throw error
+      }
+    })
+    if (outcome === 'completed') api.load.mockResolvedValueOnce(followedPage(1, null))
+    navigation.back()
+    await flushPromises()
+    unguard()
+    removeErrorHandler()
+    expect(navigation.currentRoute.value.query.stickerPrefix).toBe(outcome === 'completed' ? 'REDIRECTED' : '00')
+    expect(onError).toHaveBeenCalledTimes(outcome === 'rejected' ? 1 : 0)
+
+    api.load.mockResolvedValueOnce(followedPage(2, 313))
+    await sendScan(scanEvent(1, 313))
+    expect(api.load.mock.lastCall[1]).toMatchObject({
+      page: '1', stickerPrefix: outcome === 'completed' ? 'REDIRECTED' : '00', followParcelId: '313'
+    })
+    expect(navigation.currentRoute.value.query.page).toBe('2')
+    expect(wrapper.get(followedRow).text()).toContain('0001-2')
+  })
+
+  it('resumes Lookup after Back redirects through two routes and returns to the same monitor', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    api.followUserId = 21
+    const navigation = await openRoutedMonitor({ previousPath: '/login' })
+    await flushPromises()
+    navigation.addRoute({ path: '/intermediate', component: LoginView })
+    const unguard = navigation.beforeEach(to => {
+      if (to.path === '/login') return '/intermediate'
+      if (to.path === '/intermediate') {
+        return { name: 'scanjob-monitor-lookup', params: { id: 8 }, query: { page: '1', stickerPrefix: 'RETURNED' } }
+      }
+    })
+    api.load.mockResolvedValueOnce(followedPage(1, null))
+    navigation.back()
+    await flushPromises()
+    unguard()
+    expect(navigation.currentRoute.value.query).toMatchObject({ page: '1', stickerPrefix: 'RETURNED' })
+    expect(api.load.mock.lastCall[1]).toMatchObject({ page: '1', stickerPrefix: 'RETURNED' })
+
+    api.load.mockResolvedValueOnce(followedPage(2, 313))
+    await sendScan(scanEvent(1, 313))
+    expect(wrapper.get(followedRow).text()).toContain('0001-2')
+  })
+
+  it('keeps Back pending when an older autofollow replacement to the same URL is cancelled', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    api.followUserId = 21
+    api.currentRoute.value.fullPath = '/scanjobs/8/monitor/lookup?page=2&pageSize=50&sortBy=id&sortOrder=asc&parcelFilterId=9&stickerPrefix=00'
+    const navigation = await openRoutedMonitor()
+    await flushPromises()
+    const previous = navigation.currentRoute.value.fullPath
+    api.load.mockResolvedValueOnce(followedPage(1, null))
+    await navigation.push({ query: { ...navigation.currentRoute.value.query, page: '1' } })
+    await flushPromises()
+    const blocked = []
+    const unguard = navigation.beforeEach(to => {
+      if (to.fullPath === previous) return new Promise(resolve => { blocked.push(resolve) })
+    })
+    api.load.mockResolvedValueOnce(followedPage(2, 313))
+    await sendScan(scanEvent(1, 313))
+    navigation.back()
+    await flushPromises()
+    expect(blocked).toHaveLength(2)
+
+    blocked[0]()
+    await flushPromises()
+    await sendScan(scanEvent(2, 312))
+    expect(api.load).toHaveBeenCalledTimes(3)
+    expect(navigation.currentRoute.value.query.page).toBe('1')
+    expect(wrapper.find(followedRow).exists()).toBe(false)
+
+    api.load.mockResolvedValueOnce(followedPage(2, null))
+    blocked[1]()
+    await flushPromises()
+    unguard()
+    expect(navigation.currentRoute.value.fullPath).toBe(previous)
+    expect(api.load.mock.lastCall[1]).not.toHaveProperty('followParcelId')
+    expect(wrapper.getComponent(PaginationFooter).props('page')).toBe(2)
+  })
+
+  it('resumes Lookup when leaving supersedes a held Back and the new route fails to load', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    api.followUserId = 21
+    const navigation = await openRoutedMonitor()
+    await flushPromises()
+    api.load.mockResolvedValueOnce(followedPage(1, null))
+    await navigation.push({ query: { ...navigation.currentRoute.value.query, page: '1' } })
+    await flushPromises()
+    let finishBack
+    const unguard = navigation.beforeEach(to => to.query.page === '2'
+      ? new Promise(resolve => { finishBack = resolve }) : true)
+    navigation.back()
+    await flushPromises()
+    expect(finishBack).toEqual(expect.any(Function))
+
+    const error = new Error('Route chunk unavailable')
+    navigation.addRoute({ path: '/removed-chunk', component: () => Promise.reject(error) })
+    await expect(navigation.push('/removed-chunk')).rejects.toBe(error)
+    finishBack()
+    await flushPromises()
+    unguard()
+    expect(navigation.currentRoute.value.query.page).toBe('1')
+
+    api.load.mockResolvedValueOnce(followedPage(2, 313))
+    await sendScan(scanEvent(1, 313))
+    expect(navigation.currentRoute.value.query.page).toBe('2')
+    expect(wrapper.get(followedRow).text()).toContain('0001-2')
   })
 
   it('reloads the current page when a navigation guard aborts autofollow', async () => {

@@ -32,6 +32,9 @@ const signalRTestState = vi.hoisted(() => {
       onclose: vi.fn((handler) => {
         connection.handlers.onclose = handler
       }),
+      onreconnecting: vi.fn((handler) => {
+        connection.handlers.onreconnecting = handler
+      }),
       onreconnected: vi.fn((handler) => {
         connection.handlers.onreconnected = handler
       })
@@ -97,7 +100,8 @@ vi.mock('@microsoft/signalr', () => ({
   HubConnectionBuilder: signalRBuilder,
   HubConnectionState: {
     Connected: 'Connected',
-    Disconnected: 'Disconnected'
+    Disconnected: 'Disconnected',
+    Reconnecting: 'Reconnecting'
   }
 }))
 
@@ -501,8 +505,9 @@ describe('scanjobs store', () => {
       const onError = vi.fn()
       const onSnapshot = vi.fn()
       const onClosed = vi.fn()
+      const onReconnecting = vi.fn()
       const lookup = store.createLookupMonitorChannel(onError)
-      await lookup.start(42, { onSnapshot, onClosed })
+      await lookup.start(42, { onSnapshot, onClosed, onReconnecting })
       const connection = signalRConnections[1]
       expect(connection.invoke).toHaveBeenCalledWith('ObserveScanJob', { scanJobId: 42, area: 4 })
 
@@ -523,6 +528,8 @@ describe('scanjobs store', () => {
       expect(store.monitorClosed).toBe(null)
 
       const error = new Error('Reconnect failure')
+      connection.handlers.onreconnecting()
+      expect(onReconnecting).toHaveBeenCalledOnce()
       connection.invoke.mockRejectedValueOnce(error)
       connection.handlers.onreconnected()
       await Promise.resolve()
@@ -542,10 +549,219 @@ describe('scanjobs store', () => {
       expect(onError).toHaveBeenLastCalledWith(expect.objectContaining({ message: 'Соединение с монитором сканирования закрыто' }))
       await lookup.stop()
       connection.handlers.onclose()
+      connection.handlers.onreconnecting()
+      expect(onReconnecting).toHaveBeenCalledOnce()
       expect(onError).toHaveBeenCalledTimes(4)
       expect(connection.stop).toHaveBeenCalledOnce()
       expect(connection.invoke).not.toHaveBeenCalledWith('ClearScanJobMonitor')
       expect(signalRConnections[0].stop).not.toHaveBeenCalled()
+    })
+
+    it('keeps the new scanner subscription when a previous reconnect request rejects', async () => {
+      const store = useScanjobsStore()
+      const onError = vi.fn()
+      const lookup = store.createLookupMonitorChannel(onError)
+      await lookup.start(42, {})
+      await lookup.followUser(42, 17)
+      const connection = signalRConnections[0]
+      let rejectPrevious
+      connection.invoke.mockResolvedValueOnce(undefined)
+        .mockImplementationOnce(() => new Promise((_resolve, reject) => { rejectPrevious = reject }))
+      connection.handlers.onreconnected()
+
+      const onFollowEvent = vi.fn()
+      await lookup.clearFollowUser()
+      await lookup.followUser(42, 18, { onFollowEvent })
+      const diagnostics = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+      const failure = new Error('Previous follow request failed')
+      try {
+        rejectPrevious(failure)
+        await Promise.resolve()
+        expect(onError).not.toHaveBeenCalled()
+        expect(diagnostics).toHaveBeenCalledExactlyOnceWith('[Переподключение к предыдущему сканеру]', failure)
+        const event = { scanJobId: 42, userId: 18, lookupParcelMatched: true, followTarget: { parcelId: 10 } }
+        connection.handlers.ScanJobMonitorFollowEvent(event)
+        expect(onFollowEvent).toHaveBeenCalledExactlyOnceWith(event)
+      } finally {
+        diagnostics.mockRestore()
+        await lookup.stop()
+      }
+    })
+
+    it('subscribes only to the latest scanner if two requests start together', async () => {
+      const store = useScanjobsStore()
+      const lookup = store.createLookupMonitorChannel(vi.fn())
+      await lookup.start(42, {})
+      const connection = signalRConnections[0]
+      const first = lookup.followUser(42, 17)
+      const latest = lookup.followUser(42, 18)
+
+      await expect(first).resolves.toBe(false)
+      await expect(latest).resolves.toBe(true)
+      expect(connection.invoke.mock.calls.filter(([method]) => method === 'ObserveScanJobFollowUser'))
+        .toEqual([['ObserveScanJobFollowUser', { scanJobId: 42, userId: 18 }]])
+      await lookup.stop()
+    })
+
+    it('waits for reconnection and acknowledges only the latest scanner subscription', async () => {
+      const store = useScanjobsStore()
+      const onError = vi.fn()
+      const lookup = store.createLookupMonitorChannel(onError)
+      await lookup.start(42, {})
+      await lookup.followUser(42, 17)
+      const connection = signalRConnections[0]
+      connection.invoke.mockClear()
+      connection.state = 'Reconnecting'
+      connection.handlers.onreconnecting()
+      expect(lookup.reconnecting.value).toBe(true)
+
+      const superseded = lookup.followUser(42, 18)
+      const onFollowEvent = vi.fn()
+      const latest = lookup.followUser(42, 19, { onFollowEvent })
+      await expect(superseded).resolves.toBe(false)
+      expect(connection.start).toHaveBeenCalledOnce()
+      expect(connection.invoke).not.toHaveBeenCalled()
+
+      let finishSubscribe
+      connection.invoke.mockResolvedValueOnce(undefined)
+        .mockImplementationOnce(() => new Promise(resolve => { finishSubscribe = resolve }))
+      const settled = vi.fn()
+      const applied = latest.then(settled)
+      connection.state = 'Connected'
+      connection.handlers.onreconnected()
+      await Promise.resolve()
+      expect(lookup.reconnecting.value).toBe(false)
+      expect(connection.invoke.mock.calls).toEqual([
+        ['ObserveScanJob', { scanJobId: 42, area: 4 }],
+        ['ObserveScanJobFollowUser', { scanJobId: 42, userId: 19 }]
+      ])
+      expect(settled).not.toHaveBeenCalled()
+      finishSubscribe()
+      await applied
+      expect(settled).toHaveBeenCalledExactlyOnceWith(true)
+      expect(onError).not.toHaveBeenCalled()
+      const event = { scanJobId: 42, userId: 19 }
+      connection.handlers.ScanJobMonitorFollowEvent(event)
+      expect(onFollowEvent).toHaveBeenCalledExactlyOnceWith(event)
+      await lookup.stop()
+    })
+
+    it.each(['clear', 'close', 'stop'])('cancels a queued scanner selection on %s', async action => {
+      const store = useScanjobsStore()
+      const onError = vi.fn()
+      const lookup = store.createLookupMonitorChannel(onError)
+      await lookup.start(42, {})
+      const connection = signalRConnections[0]
+      connection.invoke.mockClear()
+      connection.state = 'Reconnecting'
+      connection.handlers.onreconnecting()
+      const pending = lookup.followUser(42, 18)
+      const failure = new Error('Reconnect attempts exhausted')
+
+      if (action === 'clear') await lookup.clearFollowUser()
+      else if (action === 'stop') await lookup.stop()
+      else {
+        connection.state = 'Disconnected'
+        connection.handlers.onclose(failure)
+      }
+
+      await expect(pending).resolves.toBe(false)
+      if (action !== 'close') {
+        connection.state = 'Connected'
+        connection.handlers.onreconnected()
+        expect(onError).not.toHaveBeenCalled()
+      } else {
+        expect(onError).toHaveBeenCalledExactlyOnceWith(failure)
+      }
+      expect(lookup.reconnecting.value).toBe(false)
+      expect(connection.start).toHaveBeenCalledOnce()
+      expect(connection.invoke).not.toHaveBeenCalledWith('ObserveScanJobFollowUser', expect.anything())
+      if (action !== 'stop') await lookup.stop()
+    })
+
+    it('rejects a queued scanner selection to its caller if the hub refuses it after reconnecting', async () => {
+      const store = useScanjobsStore()
+      const onError = vi.fn()
+      const lookup = store.createLookupMonitorChannel(onError)
+      await lookup.start(42, {})
+      const connection = signalRConnections[0]
+      connection.state = 'Reconnecting'
+      const pending = lookup.followUser(42, 18)
+      const failure = new Error('Scanner no longer available')
+      connection.invoke.mockResolvedValueOnce(undefined).mockRejectedValueOnce(failure)
+      connection.state = 'Connected'
+      connection.handlers.onreconnected()
+
+      await expect(pending).rejects.toBe(failure)
+      expect(onError).not.toHaveBeenCalled()
+      connection.invoke.mockClear()
+      connection.handlers.onreconnected()
+      expect(connection.invoke).toHaveBeenCalledExactlyOnceWith('ObserveScanJob', { scanJobId: 42, area: 4 })
+      await lookup.stop()
+    })
+
+    it('keeps a queued scanner through a second transport loss before the hub acknowledges it', async () => {
+      const store = useScanjobsStore()
+      const onError = vi.fn()
+      const lookup = store.createLookupMonitorChannel(onError)
+      await lookup.start(42, {})
+      const connection = signalRConnections[0]
+      connection.invoke.mockClear()
+      connection.state = 'Reconnecting'
+      connection.handlers.onreconnecting()
+      const pending = lookup.followUser(42, 18)
+      let rejectObserve, rejectFollow
+      connection.invoke
+        .mockImplementationOnce(() => new Promise((_resolve, reject) => { rejectObserve = reject }))
+        .mockImplementationOnce(() => new Promise((_resolve, reject) => { rejectFollow = reject }))
+      connection.state = 'Connected'
+      connection.handlers.onreconnected()
+      await Promise.resolve()
+      expect(rejectFollow).toEqual(expect.any(Function))
+
+      const failure = new Error('Connection lost during rejoin')
+      const diagnostics = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+      try {
+        connection.state = 'Reconnecting'
+        connection.handlers.onreconnecting()
+        rejectObserve(failure)
+        rejectFollow(failure)
+        await Promise.resolve()
+        expect(onError).not.toHaveBeenCalled()
+        expect(diagnostics).toHaveBeenCalledExactlyOnceWith('[Восстановление прерванной подписки на монитор]', failure)
+        connection.state = 'Connected'
+        connection.handlers.onreconnected()
+
+        await expect(pending).resolves.toBe(true)
+        expect(onError).not.toHaveBeenCalled()
+        expect(connection.start).toHaveBeenCalledOnce()
+        expect(connection.invoke.mock.calls.filter(([method]) => method === 'ObserveScanJobFollowUser'))
+          .toEqual(Array.from({ length: 2 }, () => ['ObserveScanJobFollowUser', { scanJobId: 42, userId: 18 }]))
+      } finally {
+        diagnostics.mockRestore()
+        await lookup.stop()
+      }
+    })
+
+    it('lets the terminal close handler own an interrupted scanner subscription', async () => {
+      const store = useScanjobsStore()
+      const onError = vi.fn()
+      const lookup = store.createLookupMonitorChannel(onError)
+      await lookup.start(42, {})
+      const connection = signalRConnections[0]
+      let rejectFollow
+      connection.invoke.mockImplementationOnce(() => new Promise((_resolve, reject) => { rejectFollow = reject }))
+      const pending = lookup.followUser(42, 18)
+      await Promise.resolve()
+
+      const failure = new Error('Connection closed while subscribing')
+      connection.state = 'Disconnected'
+      connection.handlers.onclose(failure)
+      rejectFollow(failure)
+
+      await expect(pending).resolves.toBe(false)
+      expect(onError).toHaveBeenCalledExactlyOnceWith(failure)
+      await lookup.stop()
     })
 
     it('loads box monitor snapshot with box id', async () => {

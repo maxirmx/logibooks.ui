@@ -4,7 +4,7 @@
 
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import { nextTick } from 'vue'
+import { nextTick, ref } from 'vue'
 import { createMemoryHistory, createRouter, RouterView } from 'vue-router'
 import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import LookupMonitorView from '@/views/Scanjob_LookupMonitor_View.vue'
@@ -22,6 +22,7 @@ const api = vi.hoisted(() => ({ load: vi.fn(), createChannel: vi.fn(), start: vi
   followUser: vi.fn(), clearFollowUser: vi.fn(), loadFollowUsers: vi.fn(), setFollowUser: vi.fn(), followUserId: null,
   loadRegister: vi.fn(), resolveTarget: vi.fn(), exportStickers: vi.fn(),
   filters: vi.fn(), push: vi.fn(), replace: vi.fn(), back: vi.fn(),
+  beforeResolve: vi.fn(), afterEach: vi.fn(), onError: vi.fn(),
   setScanjobMonitorMode: vi.fn(), clearSession: vi.fn(), canOpenParcel: true, returnUrl: null,
   routed: false, route: { query: {} }, currentRoute: { value: { fullPath: '/scanjobs/8/monitor/lookup' } } }))
 
@@ -84,6 +85,7 @@ function lookupSnapshot(overrides = {}) {
 let wrapper
 let handlers
 let onConnectionError
+const reconnecting = ref(false)
 
 function openMonitor(navigation) {
   const table = vuetifyStubs['v-data-table-server']
@@ -115,7 +117,11 @@ async function openRoutedMonitor() {
   await navigation.push(api.currentRoute.value.fullPath)
   api.routed = true
   api.currentRoute = navigation.currentRoute
+  api.options = navigation.options
   api.replace.mockImplementation(navigation.replace)
+  api.beforeResolve.mockImplementation(navigation.beforeResolve)
+  api.afterEach.mockImplementation(navigation.afterEach)
+  api.onError.mockImplementation(navigation.onError)
   openMonitor(navigation)
   return navigation
 }
@@ -138,12 +144,31 @@ function expectDiagnostics(...entries) {
   onTestFinished(() => expect(diagnostics.mock.calls).toEqual(expected))
 }
 
+const followedRow = '.monitor-followed-parcel-row'
+
+function scanEvent(scanCodeId, parcelId) {
+  return { scanJobId: 8, userId: 21, scanCodeId, lookupParcelMatched: parcelId != null, followTarget: { parcelId } }
+}
+
+async function sendScan(event) {
+  await api.followUser.mock.lastCall[2].onFollowEvent(event)
+  await vi.advanceTimersByTimeAsync(150)
+  await flushPromises()
+}
+
+function followedPage(page, parcelId) {
+  const snapshot = lookupSnapshot()
+  snapshot.lookupPage = { ...snapshot.lookupPage, page, followedParcelId: parcelId }
+  return snapshot
+}
+
 beforeEach(() => {
   setActivePinia(createPinia())
   vi.resetAllMocks()
   api.canOpenParcel = true
   api.returnUrl = null
   api.followUserId = null
+  reconnecting.value = false
   api.loadRegister.mockResolvedValue(true)
   api.loadFollowUsers.mockResolvedValue([{ id: 21, displayName: 'Оператор 21' }])
   api.followUser.mockResolvedValue(true)
@@ -153,13 +178,14 @@ beforeEach(() => {
   api.currentRoute = { value: { name: 'scanjob-monitor-lookup', params: { id: '8' },
     fullPath: '/scanjobs/8/monitor/lookup?page=2&stickerPrefix=00&parcelFilterId=9' } }
   api.load.mockResolvedValue(lookupSnapshot())
+  api.beforeResolve.mockReturnValue(() => {})
   api.replace.mockImplementation(async location => {
     if (location === '/login') api.currentRoute.value = { path: '/login', fullPath: '/login' }
   })
   api.start.mockImplementation(async (_id, callbacks) => { handlers = callbacks })
   api.createChannel.mockImplementation(callback => {
     onConnectionError = callback
-    return { start: api.start, followUser: api.followUser, clearFollowUser: api.clearFollowUser, stop: api.stop }
+    return { start: api.start, reconnecting, followUser: api.followUser, clearFollowUser: api.clearFollowUser, stop: api.stop }
   })
 })
 
@@ -198,6 +224,7 @@ describe('Lookup monitor', () => {
   })
 
   it('follows a scanner in the lookup list and retries a rejected subscription', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
     api.followUser.mockRejectedValueOnce(new Error('Invalid follow request'))
     openMonitor()
     await flushPromises()
@@ -217,19 +244,282 @@ describe('Lookup monitor', () => {
     expect(api.followUser).toHaveBeenLastCalledWith(8, 21, expect.any(Object))
     expect(api.setFollowUser).toHaveBeenCalledExactlyOnceWith(21)
     expect(wrapper.getComponent(LocalLabelPrinting).props('userId')).toBe(21)
-    const followEvent = api.followUser.mock.lastCall[2].onFollowEvent
     const scroll = vi.fn()
     wrapper.findAll('.v-data-table-row')[1].element.scrollIntoView = scroll
-    await followEvent({ scanJobId: 8, userId: 21, followTarget: { area: 1, boxId: 7, parcelId: 313 } })
-    await nextTick()
-    expect(wrapper.get('.selected-parcel-row').text()).toContain('0001-2')
+    await sendScan({ ...scanEvent(1), followTarget: { area: 1, boxId: 7 } })
+    expect(wrapper.find(followedRow).exists()).toBe(false)
+    expect(api.load).toHaveBeenCalledOnce()
+    api.load.mockResolvedValueOnce(followedPage(2, 313))
+    await sendScan(scanEvent(2, 313))
+    expect(wrapper.get(followedRow).text()).toContain('0001-2')
     expect(scroll).toHaveBeenCalledWith({ block: 'nearest' })
-    await followEvent({ scanJobId: 8, userId: 21, followTarget: { area: 1, boxId: 7 } })
-    await nextTick()
-    expect(wrapper.find('.selected-parcel-row').exists()).toBe(false)
+    expect(api.load.mock.lastCall[1]).toMatchObject({ followParcelId: '313', page: '2', stickerPrefix: '00' })
+    await sendScan({ ...scanEvent(3), followTarget: { area: 1, boxId: 7 } })
+    expect(wrapper.get(followedRow).text()).toContain('0001-2')
+    expect(scroll).toHaveBeenCalledOnce()
+    api.load.mockResolvedValueOnce(followedPage(2, 313))
+    await sendScan(scanEvent(4, 313))
+    expect(scroll).toHaveBeenCalledTimes(2)
+    await sendScan({ ...scanEvent(5), followTarget: { parcelId: 312 } })
+    expect(wrapper.get(followedRow).text()).toContain('0001-2')
+    await sendScan(scanEvent(4, 313))
+    expect(scroll).toHaveBeenCalledTimes(2)
     expect(api.push).not.toHaveBeenCalled()
     expect(api.replace).not.toHaveBeenCalled()
-    expect(api.load).toHaveBeenCalledOnce()
+    expect(api.load).toHaveBeenCalledTimes(3)
+  })
+
+  it.each(['applied', 'disabled', 'refused'])('handles a pending scanner selection that is %s', async outcome => {
+    api.followUserId = 21
+    api.loadFollowUsers.mockResolvedValue([
+      { id: 21, displayName: 'Оператор 21' }, { id: 22, displayName: 'Оператор 22' }
+    ])
+    openMonitor()
+    await flushPromises()
+    reconnecting.value = true
+    handlers.onReconnecting()
+    await wrapper.get('button[data-testid="scanjob-monitor-follow-user-open"]').trigger('click')
+    const select = wrapper.findAllComponents({ name: 'v-select' })
+      .find(component => component.props('label') === 'Следить за сканером')
+    expect(select).toBeDefined()
+    const apply = wrapper.get('button[data-testid="scanjob-monitor-follow-user-apply"]')
+    let confirmSelection, rejectSelection
+    api.followUser.mockImplementationOnce(() => new Promise((resolve, reject) => {
+      confirmSelection = resolve
+      rejectSelection = reject
+    }))
+
+    select.vm.$emit('update:modelValue', 22)
+    await apply.trigger('click')
+    await flushPromises()
+    expect(api.followUser).toHaveBeenLastCalledWith(8, 22, expect.any(Object))
+    expect(api.setFollowUser).not.toHaveBeenCalled()
+    expect(apply.element.disabled).toBe(false)
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+
+    if (outcome === 'disabled') {
+      select.vm.$emit('update:modelValue', null)
+      await apply.trigger('click')
+      await flushPromises()
+      confirmSelection(false)
+    } else {
+      reconnecting.value = false
+      if (outcome === 'refused') rejectSelection(new Error('Scanner not available'))
+      else confirmSelection(true)
+    }
+    await flushPromises()
+
+    if (outcome === 'refused') {
+      expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+      expect(wrapper.get('[role="alert"]').text()).toContain('Ошибка при загрузке монитора сканирования')
+      expect(api.setFollowUser).not.toHaveBeenCalled()
+      expect(apply.element.disabled).toBe(false)
+      return
+    }
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+    expect(api.setFollowUser).toHaveBeenCalledExactlyOnceWith(outcome === 'disabled' ? null : 22)
+    expect(wrapper.get('button[data-testid="scanjob-monitor-follow-user-open"]').classes().includes('anti-btn-green'))
+      .toBe(outcome === 'applied')
+  })
+
+  it('applies an off-page scan once and keeps the follow target out of the URL', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    api.followUserId = 21
+    const navigation = await openRoutedMonitor()
+    await flushPromises()
+    api.load.mockResolvedValueOnce(followedPage(1, 313))
+    await sendScan(scanEvent(1, 313))
+
+    expect(navigation.currentRoute.value.query).toMatchObject({ page: '1', stickerPrefix: '00', parcelFilterId: '9' })
+    expect(navigation.currentRoute.value.query).not.toHaveProperty('followParcelId')
+    expect(wrapper.getComponent(PaginationFooter).props('page')).toBe(1)
+    expect(wrapper.get(followedRow).text()).toContain('0001-2')
+    expect(api.load).toHaveBeenCalledTimes(2)
+    expect(api.replace).toHaveBeenCalledOnce()
+  })
+
+  it('retains an explicit parcel selection from the opening URL', async () => {
+    api.currentRoute.value.fullPath += '&selectedParcelId=313'
+    await openRoutedMonitor()
+    await flushPromises()
+    expect(wrapper.get(followedRow).text()).toContain('0001-2')
+    expect(api.load.mock.lastCall[1]).not.toHaveProperty('followParcelId')
+  })
+
+  it('restores the previous URL if a box arrives as an automatic replacement finishes', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    api.followUserId = 21
+    const navigation = await openRoutedMonitor()
+    await flushPromises()
+    const previous = navigation.currentRoute.value.fullPath
+    let newerEvent
+    const unguard = navigation.afterEach((to, _from, failure) => {
+      if (!failure && to.query.page === '1') {
+        newerEvent = api.followUser.mock.lastCall[2].onFollowEvent(scanEvent(2))
+      }
+    })
+    api.load.mockResolvedValueOnce(followedPage(1, 313))
+    await sendScan(scanEvent(1, 313))
+    await newerEvent
+    unguard()
+    expect(newerEvent).toBeDefined()
+    expect(navigation.currentRoute.value.fullPath).toBe(previous)
+    expect(wrapper.getComponent(PaginationFooter).props('page')).toBe(2)
+    expect(wrapper.find(followedRow).exists()).toBe(false)
+    expect(api.replace).toHaveBeenCalledTimes(2)
+  })
+
+  it.each(['box scan', 'reconnecting', 'follow disabled'])('preserves the displayed URL if %s cancels a pending jump', async cancellation => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    api.followUserId = 21
+    const navigation = await openRoutedMonitor()
+    await flushPromises()
+    const initial = navigation.currentRoute.value.fullPath
+    const scroll = vi.fn()
+    wrapper.findAll('.v-data-table-row')[0].element.scrollIntoView = scroll
+    api.load.mockResolvedValueOnce(followedPage(2, 312))
+    await sendScan(scanEvent(1, 312))
+    let unblock
+    const unguard = navigation.beforeResolve(to => Number(to.query.page) === 1
+      ? new Promise(resolve => { unblock = resolve }) : true)
+    api.load.mockResolvedValueOnce(followedPage(1, 313))
+    await sendScan(scanEvent(2, 313))
+    expect(unblock).toEqual(expect.any(Function))
+    expect(wrapper.getComponent(PaginationFooter).props('loading')).toBe(false)
+    const followButton = wrapper.get('button[data-testid="scanjob-monitor-follow-user-open"]')
+    expect(followButton.element.disabled).toBe(false)
+
+    if (cancellation === 'box scan') {
+      await sendScan({ ...scanEvent(3), followTarget: { area: 1, boxId: 7 } })
+    } else if (cancellation === 'reconnecting') {
+      handlers.onReconnecting()
+    } else {
+      await followButton.trigger('click')
+      const select = wrapper.findAllComponents({ name: 'v-select' })
+        .find(component => component.props('label') === 'Следить за сканером')
+      select.vm.$emit('update:modelValue', null)
+      await wrapper.get('button[data-testid="scanjob-monitor-follow-user-apply"]').trigger('click')
+      await flushPromises()
+      expect(api.setFollowUser).toHaveBeenCalledWith(null)
+    }
+    unblock()
+    await flushPromises()
+    unguard()
+    expect(navigation.currentRoute.value.fullPath).toBe(initial)
+    expect(wrapper.getComponent(PaginationFooter).props('page')).toBe(2)
+    expect(wrapper.get(followedRow).text()).toContain('0001-1')
+    expect(scroll).toHaveBeenCalledOnce()
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+  })
+
+  it('lets a user change page during a slow follow read', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    api.followUserId = 21
+    const navigation = await openRoutedMonitor()
+    await flushPromises()
+    let finishFollow
+    api.load.mockImplementationOnce(() => new Promise(resolve => { finishFollow = resolve }))
+    await sendScan(scanEvent(1, 313))
+    const footer = wrapper.getComponent(PaginationFooter)
+    const previous = footer.get('button[icon="$prev"]')
+    expect(previous.element.disabled).toBe(false)
+    await previous.trigger('click')
+    api.load.mockResolvedValueOnce(followedPage(1, null))
+    finishFollow(followedPage(2, 313))
+    await flushPromises()
+    expect(navigation.currentRoute.value.query.page).toBe('1')
+    expect(footer.props('page')).toBe(1)
+    expect(wrapper.find(followedRow).exists()).toBe(false)
+    expect(api.load.mock.lastCall[1]).not.toHaveProperty('followParcelId')
+  })
+
+  it('defers the ordinary reload until an in-flight browser Back finishes', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    api.followUserId = 21
+    const navigation = await openRoutedMonitor()
+    await flushPromises()
+    api.load.mockResolvedValueOnce(followedPage(1, null))
+    await navigation.push({ query: { ...navigation.currentRoute.value.query, page: '1' } })
+    await flushPromises()
+
+    let finishFollow
+    api.load.mockImplementationOnce(() => new Promise(resolve => { finishFollow = resolve }))
+    await sendScan(scanEvent(1, 313))
+    let finishBack
+    const unguard = navigation.beforeEach(to => to.query.page === '2'
+      ? new Promise(resolve => { finishBack = resolve }) : true)
+    navigation.back()
+    await flushPromises()
+    expect(finishBack).toEqual(expect.any(Function))
+    finishFollow(followedPage(2, 313))
+    await sendScan(scanEvent(2, 313))
+    expect(api.load).toHaveBeenCalledTimes(3)
+    expect(navigation.currentRoute.value.query.page).toBe('1')
+    expect(wrapper.find(followedRow).exists()).toBe(false)
+
+    finishBack()
+    await flushPromises()
+    unguard()
+    expect(navigation.currentRoute.value.query.page).toBe('2')
+    expect(wrapper.getComponent(PaginationFooter).props('page')).toBe(2)
+    expect(api.load.mock.lastCall[1]).not.toHaveProperty('followParcelId')
+  })
+
+  it('reloads the current page when a navigation guard aborts autofollow', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    api.followUserId = 21
+    const navigation = await openRoutedMonitor()
+    await flushPromises()
+    const unguard = navigation.beforeResolve(to => to.query.page !== '1')
+    const diagnostics = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    try {
+      api.load.mockResolvedValueOnce(followedPage(1, 313))
+      await sendScan(scanEvent(1, 313))
+      expect(navigation.currentRoute.value.query.page).toBe('2')
+      expect(wrapper.getComponent(PaginationFooter).props('page')).toBe(2)
+      expect(wrapper.find(followedRow).exists()).toBe(false)
+      expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+      expect(wrapper.get('[role="alert"]').text()).toContain('Операция отменена.')
+      expect(diagnostics).toHaveBeenCalledExactlyOnceWith('[Не удалось открыть страницу найденной посылки]', expect.any(Error))
+      expect(api.load).toHaveBeenCalledTimes(3)
+      expect(api.load.mock.lastCall[1]).not.toHaveProperty('followParcelId')
+    } finally {
+      diagnostics.mockRestore()
+      unguard()
+    }
+  })
+
+  it('recovers a rejected follow request once through the login alert', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    api.followUserId = 21
+    const navigation = await openRoutedMonitor()
+    await flushPromises()
+    const error = new Error('Follow read failed')
+    expectDiagnostics(['Не удалось загрузить посылки для поиска', error])
+    api.load.mockRejectedValueOnce(error)
+    await sendScan(scanEvent(1, 313))
+    expect(navigation.currentRoute.value.path).toBe('/login')
+    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+    expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось загрузить посылки для поиска')
+  })
+
+  it('refreshes the current page when a superseded follow request rejects', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    api.followUserId = 21
+    const navigation = await openRoutedMonitor()
+    await flushPromises()
+    let rejectFollow
+    api.load.mockImplementationOnce(() => new Promise((_resolve, reject) => { rejectFollow = reject }))
+    await sendScan(scanEvent(1, 313))
+    await sendScan(scanEvent(2))
+    const error = new Error('Obsolete follow read failed')
+    expectDiagnostics(['Ошибка устаревшего запроса посылок для поиска', error])
+    rejectFollow(error)
+    await flushPromises()
+    expect(navigation.currentRoute.value.query.page).toBe('2')
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+    expect(api.load).toHaveBeenCalledTimes(3)
+    expect(api.load.mock.lastCall[1]).not.toHaveProperty('followParcelId')
   })
 
   it('clears the follow indicator and restores the preference when Lookup is opened again', async () => {

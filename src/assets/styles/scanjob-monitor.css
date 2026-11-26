@@ -168,7 +168,8 @@ This file is a part of Logibooks ui application
   height: 36px !important;
 }
 
-.scanjob-monitor-parcels-table .monitor-followed-parcel-row {
+.scanjob-monitor-parcels-table .monitor-followed-parcel-row,
+.scanjob-lookup-table .monitor-followed-parcel-row {
   outline: 2px dashed var(--primary-color);
   outline-offset: -2px;
 }

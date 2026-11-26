@@ -3,8 +3,8 @@
 // All rights reserved.
 // This file is a part of Logibooks UI application.
 
-import { computed, onMounted, onUnmounted, provide, ref, watch } from 'vue'
-import { isNavigationFailure, useRoute, useRouter } from 'vue-router'
+import { computed, nextTick, onMounted, onUnmounted, provide, ref, watch } from 'vue'
+import { isNavigationFailure, NavigationFailureType, onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import CorrectedWeightDisplay from '@/components/CorrectedWeightDisplay.vue'
 import PaginationFooter from '@/components/PaginationFooter.vue'
 import ParcelWhFilterSelectors from '@/components/ParcelWhFilterSelectors.vue'
@@ -49,6 +49,8 @@ const liveReady = ref(false)
 const closed = ref(false)
 const lookupContent = ref(null)
 const pageCurrent = ref(false)
+const blocking = computed(() => busy.value && !pageCurrent.value)
+const followedParcelId = ref(null)
 const liveFailed = ref(false)
 const optionsLoading = ref(true)
 
@@ -103,15 +105,17 @@ const summaryCards = computed(() => snapshot.value
   ? buildScanjobProgressCards(snapshot.value, { includeRestrictions: false })
   : [])
 const visibleFollowedParcelId = computed(() => {
-  const id = props.selectedParcelId
+  const id = followedParcelId.value ?? props.selectedParcelId
   return pageCurrent.value && id != null && lookupPage.value?.items.some(item => item.parcel.parcelId === id) ? id : null
 })
-watch(visibleFollowedParcelId, id => {
-  if (id != null) lookupContent.value?.querySelector('.selected-parcel-row')?.scrollIntoView?.({ block: 'nearest' })
-}, { flush: 'post' })
+
+function scrollToSelection() {
+  lookupContent.value?.querySelector('.monitor-followed-parcel-row')?.scrollIntoView?.({ block: 'nearest' })
+}
+
 function getRowProps({ item }) {
   return {
-    class: item.parcel.parcelId === visibleFollowedParcelId.value ? 'selected-parcel-row' : '',
+    class: item.parcel.parcelId === visibleFollowedParcelId.value ? 'monitor-followed-parcel-row' : '',
     ...(canOpenParcel.value ? {
       tabindex: 0,
       onClick: () => editParcel(item),
@@ -155,6 +159,14 @@ let requested = false
 let timer = null
 let pendingLiveError = null
 let routeUpdate = Promise.resolve()
+let pendingFollow = null
+let followVersion = 0
+let lastFollowScanId = null
+let automaticRoute = null
+let leaving = null
+let historyDestination = null
+let reloadAfterNavigation = false
+const stopNavigationListeners = []
 const live = store.createLookupMonitorChannel(handleLiveFailure)
 
 function showError(error, fallback) {
@@ -162,8 +174,8 @@ function showError(error, fallback) {
   reportError(error, { context: fallback })
 }
 
-function queryParams() {
-  return Object.fromEntries(Object.entries(controls.value)
+function queryParams(values = controls.value) {
+  return Object.fromEntries(Object.entries(values)
     .filter(([, value]) => value !== null && value !== '')
     .map(([key, value]) => [key, String(value)]))
 }
@@ -175,7 +187,8 @@ function saveRoute() {
 }
 
 function changeControls(changes, { delay = 0, updateRoute = true } = {}) {
-  if (Object.entries(changes).every(([key, value]) => controls.value[key] === value)) return
+  if (controlsMatch(controls.value, changes)) return
+  invalidateFollow({ navigating: true })
   controls.value = { ...controls.value, ...changes }
   pageCurrent.value = false
   busy.value = true
@@ -184,11 +197,104 @@ function changeControls(changes, { delay = 0, updateRoute = true } = {}) {
   queueReload(delay)
 }
 
+function controlsMatch(values, expected) {
+  return Object.entries(expected).every(([key, value]) => values[key] === value)
+}
+
 watch(() => route.query, query => {
   if (route.name === lookupRouteName && Number(route.params.id) === props.scanjobId) {
-    changeControls(readControls(query), { updateRoute: false })
+    const values = readControls(query)
+    if (automaticRoute && !automaticRoute.supersededByNavigation && controlsMatch(values, automaticRoute.destination)) return
+    changeControls(values, { updateRoute: false })
   }
-})
+}, { flush: 'sync' })
+
+function invalidateFollow({ navigating = false } = {}) {
+  pendingFollow = null
+  followVersion++
+  if (navigating && automaticRoute) automaticRoute.supersededByNavigation = true
+}
+
+function queueFollowEvent(event) {
+  const scanId = positiveInt(event.scanCodeId)
+  if (!active || leaving || historyDestination || closed.value || !liveReady.value || snapshot.value?.status !== inProgressStatus ||
+      scanId == null || scanId <= lastFollowScanId) return
+  lastFollowScanId = scanId
+  invalidateFollow()
+  const parcelId = event.lookupParcelMatched === true ? positiveInt(event.followTarget?.parcelId) : null
+  if (parcelId == null) return
+  pendingFollow = { parcelId, version: followVersion }
+  if (timer == null) queueReload(150)
+}
+
+function deferReloadForNavigation() {
+  if (!leaving && !historyDestination) return false
+  reloadAfterNavigation = true
+  return true
+}
+
+function resumeDeferredReload() {
+  if (!reloadAfterNavigation || leaving || historyDestination || route.name !== lookupRouteName) return
+  reloadAfterNavigation = false
+  queueReload(0)
+}
+
+function clearFollowUser() {
+  lastFollowScanId = null
+  invalidateFollow()
+  return live.clearFollowUser()
+}
+
+function isCurrentRequest(currentVersion, follow) {
+  return active && currentVersion === version && (!follow || follow.version === followVersion)
+}
+
+async function positionFollow(refreshed, currentVersion, follow) {
+  const { page, followedParcelId: parcelId } = refreshed.lookupPage
+  if (controls.value.page !== page) {
+    const attempt = {
+      from: router.currentRoute.value,
+      previousQuery: { ...route.query },
+      destination: { ...controls.value, page },
+      supersededByNavigation: false
+    }
+    automaticRoute = attempt
+    const isDestination = to => to.name === lookupRouteName && Number(to.params.id) === props.scanjobId &&
+      controlsMatch(readControls(to.query), attempt.destination)
+    const removeGuard = router.beforeResolve((to, from) => {
+      if (!attempt.supersededByNavigation && from === attempt.from && isDestination(to) &&
+          !isCurrentRequest(currentVersion, follow)) return false
+    })
+    try {
+      const result = await router.replace({ query: queryParams(attempt.destination) })
+      if (!isCurrentRequest(currentVersion, follow)) {
+        // A navigation may have finished just before the scan was superseded.
+        if (!result && active && !attempt.supersededByNavigation && isDestination(router.currentRoute.value)) {
+          const restored = await router.replace({ query: attempt.previousQuery })
+          if (isNavigationFailure(restored, NavigationFailureType.aborted)) throw restored
+        }
+        return false
+      }
+      if (isNavigationFailure(result, NavigationFailureType.cancelled)) return false
+      if (isNavigationFailure(result)) throw result
+      if (!isDestination(router.currentRoute.value)) return false
+    } catch (error) {
+      if (isCurrentRequest(currentVersion, follow)) showError(error, 'Не удалось открыть страницу найденной посылки')
+      else reportError(error, { context: 'Переход по устаревшему сканированию' })
+      return false
+    } finally {
+      removeGuard()
+      automaticRoute = null
+    }
+  }
+  controls.value.page = page
+  snapshot.value = refreshed
+  pageCurrent.value = true
+  followedParcelId.value = parcelId
+  await nextTick()
+  if (isCurrentRequest(currentVersion, follow) && visibleFollowedParcelId.value === parcelId) scrollToSelection()
+  return true
+}
 
 function changeFilter(key, value, delay = 0) {
   const filter = key === 'parcelFilterId' ? value ?? null : textFilter(value)
@@ -217,18 +323,39 @@ async function loadPage() {
   busy.value = true
   while (active && requested) {
     requested = false
+    if (deferReloadForNavigation()) break
     const currentVersion = version
+    let follow = null
     try {
       await routeUpdate
       if (!active || currentVersion !== version) continue
-      const refreshed = await store.loadLookupMonitorPage(props.scanjobId, queryParams())
-      if (!active || currentVersion !== version) continue
+      follow = pendingFollow
+      pendingFollow = null
+      const params = queryParams()
+      if (follow) params.followParcelId = String(follow.parcelId)
+      const refreshed = await store.loadLookupMonitorPage(props.scanjobId, params)
+      if (!isCurrentRequest(currentVersion, follow)) {
+        if (active && currentVersion === version && timer == null) requested = true
+        continue
+      }
+      if (deferReloadForNavigation()) continue
       if (!refreshed?.lookupPage) throw new Error('Сервер не вернул список посылок для поиска')
+      if (follow && refreshed.status === inProgressStatus && refreshed.lookupPage.followedParcelId === follow.parcelId) {
+        if (!await positionFollow(refreshed, currentVersion, follow) && active && currentVersion === version && timer == null) {
+          requested = true
+        }
+        continue
+      }
+      const restoreSelection = !snapshot.value && props.selectedParcelId != null
       snapshot.value = refreshed
       pageCurrent.value = true
       if (controls.value.page !== refreshed.lookupPage.page) {
         controls.value.page = refreshed.lookupPage.page
         saveRoute()
+      }
+      if (restoreSelection) {
+        await nextTick()
+        if (isCurrentRequest(currentVersion, follow) && visibleFollowedParcelId.value != null) scrollToSelection()
       }
       if (pendingLiveError) {
         const error = pendingLiveError
@@ -244,8 +371,12 @@ async function loadPage() {
       }
       if (refreshed.status === inProgressStatus && !observing && !closed.value && !liveFailed.value) void observe()
     } catch (error) {
-      if (!active || currentVersion !== version) {
+      if (!isCurrentRequest(currentVersion, follow)) {
         reportError(error, { context: 'Ошибка устаревшего запроса посылок для поиска' })
+        if (active && currentVersion === version && timer == null) requested = true
+      } else if (deferReloadForNavigation()) {
+        // Navigation owns the current route until it finishes.
+        reportError(error, { context: loadFailure })
       } else if (controls.value.parcelFilterId != null && error?.data?.code === 'parcel_filter_not_found') {
         changeFilter('parcelFilterId', null)
         const clearedVersion = version
@@ -285,6 +416,7 @@ function handleLiveFailure(error) {
   }
   liveFailed.value = true
   pendingLiveError = error
+  invalidateFollow()
   void stopObserving()
   if (timer == null) queueReload(0)
 }
@@ -293,6 +425,7 @@ async function observe() {
   observing = true
   try {
     await live.start(props.scanjobId, {
+      onReconnecting: () => invalidateFollow(),
       onSnapshot: update => {
         if (active && timer == null && update.scanJobId === props.scanjobId && update.area === scanjobMonitorArea.Lookup) {
           queueReload(150)
@@ -302,6 +435,7 @@ async function observe() {
         if (active && jobId === props.scanjobId) {
           closed.value = true
           liveFailed.value = false
+          invalidateFollow()
           void stopObserving()
           queueReload(0)
         }
@@ -344,6 +478,7 @@ async function loadOptions() {
 async function navigateFromLookup(navigate, failureMessage) {
   await routeUpdate
   if (!active || !pageCurrent.value) return
+  invalidateFollow({ navigating: true })
   try {
     const result = await navigate()
     if (isNavigationFailure(result)) throw result
@@ -373,6 +508,28 @@ function lookupBoxClass(item) {
   return stickerClass(false)
 }
 
+if (route.matched?.length) {
+  // History can change the query within the same route record while authentication is pending.
+  stopNavigationListeners.push(router.options.history.listen(to => {
+    historyDestination = to
+    invalidateFollow({ navigating: true })
+  }))
+  onBeforeRouteLeave(to => {
+    leaving = to
+    invalidateFollow({ navigating: true })
+  })
+  stopNavigationListeners.push(router.afterEach((to, _from, failure) => {
+    if (failure && to === leaving) leaving = null
+    if (to.fullPath === historyDestination) historyDestination = null
+    resumeDeferredReload()
+  }))
+  stopNavigationListeners.push(router.onError((_error, to) => {
+    if (to === leaving) leaving = null
+    if (to.fullPath === historyDestination) historyDestination = null
+    resumeDeferredReload()
+  }))
+}
+
 onMounted(() => {
   queueReload(0)
   void loadOptions()
@@ -380,11 +537,13 @@ onMounted(() => {
 
 onUnmounted(() => {
   active = false
+  for (const stopListening of stopNavigationListeners) stopListening()
   clearTimeout(timer)
   void stopObserving()
 })
 
-defineExpose({ snapshot, busy, closed, liveReady, followUser: live.followUser, clearFollowUser: live.clearFollowUser })
+defineExpose({ snapshot, busy, blocking, closed, liveReady, reconnecting: live.reconnecting,
+  followUser: live.followUser, clearFollowUser, queueFollowEvent })
 </script>
 
 <template>
@@ -412,7 +571,7 @@ defineExpose({ snapshot, busy, closed, liveReady, followUser: live.followUser, c
 
       <v-card v-if="pageCurrent || busy" class="table-card">
         <v-data-table-server
-          class="interlaced-table"
+          class="interlaced-table scanjob-lookup-table"
           item-value="parcel.parcelId"
           :headers="headers"
           :items="pageCurrent ? lookupPage.items : []"
@@ -421,7 +580,7 @@ defineExpose({ snapshot, busy, closed, liveReady, followUser: live.followUser, c
           :page="controls.page"
           :items-per-page="controls.pageSize"
           :sort-by="sortBy"
-          :loading="busy"
+          :loading="blocking"
           density="compact"
           hide-default-footer
           loading-text="Загрузка посылок…"
@@ -476,7 +635,7 @@ defineExpose({ snapshot, busy, closed, liveReady, followUser: live.followUser, c
             :items-per-page-options="itemsPerPageOptions"
             :total-count="pageCurrent ? totalCount : 0"
             :max-page="maxPage"
-            :loading="busy"
+            :loading="blocking"
             @update:page="changeControls({ page: $event })"
             @update:items-per-page="changeControls({ pageSize: $event, page: 1 })"
           />

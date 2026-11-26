@@ -17,7 +17,7 @@ const props = defineProps({
   register: { type: Object, default: null },
   processedCount: { type: Number, default: 0 },
   foundCount: { type: Number, default: 0 },
-  foundProductCount: { type: Number, default: 0 },
+  foundProductCount: { type: Number, default: null },
   missingNumbers: { type: Array, default: () => [] },
   blockedItems: { type: Array, default: () => [] },
   statusChange: Boolean
@@ -58,7 +58,8 @@ const searchSummary = computed(() => {
       : search
   }
 
-  const foundSummary = foundProductCount > foundCount
+  const showBothCounts = foundProductCount !== null && (props.statusChange || foundProductCount > foundCount)
+  const foundSummary = showBothCounts
     ? `Найдено посылок ${foundCount}, товаров ${foundProductCount}`
     : `Найдено: ${foundCount}`
   return `Обработано: ${processedCount}. ${foundSummary}. Не найдено: ${missingNumbers.length}. Недоступно: ${blockedItems.length}.`

@@ -17,6 +17,7 @@ const props = defineProps({
   register: { type: Object, default: null },
   processedCount: { type: Number, default: 0 },
   foundCount: { type: Number, default: 0 },
+  foundProductCount: { type: Number, default: 0 },
   missingNumbers: { type: Array, default: () => [] },
   blockedItems: { type: Array, default: () => [] },
   statusChange: Boolean
@@ -48,7 +49,7 @@ const report = computed(() => buildParcelStatusBulkReport(
   props.missingNumbers, props.blockedItems, bySticker.value
 ))
 const searchSummary = computed(() => {
-  const { processedCount, foundCount, missingNumbers, blockedItems } = props
+  const { processedCount, foundCount, foundProductCount, missingNumbers, blockedItems } = props
   if (processedCount <= 0) {
     const values = bySticker.value ? 'стикеры или коды стикеров' : 'номера отправлений'
     const search = `Введите ${values} и нажмите «Найти».`
@@ -57,7 +58,10 @@ const searchSummary = computed(() => {
       : search
   }
 
-  return `Обработано: ${processedCount}. Найдено: ${foundCount}. Не найдено: ${missingNumbers.length}. Недоступно: ${blockedItems.length}.`
+  const foundSummary = foundProductCount > foundCount
+    ? `Найдено посылок ${foundCount}, товаров ${foundProductCount}`
+    : `Найдено: ${foundCount}`
+  return `Обработано: ${processedCount}. ${foundSummary}. Не найдено: ${missingNumbers.length}. Недоступно: ${blockedItems.length}.`
 })
 
 defineExpose({ focus: () => inputRef.value?.focus() })

@@ -117,6 +117,8 @@ const FOLLOW_USERS_LOAD_FAILURE = 'Не удалось загрузить спи
 let pendingSnapshot = null
 let throttleTimer = null
 let followUsersRequest = 0
+let lookupFollowSubscription = 0
+let followApplyVersion = 0
 
 const isRegisterMode = computed(() => mode.value === MODE_REGISTER)
 const isBoxMode = computed(() => mode.value === MODE_BOX)
@@ -167,8 +169,9 @@ const manualScan = isLookupMode.value ? null : useManualScan({
   refresh: refreshCurrentScopeSnapshot
 })
 const manualScanLocked = computed(() => manualScan?.locked.value === true)
-const controlsBusy = computed(() => isLoading.value || manualScanLocked.value)
-const followSelectionDisabled = computed(() => controlsBusy.value || followApplyLoading.value ||
+const controlsBusy = computed(() => (isLookupMode.value ? lookupMonitor.value?.blocking ?? true : isLoading.value) || manualScanLocked.value)
+const followSelectionDisabled = computed(() => controlsBusy.value ||
+  (followApplyLoading.value && !lookupMonitor.value?.reconnecting) ||
   followUsersLoading.value || !monitorDetailsLoaded.value)
 let deferredFollowEvent = null
 watch(manualScanLocked, busy => {
@@ -286,18 +289,19 @@ function cancelEditor() {
 
 async function applyFollowUserSelection() {
   if (followSelectionDisabled.value) return
+  const version = ++followApplyVersion
   followApplyLoading.value = true
   selectedFollowUserId.value = toNumberOrNull(draftFollowUserId.value)
   try {
     const applied = await startFollowUserSubscription()
-    if (applied && isComponentMounted.value) {
+    if (applied && isComponentMounted.value && version === followApplyVersion) {
       authStore.setScanjobMonitorFollowUserId(selectedFollowUserId.value)
       cancelEditor()
     }
   } catch (error) {
-    if (isComponentMounted.value) alertStore.error(error)
+    if (isComponentMounted.value && version === followApplyVersion) alertStore.error(error)
   } finally {
-    followApplyLoading.value = false
+    if (version === followApplyVersion) followApplyLoading.value = false
   }
 }
 
@@ -793,29 +797,40 @@ async function startFollowUserSubscription({
   version = scopeVersion.value
 } = {}) {
   followSubscriptionActive.value = false
+  const lookupSubscription = isLookupMode.value ? ++lookupFollowSubscription : null
+  const isCurrent = () => isComponentMounted.value && version === scopeVersion.value &&
+    (lookupSubscription === null || lookupSubscription === lookupFollowSubscription)
   try {
     const lookupChannel = lookupMonitor.value
     if (isLookupMode.value) await lookupChannel?.clearFollowUser()
     else await scanJobsStore.clearMonitorFollowUser()
 
+    if (!isCurrent()) return false
     const userId = toNumberOrNull(selectedFollowUserId.value)
     if (!subscribe || userId == null || !canSubscribeToMonitor(monitorJob.value)) return true
-    if (!isComponentMounted.value || version !== scopeVersion.value) return false
-    const handlers = { onFollowEvent: followEvent => handleFollowEvent(followEvent, version) }
+    const handlers = { onFollowEvent: followEvent => {
+      if (lookupSubscription === null || lookupSubscription === lookupFollowSubscription) {
+        return handleFollowEvent(followEvent, version)
+      }
+    } }
     if (isLookupMode.value) {
       if (!lookupChannel?.liveReady) return true
-      await lookupChannel.followUser(props.scanjobId, userId, handlers)
-      if (!lookupChannel.liveReady) return false
-    } else {
-      await scanJobsStore.startMonitorFollowUser(props.scanjobId, userId, handlers)
+      const applied = await lookupChannel.followUser(props.scanjobId, userId, handlers)
+      if (applied === false || !lookupChannel.liveReady) return false
+    } else if (await scanJobsStore.startMonitorFollowUser(props.scanjobId, userId, handlers) === false) {
+      return false
     }
-    if (isComponentMounted.value && version === scopeVersion.value && !closedInfo.value) {
+    if (!isCurrent()) return false
+    if (!closedInfo.value) {
       followSubscriptionActive.value = true
     }
     return true
   } catch (error) {
-    if (isComponentMounted.value && version === scopeVersion.value) {
+    if (isCurrent()) {
       alertStore.error(getMonitorErrorMessage(error))
+    } else {
+      // An obsolete subscription cannot publish to the current monitor.
+      reportError(error, { context: 'Подписка на сканер закрытого монитора' })
     }
     return false
   }
@@ -839,12 +854,12 @@ async function handleFollowEvent(followEvent, version = scopeVersion.value) {
     return
   }
 
-  const targetParcelId = toNumberOrNull(followEvent?.followTarget?.parcelId)
   if (isLookupMode.value) {
-    selectedParcelId.value = targetParcelId
+    lookupMonitor.value?.queueFollowEvent(followEvent)
     return
   }
 
+  const targetParcelId = toNumberOrNull(followEvent?.followTarget?.parcelId)
   const targetScope = normalizeFollowTarget(followEvent?.followTarget)
 
   if (targetScope.area === scanjobMonitorArea.Boxes) {

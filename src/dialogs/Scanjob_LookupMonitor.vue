@@ -129,7 +129,11 @@ const visibleFollowedParcelId = computed(() => {
 })
 
 function scrollToSelection() {
-  lookupContent.value?.querySelector('.monitor-followed-parcel-row')?.scrollIntoView?.({ block: 'nearest' })
+  lookupContent.value?.querySelector('.monitor-followed-parcel-row')?.scrollIntoView?.({
+    behavior: 'smooth',
+    block: 'center',
+    inline: 'nearest'
+  })
 }
 
 function isSelectionClick(event) {

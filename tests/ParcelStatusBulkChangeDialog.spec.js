@@ -210,6 +210,28 @@ describe('ParcelStatusBulkChangeDialog', () => {
     expect(wrapper.emitted('updated')).toHaveLength(1)
   })
 
+  it('shows separate shipment and goods counts for a bulk number search and applies every eligible row', async () => {
+    const numbers = Array.from({ length: 359 }, (_, index) => `0001-${index + 1}`)
+    const parcelIds = Array.from({ length: 382 }, (_, index) => index + 101)
+    mocks.resolveStatusSelection.mockResolvedValueOnce({
+      parcelIds, foundParcelCount: 359, missingNumbers: [], blockedItems: []
+    })
+    const wrapper = mountDialog({ register: { id: 7, registerType: OZON_COMPANY_ID } })
+
+    await control(wrapper, 'status').setValue('3')
+    await control(wrapper, 'input').setValue([...numbers, numbers[0]].join('\n'))
+    await control(wrapper, 'find').trigger('click')
+    await flushPromises()
+
+    expect(mocks.resolveStatusSelection).toHaveBeenCalledWith(7, numbers, 'number')
+    expect(control(wrapper, 'summary').text()).toBe(
+      'Обработано: 359. Найдено посылок 359, товаров 382. Не найдено: 0. Недоступно: 0.'
+    )
+    await control(wrapper, 'update-found').trigger('click')
+    await flushPromises()
+    expect(mocks.updateStatusSelection).toHaveBeenCalledWith(7, 3, parcelIds)
+  })
+
   it('preserves input and status on mode change and applies only a fresh sticker result', async () => {
     const wrapper = mountDialog({ register: { id: 7, registerType: WBR_COMPANY_ID } })
     const mode = control(wrapper, 'lookup')
@@ -229,6 +251,9 @@ describe('ParcelStatusBulkChangeDialog', () => {
     await flushPromises()
     expect(mocks.resolveStatusSelection).toHaveBeenLastCalledWith(7, ['0001', 'A'], 'number')
     expect(apply.element.disabled).toBe(false)
+    expect(control(wrapper, 'summary').text()).toBe(
+      'Обработано: 2. Найдено: 1. Не найдено: 1. Недоступно: 0.'
+    )
 
     await mode.setValue(true)
     expect(input.element.value).toBe(' 0001, A\t0001 ')
@@ -240,7 +265,7 @@ describe('ParcelStatusBulkChangeDialog', () => {
     expect(control(wrapper, 'summary').text()).toContain('Введите стикеры или коды стикеров')
 
     mocks.resolveStatusSelection.mockResolvedValueOnce({
-      lookupBy: 'sticker', parcelIds: [82, 83], missingNumbers: ['A'],
+      lookupBy: 'sticker', parcelIds: [82, 83], foundParcelCount: 1, missingNumbers: ['A'],
       blockedItems: [{ number: '0001', parcelId: 84 }, { number: '0001', parcelId: 85 }]
     })
     await find.trigger('click')
@@ -248,7 +273,7 @@ describe('ParcelStatusBulkChangeDialog', () => {
     expect(mocks.resolveStatusSelection).toHaveBeenLastCalledWith(7, ['0001', 'A'], 'sticker')
     expect(control(wrapper, 'report').element.value).toContain('0001 — посылка #84\n0001 — посылка #85')
     expect(control(wrapper, 'summary').text()).toBe(
-      'Обработано: 2. Найдено: 2. Не найдено: 1. Недоступно: 2.'
+      'Обработано: 2. Найдено посылок 1, товаров 2. Не найдено: 1. Недоступно: 2.'
     )
     await apply.trigger('click')
     await flushPromises()
@@ -257,6 +282,37 @@ describe('ParcelStatusBulkChangeDialog', () => {
     await input.setValue('NEW')
     expect(apply.element.disabled).toBe(true)
     expect(control(wrapper, 'report').element.value).toBe('')
+  })
+
+  it('clears both counts on a failed repeat search and shows zero counts after a successful retry', async () => {
+    const error = new Error('Connection reset')
+    mocks.resolveStatusSelection
+      .mockResolvedValueOnce({ parcelIds: [11], foundParcelCount: 1 })
+      .mockRejectedValueOnce(error)
+      .mockResolvedValueOnce({ parcelIds: [], foundParcelCount: 0, missingNumbers: ['ABC'] })
+    const wrapper = mountDialog()
+    await control(wrapper, 'status').setValue('3')
+    await control(wrapper, 'input').setValue('ABC')
+    await control(wrapper, 'find').trigger('click')
+    await flushPromises()
+    expect(control(wrapper, 'summary').text()).toContain('Найдено посылок 1, товаров 1.')
+
+    await control(wrapper, 'find').trigger('click')
+    await flushPromises()
+    expect(alert(wrapper).text()).toContain('Ошибка при поиске посылок')
+    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+    expect(console.error).toHaveBeenCalledExactlyOnceWith(expect.any(String), error)
+    expect(control(wrapper, 'summary').text()).toContain('Введите номера')
+    expect(control(wrapper, 'update-found').element.disabled).toBe(true)
+    expect(wrapper.emitted('update:show')).toBeUndefined()
+
+    await control(wrapper, 'find').trigger('click')
+    await flushPromises()
+    expect(mocks.resolveStatusSelection.mock.calls).toEqual(Array(3).fill([7, ['ABC'], 'number']))
+    expect(control(wrapper, 'input').element.value).toBe('ABC')
+    expect(control(wrapper, 'summary').text()).toBe(
+      'Обработано: 1. Найдено посылок 0, товаров 0. Не найдено: 1. Недоступно: 0.'
+    )
   })
 
   it('rejects an old Core response and clears a prior selection before retrying', async () => {

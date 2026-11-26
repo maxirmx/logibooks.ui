@@ -45,6 +45,7 @@ const selectedStatusId = ref(null)
 const bySticker = ref(false)
 const identifiersInput = ref('')
 const foundParcelIds = ref([])
+const foundParcelCount = ref(null)
 const missingNumbers = ref([])
 const blockedItems = ref([])
 const { activeOperation, beginOperation, isCurrent, finishOperation, invalidateOperation } = useParcelSelectionRequest()
@@ -86,9 +87,9 @@ const supportsStickerLookup = computed(() => supportsParcelStickerLookup(registe
 const busy = computed(() => activeOperation.value !== null)
 const actionsDisabled = computed(() => props.disabled || currentRegister.value?.readOnly === true)
 const canOperate = computed(() => props.show && hasRegister.value && !actionsDisabled.value && !busy.value)
-const foundCount = computed(() => foundParcelIds.value.length)
+const foundProductCount = computed(() => foundParcelIds.value.length)
 const canFind = computed(() => canOperate.value && parsedIdentifiers.value.length > 0)
-const canUpdateFound = computed(() => canOperate.value && hasStatus.value && foundCount.value > 0)
+const canUpdateFound = computed(() => canOperate.value && hasStatus.value && foundProductCount.value > 0)
 const canUpdateAll = computed(() => canOperate.value && hasStatus.value)
 
 watch(() => props.show && busy.value, visible => emit('progress-visible', visible))
@@ -119,6 +120,7 @@ function dismissDialogAlert() {
 
 function resetResolution() {
   foundParcelIds.value = []
+  foundParcelCount.value = null
   missingNumbers.value = []
   blockedItems.value = []
   lastSearchCount.value = 0
@@ -182,6 +184,7 @@ async function findParcels() {
       throw new Error('Сервер не поддерживает поиск по стикерам. Повторите попытку после обновления сервера.')
     }
     foundParcelIds.value = normalizeParcelStatusBulkIds(result?.parcelIds)
+    foundParcelCount.value = result?.foundParcelCount ?? null
     missingNumbers.value = Array.isArray(result?.missingNumbers) ? result.missingNumbers : []
     blockedItems.value = Array.isArray(result?.blockedItems) ? result.blockedItems : []
     lastSearchCount.value = identifiers.length
@@ -331,7 +334,8 @@ defineExpose({
       :disabled="busy || actionsDisabled"
       :register="currentRegister"
       :processed-count="lastSearchCount"
-      :found-count="foundCount"
+      :found-count="foundParcelCount ?? foundProductCount"
+      :found-product-count="foundParcelCount === null ? null : foundProductCount"
       :missing-numbers="missingNumbers"
       :blocked-items="blockedItems"
       status-change

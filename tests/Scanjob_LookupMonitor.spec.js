@@ -21,6 +21,8 @@ import { vuetifyStubs } from './helpers/test-utils.js'
 const api = vi.hoisted(() => ({ load: vi.fn(), createChannel: vi.fn(), start: vi.fn(), stop: vi.fn(),
   followUser: vi.fn(), clearFollowUser: vi.fn(), loadFollowUsers: vi.fn(), setFollowUser: vi.fn(), followUserId: null,
   loadRegister: vi.fn(), resolveTarget: vi.fn(), exportStickers: vi.fn(),
+  scanParcel: vi.fn(), scanParcels: vi.fn(), confirm: vi.fn(), ensureOpsLoaded: vi.fn(),
+  isWhOperator: false, registerReadOnly: false,
   filters: vi.fn(), push: vi.fn(), replace: vi.fn(), back: vi.fn(),
   beforeResolve: vi.fn(), afterEach: vi.fn(), onError: vi.fn(),
   setScanjobMonitorMode: vi.fn(), clearSession: vi.fn(), canOpenParcel: true, returnUrl: null,
@@ -35,9 +37,14 @@ vi.mock('vue-router', async importOriginal => {
   }
 })
 vi.mock('@/router', () => ({ default: api }))
+vi.mock('@/composables/useAppConfirm.js', () => ({ useAppConfirm: () => api.confirm }))
 vi.mock('@/stores/scanjobs.store.js', () => ({
   useScanjobsStore: () => ({
     scanjobMonitorArea,
+    ops: { constants: { inProgressStatus: 15, parcelOnlyType: 10, boxOnlyType: 20, lookupOperation: 30 } },
+    ensureOpsLoaded: api.ensureOpsLoaded,
+    scanParcel: api.scanParcel,
+    scanParcels: api.scanParcels,
     loadLookupMonitorPage: api.load,
     createLookupMonitorChannel: api.createChannel,
     loadMonitorFollowUsers: api.loadFollowUsers,
@@ -45,13 +52,15 @@ vi.mock('@/stores/scanjobs.store.js', () => ({
   })
 }))
 vi.mock('@/stores/registers.store.js', () => ({
-  useRegistersStore: () => ({ item: { id: 42 }, getById: api.loadRegister, getTransportationDocument: () => 'Авианакладная' })
+  useRegistersStore: () => ({ item: { id: 42, readOnly: api.registerReadOnly }, getById: api.loadRegister,
+    getTransportationDocument: () => 'Авианакладная' })
 }))
 vi.mock('@/stores/boxes.store.js', () => ({
   useBoxesStore: () => ({ downloadRegisterStickers: api.exportStickers })
 }))
 vi.mock('@/stores/auth.store.js', () => ({ useAuthStore: () => ({
-  hasLogistRole: api.canOpenParcel, isWhManagerPlus: true, setScanjobMonitorMode: api.setScanjobMonitorMode,
+  hasLogistRole: api.canOpenParcel, isWhManagerPlus: true, isWhOperator: api.isWhOperator,
+  setScanjobMonitorMode: api.setScanjobMonitorMode,
   clearSession: api.clearSession, set returnUrl(value) { api.returnUrl = value },
   scanjobmonitor_follow_user_id: api.followUserId, setScanjobMonitorFollowUserId: api.setFollowUser
 }) }))
@@ -64,7 +73,7 @@ const trailingHeaders = ['Номер коробки', 'Статус', 'Поль�
 
 function lookupSnapshot(overrides = {}) {
   return {
-    scanJobId: 8, scanJobName: 'Поиск пропущенных посылок', operation: 30, status: 15, registerId: 42, registerType: 1,
+    scanJobId: 8, scanJobName: 'Поиск пропущенных посылок', type: 30, operation: 30, status: 15, registerId: 42, registerType: 1,
     totalBoxes: 5, boxesWithStickerScanned: 2, boxesWithStickerNotScanned: 3,
     totalParcels: 100, parcelsWithStickerScanned: 4, parcelsWithStickerNotScanned: 96,
     lookupFoundCount: 1, lookupNotFoundCount: 1,
@@ -168,6 +177,8 @@ beforeEach(() => {
   setActivePinia(createPinia())
   vi.resetAllMocks()
   api.canOpenParcel = true
+  api.isWhOperator = false
+  api.registerReadOnly = false
   api.returnUrl = null
   api.followUserId = null
   reconnecting.value = false
@@ -180,6 +191,7 @@ beforeEach(() => {
   api.currentRoute = { value: { name: 'scanjob-monitor-lookup', params: { id: '8' },
     fullPath: '/scanjobs/8/monitor/lookup?page=2&stickerPrefix=00&parcelFilterId=9' } }
   api.load.mockResolvedValue(lookupSnapshot())
+  api.confirm.mockResolvedValue(true)
   api.beforeResolve.mockReturnValue(() => {})
   api.replace.mockImplementation(async location => {
     if (location === '/login') api.currentRoute.value = { path: '/login', fullPath: '/login' }
@@ -908,6 +920,187 @@ describe('Lookup monitor', () => {
     expect(api.push).toHaveBeenCalledExactlyOnceWith({
       name: 'scanjob-monitor-box', params: { id: 8, boxId: 7 }, query: { returnUrl }
     })
+  })
+
+  const manualScanButton = 'button[data-testid="manual-parcel-scan"]'
+  const lookupRows = () => wrapper.findAll('.v-data-table-row')
+
+  it('scans one parcel and refreshes its current sorted page without following its own scan', async () => {
+    vi.useFakeTimers()
+    api.isWhOperator = true
+    api.followUserId = 21
+    Object.assign(api.route.query, { sortBy: 'postingNumber', sortOrder: 'desc' })
+    let finishScan
+    api.scanParcel.mockImplementationOnce(() => new Promise(resolve => { finishScan = resolve }))
+    openMonitor()
+    await flushPromises()
+    const row = lookupRows()[1]
+    await row.trigger('click', { ctrlKey: true })
+    await row.get(manualScanButton).trigger('click')
+    expect(api.scanParcel).toHaveBeenCalledExactlyOnceWith(8, 313)
+    expect(api.confirm).not.toHaveBeenCalled()
+    expect(wrapper.get('button[data-testid="scanjob-monitor-close-action"]').element.disabled).toBe(true)
+    await row.trigger('keydown', { key: 'Enter' })
+    await api.followUser.mock.lastCall[2].onFollowEvent(scanEvent(603, 313))
+    handlers.onSnapshot({ scanJobId: 8, area: scanjobMonitorArea.Lookup })
+
+    const refreshed = lookupSnapshot({ lookupFoundCount: 2, lookupNotFoundCount: 0 })
+    refreshed.lookupPage.items[1].found = true
+    api.load.mockResolvedValueOnce(refreshed)
+    finishScan({ id: 313, count: 1, scanCodeId: 603, lookupOutcome: 'confirmed',
+      itemNumbers: ['0001-2'], extData: 'Посылка найдена' })
+    await flushPromises()
+    await sendScan(scanEvent(603, 313))
+
+    const expectedQuery = { pageSize: '50', ...api.route.query }
+    expect(api.load.mock.calls).toEqual([[8, expectedQuery], [8, expectedQuery]])
+    expect(api.push).not.toHaveBeenCalled()
+    expect(api.replace).not.toHaveBeenCalled()
+    expect(wrapper.get('.selected-parcel-row').element).toBe(row.element)
+    expect(row.text()).toContain('Найдена')
+    expect(wrapper.get('[data-testid="page-alert-region"] [role="status"]').text()).toContain('0001-2 — Посылка найдена')
+  })
+
+  it('waits for an in-flight read and resumes a queued follow event after the manual scan', async () => {
+    vi.useFakeTimers()
+    api.isWhOperator = true
+    api.followUserId = 21
+    let finishScan
+    let finishRead
+    api.scanParcel.mockImplementationOnce(() => new Promise(resolve => { finishScan = resolve }))
+    openMonitor()
+    await flushPromises()
+
+    await api.followUser.mock.lastCall[2].onFollowEvent(scanEvent(603, 312))
+    api.load.mockImplementationOnce(() => new Promise(resolve => { finishRead = resolve }))
+    await lookupRows()[1].get(manualScanButton).trigger('click')
+    await vi.advanceTimersByTimeAsync(150)
+    const query = { pageSize: '50', sortBy: 'id', sortOrder: 'asc', ...api.route.query }
+    expect(api.load).toHaveBeenLastCalledWith(8, query)
+    finishScan({ id: 313, count: 1, scanCodeId: 604 })
+    await flushPromises()
+    handlers.onSnapshot({ scanJobId: 8, area: scanjobMonitorArea.Lookup })
+    await vi.advanceTimersByTimeAsync(150)
+    expect(api.load).toHaveBeenCalledTimes(2)
+
+    api.load.mockResolvedValueOnce(lookupSnapshot()).mockResolvedValueOnce(followedPage(2, 312))
+    finishRead(lookupSnapshot())
+    await flushPromises()
+    expect(api.load.mock.calls.slice(2)).toEqual([[8, query], [8, { ...query, followParcelId: '312' }]])
+    expect(wrapper.get(followedRow).text()).toContain('0001-1')
+  })
+
+  it.each(['кнопка', 'контекстное меню'])('scans the selected rows through %s after confirmation', async action => {
+    api.isWhOperator = true
+    api.confirm.mockResolvedValueOnce(false)
+    api.scanParcels.mockResolvedValue({ completed: [{ id: 312, count: 1 }, { id: 313, count: 1 }], skippedIds: [] })
+    openMonitor()
+    await flushPromises()
+    const [first, second] = lookupRows()
+    await first.trigger('click', { ctrlKey: true })
+    await second.get('.lookup-box-cell').trigger('click', { shiftKey: true })
+    expect(wrapper.findAll('.selected-parcel-row')).toHaveLength(2)
+    expect(api.push).not.toHaveBeenCalled()
+    const scan = () => action === 'кнопка' ? second.get(manualScanButton).trigger('click') : second.trigger('contextmenu')
+    await scan()
+    await flushPromises()
+    expect(api.scanParcels).not.toHaveBeenCalled()
+    expect(wrapper.findAll('.selected-parcel-row')).toHaveLength(2)
+
+    await scan()
+    await flushPromises()
+    expect(api.confirm).toHaveBeenCalledTimes(2)
+    expect(api.confirm).toHaveBeenLastCalledWith(expect.objectContaining({
+      title: 'Сканирование посылок', contentComponentProps: expect.objectContaining({
+        count: 2, jobs: [{ id: 8, label: 'Поиск пропущенных посылок' }]
+      })
+    }))
+    expect(api.scanParcels).toHaveBeenCalledExactlyOnceWith(8, [312, 313])
+    expect(api.scanParcel).not.toHaveBeenCalled()
+    expect(wrapper.findAll('.selected-parcel-row')).toHaveLength(0)
+    expect(api.load).toHaveBeenCalledTimes(2)
+  })
+
+  it.each(['snapshot', 'register'])('disables the action and multi-selection for a read-only %s', async source => {
+    api.isWhOperator = true
+    api.registerReadOnly = source === 'register'
+    api.load.mockResolvedValue(lookupSnapshot({ readOnly: source === 'snapshot' }))
+    openMonitor()
+    await flushPromises()
+    expect(wrapper.get('.read-only-notice').isVisible()).toBe(true)
+    const [first, second] = lookupRows()
+    expect(first.get(manualScanButton).element.disabled).toBe(true)
+    await first.trigger('click', { ctrlKey: true })
+    await second.trigger('click', { shiftKey: true })
+    await first.trigger('contextmenu')
+    await first.get(manualScanButton).trigger('click')
+    expect(wrapper.findAll('.selected-parcel-row')).toHaveLength(0)
+    expect(api.confirm).not.toHaveBeenCalled()
+    expect(api.scanParcel).not.toHaveBeenCalled()
+    expect(api.scanParcels).not.toHaveBeenCalled()
+    await first.trigger('click')
+    await flushPromises()
+    expect(api.push).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ params: { id: 312, registerId: 42 } }))
+  })
+
+  it('shows a rejected batch once and retries the same selected parcels', async () => {
+    api.isWhOperator = true
+    api.scanParcels.mockRejectedValueOnce(Object.assign(new Error('Batch rejected'), { status: 422 }))
+      .mockResolvedValueOnce({ completed: [{ id: 312, count: 1 }, { id: 313, count: 1 }], skippedIds: [] })
+    openMonitor()
+    await flushPromises()
+    const [first, second] = lookupRows()
+    await first.trigger('click', { ctrlKey: true })
+    await second.trigger('click', { ctrlKey: true })
+    await second.trigger('contextmenu')
+    await flushPromises()
+    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+    expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось отсканировать выбранные позиции')
+    expect(wrapper.text()).not.toContain('Batch rejected')
+    expect(wrapper.findAll('.selected-parcel-row')).toHaveLength(2)
+    expect(api.push).not.toHaveBeenCalled()
+    expect(api.replace).not.toHaveBeenCalled()
+
+    await second.get(manualScanButton).trigger('click')
+    await flushPromises()
+    expect(api.scanParcels.mock.calls).toEqual([[8, [312, 313]], [8, [312, 313]]])
+    expect(wrapper.findAll('.selected-parcel-row')).toHaveLength(0)
+  })
+
+  it('clears selected parcels when a rejected scan refreshes the register as read-only', async () => {
+    api.isWhOperator = true
+    const error = { status: 409, data: { code: 'RegisterReadOnly', msg: 'Партия доступна только для просмотра' } }
+    api.scanParcels.mockRejectedValueOnce(error)
+    openMonitor()
+    await flushPromises()
+    const [first, second] = lookupRows()
+    await first.trigger('click', { ctrlKey: true })
+    await second.trigger('click', { shiftKey: true })
+    api.load.mockResolvedValueOnce(lookupSnapshot({ readOnly: true }))
+    await second.trigger('contextmenu')
+    await flushPromises()
+    expect(api.scanParcels).toHaveBeenCalledExactlyOnceWith(8, [312, 313])
+    expect(wrapper.get('[role="alert"]').text()).toContain(error.data.msg)
+    expect(wrapper.get('.read-only-notice').isVisible()).toBe(true)
+    expect(first.get(manualScanButton).element.disabled).toBe(true)
+    expect(wrapper.findAll('.selected-parcel-row')).toHaveLength(0)
+  })
+
+  it('reports a failed post-scan read once and keeps the current page open', async () => {
+    const error = new Error('Lookup snapshot unavailable')
+    expectDiagnostics(['manual scan failure refresh', error])
+    api.isWhOperator = true
+    api.scanParcel.mockResolvedValue({ id: 313, count: 1 })
+    openMonitor()
+    await flushPromises()
+    api.load.mockRejectedValueOnce(error)
+    await lookupRows()[1].get(manualScanButton).trigger('click')
+    await flushPromises()
+    expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
+    expect(wrapper.get('[role="alert"]').text()).toContain('Не удалось обновить данные после сканирования')
+    expect(wrapper.text()).not.toContain(error.message)
+    expect(lookupRows()).toHaveLength(2)
+    expect(api.replace).not.toHaveBeenCalled()
   })
 
   it('presents a rejected box navigation once and retries the box route', async () => {

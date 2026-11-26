@@ -2,13 +2,14 @@ import { computed, inject, onUnmounted, ref, toValue, watch } from 'vue'
 import { useTableMultiSelect } from './useTableMultiSelect.js'
 import { MANUAL_SCAN_KEY } from '@/helpers/manual.scan.key.js'
 
-export function useManualScanSelection({ loading, page, scopeKey, scan: providedScan = null, contextMenu }) {
+export function useManualScanSelection({ loading, page, scopeKey, scan: providedScan = null, contextMenu,
+  items, disabled = false }) {
   const injectedScan = inject(MANUAL_SCAN_KEY, null)
   const scan = providedScan ?? injectedScan
   const displayedItems = ref([])
   const selection = useTableMultiSelect({
-    items: displayedItems, loading, page, scopeKey, selectedId: ref(null),
-    disabled: () => scan?.locked.value,
+    items: items ?? displayedItems, loading, page, scopeKey, selectedId: ref(null),
+    disabled: () => scan?.locked.value || toValue(disabled),
     getItemId: item => scan?.target.value.getId(item),
     isItemSelectable: item => scan?.target.value.getId(item) != null,
     keyboardContextMenu: () => Boolean(contextMenu?.value),

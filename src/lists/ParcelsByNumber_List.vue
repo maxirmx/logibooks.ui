@@ -3,6 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
+import DataTablePaginationFooter from '@/components/DataTablePaginationFooter.vue'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { runWithAlert } from '@/helpers/notification.helpers.js'
 import { onMounted, ref } from 'vue'
@@ -180,13 +181,16 @@ defineExpose({
         :items="items_bn"
         v-model:sort-by="parcels_bn_sort_by"
         :loading="loading"
-        items-per-page-text="Посылок на странице"
-        :items-per-page-options="itemsPerPageOptions"
-        page-text="{0}-{1} из {2}"
         density="compact"
         class="elevation-1 interlaced-table"
         fixed-header
       >
+        <template #bottom>
+          <DataTablePaginationFooter
+            :items-per-page-options="itemsPerPageOptions"
+            items-per-page-label="Посылок на странице"
+          />
+        </template>
         <template
           v-for="column in clickableColumns"
           :key="column.key"

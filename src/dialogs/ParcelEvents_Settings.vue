@@ -5,6 +5,7 @@
 
 import { useListState } from '@/composables/useListState.js'
 import { scalarField } from '@/helpers/list.state.helpers.js'
+import DataTablePaginationFooter from '@/components/DataTablePaginationFooter.vue'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import { computed, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
@@ -269,7 +270,6 @@ onMounted(async () => {
           <v-data-table
             v-model:items-per-page="parcelevents_per_page"
             v-model:page="parcelevents_page"
-            :items-per-page-options="itemsPerPageOptions"
             :headers="headers"
             :items="filteredEvents"
             item-value="id"
@@ -277,6 +277,9 @@ onMounted(async () => {
             density="compact"
             :loading="loading"
           >
+            <template #bottom>
+              <DataTablePaginationFooter :items-per-page-options="itemsPerPageOptions" />
+            </template>
             <template #[`item.eventTitle`]="{ item }">
               <span :data-testid="`parcel-event-row-${item.id}`">{{ getEventTitle(item) }}</span>
             </template>

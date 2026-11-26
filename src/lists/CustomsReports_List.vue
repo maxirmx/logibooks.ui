@@ -3,6 +3,7 @@
 // All rights reserved.
 // This file is a part of Logibooks ui application
 
+import DataTablePaginationFooter from '@/components/DataTablePaginationFooter.vue'
 import UserDisplay from '@/components/UserDisplay.vue'
 import { formatDateTime } from '@/helpers/date.formatters.js'
 import { reportError } from '@/helpers/error.helpers.js'
@@ -306,7 +307,6 @@ function viewDecisions(report) {
     <v-card class="table-card">
       <v-data-table-server
         v-model:items-per-page="uploadcustomsreports_per_page"
-        :items-per-page-options="itemsPerPageOptions"
         v-model:page="uploadcustomsreports_page"
         v-model:sort-by="uploadcustomsreports_sort_by"
         :headers="headers"
@@ -318,6 +318,9 @@ function viewDecisions(report) {
         item-value="id"
         fixed-header
       >
+        <template #bottom>
+          <DataTablePaginationFooter :items-per-page-options="itemsPerPageOptions" />
+        </template>
         <!-- Row-level slot to avoid dotted slot names -->
         <template #item="{ item, columns }">
           <tr>

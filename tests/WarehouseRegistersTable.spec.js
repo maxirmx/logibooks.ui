@@ -95,6 +95,7 @@ function mountTable(props = {}) {
     },
     global: {
       stubs: {
+        DataTablePaginationFooter: true,
         'v-card': {
           template: '<div><slot /></div>'
         },
@@ -108,6 +109,7 @@ function mountTable(props = {}) {
                 <slot name="item.actions" :item="item" />
                 <slot name="item.matchingParcelsCount" :item="item" />
               </div>
+              <slot name="bottom" />
             </div>
           `
         },

@@ -111,6 +111,7 @@ function mountTable(props = {}) {
     },
     global: {
       stubs: {
+        DataTablePaginationFooter: true,
         VOverlay: vuetifyStubs['v-overlay'],
         'v-card': {
           template: '<div><slot /></div>'
@@ -133,6 +134,7 @@ function mountTable(props = {}) {
                 <slot name="item.weight" :item="item" />
                 <slot name="item.customsCharges" :item="item" />
               </div>
+              <slot name="bottom" />
             </div>
           `,
           methods: {

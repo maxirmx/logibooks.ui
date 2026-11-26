@@ -6,6 +6,7 @@
 import { useListState } from '@/composables/useListState.js'
 import { useListPageBounds } from '@/composables/useListPageBounds.js'
 import { listField, pageField, pageSizeField, scalarField } from '@/helpers/list.state.helpers.js'
+import DataTablePaginationFooter from '@/components/DataTablePaginationFooter.vue'
 import UserDisplay from '@/components/UserDisplay.vue'
 import PageAlertRegion from '@/components/PageAlertRegion.vue'
 import ResponsiveFilterBar from '@/components/ResponsiveFilterBar.vue'
@@ -387,14 +388,17 @@ watch(
         :items="items"
         :items-length="totalCount"
         :loading="pageLoading || loading"
-        :items-per-page-options="historyItemsPerPageOptions"
-        items-per-page-text="Записей на странице"
-        page-text="{0}-{1} из {2}"
         density="compact"
         must-sort
         class="elevation-1 interlaced-table"
         data-testid="register-history-table"
       >
+        <template #bottom>
+          <DataTablePaginationFooter
+            :items-per-page-options="historyItemsPerPageOptions"
+            items-per-page-label="Записей на странице"
+          />
+        </template>
         <template #[`item.changedAt`]="{ item }">
           {{ formatDateTime(item.changedAt) }}
         </template>

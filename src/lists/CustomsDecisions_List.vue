@@ -13,6 +13,7 @@ import { useCustomsReportsStore } from '@/stores/customs.reports.store.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { itemsPerPageOptions } from '@/helpers/items.per.page.js'
+import { buildPageOptions } from '@/helpers/pagination.helpers.js'
 import { formatDateTimeLines } from '@/helpers/date.formatters.js'
 import TruncateTooltipCell from '@/components/TruncateTooltipCell.vue'
 import ClickableCell from '@/components/ClickableCell.vue'
@@ -345,22 +346,7 @@ const maxPage = computed(() =>
   Math.max(1, Math.ceil((decisionsTotalCount.value || 0) / customsdecisions_per_page.value))
 )
 
-const pageOptions = computed(() => {
-  const mp = maxPage.value
-  const current = customsdecisions_page.value || 1
-  if (mp <= 200) {
-    return Array.from({ length: mp }, (_, i) => ({ value: i + 1, title: String(i + 1) }))
-  }
-
-  const set = new Set()
-  for (let i = 1; i <= 10; i++) set.add(i)
-  for (let i = Math.max(1, mp - 9); i <= mp; i++) set.add(i)
-  for (let i = Math.max(1, current - 10); i <= Math.min(mp, current + 10); i++) set.add(i)
-
-  return Array.from(set)
-    .sort((a, b) => a - b)
-    .map((n) => ({ value: n, title: String(n) }))
-})
+const pageOptions = computed(() => buildPageOptions(maxPage.value, customsdecisions_page.value))
 
 const reportsNavigationFallback = 'Не удалось открыть список отчётов'
 

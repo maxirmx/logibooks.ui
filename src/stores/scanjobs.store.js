@@ -120,6 +120,21 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     let closedHandler = null
     let followEventHandler = null
     let connectionErrorHandler = null
+    let reconnectingHandler = null
+    let followReconnect = null
+    const reconnecting = ref(false)
+
+    function finishFollowReconnect(connected) {
+      const resume = followReconnect
+      followReconnect = null
+      resume?.(connected)
+    }
+
+    function clearFollowRequest() {
+      followEventHandler = null
+      lastFollowRequest = null
+      finishFollowReconnect(false)
+    }
 
     function ensureConnection() {
       if (connection) {
@@ -154,36 +169,61 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
       })
 
       currentConnection.on('ScanJobMonitorFollowEvent', (followEvent) => {
-        if (followEventHandler) {
+        if (connection === currentConnection && followEventHandler) {
           followEventHandler(followEvent)
         }
       })
 
-      currentConnection.onclose((err) => {
-        if (err && syncErrors) {
-          monitorError.value = err
-        }
+      currentConnection.onreconnecting?.(() => {
         if (connection === currentConnection) {
-          connectionErrorHandler?.(err ?? new Error('Соединение с монитором сканирования закрыто'))
+          reconnecting.value = true
+          reconnectingHandler?.()
         }
       })
 
+      currentConnection.onclose((err) => {
+        if (connection !== currentConnection) return
+        if (err && syncErrors) {
+          monitorError.value = err
+        }
+        reconnecting.value = false
+        clearFollowRequest()
+        connectionErrorHandler?.(err ?? new Error('Соединение с монитором сканирования закрыто'))
+      })
+
       currentConnection.onreconnected?.(() => {
-        if (lastObserveRequest) {
-          currentConnection.invoke('ObserveScanJob', lastObserveRequest).catch((err) => {
-            if (syncErrors) {
-              monitorError.value = err
+        if (connection !== currentConnection) return
+        reconnecting.value = false
+        const observeRequest = lastObserveRequest
+        if (observeRequest) {
+          currentConnection.invoke('ObserveScanJob', observeRequest).catch((err) => {
+            if (connection === currentConnection && lastObserveRequest === observeRequest &&
+                currentConnection.state === signalR.HubConnectionState.Connected) {
+              if (syncErrors) monitorError.value = err
+              connectionErrorHandler?.(err)
+            } else {
+              // An interrupted rejoin will be replayed when the current connection is ready.
+              reportError(err, { context: 'Восстановление прерванной подписки на монитор' })
             }
-            if (connection === currentConnection) connectionErrorHandler?.(err)
           })
         }
 
-        if (lastFollowRequest) {
-          currentConnection.invoke('ObserveScanJobFollowUser', lastFollowRequest).catch((err) => {
-            if (syncErrors) {
-              monitorError.value = err
+        if (followReconnect) {
+          // The initiating action will subscribe and own any failure from that request.
+          finishFollowReconnect(true)
+          return
+        }
+        const followRequest = lastFollowRequest
+        if (followRequest) {
+          currentConnection.invoke('ObserveScanJobFollowUser', followRequest).catch((err) => {
+            if (connection === currentConnection && lastFollowRequest === followRequest &&
+                currentConnection.state === signalR.HubConnectionState.Connected) {
+              if (syncErrors) monitorError.value = err
+              connectionErrorHandler?.(err)
+            } else {
+              // The scanner subscription is obsolete or will be replayed after reconnecting.
+              reportError(err, { context: 'Переподключение к предыдущему сканеру' })
             }
-            if (connection === currentConnection) connectionErrorHandler?.(err)
           })
         }
       })
@@ -224,6 +264,7 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
         bucketIndex = null,
         onSnapshot = null,
         onClosed = null,
+        onReconnecting = null,
         onConnectionError = null
       } = {}
     ) {
@@ -238,6 +279,7 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
       }
       snapshotHandler = onSnapshot
       closedHandler = onClosed
+      reconnectingHandler = onReconnecting
       connectionErrorHandler = onConnectionError
 
       try {
@@ -262,6 +304,7 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     async function clear() {
       lastObserveRequest = null
       connectionErrorHandler = null
+      reconnectingHandler = null
 
       if (!connection || connection.state !== signalR.HubConnectionState.Connected) {
         return false
@@ -279,29 +322,48 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     }
 
     async function followUser(scanJobId, userId, { onFollowEvent = null } = {}) {
-      followEventHandler = onFollowEvent
-      lastFollowRequest = {
+      finishFollowReconnect(false)
+      const request = {
         scanJobId: Number(scanJobId),
         userId: Number(userId)
       }
+      followEventHandler = onFollowEvent
+      lastFollowRequest = request
 
       try {
-        const currentConnection = await ensureStarted()
-        await currentConnection.invoke('ObserveScanJobFollowUser', lastFollowRequest)
-        return true
+        const reconnectingState = signalR.HubConnectionState.Reconnecting
+        const currentConnection = connection && connection.state === reconnectingState ? connection : await ensureStarted()
+        const isCurrent = () => connection === currentConnection && lastFollowRequest === request
+        while (isCurrent()) {
+          if (currentConnection.state === reconnectingState) {
+            if (!await new Promise(resolve => { followReconnect = resolve })) return false
+            continue
+          }
+          if (currentConnection.state !== signalR.HubConnectionState.Connected) return false
+          try {
+            await currentConnection.invoke('ObserveScanJobFollowUser', request)
+            return isCurrent()
+          } catch (error) {
+            if (!isCurrent() && currentConnection.state !== signalR.HubConnectionState.Connected) {
+              // Connection closure or teardown already owns the transport failure.
+              return false
+            }
+            if (!isCurrent() || currentConnection.state !== reconnectingState) throw error
+            // SignalR canceled this invocation when the transport dropped. Retry after reconnecting.
+          }
+        }
+        return false
       } catch (err) {
-        followEventHandler = null
-        lastFollowRequest = null
-        if (syncErrors) {
-          monitorError.value = err
+        if (lastFollowRequest === request) {
+          clearFollowRequest()
+          if (syncErrors) monitorError.value = err
         }
         throw err
       }
     }
 
     async function clearFollowUser() {
-      followEventHandler = null
-      lastFollowRequest = null
+      clearFollowRequest()
 
       if (!connection || connection.state !== signalR.HubConnectionState.Connected) {
         return false
@@ -321,10 +383,11 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     async function stop() {
       snapshotHandler = null
       closedHandler = null
-      followEventHandler = null
       connectionErrorHandler = null
+      reconnectingHandler = null
       lastObserveRequest = null
-      lastFollowRequest = null
+      reconnecting.value = false
+      clearFollowRequest()
 
       if (!connection) {
         return false
@@ -357,6 +420,7 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     return {
       start,
       clear,
+      reconnecting,
       followUser,
       clearFollowUser,
       stop
@@ -374,6 +438,7 @@ export const useScanjobsStore = defineStore('scanjobs', () => {
     const channel = createMonitorChannel({ clearOnStop: false })
     return {
       start: (scanJobId, handlers) => channel.start(scanJobId, { ...handlers, area: scanjobMonitorArea.Lookup, onConnectionError }),
+      reconnecting: channel.reconnecting,
       followUser: channel.followUser,
       clearFollowUser: channel.clearFollowUser,
       stop: channel.stop

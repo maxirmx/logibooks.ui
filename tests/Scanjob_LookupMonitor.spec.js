@@ -266,7 +266,7 @@ describe('Lookup monitor', () => {
     api.load.mockResolvedValueOnce(followedPage(2, 313))
     await sendScan(scanEvent(2, 313))
     expect(wrapper.get(followedRow).text()).toContain('0001-2')
-    expect(scroll).toHaveBeenCalledWith({ block: 'nearest' })
+    expect(scroll).toHaveBeenCalledWith({ behavior: 'smooth', block: 'center', inline: 'nearest' })
     expect(api.load.mock.lastCall[1]).toMatchObject({ followParcelId: '313', page: '2', stickerPrefix: '00' })
     await sendScan({ ...scanEvent(3), followTarget: { area: 1, boxId: 7 } })
     expect(wrapper.get(followedRow).text()).toContain('0001-2')

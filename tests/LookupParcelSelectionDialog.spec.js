@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
 import LookupParcelSelectionDialog from '@/dialogs/LookupParcelSelectionDialog.vue'
-import { WBR_COMPANY_ID } from '@/helpers/company.constants.js'
+import { OZON_COMPANY_ID, WBR_COMPANY_ID } from '@/helpers/company.constants.js'
 import { useAlertStore } from '@/stores/alert.store.js'
 
 const resolveStatusSelection = vi.hoisted(() => vi.fn())
@@ -42,10 +42,8 @@ function action(wrapper, name) {
   return wrapper.get('[data-testid="lookup-parcels-' + name + '"]')
 }
 
-const match = (identifier, ...ids) => ({
-  identifier,
-  parcels: ids.map(parcelId => ({ parcelId, parcelNumber: 'P-' + parcelId, boxNumber: 'BOX' }))
-})
+const row = (parcelId, parcelNumber = 'P-' + parcelId, boxNumber = 'BOX') => ({ parcelId, parcelNumber, boxNumber })
+const match = (identifier, ...parcels) => ({ identifier, parcels })
 
 describe('LookupParcelSelectionDialog', () => {
   it.each([
@@ -90,7 +88,7 @@ describe('LookupParcelSelectionDialog', () => {
     const wrapper = mountDialog()
     resolveStatusSelection.mockResolvedValue({
       purpose: 'lookup', lookupBy: 'sticker', missingNumbers: ['absent'],
-      matches: [match('0007', 7), match('ambiguous', 7, 8), match('alias', 7)]
+      matches: [match('0007', row(7)), match('ambiguous', row(7), row(8)), match('alias', row(7))]
     })
     await wrapper.get('[data-testid="lookup-parcels-lookup"]').setValue(true)
     await wrapper.get('[data-testid="lookup-parcels-input"]').setValue('0007\nambiguous\talias, 0007\r\nabsent')
@@ -112,6 +110,108 @@ describe('LookupParcelSelectionDialog', () => {
       expect.objectContaining({ identifier: 'ambiguous', parcelId: 8, parcelNumber: 'P-8', boxNumber: 'BOX' })
     ], 7]])
     expect(wrapper.emitted('update:modelValue')).toEqual([[false]])
+  })
+
+  it.each([
+    ['number', '0100194380-0056-3'],
+    ['sticker', 'STICKER']
+  ])('counts three product rows under one shipment when searching by %s', async (lookupBy, identifier) => {
+    const wrapper = mountDialog(OZON_COMPANY_ID)
+    const shipment = '0100194380-0056-3'
+    const rows = [row(7, shipment), row(8, shipment), row(9, shipment)]
+    resolveStatusSelection.mockResolvedValueOnce({
+      purpose: 'lookup', lookupBy, matches: [match(identifier, ...rows)]
+    })
+
+    await action(wrapper, 'lookup').setValue(lookupBy === 'sticker')
+    await action(wrapper, 'input').setValue(identifier)
+    await action(wrapper, 'find').trigger('click')
+    await flushPromises()
+
+    expect(resolveStatusSelection).toHaveBeenCalledWith(7, [identifier], lookupBy, 'lookup')
+    expect(action(wrapper, 'summary').text()).toBe(
+      'Обработано: 1. Найдено посылок 1, товаров 3. Не найдено: 0. Недоступно: 0.'
+    )
+    await action(wrapper, 'confirm').trigger('click')
+    expect(wrapper.emitted('selected')).toEqual([[rows.map(parcel => ({ ...parcel, identifier })), 7]])
+  })
+
+  it('counts distinct shipments for a shared sticker and deduplicates rows matched by aliases', async () => {
+    const wrapper = mountDialog()
+    const rows = [row(7, 'P-7'), row(8, 'P-7'), row(9, 'P-9')]
+    resolveStatusSelection.mockResolvedValueOnce({
+      purpose: 'lookup', lookupBy: 'sticker',
+      matches: [match('SHARED', ...rows), match('ALIAS', rows[0], rows[1])]
+    })
+
+    await action(wrapper, 'lookup').setValue(true)
+    await action(wrapper, 'input').setValue('SHARED\nALIAS\nSHARED')
+    await action(wrapper, 'find').trigger('click')
+    await flushPromises()
+
+    expect(action(wrapper, 'summary').text()).toBe(
+      'Обработано: 2. Найдено посылок 2, товаров 3. Не найдено: 0. Недоступно: 0.'
+    )
+    await action(wrapper, 'confirm').trigger('click')
+    expect(wrapper.emitted('selected')).toEqual([[rows.map(parcel => ({ ...parcel, identifier: 'SHARED' })), 7]])
+
+    await wrapper.setProps({ modelValue: false })
+    await wrapper.setProps({ modelValue: true })
+    expect(action(wrapper, 'summary').text()).toBe('Введите номера отправлений и нажмите «Найти».')
+    expect(action(wrapper, 'confirm').element.disabled).toBe(true)
+  })
+
+  it('counts rows without a shipment number separately and clears the summary on changing lookup mode', async () => {
+    const wrapper = mountDialog()
+    const rows = [row(7, 'P-7'), row(8, 'P-7'), row(9, ''), row(10, null), row(11, '\u0085'), row(12, '\u0085')]
+    resolveStatusSelection.mockResolvedValueOnce({
+      purpose: 'lookup', lookupBy: 'sticker',
+      matches: [match('SHARED', ...rows)]
+    })
+
+    await action(wrapper, 'lookup').setValue(true)
+    await action(wrapper, 'input').setValue('SHARED')
+    await action(wrapper, 'find').trigger('click')
+    await flushPromises()
+
+    expect(action(wrapper, 'summary').text()).toBe(
+      'Обработано: 1. Найдено посылок 5, товаров 6. Не найдено: 0. Недоступно: 0.'
+    )
+    await action(wrapper, 'lookup').setValue(false)
+    expect(action(wrapper, 'summary').text()).toBe('Введите номера отправлений и нажмите «Найти».')
+    expect(action(wrapper, 'confirm').element.disabled).toBe(true)
+  })
+
+  it('groups rows by a stored shipment number containing only a byte order mark', async () => {
+    const wrapper = mountDialog()
+    resolveStatusSelection.mockResolvedValueOnce({
+      purpose: 'lookup', lookupBy: 'sticker', matches: [match('STICKER', row(7, '\uFEFF'), row(8, '\uFEFF'))]
+    })
+
+    await action(wrapper, 'lookup').setValue(true)
+    await action(wrapper, 'input').setValue('STICKER')
+    await action(wrapper, 'find').trigger('click')
+    await flushPromises()
+
+    expect(action(wrapper, 'summary').text()).toBe(
+      'Обработано: 1. Найдено посылок 1, товаров 2. Не найдено: 0. Недоступно: 0.'
+    )
+  })
+
+  it('keeps the compact summary when no rows match', async () => {
+    const wrapper = mountDialog()
+    resolveStatusSelection.mockResolvedValueOnce({
+      purpose: 'lookup', lookupBy: 'number', matches: [], missingNumbers: ['missing']
+    })
+
+    await action(wrapper, 'input').setValue('missing')
+    await action(wrapper, 'find').trigger('click')
+    await flushPromises()
+
+    expect(action(wrapper, 'summary').text()).toBe(
+      'Обработано: 1. Найдено: 0. Не найдено: 1. Недоступно: 0.'
+    )
+    expect(action(wrapper, 'confirm').element.disabled).toBe(true)
   })
 
   it('rejects a legacy bulk status response before enabling confirmation', async () => {
@@ -138,7 +238,7 @@ describe('LookupParcelSelectionDialog', () => {
     await field.setValue('old')
     await action(wrapper, 'find').trigger('click')
     await field.setValue('new')
-    finishFirst({ purpose: 'lookup', lookupBy: 'number', matches: [match('old', 7)] })
+    finishFirst({ purpose: 'lookup', lookupBy: 'number', matches: [match('old', row(6, 'old'), row(7, 'old'))] })
     await flushPromises()
     expect(action(wrapper, 'summary').text()).toBe('Введите номера отправлений и нажмите «Найти».')
     expect(action(wrapper, 'confirm').element.disabled).toBe(true)
@@ -148,16 +248,20 @@ describe('LookupParcelSelectionDialog', () => {
     await flushPromises()
     expect(wrapper.findAll('[role="alert"]')).toHaveLength(1)
     expect(wrapper.get('[role="alert"]').text()).toContain('Нет доступа к реестру')
+    expect(field.element.value).toBe('new')
+    expect(action(wrapper, 'confirm').element.disabled).toBe(true)
 
+    const rows = [row(8, 'new', null), row(9, 'new', null)]
     resolveStatusSelection.mockResolvedValueOnce({
-      purpose: 'lookup', lookupBy: 'number',
-      matches: [{ identifier: 'new', parcels: [{ parcelId: 8, parcelNumber: 'P-8', boxNumber: null }] }]
+      purpose: 'lookup', lookupBy: 'number', matches: [match('new', ...rows)]
     })
     await action(wrapper, 'find').trigger('click')
     await flushPromises()
+    expect(resolveStatusSelection).toHaveBeenNthCalledWith(3, 7, ['new'], 'number', 'lookup')
+    expect(action(wrapper, 'summary').text()).toBe(
+      'Обработано: 1. Найдено посылок 1, товаров 2. Не найдено: 0. Недоступно: 0.'
+    )
     await action(wrapper, 'confirm').trigger('click')
-    expect(wrapper.emitted('selected')).toEqual([[[
-      expect.objectContaining({ identifier: 'new', parcelId: 8, parcelNumber: 'P-8', boxNumber: null })
-    ], 7]])
+    expect(wrapper.emitted('selected')).toEqual([[rows.map(parcel => ({ ...parcel, identifier: 'new' })), 7]])
   })
 })

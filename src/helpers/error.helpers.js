@@ -110,14 +110,23 @@ export function getServerFieldErrors(error, fieldAliases = {}) {
 }
 
 /**
- * Maps structured validation errors beside their fields and publishes only
- * the general remainder. Returns true when at least one field was mapped.
+ * Maps structured validation errors beside their fields and publishes the general remainder.
+ * Supply visibleFields to include messages for other fields in the general alert.
+ * Returns true when at least one field was mapped.
  */
 export function reportFormError(
   error,
-  { setErrors, alertStore, fallback = DEFAULT_ERROR_MESSAGE, fieldAliases = {} } = {}
+  { setErrors, alertStore, fallback = DEFAULT_ERROR_MESSAGE, fieldAliases = {}, visibleFields } = {}
 ) {
   const fieldErrors = getServerFieldErrors(error, fieldAliases)
+  const unmappedErrors = []
+  if (visibleFields) {
+    for (const [name, message] of Object.entries(fieldErrors)) {
+      if (visibleFields.includes(name)) continue
+      unmappedErrors.push(message)
+      delete fieldErrors[name]
+    }
+  }
   const hasFieldErrors = Object.keys(fieldErrors).length > 0
 
   if (hasFieldErrors && typeof setErrors === 'function') setErrors(fieldErrors)
@@ -130,10 +139,11 @@ export function reportFormError(
         .filter(Boolean)
         .join(' ')
     : ''
-  // ErrMessage.msg summarizes field failures. Only an explicit general error
-  // accompanies mapped field errors; the summary remains the fallback for other callers.
+  // ErrMessage.msg summarizes field failures. Report explicit general errors and
+  // unmapped messages alongside field errors, using the summary only as a fallback.
   const explicitGeneral =
-    generalFromErrors || (!hasFieldErrors && nonEmptyString(payload?.msg)) || nonEmptyString(payload?.message)
+    [...new Set([generalFromErrors, ...unmappedErrors])].filter(Boolean).join(' ') ||
+    (!hasFieldErrors && nonEmptyString(payload?.msg)) || nonEmptyString(payload?.message)
 
   if (!hasFieldErrors || explicitGeneral || typeof setErrors !== 'function') {
     alertStore?.error(explicitGeneral || error, { fallback })

@@ -39,6 +39,15 @@ describe('date.formatters', () => {
   })
 
   describe('formatDateTimeLines', () => {
+    it('displays offset-bearing decision timestamps in Moscow time', () => {
+      expect(formatDateTimeLines('2026-03-28T23:30:00Z', 'Europe/Moscow')).toEqual(['29.03.2026', '02:30:00'])
+    })
+
+    it('keeps the date and clock of legacy Moscow values without an offset', () => {
+      expect(formatDateTimeLines('2026-03-29T02:30:00', 'Europe/Moscow')).toEqual(['29.03.2026', '02:30:00'])
+      expect(formatDateTimeLines('2026-03-29', 'Europe/Moscow')).toEqual(['29.03.2026', '00:00:00'])
+    })
+
     it('returns original value once for invalid date-time values', () => {
       expect(formatDateTimeLines('not-a-date')).toEqual(['not-a-date'])
     })

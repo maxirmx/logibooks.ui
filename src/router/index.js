@@ -429,6 +429,12 @@ const router = createRouter({
       meta: { reqAnyRole: true }
     },
     {
+      path: '/alta-sync',
+      name: 'Журнал синхронизации Альта Софт',
+      component: () => import('@/views/AltaSyncJournal_View.vue'),
+      meta: { reqAdminOrSrLogist: true }
+    },
+    {
       path: '/customs-reports',
       name: 'Отчеты о выпуске',
       component: () => import('@/views/CustomsReports_View.vue'),

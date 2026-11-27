@@ -258,6 +258,7 @@ vi.mock('@/stores/registers.store.js', () => ({
     item: registerItem,
     ops: registerOps,
     getById: getRegisterById,
+    refreshDerived: vi.fn().mockResolvedValue(undefined),
     startReconciliation,
     getReconciliation,
     ensureOpsLoaded,
@@ -994,9 +995,12 @@ describe('WbrNParcels_List.vue', () => {
     } } })
     try {
       await resolveAll()
+      const input = wrapper.get('[data-testid="reconciliation-file-input"]')
+      expect(input.element.multiple).toBe(true)
       const file = new File(['manifest'], 'sample.xlsx')
-      await wrapper.vm.reconciliation.selectFile({ target: { files: [file], value: 'selected' } })
-      await wrapper.vm.$nextTick()
+      Object.defineProperty(input.element, 'files', { value: [file] })
+      await input.trigger('change')
+      await resolveAll()
       expect(wrapper.get('[data-testid="reconciliation-retry-start"]').attributes('disabled')).toBeUndefined()
       await wrapper.get('[data-testid="reconciliation-retry-start"]').trigger('click')
       await resolveAll()
@@ -1015,7 +1019,7 @@ describe('WbrNParcels_List.vue', () => {
       getReconciliation.mockRejectedValueOnce(Object.assign(new Error('Результат неизвестен'), {
         status: 409, data: { code: 'ReconciliationOutcomeUnknown' }
       }))
-      await wrapper.vm.reconciliation.selectFile({ target: { files: [file], value: 'selected' } })
+      await wrapper.vm.reconciliation.selectFiles({ target: { files: [file], value: 'selected' } })
       await wrapper.vm.$nextTick()
       await wrapper.get('[data-testid="reconciliation-new-run"]').trigger('click')
       await resolveAll()

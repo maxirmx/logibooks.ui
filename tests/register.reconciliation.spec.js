@@ -36,7 +36,6 @@ function harness(options = {}) {
   const runningAction = ref(false)
   const mounted = ref(true)
   const refreshRegister = vi.fn().mockResolvedValue(undefined)
-  const refreshParcels = vi.fn().mockResolvedValue(true)
   const confirm = vi.fn().mockResolvedValue(false)
   const router = createRouter({ history: createMemoryHistory(), routes: [
     { path: '/registers/7/parcels', component: { template: '<div />' } },
@@ -45,7 +44,7 @@ function harness(options = {}) {
   let flow
   const component = defineComponent({ components: { PageAlertRegion, RegisterReconciliationDialogs }, setup() {
     flow = useRegisterReconciliation({ store, alertStore, authStore, router, register: () => register, busy: () => false,
-      runningAction, mounted, refreshRegister, refreshParcels, confirm, makeId: () => 'op-1', ...options })
+      runningAction, mounted, refreshSnapshot: refreshRegister, confirm, makeId: () => 'op-1', ...options })
     onUnmounted(flow.stop)
     return { flow }
   }, template: `<div><hr><PageAlertRegion />
@@ -57,7 +56,7 @@ function harness(options = {}) {
   wrappers.push(wrapper)
   const file = new File(['manifest'], 'manifest.xlsx')
   const event = { target: { value: 'selected', files: [file] } }
-  return { wrapper, flow, store, register, authStore, router, runningAction, mounted, refreshRegister, refreshParcels, confirm, notify, file, event }
+  return { wrapper, flow, store, register, authStore, router, runningAction, mounted, refreshRegister, confirm, notify, file, event }
 }
 
 beforeEach(() => { setActivePinia(createPinia()); wrappers = [] })
@@ -83,14 +82,22 @@ describe('register reconciliation', () => {
     expect(canReconcileRegister({ registerType: WBRN_REGISTER_ID, theOtherCountryCode: 762 }, false)).toBe(false)
   })
 
+  it('does not start reconciliation when the picker is cancelled', async () => {
+    const h = harness()
+    await h.flow.selectFiles()
+    expect(h.store.startReconciliation).not.toHaveBeenCalled()
+  })
+
   it('shows all six committed statistics and resets the input for an explicit later import', async () => {
     const reported = { ...statistics, registerOnlyCount: 5, manifestOnlyCount: 6 }
     const h = harness()
     h.store.getReconciliation.mockResolvedValue({ ...complete, result: reported })
-    await h.flow.selectFile(h.event)
+    const second = new File(['manifest2'], 'second.xlsm')
+    h.event.target.files.push(second)
+    await h.flow.selectFiles(h.event)
     await flushPromises()
     expect(h.event.target.value).toBe('')
-    expect(h.store.startReconciliation).toHaveBeenCalledWith(7, h.file, 'op-1')
+    expect(h.store.startReconciliation).toHaveBeenCalledWith(7, [h.file, second], 'op-1')
     expect(h.store.getReconciliation).toHaveBeenCalledWith(7, 'op-1')
     for (const [key, value] of Object.entries(reported).filter(([key]) => key !== 'registerId'))
       expect(h.wrapper.get(`[data-testid="reconciliation-${key}"]`).text()).toBe(String(value))
@@ -102,7 +109,6 @@ describe('register reconciliation', () => {
     ])
     expect(report.findAll('dd').map(value => Number(value.text()))).toEqual([104, 42, 13, 2, 5, 6])
     expect(h.refreshRegister).toHaveBeenCalledOnce()
-    expect(h.refreshParcels).toHaveBeenCalledOnce()
     expect(h.notify).not.toHaveBeenCalled()
     expect(h.runningAction.value).toBe(false)
     const close = h.wrapper.findAll('button').find(b => b.text() === 'Закрыть')
@@ -113,7 +119,7 @@ describe('register reconciliation', () => {
   it('recovers upload uncertainty by reading the same operation without resending the file', async () => {
     const h = harness()
     h.store.startReconciliation.mockRejectedValueOnce(new Error('network technical failure'))
-    await h.flow.selectFile(h.event)
+    await h.flow.selectFiles(h.event)
     await flushPromises()
     expect(h.flow.state.phase).toBe('retry-start')
     expect(h.flow.state.progress.show).toBe(false)
@@ -122,7 +128,7 @@ describe('register reconciliation', () => {
     expect(h.wrapper.findAll('[role="alert"]')).toHaveLength(1)
     expect(h.notify).toHaveBeenCalledOnce()
     expect(h.flow.openFile()).toBe(false)
-    await h.flow.selectFile(h.event)
+    await h.flow.selectFiles(h.event)
     expect(h.store.startReconciliation).toHaveBeenCalledOnce()
     await h.wrapper.get('[data-testid="retry"]').trigger('click')
     await flushPromises()
@@ -136,7 +142,7 @@ describe('register reconciliation', () => {
   ])('presents terminal %s exactly once and unlocks', async failureKind => {
     const h = harness()
     h.store.getReconciliation.mockRejectedValueOnce(failure('ReconciliationFailed', 400, { finished: true, failureKind }))
-    await h.flow.selectFile(h.event)
+    await h.flow.selectFiles(h.event)
     await flushPromises()
     expect(h.runningAction.value).toBe(false)
     expect(h.flow.state.phase).toBe('idle')
@@ -157,7 +163,7 @@ describe('register reconciliation', () => {
   ])('handles definite upload rejection %i without a retry loop', async status => {
     const h = harness()
     h.store.startReconciliation.mockRejectedValueOnce(failure('ReconciliationInvalidManifest', status))
-    await h.flow.selectFile(h.event)
+    await h.flow.selectFiles(h.event)
     expect(h.flow.state.phase).toBe('idle')
     expect(h.flow.state.error.show).toBe(status === 400)
     expect(h.runningAction.value).toBe(false)
@@ -167,19 +173,19 @@ describe('register reconciliation', () => {
   it('allows an initiator to recover their already-running operation through GET', async () => {
     const h = harness()
     h.store.startReconciliation.mockRejectedValueOnce(failure('ReconciliationAlreadyRunning', 409, { activeHandle: 'previous-op' }))
-    await h.flow.selectFile(h.event)
+    await h.flow.selectFiles(h.event)
     expect(h.flow.state.phase).toBe('retry-status')
     await h.flow.retry()
     expect(h.store.getReconciliation).toHaveBeenCalledWith(7, 'previous-op')
     expect(h.store.startReconciliation).toHaveBeenCalledOnce()
   })
 
-  it.each(['register', 'table'])('opens login after a confirmed reconciliation and failed %s refresh', async where => {
+  it('opens login after a confirmed reconciliation and a failed snapshot refresh', async () => {
     const h = harness()
     await h.router.push('/registers/7/parcels')
-    const refresh = where === 'register' ? h.refreshRegister : h.refreshParcels
+    const refresh = h.refreshRegister
     refresh.mockRejectedValueOnce(new Error('Invalid refresh'))
-    await h.flow.selectFile(h.event)
+    await h.flow.selectFiles(h.event)
     await flushPromises()
     expect(h.flow.state.result).toEqual(statistics)
     expect(h.wrapper.get('[data-testid="reconciliation-statistics"]').isVisible()).toBe(true)
@@ -198,7 +204,7 @@ describe('register reconciliation', () => {
       const promise = new Promise((_, r) => { reject = r })
       if (phase === 'start') h.store.startReconciliation.mockReturnValueOnce(promise)
       else h.store.getReconciliation.mockReturnValueOnce(promise)
-      const work = h.flow.selectFile(h.event)
+      const work = h.flow.selectFiles(h.event)
       await flushPromises()
       h.wrapper.unmount()
       reject(new Error('teardown network diagnostic'))
@@ -214,7 +220,7 @@ describe('register reconciliation', () => {
     const makeId = vi.fn().mockReturnValueOnce('old-op').mockReturnValueOnce('new-op')
     const h = harness({ makeId })
     h.store.startReconciliation.mockRejectedValueOnce(new Error('Ответ сервера потерян'))
-    await h.flow.selectFile(h.event)
+    await h.flow.selectFiles(h.event)
     h.store.getReconciliation.mockRejectedValueOnce(failure('ReconciliationOperationNotFound', 404))
     await h.flow.retry()
     expect(h.store.startReconciliation).toHaveBeenCalledOnce()
@@ -226,8 +232,8 @@ describe('register reconciliation', () => {
     h.flow.fileInput.value = { value: '', click: vi.fn() }
     await h.flow.acknowledgeUnknown()
     expect(h.store.startReconciliation).toHaveBeenCalledOnce()
-    await h.flow.selectFile(h.event)
-    expect(h.store.startReconciliation).toHaveBeenNthCalledWith(2, 7, h.file, 'new-op')
+    await h.flow.selectFiles(h.event)
+    expect(h.store.startReconciliation).toHaveBeenNthCalledWith(2, 7, [h.file], 'new-op')
   })
 
   it('discards an old route response without leaving a spinner or mutation lock', async () => {
@@ -235,7 +241,7 @@ describe('register reconciliation', () => {
     const h = harness({ registerId: () => routeId.value })
     let resolve
     h.store.getReconciliation.mockReturnValueOnce(new Promise(r => { resolve = r }))
-    const work = h.flow.selectFile(h.event)
+    const work = h.flow.selectFiles(h.event)
     await flushPromises()
     routeId.value = 8
     expect(h.flow.state.phase).toBe('idle')

@@ -9,7 +9,7 @@ import { recoverPageLoad } from '@/helpers/login.navigation.js'
 import { useAppConfirm } from '@/composables/useAppConfirm.js'
 
 export function useRegisterSplit({ store, authStore, alertStore, router, register, busy, runningAction, mounted,
-  refreshRegister, registerId = () => register()?.id, makeId = () => globalThis.crypto.randomUUID(),
+  refreshSnapshot = id => store.refreshDerived(id, { afterMutation: true }), registerId = () => register()?.id, makeId = () => globalThis.crypto.randomUUID(),
   storage = globalThis.sessionStorage, confirm = useAppConfirm() }) {
   const state = reactive({ phase: 'idle', progress: { show: false, title: 'Разделение реестра', percent: null },
     result: null, summaryVisible: false, canCancel: false, cancelling: false })
@@ -37,7 +37,7 @@ export function useRegisterSplit({ store, authStore, alertStore, router, registe
     } catch (error) { reportError(error, { context: 'split recovery storage' }) }
   }
   function clearOperation() { persist(null); operation = null; setPhase('idle') }
-  function failed(error, candidate, starting, fallback = 'Не удалось получить результат разделения реестра. Проверьте результат операции') {
+  async function failed(error, candidate, starting, fallback = 'Не удалось получить результат разделения реестра. Проверьте результат операции') {
     if (!alive(candidate)) {
       // Navigation aborts are expected; other late failures still need diagnostics.
       if (error?.name !== 'AbortError') reportError(error, { context: 'split after navigation' })
@@ -46,17 +46,23 @@ export function useRegisterSplit({ store, authStore, alertStore, router, registe
     stopTimer()
     state.progress.show = false
     if (['RegisterSplitOperationUnavailable', 'RegisterSplitOutcomeUnknown'].includes(error?.data?.code)) setPhase('unknown')
-    else if (error?.data?.details?.finished || starting && error?.status >= 400 && error.status < 500) clearOperation()
+    else if (error?.data?.details?.finished) {
+      alertStore.error(error, { fallback })
+      await reloadAfterTerminal(candidate, 'Не удалось обновить данные реестра после разделения')
+      return
+    } else if (starting && error?.status >= 400 && error.status < 500) clearOperation()
     else setPhase('recovery')
     alertStore.error(error, { fallback })
   }
-  async function refresh() {
-    const currentId = registerId()
-    try { await refreshRegister() }
-    catch (error) {
-      if (!stopped && mounted.value && currentId === registerId()) {
-        await recoverPageLoad(router, error, 'Разделение выполнено, но не удалось обновить данные реестра')
-      } else reportError(error, { context: 'split refresh after navigation' })
+  async function reloadAfterTerminal(candidate, fallback) {
+    state.canCancel = false
+    try {
+      await refreshSnapshot(candidate.registerId)
+    } catch (error) {
+      if (alive(candidate)) await recoverPageLoad(router, error, fallback)
+      else reportError(error, { context: 'split refresh after navigation' })
+    } finally {
+      if (alive(candidate)) clearOperation()
     }
   }
   async function acceptProgress(progress, candidate) {
@@ -69,8 +75,9 @@ export function useRegisterSplit({ store, authStore, alertStore, router, registe
       state.progress.show = false
       state.result = progress.result ?? null
       state.summaryVisible = Boolean(progress.result)
-      clearOperation()
-      if (progress.result) await refresh()
+      await reloadAfterTerminal(candidate, progress.result
+        ? 'Разделение выполнено, но не удалось обновить данные реестра'
+        : 'Не удалось обновить данные реестра после отмены разделения')
       return true
     }
     return false
@@ -91,7 +98,7 @@ export function useRegisterSplit({ store, authStore, alertStore, router, registe
     } catch (error) {
       // A cancellation request supersedes any outstanding progress read.
       if (version !== pollingVersion && alive(candidate)) reportError(error, { context: 'superseded split polling' })
-      else failed(error, candidate, false)
+      else await failed(error, candidate, false)
     }
   }
   async function cancel() {
@@ -104,7 +111,7 @@ export function useRegisterSplit({ store, authStore, alertStore, router, registe
       if (!await acceptProgress(progress, candidate) && alive(candidate)) await poll(candidate)
     } catch (error) {
       if (alive(candidate)) state.cancelling = false
-      failed(error, candidate, false, 'Не удалось отменить разделение реестра. Проверьте состояние операции')
+      await failed(error, candidate, false, 'Не удалось отменить разделение реестра. Проверьте состояние операции')
     }
     return true
   }
@@ -122,7 +129,7 @@ export function useRegisterSplit({ store, authStore, alertStore, router, registe
     try {
       await store.startSplit(candidate.registerId, candidate.id)
       if (alive(candidate)) { state.canCancel = true; await poll(candidate) }
-    } catch (error) { failed(error, candidate, true) }
+    } catch (error) { await failed(error, candidate, true) }
     return true
   }
   async function retry() { if (state.phase === 'recovery') await poll(operation) }

@@ -440,11 +440,11 @@ export const useRegistersStore = defineStore('registers', () => {
       return await fetchWrapper.get(`${baseUrl}/${registerId}/split/${encodeURIComponent(operationId)}`)
     } catch (err) { error.value = err; throw err }
   }
-  async function startReconciliation(registerId, file, operationId) {
+  async function startReconciliation(registerId, files, operationId) {
     error.value = null
     try {
       const formData = new FormData()
-      formData.append('file', file)
+      for (const file of files) formData.append('files', file)
       return await fetchWrapper.postFile(`${baseUrl}/${registerId}/reconciliation?operationId=${encodeURIComponent(operationId)}`, formData)
     } catch (err) {
       error.value = err
@@ -483,9 +483,10 @@ export const useRegistersStore = defineStore('registers', () => {
     useBoxesStore().invalidateDerived(id)
   }
 
-  function refreshDerived(id) {
+  function refreshDerived(id, { afterMutation = false } = {}) {
     const key = Number(id)
     if (!Number.isInteger(key) || key <= 0) return Promise.resolve()
+    if (afterMutation) useParcelsStore().invalidateDerived(key)
     const existing = derivedRefreshes.get(key)
     if (existing) { existing.dirty ||= existing.revision !== (projectionRevisions.get(key) ?? 0); return existing.promise }
     const state = { dirty: false, promise: null, revision: projectionRevisions.get(key) ?? 0 }

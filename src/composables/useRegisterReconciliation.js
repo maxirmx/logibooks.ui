@@ -3,10 +3,11 @@ import { useAppConfirm } from '@/composables/useAppConfirm.js'
 import { getErrorMessage, reportError } from '@/helpers/error.helpers.js'
 import { recoverPageLoad } from '@/helpers/login.navigation.js'
 import { canReconcileRegister } from '@/helpers/register.reconciliation.helpers.js'
-import { EXCEL_FILE_ACCEPT, openExcelFilePicker, takeSelectedExcelFile } from '@/helpers/excel.file.helpers.js'
+import { EXCEL_FILE_ACCEPT, openExcelFilePicker, takeSelectedExcelFiles } from '@/helpers/excel.file.helpers.js'
 
 export function useRegisterReconciliation({ store, authStore, alertStore, router, register, busy,
-  runningAction, mounted, refreshRegister, refreshParcels, registerId = () => register()?.id, confirm = useAppConfirm(),
+  runningAction, mounted, refreshSnapshot = id => store.refreshDerived(id, { afterMutation: true }),
+  registerId = () => register()?.id, confirm = useAppConfirm(),
   makeId = () => globalThis.crypto.randomUUID() }) {
   const fileInput = ref(null)
   const state = reactive({ phase: 'idle', progress: { show: false, title: 'Сверка реестра', percent: 0 },
@@ -49,7 +50,7 @@ export function useRegisterReconciliation({ store, authStore, alertStore, router
     if (fileError) state.error = { show: true, message }
     else alertStore.error(error, { fallback })
   }
-  function failed(error, starting, fallback) {
+  async function failed(error, starting, fallback) {
     state.progress.show = false
     stopTimer()
     const data = error?.data
@@ -57,9 +58,8 @@ export function useRegisterReconciliation({ store, authStore, alertStore, router
       setPhase('unknown')
       showError(error, false, fallback)
     } else if (data?.code === 'ReconciliationFailed' && data.details?.finished) {
-      setPhase('idle')
-      operation = null
       showError(error, data.details.failureKind === 'InvalidManifest', fallback)
+      await reloadAfterTerminal(operation, 'Не удалось обновить данные реестра после сверки')
     } else if (starting && error?.status >= 400 && error.status < 500) {
       if (data?.code === 'ReconciliationAlreadyRunning' && data.details?.activeHandle) {
         operation.id = data.details.activeHandle
@@ -74,16 +74,18 @@ export function useRegisterReconciliation({ store, authStore, alertStore, router
       showError(error, false, fallback)
     }
   }
-  async function refresh() {
-    const currentId = registerId()
+  async function reloadAfterTerminal(candidate, fallback) {
+    state.canCancel = false
     try {
-      await refreshRegister()
-      if (stopped || !mounted.value || registerId() !== currentId) return
-      await refreshParcels()
+      await refreshSnapshot(candidate.registerId)
     } catch (error) {
-      if (!stopped && mounted.value && registerId() === currentId) {
-        await recoverPageLoad(router, error, 'Сверка выполнена, но не удалось обновить данные реестра')
-      } else reportError(error, { context: 'reconciliation refresh after disposal or route change' })
+      if (alive(candidate)) await recoverPageLoad(router, error, fallback)
+      else reportError(error, { context: 'reconciliation refresh after disposal or route change' })
+    } finally {
+      if (alive(candidate)) {
+        operation = null
+        setPhase('idle')
+      }
     }
   }
   async function acceptProgress(progress, candidate) {
@@ -96,9 +98,9 @@ export function useRegisterReconciliation({ store, authStore, alertStore, router
       state.result = progress.result ?? null
       state.summaryVisible = Boolean(progress.result)
       state.progress.show = false
-      operation = null
-      setPhase('idle')
-      if (progress.result) await refresh()
+      await reloadAfterTerminal(candidate, progress.result
+        ? 'Сверка выполнена, но не удалось обновить данные реестра'
+        : 'Не удалось обновить данные реестра после отмены сверки')
       return true
     }
     return false
@@ -119,7 +121,7 @@ export function useRegisterReconciliation({ store, authStore, alertStore, router
     } catch (error) {
       // Cancellation supersedes the read; late failures still retain diagnostics.
       if (version !== pollingVersion || !alive(candidate)) reportError(error, { context: 'reconciliation polling after unmount or cancellation' })
-      else failed(error, false)
+      else await failed(error, false)
     }
   }
   async function cancel() {
@@ -133,7 +135,7 @@ export function useRegisterReconciliation({ store, authStore, alertStore, router
     } catch (error) {
       if (alive(candidate)) {
         state.cancelling = false
-        failed(error, false, 'Не удалось отменить сверку реестра. Проверьте состояние операции')
+        await failed(error, false, 'Не удалось отменить сверку реестра. Проверьте состояние операции')
       } else reportError(error, { context: 'reconciliation cancellation after unmount' })
     }
     return true
@@ -144,17 +146,17 @@ export function useRegisterReconciliation({ store, authStore, alertStore, router
     setPhase('working')
     state.progress.show = true
     try {
-      await store.startReconciliation(candidate.registerId, candidate.file, candidate.id)
+      await store.startReconciliation(candidate.registerId, candidate.files, candidate.id)
       if (alive(candidate)) { state.canCancel = true; await poll(candidate) }
     } catch (error) {
-      if (alive(candidate)) failed(error, true)
+      if (alive(candidate)) await failed(error, true)
       else reportError(error, { context: 'reconciliation start after unmount' })
     }
   }
-  async function selectFile(event) {
-    const file = takeSelectedExcelFile(event)
-    if (!file || locked.value || busy() || register()?.readOnly || register()?.id !== registerId() || !canReconcileRegister(register(), authStore.isSrLogistPlus)) return
-    operation = { id: makeId(), file, registerId: registerId() }
+  async function selectFiles(event) {
+    const files = takeSelectedExcelFiles(event)
+    if (!files.length || locked.value || busy() || register()?.readOnly || register()?.id !== registerId() || !canReconcileRegister(register(), authStore.isSrLogistPlus)) return
+    operation = { id: makeId(), files, registerId: registerId() }
     state.progress.percent = 0
     state.result = null
     state.summaryVisible = false
@@ -182,5 +184,5 @@ export function useRegisterReconciliation({ store, authStore, alertStore, router
     runningAction.value = false
     // Server-side work deliberately continues; teardown never replays or cancels an import.
   }
-  return { state, locked, cancel, fileInput, accept: EXCEL_FILE_ACCEPT, openFile, selectFile, retry, acknowledgeUnknown, stop }
+  return { state, locked, cancel, fileInput, accept: EXCEL_FILE_ACCEPT, openFile, selectFiles, retry, acknowledgeUnknown, stop }
 }

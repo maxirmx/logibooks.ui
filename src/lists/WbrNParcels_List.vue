@@ -288,14 +288,13 @@ const {
 const reconciliation = useRegisterReconciliation({
   store: registersStore, authStore, alertStore, router, register: () => registersStore.item,
   busy: () => generalActionsDisabled.value || isInitializing.value,
-  runningAction, mounted: isComponentMounted, registerId: () => props.registerId,
-  refreshRegister: fetchRegister, refreshParcels: () => loadParcelsWrapper({ throwOnError: true })
+  runningAction, mounted: isComponentMounted, registerId: () => props.registerId
 })
 const { state: reconciliationState, fileInput: reconciliationFileInput } = reconciliation
 const split = useRegisterSplit({
   store: registersStore, authStore, alertStore, router, register: () => registersStore.item,
   busy: () => generalActionsDisabled.value || isInitializing.value,
-  runningAction, mounted: isComponentMounted, registerId: () => props.registerId, refreshRegister: fetchRegister
+  runningAction, mounted: isComponentMounted, registerId: () => props.registerId
 })
 const { state: splitState } = split
 
@@ -637,7 +636,7 @@ function getGenericTemplateHeaders() {
 
     <PageAlertRegion v-if="!showParcelStatusBulkDialog && !xmlDialog.cancellable" />
     <RegisterSplitDialogs :state="splitState" @cancel="split.cancel" @retry="split.retry" @acknowledge="split.acknowledgeUnknown" @close="splitState.summaryVisible = false" />
-    <input ref="reconciliationFileInput" type="file" :accept="reconciliation.accept" hidden data-testid="reconciliation-file-input" @change="reconciliation.selectFile" />
+    <input ref="reconciliationFileInput" type="file" :accept="reconciliation.accept" multiple hidden data-testid="reconciliation-file-input" @change="reconciliation.selectFiles" />
     <div v-if="['retry-start', 'retry-status', 'unknown'].includes(reconciliationState.phase)" class="header-actions-bar">
       <v-btn v-if="reconciliationState.phase === 'retry-start'" v-bind="APP_DIALOG_BUTTON_PROPS.primary" data-testid="reconciliation-retry-start" @click="reconciliation.retry">Проверить результат отправки</v-btn>
       <v-btn v-if="reconciliationState.phase === 'retry-status'" v-bind="APP_DIALOG_BUTTON_PROPS.primary" data-testid="reconciliation-retry-status" @click="reconciliation.retry">Повторить получение результата</v-btn>

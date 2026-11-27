@@ -20,7 +20,11 @@ import { vuetifyStubs } from './helpers/test-utils.js'
 
 vi.mock('@/composables/useAppConfirm.js', () => ({ useAppConfirm: () => vi.fn().mockResolvedValue(false) }))
 vi.mock('@/helpers/error.helpers.js', async original => ({ ...await original(), reportError: vi.fn() }))
-const result = { ordinary: { id: 8, name: 'Latin основной', count: 2, available: true }, dangerous: { id: 9, name: 'Latin опасник', count: 4, available: true } }
+const result = { outputs: [
+  { id: 8, kind: 'ordinary', name: 'Latin основной 1', count: 2, available: true, manifestFileName: 'A.xlsx', manifestPosition: 1 },
+  { id: 10, kind: 'ordinary', name: 'Latin основной 3', count: 1, available: true, manifestFileName: 'C.xls', manifestPosition: 3 },
+  { id: 9, kind: 'dangerous', name: 'Latin опасник', count: 4, available: true }
+], sourceOnlyCount: 2 }
 const complete = { finished: true, percent: 100, result }
 const failure = (status = 503, code = 'Network', details = {}) => Object.assign(new Error('Не удалось выполнить разделение'), {
   status, data: { msg: 'Не удалось выполнить разделение', code, details, errors: {} }
@@ -41,7 +45,7 @@ let wrappers
 function harness(options = {}) {
   const store = { startSplit: vi.fn().mockResolvedValue({ id: 'operation' }), getSplit: vi.fn().mockResolvedValue(globalThis.structuredClone(complete)) }
   const authStore = reactive({ user: { id: 42 }, isSrLogistPlus: true, isShiftLeadPlus: false })
-  const register = reactive({ id: 7, registerType: WBRN_REGISTER_ID, theOtherCountryCode: 762, dangerousGoodsCount: 4, parcelsTotal: 6, readOnly: false })
+  const register = reactive({ id: 7, registerType: WBRN_REGISTER_ID, theOtherCountryCode: 762, hasReconciliationBatch: true, readOnly: false })
   const registerId = ref(7)
   const runningAction = ref(false)
   const mounted = ref(true)
@@ -53,7 +57,7 @@ function harness(options = {}) {
   let flow
   const component = defineComponent({ components: { PageAlertRegion, RegisterSplitDialogs }, setup() {
     flow = useRegisterSplit({ store, authStore, alertStore, router, register: () => register, busy: () => false,
-      registerId: () => registerId.value, runningAction, mounted, refreshRegister, makeId: () => 'operation', confirm, ...options })
+      registerId: () => registerId.value, runningAction, mounted, refreshSnapshot: refreshRegister, makeId: () => 'operation', confirm, ...options })
     onUnmounted(flow.stop)
     return { flow }
   }, template: '<main><hr><PageAlertRegion/><RegisterSplitDialogs :state="flow.state" @retry="flow.retry" @acknowledge="flow.acknowledgeUnknown" @close="flow.state.summaryVisible = false" /></main>' })
@@ -66,17 +70,13 @@ afterEach(() => { wrappers.forEach(wrapper => wrapper.unmount()); vi.useRealTime
 
 describe('register splitting', () => {
   it.each([
-    'role'
+    'role', 'country', 'format', 'no-batch', 'readOnly', 'other-register', 'busy'
   ])('guards split for %s', async condition => {
     const h = harness({ busy: () => condition === 'busy' })
     if (condition === 'role') h.authStore.isSrLogistPlus = false
     if (condition === 'country') h.register.theOtherCountryCode = 860
     if (condition === 'format') h.register.registerType = 1
-    if (condition === 'count') h.register.dangerousGoodsCount = undefined
-    if (condition === 'no-dangerous') h.register.dangerousGoodsCount = 0
-    if (condition === 'all-dangerous') h.register.dangerousGoodsCount = h.register.parcelsTotal
-    if (condition === 'empty') { h.register.dangerousGoodsCount = 0; h.register.parcelsTotal = 0 }
-    if (condition === 'total-unavailable') h.register.parcelsTotal = undefined
+    if (condition === 'no-batch') h.register.hasReconciliationBatch = false
     if (condition === 'readOnly') h.register.readOnly = true
     if (condition === 'other-register') h.register.id = 99
     expect(await h.flow.start()).toBe(false)
@@ -104,7 +104,7 @@ describe('register splitting', () => {
     'start'
   ])('unlocks after a confirmed %s failure', async phase => {
     const h = harness()
-    if (phase === 'start') h.store.startSplit.mockRejectedValue(failure(409, 'RegisterSplitNoOrdinaryParcels'))
+    if (phase === 'start') h.store.startSplit.mockRejectedValue(failure(409, 'RegisterSplitMissingReconciliation'))
     else h.store.getSplit.mockRejectedValue(failure(409, 'RegisterSplitConflict', { finished: true }))
     await h.flow.start()
     expect(h.flow.state.phase).toBe('idle')
@@ -131,9 +131,9 @@ describe('register splitting', () => {
     await flushPromises()
     expect(h.store.getSplit).toHaveBeenCalledWith(7, 'operation')
     expect(h.store.startSplit).not.toHaveBeenCalled()
-    h.flow.state.result.dangerous.available = false
+    h.flow.state.result.outputs[2].available = false
     await flushPromises()
-    expect(h.wrapper.find('[data-testid="split-open-dangerous"]').exists()).toBe(false)
+    expect(h.wrapper.find('[data-testid="split-open-9"]').exists()).toBe(false)
     expect(h.wrapper.text()).toContain('Реестр недоступен')
   })
   it('ignores late responses after route change and teardown without clearing recoverable work', async () => {
@@ -161,7 +161,13 @@ describe('register splitting', () => {
     await flushPromises()
     await wrapper.get('[data-testid="split-retry"]').trigger('click')
     await flushPromises()
-    expect(wrapper.get('[data-testid="split-results"]').text()).toContain('Latin основной')
+    const receipt = wrapper.get('[data-testid="split-results"]')
+    expect(receipt.findAll('[data-testid="split-output"]').map(row => row.text())).toEqual([
+      expect.stringContaining('Манифест № 1 · A.xlsx'),
+      expect.stringContaining('Манифест № 3 · C.xls'),
+      expect.stringContaining('Latin опасник')
+    ])
+    expect(receipt.get('[data-testid="split-source-only"]').text()).toContain('2 посылок')
     await wrapper.findAll('button').find(button => button.text() === 'Закрыть').trigger('click')
     expect(wrapper.find('[data-testid="split-results"]').exists()).toBe(false)
   })

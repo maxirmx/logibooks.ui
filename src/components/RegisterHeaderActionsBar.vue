@@ -99,7 +99,8 @@ const reconciliationEligible = computed(() => canReconcileRegister(props.item, i
 const splitEligible = computed(() => canSplitRegister(props.item, isSrLogistPlus?.value))
 const reconciliationOptions = computed(() => [
   { label: 'Сверить реестр', action: () => run('reconcile-register') },
-  { label: 'Разделить реестр', disabled: !splitEligible.value, action: () => run('split-register') }
+  { label: splitEligible.value ? 'Разделить реестр' : 'Разделить реестр (сначала выполните сверку)',
+    disabled: !splitEligible.value, action: () => run('split-register') }
 ])
 const derivedTotalsPending = computed(() => props.item?.derivedTotalsPending === true)
 const xmlExportEvents = ['export-ordinary', 'export-excise', 'export-notifications']

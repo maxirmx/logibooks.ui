@@ -12,6 +12,12 @@ export function openExcelFilePicker(input) {
   return true
 }
 
+export function takeSelectedExcelFiles(event) {
+  const files = Array.from(event?.target?.files ?? [])
+  resetExcelFileInput(event?.target)
+  return files
+}
+
 export function takeSelectedExcelFile(event) {
   const file = event?.target?.files?.[0]
   resetExcelFileInput(event?.target)

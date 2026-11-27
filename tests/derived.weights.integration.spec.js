@@ -57,6 +57,21 @@ describe('server-owned derived weight projections', () => {
     expect(registers.items[0].derivedTotalsPending).toBe(false)
   })
 
+  it('reloads after a terminal write even when a pre-terminal refresh is still in flight', async () => {
+    const registers = useRegistersStore()
+    registers.item = { ...register, hasReconciliationBatch: false }
+    let finishOld
+    fetchWrapper.get.mockImplementationOnce(() => new Promise(resolve => { finishOld = resolve }))
+    const oldRefresh = registers.refreshDerived(12)
+    await flushPromises()
+    const terminalRefresh = registers.refreshDerived(12, { afterMutation: true })
+    register = { ...register, hasReconciliationBatch: true, totalWeightKgToRelease: 9 }
+    finishOld({ ...register, hasReconciliationBatch: false, totalWeightKgToRelease: 3 })
+    await Promise.all([oldRefresh, terminalRefresh])
+    expect(fetchWrapper.get.mock.calls.filter(([url]) => url === '/api/registers/12')).toHaveLength(2)
+    expect(registers.item).toMatchObject({ hasReconciliationBatch: true, totalWeightKgToRelease: 9 })
+  })
+
   it('recovers the current detail when its older read fails before the terminal reload finishes', async () => {
     const registers = useRegistersStore()
     fetchWrapper.get.mockResolvedValueOnce({ customsProcedures: [1], transportationTypes: [1], incoterms: [1] })

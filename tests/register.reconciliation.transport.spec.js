@@ -17,11 +17,11 @@ it('preserves full ErrMessage and rejection through real multipart transport and
   const store = useRegistersStore()
   const notification = vi.spyOn(useAlertStore(), 'error')
   const file = new File(['a'], 'manifest.xlsx')
-  await expect(store.startReconciliation(7, file, 'op')).rejects.toMatchObject({ status: 400, data })
+  await expect(store.startReconciliation(7, [file, new File(['b'], 'secondary.xlsm')], 'op')).rejects.toMatchObject({ status: 400, data })
   expect(store.error.data).toEqual(data)
   expect(notification).not.toHaveBeenCalled()
   expect(fetch.mock.calls[0][0]).toBe('http://localhost/api/registers/7/reconciliation?operationId=op')
-  expect(fetch.mock.calls[0][1].body.get('file').name).toBe('manifest.xlsx')
+  expect(fetch.mock.calls[0][1].body.getAll('files').map(upload => upload.name)).toEqual(['manifest.xlsx', 'secondary.xlsm'])
   expect(fetch.mock.calls[0][1].headers.Authorization).toBe('Bearer token')
 })
 
@@ -32,7 +32,7 @@ it('preserves terminal GET metadata and returns accepted/completed data', async 
   await expect(store.getReconciliation(7, 'op')).rejects.toMatchObject({ status: 409, data })
   expect(store.error.data).toEqual(data)
   fetch.mockResolvedValueOnce(new globalThis.Response(JSON.stringify({ id: 'op' }), { status: 202 }))
-  await expect(store.startReconciliation(7, new File(['a'], 'a.xlsx'), 'op')).resolves.toEqual({ id: 'op' })
+  await expect(store.startReconciliation(7, [new File(['a'], 'a.xlsx')], 'op')).resolves.toEqual({ id: 'op' })
   const result = { registerId: 7, dangerousGoodsCount: 104, markedCount: 42, newlyMarkedCount: 13,
     excludedCount: 2, registerOnlyCount: 5, manifestOnlyCount: 6 }
   fetch.mockResolvedValueOnce(new globalThis.Response(JSON.stringify({ finished: true, result }), { status: 200 }))

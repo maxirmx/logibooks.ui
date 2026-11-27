@@ -636,7 +636,7 @@ describe('RegisterHeaderActionsBar', () => {
   it('offers reconciliation and split to senior logist, retaining country, format and mutation guards', async () => {
     authRefs.isShiftLeadPlus.value = false
     authRefs.isSrLogistPlus.value = true
-    const item = { ...baseProps.item, registerType: WBRN_REGISTER_ID, theOtherCountryCode: 762, dangerousGoodsCount: 3, parcelsTotal: 5 }
+    const item = { ...baseProps.item, registerType: WBRN_REGISTER_ID, theOtherCountryCode: 762, hasReconciliationBatch: true }
     const wrapper = mount(RegisterHeaderActionsBar, { props: { ...baseProps, item, showWeightUpdate: true }, global: { stubs: vuetifyStubs } })
     const menu = () => wrapper.findAllComponents(ActionButton2L).find(button => button.props('tooltipText') === 'Сверить и разделить реестр')
     expect(menu().props('options').map(option => option.label)).toEqual(['Сверить реестр', 'Разделить реестр'])
@@ -644,17 +644,13 @@ describe('RegisterHeaderActionsBar', () => {
     menu().props('options')[1].action()
     expect(wrapper.emitted('reconcile-register')).toHaveLength(1)
     expect(wrapper.emitted('split-register')).toHaveLength(1)
-    for (const counts of [
-      { dangerousGoodsCount: 0, parcelsTotal: 5 },
-      { dangerousGoodsCount: 5, parcelsTotal: 5 },
-      { dangerousGoodsCount: 0, parcelsTotal: 0 },
-      { dangerousGoodsCount: 3, parcelsTotal: undefined }
-    ]) {
-      await wrapper.setProps({ item: { ...item, ...counts } })
-      expect(menu().props('options')[1].disabled).toBe(true)
-      menu().props('options')[1].action()
-      expect(wrapper.emitted('split-register')).toHaveLength(1)
-    }
+    await wrapper.setProps({ item: { ...item, hasReconciliationBatch: false } })
+    expect(menu().props('options')[1]).toMatchObject({
+      label: 'Разделить реестр (сначала выполните сверку)', disabled: true
+    })
+    menu().props('options')[1].action()
+    expect(wrapper.emitted('split-register')).toHaveLength(1)
+    await wrapper.setProps({ item })
     for (const props of [{ mutationDisabled: true }, { mutationDisabled: false, loading: true }, { loading: false, item: { ...item, readOnly: true } }]) {
       await wrapper.setProps(props)
       expect(menu().props('disabled')).toBe(true)

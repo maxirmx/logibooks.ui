@@ -11,7 +11,5 @@ export function canReconcileRegister(register, isSrLogistPlus) {
 
 
 export function canSplitRegister(register, isSrLogistPlus) {
-  const dangerousCount = Number(register?.dangerousGoodsCount)
-  return canReconcileRegister(register, isSrLogistPlus) && dangerousCount > 0 &&
-    dangerousCount < Number(register?.parcelsTotal)
+  return canReconcileRegister(register, isSrLogistPlus) && register.hasReconciliationBatch === true
 }

@@ -16,7 +16,7 @@ const mounted = ref(true)
 const split = useRegisterSplit({ store: useRegistersStore(), authStore: useAuthStore(), alertStore: useAlertStore(), router: useRouter(),
   register: () => null, registerId: () => props.registerId, busy: () => true, runningAction: ref(false), mounted,
   // The source failed to load. Receipt recovery must not depend on loading it again.
-  refreshRegister: async () => undefined })
+  refreshSnapshot: async () => undefined })
 const { state } = split
 onUnmounted(() => { mounted.value = false; split.stop() })
 </script>

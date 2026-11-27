@@ -34,7 +34,7 @@ function harness(kind) {
   const cancel = vi.fn().mockResolvedValue(cancelled)
   const store = split ? { startSplit: start, getSplit: get, cancelSplit: cancel }
     : { startReconciliation: start, getReconciliation: get, cancelReconciliation: cancel }
-  const register = reactive({ id: 7, registerType: WBRN_REGISTER_ID, theOtherCountryCode: 762, dangerousGoodsCount: 1, parcelsTotal: 2 })
+  const register = reactive({ id: 7, registerType: WBRN_REGISTER_ID, theOtherCountryCode: 762, hasReconciliationBatch: true })
   const alertStore = useAlertStore()
   const notify = vi.spyOn(alertStore, 'error')
   const refresh = vi.fn().mockResolvedValue(true)
@@ -44,16 +44,16 @@ function harness(kind) {
     setup() {
       flow = (split ? useRegisterSplit : useRegisterReconciliation)({ store, register: () => register,
         authStore: { user: { id: 42 }, isSrLogistPlus: true }, alertStore, busy: () => false,
-        runningAction: running, mounted: ref(true), refreshRegister: refresh, refreshParcels: refresh, makeId: () => 'op' })
+        runningAction: running, mounted: ref(true), refreshSnapshot: refresh, makeId: () => 'op' })
       onUnmounted(flow.stop)
       return { flow }
     }, template: '<main><hr><PageAlertRegion/><OperationDialogs :state="flow.state" @cancel="flow.cancel" /></main>' })
   const wrapper = mount(component, { global: { stubs } })
   wrappers.push(wrapper)
-  return { flow, wrapper, notify, start, get, cancel, refresh, running,
-    begin: () => split ? flow.start() : flow.selectFile({ target: { value: 'chosen', files: [new File(['manifest'], 'm.xlsx')] } }),
+  return { flow, wrapper, notify, start, get, cancel, refresh, running, register,
+    begin: () => split ? flow.start() : flow.selectFiles({ target: { value: 'chosen', files: [new File(['manifest'], 'm.xlsx')] } }),
     completed: { finished: true, phase: 'completed', percent: 100, result: split
-      ? { ordinary: { id: 8, name: 'Основной', count: 1, available: true }, dangerous: { id: 9, name: 'Опасник', count: 1, available: true } }
+      ? { outputs: [{ id: 8, kind: 'ordinary', name: 'Основной', count: 1, available: true }, { id: 9, kind: 'dangerous', name: 'Опасник', count: 1, available: true }], sourceOnlyCount: 0 }
       : { registerId: 7, dangerousGoodsCount: 1, markedCount: 0, newlyMarkedCount: 0, excludedCount: 0, registerOnlyCount: 0, manifestOnlyCount: 0 } }
   }
 }
@@ -83,6 +83,35 @@ describe.each(['split', 'reconciliation'])('%s cancellation', kind => {
     expect(h.flow.state.progress.show).toBe(false)
   })
 
+  it.each(['cancelled', 'failed'])('reloads the committed snapshot once after terminal %s and holds the lock during reload', async outcome => {
+    const h = harness(kind)
+    let finishReload
+    h.refresh.mockImplementationOnce(() => new Promise(resolve => { finishReload = resolve }))
+    let work
+    if (outcome === 'cancelled') {
+      await h.begin()
+      work = h.flow.cancel()
+    } else {
+      const code = kind === 'split' ? 'RegisterSplitConflict' : 'ReconciliationFailed'
+      h.get.mockRejectedValueOnce(Object.assign(new Error('Обработка завершилась ошибкой'), {
+        status: 409, data: { code, msg: 'Обработка завершилась ошибкой', details: { finished: true } }
+      }))
+      work = h.begin()
+    }
+    await flushPromises()
+    expect(h.refresh).toHaveBeenCalledExactlyOnceWith(7)
+    expect(h.running.value).toBe(true)
+    expect(h.flow.state.canCancel).toBe(false)
+    if (outcome === 'failed') {
+      expect(h.notify).toHaveBeenCalledOnce()
+      expect(h.wrapper.get('[data-testid="page-alert-region"]').text()).toContain('Обработка завершилась ошибкой')
+    } else expect(h.notify).not.toHaveBeenCalled()
+    finishReload()
+    await work
+    expect(h.running.value).toBe(false)
+    expect(h.flow.state.progress.show).toBe(false)
+  })
+
   it('presents cancellation transport failure once and recovers without replaying the operation', async () => {
     const h = harness(kind)
     await h.begin()
@@ -100,6 +129,21 @@ describe.each(['split', 'reconciliation'])('%s cancellation', kind => {
     expect(h.cancel).toHaveBeenCalledTimes(2)
     expect(h.start).toHaveBeenCalledOnce()
     expect(h.flow.state.phase).toBe('idle')
+  })
+
+  it('reports a terminal reload failure after navigation without a stale alert', async () => {
+    const h = harness(kind)
+    await h.begin()
+    let rejectReload
+    h.refresh.mockImplementationOnce(() => new Promise((_resolve, reject) => { rejectReload = reject }))
+    const work = h.flow.cancel()
+    await flushPromises()
+    h.register.id = 8
+    const error = new Error('Old snapshot failed')
+    rejectReload(error)
+    await work
+    expect(h.notify).not.toHaveBeenCalled()
+    expect(reportError).toHaveBeenCalledWith(error, { context: expect.stringContaining('refresh after') })
   })
 
   it.each(['resolve', 'reject'])('handles a cancellation response that %ss after navigation', async outcome => {
